@@ -4,10 +4,11 @@
  *
  * Author: Markku Rossi <mtr@iki.fi>
  *
- * Copyright (c) 1999-2000 Markku Rossi, etc.
+ * Copyright (c) 1999-2000 WAPIT OY LTD.
  *		 All rights reserved.
  *
- * Syntax tree.
+ * Syntax tree creation, manipulation and byte-code assembler
+ * generation.
  *
  */
 
@@ -157,6 +158,10 @@ struct WsFunctionRec
   WsUInt32 line;
   WsList *params;
   WsList *block;
+
+  /* The usage count of this function.  This is used when sorting the
+     functions by their usage count. */
+  WsUInt32 usage_count;
 };
 
 typedef struct WsFunctionRec WsFunction;
@@ -274,18 +279,21 @@ struct WsExpressionRec
 
     struct
     {
+      /* The type is the opcode of the unary byte-code operand. */
       int type;
       struct WsExpressionRec *expr;
     } unary;
 
     struct
     {
+      /* Is this an unary addition or substraction. */
       WsBool addp;
       char *variable;
     } unary_var;
 
     struct
     {
+      /* Is this a postfix addition or substraction. */
       WsBool addp;
       char *variable;
     } postfix_var;
@@ -310,15 +318,15 @@ struct WsExpressionRec
     WsUInt16 cindex;
 
     WsUInt32 ival;
-    WsFloat32 fval;
+    WsFloat fval;
     WsUtf8String string;
   } u;
 };
 
 typedef struct WsExpressionRec WsExpression;
 
-/* General expression manipulators. */
-
+/* Linearize the expression `expr' into symbolic byte-code
+   assembler. */
 void ws_expr_linearize(WsCompilerPtr compiler, WsExpression *expr);
 
 
@@ -328,7 +336,8 @@ void ws_expr_linearize(WsCompilerPtr compiler, WsExpression *expr);
 WsExpression *ws_expr_comma(WsCompilerPtr compiler, WsUInt32 line,
 			    WsExpression *left, WsExpression *right);
 
-/* Create an assignment expression.  */
+/* Create an assignment expression.  The argument `type' specifies the
+   type of the expression.  It is the assignment token value. */
 WsExpression *ws_expr_assign(WsCompilerPtr compiler, WsUInt32 line,
 			     char *identifier, int op, WsExpression *expr);
 
@@ -338,17 +347,20 @@ WsExpression *ws_expr_conditional(WsCompilerPtr compiler, WsUInt32 line,
 				  WsExpression *e_cond, WsExpression *e_then,
 				  WsExpression *e_else);
 
-/* Create a logical expression of type `type'. */
+/* Create a logical expression of type `type'.  The argument `type' is
+   the opcode of the logical shoft-circuit byte-code operand. */
 WsExpression *ws_expr_logical(WsCompilerPtr compiler, WsUInt32 line,
 			      int type, WsExpression *left,
 			      WsExpression *right);
 
-/* Create a binary expression of type `type'. */
+/* Create a binary expression of type `type'.  The argument `type' is
+   the opcode of the binary byte-code operand. */
 WsExpression *ws_expr_binary(WsCompilerPtr compiler, WsUInt32 line,
 			     int type, WsExpression *left,
 			     WsExpression *right);
 
-/* Create an unary expression of type `type'. */
+/* Create an unary expression of type `type'.  The argument `type' is
+   the opcode of the unary byte-code operand. */
 WsExpression *ws_expr_unary(WsCompilerPtr compiler, WsUInt32 line,
 			    int type, WsExpression *expr);
 
@@ -365,7 +377,8 @@ WsExpression *ws_expr_postfix_var(WsCompilerPtr compiler, WsUInt32 line,
 				  WsBool addp, char *variable);
 
 /* A generic call expression.  The argument `type' must be one of ' ',
-   '#', or '.'. */
+   '#', or '.' for local, extern, or library function call
+   respectively. */
 WsExpression *ws_expr_call(WsCompilerPtr compiler, WsUInt32 linenum,
 			   int type, char *base, char *name,
 			   WsList *arguments);
@@ -389,7 +402,7 @@ WsExpression *ws_expr_const_integer(WsCompilerPtr compiler, WsUInt32 linenum,
 
 /* A floating point number. */
 WsExpression *ws_expr_const_float(WsCompilerPtr compiler, WsUInt32 linenum,
-				  WsFloat32 fval);
+				  WsFloat fval);
 
 /* An UTF-8 encoded string. */
 WsExpression *ws_expr_const_string(WsCompilerPtr compiler, WsUInt32 linenum,
@@ -450,34 +463,49 @@ struct WsStatementRec
 
 typedef struct WsStatementRec WsStatement;
 
-/* Manipulator. */
-
+/* Linearize the statement `stmt' into symbolic byte-code
+   assembler. */
 void ws_stmt_linearize(WsCompilerPtr compiler, WsStatement *stmt);
 
 /* Constructors for statements. */
 
+/* Create a new block statement from the statements `block'.  The
+   arguments `first_line' and `last_line' specify the first and last
+   line numbers of the block (the line numbers of the '{' and '}'
+   tokens). */
 WsStatement *ws_stmt_block(WsCompilerPtr compiler, WsUInt32 first_line,
 			   WsUInt32 last_line, WsList *block);
 
+/* Create a new variable initialization statement. */
 WsStatement *ws_stmt_variable(WsCompilerPtr compiler, WsUInt32 line,
 			      WsList *variables);
 
+/* Create a new expression statement. */
 WsStatement *ws_stmt_expr(WsCompilerPtr compiler, WsUInt32 line,
 			  WsExpression *expr);
 
+/* Create a new if statement. */
 WsStatement *ws_stmt_if(WsCompilerPtr compiler, WsUInt32 line,
 			WsExpression *expr, WsStatement *s_then,
 			WsStatement *s_else);
 
+/* Create a new for statement.  Only one of the arguments `init' and
+   `e1' can be defined.  The init must be given for statements which
+   has a VariableDeclarationList in the initialization block.  For the
+   C-like statements, the argument `e1' must be given for the
+   initialization expression. */
 WsStatement *ws_stmt_for(WsCompilerPtr compiler, WsUInt32 line, WsList *init,
 			 WsExpression *e1, WsExpression *e2, WsExpression *e3,
 			 WsStatement *stmt);
 
+/* Create a new while statement. */
 WsStatement *ws_stmt_while(WsCompilerPtr compiler, WsUInt32 line,
 			   WsExpression *expr, WsStatement *stmt);
 
+/* Create a new continue statement. */
 WsStatement *ws_stmt_continue(WsCompilerPtr compiler, WsUInt32 line);
 
+/* Create a new break statement. */
 WsStatement *ws_stmt_break(WsCompilerPtr compiler, WsUInt32 line);
 
 /* Create a new return statement.  The argument `expr' is the

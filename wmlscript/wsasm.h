@@ -4,7 +4,7 @@
  *
  * Author: Markku Rossi <mtr@iki.fi>
  *
- * Copyright (c) 1999-2000 Markku Rossi, etc.
+ * Copyright (c) 1999-2000 WAPIT OY LTD.
  *		 All rights reserved.
  *
  * Byte-code assembler definitions.
@@ -41,6 +41,8 @@
 #define WS_ASM_CLASS4P(op)	(((op) & 0xc0) == 0x00)
 #define WS_ASM_CLASS4_OP(op)	(op)
 
+/* Get the opcode of the operand `op'.  The operand `op' can belong to
+   any of the classes 1-4. */
 #define WS_ASM_OP(op)		\
   (WS_ASM_CLASS1P(op)		\
    ? WS_ASM_CLASS1_OP(op)	\
@@ -50,6 +52,9 @@
 	 ? WS_ASM_CLASS3_OP(op) \
 	 : WS_ASM_CLASS4_OP(op))))
 
+/* Get the implicit argument of the operand `op'.  The operand `op'
+   can belong to any of the classes 1-4.  For the class 4 operands,
+   this returns 0. */
 #define WS_ASM_ARG(op)			\
   (WS_ASM_CLASS1P(op)			\
    ? WS_ASM_CLASS1_ARG(op)		\
@@ -59,6 +64,8 @@
 	 ? WS_ASM_CLASS3_ARG(op)	\
 	 : 0)))
 
+/* Create an operand with implicit argument from the operand `op' and
+   argument `arg'. */
 #define WS_ASM_GLUE(op, arg)	((WsByte) (((WsByte) (op)) | ((WsByte) (arg))))
 
 
@@ -228,7 +235,8 @@ typedef struct WsAsmInsRec WsAsmIns;
    chain, currently being constructed in `compiler'. */
 void ws_asm_link(WsCompilerPtr compiler, WsAsmIns *ins);
 
-/* Print the assembler instruction. */
+/* Print the current assembler instructions of the compiler
+   `compiler'. */
 void ws_asm_print(WsCompilerPtr compiler);
 
 /* Disassemble the byte-code `code', `len' to the standard output. */

@@ -4,7 +4,7 @@
  *
  * Author: Markku Rossi <mtr@iki.fi>
  *
- * Copyright (c) 1999-2000 Markku Rossi, etc.
+ * Copyright (c) 1999-2000 WAPIT OY LTD.
  *		 All rights reserved.
  *
  * Optimizations for the WMLScript symbolic assembler.
@@ -13,6 +13,8 @@
 
 #include <wsint.h>
 #include <wsasm.h>
+
+/* TODO: liveness analyzation */
 
 /********************* Optimization functions ***************************/
 
@@ -148,6 +150,60 @@ opt_dead_code(WsCompilerPtr compiler)
   return change;
 }
 
+
+static WsBool
+opt_peephole(WsCompilerPtr compiler)
+{
+  WsBool change = WS_FALSE;
+  WsAsmIns *i, *i2, *prev;
+
+  ws_info(compiler, "optimize: peephole");
+
+  prev = NULL;
+  i = compiler->asm_head;
+  while (i)
+    {
+      /* Two instructions wide peephole. */
+      if (i->next)
+	{
+	  i2 = i->next;
+
+	  /*
+	   * {load*,const*}	=>	-
+	   * pop
+	   */
+	  if (i2->type == WS_ASM_POP
+	      && (i->type == WS_ASM_P_LOAD_VAR
+		  || i->type == WS_ASM_P_LOAD_CONST
+		  || i->type == WS_ASM_CONST_0
+		  || i->type == WS_ASM_CONST_1
+		  || i->type == WS_ASM_CONST_M1
+		  || i->type == WS_ASM_CONST_ES
+		  || i->type == WS_ASM_CONST_INVALID
+		  || i->type == WS_ASM_CONST_TRUE
+		  || i->type == WS_ASM_CONST_FALSE))
+	      {
+		/* Remove both instructions. */
+		change = WS_TRUE;
+
+		if (prev)
+		  prev->next = i2->next;
+		else
+		  compiler->asm_head = i2->next;
+
+		i = i2->next;
+		continue;
+	      }
+	}
+
+      /* Move forward. */
+      prev = i;
+      i = i->next;
+    }
+
+  return change;
+}
+
 /********************* Global entry point *******************************/
 
 void
@@ -160,6 +216,10 @@ ws_asm_optimize(WsCompilerPtr compiler)
   while (change)
     {
       change = WS_FALSE;
+
+      /* Peephole. */
+      if (!compiler->params.no_opt_peephole && opt_peephole(compiler))
+	change = WS_TRUE;
 
       /* Jumps to jump instructions. */
       if (!compiler->params.no_opt_jumps_to_jumps

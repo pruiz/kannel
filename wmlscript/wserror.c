@@ -4,7 +4,7 @@
  *
  * Author: Markku Rossi <mtr@iki.fi>
  *
- * Copyright (c) 1999-2000 Markku Rossi, etc.
+ * Copyright (c) 1999-2000 WAPIT OY LTD.
  *		 All rights reserved.
  *
  * Error and information reporting functions.
@@ -19,6 +19,9 @@ void
 ws_info(WsCompilerPtr compiler, char *message, ...)
 {
   va_list ap;
+
+  if (!compiler->params.verbose)
+    return;
 
   ws_puts(WS_STDOUT, "wsc: ");
 
@@ -74,7 +77,14 @@ ws_error_syntax(WsCompilerPtr compiler, WsUInt32 line)
   if (line == 0)
     line = compiler->linenum;
 
+  if (compiler->last_syntax_error_line == line)
+    /* It makes no sense to report multiple syntax errors from the
+       same line. */
+    return;
+
+  compiler->last_syntax_error_line = line;
   compiler->errors |= WS_ERROR_B_SYNTAX;
+
   ws_fprintf(WS_STDERR, "%s:%u: syntax error" WS_LINE_TERMINATOR,
 	    compiler->input_name, line);
 }
@@ -233,7 +243,7 @@ ws_vfprintf(WsIOProc io, void *context, const char *fmt, va_list ap)
 	    break;
 
 	  default:
-	    ws_fatal("ws_vfprintf(): format %%%c not implemented\n", fmt[i]);
+	    ws_fatal("ws_vfprintf(): format %%%c not implemented", fmt[i]);
 	    break;
 	  }
 

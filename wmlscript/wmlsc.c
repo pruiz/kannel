@@ -1,10 +1,10 @@
 /*
  *
- * wsc.c
+ * wmlsc.c
  *
  * Author: Markku Rossi <mtr@iki.fi>
  *
- * Copyright (c) 1999-2000 Markku Rossi, etc.
+ * Copyright (c) 1999-2000 WAPIT OY LTD.
  *		 All rights reserved.
  *
  * Main for the WMLScript compiler.
@@ -23,22 +23,18 @@
 
 #include <ws.h>
 
-/*
- * Prototypes for static functions.
- */
+/********************* Prototypes for static functions ******************/
 
 /* Print usage message to the stdout. */
 static void usage(void);
 
-/* A callback functio to receive the meta-pragmas. */
+/* A callback function to receive the meta-pragmas. */
 static void pragma_meta(const WsUtf8String *property_name,
 			const WsUtf8String *content,
 			const WsUtf8String *scheme,
 			void *context);
 
-/*
- * Static variables.
- */
+/********************* Static variables *********************************/
 
 /* The name of the compiler program. */
 static char *program;
@@ -46,10 +42,7 @@ static char *program;
 /* Use ws_compile_data() instead of ws_compile_file(). */
 int eval_data = 0;
 
-
-/*
- * Global functions.
- */
+/********************* Global functions *********************************/
 
 int
 main(int argc, char *argv[])
@@ -66,11 +59,19 @@ main(int argc, char *argv[])
   else
     program = argv[0];
 
+  /* Initialize the parameters structure.  The command line options
+     modify this directly. */
+  memset(&params, 0, sizeof(params));
+
   /* Process command line arguments. */
-  while ((opt = getopt(argc, argv, "dh")) != -1)
+  while ((opt = getopt(argc, argv, "adhsv")) != EOF)
     {
       switch (opt)
 	{
+	case 'a':
+	  params.print_assembler = 1;
+	  break;
+
 	case 'd':
 	  eval_data = 1;
 	  break;
@@ -80,27 +81,34 @@ main(int argc, char *argv[])
 	  exit(0);
 	  break;
 
+	case 'l':
+	  params.use_latin1_strings = 1;
+	  break;
+
+	case 'p':
+	  params.meta_name_cb = pragma_meta;
+	  params.meta_name_cb_context = "meta name";
+
+	  params.meta_http_equiv_cb = pragma_meta;
+	  params.meta_http_equiv_cb_context = "meta http equiv";
+	  break;
+
+	case 's':
+	  params.print_symbolic_assembler = 1;
+	  break;
+
+	case 'v':
+	  params.verbose = 1;
+	  break;
+
 	case '?':
-	  printf("Usage `%s -h' for a complete list of options.\n",
+	  printf("Try `%s -h' for a complete list of options.\n",
 		 program);
 	  exit(1);
 	}
     }
 
-  /* Create a compiler. */
-
-  memset(&params, 0, sizeof(params));
-
-  params.use_latin1_strings = 0;
-
-  params.print_symbolic_assembler = 1;
-  params.print_assembler = 0;
-
-  params.meta_name_cb = pragma_meta;
-  params.meta_name_cb_context = "meta name";
-
-  params.meta_http_equiv_cb = pragma_meta;
-  params.meta_http_equiv_cb_context = "meta http equiv";
+  /* Create compiler. */
 
   compiler = ws_create(&params);
   if (compiler == NULL)
@@ -211,20 +219,26 @@ main(int argc, char *argv[])
   return 0;
 }
 
-/*
- * Static functions.
- */
+/********************* Static functions *********************************/
 
 static void
 usage(void)
 {
   printf("Usage: %s OPTION... FILE...\n\
 \n\
+  -a            disassemble resulting byte-code and print it to the\n\
+                standard output\n\
   -d		use ws_eval_data() function instead of ws_eval_file()\n\
-  -h            print this message and exit successfully\n\
+  -h            print this help message and exit successfully\n\
+  -l            encode strings in ISO-8859/1 (ISO latin1) instead of using
+                UTF-8\n\
+  -p            print pragmas\n\
+  -s            print symbolic byte-code assembler to the standard output\n\
+  -v            print verbose progress messages\n\
 \n",
 	 program);
 }
+
 
 static void
 pragma_meta(const WsUtf8String *property_name, const WsUtf8String *content,

@@ -17,7 +17,7 @@
 #define	tTRUE	258
 #define	tFALSE	259
 #define	tINTEGER	260
-#define	tFLOAT32	261
+#define	tFLOAT	261
 #define	tSTRING	262
 #define	tIDENTIFIER	263
 #define	tACCESS	264
@@ -105,7 +105,7 @@
  *
  * Author: Markku Rossi <mtr@iki.fi>
  *
- * Copyright (c) 1999-2000 Markku Rossi, etc.
+ * Copyright (c) 1999-2000 WAPIT OY LTD.
  *		 All rights reserved.
  *
  * Bison grammar for the WMLScript compiler.
@@ -122,15 +122,17 @@
    by using the `wserror.h' functions. */
 extern void yyerror(char *msg);
 
+#if WS_DEBUG
 /* Just for debugging purposes. */
 WsCompilerPtr global_compiler = NULL;
+#endif /* WS_DEBUG */
 
 
-#line 31 "wmlscript/wsgram.y"
+#line 33 "wmlscript/wsgram.y"
 typedef union
 {
   WsUInt32 integer;
-  WsFloat32 vfloat;
+  WsFloat vfloat;
   char *identifier;
   WsUtf8String *string;
 
@@ -285,21 +287,21 @@ static const short yyrhs[] = {   110,
 
 #if YYDEBUG != 0
 static const short yyrline[] = { 0,
-   111,   113,   114,   122,   124,   127,   129,   135,   137,   138,
-   141,   148,   152,   163,   174,   196,   200,   202,   203,   206,
-   224,   244,   280,   285,   291,   292,   293,   297,   299,   302,
-   317,   319,   322,   327,   330,   332,   335,   355,   375,   382,
-   383,   387,   391,   392,   393,   397,   401,   404,   413,   420,
-   425,   428,   434,   440,   445,   451,   457,   463,   480,   485,
-   491,   496,   502,   507,   513,   519,   526,   535,   537,   541,
-   543,   549,   551,   555,   559,   563,   567,   571,   575,   579,
-   583,   587,   591,   595,   599,   605,   607,   613,   615,   622,
-   624,   631,   633,   640,   642,   649,   651,   658,   660,   664,
-   670,   672,   676,   680,   684,   690,   692,   697,   702,   709,
-   711,   715,   721,   723,   727,   731,   736,   742,   744,   748,
-   752,   756,   760,   783,   787,   791,   797,   799,   803,   809,
-   811,   821,   825,   831,   836,   840,   844,   848,   852,   856,
-   860,   866,   871,   877,   883
+   120,   122,   123,   131,   133,   136,   138,   144,   146,   147,
+   150,   157,   161,   172,   183,   205,   209,   211,   212,   215,
+   233,   253,   289,   294,   300,   301,   302,   306,   308,   311,
+   326,   328,   331,   336,   339,   341,   344,   364,   384,   393,
+   394,   398,   402,   403,   404,   408,   412,   415,   424,   431,
+   436,   439,   445,   451,   456,   462,   468,   474,   491,   496,
+   502,   507,   513,   518,   521,   527,   534,   543,   545,   549,
+   551,   557,   559,   563,   567,   571,   575,   579,   583,   587,
+   591,   595,   599,   603,   607,   613,   615,   621,   623,   630,
+   632,   639,   641,   648,   650,   657,   659,   666,   668,   672,
+   678,   680,   684,   688,   692,   698,   700,   705,   710,   717,
+   719,   723,   729,   731,   735,   739,   744,   750,   752,   756,
+   760,   764,   768,   791,   795,   799,   805,   807,   811,   817,
+   819,   829,   833,   839,   844,   848,   852,   856,   860,   864,
+   868,   874,   879,   885,   891
 };
 #endif
 
@@ -307,7 +309,7 @@ static const short yyrline[] = { 0,
 #if YYDEBUG != 0 || defined (YYERROR_VERBOSE)
 
 static const char * const yytname[] = {   "$","error","$undefined.","tINVALID",
-"tTRUE","tFALSE","tINTEGER","tFLOAT32","tSTRING","tIDENTIFIER","tACCESS","tAGENT",
+"tTRUE","tFALSE","tINTEGER","tFLOAT","tSTRING","tIDENTIFIER","tACCESS","tAGENT",
 "tBREAK","tCONTINUE","tIDIV","tIDIVA","tDOMAIN","tELSE","tEQUIV","tEXTERN","tFOR",
 "tFUNCTION","tHEADER","tHTTP","tIF","tISVALID","tMETA","tNAME","tPATH","tRETURN",
 "tTYPEOF","tUSE","tUSER","tVAR","tWHILE","tURL","tDELETE","tIN","tLIB","tNEW",
@@ -546,7 +548,7 @@ static const short yycheck[] = {    72,
 #define YYPURE 1
 
 /* -*-C-*-  Note some compilers choke on comments on `#line' lines.  */
-#line 3 "/usr/share/misc/bison.simple"
+#line 3 "/usr/pkg/share/bison.simple"
 /* This file comes from bison-1.28.  */
 
 /* Skeleton output parser for bison,
@@ -760,7 +762,7 @@ __yy_memcpy (char *to, char *from, unsigned int count)
 #endif
 #endif
 
-#line 217 "/usr/share/misc/bison.simple"
+#line 217 "/usr/pkg/share/bison.simple"
 
 /* The user can define YYPARSE_PARAM as the name of an argument to be passed
    into yyparse.  The argument should have type void *.
@@ -1089,25 +1091,25 @@ yyreduce:
   switch (yyn) {
 
 case 3:
-#line 115 "wmlscript/wsgram.y"
+#line 124 "wmlscript/wsgram.y"
 {
 		  ws_error_syntax(pctx, yylsp[0].first_line);
 		;
     break;}
 case 7:
-#line 130 "wmlscript/wsgram.y"
+#line 139 "wmlscript/wsgram.y"
 {
 		  ws_error_syntax(pctx, yylsp[1].first_line);
 		;
     break;}
 case 11:
-#line 143 "wmlscript/wsgram.y"
+#line 152 "wmlscript/wsgram.y"
 {
 		  ws_pragma_use(pctx, yylsp[-1].first_line, yyvsp[-1].identifier, yyvsp[0].string);
 		;
     break;}
 case 13:
-#line 154 "wmlscript/wsgram.y"
+#line 163 "wmlscript/wsgram.y"
 {
 		  WsCompiler *compiler = (WsCompiler *) pctx;
 
@@ -1119,7 +1121,7 @@ case 13:
 		;
     break;}
 case 14:
-#line 164 "wmlscript/wsgram.y"
+#line 173 "wmlscript/wsgram.y"
 {
 		  WsCompiler *compiler = (WsCompiler *) pctx;
 
@@ -1132,7 +1134,7 @@ case 14:
 		;
     break;}
 case 15:
-#line 175 "wmlscript/wsgram.y"
+#line 184 "wmlscript/wsgram.y"
 {
 		  WsCompiler *compiler = (WsCompiler *) pctx;
 		  WsBool success = WS_TRUE;
@@ -1154,7 +1156,7 @@ case 15:
 		;
     break;}
 case 20:
-#line 208 "wmlscript/wsgram.y"
+#line 217 "wmlscript/wsgram.y"
 {
 		  WsCompiler *compiler = (WsCompiler *) pctx;
 
@@ -1171,7 +1173,7 @@ case 20:
 		;
     break;}
 case 21:
-#line 226 "wmlscript/wsgram.y"
+#line 235 "wmlscript/wsgram.y"
 {
 		  WsCompiler *compiler = (WsCompiler *) pctx;
 
@@ -1190,7 +1192,7 @@ case 21:
 		;
     break;}
 case 22:
-#line 246 "wmlscript/wsgram.y"
+#line 255 "wmlscript/wsgram.y"
 {
 		  WsBool success;
 		  WsCompiler *compiler = (WsCompiler *) pctx;
@@ -1225,19 +1227,19 @@ case 22:
 		;
     break;}
 case 23:
-#line 282 "wmlscript/wsgram.y"
+#line 291 "wmlscript/wsgram.y"
 {
 		  yyval.meta_body = ws_pragma_meta_body(pctx, yyvsp[-1].string, yyvsp[0].string, NULL);
 		;
     break;}
 case 24:
-#line 286 "wmlscript/wsgram.y"
+#line 295 "wmlscript/wsgram.y"
 {
 		  yyval.meta_body = ws_pragma_meta_body(pctx, yyvsp[-2].string, yyvsp[-1].string, yyvsp[0].string);
 		;
     break;}
 case 30:
-#line 305 "wmlscript/wsgram.y"
+#line 314 "wmlscript/wsgram.y"
 {
 		  char *name = ws_strdup(yyvsp[-5].identifier);
 
@@ -1250,21 +1252,21 @@ case 30:
 		;
     break;}
 case 31:
-#line 318 "wmlscript/wsgram.y"
+#line 327 "wmlscript/wsgram.y"
 { yyval.boolean = WS_FALSE; ;
     break;}
 case 32:
-#line 319 "wmlscript/wsgram.y"
+#line 328 "wmlscript/wsgram.y"
 { yyval.boolean = WS_TRUE;  ;
     break;}
 case 33:
-#line 324 "wmlscript/wsgram.y"
+#line 333 "wmlscript/wsgram.y"
 {
 		  yyval.list = ws_list_new(pctx);
 		;
     break;}
 case 37:
-#line 337 "wmlscript/wsgram.y"
+#line 346 "wmlscript/wsgram.y"
 {
 		  char *id = ws_f_strdup(((WsCompiler *) pctx)->pool_stree,
 					 yyvsp[0].identifier);
@@ -1285,7 +1287,7 @@ case 37:
 		;
     break;}
 case 38:
-#line 356 "wmlscript/wsgram.y"
+#line 365 "wmlscript/wsgram.y"
 {
 		  char *id = ws_f_strdup(((WsCompiler *) pctx)->pool_stree,
 					 yyvsp[0].identifier);
@@ -1303,39 +1305,41 @@ case 38:
 		;
     break;}
 case 39:
-#line 377 "wmlscript/wsgram.y"
+#line 386 "wmlscript/wsgram.y"
 {
 		  if (yyvsp[0].list)
 		    yyval.stmt = ws_stmt_block(pctx, yyvsp[0].list->first_line, yyvsp[0].list->last_line,
 				       yyvsp[0].list);
+		  else
+		    yyval.stmt = NULL;
 		;
     break;}
 case 41:
-#line 384 "wmlscript/wsgram.y"
+#line 395 "wmlscript/wsgram.y"
 {
 		  yyval.stmt = NULL;
 		;
     break;}
 case 42:
-#line 388 "wmlscript/wsgram.y"
+#line 399 "wmlscript/wsgram.y"
 {
 		  yyval.stmt = ws_stmt_expr(pctx, yyvsp[-1].expr->line, yyvsp[-1].expr);
 		;
     break;}
 case 45:
-#line 394 "wmlscript/wsgram.y"
+#line 405 "wmlscript/wsgram.y"
 {
 		  yyval.stmt = ws_stmt_continue(pctx, yylsp[-1].first_line);
 		;
     break;}
 case 46:
-#line 398 "wmlscript/wsgram.y"
+#line 409 "wmlscript/wsgram.y"
 {
 		  yyval.stmt = ws_stmt_break(pctx, yylsp[-1].first_line);
 		;
     break;}
 case 48:
-#line 405 "wmlscript/wsgram.y"
+#line 416 "wmlscript/wsgram.y"
 {
 		  yyval.list = yyvsp[-1].list;
 		  if (yyval.list)
@@ -1346,58 +1350,58 @@ case 48:
 		;
     break;}
 case 49:
-#line 414 "wmlscript/wsgram.y"
+#line 425 "wmlscript/wsgram.y"
 {
 		  ws_error_syntax(pctx, yylsp[1].first_line);
 		  yyval.list = NULL;
 		;
     break;}
 case 50:
-#line 422 "wmlscript/wsgram.y"
+#line 433 "wmlscript/wsgram.y"
 {
 		  yyval.list = ws_list_new(pctx);
 		;
     break;}
 case 52:
-#line 430 "wmlscript/wsgram.y"
+#line 441 "wmlscript/wsgram.y"
 {
 		  yyval.list = ws_list_new(pctx);
 		  ws_list_append(pctx, yyval.list, yyvsp[0].stmt);
 		;
     break;}
 case 53:
-#line 435 "wmlscript/wsgram.y"
+#line 446 "wmlscript/wsgram.y"
 {
 		  ws_list_append(pctx, yyvsp[-1].list, yyvsp[0].stmt);
 		;
     break;}
 case 54:
-#line 442 "wmlscript/wsgram.y"
+#line 453 "wmlscript/wsgram.y"
 {
 		  yyval.stmt = ws_stmt_variable(pctx, yylsp[-2].first_line, yyvsp[-1].list);
 		;
     break;}
 case 55:
-#line 446 "wmlscript/wsgram.y"
+#line 457 "wmlscript/wsgram.y"
 {
 		  ws_error_syntax(pctx, yylsp[0].first_line);
 		;
     break;}
 case 56:
-#line 453 "wmlscript/wsgram.y"
+#line 464 "wmlscript/wsgram.y"
 {
 		  yyval.list = ws_list_new(pctx);
 		  ws_list_append(pctx, yyval.list, yyvsp[0].pair);
 		;
     break;}
 case 57:
-#line 458 "wmlscript/wsgram.y"
+#line 469 "wmlscript/wsgram.y"
 {
 		  ws_list_append(pctx, yyvsp[-2].list, yyvsp[0].pair);
 		;
     break;}
 case 58:
-#line 465 "wmlscript/wsgram.y"
+#line 476 "wmlscript/wsgram.y"
 {
 		  char *id = ws_f_strdup(((WsCompiler *) pctx)->pool_stree,
 					 yyvsp[-1].identifier);
@@ -1413,308 +1417,302 @@ case 58:
 		;
     break;}
 case 59:
-#line 482 "wmlscript/wsgram.y"
+#line 493 "wmlscript/wsgram.y"
 {
 		  yyval.expr = NULL;
 		;
     break;}
 case 60:
-#line 486 "wmlscript/wsgram.y"
+#line 497 "wmlscript/wsgram.y"
 {
 		  yyval.expr = yyvsp[0].expr;
 		;
     break;}
 case 61:
-#line 493 "wmlscript/wsgram.y"
+#line 504 "wmlscript/wsgram.y"
 {
 		  yyval.stmt = ws_stmt_if(pctx, yylsp[-6].first_line, yyvsp[-4].expr, yyvsp[-2].stmt, yyvsp[0].stmt);
 		;
     break;}
 case 62:
-#line 497 "wmlscript/wsgram.y"
+#line 508 "wmlscript/wsgram.y"
 {
 		  yyval.stmt = ws_stmt_if(pctx, yylsp[-4].first_line, yyvsp[-2].expr, yyvsp[0].stmt, NULL);
 		;
     break;}
 case 63:
-#line 504 "wmlscript/wsgram.y"
+#line 515 "wmlscript/wsgram.y"
 {
 		  yyval.stmt = ws_stmt_while(pctx, yylsp[-4].first_line, yyvsp[-2].expr, yyvsp[0].stmt);
 		;
     break;}
-case 64:
-#line 508 "wmlscript/wsgram.y"
-{
-		  yyval.stmt = yyvsp[0].stmt;
-		;
-    break;}
 case 65:
-#line 516 "wmlscript/wsgram.y"
+#line 524 "wmlscript/wsgram.y"
 {
 		  yyval.stmt = ws_stmt_for(pctx, yylsp[-8].first_line, NULL, yyvsp[-6].expr, yyvsp[-4].expr, yyvsp[-2].expr, yyvsp[0].stmt);
 		;
     break;}
 case 66:
-#line 521 "wmlscript/wsgram.y"
+#line 529 "wmlscript/wsgram.y"
 {
 		  yyval.stmt = ws_stmt_for(pctx, yylsp[-9].first_line, yyvsp[-6].list, NULL, yyvsp[-4].expr, yyvsp[-2].expr, yyvsp[0].stmt);
 		;
     break;}
 case 67:
-#line 528 "wmlscript/wsgram.y"
+#line 536 "wmlscript/wsgram.y"
 {
 		  yyval.stmt = ws_stmt_return(pctx, yylsp[-2].first_line, yyvsp[-1].expr);
 		;
     break;}
 case 68:
-#line 536 "wmlscript/wsgram.y"
+#line 544 "wmlscript/wsgram.y"
 { yyval.expr = NULL; ;
     break;}
 case 71:
-#line 544 "wmlscript/wsgram.y"
+#line 552 "wmlscript/wsgram.y"
 {
 		  yyval.expr = ws_expr_comma(pctx, yylsp[-1].first_line, yyvsp[-2].expr, yyvsp[0].expr);
 		;
     break;}
 case 73:
-#line 552 "wmlscript/wsgram.y"
+#line 560 "wmlscript/wsgram.y"
 {
 		  yyval.expr = ws_expr_assign(pctx, yylsp[-2].first_line, yyvsp[-2].identifier, '=', yyvsp[0].expr);
 		;
     break;}
 case 74:
-#line 556 "wmlscript/wsgram.y"
+#line 564 "wmlscript/wsgram.y"
 {
 		  yyval.expr = ws_expr_assign(pctx, yylsp[-2].first_line, yyvsp[-2].identifier, tMULA, yyvsp[0].expr);
 		;
     break;}
 case 75:
-#line 560 "wmlscript/wsgram.y"
+#line 568 "wmlscript/wsgram.y"
 {
 		  yyval.expr = ws_expr_assign(pctx, yylsp[-2].first_line, yyvsp[-2].identifier, tDIVA, yyvsp[0].expr);
 		;
     break;}
 case 76:
-#line 564 "wmlscript/wsgram.y"
+#line 572 "wmlscript/wsgram.y"
 {
 		  yyval.expr = ws_expr_assign(pctx, yylsp[-2].first_line, yyvsp[-2].identifier, tREMA, yyvsp[0].expr);
 		;
     break;}
 case 77:
-#line 568 "wmlscript/wsgram.y"
+#line 576 "wmlscript/wsgram.y"
 {
 		  yyval.expr = ws_expr_assign(pctx, yylsp[-2].first_line, yyvsp[-2].identifier, tADDA, yyvsp[0].expr);
 		;
     break;}
 case 78:
-#line 572 "wmlscript/wsgram.y"
+#line 580 "wmlscript/wsgram.y"
 {
 		  yyval.expr = ws_expr_assign(pctx, yylsp[-2].first_line, yyvsp[-2].identifier, tSUBA, yyvsp[0].expr);
 		;
     break;}
 case 79:
-#line 576 "wmlscript/wsgram.y"
+#line 584 "wmlscript/wsgram.y"
 {
 		  yyval.expr = ws_expr_assign(pctx, yylsp[-2].first_line, yyvsp[-2].identifier, tLSHIFTA, yyvsp[0].expr);
 		;
     break;}
 case 80:
-#line 580 "wmlscript/wsgram.y"
+#line 588 "wmlscript/wsgram.y"
 {
 		  yyval.expr = ws_expr_assign(pctx, yylsp[-2].first_line, yyvsp[-2].identifier, tRSSHIFTA, yyvsp[0].expr);
 		;
     break;}
 case 81:
-#line 584 "wmlscript/wsgram.y"
+#line 592 "wmlscript/wsgram.y"
 {
 		  yyval.expr = ws_expr_assign(pctx, yylsp[-2].first_line, yyvsp[-2].identifier, tRSZSHIFTA, yyvsp[0].expr);
 		;
     break;}
 case 82:
-#line 588 "wmlscript/wsgram.y"
+#line 596 "wmlscript/wsgram.y"
 {
 		  yyval.expr = ws_expr_assign(pctx, yylsp[-2].first_line, yyvsp[-2].identifier, tANDA, yyvsp[0].expr);
 		;
     break;}
 case 83:
-#line 592 "wmlscript/wsgram.y"
+#line 600 "wmlscript/wsgram.y"
 {
 		  yyval.expr = ws_expr_assign(pctx, yylsp[-2].first_line, yyvsp[-2].identifier, tXORA, yyvsp[0].expr);
 		;
     break;}
 case 84:
-#line 596 "wmlscript/wsgram.y"
+#line 604 "wmlscript/wsgram.y"
 {
 		  yyval.expr = ws_expr_assign(pctx, yylsp[-2].first_line, yyvsp[-2].identifier, tORA, yyvsp[0].expr);
 		;
     break;}
 case 85:
-#line 600 "wmlscript/wsgram.y"
+#line 608 "wmlscript/wsgram.y"
 {
 		  yyval.expr = ws_expr_assign(pctx, yylsp[-2].first_line, yyvsp[-2].identifier, tIDIVA, yyvsp[0].expr);
 		;
     break;}
 case 87:
-#line 608 "wmlscript/wsgram.y"
+#line 616 "wmlscript/wsgram.y"
 {
 		  yyval.expr = ws_expr_conditional(pctx, yylsp[-3].first_line, yyvsp[-4].expr, yyvsp[-2].expr, yyvsp[0].expr);
 		;
     break;}
 case 89:
-#line 616 "wmlscript/wsgram.y"
+#line 624 "wmlscript/wsgram.y"
 {
 		  yyval.expr = ws_expr_logical(pctx, yylsp[-1].first_line, WS_ASM_SCOR,
 				       yyvsp[-2].expr, yyvsp[0].expr);
 		;
     break;}
 case 91:
-#line 625 "wmlscript/wsgram.y"
+#line 633 "wmlscript/wsgram.y"
 {
 		  yyval.expr = ws_expr_logical(pctx, yylsp[-1].first_line, WS_ASM_SCAND,
 				       yyvsp[-2].expr, yyvsp[0].expr);
 		;
     break;}
 case 93:
-#line 634 "wmlscript/wsgram.y"
+#line 642 "wmlscript/wsgram.y"
 {
 		  yyval.expr = ws_expr_binary(pctx, yylsp[-1].first_line, WS_ASM_B_OR,
 				      yyvsp[-2].expr, yyvsp[0].expr);
 		;
     break;}
 case 95:
-#line 643 "wmlscript/wsgram.y"
+#line 651 "wmlscript/wsgram.y"
 {
 		  yyval.expr = ws_expr_binary(pctx, yylsp[-1].first_line, WS_ASM_B_XOR,
 				      yyvsp[-2].expr, yyvsp[0].expr);
 		;
     break;}
 case 97:
-#line 652 "wmlscript/wsgram.y"
+#line 660 "wmlscript/wsgram.y"
 {
 		  yyval.expr = ws_expr_binary(pctx, yylsp[-1].first_line, WS_ASM_B_AND,
 				      yyvsp[-2].expr, yyvsp[0].expr);
 		;
     break;}
 case 99:
-#line 661 "wmlscript/wsgram.y"
+#line 669 "wmlscript/wsgram.y"
 {
 		  yyval.expr = ws_expr_binary(pctx, yylsp[-1].first_line, WS_ASM_EQ, yyvsp[-2].expr, yyvsp[0].expr);
 		;
     break;}
 case 100:
-#line 665 "wmlscript/wsgram.y"
+#line 673 "wmlscript/wsgram.y"
 {
 		  yyval.expr = ws_expr_binary(pctx, yylsp[-1].first_line, WS_ASM_NE, yyvsp[-2].expr, yyvsp[0].expr);
 		;
     break;}
 case 102:
-#line 673 "wmlscript/wsgram.y"
+#line 681 "wmlscript/wsgram.y"
 {
 		  yyval.expr = ws_expr_binary(pctx, yylsp[-1].first_line, WS_ASM_LT, yyvsp[-2].expr, yyvsp[0].expr);
 		;
     break;}
 case 103:
-#line 677 "wmlscript/wsgram.y"
+#line 685 "wmlscript/wsgram.y"
 {
 		  yyval.expr = ws_expr_binary(pctx, yylsp[-1].first_line, WS_ASM_GT, yyvsp[-2].expr, yyvsp[0].expr);
 		;
     break;}
 case 104:
-#line 681 "wmlscript/wsgram.y"
+#line 689 "wmlscript/wsgram.y"
 {
 		  yyval.expr = ws_expr_binary(pctx, yylsp[-1].first_line, WS_ASM_LE, yyvsp[-2].expr, yyvsp[0].expr);
 		;
     break;}
 case 105:
-#line 685 "wmlscript/wsgram.y"
+#line 693 "wmlscript/wsgram.y"
 {
 		  yyval.expr = ws_expr_binary(pctx, yylsp[-1].first_line, WS_ASM_GE, yyvsp[-2].expr, yyvsp[0].expr);
 		;
     break;}
 case 107:
-#line 693 "wmlscript/wsgram.y"
+#line 701 "wmlscript/wsgram.y"
 {
 		  yyval.expr = ws_expr_binary(pctx, yylsp[-1].first_line, WS_ASM_B_LSHIFT,
 				      yyvsp[-2].expr, yyvsp[0].expr);
 		;
     break;}
 case 108:
-#line 698 "wmlscript/wsgram.y"
+#line 706 "wmlscript/wsgram.y"
 {
 		  yyval.expr = ws_expr_binary(pctx, yylsp[-1].first_line, WS_ASM_B_RSSHIFT,
 				      yyvsp[-2].expr, yyvsp[0].expr);
 		;
     break;}
 case 109:
-#line 703 "wmlscript/wsgram.y"
+#line 711 "wmlscript/wsgram.y"
 {
 		  yyval.expr = ws_expr_binary(pctx, yylsp[-1].first_line, WS_ASM_B_RSZSHIFT,
 				      yyvsp[-2].expr, yyvsp[0].expr);
 		;
     break;}
 case 111:
-#line 712 "wmlscript/wsgram.y"
+#line 720 "wmlscript/wsgram.y"
 {
 		  yyval.expr = ws_expr_binary(pctx, yylsp[-1].first_line, WS_ASM_ADD, yyvsp[-2].expr, yyvsp[0].expr);
 		;
     break;}
 case 112:
-#line 716 "wmlscript/wsgram.y"
+#line 724 "wmlscript/wsgram.y"
 {
 		  yyval.expr = ws_expr_binary(pctx, yylsp[-1].first_line, WS_ASM_SUB, yyvsp[-2].expr, yyvsp[0].expr);
 		;
     break;}
 case 114:
-#line 724 "wmlscript/wsgram.y"
+#line 732 "wmlscript/wsgram.y"
 {
 		  yyval.expr = ws_expr_binary(pctx, yylsp[-1].first_line, WS_ASM_MUL, yyvsp[-2].expr, yyvsp[0].expr);
 		;
     break;}
 case 115:
-#line 728 "wmlscript/wsgram.y"
+#line 736 "wmlscript/wsgram.y"
 {
 		  yyval.expr = ws_expr_binary(pctx, yylsp[-1].first_line, WS_ASM_DIV, yyvsp[-2].expr, yyvsp[0].expr);
 		;
     break;}
 case 116:
-#line 732 "wmlscript/wsgram.y"
+#line 740 "wmlscript/wsgram.y"
 {
 		  yyval.expr = ws_expr_binary(pctx, yylsp[-1].first_line, WS_ASM_IDIV,
 				      yyvsp[-2].expr, yyvsp[0].expr);
 		;
     break;}
 case 117:
-#line 737 "wmlscript/wsgram.y"
+#line 745 "wmlscript/wsgram.y"
 {
 		  yyval.expr = ws_expr_binary(pctx, yylsp[-1].first_line, WS_ASM_REM, yyvsp[-2].expr, yyvsp[0].expr);
 		;
     break;}
 case 119:
-#line 745 "wmlscript/wsgram.y"
+#line 753 "wmlscript/wsgram.y"
 {
 		  yyval.expr = ws_expr_unary(pctx, yylsp[-1].first_line, WS_ASM_TYPEOF, yyvsp[0].expr);
 		;
     break;}
 case 120:
-#line 749 "wmlscript/wsgram.y"
+#line 757 "wmlscript/wsgram.y"
 {
 		  yyval.expr = ws_expr_unary(pctx, yylsp[-1].first_line, WS_ASM_ISVALID, yyvsp[0].expr);
 		;
     break;}
 case 121:
-#line 753 "wmlscript/wsgram.y"
+#line 761 "wmlscript/wsgram.y"
 {
 		  yyval.expr = ws_expr_unary_var(pctx, yylsp[-1].first_line, WS_TRUE, yyvsp[0].identifier);
 		;
     break;}
 case 122:
-#line 757 "wmlscript/wsgram.y"
+#line 765 "wmlscript/wsgram.y"
 {
 		  yyval.expr = ws_expr_unary_var(pctx, yylsp[-1].first_line, WS_FALSE, yyvsp[0].identifier);
 		;
     break;}
 case 123:
-#line 761 "wmlscript/wsgram.y"
+#line 769 "wmlscript/wsgram.y"
 {
 		  /* TODO: The WMLScript specification do not say how
                      unary `+' expressions should be compiled.
@@ -1739,37 +1737,37 @@ case 123:
 		;
     break;}
 case 124:
-#line 784 "wmlscript/wsgram.y"
+#line 792 "wmlscript/wsgram.y"
 {
 		  yyval.expr = ws_expr_unary(pctx, yylsp[-1].first_line, WS_ASM_UMINUS, yyvsp[0].expr);
 		;
     break;}
 case 125:
-#line 788 "wmlscript/wsgram.y"
+#line 796 "wmlscript/wsgram.y"
 {
 		  yyval.expr = ws_expr_unary(pctx, yylsp[-1].first_line, WS_ASM_B_NOT, yyvsp[0].expr);
 		;
     break;}
 case 126:
-#line 792 "wmlscript/wsgram.y"
+#line 800 "wmlscript/wsgram.y"
 {
 		  yyval.expr = ws_expr_unary(pctx, yylsp[-1].first_line, WS_ASM_NOT, yyvsp[0].expr);
 		;
     break;}
 case 128:
-#line 800 "wmlscript/wsgram.y"
+#line 808 "wmlscript/wsgram.y"
 {
 		  yyval.expr = ws_expr_postfix_var(pctx, yylsp[-1].first_line, WS_TRUE, yyvsp[-1].identifier);
 		;
     break;}
 case 129:
-#line 804 "wmlscript/wsgram.y"
+#line 812 "wmlscript/wsgram.y"
 {
 		  yyval.expr = ws_expr_postfix_var(pctx, yylsp[-1].first_line, WS_FALSE, yyvsp[-1].identifier);
 		;
     break;}
 case 131:
-#line 812 "wmlscript/wsgram.y"
+#line 820 "wmlscript/wsgram.y"
 {
 		  WsFunctionHash *f = ws_function_hash(pctx, yyvsp[-1].identifier);
 
@@ -1781,93 +1779,93 @@ case 131:
 		;
     break;}
 case 132:
-#line 822 "wmlscript/wsgram.y"
+#line 830 "wmlscript/wsgram.y"
 {
 		  yyval.expr = ws_expr_call(pctx, yylsp[-1].first_line, '#', yyvsp[-3].identifier, yyvsp[-1].identifier, yyvsp[0].list);
 		;
     break;}
 case 133:
-#line 826 "wmlscript/wsgram.y"
+#line 834 "wmlscript/wsgram.y"
 {
 		  yyval.expr = ws_expr_call(pctx, yylsp[-1].first_line, '.', yyvsp[-3].identifier, yyvsp[-1].identifier, yyvsp[0].list);
 		;
     break;}
 case 134:
-#line 833 "wmlscript/wsgram.y"
+#line 841 "wmlscript/wsgram.y"
 {
 		  yyval.expr = ws_expr_symbol(pctx, yylsp[0].first_line, yyvsp[0].identifier);
 		;
     break;}
 case 135:
-#line 837 "wmlscript/wsgram.y"
+#line 845 "wmlscript/wsgram.y"
 {
 		  yyval.expr = ws_expr_const_invalid(pctx, yylsp[0].first_line);
 		;
     break;}
 case 136:
-#line 841 "wmlscript/wsgram.y"
+#line 849 "wmlscript/wsgram.y"
 {
 		  yyval.expr = ws_expr_const_true(pctx, yylsp[0].first_line);
 		;
     break;}
 case 137:
-#line 845 "wmlscript/wsgram.y"
+#line 853 "wmlscript/wsgram.y"
 {
 		  yyval.expr = ws_expr_const_false(pctx, yylsp[0].first_line);
 		;
     break;}
 case 138:
-#line 849 "wmlscript/wsgram.y"
+#line 857 "wmlscript/wsgram.y"
 {
 		  yyval.expr = ws_expr_const_integer(pctx, yylsp[0].first_line, yyvsp[0].integer);
 		;
     break;}
 case 139:
-#line 853 "wmlscript/wsgram.y"
+#line 861 "wmlscript/wsgram.y"
 {
 		  yyval.expr = ws_expr_const_float(pctx, yylsp[0].first_line, yyvsp[0].vfloat);
 		;
     break;}
 case 140:
-#line 857 "wmlscript/wsgram.y"
+#line 865 "wmlscript/wsgram.y"
 {
 		  yyval.expr = ws_expr_const_string(pctx, yylsp[0].first_line, yyvsp[0].string);
 		;
     break;}
 case 141:
-#line 861 "wmlscript/wsgram.y"
+#line 869 "wmlscript/wsgram.y"
 {
 		  yyval.expr = yyvsp[-1].expr;
 		;
     break;}
 case 142:
-#line 868 "wmlscript/wsgram.y"
+#line 876 "wmlscript/wsgram.y"
 {
 		  yyval.list = ws_list_new(pctx);
 		;
     break;}
 case 143:
-#line 872 "wmlscript/wsgram.y"
+#line 880 "wmlscript/wsgram.y"
 {
 		  yyval.list = yyvsp[-1].list;
 		;
     break;}
 case 144:
-#line 879 "wmlscript/wsgram.y"
+#line 887 "wmlscript/wsgram.y"
 {
 		  yyval.list = ws_list_new(pctx);
 		  ws_list_append(pctx, yyval.list, yyvsp[0].expr);
 		;
     break;}
 case 145:
-#line 884 "wmlscript/wsgram.y"
+#line 892 "wmlscript/wsgram.y"
 {
 		  ws_list_append(pctx, yyvsp[-2].list, yyvsp[0].expr);
 		;
     break;}
 }
    /* the action file gets copied in in place of this dollarsign */
-#line 543 "/usr/share/misc/bison.simple"
+#line 543 "/usr/pkg/share/bison.simple"
 
   yyvsp -= yylen;
   yyssp -= yylen;
@@ -2087,7 +2085,7 @@ yyerrhandle:
     }
   return 1;
 }
-#line 889 "wmlscript/wsgram.y"
+#line 897 "wmlscript/wsgram.y"
 
 
 void
@@ -2095,7 +2093,6 @@ yyerror(char *msg)
 {
 #if WS_DEBUG
   fprintf(stderr, "*** %s:%d: wsc: %s - this msg will be removed ***\n",
-	  global_compiler->input_name, global_compiler->linenum,
-	  msg);
+	  global_compiler->input_name, global_compiler->linenum, msg);
 #endif /* WS_DEBUG */
 }

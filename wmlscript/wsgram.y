@@ -5,7 +5,7 @@
  *
  * Author: Markku Rossi <mtr@iki.fi>
  *
- * Copyright (c) 1999-2000 Markku Rossi, etc.
+ * Copyright (c) 1999-2000 WAPIT OY LTD.
  *		 All rights reserved.
  *
  * Bison grammar for the WMLScript compiler.
@@ -22,8 +22,10 @@
    by using the `wserror.h' functions. */
 extern void yyerror(char *msg);
 
+#if WS_DEBUG
 /* Just for debugging purposes. */
 WsCompilerPtr global_compiler = NULL;
+#endif /* WS_DEBUG */
 
 %}
 
@@ -31,7 +33,7 @@ WsCompilerPtr global_compiler = NULL;
 %union
 {
   WsUInt32 integer;
-  WsFloat32 vfloat;
+  WsFloat vfloat;
   char *identifier;
   WsUtf8String *string;
 
@@ -48,7 +50,7 @@ WsCompilerPtr global_compiler = NULL;
 /* Tokens. */
 
 /* Language literals. */
-%token tINVALID tTRUE tFALSE tINTEGER tFLOAT32 tSTRING
+%token tINVALID tTRUE tFALSE tINTEGER tFLOAT tSTRING
 
 /* Identifier. */
 %token tIDENTIFIER
@@ -67,13 +69,14 @@ WsCompilerPtr global_compiler = NULL;
 %token tSWITCH tTHROW tTRY
 
 /* Punctuation. */
-
 %token tEQ tLE tGE tNE tAND tOR tPLUSPLUS tMINUSMINUS
 %token tLSHIFT tRSSHIFT tRSZSHIFT tADDA tSUBA tMULA tDIVA tANDA tORA tXORA
 %token tREMA tLSHIFTA tRSSHIFTA tRSZSHIFTA
 
+/* Assign semantic values to tokens and non-terminals. */
+
 %type <integer> tINTEGER
-%type <vfloat> tFLOAT32
+%type <vfloat> tFLOAT
 %type <string> tSTRING
 %type <identifier> tIDENTIFIER
 
@@ -101,7 +104,13 @@ WsCompilerPtr global_compiler = NULL;
 %type <expr> PostfixExpression CallExpression PrimaryExpression
 %type <expr> VariableInitializedOpt
 
+/* Options for bison. */
+
+/* Generate reentrant parser. */
 %pure_parser
+
+/* This grammar has one shift-reduce conflict.  It comes from the
+   if-else statement. */
 %expect 1
 
 %%
@@ -378,6 +387,8 @@ Statement:
 		  if ($1)
 		    $$ = ws_stmt_block(pctx, $1->first_line, $1->last_line,
 				       $1);
+		  else
+		    $$ = NULL;
 		}
 	| VariableStatement
 	| ';'			/* EmptyStatement */
@@ -505,9 +516,6 @@ IterationStatement:
 		  $$ = ws_stmt_while(pctx, @1.first_line, $3, $5);
 		}
 	| ForStatement
-		{
-		  $$ = $1;
-		}
 	;
 
 ForStatement:
@@ -849,7 +857,7 @@ PrimaryExpression:
 		{
 		  $$ = ws_expr_const_integer(pctx, @1.first_line, $1);
 		}
-	| tFLOAT32
+	| tFLOAT
 		{
 		  $$ = ws_expr_const_float(pctx, @1.first_line, $1);
 		}
@@ -893,7 +901,6 @@ yyerror(char *msg)
 {
 #if WS_DEBUG
   fprintf(stderr, "*** %s:%d: wsc: %s - this msg will be removed ***\n",
-	  global_compiler->input_name, global_compiler->linenum,
-	  msg);
+	  global_compiler->input_name, global_compiler->linenum, msg);
 #endif /* WS_DEBUG */
 }

@@ -4,7 +4,7 @@
  *
  * Author: Markku Rossi <mtr@iki.fi>
  *
- * Copyright (c) 1999-2000 Markku Rossi, etc.
+ * Copyright (c) 1999-2000 WAPIT OY LTD.
  *		 All rights reserved.
  *
  * Error and information reporting functions.
@@ -43,7 +43,6 @@ void ws_src_error(WsCompilerPtr compiler, WsUInt32 line, char *message, ...);
    number information is taken from the input stream's current
    position. */
 void ws_src_warning(WsCompilerPtr compiler, WsUInt32 line, char *message, ...);
-
 
 /********************* Low-level functions ******************************/
 

@@ -4,7 +4,7 @@
  *
  * Author: Markku Rossi <mtr@iki.fi>
  *
- * Copyright (c) 1999 Markku Rossi, etc.
+ * Copyright (c) 1999-2000 WAPIT OY LTD.
  *		 All rights reserved.
  *
  * Standard libraries.
@@ -21,8 +21,8 @@
    The function returns WS_TRUE if the operation was successful.  If
    the operation failed the function returns WS_FALSE and it sets the
    `{l,f}index_found_return' to WS_FALSE to indicate whether the
-   library or the function name was unknown.  Please, note that if the
-   library is unknown, then also the function is unknown. */
+   library or the function name was unknown.  Note that if the library
+   is unknown, then also the function is unknown. */
 WsBool ws_stdlib_function(const char *library, const char *function,
 			  WsUInt16 *lindex_return, WsUInt8 *findex_return,
 			  WsUInt8 *num_args_return,

@@ -4,7 +4,7 @@
  *
  * Author: Markku Rossi <mtr@iki.fi>
  *
- * Copyright (c) 1999, 2000 Markku Rossi, etc.
+ * Copyright (c) 1999-2000 WAPIT OY LTD.
  *		 All rights reserved.
  *
  * Encoding and decoding routines.
@@ -13,17 +13,12 @@
 
 #include <wsint.h>
 
-/*
- * Types and definitions.
- */
+/********************* Types and definitions ****************************/
 
 #define WS_MB_CONT_BIT	0x80
 #define WS_MB_DATA_MASK	0x7f
 
-
-/*
- * Global functions.
- */
+/********************* Global functions *********************************/
 
 unsigned char *
 ws_encode_mb_uint32(WsUInt32 value, unsigned char *buffer, size_t *len_return)
@@ -82,7 +77,6 @@ ws_encode_buffer(WsBuffer *buffer, ...)
   unsigned char *cp;
   size_t len;
   WsUInt32 ui32;
-  WsFloat32 float32;
   unsigned char data[64];
 
   va_start(ap, buffer);
@@ -136,18 +130,6 @@ ws_encode_buffer(WsBuffer *buffer, ...)
 	    goto error;
 
 	  memcpy(p, cp, len);
-	  break;
-
-	case WS_ENC_FLOAT32:
-	  /* XXX We assume that native floats are in the ANSI/IEEE Std
-             754-1985 format. */
-
-	  float32 = (WsFloat32) va_arg(ap, double);
-
-	  if (!ws_buffer_append_space(buffer, &p, sizeof(WsFloat32)))
-	    goto error;
-
-	  memcpy(p, &float32, sizeof(WsFloat32));
 	  break;
 
 	case WS_ENC_DATA:
@@ -267,10 +249,6 @@ ws_decode_buffer(const unsigned char *buffer, size_t buffer_len, ...)
 	  }
 	  break;
 
-	case WS_ENC_FLOAT32:
-	  ws_fatal("ws_decode_buffer(): type %d not implemented yet", spec);
-	  break;
-
 	case WS_ENC_DATA:
 	  cpp = va_arg(ap, unsigned char **);
 	  len = va_arg(ap, size_t);
@@ -290,10 +268,13 @@ ws_decode_buffer(const unsigned char *buffer, size_t buffer_len, ...)
 	  break;
 	}
     }
+  va_end(ap);
+
+  return orig_buffer_len - buffer_len;
 
  too_short_buffer:
 
   va_end(ap);
 
-  return orig_buffer_len - buffer_len;
+  return 0;
 }

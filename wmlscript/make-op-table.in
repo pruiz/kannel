@@ -1,5 +1,16 @@
 #!@PERLPROG@ -w
 # -*- perl -*-
+#
+# make-op-table.in
+#
+# Author: Markku Rossi <mtr@iki.fi>
+#
+# Copyright (c) 1999-2000 WAPIT OY LTD.
+#		All rights reserved.
+#
+# A help script to create the `wsopcodes.h' file from the `wsasm.h'
+# header file.
+#
 
 my(@table) = ();
 my(@size) = ();

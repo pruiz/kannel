@@ -4,7 +4,7 @@
  *
  * Author: Markku Rossi <mtr@iki.fi>
  *
- * Copyright (c) 1999-2000 Markku Rossi, etc.
+ * Copyright (c) 1999-2000 WAPIT OY LTD.
  *		 All rights reserved.
  *
  * Functions to manipulate UTF-8 encoded strings.
@@ -63,24 +63,25 @@ int ws_utf8_set_data(WsUtf8String *string, const unsigned char *data,
 
 /* Get a character from the UTF-8 string `string'.  The argument
    `posp' gives the index of the character in the UTF-8 encoded data.
-   It is not the sequence number of the character.  The argument
-   `posp' is updated to pointe to the beginning of the next character
-   within the data.  The character is returned in `ch_return'.  The
-   function returns 1 if the operation was successful or 0 otherwise
-   (index `posp' was invalid or there were no more characters in the
+   It is not the sequence number of the character.  It is its starting
+   position within the UTF-8 encoded data.  The argument `posp' is
+   updated to point to the beginning of the next character within the
+   data.  The character is returned in `ch_return'.  The function
+   returns 1 if the operation was successful or 0 otherwise (index
+   `posp' was invalid or there were no more characters in the
    string). */
 int ws_utf8_get_char(const WsUtf8String *string, unsigned long *ch_return,
 		     size_t *posp);
 
-/* Convert the UTF-8 encoded string `string' to ISO 8859/1 (ISO
-   latin1) string.  Those characters of `string' which can not be
-   presented in latin1 are replaced with the character `unknown_char'.
-   If the argument `len_return' is not NULL, it is set to contain the
-   length of the returned string (excluding the trailing
-   null-character).  The function returns a pointer to the string or
-   NULL if the operation failed (out of memory).  The returned string
-   is null-terminated.  The returned string must be freed with the
-   ws_utf8_free_data() function. */
+/* Convert the UTF-8 encoded string `string' to null-terminated ISO
+   8859/1 (ISO latin1) string.  Those characters of `string' which can
+   not be presented in latin1 are replaced with the character
+   `unknown_char'.  If the argument `len_return' is not NULL, it is
+   set to contain the length of the returned string (excluding the
+   trailing null-character).  The function returns a pointer to the
+   string or NULL if the operation failed (out of memory).  The
+   returned string must be freed with the ws_utf8_free_data()
+   function. */
 unsigned char *ws_utf8_to_latin1(const WsUtf8String *string,
 				 unsigned char unknown_char,
 				 size_t *len_return);

@@ -4,7 +4,7 @@
  *
  * Author: Markku Rossi <mtr@iki.fi>
  *
- * Copyright (c) 1999 Markku Rossi, etc.
+ * Copyright (c) 1999-2000 WAPIT OY LTD.
  *		 All rights reserved.
  *
  * Generic input / output stream.
@@ -62,7 +62,6 @@ struct WsStreamRec
 
 typedef struct WsStreamRec WsStream;
 
-
 /********************* Stream access functions **************************/
 
 /* Get a character from the stream `stream'.  The character is
@@ -78,7 +77,6 @@ WsBool ws_stream_flush(WsStream *stream);
 
 /* Close the stream `stream'. */
 void ws_stream_close(WsStream *stream);
-
 
 /********************* Constructors for different streams ***************/
 

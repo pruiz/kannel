@@ -4,7 +4,7 @@
  *
  * Author: Markku Rossi <mtr@iki.fi>
  *
- * Copyright (c) 1999-2000 Markku Rossi, etc.
+ * Copyright (c) 1999-2000 WAPIT OY LTD.
  *		 All rights reserved.
  *
  * A multipurpose buffer.
@@ -13,9 +13,7 @@
 
 #include <wsint.h>
 
-/*
- * Global functions.
- */
+/********************* Global functions *********************************/
 
 void
 ws_buffer_init(WsBuffer *buffer)

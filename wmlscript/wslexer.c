@@ -4,7 +4,7 @@
  *
  * Author: Markku Rossi <mtr@iki.fi>
  *
- * Copyright (c) 1999-2000 Markku Rossi, etc.
+ * Copyright (c) 1999-2000 WAPIT OY LTD.
  *		 All rights reserved.
  *
  * Lexical analyzer.
@@ -62,18 +62,38 @@
    returns WS_FALSE. */
 static WsBool lookup_keyword(char *id, size_t len, int *token_return);
 
-/* XXX */
-static WsBool read_float_from_point(WsCompiler *compiler, WsBuffer *buffer,
-				    WsFloat32 *result);
+/* Convert literal integer number, stored to the buffer `buffer', into
+   a 32 bit integer number.  The function will report possible integer
+   overflows to the compiler `compiler'.  The function modifies the
+   contents of the buffer `buffer' but it does not free it. */
+static WsInt32 buffer_to_int(WsCompilerPtr compiler, WsBuffer *buffer);
 
-/* XXX */
+/* Read a floating point number from the decimal point to the buffer
+   `buffer'.  The buffer `buffer' might already contain some leading
+   digits of the number and it always contains the decimal point.  If
+   the operation is successful, the function returns WS_TRUE and it
+   returns the resulting floating point number in `result'.  Otherwise
+   the function returns WS_FALSE.  The buffer `buffer' must be
+   initialized before this function is called and it must be
+   uninitialized by the caller. */
+static WsBool read_float_from_point(WsCompiler *compiler, WsBuffer *buffer,
+				    WsFloat *result);
+
+/* Read a floating point number from the exponent part to the buffer
+   `buffer'.  The buffer might already contain some leading digits and
+   fields of the floating poit number.  Otherwise, the function works
+   like read_float_from_point(). */
 static WsBool read_float_from_exp(WsCompiler *compiler, WsBuffer *buffer,
-				  WsFloat32 *result);
+				  WsFloat *result);
 
 /********************* Static variables *********************************/
 
+/* A helper macro which expands to a strings and its length excluding
+   the trailing '\0' character. */
 #define N(n) n, sizeof(n) - 1
 
+/* They keywords of the WMLScript language.  This array must be sorted
+   by the keyword names. */
 static struct
 {
   char *name;
@@ -151,7 +171,6 @@ ws_yy_lex(YYSTYPE *yylval, YYLTYPE *yylloc, void *context)
   WsBuffer buffer;
   unsigned char *p;
   WsBool success;
-  char buf[256];
 
   /* Just check that we get the correct amount of arguments. */
   assert(compiler->magic = 0xfefe0101);
@@ -163,14 +182,14 @@ ws_yy_lex(YYSTYPE *yylval, YYLTYPE *yylloc, void *context)
 
       switch (ch)
 	{
-	case '\t':		/* Whitespace */
+	case '\t':		/* Whitespace characters. */
 	case '\v':
 	case '\f':
 	case ' ':
 	  continue;
 	  break;
 
-	case '\n':		/* Line terminator */
+	case '\n':		/* Line terminators. */
 	case '\r':
 	  if (ch == '\r' && ws_stream_getc(compiler->input, &ch2))
 	    {
@@ -278,7 +297,7 @@ ws_yy_lex(YYSTYPE *yylval, YYLTYPE *yylloc, void *context)
 		  if (!success)
 		    return EOF;
 
-		  return tFLOAT32;
+		  return tFLOAT;
 		}
 
 	      ws_stream_ungetc(compiler->input, ch2);
@@ -286,7 +305,7 @@ ws_yy_lex(YYSTYPE *yylval, YYLTYPE *yylloc, void *context)
 	  return '.';
 	  break;
 
-	case '/':		/* /, /=, block or single line comment */
+	case '/':		/* /, /=, block or a single line comment */
 	  if (ws_stream_getc(compiler->input, &ch2))
 	    {
 	      if (ch2 == '*')
@@ -295,11 +314,14 @@ ws_yy_lex(YYSTYPE *yylval, YYLTYPE *yylloc, void *context)
 		  while (1)
 		    {
 		      if (!ws_stream_getc(compiler->input, &ch))
-			goto eof_in_comment;
+			{
+			  ws_src_error(compiler, 0, "EOF in comment");
+			  return EOF;
+			}
 
 		      if (ch == '\n' || ch == '\r')
 			{
-			  /* Line terminator. */
+			  /* Line terminators. */
 			  if (ch == '\r' && ws_stream_getc(compiler->input,
 							   &ch2))
 			    {
@@ -329,14 +351,13 @@ ws_yy_lex(YYSTYPE *yylval, YYLTYPE *yylloc, void *context)
 		  while (1)
 		    {
 		      if (!ws_stream_getc(compiler->input, &ch))
-			{
-			eof_in_comment:
-			  ws_src_error(compiler, 0, "EOF in comment");
-			  return EOF;
-			}
+			/* The end of input stream reached.  We accept
+                           this as a valid comment terminator. */
+			break;
+
 		      if (ch == '\n' || ch == '\r')
 			{
-			  /* Line terminator. */
+			  /* Line terminators. */
 			  if (ch == '\r' && ws_stream_getc(compiler->input,
 							   &ch2))
 			    {
@@ -622,7 +643,11 @@ ws_yy_lex(YYSTYPE *yylval, YYLTYPE *yylloc, void *context)
 	      unsigned char *np;
 	      size_t len = 0;
 
-	      /* An identifier or a keyword. */
+	      /* An identifier or a keyword.  We start with a 256
+                 bytes long buffer but it is expanded dynamically if
+                 needed.  However, 256 should be enought for most
+                 cases since the byte-code format limits the function
+                 names to 255 characters. */
 	      p = ws_malloc(256);
 	      if (p == NULL)
 		{
@@ -700,44 +725,32 @@ ws_yy_lex(YYSTYPE *yylval, YYLTYPE *yylloc, void *context)
 	    {
 	      /* A decimal integer literal or a decimal float
                  literal. */
-	      yylval->integer = WS_DECIMAL_TO_INT(ch);
+
+	      ws_buffer_init(&buffer);
+	      if (!ws_buffer_append_space(&buffer, &p, 1))
+		{
+		number_error_memory:
+		  ws_error_memory(compiler);
+		  ws_buffer_uninit(&buffer);
+		  return EOF;
+		}
+	      p[0] = ch;
+
 	      while (ws_stream_getc(compiler->input, &ch))
 		{
 		  if (WS_IS_DECIMAL_DIGIT(ch))
 		    {
-		      /* Check the really too large integer constants
-                         here. */
-		      if (yylval->integer > (WS_INT32_MAX / 10))
-			{
-			  ws_src_error(compiler, 0,
-				       "integer literal too large");
-			  return EOF;
-			}
-		      yylval->integer *= 10;
-		      yylval->integer += WS_DECIMAL_TO_INT(ch);
+		      if (!ws_buffer_append_space(&buffer, &p, 1))
+			goto number_error_memory;
+		      p[0] = ch;
 		    }
 		  else if (ch == '.' || ch == 'e' || ch == 'E')
 		    {
 		      /* DecimalFloatLiteral. */
-
-		      ws_buffer_init(&buffer);
-		      snprintf(buf, sizeof(buf), "%u", yylval->integer);
-
-		      if (!ws_buffer_append(&buffer,
-					    (unsigned char *) buf,
-					    strlen(buf)))
-			{
-			float_error_memory:
-			  ws_error_memory(compiler);
-			  ws_buffer_uninit(&buffer);
-			  return EOF;
-			}
-
 		      if (ch == '.')
 			{
 			  if (!ws_buffer_append_space(&buffer, &p, 1))
-			    goto float_error_memory;
-
+			    goto number_error_memory;
 			  p[0] = '.';
 
 			  success = read_float_from_point(compiler, &buffer,
@@ -755,7 +768,7 @@ ws_yy_lex(YYSTYPE *yylval, YYLTYPE *yylloc, void *context)
 		      if (!success)
 			return EOF;
 
-		      return tFLOAT32;
+		      return tFLOAT;
 		    }
 		  else
 		    {
@@ -764,9 +777,10 @@ ws_yy_lex(YYSTYPE *yylval, YYLTYPE *yylloc, void *context)
 		    }
 		}
 
-	      /* We do not check that the last digit was ok.  This
-                 check must be done when we know whether the constant
-                 did have an unary `-' operator in front of it. */
+	      /* Now the buffer contains an integer number as a
+                 string.  Let's convert it to an integer number. */
+	      yylval->integer = buffer_to_int(compiler, &buffer);
+	      ws_buffer_uninit(&buffer);
 
 	      /* Read a DecimalIntegerLiteral. */
 	      return tINTEGER;
@@ -781,23 +795,21 @@ ws_yy_lex(YYSTYPE *yylval, YYLTYPE *yylloc, void *context)
 		  if (ch2 == 'x' || ch2 == 'X')
 		    {
 		      /* HexIntegerLiteral. */
-		      yylval->integer = 0;
+
+		      ws_buffer_init(&buffer);
+		      if (!ws_buffer_append_space(&buffer, &p, 2))
+			goto number_error_memory;
+
+		      p[0] = '0';
+		      p[1] = 'x';
+
 		      while (ws_stream_getc(compiler->input, &ch))
 			{
 			  if (WS_IS_HEX_DIGIT(ch))
 			    {
-			      /* Check the really too large integer
-                                 constants here. */
-			      if (yylval->integer > (WS_INT32_MAX / 16))
-				{
-				  ws_src_error(compiler, 0,
-					       "hex integer literal too "
-					       "large");
-				  yylval->integer = 0;
-				  return EOF;
-				}
-			      yylval->integer *= 16;
-			      yylval->integer += WS_HEX_TO_INT(ch);
+			      if (!ws_buffer_append_space(&buffer, &p, 1))
+				goto number_error_memory;
+			      p[0] = ch;
 			    }
 			  else
 			    {
@@ -806,29 +818,42 @@ ws_yy_lex(YYSTYPE *yylval, YYLTYPE *yylloc, void *context)
 			    }
 			}
 
+		      if (ws_buffer_len(&buffer) == 2)
+			{
+			  ws_buffer_uninit(&buffer);
+			  ws_src_error(compiler, 0,
+				       "numeric constant with no digits");
+			  yylval->integer = 0;
+			  return tINTEGER;
+			}
+
+		      /* Now the buffer contains an integer number as
+                         a string.  Let's convert it to an integer
+                         number. */
+		      yylval->integer = buffer_to_int(compiler, &buffer);
+		      ws_buffer_uninit(&buffer);
+
 		      /* Read a HexIntegerLiteral. */
 		      return tINTEGER;
 		    }
 		  if (WS_IS_OCTAL_DIGIT(ch2))
 		    {
 		      /* OctalIntegerLiteral. */
-		      yylval->integer = WS_OCTAL_TO_INT(ch2);
+
+		      ws_buffer_init(&buffer);
+		      if (!ws_buffer_append_space(&buffer, &p, 2))
+			goto number_error_memory;
+
+		      p[0] = '0';
+		      p[1] = ch2;
+
 		      while (ws_stream_getc(compiler->input, &ch))
 			{
 			  if (WS_IS_OCTAL_DIGIT(ch))
 			    {
-			      /* Check the really too large integer
-                                 constants here. */
-			      if (yylval->integer > (WS_INT32_MAX / 8))
-				{
-				  ws_src_error(compiler, 0,
-					       "octal integer literal too "
-					       "large");
-				  yylval->integer = 0;
-				  return EOF;
-				}
-			      yylval->integer *= 8;
-			      yylval->integer += WS_OCTAL_TO_INT(ch);
+			      if (!ws_buffer_append_space(&buffer, &p, 1))
+				goto number_error_memory;
+			      p[0] = ch;
 			    }
 			  else
 			    {
@@ -836,6 +861,10 @@ ws_yy_lex(YYSTYPE *yylval, YYLTYPE *yylloc, void *context)
 			      break;
 			    }
 			}
+
+		      /* Convert the buffer into an intger number. */
+		      yylval->integer = buffer_to_int(compiler, &buffer);
+		      ws_buffer_uninit(&buffer);
 
 		      /* Read an OctalIntegerLiteral. */
 		      return tINTEGER;
@@ -848,8 +877,7 @@ ws_yy_lex(YYSTYPE *yylval, YYLTYPE *yylloc, void *context)
 		      if (ch2 == '.')
 			{
 			  if (!ws_buffer_append_space(&buffer, &p, 1))
-			    goto float_error_memory;
-
+			    goto number_error_memory;
 			  p[0] = '.';
 
 			  success = read_float_from_point(compiler, &buffer,
@@ -867,7 +895,7 @@ ws_yy_lex(YYSTYPE *yylval, YYLTYPE *yylloc, void *context)
 		      if (!success)
 			return EOF;
 
-		      return tFLOAT32;
+		      return tFLOAT;
 		    }
 
 		  ws_stream_ungetc(compiler->input, ch2);
@@ -878,8 +906,11 @@ ws_yy_lex(YYSTYPE *yylval, YYLTYPE *yylloc, void *context)
 	      return tINTEGER;
 	    }
 
-	  /* XXX */
-	  ws_fatal("ws_yy_lex: default not implemented yet");
+	  /* Garbage found from the input stream. */
+	  ws_src_error(compiler, 0,
+		       "garbage found from the input stream: character=0x%x",
+		       ch);
+	  return EOF;
 	  break;
 	}
     }
@@ -892,27 +923,31 @@ ws_yy_lex(YYSTYPE *yylval, YYLTYPE *yylloc, void *context)
 static WsBool
 lookup_keyword(char *id, size_t len, int *token_return)
 {
-  int i;
+  int left = 0, center, right = num_keywords;
 
-  /* XXX Should be reimplemented as binary search. */
-
-  for (i = 0; i < num_keywords; i++)
+  while (left < right)
     {
+      int l;
       int result;
 
-      if (keywords[i].name_len == len)
-	{
-	  result = memcmp(id, keywords[i].name, len);
+      center = left + (right - left) / 2;
 
-	  if (result == 0)
-	    {
-	      /* Found a match. */
-	      *token_return = keywords[i].token;
-	      return WS_TRUE;
-	    }
-	  if (result < 0)
-	    /* Moved over the possible match. */
-	    return WS_FALSE;
+      l = keywords[center].name_len;
+      if (len < l)
+	l = len;
+
+      result = memcmp(id, keywords[center].name, l);
+      if (result < 0 || (result == 0 && len < keywords[center].name_len))
+	/* The possible match is smaller. */
+	right = center;
+      else if (result > 0 || (result == 0 && len > keywords[center].name_len))
+	/* The possible match is bigger. */
+	left = center + 1;
+      else
+	{
+	  /* Found a match. */
+	  *token_return = keywords[center].token;
+	  return WS_TRUE;
 	}
     }
 
@@ -921,9 +956,36 @@ lookup_keyword(char *id, size_t len, int *token_return)
 }
 
 
+static WsInt32
+buffer_to_int(WsCompilerPtr compiler, WsBuffer *buffer)
+{
+  unsigned char *p;
+  long value;
+
+  /* Terminate the string. */
+  if (!ws_buffer_append_space(buffer, &p, 1))
+    {
+      ws_error_memory(compiler);
+      return 0;
+    }
+  p[0] = '\0';
+
+  /* Convert the buffer into an integer number.  The base is taken
+     from the bufer. */
+  errno = 0;
+  value = strtol((char *) ws_buffer_ptr(buffer), NULL, 0);
+
+  /* Check for overflow.  The value `value' is always positive. */
+  if (errno == ERANGE || value > WS_INT32_MAX)
+    ws_src_error(compiler, 0, "integer literal too large");
+
+  /* All done. */
+  return (WsInt32) value;
+}
+
+
 static WsBool
-read_float_from_point(WsCompiler *compiler, WsBuffer *buffer,
-		      WsFloat32 *result)
+read_float_from_point(WsCompiler *compiler, WsBuffer *buffer, WsFloat *result)
 {
   int ch;
   unsigned char *p;
@@ -951,11 +1013,12 @@ read_float_from_point(WsCompiler *compiler, WsBuffer *buffer,
 
 
 static WsBool
-read_float_from_exp(WsCompiler *compiler, WsBuffer *buffer, WsFloat32 *result)
+read_float_from_exp(WsCompiler *compiler, WsBuffer *buffer, WsFloat *result)
 {
   int ch;
   unsigned char *p;
   int sign = '+';
+  unsigned char buf[4];
 
   /* Do we have an exponent part. */
   if (!ws_stream_getc(compiler->input, &ch))
@@ -1030,7 +1093,14 @@ read_float_from_exp(WsCompiler *compiler, WsBuffer *buffer, WsFloat32 *result)
     }
   p[0] = 0;
 
-  *result = (WsFloat32) strtod((char *) ws_buffer_ptr(buffer), NULL);
+  /* Now the buffer contains a valid floating point number. */
+  *result = (WsFloat) strtod((char *) ws_buffer_ptr(buffer), NULL);
+
+  /* Check that the generated floating point number fits to
+     `float32'. */
+  if (*result == HUGE_VAL || *result == -HUGE_VAL
+      || ws_ieee754_encode_single(*result, buf) != WS_IEEE754_OK)
+    ws_src_error(compiler, 0, "floating point literal too large");
 
   return WS_TRUE;
 }

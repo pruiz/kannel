@@ -4,7 +4,7 @@
  *
  * Author: Markku Rossi <mtr@iki.fi>
  *
- * Copyright (c) 1999-2000 Markku Rossi, etc.
+ * Copyright (c) 1999-2000 WAPIT OY LTD.
  *		 All rights reserved.
  *
  * Byte-code assembler.
@@ -15,7 +15,7 @@
 #include <wsasm.h>
 #include <wsstdlib.h>
 
-/********************* Macros to fetch items from BC object *************/
+/********************* Macros to fetch items from BC operands ***********/
 
 #define WS_OPNAME(op) (operands[(op)].name)
 #define WS_OPSIZE(op) (operands[(op)].size)
@@ -31,7 +31,6 @@ static struct
 #include "wsopcodes.h"
 };
 
-
 /********************* Symbolic assembler instructions ******************/
 
 /* General helpers. */
@@ -41,9 +40,7 @@ ws_asm_link(WsCompiler *compiler, WsAsmIns *ins)
 {
   if (compiler->asm_tail)
     {
-      WsAsmIns *t = compiler->asm_tail;
-
-      t->next = ins;
+      compiler->asm_tail->next = ins;
       ins->prev = compiler->asm_tail;
 
       compiler->asm_tail = ins;
@@ -71,12 +68,12 @@ ws_asm_print(WsCompiler *compiler)
 	      break;
 
 	    case WS_ASM_P_JUMP:
-	      ws_fprintf(WS_STDOUT, "\tjump\t\tL%d\n",
+	      ws_fprintf(WS_STDOUT, "\tjump*\t\tL%d\n",
 			 ins->ws_label->ws_label_idx);
 	      break;
 
 	    case WS_ASM_P_TJUMP:
-	      ws_fprintf(WS_STDOUT, "\ttjump\t\tL%d\n",
+	      ws_fprintf(WS_STDOUT, "\ttjump*\t\tL%d\n",
 			 ins->ws_label->ws_label_idx);
 	      break;
 
@@ -87,13 +84,15 @@ ws_asm_print(WsCompiler *compiler)
 
 	    case WS_ASM_P_CALL_LIB:
 	      {
-		const char *lib = "???";
-		const char *func = "???";
+		const char *lib;
+		const char *func;
 
 		(void) ws_stdlib_function_name(ins->ws_lindex,
 					       ins->ws_findex,
 					       &lib, &func);
-		ws_fprintf(WS_STDOUT, "\tcall_lib*\t%s.%s\n", lib, func);
+		ws_fprintf(WS_STDOUT, "\tcall_lib*\t%s.%s\n",
+			   lib ? lib : "???",
+			   func ? func : "???");
 	      }
 	      break;
 
@@ -121,16 +120,7 @@ ws_asm_print(WsCompiler *compiler)
 	}
       else
 	{
-	  WsUInt8 op;
-	  WsUInt8 arg;
-
-	  if (WS_ASM_CLASS4P(ins->type))
-	    op = WS_ASM_CLASS4_OP(ins->type);
-	  else
-	    {
-	      op = WS_ASM_OP(ins->type);
-	      arg = WS_ASM_ARG(ins->type);
-	    }
+	  WsUInt8 op = WS_ASM_OP(ins->type);
 
 	  if (operands[op].name)
 	    {
@@ -157,56 +147,51 @@ ws_asm_dasm(WsCompilerPtr compiler, const unsigned char *code, size_t len)
     {
       WsUInt8 byt = code[i];
       WsUInt8 op;
-      WsUInt8 arg = 0;
+      WsUInt8 arg;
       WsUInt8 i8, j8, k8;
       WsUInt16 i16, j16;
 
-      if (WS_ASM_CLASS4P(byt))
-	op = WS_ASM_CLASS4_OP(byt);
-      else
-	{
-	  op = WS_ASM_OP(byt);
-	  arg = WS_ASM_ARG(byt);
-	}
+      op = WS_ASM_OP(byt);
+      arg = WS_ASM_ARG(byt);
 
-      ws_fprintf(WS_STDOUT, "%04x\t%-16s", i, WS_OPNAME(op));
+      ws_fprintf(WS_STDOUT, "%4x:\t%-16s", i, WS_OPNAME(op));
 
       switch (op)
 	{
 	  /* The `short jumps'. */
 	case WS_ASM_JUMP_FW_S:
 	case WS_ASM_TJUMP_FW_S:
-	  ws_fprintf(WS_STDOUT, "%04x\n", i + WS_OPSIZE(op) + arg);
+	  ws_fprintf(WS_STDOUT, "%x\n", i + WS_OPSIZE(op) + arg);
 	  break;
 
 	case WS_ASM_JUMP_BW_S:
-	  ws_fprintf(WS_STDOUT, "%04x\n", i - arg);
+	  ws_fprintf(WS_STDOUT, "%x\n", i - arg);
 	  break;
 
 	  /* Jumps with WsUInt8 argument. */
 	case WS_ASM_JUMP_FW:
 	case WS_ASM_TJUMP_FW:
 	  WS_GET_UINT8(code + i + 1, i8);
-	  ws_fprintf(WS_STDOUT, "%04x\n", i + WS_OPSIZE(op) + i8);
+	  ws_fprintf(WS_STDOUT, "%x\n", i + WS_OPSIZE(op) + i8);
 	  break;
 
 	case WS_ASM_JUMP_BW:
 	case WS_ASM_TJUMP_BW:
 	  WS_GET_UINT8(code + i + 1, i8);
-	  ws_fprintf(WS_STDOUT, "%04x\n", i - i8);
+	  ws_fprintf(WS_STDOUT, "%x\n", i - i8);
 	  break;
 
 	  /* Jumps with wide argument. */
 	case WS_ASM_JUMP_FW_W:
 	case WS_ASM_TJUMP_FW_W:
 	  WS_GET_UINT16(code + i + 1, i16);
-	  ws_fprintf(WS_STDOUT, "%04x\n", i + WS_OPSIZE(op) + i16);
+	  ws_fprintf(WS_STDOUT, "%x\n", i + WS_OPSIZE(op) + i16);
 	  break;
 
 	case WS_ASM_JUMP_BW_W:
 	case WS_ASM_TJUMP_BW_W:
 	  WS_GET_UINT16(code + i + 1, i16);
-	  ws_fprintf(WS_STDOUT, "%04x\n", i - i16);
+	  ws_fprintf(WS_STDOUT, "%x\n", i - i16);
 	  break;
 
 	  /* The `short' opcodes. */
@@ -501,7 +486,7 @@ ws_asm_linearize(WsCompiler *compiler)
 	      break;
 
 	    case WS_ASM_P_CALL:
-	      if (ins->ws_findex < 8)
+	      if (ins->ws_findex <= 7)
 		{
 		  /* The most compact form. */
 		  ins->type = WS_ASM_CALL_S;
@@ -514,12 +499,12 @@ ws_asm_linearize(WsCompiler *compiler)
 	      break;
 
 	    case WS_ASM_P_CALL_LIB:
-	      if (ins->ws_findex < 8 && ins->ws_lindex < 256)
+	      if (ins->ws_findex <= 7 && ins->ws_lindex <= 255)
 		{
 		  /* The most compact form. */
 		  ins->type = WS_ASM_CALL_LIB_S;
 		}
-	      else if (ins->ws_findex < 256 && ins->ws_lindex < 256)
+	      else if (ins->ws_findex <= 255 && ins->ws_lindex <= 255)
 		{
 		  /* The quite compact form. */
 		  ins->type = WS_ASM_CALL_LIB;
@@ -532,7 +517,7 @@ ws_asm_linearize(WsCompiler *compiler)
 	      break;
 
 	    case WS_ASM_P_CALL_URL:
-	      if (ins->ws_findex < 256 && ins->ws_lindex < 256)
+	      if (ins->ws_findex <= 255 && ins->ws_lindex <= 255)
 		/* The compact form. */
 		ins->type = WS_ASM_CALL_URL;
 	      else
@@ -540,7 +525,7 @@ ws_asm_linearize(WsCompiler *compiler)
 	      break;
 
 	    case WS_ASM_P_LOAD_VAR:
-	      if (ins->ws_vindex < 32)
+	      if (ins->ws_vindex <= 31)
 		/* The compact form. */
 		ins->type = WS_ASM_LOAD_VAR_S;
 	      else
@@ -548,14 +533,14 @@ ws_asm_linearize(WsCompiler *compiler)
 	      break;
 
 	    case WS_ASM_P_STORE_VAR:
-	      if (ins->ws_vindex < 16)
+	      if (ins->ws_vindex <= 15)
 		ins->type = WS_ASM_STORE_VAR_S;
 	      else
 		ins->type = WS_ASM_STORE_VAR;
 	      break;
 
 	    case WS_ASM_P_INCR_VAR:
-	      if (ins->ws_vindex < 8)
+	      if (ins->ws_vindex <= 7)
 		ins->type = WS_ASM_INCR_VAR_S;
 	      else
 		ins->type = WS_ASM_INCR_VAR;
@@ -627,7 +612,6 @@ ws_asm_linearize(WsCompiler *compiler)
 	  if (!ws_encode_buffer(&compiler->byte_code,
 				WS_ENC_BYTE,
 				WS_ASM_GLUE(ins->type, ins->ws_findex),
-
 				WS_ENC_END))
 	    goto error;
 	  break;
@@ -644,7 +628,6 @@ ws_asm_linearize(WsCompiler *compiler)
 	  if (!ws_encode_buffer(&compiler->byte_code,
 				WS_ENC_BYTE,
 				WS_ASM_GLUE(ins->type, ins->ws_findex),
-
 				WS_ENC_UINT8, (WsUInt8) ins->ws_lindex,
 				WS_ENC_END))
 	    goto error;
@@ -802,7 +785,7 @@ ws_asm_linearize(WsCompiler *compiler)
 	  break;
 
 	default:
-	  ws_fatal("ws_asm_linearize: instruction 0x%02x not implemented yet",
+	  ws_fatal("ws_asm_linearize(): unknown instruction 0x%02x",
 		   ins->type);
 	  break;
 	}
@@ -828,7 +811,9 @@ asm_alloc(WsCompiler *compiler, WsUInt16 type, WsUInt32 line)
 {
   WsAsmIns *ins = ws_f_calloc(compiler->pool_asm, 1, sizeof(*ins));
 
-  if (ins)
+  if (ins == NULL)
+    ws_error_memory(compiler);
+  else
     {
       ins->type = type;
       ins->line = line;

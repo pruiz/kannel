@@ -4,7 +4,7 @@
  *
  * Author: Markku Rossi <mtr@iki.fi>
  *
- * Copyright (c) 1999, 2000 Markku Rossi, etc.
+ * Copyright (c) 1999-2000 WAPIT OY LTD.
  *		 All rights reserved.
  *
  * Byte-code handling functions.
@@ -14,9 +14,7 @@
 #include <wsint.h>
 #include <wsbc.h>
 
-/*
- * Prototypes for static functions.
- */
+/********************* Prototypes for static functions ******************/
 
 /* Add a new pragma of type `type' to the byte-code `bc'.  The
    function returns a pointer to an internal pragma structure that
@@ -25,10 +23,7 @@
    could not be allocated. */
 static WsBcPragma *add_pragma(WsBc *bc, WsBcPragmaType type);
 
-
-/*
- * Global functions.
- */
+/********************* Manipulating byte-code structure *****************/
 
 WsBc *
 ws_bc_alloc(WsBcStringEncoding string_encoding)
@@ -142,14 +137,40 @@ ws_bc_encode(WsBc *bc, unsigned char **data_return, size_t *data_len_return)
 	  break;
 
 	case WS_BC_CONST_TYPE_FLOAT32:
+	case WS_BC_CONST_TYPE_FLOAT32_NAN:
+	case WS_BC_CONST_TYPE_FLOAT32_POSITIVE_INF:
+	case WS_BC_CONST_TYPE_FLOAT32_NEGATIVE_INF:
+	  switch (bc->constants[ui].type)
+	    {
+	    case WS_BC_CONST_TYPE_FLOAT32:
+	      ws_ieee754_encode_single(bc->constants[ui].u.v_float, data);
+	      p = data;
+	      break;
+
+	    case WS_BC_CONST_TYPE_FLOAT32_NAN:
+	      p = ws_ieee754_nan;
+	      break;
+
+	    case WS_BC_CONST_TYPE_FLOAT32_POSITIVE_INF:
+	      p = ws_ieee754_positive_inf;
+	      break;
+
+	    case WS_BC_CONST_TYPE_FLOAT32_NEGATIVE_INF:
+	      p = ws_ieee754_negative_inf;
+	      break;
+
+	    default:
+	      ws_fatal("ws_bc_encode(): internal inconsistency");
+	      break;
+	    }
+
 	  if (!ws_encode_buffer(&buffer,
 				WS_ENC_UINT8, (WsUInt8) WS_BC_CONST_FLOAT32,
-
-				WS_ENC_FLOAT32,
-				(double) bc->constants[ui].u.v_float32,
-
+				WS_ENC_DATA, p, 4,
 				WS_ENC_END))
 	    goto error;
+	  break;
+
 	  break;
 
 	case WS_BC_CONST_TYPE_UTF8_STRING:
@@ -224,7 +245,6 @@ ws_bc_encode(WsBc *bc, unsigned char **data_return, size_t *data_len_return)
 	  if (!ws_encode_buffer(&buffer,
 				WS_ENC_UINT8,
 				(WsUInt8) WS_BC_CONST_EMPTY_STRING,
-
 				WS_ENC_END))
 	    goto error;
 	  break;
@@ -257,7 +277,6 @@ ws_bc_encode(WsBc *bc, unsigned char **data_return, size_t *data_len_return)
 	  if (!ws_encode_buffer(&buffer,
 				WS_ENC_UINT8,
 				(WsUInt8) WS_BC_PRAGMA_ACCESS_PATH,
-
 				WS_ENC_MB_UINT16, bc->pragmas[ui].index_1,
 				WS_ENC_END))
 	    goto error;
@@ -267,7 +286,6 @@ ws_bc_encode(WsBc *bc, unsigned char **data_return, size_t *data_len_return)
 	  if (!ws_encode_buffer(&buffer,
 				WS_ENC_UINT8,
 				(WsUInt8) WS_BC_PRAGMA_USER_AGENT_PROPERTY,
-
 				WS_ENC_MB_UINT16, bc->pragmas[ui].index_1,
 				WS_ENC_MB_UINT16, bc->pragmas[ui].index_2,
 				WS_ENC_END))
@@ -279,7 +297,6 @@ ws_bc_encode(WsBc *bc, unsigned char **data_return, size_t *data_len_return)
 			&buffer,
 			WS_ENC_UINT8,
 			(WsUInt8) WS_BC_PRAGMA_USER_AGENT_PROPERTY_AND_SCHEME,
-
 			WS_ENC_MB_UINT16, bc->pragmas[ui].index_1,
 			WS_ENC_MB_UINT16, bc->pragmas[ui].index_2,
 			WS_ENC_MB_UINT16, bc->pragmas[ui].index_3,
@@ -323,10 +340,8 @@ ws_bc_encode(WsBc *bc, unsigned char **data_return, size_t *data_len_return)
 			  WS_ENC_UINT8, bc->functions[ui].num_arguments,
 			  WS_ENC_UINT8, bc->functions[ui].num_locals,
 			  WS_ENC_MB_UINT32, bc->functions[ui].code_size,
-
 			  WS_ENC_DATA, bc->functions[ui].code,
 			  (size_t) bc->functions[ui].code_size,
-
 			  WS_ENC_END))
       goto error;
 
@@ -381,6 +396,427 @@ ws_bc_data_free(unsigned char *data)
 }
 
 
+/* A helper macro to update the data pointers during the decoding of
+   byte-code data. */
+#define WS_UPDATE_DATA	\
+  data += decoded;	\
+  data_len -= decoded
+
+/* A helper macro to check the validity of the constant string index
+   `idx'. */
+#define WS_CHECK_STRING(idx)				\
+  if ((idx) >= bc->num_constants			\
+      || ((bc->constants[(idx)].type			\
+	   != WS_BC_CONST_TYPE_UTF8_STRING)		\
+	  && (bc->constants[(idx)].type			\
+	      != WS_BC_CONST_TYPE_EMPTY_STRING)))	\
+    goto error;
+
+WsBc *
+ws_bc_decode(const unsigned char *data, size_t data_len)
+{
+  WsBc *bc = ws_bc_alloc(WS_BC_STRING_ENC_ISO_8859_1);
+  WsByte b;
+  WsUInt32 ui32;
+  WsUInt16 ui16, j;
+  WsUInt16 ui16b;
+  WsUInt8 ui8, num_functions, k, l;
+  WsInt8 i8;
+  WsInt16 i16;
+  WsInt32 i32;
+  WsIeee754Result ieee754;
+  unsigned char *ucp;
+  size_t decoded;
+
+  /* Decode the byte-code header. */
+  decoded = ws_decode_buffer(data, data_len,
+			     WS_ENC_BYTE, &b,
+			     WS_ENC_MB_UINT32, &ui32,
+			     WS_ENC_END);
+
+  if (!decoded
+      || b != WS_BC_VERSION
+      || ui32 != data_len - decoded)
+    /* This is not a valid (or supported) byte-code header. */
+    goto error;
+
+  WS_UPDATE_DATA;
+
+  /* Constant pool. */
+
+  decoded = ws_decode_buffer(data, data_len,
+			     WS_ENC_MB_UINT16, &ui16,
+			     WS_ENC_MB_UINT16, &ui16b,
+			     WS_ENC_END);
+  if (!decoded)
+    goto error;
+
+  bc->string_encoding = ui16b;
+
+  bc->constants = ws_calloc(ui16, sizeof(WsBcConstant));
+  if (bc->constants == NULL)
+    goto error;
+  bc->num_constants = ui16;
+
+  WS_UPDATE_DATA;
+
+  for (j = 0; j < bc->num_constants; j++)
+    {
+      WsBcConstant *c = &bc->constants[j];
+
+      decoded = ws_decode_buffer(data, data_len,
+				 WS_ENC_UINT8, &ui8,
+				 WS_ENC_END);
+      if (decoded != 1)
+	goto error;
+
+      WS_UPDATE_DATA;
+
+      switch (ui8)
+	{
+	case WS_BC_CONST_INT8:
+	  decoded = ws_decode_buffer(data, data_len,
+				     WS_ENC_INT8, &i8,
+				     WS_ENC_END);
+	  if (decoded != 1)
+	    goto error;
+
+	  WS_UPDATE_DATA;
+
+	  c->type = WS_BC_CONST_TYPE_INT;
+	  c->u.v_int = i8;
+	  break;
+
+	case WS_BC_CONST_INT16:
+	  decoded = ws_decode_buffer(data, data_len,
+				     WS_ENC_INT16, &i16,
+				     WS_ENC_END);
+	  if (decoded != 2)
+	    goto error;
+
+	  WS_UPDATE_DATA;
+
+	  c->type = WS_BC_CONST_TYPE_INT;
+	  c->u.v_int = i16;
+	  break;
+
+	case WS_BC_CONST_INT32:
+	  decoded = ws_decode_buffer(data, data_len,
+				     WS_ENC_INT32, &i32,
+				     WS_ENC_END);
+	  if (decoded != 4)
+	    goto error;
+
+	  WS_UPDATE_DATA;
+
+	  c->type = WS_BC_CONST_TYPE_INT;
+	  c->u.v_int = i32;
+	  break;
+
+	case WS_BC_CONST_FLOAT32:
+	  decoded = ws_decode_buffer(data, data_len,
+				     WS_ENC_DATA, &ucp, (size_t) 4,
+				     WS_ENC_END);
+	  if (decoded != 4)
+	    goto error;
+
+	  WS_UPDATE_DATA;
+
+	  ieee754 = ws_ieee754_decode_single(ucp, &c->u.v_float);
+
+	  switch (ieee754)
+	    {
+	    case WS_IEEE754_OK:
+	      c->type = WS_BC_CONST_TYPE_FLOAT32;
+	      break;
+
+	    case WS_IEEE754_NAN:
+	      c->type = WS_BC_CONST_TYPE_FLOAT32_NAN;
+	      break;
+
+	    case WS_IEEE754_POSITIVE_INF:
+	      c->type = WS_BC_CONST_TYPE_FLOAT32_POSITIVE_INF;
+	      break;
+
+	    case WS_IEEE754_NEGATIVE_INF:
+	      c->type = WS_BC_CONST_TYPE_FLOAT32_NEGATIVE_INF;
+	      break;
+	    }
+
+	  break;
+
+	case WS_BC_CONST_UTF8_STRING:
+	  decoded = ws_decode_buffer(data, data_len,
+				     WS_ENC_MB_UINT32, &ui32,
+				     WS_ENC_END);
+	  if (decoded == 0)
+	    goto error;
+
+	  WS_UPDATE_DATA;
+
+	  c->type = WS_BC_CONST_TYPE_UTF8_STRING;
+	  c->u.v_string.len = ui32;
+
+	  decoded = ws_decode_buffer(data, data_len,
+				     WS_ENC_DATA, &ucp, c->u.v_string.len,
+				     WS_ENC_END);
+	  if (decoded != ui32)
+	    goto error;
+
+	  WS_UPDATE_DATA;
+
+	  c->u.v_string.data = ws_memdup(ucp, ui32);
+	  if (c->u.v_string.data == NULL)
+	    goto error;
+
+	  /* Check the validity of the data. */
+	  if (!ws_utf8_verify(c->u.v_string.data, c->u.v_string.len,
+			      &c->u.v_string.num_chars))
+	    goto error;
+	  break;
+
+	case WS_BC_CONST_EMPTY_STRING:
+	  c->type = WS_BC_CONST_TYPE_EMPTY_STRING;
+	  break;
+
+	case WS_BC_CONST_EXT_ENC_STRING:
+	  ws_fatal("external character encoding not implemented yet");
+	  break;
+
+	default:
+	  /* Reserved. */
+	  goto error;
+	  break;
+	}
+    }
+
+  /* Pragma pool. */
+
+  decoded = ws_decode_buffer(data, data_len,
+			     WS_ENC_MB_UINT16, &ui16,
+			     WS_ENC_END);
+  if (!decoded)
+    goto error;
+
+  bc->pragmas = ws_calloc(ui16, sizeof(WsBcPragma));
+  if (bc->pragmas == NULL)
+    goto error;
+  bc->num_pragmas = ui16;
+
+  WS_UPDATE_DATA;
+
+  for (j = 0; j < bc->num_pragmas; j++)
+    {
+      WsBcPragma *p = &bc->pragmas[j];
+
+      decoded = ws_decode_buffer(data, data_len,
+				 WS_ENC_UINT8, &ui8,
+				 WS_ENC_END);
+      if (decoded != 1)
+	goto error;
+
+      WS_UPDATE_DATA;
+
+      p->type = ui8;
+
+      switch (ui8)
+	{
+	case WS_BC_PRAGMA_ACCESS_DOMAIN:
+	  decoded = ws_decode_buffer(data, data_len,
+				     WS_ENC_MB_UINT16, &p->index_1,
+				     WS_ENC_END);
+	  if (!decoded)
+	    goto error;
+
+	  WS_CHECK_STRING(p->index_1);
+	  break;
+
+	case WS_BC_PRAGMA_ACCESS_PATH:
+	  decoded = ws_decode_buffer(data, data_len,
+				     WS_ENC_MB_UINT16, &p->index_1,
+				     WS_ENC_END);
+	  if (!decoded)
+	    goto error;
+
+	  WS_CHECK_STRING(p->index_1);
+	  break;
+
+	case WS_BC_PRAGMA_USER_AGENT_PROPERTY:
+	  decoded = ws_decode_buffer(data, data_len,
+				     WS_ENC_MB_UINT16, &p->index_1,
+				     WS_ENC_MB_UINT16, &p->index_2,
+				     WS_ENC_END);
+	  if (!decoded)
+	    goto error;
+
+	  WS_CHECK_STRING(p->index_1);
+	  WS_CHECK_STRING(p->index_2);
+	  break;
+
+	case WS_BC_PRAGMA_USER_AGENT_PROPERTY_AND_SCHEME:
+	  decoded = ws_decode_buffer(data, data_len,
+				     WS_ENC_MB_UINT16, &p->index_1,
+				     WS_ENC_MB_UINT16, &p->index_2,
+				     WS_ENC_MB_UINT16, &p->index_3,
+				     WS_ENC_END);
+	  if (!decoded)
+	    goto error;
+
+	  WS_CHECK_STRING(p->index_1);
+	  WS_CHECK_STRING(p->index_2);
+	  WS_CHECK_STRING(p->index_3);
+	  break;
+
+	default:
+	  goto error;
+	  break;
+	}
+
+      WS_UPDATE_DATA;
+    }
+
+  /* Function pool. */
+
+  decoded = ws_decode_buffer(data, data_len,
+			     WS_ENC_UINT8, &num_functions,
+			     WS_ENC_END);
+  if (decoded != 1)
+    goto error;
+
+  WS_UPDATE_DATA;
+
+  /* Function names. */
+
+  decoded = ws_decode_buffer(data, data_len,
+			     WS_ENC_UINT8, &ui8,
+			     WS_ENC_END);
+  if (decoded != 1)
+    goto error;
+
+  WS_UPDATE_DATA;
+
+  if (ui8)
+    {
+      /* We have function names. */
+      bc->function_names = ws_calloc(ui8, sizeof(WsBcFunctionName));
+      if (bc->function_names == NULL)
+	goto error;
+      bc->num_function_names = ui8;
+
+      for (k = 0; k < bc->num_function_names; k++)
+	{
+	  WsBcFunctionName *n = &bc->function_names[k];
+
+	  decoded = ws_decode_buffer(data, data_len,
+				     WS_ENC_UINT8, &n->index,
+				     WS_ENC_UINT8, &ui8,
+				     WS_ENC_END);
+	  if (decoded != 2)
+	    goto error;
+
+	  WS_UPDATE_DATA;
+
+	  decoded = ws_decode_buffer(data, data_len,
+				     WS_ENC_DATA, &ucp, (size_t) ui8,
+				     WS_ENC_END);
+	  if (decoded != ui8)
+	    goto error;
+
+	  WS_UPDATE_DATA;
+
+	  n->name = ws_memdup(ucp, ui8);
+	  if (n->name == NULL)
+	    goto error;
+
+	  /* Check the validity of the name. */
+
+	  if (!ws_utf8_verify((unsigned char *) n->name, ui8, NULL))
+	    goto error;
+
+	  /* Just check that the data contains only valid characters. */
+	  for (l = 0; l < ui8; l++)
+	    {
+	      unsigned int ch = (unsigned char) n->name[l];
+
+	      if (('a' <= ch && ch <= 'z')
+		  || ('A' <= ch && ch <= 'Z')
+		  || ch == '_'
+		  || (k > 0 && ('0' <= ch && ch <= '9')))
+		/* Ok. */
+		continue;
+
+	      /* Invalid character in the function name. */
+	      goto error;
+	    }
+
+	  /* Is the index valid? */
+	  if (n->index >= num_functions)
+	    goto error;
+	}
+    }
+
+  /* Functions. */
+
+  if (num_functions)
+    {
+      /* We have functions. */
+      bc->functions = ws_calloc(num_functions, sizeof(WsBcFunction));
+      if (bc->functions == NULL)
+	goto error;
+      bc->num_functions = num_functions;
+
+      for (k = 0; k < bc->num_functions; k++)
+	{
+	  WsBcFunction *f = &bc->functions[k];
+
+	  decoded = ws_decode_buffer(data, data_len,
+				     WS_ENC_UINT8, &f->num_arguments,
+				     WS_ENC_UINT8, &f->num_locals,
+				     WS_ENC_MB_UINT32, &f->code_size,
+				     WS_ENC_END);
+	  if (!decoded)
+	    goto error;
+
+	  WS_UPDATE_DATA;
+
+	  decoded = ws_decode_buffer(data, data_len,
+				     WS_ENC_DATA, &ucp, f->code_size,
+				     WS_ENC_END);
+	  if (decoded != f->code_size)
+	    goto error;
+
+	  WS_UPDATE_DATA;
+
+	  if (f->code_size)
+	    {
+	      /* It is not an empty function. */
+	      f->code = ws_memdup(ucp, f->code_size);
+	      if (f->code == NULL)
+		goto error;
+	    }
+	}
+    }
+
+  /* Did we process it all? */
+  if (data_len != 0)
+    goto error;
+
+  /* All done. */
+  return bc;
+
+  /*
+   * Error handling.
+   */
+
+ error:
+
+  ws_bc_free(bc);
+
+  return NULL;
+}
+
+/********************* Adding constant elements *************************/
+
 WsBool
 ws_bc_add_const_int(WsBc *bc, WsUInt16 *index_return, WsInt32 value)
 {
@@ -392,9 +828,6 @@ ws_bc_add_const_int(WsBc *bc, WsUInt16 *index_return, WsInt32 value)
     if (bc->constants[i].type == WS_BC_CONST_TYPE_INT
 	&& bc->constants[i].u.v_int == value)
       {
-	/* Add a reference to this constant. */
-	bc->constants[i].opt.refcount++;
-
 	*index_return = i;
 	return WS_TRUE;
       }
@@ -408,8 +841,6 @@ ws_bc_add_const_int(WsBc *bc, WsUInt16 *index_return, WsInt32 value)
 
   bc->constants = nc;
   bc->constants[bc->num_constants].type = WS_BC_CONST_TYPE_INT;
-  bc->constants[bc->num_constants].opt.refcount = 1;
-  bc->constants[bc->num_constants].opt.original_index = bc->num_constants;
   bc->constants[bc->num_constants].u.v_int = value;
 
   *index_return = bc->num_constants++;
@@ -419,7 +850,7 @@ ws_bc_add_const_int(WsBc *bc, WsUInt16 *index_return, WsInt32 value)
 
 
 WsBool
-ws_bc_add_const_float32(WsBc *bc, WsUInt16 *index_return, WsFloat32 value)
+ws_bc_add_const_float(WsBc *bc, WsUInt16 *index_return, WsFloat value)
 {
   WsUInt16 i;
   WsBcConstant *nc;
@@ -427,11 +858,8 @@ ws_bc_add_const_float32(WsBc *bc, WsUInt16 *index_return, WsFloat32 value)
   /* Do we already have a suitable integer constant? */
   for (i = 0; i < bc->num_constants; i++)
     if (bc->constants[i].type == WS_BC_CONST_TYPE_FLOAT32
-	&& bc->constants[i].u.v_float32 == value)
+	&& bc->constants[i].u.v_float == value)
       {
-	/* Add a reference to this constant. */
-	bc->constants[i].opt.refcount++;
-
 	*index_return = i;
 	return WS_TRUE;
       }
@@ -445,9 +873,7 @@ ws_bc_add_const_float32(WsBc *bc, WsUInt16 *index_return, WsFloat32 value)
 
   bc->constants = nc;
   bc->constants[bc->num_constants].type = WS_BC_CONST_TYPE_FLOAT32;
-  bc->constants[bc->num_constants].opt.refcount = 1;
-  bc->constants[bc->num_constants].opt.original_index = bc->num_constants;
-  bc->constants[bc->num_constants].u.v_float32 = value;
+  bc->constants[bc->num_constants].u.v_float = value;
 
   *index_return = bc->num_constants++;
 
@@ -469,9 +895,6 @@ ws_bc_add_const_utf8_string(WsBc *bc, WsUInt16 *index_return,
 	&& memcmp(bc->constants[i].u.v_string.data,
 		  data, len) == 0)
       {
-	/* Add a reference to this constant. */
-	bc->constants[i].opt.refcount++;
-
 	*index_return = i;
 	return WS_TRUE;
       }
@@ -485,8 +908,6 @@ ws_bc_add_const_utf8_string(WsBc *bc, WsUInt16 *index_return,
 
   bc->constants = nc;
   bc->constants[bc->num_constants].type = WS_BC_CONST_TYPE_UTF8_STRING;
-  bc->constants[bc->num_constants].opt.refcount = 1;
-  bc->constants[bc->num_constants].opt.original_index = bc->num_constants;
   bc->constants[bc->num_constants].u.v_string.len = len;
   bc->constants[bc->num_constants].u.v_string.data
     = ws_memdup(data, len);
@@ -510,9 +931,6 @@ ws_bc_add_const_empty_string(WsBc *bc, WsUInt16 *index_return)
   for (i = 0; i < bc->num_constants; i++)
     if (bc->constants[i].type == WS_BC_CONST_TYPE_EMPTY_STRING)
       {
-	/* Add a reference to this constant. */
-	bc->constants[i].opt.refcount++;
-
 	*index_return = i;
 	return WS_TRUE;
       }
@@ -526,14 +944,13 @@ ws_bc_add_const_empty_string(WsBc *bc, WsUInt16 *index_return)
 
   bc->constants = nc;
   bc->constants[bc->num_constants].type = WS_BC_CONST_TYPE_EMPTY_STRING;
-  bc->constants[bc->num_constants].opt.refcount = 1;
-  bc->constants[bc->num_constants].opt.original_index = bc->num_constants;
 
   *index_return = bc->num_constants++;
 
   return WS_TRUE;
 }
 
+/********************* Adding pragmas ***********************************/
 
 WsBool
 ws_bc_add_pragma_access_domain(WsBc *bc, const unsigned char *domain,
@@ -612,6 +1029,7 @@ ws_bc_add_pragma_user_agent_property_and_scheme(
   return WS_TRUE;
 }
 
+/********************* Adding functions *********************************/
 
 WsBool
 ws_bc_add_function(WsBc *bc, WsUInt8 *index_return, char *name,
@@ -665,10 +1083,7 @@ ws_bc_add_function(WsBc *bc, WsUInt8 *index_return, char *name,
   return WS_TRUE;
 }
 
-
-/*
- * Static functions.
- */
+/********************* Static functions *********************************/
 
 static WsBcPragma *
 add_pragma(WsBc *bc, WsBcPragmaType type)

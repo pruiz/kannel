@@ -1,7 +1,7 @@
 typedef union
 {
   WsUInt32 integer;
-  WsFloat32 vfloat;
+  WsFloat vfloat;
   char *identifier;
   WsUtf8String *string;
 
@@ -35,7 +35,7 @@ typedef
 #define	tTRUE	258
 #define	tFALSE	259
 #define	tINTEGER	260
-#define	tFLOAT32	261
+#define	tFLOAT	261
 #define	tSTRING	262
 #define	tIDENTIFIER	263
 #define	tACCESS	264

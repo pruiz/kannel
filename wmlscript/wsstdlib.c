@@ -4,7 +4,7 @@
  *
  * Author: Markku Rossi <mtr@iki.fi>
  *
- * Copyright (c) 1999- 2000 Markku Rossi, etc.
+ * Copyright (c) 1999-2000 WAPIT OY LTD.
  *		 All rights reserved.
  *
  * Standard libraries.
@@ -53,7 +53,6 @@ struct WsStdLibRegRec
 };
 
 typedef struct WsStdLibRegRec WsStdLibReg;
-
 
 /********************* Static variables *********************************/
 
@@ -154,7 +153,6 @@ static WsStdLibReg libraries[] =
    lib_wmlbrowser_functions},
   {"Dialogs",		NF(lib_dialogs_functions), lib_dialogs_functions},
 };
-
 
 /********************* Global functions *********************************/
 

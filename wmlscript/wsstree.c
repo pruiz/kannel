@@ -4,15 +4,18 @@
  *
  * Author: Markku Rossi <mtr@iki.fi>
  *
- * Copyright (c) 1999-2000 Markku Rossi, etc.
+ * Copyright (c) 1999-2000 WAPIT OY LTD.
  *		 All rights reserved.
  *
- * Syntax tree.
+ * Syntax tree creation, manipulation and byte-code assembler
+ * generation.
  *
  */
 
 #include <wsint.h>
 #include <wsgram.h>
+
+/* TODO: Constant folding. */
 
 /********************* Misc syntax tree structures **********************/
 
@@ -21,7 +24,9 @@ ws_pair_new(WsCompilerPtr compiler, void *car, void *cdr)
 {
   WsPair *pair = ws_f_malloc(compiler->pool_stree, sizeof(*pair));
 
-  if (pair)
+  if (pair == NULL)
+    ws_error_memory(compiler);
+  else
     {
       pair->car = car;
       pair->cdr = cdr;
@@ -38,10 +43,7 @@ ws_list_new(WsCompiler *compiler)
   WsList *list = ws_f_calloc(compiler->pool_stree, 1, sizeof(*list));
 
   if (list == NULL)
-    {
-      ws_error_memory(compiler);
-      return NULL;
-    }
+    ws_error_memory(compiler);
 
   return list;
 }
@@ -50,8 +52,13 @@ ws_list_new(WsCompiler *compiler)
 void
 ws_list_append(WsCompiler *compiler, WsList *list, void *value)
 {
-  WsListItem *item = ws_f_calloc(compiler->pool_stree, 1, sizeof(*item));
+  WsListItem *item;
 
+  if (list == NULL)
+    /* A recovery code for previous memory allocation problems. */
+    return;
+
+  item = ws_f_calloc(compiler->pool_stree, 1, sizeof(*item));
   if (item == NULL)
     {
       ws_error_memory(compiler);
@@ -70,7 +77,6 @@ ws_list_append(WsCompiler *compiler, WsList *list, void *value)
 
   list->num_items++;
 }
-
 
 /********************* Namespace for arguments and locals ***************/
 
@@ -137,7 +143,6 @@ ws_variable_lookup(WsCompilerPtr compiler, char *name)
 {
   return ws_hash_get(compiler->variables_hash, name);
 }
-
 
 /********************* Top-level declarations ***************************/
 
@@ -309,24 +314,6 @@ ws_function(WsCompiler *compiler, WsBool externp, char *name, WsUInt32 line,
   else
     compiler->num_local_functions++;
 
-#if 0
-  printf("%sfunction %s(", externp ? "extern " : "", name);
-
-  if (params)
-    {
-      WsListItem *i;
-
-      for (i = params->head; i; i = i->next)
-	{
-	  if (i != params->head)
-	    printf (", ");
-
-	  printf("%s", (char *) i->data);
-	}
-    }
-  printf(")\n");
-#endif
-
   compiler->functions = f;
   f = &compiler->functions[compiler->num_functions];
 
@@ -360,10 +347,7 @@ ws_function(WsCompiler *compiler, WsBool externp, char *name, WsUInt32 line,
   hash->findex = f->findex;
 }
 
-
 /********************* Expressions **************************************/
-
-/* General expression manipulators. */
 
 void
 ws_expr_linearize(WsCompiler *compiler, WsExpression *expr)
@@ -407,7 +391,6 @@ ws_expr_linearize(WsCompiler *compiler, WsExpression *expr)
 			ws_asm_variable(compiler, expr->line,
 					WS_ASM_P_STORE_VAR, ns->vindex));
 	  }
-#if 1
 	else if (expr->u.assign.op == tADDA)
 	  {
 	    /* Linearize the expression. */
@@ -428,7 +411,6 @@ ws_expr_linearize(WsCompiler *compiler, WsExpression *expr)
 			ws_asm_variable(compiler, expr->line,
 					WS_ASM_SUB_ASG, ns->vindex));
 	  }
-#endif
 	else
 	  {
 	    /* Load the old value from the variable. */
@@ -492,7 +474,7 @@ ws_expr_linearize(WsCompiler *compiler, WsExpression *expr)
 		break;
 
 	      default:
-		ws_fatal("internal compiler error: unknown OP= operand %d",
+		ws_fatal("ws_expr_linearize(): unknown assignment operand %x",
 			 expr->u.assign.op);
 		break;
 	      }
@@ -747,7 +729,8 @@ ws_expr_linearize(WsCompiler *compiler, WsExpression *expr)
 	  break;
 
 	default:
-	  ws_fatal("The cows are flying again...");
+	  ws_fatal("ws_expr_linearize(): unknown call expression type %x",
+		   expr->u.call.type);
 	  break;
 	}
       break;
@@ -787,8 +770,6 @@ ws_expr_linearize(WsCompiler *compiler, WsExpression *expr)
 
 
     case WS_EXPR_CONST_INTEGER:
-      /* XXX handle constant folding later. */
-
       if (expr->u.ival == 0)
 	ins = ws_asm_ins(compiler, expr->line, WS_ASM_CONST_0);
       else if (expr->u.ival == 1)
@@ -812,7 +793,7 @@ ws_expr_linearize(WsCompiler *compiler, WsExpression *expr)
       {
 	WsUInt16 cindex;
 
-	if (!ws_bc_add_const_float32(compiler->bc, &cindex, expr->u.fval))
+	if (!ws_bc_add_const_float(compiler->bc, &cindex, expr->u.fval))
 	  {
 	    ws_error_memory(compiler);
 	    return;
@@ -840,11 +821,6 @@ ws_expr_linearize(WsCompiler *compiler, WsExpression *expr)
 	}
 
       ws_asm_link(compiler, ins);
-      break;
-
-    default:
-      ws_fatal("ws_expr_linearize: expression type %d not handled yet",
-	       expr->type);
       break;
     }
 }
@@ -894,6 +870,9 @@ ws_expr_assign(WsCompilerPtr compiler, WsUInt32 line, char *identifier,
   if (e)
     {
       e->u.assign.identifier = ws_f_strdup(compiler->pool_stree, identifier);
+      if (e->u.assign.identifier == NULL)
+	ws_error_memory(compiler);
+
       e->u.assign.op = op;
       e->u.assign.expr = expr;
     }
@@ -984,6 +963,8 @@ ws_expr_unary_var(WsCompilerPtr compiler, WsUInt32 line, WsBool addp,
     {
       expr->u.unary_var.addp = addp;
       expr->u.unary_var.variable = ws_f_strdup(compiler->pool_stree, variable);
+      if (expr->u.unary_var.variable == NULL)
+	ws_error_memory(compiler);
     }
   ws_lexer_free_block(compiler, variable);
 
@@ -1002,6 +983,8 @@ ws_expr_postfix_var(WsCompilerPtr compiler, WsUInt32 line, WsBool addp,
       expr->u.postfix_var.addp = addp;
       expr->u.postfix_var.variable = ws_f_strdup(compiler->pool_stree,
 						 variable);
+      if (expr->u.postfix_var.variable == NULL)
+	ws_error_memory(compiler);
     }
   ws_lexer_free_block(compiler, variable);
 
@@ -1024,10 +1007,7 @@ ws_expr_call(WsCompiler *compiler, WsUInt32 line, int type, char *base,
 
       if ((base && expr->u.call.base == NULL)
 	  || (name && expr->u.call.name == NULL))
-	{
-	  ws_error_memory(compiler);
-	  expr = NULL;
-	}
+	ws_error_memory(compiler);
     }
 
   ws_lexer_free_block(compiler, base);
@@ -1045,12 +1025,8 @@ ws_expr_symbol(WsCompiler *compiler, WsUInt32 line, char *identifier)
   if (expr)
     {
       expr->u.symbol = ws_f_strdup(compiler->pool_stree, identifier);
-
       if (expr->u.symbol == NULL)
-	{
-	  ws_error_memory(compiler);
-	  expr = NULL;
-	}
+	ws_error_memory(compiler);
     }
 
   ws_lexer_free_block(compiler, identifier);
@@ -1093,7 +1069,7 @@ ws_expr_const_integer(WsCompiler *compiler, WsUInt32 line, WsUInt32 ival)
 
 
 WsExpression *
-ws_expr_const_float(WsCompiler *compiler, WsUInt32 line, WsFloat32 fval)
+ws_expr_const_float(WsCompiler *compiler, WsUInt32 line, WsFloat fval)
 {
   WsExpression *expr = expr_alloc(compiler, WS_EXPR_CONST_FLOAT, line);
 
@@ -1115,17 +1091,13 @@ ws_expr_const_string(WsCompiler *compiler, WsUInt32 line, WsUtf8String *string)
       expr->u.string.data = ws_f_memdup(compiler->pool_stree,
 					string->data, string->len);
       if (expr->u.string.data == NULL)
-	{
-	  ws_error_memory(compiler);
-	  expr = NULL;
-	}
+	ws_error_memory(compiler);
     }
 
   ws_lexer_free_utf8(compiler, string);
 
   return expr;
 }
-
 
 /********************* Statements ***************************************/
 
@@ -1156,7 +1128,6 @@ linearize_variable_init(WsCompiler *compiler, WsList *list, WsUInt32 line)
     }
 }
 
-/* General statement manipulators. */
 
 void
 ws_stmt_linearize(WsCompiler *compiler, WsStatement *stmt)
@@ -1185,8 +1156,10 @@ ws_stmt_linearize(WsCompiler *compiler, WsStatement *stmt)
 
     case WS_STMT_IF:
       {
-	/* XXX Check line numbers. */
-	WsAsmIns *l_else = ws_asm_label(compiler, stmt->first_line);
+	WsAsmIns *l_else = ws_asm_label(compiler,
+					(stmt->u.s_if.s_else
+					 ? stmt->u.s_if.s_else->first_line
+					 : stmt->last_line));
 	WsAsmIns *l_end  = ws_asm_label(compiler, stmt->last_line);
 
 	/* Linearize the expression. */
@@ -1224,7 +1197,10 @@ ws_stmt_linearize(WsCompiler *compiler, WsStatement *stmt)
 
 	cb = ws_f_calloc(compiler->pool_stree, 1, sizeof(*cb));
 	if (cb == NULL)
-	  return;
+	  {
+	    ws_error_memory(compiler);
+	    return;
+	  }
 
 	cb->next = compiler->cont_break;
 	compiler->cont_break = cb;
@@ -1289,16 +1265,19 @@ ws_stmt_linearize(WsCompiler *compiler, WsStatement *stmt)
 
     case WS_STMT_WHILE:
       {
-	/* XXX Check line numbers. */
 	WsAsmIns *l_cont = ws_asm_label(compiler, stmt->first_line);
-	WsAsmIns *l_break = ws_asm_label(compiler, stmt->last_line);
+	WsAsmIns *l_break = ws_asm_label(compiler,
+					 stmt->u.s_while.stmt->last_line);
 	WsContBreak *cb;
 
 	/* Store the labels to the compiler. */
 
 	cb = ws_f_calloc(compiler->pool_stree, 1, sizeof(*cb));
 	if (cb == NULL)
-	  return;
+	  {
+	    ws_error_memory(compiler);
+	    return;
+	  }
 
 	cb->next = compiler->cont_break;
 	compiler->cont_break = cb;
@@ -1363,11 +1342,6 @@ ws_stmt_linearize(WsCompiler *compiler, WsStatement *stmt)
 	ins = ws_asm_ins(compiler, stmt->first_line, WS_ASM_RETURN_ES);
 
       ws_asm_link(compiler, ins);
-      break;
-
-    default:
-      ws_fatal("ws_stmt_linearize: statement type %d not handled yet",
-	       stmt->type);
       break;
     }
 }

@@ -4,7 +4,7 @@
  *
  * Author: Markku Rossi <mtr@iki.fi>
  *
- * Copyright (c) 1999 Markku Rossi, etc.
+ * Copyright (c) 1999-2000 WAPIT OY LTD.
  *		 All rights reserved.
  *
  * Implementation of the file stream.
@@ -24,6 +24,10 @@ struct WsStreamFileCtxRec
 
   /* A temporary buffer for the raw file data. */
   unsigned char buf[WS_STREAM_BUFFER_SIZE];
+
+  /* For file output streams, this variable holds the number of data
+     in `buf'. */
+  size_t data_in_buf;
 
   /* Other fields (like character set conversion information) might be
      defined later. */
@@ -66,9 +70,51 @@ file_input(void *context, WsUInt32 *buf, size_t buflen)
 static size_t
 file_output(void *context, WsUInt32 *buf, size_t buflen)
 {
-  /* XXX implement */
+  WsStreamFileCtx *ctx = (WsStreamFileCtx *) context;
+  size_t wrote = 0;
+  unsigned char ch;
 
-  return 0;
+  while (buflen)
+    {
+      /* Do we have any space in the stream's internal IO buffer? */
+      if (ctx->data_in_buf >= WS_STREAM_BUFFER_SIZE)
+	{
+	  size_t w;
+
+	  /* No, flush something to our file stream. */
+	  w = fwrite(ctx->buf, 1, ctx->data_in_buf, ctx->fp);
+	  if (w < ctx->data_in_buf)
+	    {
+	      /* Write failed.  As a result code we return the number
+                 of characters written from our current write
+                 request. */
+	      ctx->data_in_buf = 0;
+	      return wrote;
+	    }
+
+	  ctx->data_in_buf = 0;
+	}
+      /* Now we have space in the internal buffer. */
+
+      /* Here we could perform some sort of conversions from ISO 10646
+         to the output character set.  Currently we just support
+         ISO-8859/1 and all unknown characters are replaced with
+         '?'. */
+
+      if (*buf > 0xff)
+	ch = '?';
+      else
+	ch = (unsigned char) *buf;
+
+      ctx->buf[ctx->data_in_buf++] = ch;
+
+      /* Move forward. */
+      buf++;
+      buflen--;
+      wrote++;
+    }
+
+  return wrote;
 }
 
 
@@ -77,6 +123,23 @@ file_flush(void *context)
 {
   WsStreamFileCtx *ctx = (WsStreamFileCtx *) context;
 
+  /* If the internal buffer has any data, then this stream must be an
+     output stream.  The variable `data_in_buf' is not updated on
+     input streams. */
+  if (ctx->data_in_buf)
+    {
+      if (fwrite(ctx->buf, 1, ctx->data_in_buf, ctx->fp) != ctx->data_in_buf)
+	{
+	  /* The write failed. */
+	  ctx->data_in_buf = 0;
+	  return WS_FALSE;
+	}
+
+      /* The temporary buffer is not empty. */
+      ctx->data_in_buf = 0;
+    }
+
+  /* Flush the underlying file stream. */
   return fflush(ctx->fp) == 0;
 }
 

@@ -4,7 +4,7 @@
  *
  * Author: Markku Rossi <mtr@iki.fi>
  *
- * Copyright (c) 1999-2000 Markku Rossi, etc.
+ * Copyright (c) 1999-2000 WAPIT OY LTD.
  *		 All rights reserved.
  *
  * Operating system specific environment and general helper utilities
@@ -24,6 +24,7 @@
 #include <stdarg.h>
 #include <errno.h>
 #include <assert.h>
+#include <math.h>
 
 /********************* Types and definitions ****************************/
 
@@ -76,7 +77,9 @@ typedef unsigned long WsUInt32;
 #endif /* SIZEOF_LONG != 4 */
 #endif /* SIZEOF_INT != 4 */
 
-typedef float WsFloat32;
+/* Internally we use as good floating point numbers as possible.  This
+   way we avoid losing data in constant folding, etc. */
+typedef double WsFloat;
 
 typedef enum
 {
@@ -103,6 +106,7 @@ typedef enum
 #include <ws.h>
 #include <wserror.h>
 #include <wsutf8.h>
+#include <wsieee754.h>
 #include <wsbuffer.h>
 #include <wsencode.h>
 #include <wsalloc.h>
@@ -124,7 +128,7 @@ extern WsCompilerPtr global_compiler;
 #endif /* WS_DEBUG */
 
 /* A structure to register the currently active `continue-break'
-   labels.  These are allocated from the stree-pool. */
+   labels.  These are allocated from the syntax-tree pool. */
 struct WsContBreakRec
 {
   struct WsContBreakRec *next;
@@ -136,6 +140,8 @@ typedef struct WsContBreakRec WsContBreak;
 
 struct WsCompilerRec
 {
+  /* A magic number of assure that a correct compiler handle is passed
+     to the parser and lexer functions. */
   WsUInt32 magic;
 
   /* User-specifiable parameters. */
@@ -159,7 +165,7 @@ struct WsCompilerRec
      allocates string or symbol tokens, their dynamically allocated
      data is registered to this list.  The parser removes the items
      when needed, but if the parsing fails, the items can be freed
-     from this list. */
+     from this list during the cleanup. */
   void **lexer_active_list;
   size_t lexer_active_list_size;
 
@@ -208,6 +214,10 @@ struct WsCompilerRec
   /* Bitmask to record occurred errors.  This is used in error
      generation and reporting to make sane error messages. */
   WsUInt32 errors;
+
+  /* The latest line where a syntax error occurred.  The compiler do
+     not print multiple syntax errors from the same line. */
+  WsUInt32 last_syntax_error_line;
 };
 
 typedef struct WsCompilerRec WsCompiler;

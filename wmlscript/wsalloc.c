@@ -4,7 +4,7 @@
  *
  * Author: Markku Rossi <mtr@iki.fi>
  *
- * Copyright (c) 1999-2000 Markku Rossi, etc.
+ * Copyright (c) 1999-2000 WAPIT OY LTD.
  *		 All rights reserved.
  *
  * Memory allocation routines.  These are simple stub functions to fix
@@ -168,7 +168,7 @@ static void
 remove_block(WsMemBlockHdr *b)
 {
   if (b->magic != MAGIC)
-    ws_fatal("remove_block: invalid magic\n");
+    ws_fatal("remove_block(): invalid magic\n");
 
   if (b->next)
     b->next->prev = b->prev;
@@ -213,6 +213,7 @@ ws_calloc_i(size_t num, size_t size, const char *file, int line)
 
   return p;
 }
+
 
 void *
 ws_realloc_i(void *ptr, size_t size, const char *file, int line)
@@ -304,6 +305,7 @@ ws_dump_blocks(void)
 	fprintf(stderr, "%s:%d: %ld\n", b->file, b->line, (long) b->size);
     }
 }
+
 
 void
 ws_clear_leaks(unsigned int num_successful_allocs_)

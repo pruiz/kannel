@@ -4,10 +4,11 @@
  *
  * Author: Markku Rossi <mtr@iki.fi>
  *
- * Copyright (c) 1999-2000 Markku Rossi, etc.
+ * Copyright (c) 1999-2000 WAPIT OY LTD.
  *		 All rights reserved.
  *
- * Encoding and decoding routines.
+ * Encoding and decoding routines to store different types of data to
+ * the format, specified by the WMLScript specification.
  *
  */
 
@@ -16,7 +17,7 @@
 
 /********************* Types and defintions *****************************/
 
-/* Macros to store and restore integers to data buffers. */
+/* Macros to store and restore integers from data buffers. */
 
 #define WS_PUT_UINT8(buf, val)				\
   do {							\
@@ -75,10 +76,11 @@
    bytes). */
 #define WS_MB_UINT32_MAX_ENCODED_LEN	5
 
-
 /* Type specifiers for the ws_{encode,decode}_buffer() functions. */
 typedef enum
 {
+  /* The terminator of the encoding list.  This must be the last item
+     in all encoding and decoding function calls. */
   WS_ENC_END,
 
   /* 8 bits of data.  The value must be given as `WsByte'. */
@@ -110,14 +112,9 @@ typedef enum
      must be given as `WsUInt32'. */
   WS_ENC_MB_UINT32,
 
-  /* A 32 bit long floating point value.  The value must be given as
-     `double'. */
-  WS_ENC_FLOAT32,
-
   /* Binary data specified with two arguments: unsigned char *, size_t */
   WS_ENC_DATA
 } WsEncodingSpec;
-
 
 /********************* Global functions *********************************/
 
@@ -147,9 +144,10 @@ WsBool ws_encode_buffer(WsBuffer *buffer, ...);
 
 /* Decode data from the buffer `buffer', `buffer_len' according to the
    WsEncodingSpec encoded argument list `...'.  The argument list
-   `...' must be encoed as in ws_encode_buffer() but the values must
+   `...' must be encoded as in ws_encode_buffer() but the values must
    be replaced with pointers to variables of the type.  The function
-   returns the number of bytes decoded from the buffer. */
+   returns the number of bytes decoded from the buffer or 0 if the
+   decoding failed. */
 size_t ws_decode_buffer(const unsigned char *buffer, size_t buffer_len, ...);
 
 #endif /* not WSENCODE_H */

@@ -4,7 +4,7 @@
  *
  * Author: Markku Rossi <mtr@iki.fi>
  *
- * Copyright (c) 1999-2000 Markku Rossi, etc.
+ * Copyright (c) 1999-2000 WAPIT OY LTD.
  *		 All rights reserved.
  *
  * Memory allocation routines.
@@ -41,7 +41,8 @@ void *ws_calloc(size_t num, size_t size);
 void *ws_realloc(void *ptr, size_t size);
 
 /* Take a copy of the memory buffer `ptr' which has `size' bytes of
-   data.  The function returns NULL if the allocation fails. */
+   data.  The function returns NULL if the allocation fails.  The
+   returned buffer is null-terminated. */
 void *ws_memdup(const void *ptr, size_t size);
 
 /* Take a copy of the C-string `str'.  The function returns NULL if
@@ -73,7 +74,11 @@ void ws_free(void *ptr);
    memory allocations have been performed, all memory allocations
    fail.  When the tested function has returned, you can see if you
    cleanup code did not free all blocks by using the functions
-   ws_hash_leaks() and ws_dump_blocks(). */
+   ws_hash_leaks() and ws_dump_blocks().
+
+   These functions are not thread safe.  They use shared static list
+   to record the active blocks and they do not use any sorts of
+   locking. */
 
 /* Macros to tag the allocation source file location to the allocated
    memory block. */

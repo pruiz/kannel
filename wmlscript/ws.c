@@ -4,7 +4,7 @@
  *
  * Author: Markku Rossi <mtr@iki.fi>
  *
- * Copyright (c) 1999-2000 Markku Rossi, etc.
+ * Copyright (c) 1999-2000 WAPIT OY LTD.
  *		 All rights reserved.
  *
  * Public entry points to the WMLScript compiler and the main compile
@@ -70,6 +70,11 @@ static WsResult compile_stream(WsCompilerPtr compiler,
    The argument `context' must be a `FILE *' file to which the output
    is written. */
 static void std_io(const char *data, size_t len, void *context);
+
+/* A comparison function for functions entries when sorting them by
+   their usage counts.  The function is stable maintaining their
+   original order if their usage counts are equal. */
+static int sort_functions_cmp(const void *a, const void *b);
 
 /********************* Global functions *********************************/
 
@@ -191,7 +196,6 @@ ws_result_to_string(WsResult result)
   return "unknown result code";
 }
 
-
 /********************* Lexer's memory handling helpers ******************/
 
 WsBool
@@ -289,6 +293,7 @@ compile_stream(WsCompilerPtr compiler, const char *input_name,
   compiler->num_extern_functions = 0;
   compiler->num_local_functions = 0;
   compiler->errors = 0;
+  compiler->last_syntax_error_line = 0;
 
   /* Allocate fast-malloc pool for the syntax tree. */
 
@@ -351,7 +356,35 @@ compile_stream(WsCompilerPtr compiler, const char *input_name,
 
   WS_CHECK_COMPILE_ERROR();
 
-  /* XXX Sort functions. */
+  /* Sort functions if allowed and it helps. */
+  if (!compiler->params.no_opt_sort_bc_functions
+      && compiler->num_functions > 7)
+    {
+      WsUInt32 i;
+
+      ws_info(compiler, "optimize: sorting functions");
+
+      /* Fetch the usage counts from the functions hash. */
+      for (i = 0; i < compiler->num_functions; i++)
+	{
+	  WsFunctionHash *fh = ws_function_hash(compiler,
+						compiler->functions[i].name);
+	  compiler->functions[i].usage_count = fh->usage_count;
+	}
+
+      /* Sort functions.  */
+      qsort(compiler->functions, compiler->num_functions,
+	    sizeof(compiler->functions[0]), sort_functions_cmp);
+
+      /* Patch the function indexes. */
+      for (i = 0; i < compiler->num_functions; i++)
+	{
+	  WsFunctionHash *fh = ws_function_hash(compiler,
+						compiler->functions[i].name);
+	  compiler->functions[i].findex = i;
+	  fh->findex = i;
+	}
+    }
 
   /* Linearize functions */
   for (i = 0; i < compiler->num_functions; i++)
@@ -397,7 +430,8 @@ compile_stream(WsCompilerPtr compiler, const char *input_name,
 
       WS_CHECK_COMPILE_ERROR();
 
-      /* Optimize symbolic assembler. */
+      /* Optimize symbolic assembler.  This function does nothing if
+         no optimizations were requested. */
       ws_asm_optimize(compiler);
 
       /* Print the resulting symbolic assembler if requested. */
@@ -423,7 +457,7 @@ compile_stream(WsCompilerPtr compiler, const char *input_name,
 
       /* Add the function to the byte-code module. */
       if (!ws_bc_add_function(compiler->bc, &findex,
-			      func->name,
+			      func->externp ? func->name : NULL,
 			      func->params->num_items,
 			      num_locals,
 			      ws_buffer_len(&compiler->byte_code),
@@ -488,4 +522,22 @@ static void
 std_io(const char *data, size_t len, void *context)
 {
   fwrite(data, 1, len, (FILE *) context);
+}
+
+
+static int
+sort_functions_cmp(const void *a, const void *b)
+{
+  WsFunction *fa = (WsFunction *) a;
+  WsFunction *fb = (WsFunction *) b;
+
+  if (fa->usage_count > fb->usage_count)
+    return -1;
+  if (fa->usage_count < fb->usage_count)
+    return 1;
+
+  if (fa->findex < fb->findex)
+    return -1;
+
+  return 1;
 }

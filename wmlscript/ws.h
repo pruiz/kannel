@@ -4,7 +4,7 @@
  *
  * Author: Markku Rossi <mtr@iki.fi>
  *
- * Copyright (c) 1999-2000 Markku Rossi, etc.
+ * Copyright (c) 1999-2000 WAPIT OY LTD.
  *		 All rights reserved.
  *
  * Public header file for the WMLScript compiler library.
@@ -19,8 +19,8 @@
 /********************* Creating and destroying compiler *****************/
 
 /* A callback function of this type is called to output compiler's
-   diagnostic and, error, and warning messages.  The argument `data'
-   has `len' bytes of data that should be output somehow to user.  The
+   diagnostic, error, and warning messages.  The argument `data' has
+   `len' bytes of data that should be output somehow to user.  The
    argument `context' is the user-specified context data for the
    callback function. */
 typedef void (*WsIOProc)(const char *data, size_t len, void *context);
@@ -66,6 +66,9 @@ struct WsCompilerParamsRec
   /* Do not sort byte-code functions by their usage counts. */
   unsigned int no_opt_sort_bc_functions : 1;
 
+  /* Do not perform peephole optimization. */
+  unsigned int no_opt_peephole : 1;
+
   /* Do not optimize jumps to jump instructions to jump directly to
      the target label of the next instruction. */
   unsigned int no_opt_jumps_to_jumps : 1;
@@ -82,6 +85,9 @@ struct WsCompilerParamsRec
 
 
   /* Output flags. */
+
+  /* Print verbose progress messages. */
+  unsigned int verbose : 1;
 
   /* Print symbolic assembler to the stdout. */
   unsigned int print_symbolic_assembler : 1;
@@ -120,10 +126,10 @@ typedef struct WsCompilerRec *WsCompilerPtr;
 /* Create a new WMLScript compiler.  The argument `params' specifies
    initialization parameters for the compiler.  If the argument
    `params' is NULL or any of its fiels have value 0 or NULL, the
-   default values will be used for the parameter.  The function takes
-   a copy of the value of the `params' argument.  You can free it
-   after this call.  The function returns NULL if the operation fails
-   (out of memory). */
+   default values will be used for those parameters.  The function
+   takes a copy of the value of the `params' argument.  You can free
+   it after this call.  The function returns NULL if the operation
+   fails (out of memory). */
 WsCompilerPtr ws_create(const WsCompilerParams *params);
 
 /* Destroy the WMLScript compiler `compiler' and free all resources it
@@ -166,13 +172,14 @@ WsResult ws_compile_file(WsCompilerPtr compiler, const char *input_name,
 			 FILE *input, FILE *output);
 
 /* Compile the `input_len' bytes of WMLScript data in `input' with the
-   compiler `compiler'.  The resulting byte-code is returned in
+   compiler `compiler'.  The data is assumed to be in the ISO-8859/1
+   (ISO latin1) format.  The resulting byte-code is returned in
    `output_return' and its length is returned in `output_len_return'.
    The argument `input_name' is the name of the input data
    `input_data'.  It is used in error messages.  The function returns
    a success code that describes the result of the compilation.  The
    output in `output_return' is valid only if the result code is
-   `WS_OK'.  The byte-code, returned in `output_return' must be freed
+   `WS_OK'.  The byte-code, returned in `output_return', must be freed
    with the ws_free_byte_code() function after it is not needed
    anymore.  It is a fatal error to free it with any other function,
    like free(). */

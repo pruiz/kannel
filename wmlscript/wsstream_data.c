@@ -4,7 +4,7 @@
  *
  * Author: Markku Rossi <mtr@iki.fi>
  *
- * Copyright (c) 1999-2000 Markku Rossi, etc.
+ * Copyright (c) 1999-2000 WAPIT OY LTD.
  *		 All rights reserved.
  *
  * Implementation of the data streams.
@@ -39,6 +39,7 @@ data_input(void *context, WsUInt32 *buf, size_t buflen)
 
   return read;
 }
+
 
 static void
 data_close(void *context)

@@ -4,7 +4,7 @@
  *
  * Author: Markku Rossi <mtr@iki.fi>
  *
- * Copyright (c) 1999-2000 Markku Rossi, etc.
+ * Copyright (c) 1999-2000 WAPIT OY LTD.
  *		 All rights reserved.
  *
  * Functions to manipulate UTF-8 encoded strings.
@@ -15,8 +15,9 @@
 
 #include <wsint.h>
 
-/********************* Types and defintions *****************************/
+/********************* Types and definitions ****************************/
 
+/* Masks to determine the UTF-8 encoding of an ISO 10646 character. */
 #define WS_UTF8_ENC_1_M	0xffffff80
 #define WS_UTF8_ENC_2_M	0xfffff800
 #define WS_UTF8_ENC_3_M	0xffff0000
@@ -25,7 +26,7 @@
 #define WS_UTF8_ENC_6_M	0x80000000
 
 /* The high-order bits.  This array can be indexed with the number of
-   bits in the encoding to get the initialization mask for the
+   bytes in the encoding to get the initialization mask for the
    high-order bits. */
 static unsigned char utf8_hibits[7] =
 {
@@ -46,7 +47,8 @@ static unsigned char utf8_hibits[7] =
 
 /* Determine the encoding type of the ISO 10646 character `ch'.  The
    argument `ch' must be given as `unsigned long'.  The macro returns
-   0 if the value `ch' can not be encoded as */
+   0 if the value `ch' can not be encoded as UTF-8 and the number of
+   bytes in the encoded value otherwise. */
 #define WS_UTF8_ENC_TYPE(ch)			\
   (((ch) & WS_UTF8_ENC_1_M) == 0		\
    ? 1						\
@@ -62,6 +64,8 @@ static unsigned char utf8_hibits[7] =
 		  ? 6				\
 		  : 0))))))
 
+/* Masks and values to determine the length of an UTF-8 encoded
+   character. */
 #define WS_UTF8_DEC_1_M	0x80
 #define WS_UTF8_DEC_2_M	0xe0
 #define WS_UTF8_DEC_3_M	0xf0
@@ -76,7 +80,10 @@ static unsigned char utf8_hibits[7] =
 #define WS_UTF8_DEC_5_V	0xf8
 #define WS_UTF8_DEC_6_V	0xfc
 
-static unsigned char utf8_hidata[7] =
+/* Masks to get the data bits from the first byte of an UTF-8 encoded
+   character.  This array can be indexed with the number of bytes in
+   the encoding. */
+static unsigned char utf8_hidata_masks[7] =
 {
   0x00,				/* unused */
   0x7f,				/* 1 byte */
@@ -258,7 +265,7 @@ ws_utf8_get_char(const WsUtf8String *string, unsigned long *ch_return,
     return 0;
 
   /* Get the first byte. */
-  ch = data[0] & utf8_hidata[num_bytes];
+  ch = data[0] & utf8_hidata_masks[num_bytes];
 
   /* Add the continuation bytes. */
   for (i = 1; i < num_bytes; i++)

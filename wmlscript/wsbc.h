@@ -4,10 +4,10 @@
  *
  * Author: Markku Rossi <mtr@iki.fi>
  *
- * Copyright (c) 1999-2000 Markku Rossi, etc.
+ * Copyright (c) 1999-2000 WAPIT OY LTD.
  *		 All rights reserved.
  *
- * Byte-Code handling.
+ * Byte-code handling.
  *
  */
 
@@ -53,6 +53,9 @@ typedef enum
 {
   WS_BC_CONST_TYPE_INT,
   WS_BC_CONST_TYPE_FLOAT32,
+  WS_BC_CONST_TYPE_FLOAT32_NAN,
+  WS_BC_CONST_TYPE_FLOAT32_POSITIVE_INF,
+  WS_BC_CONST_TYPE_FLOAT32_NEGATIVE_INF,
   WS_BC_CONST_TYPE_UTF8_STRING,
   WS_BC_CONST_TYPE_EMPTY_STRING
 } WsBcConstantType;
@@ -61,25 +64,10 @@ struct WsBcConstantRec
 {
   WsBcConstantType type;
 
-  /* Information, used in optimizing the size of the byte-code. */
-  struct
-  {
-    /* How many times this constant is used from other parts of the
-       byte-code.  */
-    WsUInt32 refcount;
-
-    /* The original index of this constant. */
-    WsUInt16 original_index;
-
-    /* The index to which the constant was moved during the refcount
-       sorting. */
-    WsUInt16 moved_index;
-  } opt;
-
   union
   {
     WsInt32 v_int;
-    WsFloat32 v_float32;
+    WsFloat v_float;
     WsUtf8String v_string;
   } u;
 };
@@ -165,12 +153,7 @@ struct WsBcRec
 
 typedef struct WsBcRec WsBc;
 
-
-/********************* Functions to manipulate byte-code ****************/
-
-/*
- * Manipulating the byte-code structure.
- */
+/********************* Manipulating byte-code structure *****************/
 
 /* Allocate a new byte-code structure.  The argument `string_encoding'
    specifies the encoding that is used for strings.  The function
@@ -196,10 +179,15 @@ WsBool ws_bc_encode(WsBc *bc, unsigned char **data_return,
    function. */
 void ws_bc_data_free(unsigned char *data);
 
+/* Decode the byte-code data `data' into an in-memory byte-code
+   structure.  The function returns the byte-code structure or NULL if
+   the decoding fails.  The argument `data_len' specfies the length of
+   the byte-code data `data'.  The returned byte-code structure must
+   be freed with the ws_bc_free() function when it is not needed
+   anymore. */
+WsBc *ws_bc_decode(const unsigned char *data, size_t data_len);
 
-/*
- * Adding constant elements.
- */
+/********************* Adding constant elements *************************/
 
 /* Add an integer constant `value' to the constant pool of the
    byte-code structure `bc'.  The index of the constant is returned in
@@ -210,8 +198,7 @@ WsBool ws_bc_add_const_int(WsBc *bc, WsUInt16 *index_return,
 
 /* Add a floating point constant `value' to the constant pool of the
    byte-code structure `bc'. */
-WsBool ws_bc_add_const_float32(WsBc *bc, WsUInt16 *index_return,
-			       WsFloat32 value);
+WsBool ws_bc_add_const_float(WsBc *bc, WsUInt16 *index_return, WsFloat value);
 
 /* Add an UTF-8 encoded string to the constant pool of the byte-code
    structure `bc'. */
@@ -222,10 +209,7 @@ WsBool ws_bc_add_const_utf8_string(WsBc *bc, WsUInt16 *index_return,
    `bc'. */
 WsBool ws_bc_add_const_empty_string(WsBc *bc, WsUInt16 *index_return);
 
-
-/*
- * Adding pragmas.
- */
+/********************* Adding pragmas ***********************************/
 
 /* Add an access control specifier pragma to the constant and pragma
    pools of the byte-code structure `bc'.  The argument `domain' has
@@ -262,9 +246,7 @@ WsBool ws_bc_add_pragma_user_agent_property_and_scheme(
 					const unsigned char *scheme,
 					size_t scheme_len);
 
-/*
- * Adding functions.
- */
+/********************* Adding functions *********************************/
 
 /* Add a new function to the function pool of the byte-code structure
    `bc'.  The argument `name' specifies the name of the function for
