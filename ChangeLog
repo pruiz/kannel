@@ -1,3 +1,10 @@
+2002-12-03  Igor Ivoilov <igor@francoudi.com>
+    * wap/wsp_server_session_states.def: fixed initial approach for
+      client SDU size to solve the problem with concatenated WSP requests.
+      Thanks to Vjacheslav Chekushin <slava@lmt.lv> for pointing out 
+      the problem with nokia 7210
+      [Message-ID: <3DD34FED.5010305@lmt.lv>]
+
 2002-12-03  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/bb_smscconn.c: fixed memory leak in smsc2_restart_smsc(),
       thanks to Nisan for spotting this.

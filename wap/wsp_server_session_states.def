@@ -38,8 +38,12 @@ ROW(NULL_SESSION,
 		sm->session_id = next_wsp_session_id();
 
 		if (pdu->u.Connect.capabilities_len > 0) {
+			unsigned long sdu;
 			sm->request_caps = wsp_cap_unpack_list(
 				pdu->u.Connect.capabilities);
+			if (wsp_cap_get_client_sdu(sm->request_caps,&sdu)) {
+				sm->client_SDU_size = sdu;
+			}
 		} else {
 			sm->request_caps = list_create();
 		}
