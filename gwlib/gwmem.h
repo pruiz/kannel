@@ -16,6 +16,7 @@
 #define GWMEM_H
 
 
+void *gw_native_noop(void *ptr);
 void gw_native_init(void);
 void gw_native_check_leaks(void);
 void *gw_native_malloc(size_t size);
@@ -42,6 +43,7 @@ void *gw_check_claim_area(void *p,
 void gw_check_shutdown(void);
 
 
+
 /*
  * "slow" == "checking" with a small variation.
  */
@@ -63,7 +65,7 @@ void gw_check_shutdown(void);
 #define gw_free(ptr) (gw_native_free(ptr))
 #define gw_strdup(str) (gw_native_strdup(str))
 #define gw_assert_allocated(ptr, file, line, function)
-#define gw_claim_area(ptr) (ptr)
+#define gw_claim_area(ptr) (gw_native_noop(ptr))
 #define gw_claim_area_for(ptr, file, line, func) (ptr)
 #define gwmem_shutdown()
 #define gwmem_type() (octstr_imm("native"))

@@ -224,6 +224,15 @@ for loc in /usr /usr/local; do
   fi    
 done
 
+dnl Implement --enable-warnings option.
+
+AC_ARG_ENABLE(warnings,
+[  --enable-warnings    enable compilation warnings (default: disabled)], [
+  echo enabling compilation warnings
+  if test -n "$GCC"; then
+    CFLAGS="$CFLAGS -Wall -O2 -g"
+  fi
+])
 
 dnl Implement --enable-docs option.
 

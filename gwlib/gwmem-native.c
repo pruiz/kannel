@@ -18,6 +18,8 @@
 #undef realloc
 #undef free
 
+void *gw_native_noop(void *ptr) { return ptr; }
+
 void *gw_native_malloc(size_t size)
 {
     void *ptr;
