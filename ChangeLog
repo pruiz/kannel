@@ -1,3 +1,9 @@
+2005-03-06  Alexander Malysh <amalysh at kannel.org>
+    * gw/wap-appl.c: Fix empty device_headers with request_headers == NULL
+      and session_headers != NULL and small memory leak with connection-oriented wap
+      Thanks to "Paul P Komkoff Jr <i at stingr.net>" for the patch.
+      [Msg-Id: <20050306212423.GA26532@stingr.stingr.net>]
+
 2005-03-04  Stipe Tolj  <stolj@wapme.de> 
     * gw/wap-appl.c: adding a NULL check causing a PANIC while dumping the
       IP in the fetch info() statement. How can this be NULL, since we 
@@ -84,7 +90,7 @@
 2005-02-17  Stipe Tolj  <stolj@wapme.de> 
 
     * test/test_radius_pdu.c: some minor issues, like usage display
-etc.
+      etc.
 
 2005-02-17  Alexander Malysh <amalysh at kannel.org>
     * gw/smsc/smsc_smpp.c: fixed typo while setting submit_sm.data_coding.

@@ -718,7 +718,7 @@ static void return_reply(int status, Octstr *content_body, List *headers,
     struct content content;
     int converted;
     WSPMachine *sm;
-    List *device_headers;
+    List *device_headers, *t_headers;
     WAPAddrTuple *addr_tuple;
     Octstr *ua, *server;
 
@@ -731,12 +731,17 @@ static void return_reply(int status, Octstr *content_body, List *headers,
      * request be obviously will not find any session machine entry. */
     sm = find_session_machine_by_id(session_id);
 
+    device_headers = gwlist_create();
+
     /* ensure we pass only the original headers to the convertion routine */
-    device_headers = (orig_event->type == S_MethodInvoke_Ind) ?
+    t_headers = (orig_event->type == S_MethodInvoke_Ind) ?
+        orig_event->u.S_MethodInvoke_Ind.session_headers :
+        NULL;
+    if (t_headers != NULL) http_header_combine(device_headers, t_headers);
+    t_headers = (orig_event->type == S_MethodInvoke_Ind) ?
         orig_event->u.S_MethodInvoke_Ind.request_headers :
         orig_event->u.S_Unit_MethodInvoke_Ind.request_headers;
-    if (device_headers == NULL)
-        device_headers = gwlist_create();
+    if (t_headers != NULL) http_header_combine(device_headers, t_headers);
 
     /* 
      * We are acting as a proxy. Hence ensure we log a correct HTTP response
@@ -1043,6 +1048,7 @@ static void return_reply(int status, Octstr *content_body, List *headers,
     octstr_destroy(content.type); /* body was re-used above */
     octstr_destroy(content.charset);
     octstr_destroy(url);          /* same as content.url */
+    http_destroy_headers(device_headers);
 
     counter_decrease(fetches);
 }
