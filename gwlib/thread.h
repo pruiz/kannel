@@ -19,7 +19,7 @@
  */
 typedef struct {
 	pthread_mutex_t mutex;
-	pthread_t owner;
+	long owner;
 #ifdef MUTEX_STATS
 	unsigned char *filename;
 	int lineno;

@@ -9,6 +9,7 @@
 #include "gwmem.h"
 #include "log.h"
 #include "thread.h"
+#include "gwthread.h"
 #include "gwassert.h"
 
 
@@ -31,7 +32,7 @@ Mutex *mutex_create_real(void) {
 	
 	mutex = gw_malloc(sizeof(Mutex));
 	pthread_mutex_init(&mutex->mutex, NULL);
-	mutex->owner = (pthread_t) -1;
+	mutex->owner = -1;
 	return mutex;
 }
 
@@ -70,9 +71,9 @@ void mutex_lock(Mutex *mutex)
 #endif
 	if (ret != 0)
 		panic(ret, "mutex_lock: Mutex failure!");
-	if (mutex->owner == pthread_self())
+	if (mutex->owner == gwthread_self())
 		panic(0, "mutex_lock: Managed to lock the mutex twice!");
-	mutex->owner = pthread_self();
+	mutex->owner = gwthread_self();
 }
 
 
@@ -96,7 +97,7 @@ int mutex_try_lock(Mutex *mutex)
 		panic(ret, "mutex_try_lock: Mutex failure!");
 	}
 
-	if (pthread_equal(mutex->owner, pthread_self())) {
+	if (mutex->owner == gwthread_self()) {
 		/* The lock succeeded, but some thread systems allow
 		 * the locking thread to lock it a second time.  We
 		 * don't want that because it's not portable, so we
@@ -106,7 +107,7 @@ int mutex_try_lock(Mutex *mutex)
 	}
 
 	/* Hey, it's ours! Let's remember that... */
-	mutex->owner = pthread_self();
+	mutex->owner = gwthread_self();
 	return 0;
 }
 
@@ -115,7 +116,7 @@ void mutex_unlock(Mutex *mutex)
 {
 	int ret;
 	gw_assert(mutex != NULL);
-	mutex->owner = (pthread_t) -1;
+	mutex->owner = -1;
 	ret = pthread_mutex_unlock(&mutex->mutex);
 	if (ret != 0)
 		panic(ret, "mutex_unlock: Mutex failure!");

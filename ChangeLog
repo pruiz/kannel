@@ -1,3 +1,15 @@
+2000-05-26  Richard Braakman  <dark@wapit.com>
+
+	* gwlib/conn.c: Converted conn_claim() stuff to use new thread
+	interface.
+
+	* gwlib/gwthread-pthread.c: Bugfix, make sure the main thread
+	can still safely call gwthread_self after shutdown, so that gwmem
+	layer can log stuff.
+
+	* gwlib/thread.c: Converted mutex->owner to use new thread
+	interface.
+
 Fri May 26 20:34:01 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* gw/wap-appl.[ch]: Wrote. This is the new application layer.

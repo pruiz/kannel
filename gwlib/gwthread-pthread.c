@@ -139,6 +139,9 @@ static void delete_threadinfo(void) {
 	threadinfo = getthreadinfo();
 	pthread_cond_broadcast(&threadinfo->exiting);
 	pthread_cond_destroy(&threadinfo->exiting);
+	/* The main thread may still try call gwthread_self, when
+	 * logging stuff.  So we need to set this to a safe value. */
+	pthread_setspecific(tsd_key, NULL);
 	THREAD(threadinfo->number) = NULL;
 	gw_free(threadinfo);
 }
