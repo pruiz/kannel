@@ -1853,10 +1853,19 @@ static void init_bb(Config *cfg)
 	    bbox->thread_limit = atoi(p);
 	if ((p = config_get(grp, "http-port")) != NULL)
 	    bbox->http_port = atoi(p);
-	if ((p = config_get(grp, "wap-port")) != NULL)
+	if ((p = config_get(grp, "wapbox-port")) != NULL)
 	    bbox->wapbox_port = atoi(p);
-	if ((p = config_get(grp, "sms-port")) != NULL)
+	if ((p = config_get(grp, "smsbox-port")) != NULL)
 	    bbox->smsbox_port = atoi(p);
+
+	if ((p = config_get(grp, "wap-port")) != NULL) {
+	    bbox->wapbox_port = atoi(p);
+	    warning(0, "Depricated wap-port configuration variable used (but it still works)");
+	}
+	if ((p = config_get(grp, "sms-port")) != NULL) {
+	    bbox->smsbox_port = atoi(p);
+	    warning(0, "Depricated sms-port configuration variable used (but it still works)");
+	}
 	if ((p = config_get(grp, "global-prefix")) != NULL)
 	    bbox->global_prefix = p;
 	if ((p = config_get(grp, "allowed-hosts")) != NULL)

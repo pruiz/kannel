@@ -1,3 +1,11 @@
+2000-03-10    <rpr@rpr.wapit.com>
+
+	* gw/bearerbox.c, gw/kannel.conf, test/sample.conf: renamed
+	wap-port to wapbox-port and sms-port to smsbox-port, to avoid any
+	future confusion. Old names still work.
+
+	* gw/smsc_sema.c: added a name to smsc
+
 Thu Mar  9 11:05:14 CET 2000	Patrick Schaaf	<bof@bof.de>
 
 	* gw/wapbox.c, gw/kannel.wapconf: cleanup, removed
