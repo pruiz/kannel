@@ -98,7 +98,7 @@
 <sect1>
 <title>Program execution</title>
 
-        <para>As the bearerbox is started up, it reads the
+        <para>As the bearerbox is started up, it reads the
         configuration from a file and then starts up any required
         systems.</para>
 
