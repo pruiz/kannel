@@ -317,7 +317,7 @@ void radius_acct_init(CfgGroup *grp)
 
 void radius_acct_shutdown(void) 
 {
-    if(radius_mutex == NULL) /* haven't init'ed at all */
+    if (radius_mutex == NULL) /* haven't init'ed at all */
         return;
 
     mutex_lock(radius_mutex);
