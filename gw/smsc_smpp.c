@@ -340,7 +340,11 @@ static Connection *open_receiver(SMPP *smpp)
 			   counter_increase(smpp->message_id_counter));
     bind->u.bind_receiver.system_id = octstr_duplicate(smpp->username);
     bind->u.bind_receiver.password = octstr_duplicate(smpp->password);
-    bind->u.bind_receiver.system_type = octstr_create("VMA");
+    if (smpp->system_type == NULL)
+	bind->u.bind_receiver.system_type = octstr_create("VMA");
+    else
+	bind->u.bind_receiver.system_type = 
+	    octstr_duplicate(smpp->system_type);
     bind->u.bind_receiver.interface_version = 0x34;
     bind->u.bind_receiver.address_range = 
     	octstr_duplicate(smpp->address_range);

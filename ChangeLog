@@ -1,4 +1,8 @@
-2001-05-04  Richard Braakman  <dark@wapit.com>
+2001-05-07  Richard Braakman  <dark@wapit.com>
+
+	* gw/smsc_smpp.c: Use system-type for receiver as well as transmitter.
+
+2001-05-06  Richard Braakman  <dark@wapit.com>
 
 	* gwlib/octstr.c: Fix edge cases in octstr_get_bits and
 	octstr_set_bits.
