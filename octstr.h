@@ -206,8 +206,16 @@ OctstrList *octstr_split_words(Octstr *ostr);
  */
 void octstr_dump(Octstr *ostr);
 
+/*
+ * write given octstr into 'fd', possibly blocking. Return -1
+ * if failed, 0 otherwise
+ */
 int octstr_send(int fd, Octstr *ostr);
 
+/*
+ * read one octet string from 'fd'. Blocks until complete octet is
+ * read, returns -1 on error (fd closed etc.)
+ */
 int octstr_recv(int fd, Octstr **ostr);
 
 #endif
