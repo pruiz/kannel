@@ -1,3 +1,8 @@
+2002-01-18  Tuomas Luttinen  <Tuomas.Luttinen@reach-u.com>
+
+	* gwlib/http.c (http_header_find_first): A bug corrected so that the 
+	function returns "<value>" instead of " <value>".
+
 2002-01-18  Stipe Tolj  <tolj@wapme-systems.de>
     * configure.in: added EXE_EXT variable to be used for systems that
       have executable extensions, i.e. Cygwin 1.x. This makes certain

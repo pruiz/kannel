@@ -2213,7 +2213,7 @@ void http_header_combine(List *old_headers, List *new_headers)
 Octstr *http_header_find_first(List *headers, char *name)
 {
     long i, name_len;
-    Octstr *h;
+    Octstr *h, *value;
 
     gwlib_assert_init();
     gw_assert(headers != NULL);
@@ -2223,8 +2223,11 @@ Octstr *http_header_find_first(List *headers, char *name)
 
     for (i = 0; i < list_len(headers); ++i) {
         h = list_get(headers, i);
-        if (header_is_called(h, name))
-            return octstr_copy(h, name_len + 1, octstr_len(h));
+        if (header_is_called(h, name)) {
+            value = octstr_copy(h, name_len + 1, octstr_len(h));
+	    octstr_strip_blanks(value);
+	    return value;
+	}
     }
     return NULL;
 }
