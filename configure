@@ -2942,7 +2942,7 @@ else
 fi
 
 
-if test "x$ssl" != "x" ; then
+if test "$ssl" = "yes" ; then
     if test "x$ssllib" = "x" && test "x$sslinc" = "x"; then
     for loc in /usr/lib /usr/local/ssl/lib /usr/local/openssl/lib; do 
       if test -f "$loc/libssl.a"; then

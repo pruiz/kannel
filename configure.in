@@ -499,7 +499,7 @@ AC_ARG_ENABLE(ssl,
   ssl=yes
 ])
 
-if test "x$ssl" != "x" ; then
+if test "$ssl" = "yes" ; then
   dnl test only if --with-ssl has not been used
   if test "x$ssllib" = "x" && test "x$sslinc" = "x"; then
     for loc in /usr/lib /usr/local/ssl/lib /usr/local/openssl/lib; do 
