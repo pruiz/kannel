@@ -6,19 +6,11 @@
  *
  * Lars Wirzenius <liw@wapit.com> for WapIT Ltd.
  */
-#if defined(linux)
-#define OSLinux
-#elif defined(__GNU__)
-#define OSHURD
-#elif defined(__sparc__)
-#define OSsunos
-#endif
-
 #include <stdlib.h>
 #include <time.h>
 #include <unistd.h>
 #include <signal.h>
-#ifdef OSsunos
+#ifdef SunOS
 #include <sys/loadavg.h>
 #endif
 
@@ -204,9 +196,14 @@ Msg *remove_msg_from_queue(void) {
 static void *send_heartbeat_thread(void *arg) {
 	list_add_producer(queue);
 	while (run_status == running) {
+	
+		#ifdef SunOS
 		double loadavg[3]={0};
+		#endif
+	
 		Msg *msg = msg_create(heartbeat);
-		#ifdef OSsunos
+		
+		#ifdef SunOS
 		if(getloadavg(loadavg,3)==-1){
 			info(0,"getloadavg failed!\n");
 		}else{
@@ -217,6 +214,7 @@ static void *send_heartbeat_thread(void *arg) {
 		#else
 		msg->heartbeat.load = 0;	/* XXX */
 		#endif
+
 		put_msg_in_queue(msg);
 		sleep(heartbeat_freq);
 	}
