@@ -1,3 +1,6 @@
+2004-08-18  Stipe Tolj  <stolj@wapme.de>
+    * gw/smsc/smsc_smpp.c: some typo fixes, no logic change.
+
 2004-08-17  Bruno Rodrigues  <bruno.rodrigues@litux.org>
     * utils/mtbatch.1: added manpage for mtbatch
 	* all: re-"released" 1.4.0 - moved branch tag

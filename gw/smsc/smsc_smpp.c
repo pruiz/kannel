@@ -1094,8 +1094,8 @@ static Msg *handle_dlr(SMPP *smpp, SMPP_PDU *pdu)
         dlrmsg->sms.msgdata = octstr_duplicate(respstr);
         dlrmsg->sms.sms_type = report_mo;
     } else {
-        error(0,"SMPP[%s]: got DLR but could not find message or was not interested"
-                "in it ts<%s> dst<%s>, type<%d>",
+        error(0,"SMPP[%s]: got DLR but could not find message or was not interested "
+                "in it id<%s> dst<%s>, type<%d>",
                 octstr_get_cstr(smpp->conn->id), octstr_get_cstr(tmp),
                 octstr_get_cstr(pdu->u.deliver_sm.destination_addr), dlrstat);
     }
