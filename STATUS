@@ -1,5 +1,5 @@
 KANNEL 1.x STATUS: 
-  Last modified at [$Id: STATUS,v 1.22 2002-06-20 13:23:28 stolj Exp $]
+  Last modified at [$Id: STATUS,v 1.23 2002-06-27 13:33:00 stolj Exp $]
 
 Release:
 
@@ -68,6 +68,21 @@ RELEASE NON-SHOWSTOPPERS BUT WOULD BE REAL NICE TO WRAP THESE UP:
     Status: Bruno Rodrigues: I've disabled http keepalive until it gets fixed
  
 Available Patches:
+
+    * SMPP Time definitions, deferred/validity
+    Posted by: Alan McNatty <alan@catalyst.net.nz>
+    Message-ID: <1025042471.1173.526.camel@euclid>
+    Status: Oded: +1
+
+    * SMPP priority flag setting
+    Posted by: Ignat Vassilev <ozzy@declera.com>
+    Message-ID: <3D1A586B.3070308@declera.com>
+    Status: Stipe: +1 for dev branch
+
+    * SMPP UNBIND operation support
+    Posted by: Ignat Vassilev <ozzy@declera.com>
+    Message-ID: <3D17E046.1060806@declera.com>
+    Status: Oded: +1 for dev branch
 
     * DLR handling logic change 
     Posted by: Oded Arbel <oded@m-wise.com>
