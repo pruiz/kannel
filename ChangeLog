@@ -1,3 +1,6 @@
+2003-08-05 Aarno Syvänen <aarno@gni.ch>
+    * doc/userguide/userguide.xml: Documented last commit
+
 2003-08-04 Aarno Syvänen <aarno@gni.ch>
      * wap/wsp_strings.def: Added new application ids from OMNA web page.
      * test/test_ppg.c: New command line option for adding a multipart part header (for
