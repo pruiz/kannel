@@ -1102,8 +1102,10 @@ static int parse_url(Octstr *url, Octstr **host, long *port, Octstr **path,
 	    *password = octstr_copy(url, at2 + 1, at - at2 - 1);
 	else
 	    *password = NULL;
+    
+    if (auth_sep != -1)
+        octstr_set_char(url, auth_sep, ':');
 
-	octstr_set_char(url, auth_sep, ':');
 	for(i = at2 + 1; i < at ; i++)
 	    octstr_set_char(url, i, '*');
 	host_len = host_len - at + prefix_len - 1;
