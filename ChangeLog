@@ -1,3 +1,8 @@
+2001-02-01  Uoti Urpala  <uau@wapit.com>
+
+	* gw/urltrans.c: Bugfix, find_default_translation() now returns
+	NULL if no default was given.
+
 2001-02-01  Richard Braakman  <dark@wapit.com>
 
 	* gw/smsbox.c: cleanup.  send_message does not destroy its msg

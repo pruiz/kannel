@@ -691,15 +691,14 @@ static URLTranslation *find_default_translation(URLTranslationList *trans)
     URLTranslation *t;
     int i;
 	
-    t = NULL;
     for (i = 0; i < list_len(trans->list); ++i) {
 	t = list_get(trans->list, i);
 	if (t->keyword != NULL && t->type != TRANSTYPE_SENDSMS
 	    && octstr_compare(octstr_imm("default"), 
 	    	    	      t->keyword) == 0)
-	    break;
+	    return t;
     }
-    return t;
+    return NULL;
 }
 
 
