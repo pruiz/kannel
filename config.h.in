@@ -1,6 +1,9 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
+/* Define if you want log file timestamps in localtime instead of GMT. */
+#undef LOG_TIMESTAMP_LOCALTIME
+
 /* Define if you have the ANSI C header files.  */
 #undef STDC_HEADERS
 

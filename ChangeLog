@@ -1,3 +1,10 @@
+Sat Apr 15 17:30:51 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* config.h.in, configure.in: Fixed --enable-docs option and added
+	(under protest but under pressure) a --enable-localtime option
+	for outputting time stamps in configuration files as local time
+	instead of GMT.
+
 2000-04-14  Richard Braakman  <dark@wapit.com>
 
 	* gwlib/thread.c: Got rid of some #ifdefs by assuming HAVE_PTHREAD_H.
