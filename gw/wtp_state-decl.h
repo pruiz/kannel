@@ -7,11 +7,12 @@
 
 ROW(LISTEN,
     RcvInvoke,
-    ((event->RcvInvoke.tcl == 2 || event->RcvInvoke.tcl == 1) &&
-    event->RcvInvoke.up_flag == 1 && wtp_tid_is_valid(event->RcvInvoke.tid)),
+    (event->RcvInvoke.tcl == 2 || event->RcvInvoke.tcl == 1) &&
+    event->RcvInvoke.up_flag == 1 && wtp_tid_is_valid(event->RcvInvoke.tid),
     {
      machine->u_ack=1;
      current_primitive=TRInvokeIndication;
+     debug(0,"handle_event: packing event");
      wsp_event=pack_wsp_event(current_primitive, event, machine);
      if (wsp_event == NULL)
         goto mem_error;

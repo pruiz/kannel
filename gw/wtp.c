@@ -282,7 +282,7 @@ void wtp_machine_dump(WTPMachine  *machine){
 
         if (machine != NULL){
 
-           debug(0, "Machine %p:", (void *) machine); 
+           debug(0, "The machine was %p:", (void *) machine); 
 	   #define INTEGER(name) \
            debug(0, "Integer field %s,%ld:", #name, machine->name)
 	   #define OCTSTR(name)  debug(0, "Octstr field %s :", #name);\
@@ -329,8 +329,6 @@ WTPMachine *create_or_find_wtp_machine(Msg *msg, WTPEvent *event){
                                     msg->wdp_datagram.destination_address,
                                     msg->wdp_datagram.destination_port,
                                     event->RcvInvoke.tid);
-                 debug(0, "machine named");
-                 wtp_machine_dump(machine);
               }
            }
 
@@ -426,9 +424,7 @@ WTPEvent *wtp_unpack_wdp_datagram(Msg *msg){
  *At last, the message itself. We remove the header.
  */
                octstr_delete(msg->wdp_datagram.user_data, 0, 4);
-               event->RcvInvoke.user_data=msg->wdp_datagram.user_data; 
-               info(0, "Invoke event packed"); 
-               wtp_event_dump(event);       
+               event->RcvInvoke.user_data=msg->wdp_datagram.user_data;     
             }
 /*
  *Message type is supposed to be result. This is impossible, so we have an
@@ -505,7 +501,6 @@ WTPEvent *wtp_unpack_wdp_datagram(Msg *msg){
                tpi_length=0;
            }
          }      
-         debug(0, "Return reached");
          return event;
 /*
  *Send Abort(WTPVERSIONZERO)
@@ -546,18 +541,20 @@ no_datagram:
 
 /*
  * Feed an event to a WTP state machine. Handle all errors yourself,
- * don't report them to the caller. Note: first include directive, then {}s.
+ * and report them to the caller. Note: first include directive, then {}s.
  * (Calling ROW macro expands everything between define and include, including
  * surplus {}s.)
  *
- * Returns: WSPEvent, if succeeded and an indication or a confirmation is 
+ * Returns: WSP event, if succeeded and an indication or a confirmation is 
  *          generated
  *          NULL, if succeeded and no indication or confirmation is generated
+ *          NULL, if failed (this information is superflous, but required by
+ *          the function call syntax.)
  */
 WSPEvent *wtp_handle_event(WTPMachine *machine, WTPEvent *event){
 
-     int current_state;
-     int current_event;
+     long current_state=machine->state;
+     long current_event=event->type;
      enum wsp_event current_primitive;
      WSPEvent *wsp_event=NULL;
      WTPTimer *timer=NULL;
@@ -567,19 +564,19 @@ WSPEvent *wtp_handle_event(WTPMachine *machine, WTPEvent *event){
         goto mem_error;
 
      #define ROW(state, event, condition, action, next_state)\
-             if (current_state == state && current_event == (event) &&\
+             if (current_state == state && current_event == event &&\
                 (condition)){\
                 action\
                 current_state=next_state;\
              } else 
      #include "wtp_state-decl.h"
-             {debug(0, "Out of synch error");
-             return NULL;}
+             {debug(0, "handle_event: out of synch error");}
+             return wsp_event;
 /*
  *Send Abort(CAPTEMPEXCEEDED)
  */
 mem_error:
-     debug(0, "Out of memory");
+     debug(0, "handle_event: out of memory");
      if (timer != NULL)
         wtp_timer_destroy(timer);
      free(timer);
@@ -682,7 +679,8 @@ WTPMachine *wtp_machine_create(void){
 /*        if (ret != EINVAL)
 	     ret=pthread_mutex_unlock(&list->mutex);*/
 
-        return machine;
+          debug(0, "create_machine: machine created");
+          return machine;
 /*
  *Message Abort(CAPTEMPEXCEEDED), to be added later. 
  *Thou shalt not leak memory... Note, that a macro could be called many times.
@@ -720,7 +718,7 @@ WTPMachine *name_machine(WTPMachine *machine, Octstr *source_address,
 
            machine->source_address=source_address;
            machine->source_port=source_port;
-           machine->source_address=destination_address;
+           machine->destination_address=destination_address;
            machine->destination_port=destination_port;
            machine->tid=tid;
 
@@ -784,7 +782,7 @@ void wsp_event_destroy(WSPEvent *event){
 void wsp_event_dump(WSPEvent *event){
 
         debug(0, "WSP event %p:", (void *) event);
-        debug(0, "type = %s", name_event(event->name));
+        debug(0, "The TYPE of the wsp event = %s", name_event(event->name));
         #define INTEGER(name) debug(0, "Integer field %s,%ld:", #name, p->name)
         #define OCTSTR(name) debug(0, "Octstr field %s:", #name);\
                              octstr_dump(p->name)
@@ -816,8 +814,7 @@ WSPEvent *pack_wsp_event(wsp_event wsp_name, WTPEvent *wtp_event,
          switch (wsp_name){
                 
 	        case TRInvokeIndication:
-                     event->TRInvokeIndication.ack_type=
-                            wtp_event->RcvInvoke.up_flag;
+                     event->TRInvokeIndication.ack_type=machine->u_ack;
                      event->TRInvokeIndication.user_data=
                             wtp_event->RcvInvoke.user_data;
                      event->TRInvokeIndication.tcl=wtp_event->RcvInvoke.tcl;
@@ -841,7 +838,8 @@ WSPEvent *pack_wsp_event(wsp_event wsp_name, WTPEvent *wtp_event,
 	        default:
                 break;
          }
-       
+         debug(0, "wtp.c: wsp event packed");
+         wsp_event_dump(event);
          return event;
 } 
 

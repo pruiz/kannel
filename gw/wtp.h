@@ -89,8 +89,14 @@ void wtp_machine_dump(WTPMachine  *machine);
 
 /*
  * Feed an event to a WTP state machine. Handle all errors yourself,
- * don't report them to the caller. Generate a pointer to WSP event, if an 
+ * and report them to the caller. Generate a pointer to WSP event, if an 
  * indication or a confirmation is required.
+ *
+ *Returns: WSPEvent, if succeeded and an indication or a confirmation is 
+ *          generated
+ *          NULL, if succeeded and no indication or confirmation is generated
+ *          NULL, if failed (this information is superflous, but required by
+ *          the function call syntax.)
  */
 WSPEvent *wtp_handle_event(WTPMachine *machine, WTPEvent *event);
 

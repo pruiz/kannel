@@ -11,14 +11,11 @@ MACHINE(
         {
         INTEGER(in_use);
         INTEGER(state);
-        INTEGER(send_tid);
-        INTEGER(rcv_tid);
         INTEGER(tid);
         OCTSTR(source_address);
         INTEGER(source_port);
         OCTSTR(destination_address);
         INTEGER(destination_port);
-        INTEGER(tcl);
         INTEGER(aec);
         INTEGER(rcr);
         INTEGER(u_ack);
@@ -34,14 +31,11 @@ MACHINE(
         {
         INTEGER(in_use);
         INTEGER(state);
-        INTEGER(send_tid);
-        INTEGER(rcv_tid);
         INTEGER(tid);
         OCTSTR(source_address);
         INTEGER(source_port);
         OCTSTR(destination_address);
         INTEGER(destination_port);
-        INTEGER(tcl);
         INTEGER(aec);
         INTEGER(rcr);
         INTEGER(u_ack);
