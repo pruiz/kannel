@@ -1,4 +1,8 @@
 2003-08-06  Stipe Tolj  <tolj@wapme-systems.de>
+    * test/test_ocstr_dump.c: added automatic convertion from hex values in
+      text/plain files to be converted to binary before cumping the content.
+
+2003-08-06  Stipe Tolj  <tolj@wapme-systems.de>
     * doc/userguide/userguide.xml, gw/wap_push_pap_mime.c: fixed compiler 
       warnings.
 
