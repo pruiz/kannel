@@ -221,8 +221,11 @@ error:
 }
 
 static int append_string(Octstr *os, Octstr *field) {
-	if (field == NULL && append_integer(os, -1) == -1)
-		return -1;
+	if (field == NULL) {
+		if (append_integer(os, -1) == -1)
+			return -1;
+		return 0;
+	}
 	if (append_integer(os, octstr_len(field)) == -1)
 		return -1;
 	if (octstr_insert(os, field, octstr_len(os)) == -1)
