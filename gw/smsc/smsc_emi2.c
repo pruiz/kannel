@@ -710,7 +710,6 @@ static int handle_operation(SMSCConn *conn, Connection *server,
 	}
 
 	msg->sms.smsc_id = octstr_duplicate(conn->id);
-	counter_increase(conn->received);
 	bb_smscconn_receive(conn, msg);
 	reply = emimsg_create_reply(52, emimsg->trn, 1, privdata->name);
 	if (emi2_emimsg_send(conn, server, reply) < 0) {
