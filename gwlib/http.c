@@ -31,6 +31,9 @@
 
 static unsigned char *internal_base6t4(unsigned char *pass);
 
+static double round_to_closest_integer(double x);
+
+
 /*****************************************************************************
 * Implementations
 */
@@ -1438,17 +1441,15 @@ char* httprequest_get_header_value(HTTPRequest *request, char *key) {
 static unsigned char *internal_base6t4(unsigned char *pass) {
 
     int ictr,ctr2;
-    unsigned char onec,*result, temp[10];
+    unsigned char onec, *result, temp[10];
     long twentyfour;
     unsigned char base64[64] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
-    result = gw_malloc(strlen(pass) + strlen(pass) / 4
-		       + strlen(pass) % 4 + 5);
+    result = gw_malloc(strlen(pass) + strlen(pass) / 4 + strlen(pass) % 4 + 5);
     result[0] = 0;
 
     twentyfour = 0;
     for (ictr=0;ictr<strlen(pass);ictr++) {
-	
 	switch(ictr%3) {
 	case 0:
 	    twentyfour=0l;
@@ -1460,38 +1461,56 @@ static unsigned char *internal_base6t4(unsigned char *pass) {
 	case 2:
 	    twentyfour+=(long)pass[ictr];
 	}
-		
 	if (ictr%3 == 2) {
 	    for(ctr2=3;ctr2>=0;ctr2--) {
-		onec = base64[(int)(twentyfour / rint(pow(64,ctr2)))];
+		onec = base64[(int)(twentyfour /
+				    round_to_closest_integer(pow(64,ctr2)))];
 		sprintf(temp, "%c", onec);
 		strcat(result, temp);
-		twentyfour = twentyfour % (long)rint(pow(64,ctr2));
+		twentyfour = twentyfour %
+		    (long)round_to_closest_integer(pow(64,ctr2));
 	    } 
 	}
     }
-	
     switch (ictr%3) {
     case 1:
 	for(ctr2=3;ctr2>1;ctr2--) {
-	    onec = base64[(int)(twentyfour / (long)rint(pow(64,ctr2)))];
+	    onec = base64[(int)(twentyfour /
+				(long)round_to_closest_integer(pow(64,ctr2)))];
 	    sprintf(temp, "%c", onec);
 	    strcat(result, temp);
-	    twentyfour = twentyfour % (long)rint(pow(64,ctr2));
+	    twentyfour = twentyfour %
+		(long)round_to_closest_integer(pow(64,ctr2));
 	}
 	strcat(result,"==");
 	break;
     case 2:
 	for(ctr2=3;ctr2>0;ctr2--) {
-	    onec = base64[(int)(twentyfour / rint(pow(64,ctr2)))];
+	    onec = base64[(int)(twentyfour /
+				(long)round_to_closest_integer(pow(64,ctr2)))];
 	    sprintf(temp, "%c", onec);
 	    strcat(result, temp);
-	    twentyfour = twentyfour % (long)rint(pow(64,ctr2));
+	    twentyfour = twentyfour %
+		(long)round_to_closest_integer(pow(64,ctr2));
 	}
 	strcat(result,"=");
     default:
 	break;
     }
-
+    
     return result;
+}
+
+
+/*
+ * rint - a new implementation for porting kannel to alpha.
+ */
+static double round_to_closest_integer(double x)
+{
+    int int_x = x;
+    
+    if((x - int_x) < 0.5) 
+	return int_x;
+    else
+	return (int) x+1;
 }
