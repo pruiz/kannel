@@ -28,8 +28,6 @@ do
 done
 
 kill -INT $bbpid
-
-kill -INT $bbpid
 wait
 
 if grep 'WARNING:|ERROR:|PANIC:' check_sendsms*.log >/dev/null ||
