@@ -1,3 +1,7 @@
+1999-11-17 Aarno Syvänen <syvanen@wapit.com>
+
+	* wtp.c: some bug fixing in function wtp_unpack_wdp_datagram 
+
 1999-11-17    <rpr@rpr.wapit.com>
 
 	* wapitlib.c, wapitlib.h: added functions mutex_lock and
