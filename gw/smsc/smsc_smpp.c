@@ -617,9 +617,9 @@ static void send_messages(SMPP *smpp, Connection *conn, long *pending_submits)
         }
         /* check for write errors */
         if (send_pdu(conn, smpp->conn->id, pdu) != -1) {
-            smpp_pdu_destroy(pdu);
             os = octstr_format("%ld", pdu->u.submit_sm.sequence_number);
             dict_put(smpp->sent_msgs, os, msg);
+            smpp_pdu_destroy(pdu);
             octstr_destroy(os);
             ++(*pending_submits);
             /*
