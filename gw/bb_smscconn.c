@@ -361,9 +361,7 @@ SMSCConn *smsc2_find(Octstr *id)
 
     for (i = 0; i < list_len(smsc_list); i++) {
         conn = list_get(smsc_list, i);
-        debug("",0,"XXX: %d is '%s'", i, octstr_get_cstr(conn->id));
         if (conn != NULL && octstr_compare(conn->id, id) == 0) {
-            debug("",0,"XXX gotcha");
             break;
         }
     }
