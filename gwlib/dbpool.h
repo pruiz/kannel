@@ -5,13 +5,13 @@
 #ifndef GWDBPOOL_H
 #define GWDBPOOL_H
 
-#if defined(HAVE_MYSQL) || defined(HAVE_SDB)
+#if defined(HAVE_MYSQL) || defined(HAVE_SDB) || defined(HAVE_ORACLE)
 #define HAVE_DBPOOL 1
 #endif
 
 /* supported databases for connection pools */
-enum dbpool_type {
-	DBPOOL_MYSQL, DBPOOL_SDB
+enum db_type {
+	DBPOOL_MYSQL, DBPOOL_SDB, DBPOOL_ORACLE
 };
 
 
@@ -27,19 +27,44 @@ typedef struct DBPool DBPool;
  * re-storage into the pool (also disallowing to insert the conn into an
  * other pool).
  */
-typedef struct {
+ typedef struct {
     void *conn; /* the pointer holding the database specific connection */
     DBPool *pool; /* pointer of the pool where this connection belongs to */
 }  DBPoolConn;
 
+typedef struct {
+    Octstr *host;
+    Octstr *username;
+    Octstr *password;
+    Octstr *database;
+} MySQLConf;
+
+/*
+ * TODO Think how to get rid of it and have generic Conf struct
+ */
+typedef struct {
+    Octstr *tnsname;
+    Octstr *username;
+    Octstr *password;
+} OracleConf;
+
+typedef struct {
+    Octstr *url;
+} SDBConf;
+
+typedef union {
+    MySQLConf *mysql;
+    SDBConf *sdb;
+    OracleConf *oracle;
+} DBConf;
+
 /*
  * Create a database pool with #connections of connections. The pool
- * is stored within a queue list. Threads that want to use the pool
- * have to register before extracting connections.
+ * is stored within a queue list.
  * Returns a pointer to the pool object on success or NULL if the
  * creation fails.
  */
-DBPool *dbpool_create(enum dbpool_type type, void *conf, unsigned int connections); 
+DBPool *dbpool_create(enum db_type db_type, DBConf *conf, unsigned int connections);
 
 /*
  * Destroys the database pool. Includes also shutdowning all existing
@@ -51,7 +76,7 @@ void dbpool_destroy(DBPool *p);
  * Increase the connection size of the pool by #conn connections.
  * Beware that you can't increase a pool size to more then the initial
  * dbpool_create() call defined and opened the maximum pool connections.
- * Returns how many connections have been additionally created and 
+ * Returns how many connections have been additionally created and
  * inserted to the pool.
  */
 unsigned int dbpool_increase(DBPool *p, unsigned int conn);
@@ -73,23 +98,27 @@ long dbpool_conn_count(DBPool *p);
 
 /*
  * Gets and active connection from the pool and returns it.
- * The caller can use it then for queuery oeprations and has to put it
+ * The caller can use it then for queuery operations and has to put it
  * back into the pool via dbpool_conn_produce(conn).
- * If no connection is in pool or some error occures, returns NULL.
+ * If no connection is in pool and DBPool is not in destroying phase then
+ * will block until connection is available otherwise returns NULL.
  */
-void *dbpool_conn_consume(DBPool *p); 
+DBPoolConn *dbpool_conn_consume(DBPool *p);
 
 /*
  * Returns a used connection to the pool again.
  * The connection is returned to it's domestic pool for further extraction
  * using dbpool_conn_consume().
  */
-void dbpool_conn_produce(DBPoolConn *pc);
+void dbpool_conn_produce(DBPoolConn *conn);
+
+int inline dbpool_conn_select(DBPoolConn *conn, const Octstr *sql, List **result);
+int inline dbpool_conn_update(DBPoolConn *conn, const Octstr *sql);
 
 /*
- * Perfoms a check of all connections within the pool and tries to 
+ * Perfoms a check of all connections within the pool and tries to
  * re-establish the same ammount of connections if there are broken
- * connections within the pool. 
+ * connections within the pool.
  * (This operation can only be performed if the database allows such
  * operations by its API.)
  * Returns how many connections within the pool have been checked and

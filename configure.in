@@ -524,14 +524,14 @@ AC_ARG_ENABLE(sms,
 ])
 
 
-dnl Implement the --with-ssl option. 
+dnl Implement the --with-ssl option.
 
 AC_CONFIG_SECTION([Configuring OpenSSL support])
 AC_ARG_WITH(ssl,
 [  --with-ssl[=DIR]        where to look for OpenSSL libs and header files
                           DIR points to the installation [/usr/local/ssl]],
-[ if test -d "$withval"; then 
-    ssllib="$withval/lib"; 
+[ if test -d "$withval"; then
+    ssllib="$withval/lib";
     sslinc="$withval/include"
   else
     AC_MSG_ERROR(Unable to find OpenSSL libs and/or directories at $withval)
@@ -557,7 +557,7 @@ AC_ARG_ENABLE(ssl,
 if test "$ssl" = "yes" ; then
   dnl test only if --with-ssl has not been used
   if test "x$ssllib" = "x" && test "x$sslinc" = "x"; then
-    for loc in /usr/lib /usr/local/ssl/lib /usr/local/openssl/lib; do 
+    for loc in /usr/lib /usr/local/ssl/lib /usr/local/openssl/lib; do
       if test -f "$loc/libssl.a"; then
         ssllib="$loc"
       fi
@@ -573,7 +573,7 @@ if test "$ssl" = "yes" ; then
 fi
 
 
-dnl Implement the SSL library checking routine. 
+dnl Implement the SSL library checking routine.
 dnl This will define HAVE_LIBSSL in config.h
 
 if test "x$ssllib" != "x" && test "x$sslinc" != "x"; then
@@ -593,7 +593,7 @@ if test "x$ssllib" != "x" && test "x$sslinc" != "x"; then
       AC_CHECK_HEADERS(openssl/x509.h openssl/rsa.h openssl/crypto.h \
                        openssl/pem.h openssl/ssl.h openssl/err.h)
       AC_MSG_CHECKING(whether the OpenSSL library is multithread-enabled)
-      AC_TRY_RUN([ 
+      AC_TRY_RUN([
         #define OPENSSL_THREAD_DEFINES
         #include <openssl/opensslconf.h>
         int main(void) {
@@ -631,18 +631,18 @@ fi
 
 AC_CONFIG_SECTION([Configuring DB support])
 
-dnl Implement the --with-mysql option. 
+dnl Implement the --with-mysql option.
 
 AC_ARG_WITH(mysql,
 [  --with-mysql[=DIR]      where to look for MySQL libs and header files
                           DIR points to the installation [/usr/local/mysql]],
-[ if test -d "$withval"; then 
-    mysqlloc="$withval"; 
+[ if test -d "$withval"; then
+    mysqlloc="$withval";
     dnl check for MySQL 4.x style mysql_config information
     PATH="$PATH:$mysqlloc/bin"
     AC_PATH_PROGS(MYSQL_CONFIG, mysql_config, no)
     if test "$MYSQL_CONFIG" != "no"; then
-      dnl mysql-4.x style 
+      dnl mysql-4.x style
       AC_MSG_CHECKING([mysql version])
       mysql_version=`$MYSQL_CONFIG --version`
       AC_MSG_RESULT([$mysql_version])
@@ -674,25 +674,25 @@ else
     AC_PATH_PROGS(MYSQL_CONFIG, mysql_config, no)
     dnl check for MySQL 4.x style mysql_config information
     if test "$MYSQL_CONFIG" = "no"; then
-      dnl mysql-3.x style 
+      dnl mysql-3.x style
       found=""
-      for loc in /usr /usr/local ; do 
-        if test "x$found" = "x" ; then 
+      for loc in /usr /usr/local ; do
+        if test "x$found" = "x" ; then
           AC_MSG_CHECKING([for MySQL client support in])
           AC_MSG_RESULT($loc)
-          AC_CHECK_FILE("$loc/include/mysql/mysql.h", 
+          AC_CHECK_FILE("$loc/include/mysql/mysql.h",
             [CFLAGS="$CFLAGS -I$loc/include/mysql"; LIBS="$LIBS -L$loc/lib/mysql -lmysqlclient"]; found=1,
-            [AC_CHECK_FILE("$loc/include/mysql.h", 
+            [AC_CHECK_FILE("$loc/include/mysql.h",
               [CFLAGS="$CFLAGS -I$loc/include"; LIBS="$LIBS -L$loc/lib -lmysqlclient"]; found=1
              )]
           )
         fi
       done
-      if test "x$found" != "x1" ; then 
+      if test "x$found" != "x1" ; then
         AC_MSG_ERROR([Unable to find mysql.h, please provide a --with-mysql=<dir> location])
       fi
     else
-      dnl mysql-4.x style 
+      dnl mysql-4.x style
       AC_MSG_CHECKING([mysql version])
       mysql_version=`$MYSQL_CONFIG --version`
       AC_MSG_RESULT([$mysql_version])
@@ -701,16 +701,16 @@ else
     fi
   else
     AC_MSG_RESULT(searching in $mysqlloc)
-    AC_CHECK_FILE("$mysqlloc/include/mysql/mysql.h", 
+    AC_CHECK_FILE("$mysqlloc/include/mysql/mysql.h",
       [CFLAGS="$CFLAGS -I$mysqlloc/include/mysql"; LIBS="$LIBS -L$mysqlloc/lib/mysql -lmysqlclient"],
-      [AC_CHECK_FILE("$mysqlloc/include/mysql.h", 
+      [AC_CHECK_FILE("$mysqlloc/include/mysql.h",
         [CFLAGS="$CFLAGS -I$mysqlloc/include"; LIBS="$LIBS -L$mysqlloc/lib -lmysqlclient"],
         [AC_MSG_ERROR([Unable to find mysql.h under location $mysqlloc])]
       )]
     )
   fi
   AC_CHECK_HEADERS(mysql/mysql.h mysql/mysql_com.h mysql/mysql_version.h)
-  AC_CHECK_LIB(mysqlclient, mysql_init) 
+  AC_CHECK_LIB(mysqlclient, mysql_init)
   AC_DEFINE(HAVE_MYSQL)
   AC_MSG_CHECKING([whether to compile with MySQL support])
   AC_MSG_RESULT(yes)
@@ -753,12 +753,59 @@ AC_ARG_ENABLE(sdb,
 ])
 
 
+dnl Implement the --enable-oracle option. This will set HAVE_ORACLE in config.h
+dnl accordingly and enable the usage of the OCI routines.
+
+AC_MSG_CHECKING([whether to compile with Oracle support])
+AC_ARG_ENABLE(oracle,
+[  --enable-oracle         enable ORACLE storage [disabled]],
+[
+    AC_MSG_RESULT(searching)
+        AC_ARG_WITH(
+                oracle-includes,
+                [  --with-oracle-includes=DIR  adds oracle include paths],
+                [ ORACLE_INCLUDE_PATH="$withval" ],
+                [ ORACLE_INCLUDE_PATH="$ORACLE_HOME/rdbms/demo $ORACLE_HOME/rdbms/public" ]
+        )
+        for a in $ORACLE_INCLUDE_PATH
+        do
+                CPPFLAGS="$CPPFLAGS -I$a"
+        done
+        AC_MSG_CHECKING([for oci.h ])
+        AC_TRY_CPP([#include <oci.h>],AC_MSG_RESULT(yes), AC_MSG_ERROR([oci.h not found]))
+        CFLAGS="$CFLAGS $CPPFLAGS"
+
+        AC_ARG_WITH(
+                oracle-libs,
+                [  --with-oracle-libs=DIR  adds oracle library path],
+                [ ORACLE_LIB_PATH="$withval" ],
+                [ ORACLE_LIB_PATH="$ORACLE_HOME/lib" ]
+        )
+        for a in $ORACLE_LIB_PATH
+        do
+                LIBS="$LIBS -L$a"
+        done
+        AC_CHECK_LIB(clntsh,OCIEnvCreate,[ LIBS="$LIBS -lclntsh" ],exit)
+        if test -f "$ORACLE_HOME/lib/libwtc8.so"
+        then
+                AC_CHECK_LIB(wtc8,wtcstu,[ LIBS="$LIBS -lwtc8" ],AC_MSG_ERROR([Oracle libwtc8.so not found]))
+        else
+                AC_CHECK_LIB(wtc9,wtcstu,[ LIBS="$LIBS -lwtc9" ],AC_MSG_ERROR([Oracle libwtc9.so not found]))
+        fi
+
+    AC_DEFINE(HAVE_ORACLE)
+    AC_MSG_CHECKING([whether to compile with Oracle support])
+    AC_MSG_RESULT(yes)
+],
+[AC_MSG_RESULT(disabled)])
+
+
 dnl Implement the --with-dlr option.
-dnl Checks which external DLR storage should be used. 
+dnl Checks which external DLR storage should be used.
 
 AC_ARG_WITH(dlr,
-[  --with-dlr[=TYPE TYPE]  select DLR storage to use: internal/mysql/sdb [internal]], 
-[ AC_CONFIG_SECTION([Configuring DLR support]) 
+[  --with-dlr[=TYPE TYPE]  select DLR storage to use: internal/mysql/sdb [internal]],
+[ AC_CONFIG_SECTION([Configuring DLR support])
   for myval in $withval; do
     AC_MSG_CHECKING([for DLR storage type $myval])
     case "$myval" in

@@ -1,174 +1,160 @@
 /*
- * dbpool.c - implement database connection pool
+ * dbpool.c - implement generic database connection pool
+ *
+ * Stipe Tolj <tolj@wapme-systems.de>
+ *      2003 Initial version.
+ * Alexander Malysh <a.malysh@centrium.de>
+ *      2003 Made dbpool more generic.
  */
 
 #include "gwlib.h"
-
 #include "dbpool.h"
+#include "dbpool_p.h"
 
-#ifdef HAVE_MYSQL
-#include <mysql.h>
-#endif
 
 #ifdef HAVE_DBPOOL
 
-typedef struct {
-    Octstr *host;
-    Octstr *username;
-    Octstr *password;
-    Octstr *database;
-} MySQLConf;
 
-typedef struct {
-    Octstr *url;
-} SDBConf;
+#include "dbpool_mysql.c"
+#include "dbpool_oracle.c"
 
 
-struct DBPool
+static inline void dbpool_conn_destroy(DBPoolConn *conn)
 {
-    List *pool; /* queue representing the pool */
-    enum dbpool_type type;
-    unsigned int max_size;
-    void *conf; /* the database type specific configuration block */
-};
+    gw_assert(conn != NULL);
 
-/* Increase pool size by #conn connections. */
-unsigned int dbpool_increase_mysql(DBPool *p, unsigned int c)
-{
-    unsigned int i, n = 0;
-    long len;
-    MySQLConf *conf;
+    if (conn->conn != NULL)
+        conn->pool->db_ops->close(conn->conn);
 
-    gw_assert(p->conf != NULL);
-
-    conf = p->conf;
-
-    list_lock(p->pool);
-
-    /* ensure we don't increase more items than the max_size border */
-    c = (len = list_len(p->pool)) + c > p->max_size ? p->max_size - len : c;
-
-    for (i = 0; i < c; i++) {
-        MYSQL *mysql;
-        DBPoolConn *pc;
-
-        /* pre-allocate */
-        mysql = gw_malloc(sizeof(MYSQL));
-        pc = gw_malloc(sizeof(DBPoolConn));
-        
-        /* assign pool connection */
-        pc->conn = mysql;
-        pc->pool = p;
-                                   
-        if (!mysql_init(pc->conn)) {
-            error(0, "MYSQL: init failed!");
-            error(0, "MYSQL: %s", mysql_error(pc->conn));
-        }
-
-        if (!mysql_real_connect(mysql, octstr_get_cstr(conf->host), 
-                                  octstr_get_cstr(conf->username),
-                                  octstr_get_cstr(conf->password),
-                                  octstr_get_cstr(conf->database), 0, NULL, 0)) {
-            error(0, "MYSQL: can not connect to database!");
-            error(0, "MYSQL: %s", mysql_error(pc->conn));
-        } else {
-       
-            /* drop the connection to the pool */
-            list_produce(p->pool, pc);
-            n++;
-
-            info(0,"Connected to mysql server at %s.", octstr_get_cstr(conf->host));
-            debug("gwlib.dbpool", 0, "MYSQL: server version %s, client version %s.",  
-                  mysql_get_server_info(pc->conn), mysql_get_client_info()); 
-        }
-    }
-    list_unlock(p->pool);
-
-    return n;
-}
-
-
-/* Initialize the mysql database config block */
-static void dbpool_startup_mysql(DBPool *p, void *data)
-{
-    list_add_producer(p->pool);
-    p->conf = data;
-}
-
-
-static void dbpool_conn_destroy(DBPoolConn *conn)
-{
-    gw_assert(conn != NULL && conn->conn != NULL);
-    mysql_close(conn->conn);
-    gw_free(conn->conn);
     gw_free(conn);
 }
-
 
 /*************************************************************************
  * public functions
  */
 
-DBPool *dbpool_create(enum dbpool_type type, void *data, unsigned int connections) 
+DBPool *dbpool_create(enum db_type db_type, DBConf *conf, unsigned int connections)
 {
     DBPool *p;
 
-    p = gw_malloc(sizeof(DBPool));
-    p->pool = list_create();
-    p->type = type;
-    p->max_size = connections;
-    p->conf = NULL;
+    if (conf == NULL)
+        return NULL;
 
-    dbpool_startup_mysql(p, data);
-    dbpool_increase_mysql(p, connections);
+    p = gw_malloc(sizeof(DBPool));
+    gw_assert(p != NULL);
+    p->pool = list_create();
+    list_add_producer(p->pool);
+    p->max_size = connections;
+    p->curr_size = 0;
+    p->conf = conf;
+    p->db_type = db_type;
+
+    switch(db_type) {
+#ifdef HAVE_MYSQL
+        case DBPOOL_MYSQL:
+            p->db_ops = &mysql_ops;
+            break;
+#endif
+#ifdef HAVE_ORACLE
+        case DBPOOL_ORACLE:
+            p->db_ops = &oracle_ops;
+            break;
+#endif
+        case DBPOOL_SDB:
+            panic(0, "DBPOOL for libsdb not yet implemented");
+        default:
+            panic(0, "Unknown dbpool type defined.");
+    }
+
+    /*
+     * XXX what is todo here if not all connections
+     * where established ???
+     */
+    dbpool_increase(p, connections);
 
     return p;
 }
 
 void dbpool_destroy(DBPool *p)
 {
-    gw_assert(p != NULL && p->pool != NULL);
 
+    if (p == NULL)
+        return; /* nothing todo here */
+
+    gw_assert(p->pool != NULL && p->db_ops != NULL);
+
+    list_remove_producer(p->pool);
     list_destroy(p->pool, (void*) dbpool_conn_destroy);
 
-    gw_free(p->conf);
+    p->db_ops->conf_destroy(p->conf);
     gw_free(p);
 }
 
 
-unsigned int dbpool_increase(DBPool *p, unsigned int conn) 
+unsigned int dbpool_increase(DBPool *p, unsigned int count)
 {
-    return dbpool_increase_mysql(p, conn);
+    unsigned int i, opened = 0;
+
+    gw_assert(p != NULL && p->conf != NULL && p->db_ops != NULL && p->db_ops->open != NULL);
+
+
+    /* lock dbpool for updates */
+    list_lock(p->pool);
+
+    /* ensure we don't increase more items than the max_size border */
+    for (i=0; i < count && p->curr_size < p->max_size; i++) {
+        void *conn = p->db_ops->open(p->conf);
+        if (conn != NULL) {
+            DBPoolConn *pc = gw_malloc(sizeof(DBPoolConn));
+            gw_assert(pc != NULL);
+
+            pc->conn = conn;
+            pc->pool = p;
+
+            p->curr_size++;
+            opened++;
+            list_produce(p->pool, pc);
+        }
+    }
+
+    /* unlock dbpool for updates */
+    list_unlock(p->pool);
+
+    return opened;
 }
-    
+
 
 unsigned int dbpool_decrease(DBPool *p, unsigned int c)
 {
-    long len;
     unsigned int i;
 
-    gw_assert(p != NULL && p->pool != NULL);
+    gw_assert(p != NULL && p->pool != NULL && p->db_ops != NULL && p->db_ops->close != NULL);
 
+    /* lock dbpool for updates */
     list_lock(p->pool);
 
-    /* Ensure we don't decrease more items then ammount in the queue */
-    c = (len = list_len(p->pool)) < c ? len : c;
-
-    /* 
-     * Ensure we don't try to decrease more then available in pool,
-     * because this would block while list_consume().
+    /*
+     * Ensure we don't try to decrease more then available in pool.
      */
     for (i = 0; i < c; i++) {
         DBPoolConn *pc;
-        
-        pc = list_consume(p->pool);
+
+        /* list_extract_first doesn't block even if no conn here */
+        pc = list_extract_first(p->pool);
+
+        /* no conn availible anymore */
+        if (pc == NULL)
+            break;
 
         /* close connections and destroy pool connection */
         dbpool_conn_destroy(pc);
+        p->curr_size--;
     }
+
+    /* unlock dbpool for updates */
     list_unlock(p->pool);
 
-    return c;
+    return i;
 }
 
 
@@ -180,9 +166,16 @@ long dbpool_conn_count(DBPool *p)
 }
 
 
-void *dbpool_conn_consume(DBPool *p)
+DBPoolConn *dbpool_conn_consume(DBPool *p)
 {
     DBPoolConn *pc;
+
+    gw_assert(p != NULL && p->pool != NULL);
+
+    /* check if we have any connection, if no return NULL; otherwise we have deadlock */
+    if (p->curr_size < 1)
+        panic(0, "DBPOOL: Deadlock detected!!!");
+
 
     /* garantee that you deliver a valid connection to the caller */
     while ((pc = list_consume(p->pool)) != NULL) {
@@ -191,9 +184,20 @@ void *dbpool_conn_consume(DBPool *p)
          * XXX check that the connection is still existing.
          * Is this a performance bottle-neck?!
          */
-        if (!pc->conn || mysql_ping(pc->conn) != 0) {
-            /* something was wrong, drop the connection */
+        if (!pc->conn || (p->db_ops->check && p->db_ops->check(pc->conn) != 0)) {
+            /* something was wrong, reinitialize the connection */
+            /* lock dbpool for update */
+            list_lock(p->pool);
             dbpool_conn_destroy(pc);
+            p->curr_size--;
+            /* unlock dbpool for update */
+            list_unlock(p->pool);
+            /*
+             * maybe not needed, just try to get next connection, but it
+             * can be dangeros if all connections where broken, then we will
+             * block here for ever.
+             */
+            dbpool_increase(p, 1);
         } else {
             break;
         }
@@ -205,35 +209,73 @@ void *dbpool_conn_consume(DBPool *p)
 
 void dbpool_conn_produce(DBPoolConn *pc)
 {
+    gw_assert(pc != NULL && pc->conn != NULL && pc->pool != NULL && pc->pool->pool != NULL);
+
     list_produce(pc->pool->pool, pc);
 }
 
 
 unsigned int dbpool_check(DBPool *p)
 {
-    long i, len, n = 0;
+    long i, len, n = 0, reinit = 0;
 
-    gw_assert(p != NULL && p->pool != NULL);
+    gw_assert(p != NULL && p->pool != NULL && p->db_ops != NULL);
+
+    /*
+     * First check if db_ops->check function pointer is here.
+     * NOTE: db_ops->check is optional, so if it is not there, then
+     * we have nothing todo and we simple return list length.
+     */
+    if (p->db_ops->check == NULL)
+        return list_len(p->pool);
 
     list_lock(p->pool);
-    
     len = list_len(p->pool);
     for (i = 0; i < len; i++) {
         DBPoolConn *pconn;
-        
+
         pconn = list_get(p->pool, i);
-        if (mysql_ping(pconn->conn) != 0) {
-            /* something was wrong, drop the connection */
+        if (p->db_ops->check(pconn->conn) != 0) {
+            /* something was wrong, reinitialize the connection */
             list_delete(p->pool, i, 1);
             dbpool_conn_destroy(pconn);
+            p->curr_size--;
+            reinit++;
+            len--;
+            i--;
         } else {
             n++;
         }
     }
     list_unlock(p->pool);
 
+    /* reinitialize brocken connections */
+    if (reinit > 0)
+        n += dbpool_increase(p, reinit);
+
+
     return n;
 }
-        
 
+int inline dbpool_conn_select(DBPoolConn *conn, const Octstr *sql, List **result)
+{
+    if (sql == NULL || conn == NULL)
+        return -1;
+
+    if (conn->pool->db_ops->select == NULL)
+        return -1; /* may be panic here ??? */
+
+    return conn->pool->db_ops->select(conn->conn, sql, result);
+}
+
+int inline dbpool_conn_update(DBPoolConn *conn, const Octstr *sql)
+{
+    if (sql == NULL || conn == NULL)
+        return -1;
+
+    if (conn->pool->db_ops->update == NULL)
+        return -1; /* may be panic here ??? */
+
+    return conn->pool->db_ops->update(conn->conn, sql);
+}
 #endif /* HAVE_DBPOOL */

@@ -134,6 +134,9 @@
 /* Define if you have and want to use the sdb client library (-lsdb) */
 #undef HAVE_SDB
 
+/* Define if you have and want to use the OCI library */
+#undef HAVE_ORACLE
+
 /* Define if you want to use the MySQL support for DLR (delivery reports) */
 #undef DLR_MYSQL
 
