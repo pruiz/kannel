@@ -136,10 +136,8 @@ Octstr *hostname = NULL;
 Octstr *gateway_addr = NULL;
 double interval = 1.0;
 unsigned short port = 9201;
-int max_send = 1,
-    tid_new = 0;
-unsigned short tid_addition = 1,
-         tid = 0; 
+int max_send = 1;
+unsigned short tid_addition = 1;
 Mutex *mutex;
 int threads = 1;
 int num_sent = 0;
@@ -185,6 +183,15 @@ static void set_tid(Octstr *hdr, int tid) {
 	octstr_set_char(hdr, 2, (unsigned char) tid);
 }
 
+/* Use this only on Invoke packets, the others have no tid_new field */
+static void set_tid_new(Octstr *hdr) {
+	int c;
+
+	c = octstr_get_char(hdr, 3);
+	c |= 0x40;
+	octstr_set_char(hdr, 3, c);
+}
+
 
 #ifndef min
 #define min(a,b) (a < b ? a : b)
@@ -211,21 +218,11 @@ static char *choose_message(char **urls, int num_urls) {
     /* the following doesn't give an even distribution, but who cares */
     return urls[rand() % num_urls];
 }
-/* returns TID */
-static unsigned short get_tid(void){ 
-    unsigned short old_tid;
-/* Mutexes are not enough to make tids thread-safe. In addition, every thread
-   must have a tid space of its own, otherwise spurious duplicates will be
-   generated. */
-    old_tid = tid;
-    tid += tid_addition;
-/* When tid is wrapped-up, we must turn on the tid_new-flag*/   
-    if (tid < old_tid)
-       tid_new = 1;
 
-    tid %= 1 << 15;
-
-    return tid;
+/* returns next tid, given current tid.  Every thread has its own
+ * port, so has its own tid space. */
+static unsigned short next_tid(unsigned short old_tid) { 
+    return (old_tid + tid_addition) % (1 << 15);
 }
 
 
@@ -274,7 +271,7 @@ static int ReadVarIntLen( const unsigned char *buf )
 */
 static int
 wap_msg_send( int fd, unsigned char * hdr,
-            int hdr_len, const unsigned short * tid, unsigned char * data,
+            int hdr_len, unsigned short tid, int tid_new, unsigned char * data,
             int data_len )
 {
     int ret;
@@ -284,15 +281,14 @@ wap_msg_send( int fd, unsigned char * hdr,
     if (hdr != NULL)
     	octstr_append_data(datagram, hdr, hdr_len);
 
-    if (tid != NULL) {
-	set_tid(datagram, *tid);
-        if (get_wtp_pdu_type(datagram) == WTP_PDU_INVOKE)
-        {
-	    /* request ack every time */
-	    int c;
-	    c = octstr_get_char(datagram, 3);
-	    octstr_set_char(datagram, 3, c | 0x10);
-        }
+    set_tid(datagram, tid);
+    if (get_wtp_pdu_type(datagram) == WTP_PDU_INVOKE) {
+	/* request ack every time */
+	int c;
+	c = octstr_get_char(datagram, 3);
+	octstr_set_char(datagram, 3, c | 0x10);
+	if (tid_new)
+		set_tid_new(datagram);
     }
 
     if (data != NULL)
@@ -385,7 +381,7 @@ wap_msg_recv( int fd, const char * hdr, int hdr_len,
             else if (GET_WTP_PDU_TYPE(msg) == WTP_PDU_ACK &&
                      GET_TID(msg) == tid) {
                 print_msg( "Received tid verification", msg, msg_len );
-                wap_msg_send( fd, WTP_TidVe, sizeof(WTP_TidVe), &tid,
+                wap_msg_send( fd, WTP_TidVe, sizeof(WTP_TidVe), tid, 0,
                               NULL, 0 );
             }
             else if (GET_WTP_PDU_TYPE(msg) == WTP_PDU_ABORT) {
@@ -441,6 +437,8 @@ client_session( void * arg)
     unsigned char reply_hdr[32];
     long timeout = 10;  /* wap gw is broken if no input */
     unsigned short tid = 0;
+    unsigned short old_tid;
+    int tid_new;
     int connection_retries = 0;
     int i_this;
 
@@ -465,9 +463,11 @@ client_session( void * arg)
         /*
         **  Connect, save sid from reply and finally ack the reply
         */
-        tid = get_tid();
+	old_tid = tid;
+        tid = next_tid(old_tid);
+	tid_new = (tid < old_tid);  /* Did we wrap? */
         ret = wap_msg_send( fd, WSP_Connect, sizeof(WSP_Connect),
-                            &tid, NULL, 0 );
+                            tid, tid_new, NULL, 0 );
 
         if (ret == -1) panic(0, "Send WSP_Connect failed");
 
@@ -489,14 +489,14 @@ client_session( void * arg)
             if (connection_retries++ > 3) {
                 panic(0, "Cannot connect WAP GW!");
             }
-            wap_msg_send( fd, WTP_Abort, sizeof(WTP_Abort), &tid,
+            wap_msg_send( fd, WTP_Abort, sizeof(WTP_Abort), tid, tid_new,
                           NULL, 0 );
             continue;
         }
         else {
             connection_retries = 0;
         }
-        ret = wap_msg_send( fd, WTP_Ack, sizeof(WTP_Ack), &tid,
+        ret = wap_msg_send( fd, WTP_Ack, sizeof(WTP_Ack), tid, tid_new,
                             NULL, 0 );
 
         if (ret == -1) panic(0, "Send WTP_Ack failed");
@@ -504,13 +504,15 @@ client_session( void * arg)
         /*
         **  Request WML page with the given URL
         */
-        tid = get_tid();
+	old_tid = tid;
+        tid = next_tid(old_tid);
+	tid_new = (tid < old_tid);  /* Did we wrap? */
         url = choose_message(urls, num_urls);
         url_len = strlen(url);
         url_off = StoreVarInt( buf, url_len );
         memcpy( buf+url_off, url, url_len );
-        ret = wap_msg_send( fd, WSP_Get, sizeof(WSP_Get), &tid, buf,
-                            url_len+url_off );
+        ret = wap_msg_send( fd, WSP_Get, sizeof(WSP_Get), tid, tid_new,
+			    buf, url_len+url_off );
         if (ret == -1) break;
 
         CONSTRUCT_EXPECTED_REPLY_HDR( reply_hdr, WSP_Reply, tid );
@@ -518,16 +520,16 @@ client_session( void * arg)
                             tid, buf, sizeof(buf), timeout );
         if (ret == -1) break;
 
-        ret = wap_msg_send( fd, WTP_Ack, sizeof(WTP_Ack), &tid, NULL,
-                            0 );
+        ret = wap_msg_send( fd, WTP_Ack, sizeof(WTP_Ack), tid, tid_new,
+			    NULL, 0 );
 
         if (ret == -1) break;
 
         /*
         **  Finally disconnect with the sid returned by connect reply
         */
-        ret = wap_msg_send( fd, WSP_Disconnect,
-                            sizeof(WSP_Disconnect), &tid, sid, sid_len );
+        ret = wap_msg_send( fd, WSP_Disconnect, sizeof(WSP_Disconnect),
+		            tid, tid_new, sid, sid_len );
 
         if (ret == -1) break;
 
