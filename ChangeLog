@@ -1,5 +1,34 @@
 2000-06-17  Richard Braakman  <dark@wapit.com>
 
+	* Replaced capabilities parsing.  New file gw/wsp_caps.[ch] defines
+	a structure to represent capabilities, and some operations on it.
+	WSP layer passes capability requests up to the Application layer,
+	which can respond to some and ignore others.  WSP layer then completes
+	the capabilities reply when it generates the ConnectReply PDU.
+	See negotiate_capabilities() function in wap-appl.c for more info.
+
+	* Added CAPABILITIES type to wap-events and wsp-session-machine.
+
+	* Added request_caps and reply_caps fields to WSP session machine,
+	removed most of the other capability-related fields except
+	client_SDU_size and MOR_push (which are the only ones we support
+	and need to remember).
+
+	* gwlib/octstr.[ch]: New function octstr_extract_uintvar.
+
+	* gw/wsp-session.c: unpack_caps, unpack_uint8, and unpack_uintvar
+	removed.
+
+	* Removed unused SESSION_MACHINE type from wap-events.
+
+	* test/drive_wapbox: Supply the same capability values as the
+	Motorola Timeport does, for testing.
+
+	* Corrected:
+	gw/cookies.c:88: warning: char format, Octstr arg (arg 3)
+
+2000-06-17  Richard Braakman  <dark@wapit.com>
+
 	* test/drive_wapbox.c: Defined wtp_types enum, because we can
 	no longer steal the values we need from wtp.h.
 

@@ -11,6 +11,7 @@
 	!defined(ADDRTUPLE) || \
 	!defined(COOKIES) || \
 	!defined(METHODMACHINES) || \
+	!defined(CAPABILITIES) || \
 	!defined(MACHINE)
 #error "Some required macro is missing."
 #endif
@@ -22,15 +23,11 @@ MACHINE(
 	INTEGER(session_id)
 	ADDRTUPLE(addr_tuple)
 
-	INTEGER(set_caps)
-	INTEGER(protocol_options)
-	INTEGER(MOR_method)
+	CAPABILITIES(request_caps)
+	CAPABILITIES(reply_caps)
+
 	INTEGER(MOR_push)
-	OCTSTR(aliases)
-	OCTSTR(extended_methods)
-	OCTSTR(header_code_pages)
 	INTEGER(client_SDU_size)
-	INTEGER(server_SDU_size)
 	
 	HTTPHEADERS(http_headers)
 	COOKIES(cookies)
@@ -44,3 +41,4 @@ MACHINE(
 #undef METHODMACHINES
 #undef MACHINE
 #undef COOKIES
+#undef CAPABILITIES

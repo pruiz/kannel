@@ -11,6 +11,7 @@
 #include "wsp.h"
 #include "wsp_pdu.h"
 #include "wsp_headers.h"
+#include "wsp_caps.h"
 #include "cookies.h"
 
 /* WAP standard defined values for capabilities */
@@ -72,15 +73,11 @@ static void cant_handle_event(WSPMachine *sm, WAPEvent *event);
 static WSPMethodMachine *method_machine_create(WSPMachine *, long);
 static void method_machine_destroy(WSPMethodMachine *msm);
 
-static void unpack_caps(Octstr *caps, WSPMachine *m);
-
-static int unpack_uint8(unsigned long *u, Octstr *os, int *off);
-static int unpack_uintvar(unsigned long *u, Octstr *os, int *off);
-
 static char *wsp_state_to_string(WSPState state);
 static long wsp_next_session_id(void);
 
-static Octstr *make_connectreply_pdu(WSPMachine *m, long session_id);
+static List *make_capabilities_reply(WSPMachine *m);
+static Octstr *make_connectreply_pdu(WSPMachine *m);
 
 static int transaction_belongs_to_session(void *session, void *tuple);
 static int find_by_session_id(void *session, void *idp);
@@ -401,8 +398,9 @@ static WSPMachine *machine_create(void) {
 	#define HTTPHEADERS(name) p->name = NULL;
 	#define ADDRTUPLE(name) p->name = NULL;
 	#define METHODMACHINES(name) p->name = list_create();
-	#define MACHINE(fields) fields
+	#define CAPABILITIES(name) p->name = NULL;
 	#define COOKIES(name) p->name = NULL;
+	#define MACHINE(fields) fields
 	#include "wsp-session-machine.h"
 	
 	p->state = NULL_SESSION;
@@ -410,9 +408,6 @@ static WSPMachine *machine_create(void) {
 	/* set capabilities to default values (defined in 1.1) */
 
 	p->client_SDU_size = 1400;
-	p->server_SDU_size = 1400;
-        /* p->protocol_options = 0x00;	 */
-	p->MOR_method = 1;
 	p->MOR_push = 1;
 	
 	/* Insert new machine at the _front_, because 1) it's more likely
@@ -446,8 +441,9 @@ static void machine_destroy(WSPMachine *p) {
 	#define HTTPHEADERS(name) http_destroy_headers(p->name);
 	#define ADDRTUPLE(name) wap_addr_tuple_destroy(p->name);
 	#define METHODMACHINES(name) wsp_session_destroy_methods(p->name);
-	#define MACHINE(fields) fields
+	#define CAPABILITIES(name) wsp_cap_destroy_list(p->name);
 	#define COOKIES(name) cookies_destroy(p->name);
+	#define MACHINE(fields) fields
 	#include "wsp-session-machine.h"
 	gw_free(p);
 }
@@ -474,7 +470,6 @@ static void machine_dump(WSPMachine *machine) {
 		debug("wap.wsp", 0, "  %s: %p", #name, (void *) p->name);
 	#define LIST(name) \
 		debug("wap.wsp", 0, "  %s: %p", #name, (void *) p->name);
-	#define SESSION_MACHINE(fields) fields
 	#define METHOD_MACHINE(fields)
 	#include "wsp_machine-decl.h"
 	debug("wap.wsp", 0, "WSPMachine dump ends.");
@@ -573,172 +568,6 @@ static void method_machine_destroy(WSPMethodMachine *msm) {
 }
 
 
-static void unpack_caps(Octstr *caps, WSPMachine *m)
-{
-    int off, flags, next_off;
-    unsigned long length, uiv, mor;
-    int caps_id;
-
-    debug("wap.wsp", 0, "capabilities dump starts.");
-    octstr_dump(caps, 1);
-    debug("wap.wsp", 0, "capabilities dump done.");
-    
-    next_off = off = 0;
-    while (next_off < octstr_len(caps)) {
-	off = next_off;
-	
-	unpack_uintvar(&length, caps, &off);
-	next_off = off + length;
-
-	/* XXX
-	 * capablity identifier is defined as 'multiple octets'
-	 * and encoded as Field-Name, but current supported
-	 * capabilities can be identified via one number
-	 */
-
-	caps_id = octstr_get_char(caps, off);
-	off++;
-
-	if (caps_id & 0x80) {
-	    caps_id &= 0x7F;
-	} else {
-	    warning(0, "Ignoring unknown token-text capability");
-	    continue;
-	}
-
-	switch(caps_id) {
-	    
-	case WSP_CAPS_CLIENT_SDU_SIZE:
-	    if (unpack_uintvar(&uiv, caps, &off) == -1)
-		warning(0, "Problems getting client SDU size capability");
-	    else {
-		if (WSP_MAX_CLIENT_SDU && uiv > WSP_MAX_CLIENT_SDU) {
-		    debug("wap.wsp", 0, "Client tried client SDU size %lu larger "
-			  "than our max %d", uiv, WSP_MAX_CLIENT_SDU);
-		} else if (!(m->set_caps & WSP_CSDU_SET)) {
-		    debug("wap.wsp", 0, "Client SDU size negotiated to %lu", uiv);
-		    /* Motorola Timeport / Phone.com hack */
-		    if (uiv == 3) {
-		    	uiv = 1350;
-		        debug("wap.wsp", 0, "Client SDU size forced to %lu", uiv);
-		    }
-		    m->client_SDU_size = uiv;
-		    m->set_caps |= WSP_CSDU_SET;
-		}
-	    }
-	    break;
-	case WSP_CAPS_SERVER_SDU_SIZE:
-	    if (unpack_uintvar(&uiv, caps, &off) == -1)
-		warning(0, "Problems getting server SDU size capability");
-	    else {
-		if (WSP_MAX_SERVER_SDU && uiv > WSP_MAX_SERVER_SDU) {
-		    debug("wap.wsp", 0, "Client tried server SDU size %lu larger "
-			  "than our max %d", uiv, WSP_MAX_SERVER_SDU);
-		} else if (!(m->set_caps & WSP_SSDU_SET)) {
-		    debug("wap.wsp", 0, "Server SDU size negotiated to %lu", uiv);
-		    m->server_SDU_size = uiv;
-		    m->set_caps |= WSP_SSDU_SET;
-		}
-	    }
-	    break;
-	case WSP_CAPS_PROTOCOL_OPTIONS:
-	    /* XXX should be taken as octstr or something - and
-		  * be sure, that there is that information */
-
-	    flags = (octstr_get_char(caps,off));
-	    off++;
-	    if (!(m->set_caps & WSP_PO_SET)) {
-
-		/* we do not support anything yet, so answer so */
-
-		debug("wap.wsp", 0, "Client protocol option flags 0x%02X, not supported.", flags);
-		     
-		m->protocol_options = WSP_MAX_PROTOCOL_OPTIONS;
-		m->set_caps |= WSP_PO_SET;
-	    }
-	    break;
-	case WSP_CAPS_METHOD_MOR:
-	    if (unpack_uint8(&mor, caps, &off) == -1)
-		warning(0, "Problems getting MOR methods capability");
-	    else {
-		if (mor > WSP_MAX_METHOD_MOR) {
-		    debug("wap.wsp", 0, "Client tried method MOR %lu larger "
-			  "than our max %d", mor, WSP_MAX_METHOD_MOR);
-		} else if (!(m->set_caps & WSP_MMOR_SET)) {
-		    debug("wap.wsp", 0, "Method MOR negotiated to %lu", mor);
-		    m->MOR_method = mor;
-		    m->set_caps |= WSP_MMOR_SET;
-		}
-	    }
-	    break;
-	case WSP_CAPS_PUSH_MOR:
-	    if (unpack_uint8(&mor, caps, &off) == -1)
-		warning(0, "Problems getting MOR push capability");
-	    else {
-		if (mor > WSP_MAX_PUSH_MOR) {
-		    debug("wap.wsp", 0, "Client tried push MOR %lu larger "
-			  "than our max %d", mor, WSP_MAX_PUSH_MOR);
-		} else if (!(m->set_caps & WSP_PMOR_SET)) {
-		    debug("wap.wsp", 0, "Push MOR negotiated to %lu", mor);
-		    m->MOR_push = mor;
-		    m->set_caps |= WSP_PMOR_SET;
-		}
-	    }
-	    break;
-	case WSP_CAPS_EXTENDED_METHODS:
-	    debug("wap.wsp", 0, "Extended methods capability ignored");
-	    off += length - 1;
-	    break;
-	case WSP_CAPS_HEADER_CODE_PAGES:
-	    debug("wap.wsp", 0, "Header code pages capability ignored");
-	    off += length - 1;
-	    break;
-	case WSP_CAPS_ALIASES:
-	    debug("wap.wsp", 0, "Aliases capability ignored");
-	    off += length - 1;
-	    break;
-	default:
-	    /* unassigned */
-	    debug("wap.wsp", 0, "Unknown capability '0x%02X' ignored", caps_id);
-	    off += length - 1;
-	    break;
-	}
-
-	if (off != next_off) {
-	    warning(0, "Problems extracting capability parameters, offset is %d, but should be %d",
-		    off, next_off);
-	}
-    }
-}
-
-
-static int unpack_uint8(unsigned long *u, Octstr *os, int *off) {
-	if (*off >= octstr_len(os)) {
-		error(0, "WSP: Trying to unpack uint8 past PDU");
-		return -1;
-	}
-	*u = octstr_get_char(os, *off);
-	++(*off);
-	return 0;
-}
-
-
-static int unpack_uintvar(unsigned long *u, Octstr *os, int *off) {
-	unsigned long o;
-	
-	*u = 0;
-	do {
-		if (unpack_uint8(&o, os, off) == -1) {
-			error(0, "WSP: unpack_uint failed in unpack_uintvar");
-			return -1;
-		}
-		*u = ((*u) << 7) | (o & 0x7F);
-	} while ((o & 0x80) != 0);
-
-	return 0;
-}
-
-
 static char *wsp_state_to_string(WSPState state) {
 	switch (state) {
 	#define STATE_NAME(name) case name: return #name;
@@ -760,55 +589,269 @@ static long wsp_next_session_id(void) {
 }
 
 
-static Octstr *make_connectreply_pdu(WSPMachine *m, long session_id) {
+static void sanitize_capabilities(List *caps, WSPMachine *m) {
+	long i;
+	Capability *cap;
+	unsigned long uint;
+
+	for (i = 0; i < list_len(caps); i++) {
+		cap = list_get(caps, i);
+
+		/* We only know numbered capabilities.  Let the application
+		 * layer negotiate whatever it wants for unknown ones. */
+		if (cap->name != NULL)
+			continue;
+
+		switch (cap->id) {
+		case WSP_CAPS_CLIENT_SDU_SIZE:
+			/* Check if it's a valid uintvar.  The value is the
+			 * max SDU size we will send, and there's no
+			 * internal limit to that, so accept any value. */
+			if (cap->data != NULL &&
+			    octstr_extract_uintvar(cap->data, &uint, 0) < 0)
+				goto bad_cap;
+			else
+				m->client_SDU_size = uint;
+			break;
+
+		case WSP_CAPS_SERVER_SDU_SIZE:
+			/* Check if it's a valid uintvar */
+			if (cap->data != NULL &&
+			    (octstr_extract_uintvar(cap->data, &uint, 0) < 0))
+				goto bad_cap;
+			/* XXX Our MRU is not quite unlimited, since we
+			 * use signed longs in the library functions --
+			 * should we make sure we limit the reply value
+			 * to LONG_MAX?  (That's already a 2GB packet) */
+			break;
+
+		case WSP_CAPS_PROTOCOL_OPTIONS:
+			/* Currently we don't support any Push, nor
+			 * session resume, nor acknowledgement headers,
+			 * so make sure those bits are not set. */
+			if (cap->data != NULL && octstr_len(cap->data) > 0
+			   && (octstr_get_char(cap->data, 0) & 0xf0) != 0) {
+				warning(0, "WSP: Application layer tried to "
+					"negotiate protocol options.");
+				octstr_set_bits(cap->data, 0, 4, 0);
+			}
+			break;
+
+		case WSP_CAPS_EXTENDED_METHODS:
+			/* XXX Check format here */
+			break;
+
+		
+		case WSP_CAPS_HEADER_CODE_PAGES:
+			/* We don't support any yet, so don't let this
+			 * be negotiated. */
+			if (cap->data)
+				goto bad_cap;
+			break;
+		}
+		continue;
+
+	bad_cap:
+		error(0, "WSP: Found illegal value in capabilities reply.");
+		wsp_cap_dump(cap);
+		list_delete(caps, i, 1);
+		i--;
+		wsp_cap_destroy(cap);
+		continue;
+	}
+}
+
+
+static void reply_known_capabilities(List *caps, List *req, WSPMachine *m) {
+	unsigned long uint;
+	Capability *cap;
+	Octstr *data;
+
+	if (wsp_cap_count(caps, WSP_CAPS_CLIENT_SDU_SIZE, NULL) == 0) {
+		if (wsp_cap_get_client_sdu(req, &uint) > 0) {
+			/* Accept value if it is not silly. */
+			if ((uint >= 256 && uint < LONG_MAX) || uint == 0) {
+				m->client_SDU_size = uint;
+			}
+		}
+		/* Reply with the client SDU we decided on */
+		data = octstr_create_empty();
+		octstr_append_uintvar(data, m->client_SDU_size);
+		cap = wsp_cap_create(WSP_CAPS_CLIENT_SDU_SIZE,
+			NULL, data);
+		list_append(caps, cap);
+	}
+
+	if (wsp_cap_count(caps, WSP_CAPS_SERVER_SDU_SIZE, NULL) == 0) {
+		/* We don't care what the client sent us, but we can
+		 * handle any size packet, so we tell the client that. */
+		data = octstr_create_empty();
+		octstr_append_uintvar(data, 0);
+		cap = wsp_cap_create(WSP_CAPS_SERVER_SDU_SIZE, NULL, data);
+		list_append(caps, cap);
+	}
+
+	/* Currently we cannot handle any protocol options */
+	if (wsp_cap_count(caps, WSP_CAPS_PROTOCOL_OPTIONS, NULL) == 0) {
+		data = octstr_create_empty();
+		octstr_append_char(data, 0);
+		cap = wsp_cap_create(WSP_CAPS_PROTOCOL_OPTIONS, NULL, data);
+		list_append(caps, cap);
+	}
+
+	/* Accept any Method-MOR the client sent; if it sent none,
+	 * reply that we can handle any number of Method requests.
+	 * ("any" is 255 because the encoding doesn't go higher) */
+	if (wsp_cap_count(caps, WSP_CAPS_METHOD_MOR, NULL) == 0) {
+		if (wsp_cap_get_method_mor(req, &uint) <= 0) {
+			uint = 255;
+		}
+		data = octstr_create_empty();
+		octstr_append_char(data, uint);
+		cap = wsp_cap_create(WSP_CAPS_METHOD_MOR, NULL, data);
+		list_append(caps, cap);
+	}
+
+	/* We will never send any Push requests because we don't support
+	 * that yet.  But we already specified that in protocol options;
+	 * so, pretend we do, and handle the value that way. */
+	if (wsp_cap_count(caps, WSP_CAPS_PUSH_MOR, NULL) == 0) {
+		if (wsp_cap_get_push_mor(req, &uint) > 0) {
+			m->MOR_push = uint;
+		}
+		data = octstr_create_empty();
+		octstr_append_char(data, m->MOR_push);
+		cap = wsp_cap_create(WSP_CAPS_PUSH_MOR, NULL, data);
+		list_append(caps, cap);
+	}
+
+	/* Supporting extended methods is up to the application layer,
+	 * not up to us.  If the application layer didn't specify any,
+	 * then we refuse whatever the client requested.  The default
+	 * is to support none, so we don't really have to add anything here. */
+
+	/* We do not support any header code pages.  sanitize_capabilities
+	 * must have already deleted any reply that indicates otherwise.
+	 * Again, not adding anything here is the same as refusing support. */
+
+	/* Listing aliases is something the application layer can do if
+	 * it wants to.  We don't care. */
+}
+
+
+/* Generate a refusal for all requested capabilities that are not
+ * replied to. */
+static void refuse_unreplied_capabilities(List *caps, List *req) {
+	long i, len;
+	Capability *cap;
+
+	len = list_len(req);
+	for (i = 0; i < len; i++) {
+		cap = list_get(req, i);
+		if (wsp_cap_count(caps, cap->id, cap->name) == 0) {
+			cap = wsp_cap_create(cap->id, cap->name, NULL);
+			list_append(caps, cap);
+		}
+	}
+}
+
+
+static int is_default_cap(Capability *cap) {
+	unsigned long uint;
+
+	/* All unknown values are empty by default */
+	if (cap->name != NULL || cap->id < 0 || cap->id >= WSP_NUM_CAPS)
+		return cap->data == NULL || octstr_len(cap->data) == 0;
+
+	switch (cap->id) {
+	case WSP_CAPS_CLIENT_SDU_SIZE:
+	case WSP_CAPS_SERVER_SDU_SIZE:
+		return (cap->data != NULL &&
+		    octstr_extract_uintvar(cap->data, &uint, 0) >= 0 &&
+		    uint == 1400);
+	case WSP_CAPS_PROTOCOL_OPTIONS:
+		return cap->data != NULL && octstr_get_char(cap->data, 0) == 0;
+	case WSP_CAPS_METHOD_MOR:
+	case WSP_CAPS_PUSH_MOR:
+		return cap->data != NULL && octstr_get_char(cap->data, 0) == 1;
+	case WSP_CAPS_EXTENDED_METHODS:
+	case WSP_CAPS_HEADER_CODE_PAGES:
+	case WSP_CAPS_ALIASES:
+		return cap->data == NULL || octstr_len(cap->data) == 0;
+	default:
+		return 0;
+	}
+}
+
+
+/* Remove any replies that have no corresponding request and that
+ * are equal to the default. */
+static void strip_default_capabilities(List *caps, List *req) {
+	long i;
+	Capability *cap;
+	int count;
+
+	/* Hmm, this is an O(N*N) operation, which may be bad. */
+
+	i = 0;
+	while (i < list_len(caps)) {
+		cap = list_get(caps, i);
+
+		count = wsp_cap_count(req, cap->id, cap->name);
+		if (count == 0 && is_default_cap(cap)) {
+			list_delete(caps, i, 1);
+		} else {
+			i++;
+		}
+	}
+}
+
+
+static List *make_capabilities_reply(WSPMachine *m) {
+	List *caps;
+
+	/* In principle, copy the application layer's capabilities
+	 * response, add refusals for all unknown requested capabilities,
+	 * and add responses for all known capabilities that are
+	 * not already responded to.  Then eliminate any replies that
+ 	 * would have no effect because they are equal to the default. */
+
+	caps = wsp_cap_duplicate_list(m->reply_caps);
+
+	/* Don't let the application layer negotiate anything we
+	 * cannot handle.  Also parse the values it set if we're
+	 * interested. */
+	sanitize_capabilities(caps, m);
+
+	/* Add capability records for all capabilities we know about
+	 * that are not already in the reply list. */
+	reply_known_capabilities(caps, m->request_caps, m);
+
+	/* All remaining capabilities in the request list that are
+	 * not in the reply list at this point must be unknown ones
+	 * that we want to refuse. */
+	refuse_unreplied_capabilities(caps, m->request_caps);
+
+	/* Now eliminate replies that would be equal to the requested
+	 * value, or (if there was none) to the default value. */
+	strip_default_capabilities(caps, m->request_caps);
+
+	return caps;
+}
+
+
+static Octstr *make_connectreply_pdu(WSPMachine *m) {
 	WSP_PDU *pdu;
-	Octstr *os, *caps, *tmp;
+	Octstr *os;
+	List *caps;
 	
 	pdu = wsp_pdu_create(ConnectReply);
 
-	pdu->u.ConnectReply.sessionid = session_id;
+	pdu->u.ConnectReply.sessionid = m->session_id;
 
-
-	if (m->set_caps) {
-		caps = octstr_create_empty();
-		tmp = octstr_create_empty();
-		
-		/* XXX put negotiated capabilities into octstr */
-		
-		if (m->set_caps & WSP_CSDU_SET) {
-			octstr_truncate(tmp, 0);
-			octstr_append_char(tmp, WSP_CAPS_SERVER_SDU_SIZE);
-			octstr_append_uintvar(tmp, m->client_SDU_size);
-
-			octstr_append_uintvar(caps, octstr_len(tmp));
-			octstr_append(caps, tmp);
-		}
-		if (m->set_caps & WSP_SSDU_SET) {
-			octstr_truncate(tmp, 0);
-			octstr_append_char(tmp, WSP_CAPS_SERVER_SDU_SIZE);
-			octstr_append_uintvar(tmp, m->server_SDU_size);
-
-			octstr_append_uintvar(caps, octstr_len(tmp));
-			octstr_append(caps, tmp);
-		}
-		
-		if (m->set_caps & WSP_MMOR_SET) {
-			octstr_append_uintvar(caps, 2);
-			octstr_append_char(caps, WSP_CAPS_METHOD_MOR);
-			octstr_append_char(caps, m->MOR_method);
-		}
-		if (m->set_caps & WSP_PMOR_SET) {
-			octstr_append_uintvar(caps, 2);
-			octstr_append_char(caps, WSP_CAPS_PUSH_MOR);
-			octstr_append_char(caps, m->MOR_push);
-		}
-		/* rest are not supported, yet */
-		
-		pdu->u.ConnectReply.capabilities = caps;
-		octstr_destroy(tmp);
-	} else
-		pdu->u.ConnectReply.capabilities = NULL;
-
+	caps = make_capabilities_reply(m);
+	pdu->u.ConnectReply.capabilities = wsp_cap_pack_list(caps);
+	wsp_cap_destroy_list(caps);
 	pdu->u.ConnectReply.headers = NULL;
 	
 	os = wsp_pdu_pack(pdu);

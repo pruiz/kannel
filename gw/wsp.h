@@ -6,18 +6,6 @@
 #define WSP_H
 
 /*
- * these capability maximum values are real maximum
- * values to our server. It cannot negotiate larger values
- * than these. No way.
- */
-
-#define WSP_MAX_CLIENT_SDU 0
-#define WSP_MAX_SERVER_SDU 0
-#define WSP_MAX_PROTOCOL_OPTIONS 0x00
-#define WSP_MAX_METHOD_MOR 1
-#define WSP_MAX_PUSH_MOR 1
-
-/*
  * int WSP_accepted_extended_methods[] = { -1 };
  * int WSP_accepted_header_code_pages[] = { -1 };
  */
@@ -67,6 +55,7 @@ struct WSPMachine {
 	#define ADDRTUPLE(name) WAPAddrTuple *name;
 	#define COOKIES(name) List *name;
 	#define METHODMACHINES(name) List *name;
+	#define CAPABILITIES(name) List *name;
 	#define MACHINE(fields) fields
 	#include "wsp-session-machine.h"
 };

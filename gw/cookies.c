@@ -85,7 +85,8 @@ int get_cookies (List *headers, const WSPMachine *sm)
 			debug ("wap.wsp.http", 0, "Caching cookie (%s)", octstr_get_cstr (header));
 
 			if ((value = get_header_value (header)) == NULL) {
-				error (0, "get_cookies: No value in (%s)", header);
+				error (0, "get_cookies: No value in (%s)",
+					octstr_get_cstr(header));
 				continue;
 			}
 

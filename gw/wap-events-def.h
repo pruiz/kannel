@@ -31,13 +31,13 @@ WAPEVENT(TR_Abort_Ind,
 WAPEVENT(S_Connect_Ind,
 	ADDRTUPLE(addr_tuple)
 	HTTPHEADER(client_headers)
-	OCTSTR(requested_capabilities)
+	CAPABILITIES(requested_capabilities)
 	INTEGER(session_id)
 	)
 
 WAPEVENT(S_Connect_Res,
 	HTTPHEADER(server_headers)
-	OCTSTR(negotiated_capabilities)
+	CAPABILITIES(negotiated_capabilities)
 	INTEGER(session_id)
 	)
 
@@ -206,6 +206,6 @@ WAPEVENT(S_Unit_MethodResult_Req,
 #undef WAPEVENT
 #undef OCTSTR
 #undef INTEGER
-#undef SESSION_MACHINE
 #undef HTTPHEADER
 #undef ADDRTUPLE
+#undef CAPABILITIES

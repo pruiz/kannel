@@ -34,8 +34,12 @@ ROW(NULL_SESSION,
 		 * application layer to refer back to this machine. */
 		sm->session_id = wsp_next_session_id();
 
-		if (pdu->u.Connect.capabilities_len > 0)
-			unpack_caps(pdu->u.Connect.capabilities, sm);
+		if (pdu->u.Connect.capabilities_len > 0) {
+			sm->request_caps = wsp_cap_unpack_list(
+				pdu->u.Connect.capabilities);
+		} else {
+			sm->request_caps = list_create();
+		}
 
 		if (pdu->u.Connect.headers_len > 0) {
 			List *hdrs;
@@ -52,9 +56,8 @@ ROW(NULL_SESSION,
 			wap_addr_tuple_duplicate(e->addr_tuple);
 		new_event->u.S_Connect_Ind.client_headers =
 			http_header_duplicate(sm->http_headers);
-		/* XXX Fill in the non-WSP capabilities here; currently
-		 * we don't even parse them so there's nothing to fill in */
-		new_event->u.S_Connect_Ind.requested_capabilities = NULL;
+		new_event->u.S_Connect_Ind.requested_capabilities =
+			wsp_cap_duplicate_list(sm->request_caps);
 		new_event->u.S_Connect_Ind.session_id = sm->session_id;
 		wap_appl_dispatch(new_event);
 	},
@@ -67,6 +70,9 @@ ROW(CONNECTING,
 	{
 		WAPEvent *wtp_event;
 		Octstr *ospdu;
+
+		sm->reply_caps = wsp_cap_duplicate_list(
+				e->negotiated_capabilities);
 		
 		/* Send Disconnect event to existing sessions for client. */
 		wsp_disconnect_other_sessions(sm);
@@ -75,8 +81,7 @@ ROW(CONNECTING,
 		/* We've already done that in the NULL_STATE. */
 
 		/* TR-Result.req(ConnectReply) */
-		/* XXX Use some values from the S-Connect.res event */
-		ospdu = make_connectreply_pdu(sm, sm->session_id);
+		ospdu = make_connectreply_pdu(sm);
 
 		wtp_event = wap_event_create(TR_Result_Req);
 		wtp_event->u.TR_Result_Req.user_data = ospdu;

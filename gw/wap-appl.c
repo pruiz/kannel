@@ -69,6 +69,7 @@ static void  dev_null(const char *data, size_t len, void *context);
 static Octstr *convert_wml_to_wmlc(struct content *content);
 static Octstr *convert_wmlscript_to_wmlscriptc(struct content *content);
 static void wsp_http_map_url(Octstr **osp);
+static List *negotiate_capabilities(List *req_caps);
 
 static struct {
 	char *type;
@@ -154,8 +155,9 @@ static void main_thread(void *arg) {
 			res = wap_event_create(S_Connect_Res);
 			/* FIXME: Not yet used by WSP layer */
 			res->u.S_Connect_Res.server_headers = NULL;
-			/* FIXME: Not yet used by WSP layer */
-			res->u.S_Connect_Res.negotiated_capabilities = NULL;
+			res->u.S_Connect_Res.negotiated_capabilities =
+				negotiate_capabilities(
+				ind->u.S_Connect_Ind.requested_capabilities);
 			res->u.S_Connect_Res.session_id =
 				ind->u.S_Connect_Ind.session_id;
 			wsp_session_dispatch_event(res);
@@ -478,6 +480,30 @@ static Octstr *convert_wmlscript_to_wmlscriptc(struct content *content) {
 	return wmlscriptc;
 }
 
+
+/* The interface for capability negotiation is a bit different from
+ * the negotiation at WSP level, to make it easier to program.
+ * The application layer gets a list of requested capabilities,
+ * basically a straight decoding of the WSP level capabilities.
+ * It replies with a list of all capabilities it wants to set or
+ * refuse.  (Refuse by setting cap->data to NULL).  Any capabilities
+ * it leaves out are considered "unknown; don't care".  The WSP layer
+ * will either process those itself, or refuse them.
+ *
+ * At the WSP level, not sending a reply to a capability means accepting
+ * what the client proposed.  If the application layer wants this to 
+ * happen, it should set cap->data to NULL and cap->accept to 1.
+ * (The WSP layer does not try to guess what kind of reply would be 
+ * identical to what the client proposed, because the format of the
+ * reply is often different from the format of the request, and this
+ * is likely to be true for unknown capabilities too.)
+ */
+static List *negotiate_capabilities(List *req_caps) {
+	/* Currently we don't know or care about any capabilities,
+	 * though it is likely that "Extended Methods" will be
+	 * the first. */
+	return list_create();
+}
 
 
 /***********************************************************************

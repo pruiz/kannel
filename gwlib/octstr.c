@@ -1434,6 +1434,7 @@ const char *function) {
 	}
 }
 
+
 void octstr_append_uintvar(Octstr *ostr, unsigned long value) {
 	/* A uintvar is defined to be up to 32 bits large, so it will
 	 * fit in 5 octets. */
@@ -1453,4 +1454,25 @@ void octstr_append_uintvar(Octstr *ostr, unsigned long value) {
 	start = i + 1;
 
 	octstr_append_data(ostr, octets + start, 5 - start);
+}
+
+
+long octstr_extract_uintvar(Octstr *ostr, unsigned long *value, long pos) {
+	int c;
+	int count;
+	unsigned long uint;
+
+	uint = 0;
+	for (count = 0; count < 5; count++) {
+		c = octstr_get_char(ostr, pos + count);
+		if (c < 0)
+			return -1;
+		uint = (uint << 7) | (c & 0x7f);
+		if (!(c & 0x80)) {
+			*value = uint;
+			return pos + count + 1;
+		}
+	}
+
+	return -1;
 }

@@ -405,9 +405,18 @@ long octstr_get_bits(Octstr *ostr, long bitpos, int numbits);
  */
 void octstr_set_bits(Octstr *ostr, long bitpos, int numbits, unsigned long value);
 
+
 /* 
  * Encode value in WSP's uintvar format, and append it to the octstr
  */
 void octstr_append_uintvar(Octstr *ostr, unsigned long value);
+
+
+/* 
+ * Decode a value in WSP's uintvar format at position pos of the octstr,
+ * and put the result in *value.  Return the position after the uintvar.
+ * Return -1 if there is not a valid uintvar at pos.
+ */
+long octstr_extract_uintvar(Octstr *ostr, unsigned long *value, long pos);
 
 #endif
