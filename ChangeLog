@@ -1,3 +1,9 @@
+2004-06-10  Alexander Malysh  <a.malysh@centrium.de> 
+    * doc/userguide/userguide.xml, gw/smsc/smsc_cimd2.c: added ability to set PID for
+      MT messages in CIMD2.
+      Thanks to "Arne K. Haaje" <haaje (at) eurobate.com> for the patch.
+      [Msg-Id: <200406101430.29450.haaje@eurobate.com>].
+
 2004-06-09  Alexander Malysh  <a.malysh@centrium.de> 
     * gwlib/counter.c: cleanup. Got rid of #ifdef's.
  

@@ -1434,15 +1434,19 @@ static struct packet *packet_encode_message(Msg *msg, Octstr *sender_prefix, SMS
     /* Turn off reply path as default.
      * This avoids phones automatically asking for a reply
      */
-	if (msg->sms.rpi > 0)
-		packet_add_int_parm(packet, P_REPLY_PATH, 1, conn);
-	else
+    if (msg->sms.rpi > 0)
+	packet_add_int_parm(packet, P_REPLY_PATH, 1, conn);
+    else
     	packet_add_int_parm(packet, P_REPLY_PATH, 0, conn);
 
-	/* Use binfo to set the tariff class */
-	if (octstr_len(msg->sms.binfo))
-		packet_add_parm(packet, P_INT, P_TARIFF_CLASS, msg->sms.binfo, conn);
+    /* Use binfo to set the tariff class */
+    if (octstr_len(msg->sms.binfo))
+	packet_add_parm(packet, P_INT, P_TARIFF_CLASS, msg->sms.binfo, conn);
 
+    /* Set the protocol identifier if requested */
+    if (msg->sms.pid > 0)
+        packet_add_int_parm(packet, P_PROTOCOL_IDENTIFIER, msg->sms.pid, conn);
+ 
     truncated = 0;
 
     spaceleft = 140;
