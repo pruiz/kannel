@@ -292,7 +292,8 @@ int at2_write_ctrlz(PrivAT2data *privdata)
         return s;
     }
     tcdrain(privdata->fd);
-    gwthread_sleep((double) privdata->modem->sendline_sleep / 1000);
+    gwthread_sleep((double) (privdata->modem == NULL ?
+        100 : privdata->modem->sendline_sleep) / 1000);
     return s;
 }
       
@@ -323,8 +324,9 @@ int at2_write(PrivAT2data *privdata, char *line)
         tcflush(privdata->fd, TCOFLUSH);
         return s;
     }
-
     tcdrain(privdata->fd);
+    gwthread_sleep((double) (privdata->modem == NULL ?
+        100 : privdata->modem->sendline_sleep) / 1000);
     return s;
 }
 
