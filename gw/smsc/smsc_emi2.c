@@ -448,7 +448,7 @@ static struct emimsg *msg_to_emimsg(Msg *msg, int trn, PrivData *privdata)
     /*
      * Check if we have to apply some after GSM transcoding kludges
      */
-    if (privdata->alt_charset = EMI_NRC_ISO_21)
+    if (privdata->alt_charset == EMI_NRC_ISO_21)
         charset_gsm_to_nrc_iso_21_german(str);
 
 	/* Could still be too long after truncation if there's an UDH part,
@@ -533,7 +533,7 @@ static int handle_operation(SMSCConn *conn, Connection *server,
 	    emimsg->fields[E01_AMSG] = NULL; /* So it's not freed */
 
         /* obey the NRC (national replacement codes) */
-        if (privdata->alt_charset = EMI_NRC_ISO_21)
+        if (privdata->alt_charset == EMI_NRC_ISO_21)
             charset_nrc_iso_21_german_to_gsm(msg->sms.msgdata);
 
 	    charset_gsm_to_latin1(msg->sms.msgdata);
@@ -640,7 +640,7 @@ static int handle_operation(SMSCConn *conn, Connection *server,
 	    emimsg->fields[E50_AMSG] = NULL; /* So it's not freed */
 
         /* obey the NRC (national replacement codes) */
-        if (privdata->alt_charset = EMI_NRC_ISO_21)
+        if (privdata->alt_charset == EMI_NRC_ISO_21)
             charset_nrc_iso_21_german_to_gsm(msg->sms.msgdata);
 
 	    charset_gsm_to_latin1(msg->sms.msgdata);

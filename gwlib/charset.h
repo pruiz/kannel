@@ -47,6 +47,13 @@ void charset_gsm_to_latin1(Octstr *gsm);
  * and the rest are converted to '?' characters. */
 void charset_latin1_to_gsm(Octstr *latin1);
 
+/* 
+ * Convert from GSM default character set to NRC ISO 21 (German)
+ * and vise versa.
+ */
+void charset_gsm_to_nrc_iso_21_german(Octstr *ostr);
+void charset_nrc_iso_21_german_to_gsm(Octstr *ostr);
+
 /* Trunctate a string of GSM characters to a maximum length.
  * Make sure the last remaining character is a whole character,
  * and not half of an escape sequence.

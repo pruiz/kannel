@@ -275,6 +275,12 @@ int http_open_port(int port, int ssl);
 
 
 /*
+ * Same as above, but bind to a specific interface.
+ */
+int http_open_port_if(int port, int ssl, Octstr *interface);
+
+
+/*
  * Accept a request from a client to the specified open port. Return NULL
  * if the port is closed, otherwise a pointer to a client descriptor.
  * Return the IP number (as a string) and other related information about
