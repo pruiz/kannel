@@ -718,10 +718,13 @@ static void return_reply(int status, Octstr *content_body, List *headers,
     int converted;
     WSPMachine *sm;
     List *device_headers;
+    WAPAddrTuple *addr_tuple;
+    Octstr *ua, *server;
 
     content.url = url;
     content.body = content_body;
-    content.version = NULL;
+    content.version = content.type = content.charset = NULL;
+    server = ua = NULL;
 
     /* Get session machine for this session. If this was a connection-less
      * request be obviously will not find any session machine entry. */
@@ -734,8 +737,40 @@ static void return_reply(int status, Octstr *content_body, List *headers,
     if (device_headers == NULL)
         device_headers = list_create();
 
+    /* 
+     * We are acting as a proxy. Hence ensure we log a correct HTTP response
+     * code to our access-log file to allow identification of failed proxying
+     * requests in the main accesss-log.
+     */
+    /* get client IP and User-Agent identifier */
+    addr_tuple = (orig_event->type == S_MethodInvoke_Ind) ?
+        orig_event->u.S_MethodInvoke_Ind.addr_tuple : 
+        orig_event->u.S_Unit_MethodInvoke_Ind.addr_tuple;
+    ua = http_header_value(request_headers, octstr_imm("User-Agent"));
+
+    if (headers != NULL) {
+        /* get response content type and Server identifier */
+        http_header_get_content_type(headers, &content.type, &content.charset);
+        server = http_header_value(headers, octstr_imm("Server"));
+    }
+
+    /* log the access */
+    /* XXX make this configurable in the future */
+    alog("%s %s <%s> (%s, charset='%s') %ld %d <%s> <%s>", 
+         octstr_get_cstr(addr_tuple->remote->address), 
+         octstr_get_cstr(method), octstr_get_cstr(url), 
+         content.type ? octstr_get_cstr(content.type) : "", 
+         content.charset ? octstr_get_cstr(content.charset) : "",
+         octstr_len(content.body), status < 0 ? HTTP_BAD_GATEWAY : status,
+         ua ? octstr_get_cstr(ua) : "",
+         server ? octstr_get_cstr(server) : "");
+
+    octstr_destroy(ua);
+    octstr_destroy(server);
+    
+
     if (status < 0) {
-        error(0, "WSP: http lookup failed, oops."); /* XXX DAVI: also check for empty reply */
+        error(0, "WSP: HTTP lookup failed, oops.");
         /* smart WSP error messaging?! */
         if (wsp_smart_errors) {
             Octstr *referer_url;
@@ -784,32 +819,7 @@ static void return_reply(int status, Octstr *content_body, List *headers,
 
     } else {
         /* received response by HTTP server */
-        WAPAddrTuple *addr_tuple;
-        Octstr *ua, *server;
-
-        /* get client IP and User-Agent identifier */
-        addr_tuple = (orig_event->type == S_MethodInvoke_Ind) ?
-            orig_event->u.S_MethodInvoke_Ind.addr_tuple : 
-            orig_event->u.S_Unit_MethodInvoke_Ind.addr_tuple;
-        ua = http_header_value(request_headers, octstr_imm("User-Agent"));
-
-        /* get response content type and Server identifier */
-        http_header_get_content_type(headers, &content.type, &content.charset);
-        server = http_header_value(headers, octstr_imm("Server"));
-
-        /* log the access */
-        /* XXX make this configurable in the future */
-        alog("%s %s <%s> (%s, charset='%s') %ld %d <%s> <%s>", 
-             octstr_get_cstr(addr_tuple->remote->address), 
-             octstr_get_cstr(method), octstr_get_cstr(url), 
-             octstr_get_cstr(content.type), octstr_get_cstr(content.charset),
-             octstr_len(content.body), status,
-             ua ? octstr_get_cstr(ua) : "",
-             server ? octstr_get_cstr(server) : "");
-
-        octstr_destroy(ua);
-        octstr_destroy(server);
-
+ 
 #ifdef ENABLE_COOKIES
         if (session_id != -1)
             /* DAVI if (get_cookies(url, headers, find_session_machine_by_id(session_id)) == -1) */

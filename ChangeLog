@@ -1,3 +1,10 @@
+2003-12-16  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/wap-appl.c: added access-log logging of upstream HTTP server failures
+      with HTTP response code 502 (bad gateway). So even in case the HTTP server
+      can not be resolved or is not reachable, user's will be logged with a
+      request access entry in wapbox's access-log.
+      [Msg-ID: <3FDDB666.F31F5648@wapme-systems.de>]
+
 2003-12-11  Stipe Tolj  <tolj@wapme-systems.de>
     * test/fakesmsc.c: changed randomization behaviour to allow adding randomized
       numbers as last message word. Use the -r switch as bitmask.
