@@ -1,3 +1,8 @@
+2000-11-24  Lars Wirzenius  <liw@iki.fi>
+
+	* gwlib/gwmem-check.c: Add casts to avoid comparing pointers
+	and integers.
+
 2000-11-24  Richard Braakman  <dark@wapi.com>
 
 	* gw/heartbeat.[ch]: New files, contain heartbeat code shared

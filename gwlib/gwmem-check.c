@@ -279,13 +279,15 @@ static struct area *find_area(unsigned char *p)
     long index;
     struct area *area;
     long suspicious_pointer;
+    unsigned long p_ul;
 
     gw_assert(p != NULL);
 
+    p_ul = (unsigned long) p;
     suspicious_pointer =
         (sizeof(p) == sizeof(long) &&
-         (p == NEW_AREA_PATTERN || p == FREE_AREA_PATTERN ||
-	  p == START_MARK_PATTERN || p == END_MARK_PATTERN));
+         (p_ul == NEW_AREA_PATTERN || p_ul == FREE_AREA_PATTERN ||
+	  p_ul == START_MARK_PATTERN || p_ul == END_MARK_PATTERN));
 
     if (slow || suspicious_pointer) {
         /* Extra check, which does not touch the (perhaps not allocated)
