@@ -1,4 +1,9 @@
 2002-03-07  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/wap_push_ppg.c, test/test_ppg.c, wap/wsp_strings.def: corrected
+      MMS related well known values and stuff that is required to use
+      the PPG part for the M.notification-ind processing.
+    
+2002-03-07  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/cfg.[ch]: implemented inclusion feature for configuration file
       processing. Now you may use 'include = "foobar.conf"' anywhere in
       the config file to include sub-configuration parts. 
