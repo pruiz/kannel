@@ -277,6 +277,7 @@ MULTI_GROUP(smsc,
     OCTSTR(notification-addr)
     OCTSTR(msg-id-type)
     OCTSTR(no-dlr)
+    OCTSTR(connection-timeout)
 )
 
 

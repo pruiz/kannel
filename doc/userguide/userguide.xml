@@ -2928,6 +2928,33 @@ address-range = ""
 		  should be presented for this directive.
      </entry></row>
 
+    <row><entry><literal>connection-timeout</literal></entry>
+      <entry><literal>number (seconds)</literal></entry>
+      <entry valign="bottom">
+        This timer specifies the maximum time lapse allowed 
+        between transactions , after which period of inactivity, an SMPP driver may 
+        assume that the session is no longer active and does reconnect.
+	Defaults to 300 seconds, to disable set it to 0.
+     </entry></row>
+
+    <row><entry><literal>wait-ack</literal></entry>
+      <entry><literal>number (seconds)</literal></entry>
+      <entry valign="bottom">
+        A message is resent if the acknowledge from SMSC takes more than 
+	this time.  Defaults to 60 seconds.
+     </entry></row>
+
+    <row><entry><literal>wait-ack-expire</literal></entry>
+      <entry><literal>number</literal></entry>
+      <entry valign="bottom">
+        Defines what kind of action should be taken if the ack of 
+		  a message expires. The options for this value are:
+		  0x00 - disconnect/reconnect, (default) 0x01 - as is now, requeue, 
+		  but this could potentially result in the msg arriving twice
+		  0x02 - just carry on waiting (given that the wait-ack should never 
+		  expire this is the mst accurate)
+     </entry></row>
+
    </tbody></tgroup></informaltable>
 
 </sect2>

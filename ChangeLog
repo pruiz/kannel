@@ -1,3 +1,8 @@
+2003-09-02  Alexander Malysh  <a.malysh@centrium.de>
+    * doc/userguide/userguide.xml,gwlib/cfg.def,gw/smsc/smsc_smpp.c:
+      applied SMPP inactivity+transaction timeouts patch. For description
+      see: Message-Id: <200308202001.50721.a.malysh@centrium.de>
+
 2003-09-02  Stipe Tolj  <tolj@wapme-systems.de>
     * gwlib/socket.c: fixed a segmentation bug. If setup_official_name()
       did not have a successfull gw_gethostbyname() call, then 
