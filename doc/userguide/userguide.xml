@@ -1334,7 +1334,14 @@ bearerbox-host = localhost
         it and any other special non-alphabet characters. 
         This 'id' is written into log files and can be used to
         route SMS messages, and to specify the used SMS-service. 
-        Several smsc'es can have the same id. The name is case-insensitive.
+        Several smsc'es can have the same id. The name is
+        case-insensitive. Note that if SMS Center connection has an
+	assigned SMSC ID, it does NOT automatically mean that messages
+	with identical SMSC ID are routed to it; instead configuration
+	variables <literal>denied-smsc-id</literal>, 
+	<literal>allowed-smsc-id</literal> and
+	<literal>preferred-smsc-id</literal> is used for that.
+
      </entry></row>
 
    <row><entry><literal>denied-smsc-id</literal></entry>
@@ -1343,6 +1350,15 @@ bearerbox-host = localhost
         SMS messages with SMSC ID equal to any of the IDs in this list
         are never routed to this SMSC. Multiple entries are separated 
         with semicolons (';')
+
+     </entry></row>
+
+   <row><entry><literal>allowed-smsc-id</literal></entry>
+     <entry><literal>id-list</literal></entry>
+     <entry valign=bottom>
+        This list is opposite to previous: only SMS messages with SMSC
+        ID in this list are ever routed to this SMSC.
+        Multiple entries are separated with semicolons (';')
 
      </entry></row>
 

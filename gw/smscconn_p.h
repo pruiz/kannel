@@ -93,6 +93,7 @@ struct smscconn {
 
 
     /* Routing Octstrings common to all SMSC Connections */
+    Octstr *allowed_smsc_id;
     Octstr *denied_smsc_id;
     Octstr *preferred_smsc_id;
 

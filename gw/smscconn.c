@@ -51,10 +51,15 @@ SMSCConn *smscconn_create(ConfigGroup *grp, int start_as_stopped)
 #define GET_OPTIONAL_VAL(x, n) x = (p = config_get(grp,n)) ? octstr_create(p) : NULL
     
     GET_OPTIONAL_VAL(conn->id, "smsc-id");
+    GET_OPTIONAL_VAL(conn->allowed_smsc_id, "allowed-smsc-id");
     GET_OPTIONAL_VAL(conn->denied_smsc_id, "denied-smsc-id");
     GET_OPTIONAL_VAL(conn->preferred_smsc_id, "preferred-smsc-id");
     GET_OPTIONAL_VAL(conn->denied_prefix, "denied-prefix");
     GET_OPTIONAL_VAL(conn->preferred_prefix, "preferred-prefix");
+
+    if (conn->allowed_smsc_id && conn->denied_smsc_id)
+	warning(0, "Both 'allowed-smsc-id' and 'denied-smsc-id' set, deny-list "
+		"automatically ignored");
     
     smsc_type = config_get(grp, "smsc");
     
@@ -103,6 +108,7 @@ int smscconn_destroy(SMSCConn *conn)
 
     octstr_destroy(conn->name);
     octstr_destroy(conn->id);
+    octstr_destroy(conn->allowed_smsc_id);
     octstr_destroy(conn->denied_smsc_id);
     octstr_destroy(conn->preferred_smsc_id);
     octstr_destroy(conn->denied_prefix);
@@ -186,9 +192,23 @@ int smscconn_usable(SMSCConn *conn, Msg *msg)
     if (conn->status == SMSCCONN_KILLED || conn->is_killed)
 	return -1;
 
-    /* first check if this SMSC is denied altogether */
-    
-    if (conn->denied_smsc_id && msg->sms.smsc_id != NULL) {
+    /* if allowed-smsc-id set, then only allow this SMSC if message
+     * smsc-id matches any of its allowed SMSCes
+     */
+    if (conn->allowed_smsc_id) {
+	if (msg->sms.smsc_id == NULL)
+	    return -1;
+
+        list = octstr_split(conn->allowed_smsc_id, octstr_create_immutable(";"));
+        if (list_search(list, msg->sms.smsc_id, octstr_item_match) == NULL) {
+	    list_destroy(list, octstr_destroy_item);
+	    return -1;
+	}
+	list_destroy(list, octstr_destroy_item);
+    }
+    /* ..if no allowed-smsc-id set but denied-smsc-id and message smsc-id
+     * is set, deny message if smsc-ids match */
+    else if (conn->denied_smsc_id && msg->sms.smsc_id != NULL) {
         list = octstr_split(conn->denied_smsc_id, octstr_create_immutable(";"));
         if (list_search(list, msg->sms.smsc_id, octstr_item_match) != NULL) {
 	    list_destroy(list, octstr_destroy_item);

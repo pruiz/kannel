@@ -1,5 +1,12 @@
 2000-12-27  Kalle Marjola  <rpr@wapit.com>
 
+	* gw/smscconn.c, gw/smscconn_p.h: added new smsc configuration
+	group variable allowed-smsc-id
+
+	* doc/userguide/userguide.xml: added description
+
+2000-12-27  Kalle Marjola  <rpr@wapit.com>
+
 	* gw/smscconn_p.h, gw/smsc_wrapper.c: a bit more commented code 
 
 2000-12-22  Derry Hamilton <rasilon@tardis.ed.ac.uk>
