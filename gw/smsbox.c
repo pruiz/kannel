@@ -1924,6 +1924,9 @@ static Octstr *smsbox_req_handle(URLTranslation *t, Octstr *client_ip,
     }
     msg->sms.msgdata = text ? octstr_duplicate(text) : octstr_create("");
     msg->sms.udhdata = udh ? octstr_duplicate(udh) : octstr_create("");
+    
+    if (octstr_len(binfo))
+        msg->sms.binfo = octstr_duplicate(binfo);
 
     if(octstr_len(dlr_url)) {
 	if(octstr_len(dlr_url) < 8) { /* http(s):// */

@@ -1,4 +1,8 @@
 2003-10-17  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/smsbox.c: fixed missing assignment of msg->sms.binfo. Thanks to Paul
+      for spotting my looseliness ;)
+
+2003-10-17  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/smsc/smsc_at.[ch]: adding +CMTI, MO support. Original patch submited 
       by "Rene Kluwen" <rene.kluwen@chimit.nl> and revised by Alexander to fit
       current cvs head tree. Thanks a lot for submission.
