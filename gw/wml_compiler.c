@@ -61,6 +61,15 @@ typedef struct {
   Octstr *wbxml_string;
 } wml_binary_t;
 
+/*
+ * The string table list node.
+ */
+
+typedef struct {
+  long offset;
+  Octstr *string;
+} string_table_t;
+
 
 #include "wml_definitions.h"
 
@@ -118,18 +127,17 @@ static void wml_binary_output(Octstr *ostr, wml_binary_t *wbxml);
 static void output_char(int byte, wml_binary_t **wbxml);
 static int output_octet_string(Octstr *ostr, wml_binary_t **wbxml);
 static int output_plain_octet_string(Octstr *ostr, wml_binary_t **wbxml);
-static Octstr *output_variable(Octstr *variable, var_esc_t escaped, 
-			       wml_binary_t **wbxml);
+void output_variable(Octstr *variable, Octstr **output, var_esc_t escaped);
 
 /* 
  * String table functions, used to add and remove strings into and from the
  * string table.
  */
 
-#if 0
+static string_table_t *string_table_create(int offset, Octstr *ostr);
+static void string_table_destroy(string_table_t *node);
 static int string_table_add(Octstr *ostr, wml_binary_t **wbxml);
 static void string_table_output(Octstr *ostr, wml_binary_t **wbxml);
-#endif
 
 /*
  * The actual compiler function. This operates as interface to the compiler.
@@ -679,8 +687,8 @@ static int parse_charset(Octstr *charset)
  * - text: the octet string containing a variable
  * - start: the starting position of the variable not including 
  *   trailing &
- * Returns: lenth of the variable for success, -1 for failure. A variable 
- * encoutered in a context that doesn't allow them is considered a failure.
+ * Returns: lenth of the variable for success, -1 for failure, 0 for 
+ * variable syntax error, when it will be ignored. 
  * Parsed variable is returned as an octet string in Octstr **output.
  */
 
@@ -692,10 +700,14 @@ static int parse_variable(Octstr *text, int start, Octstr **output,
   Octstr *variable;
 
   variable = get_variable(text, start + 1);
+  octstr_truncate(*output, 0);
+
+  if (variable == NULL)
+    return 0;
 
   if (octstr_get_char(variable, 0) == '$')
     {
-      *output = octstr_create("$");
+      octstr_append_char(*output, '$');
       ret = 2;
     }
   else
@@ -708,8 +720,7 @@ static int parse_variable(Octstr *text, int start, Octstr **output,
       if ((esc = check_variable_syntax(variable)) == FAILED)
 	return -1;
       else
-	if ((*output = output_variable(variable, esc, wbxml)) == NULL)
-	  return -1;
+	output_variable(variable, output, esc);
     }
 
   octstr_destroy (variable);
@@ -720,7 +731,7 @@ static int parse_variable(Octstr *text, int start, Octstr **output,
 
 /*
  * get_variable - get the variable name from text.
- * Octstr *text contains the text with a ariable name starting at point 
+ * Octstr *text contains the text with a variable name starting at point 
  * int start.
  */
 
@@ -760,8 +771,6 @@ static Octstr *get_variable(Octstr *text, int start)
       var = octstr_copy(text, start, end - start);
     }
 
-  gw_assert(var != NULL);
-
   return var;
 }
 
@@ -769,12 +778,12 @@ static Octstr *get_variable(Octstr *text, int start)
 
 /*
  * check_variable_syntax - checks the variable syntax and the possible 
- * escepe mode it has. Octstr *variable contains the variable string.
+ * escape mode it has. Octstr *variable contains the variable string.
  */
 
 static var_esc_t check_variable_syntax(Octstr *variable)
 {
-  Octstr *escaped, *noesc, *unesc, *escape;
+  Octstr *escape;
   char *buf;
   char ch;
   int pos, len, i;
@@ -782,37 +791,25 @@ static var_esc_t check_variable_syntax(Octstr *variable)
 
   if ((pos = octstr_search_char(variable, ':')) > 0)
     {
-      buf = gw_malloc((len = (octstr_len(variable) - pos) - 1));
-      octstr_get_many_chars(buf, variable, pos + 1, len);
-      escaped = octstr_create_tolower(buf);
+      len = octstr_len(variable) - pos;
+      escape = octstr_copy(variable, pos + 1, len - 1);
       octstr_truncate(variable, pos);
-      octstr_truncate(escaped, len);
+      octstr_truncate(escape, len);
+      octstr_convert_range(escape, 0, octstr_len(escape), tolower);
 
-      noesc = octstr_create("noesc");
-      unesc = octstr_create("unesc");
-      escape = octstr_create("escape");
-
-      if (octstr_compare(escaped, noesc) == 0)
+      if (octstr_str_compare(escape, "noesc") == 0)
 	ret = NOESC;
-      else if (octstr_compare(escaped, unesc) == 0)
+      else if (octstr_str_compare(escape, "unesc") == 0)
 	ret = UNESC;
-      else if (octstr_compare(escaped, escape) == 0)
+      else if (octstr_str_compare(escape, "escape") == 0)
 	ret = ESC;
       else
 	{
 	  error(0, "WML compiler: syntax error in variable escaping.");
-	  octstr_destroy(escaped);
 	  octstr_destroy(escape);
-	  octstr_destroy(noesc);
-	  octstr_destroy(unesc);
-	  gw_free(buf);
 	  return FAILED;
 	}
-      octstr_destroy(escaped);
       octstr_destroy(escape);
-      octstr_destroy(noesc);
-      octstr_destroy(unesc);
-      gw_free(buf);
     }
   else
     ret = NOESC;
@@ -850,51 +847,39 @@ static var_esc_t check_variable_syntax(Octstr *variable)
 
 static int parse_octet_string(Octstr *ostr, wml_binary_t **wbxml)
 {
-  Octstr *output, *temp1, *temp2 = NULL, *var;
+  Octstr *output, *var, *temp = NULL;
   int var_len;
   int start = 0, pos = 0, len;
 
   /* No variables? Ok, let's take the easy way... */
 
-  if (octstr_search_char(ostr, '$') < 0)
+  if ((pos = octstr_search_char(ostr, '$')) < 0)
     return output_octet_string(ostr, wbxml);
 
   len = octstr_len(ostr);
   output = octstr_create_empty();
   var = octstr_create_empty();
 
-  for (pos = 0; pos < len; pos ++)
+  for ( ; pos < len; pos ++)
     {
       if (octstr_get_char(ostr, pos) == '$')
 	{
-	  temp1 = octstr_copy(ostr, start, pos - start);
+	  temp = octstr_copy(ostr, start, pos - start);
+	  octstr_insert(output, temp, octstr_len(output));
+	  octstr_destroy(temp);
+	  
 	  if ((var_len = parse_variable(ostr, pos, &var, wbxml)) > 0)
 	    {
 	      if (octstr_get_char(var, 0) == '$')
 		/* No, it's not actually variable, but $-character escaped as
 		   "$$". So everything should be packed into one string. */
-		{
-		  temp2 = octstr_cat(temp1, var);
-		  octstr_destroy(temp1);
-
-		  if (octstr_len(output) == 0)
-		    {	
-		      output = octstr_duplicate(temp2);
-		      octstr_destroy(temp2);
-		    }
-		  else
-		    {
-		      temp1 = octstr_cat(output, temp2);
-		      output = octstr_duplicate(temp1);
-		      octstr_destroy(temp1);
-		    }
-		}
+		octstr_insert(output, var, octstr_len(output));
 	      else
 		/* The string is output as a inline string and the variable 
 		   as a inline variable reference. */
 		{
-		  output_octet_string(temp1, wbxml);
-		  octstr_destroy(temp1);
+		  output_octet_string(output, wbxml);
+		  octstr_truncate(output, 0);
 		  output_plain_octet_string(var, wbxml);
 		}
 
@@ -905,23 +890,17 @@ static int parse_octet_string(Octstr *ostr, wml_binary_t **wbxml)
 	    return -1;
 	}
     }
-  
 
   /* Was there still something after the last variable? */
   if (start < pos - 1)
     {
-      if (octstr_len(output) != 0)
-	{
-	  temp2 = octstr_copy(ostr, start, pos - start);
-	  temp1 = octstr_cat(output, temp2);
-	  output = octstr_duplicate(temp1);
-	  octstr_destroy(temp1);
-	}
+      if (octstr_len(output) == 0)
+	output = octstr_copy(ostr, start, pos - start);
       else
 	{
-	  temp1 = octstr_copy(ostr, start, pos - start);
-	  output_octet_string(temp1, wbxml);
-	  octstr_destroy(temp1);
+	  temp = octstr_copy(ostr, start, pos - start);
+	  octstr_insert(output, temp, octstr_len(output));
+	  octstr_destroy(temp);
 	}
     }
 
@@ -986,11 +965,8 @@ static void wml_binary_output(Octstr *ostr, wml_binary_t *wbxml)
   octstr_append_char(ostr, wbxml->character_set);
   octstr_append_char(ostr, wbxml->string_table_length);
 
-  /* XXX String table is ignored atm. -tuo */
-#if 0
   if (wbxml->string_table_length > 0)
-    output_string_table(ostr, wbxml->string_table);
-#endif
+    string_table_output(ostr, &wbxml);
 
   octstr_insert(ostr, wbxml->wbxml_string, octstr_len(ostr));
 }
@@ -1034,15 +1010,8 @@ static int output_octet_string(Octstr *ostr, wml_binary_t **wbxml)
 
 static int output_plain_octet_string(Octstr *ostr, wml_binary_t **wbxml)
 {
-  Octstr *temp;
-  if ((temp = octstr_cat((*wbxml)->wbxml_string, ostr)) == NULL)
-    return -1;
-
-  octstr_destroy((*wbxml)->wbxml_string);
-
-  (*wbxml)->wbxml_string = octstr_duplicate(temp);
-
-  octstr_destroy(temp);
+  octstr_insert((*wbxml)->wbxml_string, ostr, 
+		octstr_len((*wbxml)->wbxml_string));
 
   return 0;
 }
@@ -1050,44 +1019,113 @@ static int output_plain_octet_string(Octstr *ostr, wml_binary_t **wbxml)
 
 
 /*
- * output_variable - output a variable reference into a octet string
- * that is returned to the caller. Return NULL for an error.
+ * output_variable - output a variable reference into an octet string.
  */
 
-static Octstr *output_variable(Octstr *variable, var_esc_t escaped, 
-			       wml_binary_t **wbxml)
+void output_variable(Octstr *variable, Octstr **output, var_esc_t escaped)
 {
-  char ch;
-  char cha[2];
-  Octstr *ret;
-
   switch (escaped)
     {
     case ESC:
-      ch = EXT_I_0;
-      sprintf(cha, "%c", ch);
-      if ((ret = octstr_create(cha)) == NULL)
-	error(0, "WML compiler: could not output EXT_I_0.");
+      octstr_append_char(*output, EXT_I_0);
       break;
     case UNESC:
-      ch = EXT_I_1;
-      sprintf(cha, "%c", ch);
-      if ((ret = octstr_create(cha)) == NULL)
-	error(0, "WML compiler: could not output EXT_I_1.");
+      octstr_append_char(*output, EXT_I_1);
       break;
     default:
-      ch = EXT_I_2;
-      sprintf(cha, "%c", ch);
-      if ((ret = octstr_create(cha)) == NULL)
-	error(0, "WML compiler: could not output EXT_I_2.");
+      octstr_append_char(*output, EXT_I_2);
       break;
     }
 
-  octstr_insert(ret, variable, octstr_len(ret));
-  octstr_append_char(ret, STR_END);
+  octstr_insert(*output, variable, octstr_len(*output));
+  octstr_append_char(*output, STR_END);
+}
 
-  if (ret == NULL)
-    error(0, "WML compiler: could not output variable name.");
 
-  return ret;
+
+/*
+ * string_table_create - reserves memory for the string_table_t and sets the 
+ * fields to zeroes and NULLs.
+ */
+
+static string_table_t *string_table_create(int offset, Octstr *ostr)
+{
+  string_table_t *node;
+
+  node = gw_malloc(sizeof(string_table_t));
+  node->offset = offset;
+  node->string = ostr;
+
+  return node;
+}
+
+
+
+/*
+ * string_table_destroy - frees the memory allocated for the string_table_t.
+ */
+
+static void string_table_destroy(string_table_t *node)
+{
+  if (node != NULL)
+    {
+      octstr_destroy(node->string);
+      gw_free(node);
+    }
+}
+
+
+
+/*
+ * string_table_add - adds a string to the string table. Duplicates are
+ * discarded. The function returns the offset of the string in the 
+ * string table; if the string is already in the table then the offset 
+ * of the first copy.
+ */
+
+static int string_table_add(Octstr *ostr, wml_binary_t **wbxml)
+{
+  string_table_t *item = NULL;
+  int i;
+  long offset = 0;
+
+  /* Check whether the string is unique. */
+  for (i = 0; i < list_len((*wbxml)->string_table); i++)
+    {
+      item = list_get((*wbxml)->string_table, i);
+      if (octstr_compare(item->string, ostr) == 0)
+	{
+	  octstr_destroy(ostr);
+	  return item->offset;
+	}
+    }
+
+  /* Create a new list item for the string table. */
+  octstr_append_char(ostr, STR_END);
+  offset = (*wbxml)->string_table_length;
+
+  item = string_table_create(offset, ostr);
+
+  (*wbxml)->string_table_length = 
+    (*wbxml)->string_table_length + octstr_len(ostr);
+
+  return offset;
+}
+
+
+
+/*
+ * string_table_output - writes the contents of the string table 
+ * into an octet string that is sent to the phone.
+ */
+
+static void string_table_output(Octstr *ostr, wml_binary_t **wbxml)
+{
+  string_table_t *item;
+
+  while ((item = list_extract_first((*wbxml)->string_table)) != NULL)
+    {
+      octstr_insert(ostr, item->string, octstr_len(ostr));
+      string_table_destroy(item);
+    }
 }

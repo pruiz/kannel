@@ -122,23 +122,6 @@ Octstr *octstr_create_limited(char *cstr, int max_len) {
 }
 
 
-Octstr *octstr_create_tolower(const char *cstr) {
-	int i;
-	int len;
-	Octstr *ret;
-    
-	gw_assert(cstr != NULL);
-
-	len = strlen(cstr);
-	ret = octstr_create_from_data(cstr, len);
-	for (i = 0; i < len; i ++)
-		octstr_set_char(ret, i, tolower(octstr_get_char(ret, i)));
-	
-	seems_valid(ret);
-	return ret;
-}
-
-
 Octstr *octstr_create_from_data(const void *data, long len) {
 	Octstr *ostr;
 	
