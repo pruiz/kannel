@@ -1,5 +1,9 @@
 2001-07-11 Aarno Syvänen <aarno@wiral.com>
 
+	* test/test_ppg.c: Made help more helpful
+
+2001-07-11 Aarno Syvänen <aarno@wiral.com>
+
 	* gw/wap_push_ppg.c: Committed bug fixes made by Bernard Valton
 
 2001-07-10 Aarno Syvänen <aarno@wiral.com>
