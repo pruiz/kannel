@@ -25,7 +25,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#include <ws.h>
+#include "ws.h"
 
 /********************* Prototypes for static functions ******************/
 
@@ -44,7 +44,7 @@ static void pragma_meta(const WsUtf8String *property_name,
 static char *program;
 
 /* Use ws_compile_data() instead of ws_compile_file(). */
-int eval_data = 0;
+static int eval_data = 0;
 
 /********************* Global functions *********************************/
 

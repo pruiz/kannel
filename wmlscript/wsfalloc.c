@@ -11,7 +11,7 @@
  *
  */
 
-#include <wsint.h>
+#include "wsint.h"
 
 /********************* Global functions *********************************/
 
@@ -36,11 +36,6 @@ ws_f_destroy(WsFastMalloc *pool)
 
   if (pool == NULL)
     return;
-
-#if 0
-  fprintf(stderr, "ws_f_destroy(): user_bytes_allocated=%u\n",
-	  pool->user_bytes_allocated);
-#endif
 
   for (b = pool->blocks; b; b = bnext)
     {

@@ -11,8 +11,8 @@
  *
  */
 
-#include <wsint.h>
-#include <wsasm.h>
+#include "wsint.h"
+#include "wsasm.h"
 
 /* TODO: liveness analyzation */
 

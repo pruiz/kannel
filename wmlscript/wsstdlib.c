@@ -11,7 +11,7 @@
  *
  */
 
-#include <wsint.h>
+#include "wsint.h"
 
 /* TODO: the function registry could have argument type specifier
    strings.  These could be used to generate extra warnings when

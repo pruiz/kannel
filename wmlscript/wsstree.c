@@ -12,8 +12,8 @@
  *
  */
 
-#include <wsint.h>
-#include <wsgram.h>
+#include "wsint.h"
+#include "wsgram.h"
 
 /* TODO: Constant folding. */
 

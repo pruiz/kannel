@@ -1,5 +1,11 @@
 2000-03-16  Richard Braakman  <dark@wapit.fi>
 
+	* wmlscript/*: Stylistic changes.
+
+	* wmlscript/wsbc.c: Minor bugfix in verification of bytecode.
+
+2000-03-16  Richard Braakman  <dark@wapit.fi>
+
 	* utils/run_kannel_box.c: Clean up compiler warnings, fix minor
 	bug found by rpr.
 

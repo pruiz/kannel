@@ -280,6 +280,6 @@ WsAsmIns *ws_asm_load_const(WsCompilerPtr compiler, WsUInt32 line,
 			    WsUInt16 cindex);
 
 /* Create an instruction `ins'. */
-WsAsmIns *ws_asm_ins(WsCompilerPtr compiler, WsUInt32 line, WsUInt8 ins);
+WsAsmIns *ws_asm_ins(WsCompilerPtr compiler, WsUInt32 line, WsUInt8 opcode);
 
 #endif /* not WSASM_H */

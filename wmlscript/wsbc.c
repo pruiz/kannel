@@ -11,8 +11,8 @@
  *
  */
 
-#include <wsint.h>
-#include <wsbc.h>
+#include "wsint.h"
+#include "wsbc.h"
 
 /********************* Prototypes for static functions ******************/
 
@@ -743,7 +743,7 @@ ws_bc_decode(const unsigned char *data, size_t data_len)
 	      if (('a' <= ch && ch <= 'z')
 		  || ('A' <= ch && ch <= 'Z')
 		  || ch == '_'
-		  || (k > 0 && ('0' <= ch && ch <= '9')))
+		  || (l > 0 && ('0' <= ch && ch <= '9')))
 		/* Ok. */
 		continue;
 
@@ -857,7 +857,7 @@ ws_bc_add_const_float(WsBc *bc, WsUInt16 *index_return, WsFloat value)
   WsUInt16 i;
   WsBcConstant *nc;
 
-  /* Do we already have a suitable integer constant? */
+  /* Do we already have a suitable float32 constant? */
   for (i = 0; i < bc->num_constants; i++)
     if (bc->constants[i].type == WS_BC_CONST_TYPE_FLOAT32
 	&& bc->constants[i].u.v_float == value)
@@ -890,7 +890,7 @@ ws_bc_add_const_utf8_string(WsBc *bc, WsUInt16 *index_return,
   WsUInt16 i;
   WsBcConstant *nc;
 
-  /* Do we already have a suitable integer constant? */
+  /* Do we already have a suitable utf8 constant? */
   for (i = 0; i < bc->num_constants; i++)
     if (bc->constants[i].type == WS_BC_CONST_TYPE_UTF8_STRING
 	&& bc->constants[i].u.v_string.len == len
@@ -929,7 +929,7 @@ ws_bc_add_const_empty_string(WsBc *bc, WsUInt16 *index_return)
   WsUInt16 i;
   WsBcConstant *nc;
 
-  /* Do we already have a suitable integer constant? */
+  /* Do we already have a suitable empty string constant? */
   for (i = 0; i < bc->num_constants; i++)
     if (bc->constants[i].type == WS_BC_CONST_TYPE_EMPTY_STRING)
       {

@@ -12,7 +12,7 @@
  *
  */
 
-#include <wsint.h>
+#include "wsint.h"
 
 #if !WS_MEM_DEBUG
 

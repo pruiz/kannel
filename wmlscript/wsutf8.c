@@ -13,7 +13,7 @@
  *
  */
 
-#include <wsint.h>
+#include "wsint.h"
 
 /********************* Types and definitions ****************************/
 

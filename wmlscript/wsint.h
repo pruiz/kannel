@@ -106,22 +106,22 @@ typedef enum
 
 /********************* Include sub-module headers ***********************/
 
-#include <ws.h>
-#include <wserror.h>
-#include <wsutf8.h>
-#include <wsieee754.h>
-#include <wsbuffer.h>
-#include <wsencode.h>
-#include <wsalloc.h>
-#include <wsfalloc.h>
-#include <wsstream.h>
-#include <wshash.h>
-#include <wsbc.h>
+#include "ws.h"
+#include "wserror.h"
+#include "wsutf8.h"
+#include "wsieee754.h"
+#include "wsbuffer.h"
+#include "wsencode.h"
+#include "wsalloc.h"
+#include "wsfalloc.h"
+#include "wsstream.h"
+#include "wshash.h"
+#include "wsbc.h"
 
-#include <wsstree.h>
-#include <wsasm.h>
-#include <wsopt.h>
-#include <wsstdlib.h>
+#include "wsstree.h"
+#include "wsasm.h"
+#include "wsopt.h"
+#include "wsstdlib.h"
 
 /********************* The compiler handle ******************************/
 
@@ -141,6 +141,7 @@ struct WsContBreakRec
 
 typedef struct WsContBreakRec WsContBreak;
 
+#define COMPILER_MAGIC (0xfefe0101)
 struct WsCompilerRec
 {
   /* A magic number of assure that a correct compiler handle is passed

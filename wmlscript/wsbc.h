@@ -14,7 +14,7 @@
 #ifndef WSBC_H
 #define WSBC_H
 
-#include <wsint.h>
+#include "wsint.h"
 
 /********************* Types and defintions *****************************/
 

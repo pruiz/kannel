@@ -11,9 +11,9 @@
  *
  */
 
-#include <wsint.h>
-#include <wsstree.h>
-#include <wsgram.h>
+#include "wsint.h"
+#include "wsstree.h"
+#include "wsgram.h"
 
 /********************* Types and definitions ****************************/
 
@@ -173,7 +173,7 @@ ws_yy_lex(YYSTYPE *yylval, YYLTYPE *yylloc, void *context)
   WsBool success;
 
   /* Just check that we get the correct amount of arguments. */
-  assert(compiler->magic = 0xfefe0101);
+  assert(compiler->magic = COMPILER_MAGIC);
 
   while (ws_stream_getc(compiler->input, &ch))
     {

@@ -11,9 +11,9 @@
  *
  */
 
-#include <wsint.h>
-#include <wsasm.h>
-#include <wsstdlib.h>
+#include "wsint.h"
+#include "wsasm.h"
+#include "wsstdlib.h"
 
 /********************* Macros to fetch items from BC operands ***********/
 
@@ -87,9 +87,9 @@ ws_asm_print(WsCompiler *compiler)
 		const char *lib;
 		const char *func;
 
-		(void) ws_stdlib_function_name(ins->ws_lindex,
-					       ins->ws_findex,
-					       &lib, &func);
+		ws_stdlib_function_name(ins->ws_lindex,
+				        ins->ws_findex,
+					&lib, &func);
 		ws_fprintf(WS_STDOUT, "\tcall_lib*\t%s.%s\n",
 			   lib ? lib : "???",
 			   func ? func : "???");
@@ -922,7 +922,7 @@ ws_asm_load_const(WsCompiler *compiler, WsUInt32 line, WsUInt16 cindex)
 
 
 WsAsmIns *
-ws_asm_ins(WsCompiler *compiler, WsUInt32 line, WsUInt8 ins)
+ws_asm_ins(WsCompiler *compiler, WsUInt32 line, WsUInt8 opcode)
 {
-  return asm_alloc(compiler, ins, line);
+  return asm_alloc(compiler, opcode, line);
 }

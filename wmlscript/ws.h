@@ -14,7 +14,7 @@
 #ifndef WS_H
 #define WS_H
 
-#include <wsutf8.h>
+#include "wsutf8.h"
 
 /********************* Creating and destroying compiler *****************/
 
@@ -81,7 +81,7 @@ struct WsCompilerParamsRec
 
   /* Perform expensive optimizations which require liveness
      analyzation of the local variables. */
-  unsigned int opt_analyze_variable_liveness;
+  unsigned int opt_analyze_variable_liveness : 1;
 
 
   /* Output flags. */

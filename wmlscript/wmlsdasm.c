@@ -11,7 +11,7 @@
  *
  */
 
-#include <wsint.h>
+#include "wsint.h"
 
 #include <sys/stat.h>
 

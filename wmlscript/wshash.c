@@ -11,8 +11,8 @@
  *
  */
 
-#include <wsint.h>
-#include <wshash.h>
+#include "wsint.h"
+#include "wshash.h"
 
 /********************* Types and definitions ****************************/
 

@@ -21,36 +21,36 @@
 
 #define WS_PUT_UINT8(buf, val)				\
   do {							\
-    unsigned char *_p = (unsigned char *) (buf);	\
-    _p[0] = ((unsigned int) (val) & 0xff);		\
+    unsigned char *_p = (buf);				\
+    _p[0] = ((val) & 0xff);				\
   } while (0)
 
 
 #define WS_PUT_UINT16(buf, val)				\
   do {							\
-    unsigned char *_p = (unsigned char *) (buf);	\
-    _p[0] = (((unsigned int) (val) & 0xff00) >> 8);	\
-    _p[1] = ((unsigned int)  (val) & 0xff);		\
+    unsigned char *_p = (buf);				\
+    _p[0] = (((val) & 0xff00) >> 8);			\
+    _p[1] = ((val) & 0xff);				\
   } while (0)
 
-#define WS_PUT_UINT32(buf, val)					\
-  do {								\
-    unsigned char *_p = (unsigned char *) (buf);		\
-    _p[0] = (((unsigned int) (val) & 0xff000000) >> 24);	\
-    _p[1] = (((unsigned int) (val) & 0x00ff0000) >> 16);	\
-    _p[2] = (((unsigned int) (val) & 0x0000ff00) >> 8);		\
-    _p[3] = ((unsigned int)  (val) & 0x000000ff);		\
+#define WS_PUT_UINT32(buf, val)				\
+  do {							\
+    unsigned char *_p = (buf);				\
+    _p[0] = (((val) & 0xff000000) >> 24);		\
+    _p[1] = (((val) & 0x00ff0000) >> 16);		\
+    _p[2] = (((val) & 0x0000ff00) >> 8);		\
+    _p[3] = ((val) & 0x000000ff);			\
   } while (0)
 
 #define WS_GET_UINT8(buf, var)				\
   do {							\
-    unsigned char *_p = (unsigned char *) (buf);	\
+    const unsigned char *_p = (buf);				\
     (var) = _p[0];					\
   } while (0);
 
 #define WS_GET_UINT16(buf, var)				\
   do {							\
-    unsigned char *_p = (unsigned char *) (buf);	\
+    const unsigned char *_p = (buf);				\
     WsUInt16 _val;					\
     _val = _p[0];					\
     _val <<= 8;						\
@@ -60,7 +60,7 @@
 
 #define WS_GET_UINT32(buf, var)				\
   do {							\
-    unsigned char *_p = (unsigned char *) (buf);	\
+    const unsigned char *_p = (buf);				\
     WsUInt32 _val;					\
     _val = _p[0];					\
     _val <<= 8;						\

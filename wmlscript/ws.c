@@ -12,10 +12,10 @@
  *
  */
 
-#include <wsint.h>
-#include <ws.h>
-#include <wsstree.h>
-#include <wsasm.h>
+#include "wsint.h"
+#include "ws.h"
+#include "wsstree.h"
+#include "wsasm.h"
 
 /********************* Types and definitions ****************************/
 
@@ -88,11 +88,11 @@ ws_create(const WsCompilerParams *params)
 
   /* Store user params if specified. */
   if (params)
-    memcpy(&compiler->params, params, sizeof(*params));
+    compiler->params = *params;
 
   /* Basic initialization. */
 
-  compiler->magic = 0xfefe0101;
+  compiler->magic = COMPILER_MAGIC;
 
   if (compiler->params.stdout_cb == NULL)
     {
@@ -340,7 +340,7 @@ compile_stream(WsCompilerPtr compiler, const char *input_name,
   global_compiler = compiler;
 #endif /* WS_DEBUG */
 
-  (void) ws_yy_parse(compiler);
+  ws_yy_parse(compiler);
 
   /* Free all lexer's active not freed blocks.  If we have any blocks
      on the used list, our compilation was not successful. */
