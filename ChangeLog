@@ -1,5 +1,11 @@
 2001-09-07 Andreas Fink <andreas@fink.org>
 	* gw/smsc_at2.c
+	some systems dont have SSIZE_MAX defined
+	so I presume its larger than 1024 in those cases
+	On my system SSIZE_MAX is INT_MAX which is ((int)(~0U>>1))
+	
+2001-09-07 Andreas Fink <andreas@fink.org>
+	* gw/smsc_at2.c
 	fixed to wait for OK while sending
 	AT+CNMS to acknowledge the received
 	packet. Changed the doc

@@ -76,6 +76,8 @@ struct modem_def ModemTypes[MAX_MODEM_TYPES] =
     { "ericcson",	"AT+IFC=2,2"	, 9600  , "AT+CNMI=3,2,0,0",	"R520m",	NULL,	0, 0, 1, 1, 1	}
 };
 
+/* maximum data to attempt to read in one go */
+#define	MAX_READ	1023
 
 /******************************************************************************
  * Message types defines
@@ -254,11 +256,10 @@ void	at2_close_device(PrivAT2data *privdata)
 ** and adds them to the line buffer
 */
 
-#define	MAX_READ	1024
 
 void	at2_read_buffer(PrivAT2data *privdata)
 {
-    char buf[MAX_READ];
+    char buf[MAX_READ+1];
     int s;
     int count;
  
@@ -268,9 +269,12 @@ void	at2_read_buffer(PrivAT2data *privdata)
   	return;
     }
     count = MAX_READ;
+
+#ifdef	SSIZE_MAX
     if(count > SSIZE_MAX)
     	count = SSIZE_MAX;
-    	
+#endif
+	
     s = read(privdata->fd, buf,count);
     if(s > 0)
     	octstr_append_data(privdata->ilb, buf, s);
