@@ -74,6 +74,7 @@ SINGLE_GROUP(wapbox,
     OCTSTR(log-level)
     OCTSTR(syslog-level)
     OCTSTR(force-sar)
+    OCTSTR(smart-errors)
 )
 
 SINGLE_GROUP(wtls,

@@ -44,6 +44,7 @@ static long heartbeat_freq = BB_DEFAULT_HEARTBEAT;
 static long heartbeat_thread;
 static Counter *sequence_counter = NULL;
 int wtp_forced_sar = 0;
+int wsp_smart_errors = 0;
 
 #ifdef HAVE_WTLS_OPENSSL
 RSA* private_key = NULL;
@@ -164,6 +165,12 @@ static Cfg *read_config(Octstr *filename)
 
     /* check if we are using a kludge to allow WTP-SAR only clients */
     cfg_get_bool(&wtp_forced_sar, grp, octstr_imm("force-sar"));
+
+    /* 
+     * users may define 'smart-errors' to have WML decks returned with
+     * error information instread of signaling using the HTTP reply codes
+     */
+    cfg_get_bool(&wsp_smart_errors, grp, octstr_imm("smart-errors"));
 
     /* configure the 'wtls' group */
 #if (HAVE_WTLS_OPENSSL)
