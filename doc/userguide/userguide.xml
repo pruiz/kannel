@@ -423,6 +423,7 @@
         chapter and 'smsbox', 'smsc' (SMS center), 'sms-service' and
         'sendsms-user' groups are in the SMS Kannel chapter.</para>
 
+  
 
 <sect2>
 <title>Configuration file syntax</title>
@@ -488,7 +489,11 @@ admin-password = f00bar
 
    Naturally this is not sufficient for any real use, as you want to
    use Kannel as an SMS gateway, or WAP gateway, or both. Thus, one or
-   more of the optional configuration variables are used.</para>
+   more of the optional configuration variables are used. In following
+   list (as in any other similar lists), all mandatory variables are
+   marked with <literal>(m)</literal>, while conditionally mandatory
+   (variables which must be set in certain cases) are marked with
+   <literal>(c)</literal>.</para>
 
 
  <table frame=none>
@@ -502,13 +507,13 @@ admin-password = f00bar
    </row>
   </thead>
   <tbody>
-   <row><entry><literal>group</literal></entry>
+   <row><entry><literal>group (m)</literal></entry>
      <entry><literal>core</literal></entry>
      <entry valign=bottom>
        This is a mandatory variable
      </entry></row>
 
-    <row><entry><literal>admin-port</literal></entry>
+    <row><entry><literal>admin-port (m)</literal></entry>
      <entry>port-number</entry>
      <entry valign=bottom>
         The port number in which the bearerbox listens to HTTP
@@ -518,7 +523,7 @@ admin-password = f00bar
         root process (not recommended)
      </entry></row>
 
-    <row><entry><literal>admin-password</literal></entry>
+    <row><entry><literal>admin-password (m)</literal></entry>
      <entry>string</entry>
      <entry valign=bottom>
          Password for HTTP administration commands (see below)
@@ -536,7 +541,7 @@ admin-password = f00bar
     <row><entry><literal>admin-allow-ip</literal></entry></row>
 
 
-    <row><entry><literal>smsbox-port</literal></entry>
+    <row><entry><literal>smsbox-port (c)</literal></entry>
      <entry>port-number</entry>
      <entry valign=bottom>
         This is the port number to which the smsboxes, if any, connect.
@@ -544,7 +549,7 @@ admin-password = f00bar
         if you want to handle any SMS traffic.
      </entry></row>
 
-    <row><entry><literal>wapbox-port</literal></entry>
+    <row><entry><literal>wapbox-port (c)</literal></entry>
      <entry>port-number</entry>
      <entry valign=bottom>
         Like smsbox-port, but for wapbox-connections. If not set,
@@ -562,7 +567,7 @@ admin-password = f00bar
      </entry></row>
     <row><entry><literal>bow-allow-ip</literal></entry></row>
 
-    <row><entry><literal>wdp-interface-name</literal></entry>
+    <row><entry><literal>wdp-interface-name (c)</literal></entry>
      <entry>IP or '*'</entry>
      <entry valign=bottom>
         If this is set, Kannel listens to WAP UDP packets incoming to
@@ -969,13 +974,13 @@ bearerbox-host = localhost
    </row>
   </thead>
   <tbody>
-   <row><entry><literal>group</literal></entry>
+   <row><entry><literal>group (m)</literal></entry>
      <entry><literal>wapbox</literal></entry>
      <entry valign=bottom>
        This is mandatory variable
      </entry></row>
 
-   <row><entry><literal>bearerbox-host</literal></entry>
+   <row><entry><literal>bearerbox-host (m)</literal></entry>
      <entry><literal>hostname</literal></entry>
      <entry valign=bottom>
         The machine in which the bearerbox is. 
@@ -1151,13 +1156,13 @@ bearerbox-host = localhost
    </row>
   </thead>
   <tbody>
-   <row><entry><literal>group</literal></entry>
+   <row><entry><literal>group (m)</literal></entry>
      <entry><literal>smsc</literal></entry>
      <entry valign=bottom>
        This is a mandatory variable
      </entry></row>
 
-   <row><entry><literal>smsc</literal></entry>
+   <row><entry><literal>smsc (m)</literal></entry>
      <entry><literal>string</literal></entry>
      <entry valign=bottom>
        Identifies the SMS center type. See below
@@ -1265,26 +1270,26 @@ keepalive = 5
      <entry>Description</entry>
    </row></thead><tbody>
 
-   <row><entry><literal>host</literal></entry>
+   <row><entry><literal>host (m)</literal></entry>
      <entry><literal>hostname</literal></entry>
      <entry valign=bottom>
         Machine that runs the SMSC. As IP (100.100.100.100) 
         or hostname (their.machine.here)
      </entry></row>
 
-   <row><entry><literal>port</literal></entry>
+   <row><entry><literal>port (m)</literal></entry>
      <entry><literal>port-number</literal></entry>
      <entry valign=bottom>
        Port number in the smsc host machine
      </entry></row>
 
-   <row><entry><literal>smsc-username</literal></entry>
+   <row><entry><literal>smsc-username (m)</literal></entry>
      <entry><literal>string</literal></entry>
      <entry valign=bottom>
        Username in the SMSC machine/connection account
      </entry></row>
 
-   <row><entry><literal>smsc-password</literal></entry>
+   <row><entry><literal>smsc-password (m)</literal></entry>
      <entry><literal>string</literal></entry>
      <entry valign=bottom>
         Password in the SMSC machine needed to contact SMSC
@@ -1338,20 +1343,32 @@ smsc-password = bar
      <entry>Description</entry>
    </row></thead><tbody>
 
-   <row><entry><literal>host</literal></entry>
+   <row><entry><literal>host (c)</literal></entry>
      <entry><literal>hostname</literal></entry>
      <entry valign=bottom>
         Machine that runs SMSC. As IP (100.100.100.100) 
         or hostname (their.machine.here)
      </entry></row>
 
-   <row><entry><literal>port</literal></entry>
+   <row><entry><literal>port (c)</literal></entry>
      <entry><literal>port-number</literal></entry>
      <entry valign=bottom>
        Port number in the SMSC host machine
      </entry></row>
 
-   <row><entry><literal>device</literal></entry>
+   <row><entry><literal>smsc-username (m)</literal></entry>
+     <entry><literal>string</literal></entry>
+     <entry valign=bottom>
+       Username in the SMSC machine/connection account
+     </entry></row>
+
+   <row><entry><literal>smsc-password (m)</literal></entry>
+     <entry><literal>string</literal></entry>
+     <entry valign=bottom>
+        Password in the SMSC machine needed to contact SMSC
+     </entry></row>
+
+   <row><entry><literal>device (c)</literal></entry>
      <entry><literal>device-name</literal></entry>
      <entry valign=bottom>
           The device the modem is connected to, like <literal>/dev/ttyS0</literal>.
@@ -1410,14 +1427,14 @@ address-range = ""
      <entry>Description</entry>
    </row></thead><tbody>
 
-   <row><entry><literal>host</literal></entry>
+   <row><entry><literal>host (m)</literal></entry>
      <entry><literal>hostname</literal></entry>
      <entry valign=bottom>
         Machine that runs SMSC. As IP (100.100.100.100) 
         or hostname (their.machine.here)
      </entry></row>
 
-   <row><entry><literal>port</literal></entry>
+   <row><entry><literal>port (m)</literal></entry>
      <entry><literal>port-number</literal></entry>
      <entry valign=bottom>
        The port number for the TRANSMITTER connection to the SM-SC. 
@@ -1431,7 +1448,7 @@ address-range = ""
        May be the same as port.
      </entry></row>
 
-   <row><entry><literal>system-id</literal></entry>
+   <row><entry><literal>system-id (m)</literal></entry>
      <entry><literal>string</literal></entry>
      <entry valign=bottom>
        The 'username' of the Messaging Entity connecting to the
@@ -1442,7 +1459,7 @@ address-range = ""
        is accordingly "SMPP_ZAP".
      </entry></row>
 
-   <row><entry><literal>smsc-password</literal></entry>
+   <row><entry><literal>smsc-password (m)</literal></entry>
      <entry><literal>string</literal></entry>
      <entry valign=bottom>
        The password matching the "system-id" your teleoperator
@@ -1450,14 +1467,14 @@ address-range = ""
      </entry></row>
 
 
-   <row><entry><literal>system-type</literal></entry>
+   <row><entry><literal>system-type (m)</literal></entry>
      <entry><literal>string</literal></entry>
      <entry valign=bottom>
        Usually you can get away with "VMA" which stands for
        Voice Mail Activation.
      </entry></row>
 
-   <row><entry><literal>address-range</literal></entry>
+   <row><entry><literal>address-range (m)</literal></entry>
      <entry><literal>string</literal></entry>
      <entry valign=bottom>
        According to the SMPP 3.4 spec this is supposed to
@@ -1533,7 +1550,7 @@ pin = 2345
         <literal>premicell</literal>, <literal>siemens</literal>.
      </entry></row>
 
-   <row><entry><literal>device</literal></entry>
+   <row><entry><literal>device (m)</literal></entry>
      <entry><literal>device-name</literal></entry>
      <entry valign=bottom>
           The device the modem is connected to, like <literal>/dev/ttyS0</literal>.
@@ -1577,14 +1594,14 @@ port = 10000
      <entry>Description</entry>
    </row></thead><tbody>
 
-   <row><entry><literal>host</literal></entry>
+   <row><entry><literal>host (m)</literal></entry>
      <entry><literal>hostname</literal></entry>
      <entry valign=bottom>
         Machine that runs the SMSC. As IP (100.100.100.100) 
         or hostname (their.machine.here)
      </entry></row>
 
-   <row><entry><literal>port</literal></entry>
+   <row><entry><literal>port (m)</literal></entry>
      <entry><literal>port-number</literal></entry>
      <entry valign=bottom>
        Port number in smsc host machine
@@ -1640,19 +1657,19 @@ bearerbox-host = localhost
    </row>
   </thead>
   <tbody>
-   <row><entry><literal>group</literal></entry>
+   <row><entry><literal>group (m)</literal></entry>
      <entry><literal>smsbox</literal></entry>
      <entry valign=bottom>
        This is a mandatory variable
      </entry></row>
 
-   <row><entry><literal>bearerbox-host</literal></entry>
+   <row><entry><literal>bearerbox-host (m)</literal></entry>
      <entry><literal>hostname</literal></entry>
      <entry valign=bottom>
         The machine in which the bearerbox is. 
      </entry></row>
 
-    <row><entry><literal>sendsms-port</literal></entry>
+    <row><entry><literal>sendsms-port (c)</literal></entry>
      <entry>port-number</entry>
      <entry valign=bottom>
         The port in which any sendsms HTTP requests are done. As with
@@ -1760,13 +1777,13 @@ url = "http://%S"
    </row>
   </thead>
   <tbody>
-   <row><entry><literal>group</literal></entry>
+   <row><entry><literal>group (m)</literal></entry>
      <entry><literal>sms-service</literal></entry>
      <entry valign=bottom>
        This is a mandatory variable
      </entry></row>
 
-   <row><entry><literal>keyword</literal></entry>
+   <row><entry><literal>keyword (m)</literal></entry>
      <entry>word</entry>
      <entry valign=bottom>
         Services are identified by the first word in the SMS Each
@@ -1787,7 +1804,7 @@ url = "http://%S"
 
      </entry></row>
 
-   <row><entry><literal>url</literal></entry>
+   <row><entry><literal>url (c)</literal></entry>
      <entry>URL</entry>
      <entry valign=bottom>
         Requested URL. The url can include a list of parameters, which are
@@ -1798,7 +1815,7 @@ url = "http://%S"
      </entry></row>
 
 
-   <row><entry><literal>file</literal></entry>
+   <row><entry><literal>file (c)</literal></entry>
      <entry>filename</entry>
      <entry valign=bottom>
         File read from a local disc. Use this variable only if no
@@ -1808,7 +1825,7 @@ url = "http://%S"
 
      </entry></row>
 
-   <row><entry><literal>text</literal></entry>
+   <row><entry><literal>text (c)</literal></entry>
      <entry>string</entry>
      <entry valign=bottom>
         Predefined text answer. Only if there is neither <literal>url</literal> nor 
@@ -2010,19 +2027,19 @@ text = "No action spesified"
    </row>
   </thead>
   <tbody>
-   <row><entry><literal>group</literal></entry>
+   <row><entry><literal>group (m)</literal></entry>
      <entry><literal>sendsms-user</literal></entry>
      <entry valign=bottom>
        This is a mandatory variable
      </entry></row>
 
-   <row><entry><literal>username</literal></entry>
+   <row><entry><literal>username (m)</literal></entry>
      <entry>string</entry>
      <entry valign=bottom>
        Name for the user/account. 
      </entry></row>
 
-   <row><entry><literal>password</literal></entry>
+   <row><entry><literal>password (m)</literal></entry>
      <entry>string</entry>
      <entry valign=bottom>
        Password for the user (see HTTP interface, below)

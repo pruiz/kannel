@@ -1,5 +1,11 @@
 2000-10-26  Kalle Marjola  <rpr@wapit.com>
 
+	* doc/userguide/userguide.xml: added (m) 'mandatory' and (c)
+	'conditionally mandatory) markings to all configuration file
+	variables. 
+	
+2000-10-26  Kalle Marjola  <rpr@wapit.com>
+
 	* gw/smsbox_req.c: fixed that messages with no translation are
 	handled correctly
 
