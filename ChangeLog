@@ -1,3 +1,10 @@
+2000-10-03  Kalle Marjola  <rpr@wapit.com>
+
+	* test/fakesmsc.c: Updated to use general Kannel command line
+	interface - now use options -p, -i and -m to set various fakesmsc
+	settings. Also changed messages to 'debug' level so that there is
+	some use for -v argument.
+
 2000-10-03  Richard Braakman  <dark@wapit.com>
 
 	* gw/wsp-strings.c: Correct silly mistake in string_to_number.
