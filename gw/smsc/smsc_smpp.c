@@ -365,10 +365,9 @@ static Msg *pdu_to_msg(SMPP *smpp, SMPP_PDU *pdu, long *reason)
         /* international, insert '+' if not already here */
         if (octstr_get_char(pdu->u.deliver_sm.source_addr, 0) != '+')
             octstr_insert_char(pdu->u.deliver_sm.source_addr, 0, '+');
-    }
-    else if ((ton == GSM_ADDR_TON_ALPHANUMERIC ||
-             !octstr_check_range(pdu->u.deliver_sm.source_addr, 0, 256, gw_isdigit)) &&
-	         octstr_len(pdu->u.deliver_sm.source_addr) > 11) {
+    } else if (octstr_len(pdu->u.deliver_sm.source_addr) > 11 &&
+               (ton == GSM_ADDR_TON_ALPHANUMERIC ||
+               !octstr_check_range(pdu->u.deliver_sm.source_addr, 0, 256, gw_isdigit))) {
         /* alphanum sender, max. allowed length is 11 (according to GSM specs) */
         *reason = SMPP_ESME_RINVSRCADR;
         goto error;
