@@ -71,11 +71,13 @@ void debug(const char *, int, const char *, ...) PRINTFLIKE2 ;
  */
 void log_set_debug_places(const char *places);
 
-
 /* Set minimum level for output messages to stderr. Messages with a lower 
    level are not printed to standard error, but may be printed to files
    (see below). */
 void log_set_output_level(enum output_level level);
+
+/* Set minimum level for output messages to logfiles */
+void log_set_log_level(enum output_level level);
 
 /*
  * Set syslog usage. If `ident' is NULL, syslog is not used.

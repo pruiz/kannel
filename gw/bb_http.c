@@ -95,6 +95,27 @@ static Octstr *httpd_store_status(List *cgivars, int status_type)
     return store_status(status_type);
 }
 
+static Octstr *httpd_loglevel(List *cgivars)
+{
+    Octstr *reply;
+    Octstr *level;
+    int new_loglevel;
+    
+    if ((reply = httpd_check_authorization(cgivars, 0))!= NULL) return reply;
+    if ((reply = httpd_check_status())!= NULL) return reply;
+ 
+    /* check if new loglevel is given */
+    level = http_cgi_variable(cgivars, "level");
+    if (level) {
+        new_loglevel = atoi(octstr_get_cstr(level));
+        log_set_log_level(new_loglevel);
+        return octstr_format("log-level set to %d", new_loglevel);
+    }
+    else {
+        return octstr_create("New level not given");
+    }
+}
+
 static Octstr *httpd_shutdown(List *cgivars)
 {
     Octstr *reply;
@@ -261,6 +282,9 @@ static void httpd_serve(HTTPClient *client, Octstr *url, List *headers,
     } else if (octstr_str_compare(url, "/store-status.xml") == 0) {
         status_type = BBSTATUS_XML;
         reply = httpd_store_status(cgivars, status_type);
+    } else if (octstr_str_compare(url, "/cgi-bin/loglevel")==0
+	       || octstr_str_compare(url, "/loglevel")==0) {
+	reply = httpd_loglevel(cgivars);
     } else if (octstr_str_compare(url, "/cgi-bin/shutdown")==0
 	       || octstr_str_compare(url, "/shutdown")==0) {
 	reply = httpd_shutdown(cgivars);

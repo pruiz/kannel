@@ -92,6 +92,20 @@ void log_set_output_level(enum output_level level)
     }
 }
 
+void log_set_log_level(enum output_level level) 
+{
+    int i;
+    
+    /* 
+     * start with index 1, because 0 is stderr and
+     * we want to keep that untouched.
+     */
+    for (i = 1; i < num_logfiles; ++i) {
+	    logfiles[i].minimum_output_level = level;
+        info(0, "Changed logfile `%s' to level `%d'.", &logfiles[i].filename, level);
+    }
+}
+
 
 void log_set_syslog(const char *ident, int syslog_level) 
 {
