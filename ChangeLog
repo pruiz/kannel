@@ -1,4 +1,9 @@
 2002-02-20  Stipe Tolj  <tolj@wapme-systems.de>
+    * gwlib/conn.c: fixing mutex race condition in conn_register()
+      suggested by: Uoti Urpala <uoti.urpala@netikos.com>
+      [Msg-ID: <3C724267.1040508@netikos.com>]
+      
+2002-02-20  Stipe Tolj  <tolj@wapme-systems.de>
     * gwlib/conn.c: fixing major bug in poll_callback() that
       caused heavy CPU cycling impact on Linux and system error
       on Solaris and Cygwin while handling the poll in/out.
