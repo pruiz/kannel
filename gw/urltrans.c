@@ -545,7 +545,6 @@ static URLTranslation *find_default_translation(URLTranslationList *trans)
     for (t = trans->list; t != NULL; t = t->next) {
 	if (t->keyword != NULL && strcasecmp("default", t->keyword) == 0)
 	    break;
-	t = t->next;
     }
     return t;
 }

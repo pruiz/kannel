@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <assert.h>
 
 #include <netdb.h>
 #include <sys/types.h>
@@ -95,6 +96,8 @@ int boxc_close(BOXC *boxc)
 int boxc_send_message(BOXC *boxc, RQueueItem *msg, RQueue *reply_queue)
 {
     int ack = 0;
+
+    assert(msg != NULL);
     
     if (msg->msg_type == R_MSG_TYPE_ACK ||
 	msg->msg_type == R_MSG_TYPE_NACK) {
@@ -142,7 +145,7 @@ int boxc_send_message(BOXC *boxc, RQueueItem *msg, RQueue *reply_queue)
      } else
      *
      */
-	rqi_delete(msg);	/* delete message */
+    rqi_delete(msg);	/* delete message */
     
 	
     return 0;
@@ -157,6 +160,8 @@ int boxc_get_message(BOXC *boxc, RQueueItem **rmsg)
     RQueueItem *msg;
     int ret;
 
+    assert(boxc != NULL);
+    
     msg = NULL;
     *rmsg = NULL;
     if (boxc->fd == BOXC_THREAD)

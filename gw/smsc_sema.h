@@ -308,7 +308,7 @@ static int sema_msglist_push(sema_msglist*, sema_msg*);
 
 static int sema_msglist_pop(sema_msglist*, sema_msg**);
 
-static int sema_msgbuffer_pop(Octstr *, Octstr **);
+/* static int sema_msgbuffer_pop(Octstr *, Octstr **); */
 
 static int sema_decode_msg(sema_msg**, char*);
 

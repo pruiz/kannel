@@ -1,6 +1,12 @@
 TESTCASES for the WapIT Open Source SMS Gateway
 by gw@wapit.com.
 
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+NOTE: This file is ONLY for old SMS Gateway, not for the Kannel!
+(SMS and WAP Gateway)
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 This file lists each step of the test cases that a release candidate
 of the gateway must pass before a new release can be made. Any problems

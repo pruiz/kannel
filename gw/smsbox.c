@@ -101,7 +101,7 @@ static sig_atomic_t 	abort_program = 0;
 int socket_sender(Msg *pmsg)
 {
     Octstr *pack;
-    
+
     pack = msg_pack(pmsg);
     if (pack == NULL)
 	goto error;

@@ -1,3 +1,14 @@
+2000-03-08    <rpr@rpr.wapit.com>
+
+	* gw/smsbox_req.c: started re-working on UDHs, all new code
+	commented out, yet
+
+	* gw/bb_msg.c, gw/boxc.c: added assertions and some extra checking
+
+	* gw/urltrans.c: fixed an error in 'default' rule finding code
+
+	* gw/smsc_sema.h: commented out a function prototype not implemented
+
 Tue Mar  7 16:40:49 CET 2000	Patrick Schaaf	<bof@bof.de>
 
 	* gwlib/http.{c,h}: Added httprequest_replace_header() function,
