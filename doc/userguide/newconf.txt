@@ -219,13 +219,14 @@ Remaining variables are smsc-dependant.
  #       the device like /dev/ttyS0. Used with EMI accessed via modem
  #
  smsc_nua = (X121 smsc address)
- #       address of smsc for sms2000 protocal using x28
- #
+ #	 The address of an SMSC for Sema SMS2000 protocols using an X.28 
+ #  	 connection.
  home_nua = (x121 radio pad address)
- #       radio pad implement sms2000 using x28 
+ #       The address of a radio PAD implementing Sema SMS2000 using X.28 
+ #  	 connection.
  #
  wait_report = 0/1 (0 means false, 1 means true)
- #       used by sms2000 protocol 
+ #       Report indicator used by the Sema SMS2000 protocol.
  #
  alt-charset = (number)
  #       As some SMS Centers do not follow the standards in character
