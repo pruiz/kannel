@@ -1,3 +1,8 @@
+2001-03-26  Uoti Urpala  <uau@wapit.com>
+
+	* gw/msg.c: Fixed bug when sizeof(long) != 4, removed unneeded
+	code.
+
 2001-03-23  Richard Braakman  <dark@xs4all.nl>
 
 	* gw/smsbox.c: Fix call to alog (urltrans_username returns

@@ -20,7 +20,6 @@
  */
 
 static void append_integer(Octstr *os, long i);
-static void prepend_integer(Octstr *os, long i);
 static void append_string(Octstr *os, Octstr *field);
 
 static int parse_integer(long *i, Octstr *packed, int *off);
@@ -127,8 +126,6 @@ Octstr *msg_pack(Msg *msg)
               msg->type);
     }
 
-    prepend_integer(os, octstr_len(os));
-
     return os;
 }
 
@@ -144,10 +141,6 @@ Msg *msg_unpack(Octstr *os)
         goto error;
 
     off = 0;
-
-    /* Skip length. */
-    if (parse_integer(&i, os, &off) == -1)
-        goto error;
 
     if (parse_integer(&i, os, &off) == -1)
         goto error;
@@ -182,22 +175,10 @@ error:
 
 static void append_integer(Octstr *os, long i)
 {
-    Octstr *temp;
+    unsigned char buf[4];
 
-    i = htonl(i);
-    temp = octstr_create_from_data((char *) & i, sizeof(i));
-    octstr_insert(os, temp, octstr_len(os));
-    octstr_destroy(temp);
-}
-
-static void prepend_integer(Octstr *os, long i)
-{
-    Octstr *temp;
-
-    i = htonl(i);
-    temp = octstr_create_from_data((char *) & i, sizeof(i));
-    octstr_insert(os, temp, 0);
-    octstr_destroy(temp);
+    encode_network_long(buf, i);
+    octstr_append_data(os, buf, 4);
 }
 
 static void append_string(Octstr *os, Octstr *field)
@@ -213,15 +194,17 @@ static void append_string(Octstr *os, Octstr *field)
 
 static int parse_integer(long *i, Octstr *packed, int *off)
 {
+    unsigned char buf[4];
+
     gw_assert(*off >= 0);
-    if ((int) sizeof(long) + *off > octstr_len(packed)) {
+    if (*off + 4 > octstr_len(packed)) {
         error(0, "Packet too short while unpacking Msg.");
         return -1;
     }
 
-    octstr_get_many_chars((char *) i, packed, *off, sizeof(long));
-    *i = ntohl(*i);
-    *off += sizeof(long);
+    octstr_get_many_chars(buf, packed, *off, 4);
+    *i = decode_network_long(buf);
+    *off += 4;
     return 0;
 }
 
