@@ -4,8 +4,11 @@
  */
 
 /* TODO: Check checksums on incoming packets */
+/* TODO: Leading or trailing spaces are not allowed on parameters
+ * "user identity" and "password".  Check this. */
+/* TODO: Try to use the "More messages to send" flag */
 
-/* This code is based on the CIMD 2 spec, version 1-0 en.
+/* This code is based on the CIMD 2 spec, version 2-0 en.
  * All USSD-specific parts have been left out, since we only want to
  * communicate with SMSC's.
  *
@@ -69,10 +72,13 @@ enum {
     P_PASSWORD = 11,
     P_DESTINATION_ADDRESS = 21,
     P_ORIGINATING_ADDRESS = 23,
+    P_ORIGINATING_IMSI = 26,
+    P_ORIGINATED_VISITED_MSC = 28,
     P_DATA_CODING_SCHEME = 30,
     P_USER_DATA_HEADER = 32,
     P_USER_DATA = 33,
     P_USER_DATA_BINARY = 34,
+    P_MORE_MESSAGES_TO_SEND = 44,
     P_VALIDITY_PERIOD_RELATIVE = 50,
     P_VALIDITY_PERIOD_ABSOLUTE = 51,
     P_PROTOCOL_IDENTIFIER = 52,
@@ -84,6 +90,7 @@ enum {
     P_CANCEL_MODE = 59,
     P_MC_TIMESTAMP = 60,
     P_STATUS_CODE = 61,
+    P_STATUS_ERROR_CODE = 62,
     P_DISCHARGE_TIME = 63,
     P_TARIFF_CLASS = 64,
     P_SERVICE_DESCRIPTION = 65,
@@ -121,21 +128,26 @@ parameters[] = {
     { "password", P_PASSWORD, 32, P_STRING },
     { "destination address", P_DESTINATION_ADDRESS, 20, P_ADDRESS },
     { "originating address", P_ORIGINATING_ADDRESS, 20, P_ADDRESS },
+    /* IMSI is International Mobile Subscriber Identity number */
+    { "originating IMSI", P_ORIGINATING_IMSI, 20, P_ADDRESS },
+    { "originated visited MSC", P_ORIGINATED_VISITED_MSC, 20, P_ADDRESS },
     { "data coding scheme", P_DATA_CODING_SCHEME, 3, P_INT, 0, 255 },
     { "user data header", P_USER_DATA_HEADER, 280, P_HEX },
     { "user data", P_USER_DATA, 480, P_SMS },
     { "user data binary", P_USER_DATA_BINARY, 280, P_HEX },
+    { "more messages to send", P_MORE_MESSAGES_TO_SEND, 1, P_INT, 0, 1 },
     { "validity period relative", P_VALIDITY_PERIOD_RELATIVE, 3, P_INT, -1, 255 },
     { "validity period absolute", P_VALIDITY_PERIOD_ABSOLUTE, 12, P_TIME },
     { "protocol identifier", P_PROTOCOL_IDENTIFIER, 3, P_INT, 0, 255 },
     { "first delivery time relative", P_FIRST_DELIVERY_TIME_RELATIVE, 3, P_INT, -1, 255 },
     { "first delivery time absolute", P_FIRST_DELIVERY_TIME_ABSOLUTE, 12, P_TIME },
     { "reply path", P_REPLY_PATH, 1, P_INT, 0, 1 },
-    { "status report request", P_STATUS_REPORT_REQUEST, 2, P_INT, 0, 32 },
+    { "status report request", P_STATUS_REPORT_REQUEST, 2, P_INT, 0, 63 },
     { "cancel enabled", P_CANCEL_ENABLED, 1, P_INT, 0, 1 },
     { "cancel mode", P_CANCEL_MODE, 1, P_INT, 0, 2 },
-    { "MC timestamp", P_MC_TIMESTAMP, 12, P_TIME },
+    { "service centre timestamp", P_MC_TIMESTAMP, 12, P_TIME },
     { "status code", P_STATUS_CODE, 2, P_INT, 0, 9 },
+    { "status error code", P_STATUS_ERROR_CODE, 3, P_INT, 0, 999 },
     { "discharge time", P_DISCHARGE_TIME, 12, P_TIME },
     { "tariff class", P_TARIFF_CLASS, 2, P_INT, 0, 99 },
     { "service description", P_SERVICE_DESCRIPTION, 1, P_INT, 0, 9 },
@@ -144,8 +156,6 @@ parameters[] = {
     { "delivery request mode", P_DELIVERY_REQUEST_MODE, 1, P_INT, 0, 2 },
     { "get parameter", P_GET_PARAMETER, 3, P_INT, 501, 999 },
     { "MC time", P_MC_TIME, 12, P_TIME },
-    /* Spec is contradictory about error code.  It says they should be
-     * of max length 2, but it lists 3-digit error codes to use. */
     { "error code", P_ERROR_CODE, 3, P_INT, 0, 999 },
     { "error text", P_ERROR_TEXT, 64, P_STRING },
     { NULL }
@@ -1524,7 +1534,7 @@ next_reply:
         warning(0, "CIMD2 received NACK");
         octstr_dump(reply->data, 0);
         /* Correct sequence number if server says it was wrong,
-        	 * but only if server's number is sane. */
+         * but only if server's number is sane. */
         if (reply->seq != request->seq && (reply->seq % 1) == 1) {
             warning(0, "correcting sequence number from %ld to %ld.",
                     (long) smsc->cimd2_send_seq, (long) reply->seq);

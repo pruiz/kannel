@@ -1,3 +1,10 @@
+2001-02-01  Richard Braakman  <dark@wapit.com>
+
+	* gw/smsc_cimd2.c: Update to version 2-0 en.
+	Added definitions for new parameter numbers 26, 28, 44, and 62.
+	Corrected range of "status report request" parameter from 0..32
+	to 0..63.
+
 2001-01-31  Uoti Urpala  <uau@wapit.com>
 
 	* gw/wap-appl.c: Fixed an uninitialized variable.
