@@ -79,9 +79,7 @@ static Octstr *httpd_check_status(void)
 	    	    	     "save the sheeps");
     return NULL;
 }
-
-
-
+    
 static Octstr *httpd_status(List *cgivars, int status_type)
 {
     Octstr *reply;
@@ -148,7 +146,41 @@ static Octstr *httpd_flush_dlr(List *cgivars)
 	return octstr_create("DLR queue flushed");
 }
 
+static Octstr *httpd_stop_smsc(List *cgivars)
+{
+    Octstr *reply;
+    Octstr *smsc;
+    if ((reply = httpd_check_authorization(cgivars, 0))!= NULL) return reply;
+    if ((reply = httpd_check_status())!= NULL) return reply;
 
+    /* check if the smsc id is given */
+    smsc = http_cgi_variable(cgivars, "smsc");
+    if (smsc) {
+        if (bb_stop_smsc(smsc) == -1)
+            return octstr_format("Could not stop smsc-id '%s'", octstr_get_cstr(smsc));
+        else
+            return octstr_format("smsc-id '%s' stopped", octstr_get_cstr(smsc));
+    } else
+        return octstr_create("smsc-id not given");
+}
+
+static Octstr *httpd_start_smsc(List *cgivars)
+{
+    Octstr *reply;
+    Octstr *smsc;
+    if ((reply = httpd_check_authorization(cgivars, 0))!= NULL) return reply;
+    if ((reply = httpd_check_status())!= NULL) return reply;
+
+    /* check if the smsc id is given */
+    smsc = http_cgi_variable(cgivars, "smsc");
+    if (smsc) {
+        if (bb_start_smsc(smsc) == -1)
+            return octstr_format("Could not start smsc-id '%s'", octstr_get_cstr(smsc));
+        else
+            return octstr_format("smsc-id '%s' started", octstr_get_cstr(smsc));
+    } else
+        return octstr_create("smsc-id not given");
+}
 
 static void httpd_serve(HTTPClient *client, Octstr *url, List *headers, 
     	    	    	Octstr *body, List *cgivars)
@@ -212,6 +244,12 @@ static void httpd_serve(HTTPClient *client, Octstr *url, List *headers,
     } else if (octstr_str_compare(url, "/cgi-bin/flush-dlr")==0
 	       || octstr_str_compare(url, "/flush-dlr")==0) {
 	reply = httpd_flush_dlr(cgivars);
+    } else if (octstr_str_compare(url, "/cgi-bin/stop-smsc")==0
+	       || octstr_str_compare(url, "/stop-smsc")==0) {
+	reply = httpd_stop_smsc(cgivars);
+    } else if (octstr_str_compare(url, "/cgi-bin/start-smsc")==0
+	       || octstr_str_compare(url, "/start-smsc")==0) {
+	reply = httpd_start_smsc(cgivars);
     /*
      * reconfig? restart?
      */

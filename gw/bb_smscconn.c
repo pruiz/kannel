@@ -354,6 +354,53 @@ int smsc2_start(Cfg *cfg)
     return 0;
 }
 
+SMSCConn *smsc2_find(Octstr *id)
+{
+    SMSCConn *conn;
+    int i;
+
+    for (i = 0; i < list_len(smsc_list); i++) {
+        conn = list_get(smsc_list, i);
+        debug("",0,"XXX: %d is '%s'", i, octstr_get_cstr(conn->id));
+        if (conn != NULL && octstr_compare(conn->id, id) == 0) {
+            debug("",0,"XXX gotcha");
+            break;
+        }
+    }
+    if (i >= list_len(smsc_list))
+        conn = NULL;
+    return conn;
+}
+
+int smsc2_stop_smsc(Octstr *id)
+{
+    SMSCConn *conn;
+
+    if ((conn = smsc2_find(id)) == NULL)
+        return -1;
+    /*
+    if (conn->status = SMSCCONN_CONNECTING)
+        return -1;
+    */
+    smscconn_stop(conn);
+    return 0;
+}
+
+int smsc2_start_smsc(Octstr *id)
+{
+    SMSCConn *conn;
+
+    if ((conn = smsc2_find(id)) == NULL)
+        return -1;
+    /*
+    if (conn->status = SMSCCONN_ACTIVE)
+        return -1;
+    */
+    smscconn_start(conn);
+    if (router_thread >= 0)
+        gwthread_wakeup(router_thread);
+    return 0;
+}
 
 void smsc2_resume(void)
 {

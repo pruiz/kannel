@@ -618,6 +618,16 @@ int bb_flush_dlr(void)
     return 0;
 }
 
+int bb_stop_smsc(Octstr *id)
+{
+    return smsc2_stop_smsc(id);
+}
+
+int bb_start_smsc(Octstr *id)
+{
+    return smsc2_start_smsc(id);
+}
+
 int bb_restart(void)
 {
     return -1;
