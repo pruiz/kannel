@@ -243,34 +243,34 @@ static void dump_area(struct area *area)
 {
     debug("gwlib.gwmem", 0, "Area %p, size %ld, max_size %ld",
           area->area, (long) area->area_size, (long) area->max_size);
-    debug("gwlib.gwmem", 0, "Allocated by %s at %s:%ld",
+    debug("gwlib.gwmem", 0, "Allocated by %s() at %s:%ld",
           area->allocator.function,
           area->allocator.filename,
           area->allocator.lineno);
     if (area->reallocator.function) {
-        debug("gwlib.gwmem", 0, "Re-allocated by %s at %s:%ld",
+        debug("gwlib.gwmem", 0, "Re-allocated by %s() at %s:%ld",
               area->reallocator.function,
               area->reallocator.filename,
               area->reallocator.lineno);
     }
     if (area->claimer.function) {
-        debug("gwlib.gwmem", 0, "Claimed by %s at %s:%ld",
+        debug("gwlib.gwmem", 0, "Claimed by %s() at %s:%ld",
               area->claimer.function,
               area->claimer.filename,
               area->claimer.lineno);
     }
     if (area->area_size > 0) {
-	size_t i;
-	unsigned char *p;
-	char buf[MAX_DUMP * 3 + 1];
-	
+        size_t i;
+        unsigned char *p;
+        char buf[MAX_DUMP * 3 + 1];
+
     	p = area->area;
-	buf[0] = '\0';
-	for (i = 0; i < area->area_size && i < MAX_DUMP; ++i)
-	    sprintf(strchr(buf, '\0'), "%02x ", p[i]);
-    	debug("gwlib.gwmem", 0, "Contents of area (first %d bytes):",
-	      MAX_DUMP);
-	debug("gwlib.gwmem", 0, "  %s", buf);
+        buf[0] = '\0';
+        for (i = 0; i < area->area_size && i < MAX_DUMP; ++i)
+            sprintf(strchr(buf, '\0'), "%02x ", p[i]);
+
+        debug("gwlib.gwmem", 0, "Contents of area (first %d bytes):", MAX_DUMP);
+        debug("gwlib.gwmem", 0, "  %s", buf);
     }
 }
 
@@ -585,6 +585,7 @@ void gw_check_check_leaks(void)
     }
     gw_assert(calculated_size == total_size);
 
+    debug("gwlib.gwmem", 0, "----------------------------------------");
     debug("gwlib.gwmem", 0, "Current allocations: %ld areas, %ld bytes",
           num_allocations, total_size);
     debug("gwlib.gwmem", 0, "Highest number of allocations: %ld areas",
