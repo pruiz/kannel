@@ -19,8 +19,8 @@
 
   -  From WSP (WAP-203-WSP-20000504-a.pdf and corrections) requires another
      optional feature, multipart headers. We must add this. In addition, 
-     we must add encoding of new headers, WSP version control and encoding
-     of new headers and content types.
+     we must add encoding of new headers, WSP version control and content 
+     types.
 
    - User Agent Profiling (WAP-174-UAProf-19991110-a.pdf and corrections (SINs)
      to it) defines how the phone can tell its capabilities to MMSC. This is
