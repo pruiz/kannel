@@ -525,33 +525,6 @@ static void brunet_receive_sms(SMSCConn *conn, HTTPClient *client,
     date = http_cgi_variable(cgivars, "DateReceived");
     type = http_cgi_variable(cgivars, "MessageType");
 
-    /*
-    tmp_string = http_cgi_variable(cgivars, "flash");
-    if(tmp_string) {
-	sscanf(octstr_get_cstr(tmp_string),"%d", &mclass);
-    }
-    tmp_string = http_cgi_variable(cgivars, "mclass");
-    if(tmp_string) {
-	sscanf(octstr_get_cstr(tmp_string),"%d", &mclass);
-    }
-    tmp_string = http_cgi_variable(cgivars, "mwi");
-    if(tmp_string) {
-	sscanf(octstr_get_cstr(tmp_string),"%d", &mwi);
-    }
-    tmp_string = http_cgi_variable(cgivars, "coding");
-    if(tmp_string) {
-	sscanf(octstr_get_cstr(tmp_string),"%d", &coding);
-    }
-    tmp_string = http_cgi_variable(cgivars, "validity");
-    if(tmp_string) {
-	sscanf(octstr_get_cstr(tmp_string),"%d", &validity);
-    }
-    tmp_string = http_cgi_variable(cgivars, "deferred");
-    if(tmp_string) {
-	sscanf(octstr_get_cstr(tmp_string),"%d", &deferred);
-    }
-    */
-
     debug("smsc.http.brunet", 0, "HTTP[%s]: Received a request",
           octstr_get_cstr(conn->id));
     
@@ -599,6 +572,211 @@ static void brunet_receive_sms(SMSCConn *conn, HTTPClient *client,
     http_send_reply(client, HTTP_OK, reply_headers, retmsg);
 
     octstr_destroy(retmsg);
+    octstr_destroy(user);
+    octstr_destroy(from);
+    octstr_destroy(to);
+    octstr_destroy(text);
+    octstr_destroy(udh);
+    octstr_destroy(date);
+    octstr_destroy(type);
+    http_destroy_headers(reply_headers);
+}
+
+
+/*----------------------------------------------------------------
+ * Xidris - An austrian aggregator 
+ * Implementing version 1.3, 06.05.2003
+ *
+ * Stipe Tolj <tolj@wapme-systems.de>
+ */
+
+/* MT related function */
+static void xidris_send_sms(SMSCConn *conn, Msg *sms)
+{
+    ConnData *conndata = conn->data;
+    Octstr *url, *raw, *new_msg;
+    List *headers;
+    int dcs, esm_class;
+
+    url = raw = new_msg = NULL;
+    dcs = esm_class = 0;
+
+    /* RAW additions to called URL */
+    if (octstr_len(sms->sms.udhdata)) {
+
+        /* set the data coding scheme (DCS) and ESM class fields */
+        dcs = fields_to_dcs(sms, sms->sms.alt_dcs);
+        /* ESM_CLASS_SUBMIT_STORE_AND_FORWARD_MODE | 
+           ESM_CLASS_SUBMIT_UDH_INDICATOR */
+        esm_class = 0x03 | 0x40; 
+    
+        /* prepend UDH header to message block */
+        new_msg = octstr_duplicate(sms->sms.udhdata);
+        octstr_append(new_msg, sms->sms.msgdata);
+
+        raw = octstr_format("&dcs=%d&esm=%d", dcs, esm_class);
+    }
+
+    /* format the URL for call */
+    url = octstr_format("%S?"
+        "app_id=%E&key=%E&dest_addr=%E&source_addr=%E"
+        "&type=%E&message=%E",
+        conndata->send_url,
+        conndata->username, conndata->password, sms->sms.receiver, sms->sms.sender,
+        (raw ? octstr_imm("200") : (sms->sms.mclass ? octstr_imm("1") : octstr_imm("0"))), 
+        (raw ? new_msg : sms->sms.msgdata));
+
+    if (raw) {
+        octstr_append(url, raw);
+    }
+
+    /* 
+     * We use &account=<foobar> from sendsms interface to encode any additionaly
+     * proxied parameters, ie. billing information.
+     */
+    if (octstr_len(sms->sms.account)) {
+        octstr_url_decode(sms->sms.account);
+        octstr_format_append(url, "&%s", octstr_get_cstr(sms->sms.account));
+    }
+
+    headers = list_create();
+    debug("smsc.http.xidris", 0, "HTTP[%s]: Sending request <%s>",
+          octstr_get_cstr(conn->id), octstr_get_cstr(url));
+
+    http_start_request(conndata->http_ref, HTTP_METHOD_GET, url, headers, 
+                       NULL, 0, sms, NULL);
+
+    octstr_destroy(url);
+    octstr_destroy(raw);
+    octstr_destroy(new_msg);
+    http_destroy_headers(headers);
+}
+
+/* 
+ * Parse for an parameter of an given XML tag and return it as Octstr
+ */
+static Octstr *parse_xml_tag(Octstr *body, Octstr *tag)
+{
+    Octstr *stag, *etag, *ret;
+    int spos, epos;
+   
+    stag = octstr_format("<%s>", octstr_get_cstr(tag));
+    if ((spos = octstr_search(body, stag, 0)) == -1) {
+        octstr_destroy(stag);
+        return NULL;
+    }
+    etag = octstr_format("</%s>", octstr_get_cstr(tag));
+    if ((epos = octstr_search(body, etag, spos+octstr_len(stag))) == -1) {
+        octstr_destroy(stag);
+        octstr_destroy(etag);
+        return NULL;
+    }
+
+    ret = octstr_copy(body, spos+octstr_len(stag), epos - spos+octstr_len(stag));
+
+    octstr_destroy(stag);
+    octstr_destroy(etag);
+
+    return ret;
+}
+
+static void xidris_parse_reply(SMSCConn *conn, Msg *msg, int status,
+                               List *headers, Octstr *body)
+{
+    Octstr *code, *desc;
+
+    if (status == HTTP_OK || status == HTTP_ACCEPTED) {
+        /* now parse the XML document for error code */
+        code = parse_xml_tag(body, octstr_imm("status"));
+        desc = parse_xml_tag(body, octstr_imm("description"));
+        if (octstr_case_compare(code, octstr_imm("0")) == 0) {
+            bb_smscconn_sent(conn, msg);
+        } else {
+            error(0, "HTTP[%s]: Message not accepted. Status code <%s> "
+                  "description `%s'.", octstr_get_cstr(conn->id), 
+                  octstr_get_cstr(code), octstr_get_cstr(desc));
+            bb_smscconn_send_failed(conn, msg, SMSCCONN_FAILED_MALFORMED);
+        }
+    } else {
+        error(0, "HTTP[%s]: Message was rejected. SMSC reponse was:", 
+              octstr_get_cstr(conn->id));
+        octstr_dump(body, 0);
+        bb_smscconn_send_failed(conn, msg, SMSCCONN_FAILED_REJECTED);
+    }
+}
+
+/* MO related function */
+static void xidris_receive_sms(SMSCConn *conn, HTTPClient *client,
+                               List *headers, Octstr *body, List *cgivars)
+{
+    ConnData *conndata = conn->data;
+    Octstr *user, *from, *to, *text, *account;
+    Octstr *retmsg;
+    int	mclass, mwi, coding, validity, deferred; 
+    List *reply_headers;
+    int ret, status;
+
+    mclass = mwi = coding = validity = deferred = 0;
+    retmsg = NULL;
+
+    user = http_cgi_variable(cgivars, "app_id");
+    from = http_cgi_variable(cgivars, "source_addr");
+    to = http_cgi_variable(cgivars, "dest_addr");
+    text = http_cgi_variable(cgivars, "message");
+    account = http_cgi_variable(cgivars, "operator");
+
+    debug("smsc.http.xidris", 0, "HTTP[%s]: Received a request",
+          octstr_get_cstr(conn->id));
+    
+    if (user == NULL || octstr_compare(user, conndata->username) != 0) {
+        error(0, "HTTP[%s]: Authorization failure. app_id was <%s>.",
+              octstr_get_cstr(conn->id), octstr_get_cstr(user));
+        retmsg = octstr_create("Authorization failed for MO submission.");
+        status = HTTP_UNAUTHORIZED;
+    }
+    else if (from == NULL || to == NULL || text == NULL) {
+        error(0, "HTTP[%s]: Insufficient args.",
+              octstr_get_cstr(conn->id));
+        retmsg = octstr_create("Insufficient arguments, rejected.");
+        status = HTTP_BAD_REQUEST;
+    }
+    else {
+        Msg *msg;
+        msg = msg_create(sms);
+
+        debug("smsc.http.xidris", 0, "HTTP[%s]: Received new MO SMS.",
+              octstr_get_cstr(conn->id));
+	
+        msg->sms.sender = octstr_duplicate(from);
+        msg->sms.receiver = octstr_duplicate(to);
+        msg->sms.msgdata = octstr_duplicate(text);
+        msg->sms.account = octstr_duplicate(account);
+
+        msg->sms.smsc_id = octstr_duplicate(conn->id);
+        msg->sms.time = time(NULL);
+        msg->sms.mclass = mclass;
+        msg->sms.mwi = mwi;
+        msg->sms.coding = coding;
+        msg->sms.validity = validity;
+        msg->sms.deferred = deferred;
+
+        ret = bb_smscconn_receive(conn, msg);
+        status = (ret == 0 ? HTTP_OK : HTTP_FORBIDDEN);
+    }
+
+    reply_headers = list_create();
+    debug("smsc.http.xidris", 0, "HTTP[%s]: Sending reply with HTTP status <%d>.",
+          octstr_get_cstr(conn->id), status);
+
+    http_send_reply(client, status, reply_headers, retmsg);
+
+    octstr_destroy(retmsg);
+    octstr_destroy(user);
+    octstr_destroy(from);
+    octstr_destroy(to);
+    octstr_destroy(text);
+    octstr_destroy(account);
+
     http_destroy_headers(reply_headers);
 }
 
@@ -695,6 +873,16 @@ int smsc_http_create(SMSCConn *conn, CfgGroup *cfg)
         conndata->receive_sms = brunet_receive_sms;
         conndata->send_sms = brunet_send_sms;
         conndata->parse_reply = brunet_parse_reply;
+    }
+    else if (octstr_case_compare(type, octstr_imm("xidris")) == 0) {
+        if (conndata->username == NULL || conndata->password == NULL) {
+            error(0, "HTTP[%s]: 'username' and 'password' required for Xidris http smsc",
+                  octstr_get_cstr(conn->id));
+            goto error;
+        }
+        conndata->receive_sms = xidris_receive_sms;
+        conndata->send_sms = xidris_send_sms;
+        conndata->parse_reply = xidris_parse_reply;
     }
     /*
      * ADD NEW HTTP SMSC TYPES HERE
