@@ -12,6 +12,7 @@
 #include "gwlib/gwlib.h"
 #include "wap_addr.h"
 
+
 typedef struct WAPEvent WAPEvent;
 
 /*
@@ -36,6 +37,7 @@ struct WAPEvent {
 	#define OPTIONAL_OCTSTR(name) Octstr *name; /* May be NULL */
 	#define INTEGER(name) long name;
 	#define HTTPHEADER(name) List *name;
+	#define WTLSPDUS(name) List *name;
 	#define ADDRTUPLE(name) WAPAddrTuple *name;
 	#define CAPABILITIES(name) List *name;
 	#include "wap_events.def"

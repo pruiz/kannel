@@ -17,6 +17,56 @@
  */
 
 
+
+/* WTLS material - make sure the addr_tuple comes first! */
+
+WAPEVENT(T_Unitdata_Ind, "T-Unitdata.ind",
+         ADDRTUPLE(addr_tuple)
+         WTLSPDUS(pdu_list)
+        )
+
+WAPEVENT(SEC_Create_Ind, "SEC-Create.ind",
+         ADDRTUPLE(addr_tuple)
+        )
+
+WAPEVENT(SEC_Create_Request_Req, "SEC-Create.req",
+         ADDRTUPLE(addr_tuple)
+        )
+
+WAPEVENT(SEC_Terminate_Req, "SEC-Terminate.req",
+         ADDRTUPLE(addr_tuple)
+         INTEGER(alert_level)
+         INTEGER(alert_desc)
+        )
+
+WAPEVENT(SEC_Exception_Req, "SEC-Exception.req",
+         ADDRTUPLE(addr_tuple)
+         INTEGER(alert_level)
+         INTEGER(alert_desc)
+        )
+
+WAPEVENT(SEC_Create_Res, "SEC-Create.res",
+         ADDRTUPLE(addr_tuple)
+         INTEGER(client_key_id)
+         INTEGER(bulk_cipher_algo)
+         INTEGER(mac_algo)
+         INTEGER(snmode)
+         INTEGER(krefresh)
+        )
+
+WAPEVENT(SEC_Exchange_Req, "SEC-Exchange.req",
+         ADDRTUPLE(addr_tuple)
+        )
+
+WAPEVENT(SEC_Commit_Req, "SEC-Commit.req",
+         ADDRTUPLE(addr_tuple)
+        )
+
+WAPEVENT(SEC_Unitdata_Req, "SEC-Unidata.req",
+         ADDRTUPLE(addr_tuple)
+         OCTSTR(user_data)
+        )
+
 /*
  * Transport layer (WDP)
  */
@@ -643,6 +693,7 @@ WAPEVENT(Bad_Message_Response, "badmessage-response",
 #undef OCTSTR
 #undef OPTIONAL_OCTSTR
 #undef INTEGER
+#undef WTLSPDUS
 #undef HTTPHEADER
 #undef ADDRTUPLE
 #undef CAPABILITIES

@@ -295,23 +295,21 @@ int main(int argc, char **argv)
     wap_appl_init();
     wtls_secmgr_init();
     wtls_init();
-    /*
+    
 	wap_push_ota_init(&wsp_session_dispatch_event, &wsp_unit_dispatch_event);
     wap_push_ppg_init(&wap_push_ota_dispatch_event, 
                       &wap_push_pap_dispatch_event,
                       &wap_appl_dispatch);
     wap_push_pap_init(&wap_push_ppg_dispatch_event);
-	*/
-	
+		
     wml_init();
     
     if (bearerbox_host == NULL)
     	bearerbox_host = octstr_create(BB_DEFAULT_HOST);
     connect_to_bearerbox(bearerbox_host, bearerbox_port);
 
-    /*wap_push_ota_bb_address_set(bearerbox_host);
-	*/
-    
+    wap_push_ota_bb_address_set(bearerbox_host);
+	    
 	program_status = running;
     heartbeat_thread = heartbeat_start(write_to_bearerbox, heartbeat_freq, 
     	    	    	    	       wap_appl_get_load);
@@ -371,9 +369,9 @@ int main(int argc, char **argv)
     wsp_unit_shutdown();
     wsp_session_shutdown();
     wap_appl_shutdown();
-    //wap_push_ota_shutdown();
-    //wap_push_ppg_shutdown();
-    //wap_push_pap_shutdown();
+    wap_push_ota_shutdown();
+    wap_push_ppg_shutdown();
+    wap_push_pap_shutdown();
     wml_shutdown();
     close_connection_to_bearerbox();
     wsp_http_map_destroy();

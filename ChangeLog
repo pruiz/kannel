@@ -1,3 +1,20 @@
+2001-07-05 Yann Muller <ymuller@3glab.com>
+
+	* config.h.in, configure.in: added options for wtls.
+	
+	* wap/wtls*: all WTLS files (state machines, PDUs...)
+	
+	* wap/wap_event.*: added WTLSPDUS definitions and events.
+	
+	* gw/wapbox.c: load the certificates and keys for WTLS, inititialise,
+	  dispatch datagrams according to port in main().
+	  
+	* gw/bb_upd.c: add_services for WTLS ports.
+	
+	* gwlib/cfg.def: added certificates options to the wapbox config.
+	
+	* gwlib/pki.[ch]: support functions for keys (incomplete).
+
 2001-07-05 Aarno Syvänen <aarno@wiral.com>
 
 	* test/test_ppg.c: Added a simple pi for testing ppgs
