@@ -183,17 +183,6 @@ static int do_dump(void)
 }
 
 
-static int cmp_msgs(void *item, void *pattern) {
-    Msg *smsm, *ackm;
-
-    ackm = pattern;
-    smsm = item;
-
-    if (uuid_compare(ackm->ack.id, smsm->sms.id) == 0)
-	return 1;
-    else
-	return 0;
-}
 
 
 /*
@@ -202,8 +191,6 @@ static int cmp_msgs(void *item, void *pattern) {
  */
 static void store_dumper(void *arg)
 {
-    Msg *ack;
-    List *match;
     time_t now;
 
     list_add_producer(flow_threads);
@@ -443,11 +430,9 @@ int store_load(void)
 {
     List *keys;
     Octstr *store_file, *pack, *key;
-    Msg *msg, *dmsg, *copy;
+    Msg *msg, *copy;
     int retval, msgs;
     long end, pos;
-    long store_size;
-    char id[UUID_STR_LEN + 1];
 
     if (filename == NULL)
 	return 0;

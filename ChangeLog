@@ -1,3 +1,9 @@
+2004-12-15    <kmarjola@enpocket.com>
+
+    * gw/bb_store.c: removed -Wall warnings
+    * gw/smskannel.conf: resumed global-sender, otherwise make check
+      does not work
+
 2004-12-13    <kmarjola@enpocket.com>
 
     * gw/bb_store.c: use Dict to make things much more faster. Also
