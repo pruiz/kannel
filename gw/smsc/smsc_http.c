@@ -465,6 +465,7 @@ static void brunet_send_sms(SMSCConn *conn, Msg *sms)
      * proxied parameters, ie. billing information.
      */
     if (octstr_len(sms->sms.account)) {
+        octstr_url_decode(sms->sms.account);
         octstr_format_append(url, "&%E", sms->sms.account);
     }
 
