@@ -591,7 +591,10 @@ int parse_attribute(xmlAttrPtr attr)
   Octstr *attribute, *value, *attr_i, *val_j;
 
   attribute = octstr_create_tolower(attr->name);
-  value     = octstr_create_tolower(attr->val->content);
+  if (attr->val != NULL)
+    value = octstr_create_tolower(attr->val->content);
+  else 
+    value = NULL;
 
   /* Check if the attribute is found on the code page. */
 
@@ -608,7 +611,7 @@ int parse_attribute(xmlAttrPtr attr)
 	       octstr_compare(attr_i,
 			      octstr_create(wml_attributes[j].attribute))
 		 == 0; j++)
-	    if (wml_attributes[j].a_value != NULL &&
+	    if (wml_attributes[j].a_value != NULL && value != NULL &&
 		octstr_ncompare((val_j = 
 				 octstr_create(wml_attributes[j].a_value)),
 				value, 
@@ -626,7 +629,7 @@ int parse_attribute(xmlAttrPtr attr)
    * The rest of the attribute is coded as a inline string. Not as 
    * compressed as it could be... This will be enchanced later.
    */
-  if (coded_length < octstr_len(value))
+  if (value != NULL && coded_length < octstr_len(value))
     {
       if (coded_length == 0) 
 	{
