@@ -1,3 +1,13 @@
+2005-02-01  Alexander Malysh <amalysh at kannel.org>
+    * gwlib/fdset.[ch]: In order to efficient handle timeouts and don't
+      start "yet another thread" we use already available fdset's threads.
+      With this patch applied we will have a possibility to set timeout 
+      for all filedescriptors in fdset and after timeout elapsed registered
+      callback function with POLLERR as event will be called.
+    * gwlib/http.c: changes related to server/client idle timeout and removed
+      some code duplcation.
+      [Msg-Id: <ct8rnc$pqp$1@sea.gmane.org>]
+
 2005-01-28  Stipe Tolj  <stolj@wapme.de> 
     * doc/userguide/userguide.xml: fixed personal reference for Kalle.
 

@@ -74,8 +74,11 @@ typedef void fdset_callback_t(int fd, int revents, void *data);
 
 /*
  * Create a new, empty file descriptor set and start its thread.
+ * @timeout - idle timeout for any filedescriptor in this fdset after which
+ *            callback function will be called with POLLERR as event.
  */
-FDSet *fdset_create(void);
+#define fdset_create() fdset_create_real(-1);
+FDSet *fdset_create_real(long timeout);
 
 /*
  * Destroy a file descriptor set.  Will emit a warning if any file

@@ -89,6 +89,12 @@
 /* comment this out if you don't want HTTP responses to be dumped */
 #define DUMP_RESPONSE 1
 
+/* define http client connections timeout in seconds (set to -1 for disable) */
+#define HTTP_CLIENT_TIMEOUT 240
+
+/* define http server connections timeout in seconds (set to -1 for disable) */
+#define HTTP_SERVER_TIMEOUT 60
+
 /***********************************************************************
  * Stuff used in several sub-modules.
  */
@@ -134,7 +140,7 @@ static int read_some_headers(Connection *conn, List *headers)
     for (;;) {
 	line = conn_read_line(conn);
 	if (line == NULL) {
-	    if (conn_eof(conn))
+            if (conn_eof(conn) || conn_error(conn))
 	    	return -1;
 	    return 1;
 	}
@@ -972,54 +978,30 @@ static void handle_transaction(Connection *conn, void *data)
     int ret;
     Octstr *h;
     int rc;
-    char buf[128];
     
     trans = data;
 
     if (run_status != running) {
-	conn_unregister(conn);
-	return;
+        conn_unregister(conn);
+        return;
     }
 
     while (trans->state != transaction_done) {
-	switch (trans->state) {
-	case connecting:
-	  debug("gwlib.http", 0, "Get info about connecting socket");
-          if (conn_get_connect_result(trans->conn) != 0) {
-            debug("gwlib.http", 0, "Socket not connected");
-            conn_unregister(conn);
-            goto error;
-          }
+        switch (trans->state) {
+        case connecting:
+            debug("gwlib.http", 0, "Get info about connecting socket");
+            if (conn_get_connect_result(trans->conn) != 0) {
+                debug("gwlib.http", 0, "Socket not connected");
+                goto error;
+            }
 
-          if (trans->method == HTTP_METHOD_POST) {
-            /* 
-             * Add a Content-Length header.  Override an existing one, if
-             * necessary.  We must have an accurate one in order to use the
-             * connection for more than a single request.
-             */
-            http_header_remove_all(trans->request_headers, "Content-Length");
-            sprintf(buf, "%ld", octstr_len(trans->request_body));
-            http_header_add(trans->request_headers, "Content-Length", buf);
-          } 
-          /* 
-           * ok, this has to be an GET or HEAD request method then,
-           * if it contains a body, then this is not HTTP conform, so at
-           * least warn the user 
-           */
-          else if (trans->request_body != NULL) {
-            warning(0, "HTTP: GET or HEAD method request contains body:");
-            octstr_dump(trans->request_body, 0);
-          }
-
-          if ((rc = send_request(trans)) == 0) {
-            trans->state = reading_status;
-            conn_register(trans->conn, client_fdset, handle_transaction, 
-                          trans);
-          } else {
-            debug("gwlib.http",0,"Failed while sending request");
-            goto error;
-          }
-          break;
+            if ((rc = send_request(trans)) == 0) {
+                trans->state = reading_status;
+            } else {
+                debug("gwlib.http",0,"Failed while sending request");
+                goto error;
+            }
+            break;
 
 	case reading_status:
 	    ret = client_read_status(trans);
@@ -1502,19 +1484,37 @@ error:
 
 
 /*
- * Build and send the HTTP request. Return socket from which the
- * response can be read or -1 for error.
+ * Build and send the HTTP request. Return 0 for success or -1 for error.
  */
 static int send_request(HTTPServer *trans)
 {
-    Octstr *request;
+    char buf[128];    
+    Octstr *request = NULL;
 
-    request = NULL;
+    if (trans->method == HTTP_METHOD_POST) {
+        /* 
+         * Add a Content-Length header.  Override an existing one, if
+         * necessary.  We must have an accurate one in order to use the
+         * connection for more than a single request.
+         */
+        http_header_remove_all(trans->request_headers, "Content-Length");
+        sprintf(buf, "%ld", octstr_len(trans->request_body));
+        http_header_add(trans->request_headers, "Content-Length", buf);
+    } 
+    /* 
+     * ok, this has to be an GET or HEAD request method then,
+     * if it contains a body, then this is not HTTP conform, so at
+     * least warn the user 
+     */
+    else if (trans->request_body != NULL) {
+        warning(0, "HTTP: GET or HEAD method request contains body:");
+        octstr_dump(trans->request_body, 0);
+    }
 
     /* 
-    * we have to assume all values in trans are already set
-    * by parse_url() before calling this.
-    */
+     * we have to assume all values in trans are already set
+     * by parse_url() before calling this.
+     */
 
     if (trans->username != NULL)
         http_add_basic_auth(trans->request_headers, trans->username,
@@ -1559,7 +1559,6 @@ error:
 static void write_request_thread(void *arg)
 {
     HTTPServer *trans;
-    char buf[128];    
     int rc;
 
     while (run_status == running) {
@@ -1580,25 +1579,6 @@ static void write_request_thread(void *arg)
         else if (conn_is_connected(trans->conn) == 0) {
             debug("gwlib.http", 0, "Socket connected at once");
 
-            if (trans->method == HTTP_METHOD_POST) {
-                /* 
-                * Add a Content-Length header.  Override an existing one, if
-                * necessary.  We must have an accurate one in order to use the
-                * connection for more than a single request.
-                */
-                http_header_remove_all(trans->request_headers, "Content-Length");
-                sprintf(buf, "%ld", octstr_len(trans->request_body));
-                http_header_add(trans->request_headers, "Content-Length", buf);
-            } 
-            /* 
-             * ok, this has to be an GET or HEAD request method then,
-             * if it contains a body, then this is not HTTP conform, so at
-             * least warn the user 
-             */
-            else if (trans->request_body != NULL) {
-                warning(0, "HTTP: GET or HEAD method request contains body:");
-                octstr_dump(trans->request_body, 0);
-            }
             if ((rc = send_request(trans)) == 0) {
                 trans->state = reading_status;
                 conn_register(trans->conn, client_fdset, handle_transaction, 
@@ -1627,7 +1607,7 @@ static void start_client_threads(void)
 	 */
 	mutex_lock(client_thread_lock);
 	if (!client_threads_are_running) {
-	    client_fdset = fdset_create();
+	    client_fdset = fdset_create_real(HTTP_CLIENT_TIMEOUT);
 	    gwthread_create(write_request_thread, NULL);
 	    client_threads_are_running = 1;
 	}
@@ -2107,7 +2087,7 @@ static void receive_request(Connection *conn, void *data)
 	    return;
 
 	case sending_reply:
-            /* Implicite conn_unregister() and _destroy */
+            /* Implicit conn_unregister() and _destroy */
             if (conn_error(conn))
                 goto error;
 	    if (conn_outbuf_len(conn) > 0)
@@ -2247,7 +2227,7 @@ static void start_server_thread(void)
 	 */
 	mutex_lock(server_thread_lock);
 	if (!server_thread_is_running) {
-	    server_fdset = fdset_create();
+	    server_fdset = fdset_create_real(HTTP_SERVER_TIMEOUT);
 	    server_thread_id = gwthread_create(server_thread, NULL);
 	    server_thread_is_running = 1;
 	}

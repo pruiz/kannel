@@ -58,11 +58,14 @@
  * fdset.c - module for managing a large collection of file descriptors
  */
 
+#include "gw-config.h"
+ 
 #include <stdlib.h>
 #include <unistd.h>
 #include <errno.h>
 
 #include "gwlib/gwlib.h"
+
 
 struct FDSet
 {
@@ -80,6 +83,11 @@ struct FDSet
     struct pollfd *pollinfo;
     int size;
     int entries;
+    
+    /* Array of times when appropriate fd got any event or events bitmask changed */
+    time_t *times;
+    /* timeout for this fdset */
+    long timeout;
 
     /* Arrays of callback and data fields.  They are kept in sync with
      * the pollinfo array, and are basically extra fields that we couldn't
@@ -276,6 +284,7 @@ static void remove_entry(FDSet *set, int entry)
         set->pollinfo[entry] = set->pollinfo[set->entries - 1];
         set->callbacks[entry] = set->callbacks[set->entries - 1];
         set->datafields[entry] = set->datafields[set->entries - 1];
+        set->times[entry] = set->times[set->entries - 1];
     }
     set->entries--;
 }
@@ -307,6 +316,7 @@ static void poller(void *arg)
     struct action *action;
     int ret;
     int i;
+    time_t now;
 
     gw_assert(set != NULL);
 
@@ -317,26 +327,32 @@ static void poller(void *arg)
                 return;
         }
 
-        /* Block indefinitely, waiting for activity */
-        ret = gwthread_poll(set->pollinfo, set->entries, -1.0);
+        /* Block for defined timeout, waiting for activity */
+        ret = gwthread_poll(set->pollinfo, set->entries, set->timeout);
 
         if (ret < 0) {
 	    if (errno != EINTR) {
-                error(0, "Poller: can't handle error; sleeping 1 second.");
+                error(errno, "Poller: can't handle error; sleeping 1 second.");
                 gwthread_sleep(1.0);
             }
             continue;
         }
-
-	/* Callbacks may modify the table while we scan it, so be careful. */
-	set->scanning = 1;
+        time(&now);
+        /* Callbacks may modify the table while we scan it, so be careful. */
+        set->scanning = 1;
         for (i = 0; i < set->entries; i++) {
-            if (set->pollinfo[i].revents != 0)
+            if (set->pollinfo[i].revents != 0) {
                 set->callbacks[i](set->pollinfo[i].fd,
-                                  set->pollinfo[i].revents,
-                                  set->datafields[i]);
+                                set->pollinfo[i].revents,
+                                set->datafields[i]);
+                /* update event time */
+                time(&set->times[i]);
+            } else if (set->timeout > 0 && difftime(set->times[i] + set->timeout, now) <= 0) {
+                debug("gwlib.fdset", 0, "Timeout for fd:%d appeares.", set->pollinfo[i].fd);
+                set->callbacks[i](set->pollinfo[i].fd, POLLERR, set->datafields[i]);
+            }
         }
-	set->scanning = 0;
+        set->scanning = 0;
 
 	if (set->deleted_entries > 0)
 	    remove_deleted_entries(set);
@@ -345,7 +361,7 @@ static void poller(void *arg)
 
 
 
-FDSet *fdset_create(void)
+FDSet *fdset_create_real(long timeout)
 {
     FDSet *new;
 
@@ -358,6 +374,8 @@ FDSet *fdset_create(void)
     new->pollinfo = gw_malloc(sizeof(new->pollinfo[0]) * new->size);
     new->callbacks = gw_malloc(sizeof(new->callbacks[0]) * new->size);
     new->datafields = gw_malloc(sizeof(new->datafields[0]) * new->size);
+    new->times = gw_malloc(sizeof(new->times[0]) * new->size);
+    new->timeout = timeout > 0 ? timeout : -1;
     new->scanning = 0;
     new->deleted_entries = 0;
 
@@ -386,6 +404,7 @@ void fdset_destroy(FDSet *set)
         gw_free(set->pollinfo);
         gw_free(set->callbacks);
         gw_free(set->datafields);
+        gw_free(set->times);
         if (list_len(set->actions) > 0) {
             error(0, "Destroying fdset with %ld pending actions.",
                   list_len(set->actions));
@@ -428,6 +447,7 @@ void fdset_register(FDSet *set, int fd, int events,
                                    sizeof(set->callbacks[0]) * newsize);
         set->datafields = gw_realloc(set->datafields,
                                    sizeof(set->datafields[0]) * newsize);
+        set->times = gw_realloc(set->times, sizeof(set->times[0]) * newsize);
         set->size = newsize;
     }
 
@@ -440,6 +460,7 @@ void fdset_register(FDSet *set, int fd, int events,
     set->pollinfo[new].revents = 0;
     set->callbacks[new] = callback;
     set->datafields[new] = data;
+    time(&set->times[new]);
 }
 
 void fdset_listen(FDSet *set, int fd, int mask, int events)
@@ -478,6 +499,8 @@ void fdset_listen(FDSet *set, int fd, int mask, int events)
         set->pollinfo[entry].revents =
             set->pollinfo[entry].revents & (events | ~mask);
     }
+    
+    time(&set->times[entry]);
 }
 
 void fdset_unregister(FDSet *set, int fd)
