@@ -2280,6 +2280,17 @@ smsc-password = bar
 	this time.  Defaults to 60 seconds.
      </entry></row>
 
+    <row><entry><literal>wait-ack-expire</literal></entry>
+      <entry><literal>number</literal></entry>
+      <entry valign=bottom>
+        Defines what kind of action should be taken if the the ack of 
+		  a message expires. The options for this value are:
+		  0x00 - disconnect/reconnect, (default) 0x01 - as is now, requeue, 
+		  but this could potentially result in the msg arriving twice
+		  0x02 - just carry on waiting (given that the wait-ack should never 
+		  expire this is the mst accurate)
+     </entry></row>
+
     <row><entry><literal>flow-control</literal></entry>
       <entry><literal>number</literal></entry>
       <entry valign=bottom>
