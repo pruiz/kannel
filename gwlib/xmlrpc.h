@@ -60,23 +60,8 @@ XMLRPCMethodCall *xmlrpc_call_parse(Octstr *post_body);
 /* Destroy MethodCall object */
 void xmlrpc_call_destroy(XMLRPCMethodCall *call);
 
-/* Add i4/int scalar param to MethodCall object. Always return 0 */
-int xmlrpc_call_add_int(XMLRPCMethodCall *method, long i4);
-
-/* Add boolean scalar param to MethodCall object. Always return 0 */
-int xmlrpc_call_add_bool(XMLRPCMethodCall *method, int bool);
-
-/* Add string scalar param to MethodCall object. Always return 0 */
-int xmlrpc_call_add_string(XMLRPCMethodCall *method, Octstr *string);
-
-/* Add double scalar param to MethodCall object. Always return 0 */
-int xmlrpc_call_add_double(XMLRPCMethodCall *method, double val);
-
-/* Add date scalar param to MethodCall object. Always return 0 */
-int xmlrpc_call_add_date(XMLRPCMethodCall *method, Octstr *date);
-
-/* Add base64 scalar param to MethodCall object. Always return 0 */
-int xmlrpc_call_add_base64(XMLRPCMethodCall *method, Octstr *b64);
+/* Add a scalar param to MethodCall object. Always return 0 */
+int xmlrpc_call_add_scalar(XMLRPCMethodCall *method, int type, void *arg);
 
 /* Add given <value> param to MethodCall object. Always return 0.
  * Note that value is NOT duplicated */
@@ -171,5 +156,15 @@ int xmlrpc_parse_status(XMLRPCMethodCall *call);
 /* Return parser error string if parse_status != XMLRPC_COMPILE_OK */
 /* return NULL if no error occured or no error string was available */
 Octstr *xmlrpc_parse_error(XMLRPCMethodCall *call);
+
+/* Return the name of the method requested */
+Octstr *xmlrpc_get_method_name(XMLRPCMethodCall *call);
+
+/* Return number of parameters within the params list */
+int xmlrpc_call_len(XMLRPCMethodCall *call);
+
+/* Return type of variable at position 'pos' within the param list */
+/* return -1 if there is no item in the list */
+int xmlrpc_get_type(XMLRPCMethodCall *call, int pos);
 
 #endif

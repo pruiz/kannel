@@ -32,7 +32,7 @@ struct xmlrpc_value {
     int v_type;		/* enum here */
     XMLRPCScalar *v_scalar;
     List *v_array;     /* List of XMLRPCValues */
-    List *v_struct;    /* List of XMLRPCStructs */
+    List *v_struct;    /* List of XMLRPMembers */
 };
 
 struct xmlrpc_member {	/* member of struct */
@@ -41,13 +41,13 @@ struct xmlrpc_member {	/* member of struct */
 };
 
 struct xmlrpc_scalar {
-    int 	s_type;		/* enum here */
-    Octstr 	*s_str;
-    long 	s_int;
-    int 	s_bool;
-    double	s_double;
-    Octstr	*s_date;
-    Octstr	*s_base64;
+    int	s_type;		/* enum here */
+    Octstr *s_str;
+    long s_int;
+    int s_bool;
+    double s_double;
+    Octstr *s_date;
+    Octstr *s_base64;
 };
 
 struct xmlrpc_table_t {
@@ -84,6 +84,16 @@ static xmlrpc_2table_t value_elements[] = {
     { "ARRAY", xr_array }
 };
 
+static xmlrpc_table_t struct_elements[] = {
+    { "MEMBER" }
+};
+
+static xmlrpc_table_t member_elements[] = {
+    { "NAME" },
+    { "VALUE" }
+};
+
+
 #define NUMBER_OF_METHODCALL_ELEMENTS \
     sizeof(methodcall_elements)/sizeof(methodcall_elements[0])
 #define NUMBER_OF_PARAMS_ELEMENTS \
@@ -92,6 +102,10 @@ static xmlrpc_2table_t value_elements[] = {
     sizeof(param_elements)/sizeof(param_elements[0])
 #define NUMBER_OF_VALUE_ELEMENTS \
     sizeof(value_elements)/sizeof(value_elements[0])
+#define NUMBER_OF_STRUCT_ELEMENTS \
+    sizeof(struct_elements)/sizeof(struct_elements[0])
+#define NUMBER_OF_MEMBER_ELEMENTS \
+    sizeof(member_elements)/sizeof(member_elements[0])
 
 
 static int parse_document(xmlDocPtr document, XMLRPCMethodCall **msg);
@@ -169,62 +183,12 @@ void xmlrpc_call_destroy(XMLRPCMethodCall *call)
     gw_free(call);
 }
 
-int xmlrpc_call_add_int(XMLRPCMethodCall *method, long i4)
+int xmlrpc_call_add_scalar(XMLRPCMethodCall *method, int type, void *arg)
 {
     XMLRPCValue *nval;
     if (method == NULL)
-	return -1;
-    nval = xmlrpc_create_scalar_value(xr_int, (void *)i4);
-    list_produce(method->params, nval);
-    return 0;
-}
-
-int xmlrpc_call_add_bool(XMLRPCMethodCall *method, int bool)
-{
-    XMLRPCValue *nval;
-    if (method == NULL)
-	return -1;
-    nval = xmlrpc_create_scalar_value(xr_bool, (void *)bool);
-    list_produce(method->params, nval);
-    return 0;
-}
-
-int xmlrpc_call_add_string(XMLRPCMethodCall *method, Octstr *string)
-{
-    XMLRPCValue *nval;
-    if (method == NULL)
-	return -1;
-    nval = xmlrpc_create_scalar_value(xr_string, string);
-    list_produce(method->params, nval);
-    return 0;
-}
-
-int xmlrpc_call_add_double(XMLRPCMethodCall *method, double val)
-{
-    XMLRPCValue *nval;
-    if (method == NULL)
-	return -1;
-    nval = xmlrpc_create_scalar_value_double(xr_double, val);
-    list_produce(method->params, nval);
-    return 0;
-}
-
-int xmlrpc_call_add_date(XMLRPCMethodCall *method, Octstr *date)
-{
-    XMLRPCValue *nval;
-    if (method == NULL)
-	return -1;
-    nval = xmlrpc_create_scalar_value(xr_date, date);
-    list_produce(method->params, nval);
-    return 0;
-}
-
-int xmlrpc_call_add_base64(XMLRPCMethodCall *method, Octstr *b64)
-{
-    XMLRPCValue *nval;
-    if (method == NULL)
-	return -1;
-    nval = xmlrpc_create_scalar_value(xr_base64, b64);
+        return -1;
+    nval = xmlrpc_create_scalar_value(type, arg);
     list_produce(method->params, nval);
     return 0;
 }
@@ -522,6 +486,15 @@ XMLRPCValue *xmlrpc_create_scalar_value_double(int type, double val)
     return value;
 }
 
+XMLRPCValue *xmlrpc_create_struct_value(int type, void *arg)
+{
+    XMLRPCValue *value = xmlrpc_value_create();
+    value->v_type = xr_struct;
+    value->v_struct = list_create();
+
+    return value;
+}
+
 int xmlrpc_parse_status(XMLRPCMethodCall *call)
 {
     if (call == NULL)
@@ -538,11 +511,212 @@ Octstr *xmlrpc_parse_error(XMLRPCMethodCall *call)
     return call->parse_error;
 }
 
+Octstr *xmlrpc_get_method_name(XMLRPCMethodCall *call)
+{
+    if (call == NULL)
+        return NULL;
+
+    return call->method_name;
+}
+
+int xmlrpc_call_len(XMLRPCMethodCall *call)
+{
+    if (call == NULL)
+        return 0;
+
+    return list_len(call->params);
+}
+
+int xmlrpc_get_type(XMLRPCMethodCall *call, int pos)
+{
+    XMLRPCValue *var;
+
+    if (call == NULL)
+        return -1;
+
+    var = list_get(call->params, pos);
+    return var->v_type;
+}
 
 
 /*-------------------------------------------------
  * Internal parser functions
  */
+
+
+static int parse_member_element(xmlDocPtr doc, xmlNodePtr node, 
+                                XMLRPCMethodCall **msg)
+{
+    Octstr *name;
+    size_t i;
+
+    /*
+     * check if the element is allowed at this level 
+     */
+    name = octstr_create(node->name);
+    if (octstr_len(name) == 0) {
+        octstr_destroy(name);
+        return -1;
+    }
+
+    i = 0;
+    while (i < NUMBER_OF_MEMBER_ELEMENTS) {
+        if (octstr_case_compare(name, octstr_imm(member_elements[i].name)) == 0)
+            break;
+        ++i;
+    }
+    if (i == NUMBER_OF_MEMBER_ELEMENTS) {
+        (*msg)->parse_status = XMLRPC_PARSING_FAILED;
+        (*msg)->parse_error = octstr_format("XML-RPC compiler: unknown tag '%s' "
+                                            "in XML source at level <member>", 
+                                            octstr_get_cstr(name));
+        octstr_destroy(name);
+        return -1;
+    } 
+    octstr_destroy(name);
+
+    /* 
+     * now check which type it is and process 
+     *
+     * valid tags at this level are:
+     *   name [0]
+     *   value [1]
+     */
+    if (i == 0) {
+        /* this has been a <member> tag */
+        //if (parse_name(doc, node->xmlChildrenNode, msg) == -1)
+        //    return -1;
+    } else {
+        /* we should never be here */
+        (*msg)->parse_status = XMLRPC_PARSING_FAILED;
+        (*msg)->parse_error = octstr_format("XML-RPC compiler: bogus parsing exception in parse_member!");
+        return -1;
+    }
+    return 0;
+}
+
+
+static int parse_member(xmlDocPtr doc, xmlNodePtr node, 
+                        XMLRPCMethodCall **msg)
+{
+    int status = 0;
+  
+    /* call for the parser function of the node type. */
+    switch (node->type) {
+
+        case XML_ELEMENT_NODE:
+            status = parse_member_element(doc, node, msg);
+            break;
+
+        case XML_TEXT_NODE:
+        case XML_COMMENT_NODE:
+        case XML_PI_NODE:
+            /* Text nodes, comments and PIs are ignored. */
+            break;
+	   /*
+	    * XML has also many other node types, these are not needed with 
+	    * XML-RPC. Therefore they are assumed to be an error.
+	    */
+        default:
+            (*msg)->parse_status = XMLRPC_PARSING_FAILED;
+            (*msg)->parse_error = octstr_format("XML-RPC compiler: Unknown XML node in the XML-RPC source.");
+            return -1;
+            break;
+    }
+
+    if (node->next != NULL)
+	   if (parse_member(doc, node->next, msg) == -1)
+            return -1;
+
+    return status;
+}
+
+
+static int parse_struct_element(xmlDocPtr doc, xmlNodePtr node, 
+                                XMLRPCMethodCall **msg)
+{
+    Octstr *name;
+    size_t i;
+
+    /*
+     * check if the element is allowed at this level 
+     */
+    name = octstr_create(node->name);
+    if (octstr_len(name) == 0) {
+        octstr_destroy(name);
+        return -1;
+    }
+
+    i = 0;
+    while (i < NUMBER_OF_STRUCT_ELEMENTS) {
+        if (octstr_case_compare(name, octstr_imm(struct_elements[i].name)) == 0)
+            break;
+        ++i;
+    }
+    if (i == NUMBER_OF_STRUCT_ELEMENTS) {
+        (*msg)->parse_status = XMLRPC_PARSING_FAILED;
+        (*msg)->parse_error = octstr_format("XML-RPC compiler: unknown tag '%s' "
+                                            "in XML source at level <struct>", 
+                                            octstr_get_cstr(name));
+        octstr_destroy(name);
+        return -1;
+    } 
+    octstr_destroy(name);
+
+    /* 
+     * now check which type it is and process 
+     *
+     * valid tags at this level are:
+     *   member [0]
+     */
+    if (i == 0) {
+        /* this has been a <member> tag */
+        if (parse_member(doc, node->xmlChildrenNode, msg) == -1)
+            return -1;
+    } else {
+        /* we should never be here */
+        (*msg)->parse_status = XMLRPC_PARSING_FAILED;
+        (*msg)->parse_error = octstr_format("XML-RPC compiler: bogus parsing exception in parse_struct!");
+        return -1;
+    }
+    return 0;
+}
+
+
+static int parse_struct(xmlDocPtr doc, xmlNodePtr node, 
+                        XMLRPCMethodCall **msg)
+{
+    int status = 0;
+  
+    /* call for the parser function of the node type. */
+    switch (node->type) {
+
+        case XML_ELEMENT_NODE:
+            status = parse_struct_element(doc, node, msg);
+            break;
+
+        case XML_TEXT_NODE:
+        case XML_COMMENT_NODE:
+        case XML_PI_NODE:
+            /* Text nodes, comments and PIs are ignored. */
+            break;
+	   /*
+	    * XML has also many other node types, these are not needed with 
+	    * XML-RPC. Therefore they are assumed to be an error.
+	    */
+        default:
+            (*msg)->parse_status = XMLRPC_PARSING_FAILED;
+            (*msg)->parse_error = octstr_format("XML-RPC compiler: Unknown XML node in the XML-RPC source.");
+            return -1;
+            break;
+    }
+
+    if (node->next != NULL)
+	   if (parse_struct(doc, node->next, msg) == -1)
+            return -1;
+
+    return status;
+}
 
 
 static int parse_value_element(xmlDocPtr doc, xmlNodePtr node, 
@@ -611,7 +785,8 @@ static int parse_value_element(xmlDocPtr doc, xmlNodePtr node,
                                                     octstr_get_cstr(value));
                 return -1;
             }
-            xmlrpc_call_add_int((*msg), lval);
+            //xmlrpc_call_add_int((*msg), lval);
+            xmlrpc_call_add_scalar((*msg), xr_int, (void *) lval);
             debug("", 0, "XML-RPC: added int %ld", lval);
             break;
         
@@ -622,23 +797,37 @@ static int parse_value_element(xmlDocPtr doc, xmlNodePtr node,
                                                     octstr_get_cstr(value));
                 return -1;
             }
-            xmlrpc_call_add_bool((*msg), (int) lval);
+            //xmlrpc_call_add_bool((*msg), (int) lval);
+            xmlrpc_call_add_scalar((*msg), xr_bool, (void *) lval);
             debug("", 0, "XML-RPC: added boolean %d", (int) lval);
             break;
 
         case xr_string:
-            xmlrpc_call_add_string((*msg), value);
+            //xmlrpc_call_add_string((*msg), value);
+            xmlrpc_call_add_scalar((*msg), xr_string, (void *) value);
             debug("", 0, "XML-RPC: added string %s", octstr_get_cstr(value));
             break;
 
         case xr_date:
-            xmlrpc_call_add_date((*msg), value);
+            //xmlrpc_call_add_date((*msg), value);
+            xmlrpc_call_add_scalar((*msg), xr_date, (void *) value);
             debug("", 0, "XML-RPC: added date %s", octstr_get_cstr(value));
             break;
 
         case xr_base64:
-            xmlrpc_call_add_base64((*msg), value);
+            //xmlrpc_call_add_base64((*msg), value);
+            xmlrpc_call_add_scalar((*msg), xr_base64, (void *) value);
             debug("", 0, "XML-RPC: added base64 %s", octstr_get_cstr(value));
+            break;
+
+        case xr_struct:
+            if (parse_struct(doc, node->xmlChildrenNode, msg) == -1) {
+                debug("", 0, "%s", octstr_get_cstr((*msg)->parse_error));
+                //(*msg)->parse_status = XMLRPC_PARSING_FAILED;
+                //(*msg)->parse_error = octstr_format("XML-RPC compiler: could not parse struct"); 
+                return -1;
+            }
+            //debug("", 0, "XML-RPC: added struct %s", octstr_get_cstr(value));
             break;
 
         case xr_double:
