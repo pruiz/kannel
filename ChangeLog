@@ -1,3 +1,10 @@
+2000-04-04 Aarno Syvänen <syvanen@wapit.com>
+
+	* wtp_send.c|h: Changed tid type to int
+
+	* wapbox.c|h: Select connectionless requests out before calling wtp.
+	They made mess of wtp error handling mechanism.
+
 Tue Apr  4 17:55:10 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* utils/kannel-log-summary: Wrote. Requires AWK. Improvements
