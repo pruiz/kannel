@@ -1242,6 +1242,7 @@ static int parse_request(Octstr **url, int *use_version_1_0, Octstr *line)
     ret = parse_http_version(line);
     if (ret == -1) {
 	octstr_destroy(*url);
+	*url = NULL;
     	return -1;
     }
     *use_version_1_0 = !ret;
