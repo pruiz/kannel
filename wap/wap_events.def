@@ -698,6 +698,7 @@ WAPEVENT(Push_Message, "push-message",
     OPTIONAL_OCTSTR(push_data)
     CAPABILITIES(pi_capabilities)
     OPTIONAL_OCTSTR(smsc_id)
+    OPTIONAL_OCTSTR(product_name)
 )
 
 /*
@@ -711,6 +712,7 @@ WAPEVENT(Push_Response, "push-response",
     OPTIONAL_OCTSTR(sender_address)
     INTEGER(code)
     OPTIONAL_OCTSTR(desc)
+    OPTIONAL_OCTSTR(product_name)
     )
 
 /*

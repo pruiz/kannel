@@ -196,6 +196,7 @@ static int set_attribute_value(Octstr *element_name, Octstr *attr_value,
                                Octstr *attr_name, WAPEvent **e);
 static int return_flag(Octstr *ros);
 static void wap_event_accept_or_create(Octstr *element_name, WAPEvent **e);
+static int parse_pap_value(Octstr *attr_name, Octstr *attr_value, WAPEvent **e);
 static int parse_push_message_value(Octstr *attr_name, Octstr *attr_value,
                                      WAPEvent **e);
 static int parse_address_value(Octstr *attr_name, Octstr *attr_value, 
@@ -804,6 +805,7 @@ static int parse_attribute(Octstr *element_name, xmlAttrPtr attribute,
 
     nameos = octstr_imm("erroneous");
     attr_name = octstr_create(attribute->name);
+
     if (attribute->children != NULL)
         value = create_octstr_from_node(attribute->children);
     else
@@ -818,7 +820,9 @@ static int parse_attribute(Octstr *element_name, xmlAttrPtr attribute,
     }
 
     if (i == NUM_ATTRIBUTES) {
-        debug("wap.push.pap.compiler", 0, "PAP COMPILER: unknown attribute");
+        debug("wap.push.pap.compiler", 0, "PAP COMPILER: unknown attribute `%s' "
+              "within XML entity `%s'", octstr_get_cstr(attr_name), 
+              octstr_get_cstr(element_name));
         goto error;
     }
 
@@ -829,6 +833,7 @@ static int parse_attribute(Octstr *element_name, xmlAttrPtr attribute,
     if (pap_attributes[i].value == NULL) {
         ret = parse_attr_value(element_name, attr_name, value, e, 
                                type_of_address, is_any);
+
 	if (ret == -2) {
 	    goto error;
         } else {
@@ -844,8 +849,10 @@ static int parse_attribute(Octstr *element_name, xmlAttrPtr attribute,
     }
 
     if (octstr_compare(attr_name, nameos) != 0) {
-        debug("wap.push.pap.compiler", 0, "PAP COMPILER: unknown attribute"
-              " value");
+        debug("wap.push.pap.compiler", 0, "PAP COMPILER: unknown attribute "
+              "value `%s' for attribute `%s' within XML entity `%s'", 
+              octstr_get_cstr(value), octstr_get_cstr(attr_name), 
+              octstr_get_cstr(element_name));
         goto error;
     }
 
@@ -871,6 +878,36 @@ parsed:
     octstr_destroy(value);
     return ret;
 }
+
+/* 
+ * Attribute value parsing functions for the PAP element.
+ * Defined in PAP, chapter 8.1.  
+ */
+static int parse_pap_value(Octstr *attr_name, Octstr *attr_value, WAPEvent **e)
+{
+    Octstr *ros;
+
+    if (*e != NULL)
+        wap_event_dump(*e);
+
+    ros = octstr_imm("erroneous");
+    if (octstr_compare(attr_name, octstr_imm("product-name")) == 0) {
+        /* 
+         * XXX This is a kludge. 
+         * We can't add the product-name value to the WAPEvent, because
+         * the wap_event_create() is created in the deeper layer, which
+         * means as soon as we see <push-message> or <reponse-message>.
+         * But we would have to decide which WAPEvent to create while 
+         * being on the higher <pap> level. 
+         * How's this to be solved?! -- Stipe
+         */
+        return 0;
+    } 
+
+    debug("wap.push.pap.compiler", 0, "PAP COMPILER: unknown pap"
+          " element attribute `%s'", octstr_get_cstr(attr_name));
+    return -2;
+}  
 
 /* 
  * Value parsing functions return the newly created wap event containing 
@@ -1161,7 +1198,9 @@ static int parse_attr_value(Octstr *element_name, Octstr *attr_name,
 
     wap_event_accept_or_create(element_name, e);
 
-    if (octstr_compare(element_name, octstr_imm("push-message")) == 0) {
+    if (octstr_compare(element_name, octstr_imm("pap")) == 0) {
+        return parse_pap_value(attr_name, attr_value, e);
+    } else if (octstr_compare(element_name, octstr_imm("push-message")) == 0) {
         return parse_push_message_value(attr_name, attr_value, e);
     } else if (octstr_compare(element_name, octstr_imm("address")) == 0) {
         return parse_address_value(attr_name, attr_value, e, type_of_address);
