@@ -1553,6 +1553,7 @@ void http_close_port(int port)
     p = gw_malloc(sizeof(*p));
     *p = port;
     list_produce(closed_server_sockets, p);
+    gwthread_wakeup(server_thread_id);
 }
 
 

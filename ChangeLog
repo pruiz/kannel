@@ -1,5 +1,9 @@
 2001-03-19  Kalle Marjola  <rpr@wapit.com>
 
+	* gw/http.c: Bugfix. Make shutdown work for multiple servers
+
+2001-03-19  Kalle Marjola  <rpr@wapit.com>
+
 	* gw/smsc_http.c: Added. New module to handle HTTP based SMS
 	Center connections or other gateways (relay gateways). Currently
 	only supports 'kannel' as relay gateway
