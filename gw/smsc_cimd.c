@@ -62,54 +62,55 @@ static int cimd_open_connection(SMSCenter *smsc) {
 	memset(tmpbuff, 0, 10*1024);
 
 	/* connect */
-	
-	smsc->socket = tcpip_connect_to_server(smsc->cimd_hostname, 
-	                                            smsc->cimd_port);
+	smsc->socket = tcpip_connect_to_server(smsc->cimd_hostname, smsc->cimd_port);
 	if (smsc->socket == -1)
-		goto error;
-
+	    goto error;
+	
 	smsc->latency = 1000*1000;
-
-	/* receive protocol string "CIMD rel 1.36\n" */
-
+	
+	/* receive protocol string "CIMD rel 1.37\n" */
 	for (;;) {
-		ret = smscenter_read_into_buffer(smsc);
-		if (strstr(smsc->buffer, "CIMD rel 1.37\n") != NULL)
-			break;
-		if (ret < 0) goto logout;
+	    ret = smscenter_read_into_buffer(smsc);
+	    if (strstr(smsc->buffer, "CIMD rel 1.37\n") != NULL)
+		break;
+	    else{
+		error(errno, "cimd_open_connection: couldn't find protocol string");
+		goto logout;
+	    }
+	    if (ret < 0) goto logout;
 	}
-
+	
 	debug(0, "got the server identification tag");
-
+	
 	smscenter_remove_from_buffer(smsc, smsc->buflen);
-
+	
 	/* send login string */
 	sprintf(tmpbuff, "%c%s%c%s%c%s%c%s%c%c", 
-	  0x02, 
-	  "01", 0x09,
-	  smsc->cimd_username, 0x09, 
-	  smsc->cimd_password, 0x09, 
-	  "11",
-	  0x03, 0x0A);
+		0x02,
+		"01", 0x09,
+		smsc->cimd_username, 0x09, 
+		smsc->cimd_password, 0x09, 
+		"11",
+		0x03, 0x0A);
 
 	ret = write_to_socket(smsc->socket, tmpbuff);
 	if(ret < 0) goto logout;
-
+	
 	/* get an acknowledge message */
-
+	
 	smsc->cimd_last_spoke = 0;
-
+	
 	if(internal_cimd_expect_acknowledge(smsc, &cmd, &err) < 1)
-		goto logout;
-
+	    goto logout;
+	
 	debug(0, "logged in");
 	
 	gw_free(tmpbuff);
 	return 0;
-
+	
 logout:
 	cimd_close(smsc);
-
+	
 error:
 	error(errno, "cimd_open: could not open/handshake");
 	gw_free(tmpbuff);
@@ -537,6 +538,7 @@ static int internal_cimd_connect_tcpip(SMSCenter *smsc) {
 	}
 
 	/* Empty the buffer, there might be an evil ghost inside... */
+
 	memset(smsc->buffer, 0, smsc->bufsize);
 	smsc->buflen = 0;
 
