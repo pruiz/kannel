@@ -1,3 +1,8 @@
+2000-01-13    <rpr@rpr.wapit.com>
+
+	* gw/bearerbox.c: added XML getstatus cgi-bin - many fields
+	missing, but basic data should be available
+
 Thu Jan 13 12:19:15 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* gw/bearerbox.c, gw/msg.c, gw/smsbox_req.c, gw/wtp_send.c,

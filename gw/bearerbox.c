@@ -159,8 +159,8 @@ static time_t start_time;
  */
 
 static BBThread *internal_smsbox(void);
-static void print_threads(char *buffer);
-static void print_queues(char *buffer);
+static void print_threads(char *buffer, int in_xml);
+static void print_queues(char *buffer, int in_xml);
 
 
 
@@ -1165,7 +1165,7 @@ static BBThread *internal_smsbox(void)
  * HTTP ADMINSTRATION
  */
 
-static char *http_admin_command(char *command, CGIArg *list)
+static char *http_admin_command(char *command, CGIArg *list, char *extrabuf)
 {
     char *val;
     
@@ -1212,6 +1212,19 @@ static char *http_admin_command(char *command, CGIArg *list)
 	else
 	    return "Disconnected";
     }
+    else if (strcasecmp(command, "/cgi-bin/getstatus") == 0) {
+	char buf[1024], buf2[30000];
+	int t;
+	
+	print_queues(buf, 1);
+	print_threads(buf2, 1);
+	t = time(NULL) - start_time;
+	
+	sprintf(extrabuf,
+		"<Gateway> <TimeElapsed>%d</TimeElapsed> %s %s </Gateway>",
+		t, buf, buf2);
+	return extrabuf;
+    }
     else
 	return "Unknown request.";
 }
@@ -1250,8 +1263,8 @@ static void *http_request_thread(void *arg)
 	char buf[1024], buf2[1024];
 	int t;
 	
-	print_queues(buf);
-	print_threads(buf2);
+	print_queues(buf, 0);
+	print_threads(buf2, 0);
 	t = time(NULL) - start_time;
 	
 	sprintf(answer,
@@ -1265,7 +1278,7 @@ static void *http_request_thread(void *arg)
 	if(args!=NULL) 
 		arglist = cgiarg_decode_to_list(args);
 
-	answer = http_admin_command(path, arglist);
+	answer = http_admin_command(path, arglist, answerbuf);
 	
 	cgiarg_destroy_list(arglist);
     }
@@ -1451,9 +1464,10 @@ static void check_heartbeats(void)
 
 /*
  * print the current and mean queue length of both queues
- * into target buffer, which must be large enough (around 150 chars)
+ * into target buffer, which must be large enough
+ * (around 150 chars for non-xml, 300 for xml)
  */
-static void print_queues(char *buffer)
+static void print_queues(char *buffer, int in_xml)
 {
     int rq, rp;
     int totp, totq;
@@ -1467,13 +1481,32 @@ static void print_queues(char *buffer)
     
     mutex_lock(bbox->mutex);
 
-    sprintf(buffer,"Request queue length %d, oldest %ds old; mean %.1f, total %d messages\n"
-	    "Reply queue length %d; oldest %ds old; mean %.1f, total %d messages",
-	    rq, (int)(now-trq), bbox->mean_req_ql, totq, 
-	    rp, (int)(now-trp), bbox->mean_rep_ql, totp);
+    if (in_xml)
+    sprintf(buffer,
+	    "<MsgQueueIn> <QueueStatus> "
+	    "<ThroughPut>%d</ThroughPut> "
+	    "<QueueLen>%d</QueueLen> "
+	    "<MaxWaitInQueue>%d</MaxWaitInQueue> "
+	    "</QueueStatus> </MsgQueueIn> "
+
+	    "<MsgQueueOut> <QueueStatus> "
+	    "<ThroughPut>%d</ThroughPut> "
+	    "<QueueLen>%d</QueueLen> "
+	    "<MaxWaitInQueue>%d</MaxWaitInQueue> "
+	    "</QueueStatus> </MsgQueueOut> ",
+	    totq, rq, (int)(now-trq),
+	    totp, rp, (int)(now-trp));
+    else
+	sprintf(buffer,"Request queue length %d, oldest %ds old; mean %.1f, total %d messages\n"
+		"Reply queue length %d; oldest %ds old; mean %.1f, total %d messages",
+		rq, (int)(now-trq), bbox->mean_req_ql, totq, 
+		rp, (int)(now-trp), bbox->mean_rep_ql, totp);
 	    
     mutex_unlock(bbox->mutex);
 }
+
+
+
 
 /*
  * function to update average queue length function. Takes
@@ -1538,7 +1571,7 @@ static void update_queue_watcher()
 	    rq_last_mod(bbox->reply_queue) > limit) {
 
 	    char buf[1024];
-	    print_queues(buf);
+	    print_queues(buf, 0);
 	    debug(0, "\n%s", buf);
 	    c = 0;
 	}
@@ -1550,13 +1583,16 @@ static void update_queue_watcher()
  * print information about running receiver threads
  * Info is put into buffer which must be large enough
  */
-static void print_threads(char *buffer)
+static void print_threads(char *buffer, int in_xml)
 {
     BBThread *thr;
     int i;
     char buf[1024];
 
     buffer[0] = '\0';
+
+    if (in_xml)
+	strcat(buffer, "<Boxes> ");
     
     mutex_lock(bbox->mutex);
 
@@ -1564,25 +1600,65 @@ static void print_threads(char *buffer)
 	thr = bbox->threads[i];
 	if (thr != NULL && thr->status != BB_STATUS_DEAD) {
 	    switch(thr->type) {
+
+#define BOX_XML_ANSWER "<Box> <Id>%d</Id> <Status>%s</Status> "\
+                       	"<LogLevel>%s</LogLevel> <Type>%s</Type> "\
+ 	                "<Host>%s</Host> <Port>%d</Port> "\
+		        "<Requests>%d</Requests> "\
+		        "<Responses>%d</Responses> "\
+		        "<Pages></Pages> "\
+		        "<MessageLog></MessageLog> </Box>"
+		
 	    case BB_TTYPE_SMSC:
-		sprintf(buf, "[%d] SMSC Connection %s (%s)\n", thr->id,
-			smsc_name(thr->smsc), bbt_status_name(thr->status));
+		if (in_xml)
+		    sprintf(buf, BOX_XML_ANSWER,
+			    thr->id, bbt_status_name(thr->status),
+			    "General", "SMSC",
+			    "Internal", 0, 0, 0);
+		else
+		    sprintf(buf, "[%d] SMSC Connection %s (%s)\n", thr->id,
+			    smsc_name(thr->smsc), bbt_status_name(thr->status));
 		break;
 	    case BB_TTYPE_CSDR:
-		sprintf(buf, "[%d] CSDR Connection (%s)\n", thr->id,
-			bbt_status_name(thr->status));
+		if (in_xml)
+		    sprintf(buf, BOX_XML_ANSWER,
+			    thr->id, bbt_status_name(thr->status),
+			    "General", "CSDR",
+			    "Internal", 0, 0, 0);
+		else
+		    sprintf(buf, "[%d] CSDR Connection (%s)\n", thr->id,
+			    bbt_status_name(thr->status));
 		break;
 	    case BB_TTYPE_SMS_BOX:
-		if (thr->boxc->fd == BOXC_THREAD)
-		    sprintf(buf, "[%d] Internal SMS BOX (%s)\n", thr->id,
-			    bbt_status_name(thr->status));
-		else
-		    sprintf(buf, "[%d] SMS BOX Connection from <%s> (%s)\n", thr->id,
-			    thr->boxc->client_ip, bbt_status_name(thr->status));
+		if (thr->boxc->fd == BOXC_THREAD) {
+		    if (in_xml)
+			sprintf(buf, BOX_XML_ANSWER,
+				thr->id, bbt_status_name(thr->status),
+				"General", "SMS Box",
+				"Internal", 0, 0, 0);
+		    else
+			sprintf(buf, "[%d] Internal SMS BOX (%s)\n", thr->id,
+				bbt_status_name(thr->status));
+		} else {
+		    if (in_xml)
+			sprintf(buf, BOX_XML_ANSWER,
+				thr->id, bbt_status_name(thr->status),
+				"UNKNOWN", "SMS Box",
+				thr->boxc->client_ip, 0, 0, 0);
+		    else
+			sprintf(buf, "[%d] SMS BOX Connection from <%s> (%s)\n", thr->id,
+				thr->boxc->client_ip, bbt_status_name(thr->status));
+		}
 		break;
 	    case BB_TTYPE_WAP_BOX: 
-		sprintf(buf, "[%d] WAP BOX Connection from <%s> (%s)\n", thr->id,
-			thr->boxc->client_ip, bbt_status_name(thr->status));
+		if (in_xml)
+		    sprintf(buf, BOX_XML_ANSWER,
+			    thr->id, bbt_status_name(thr->status),
+			    "UNKNOWN", "Wap Box",
+			    thr->boxc->client_ip, 0, 0, 0);
+		else
+		    sprintf(buf, "[%d] WAP BOX Connection from <%s> (%s)\n", thr->id,
+			    thr->boxc->client_ip, bbt_status_name(thr->status));
 		break;
 	    default:
 		sprintf(buf, "Unknown connection type\n");
@@ -1593,9 +1669,18 @@ static void print_threads(char *buffer)
     mutex_unlock(bbox->mutex);
 
     if (bbox->http_port > -1) {
-	sprintf(buf, "[n/a] HTTP-Adminstration at port %d\n", bbox->http_port);
+	if (in_xml)
+	    sprintf(buf, BOX_XML_ANSWER,
+		    -1, "n/a",
+		    "General", "HTTP Adminstration",
+		    "Internal", bbox->http_port, 0, 0);	
+	else
+	    sprintf(buf, "[n/a] HTTP-Adminstration at port %d\n", bbox->http_port);
 	strcat(buffer, buf);
     }
+    if (in_xml)
+	strcat(buffer, "<Boxes> ");
+
 }
 
 
@@ -1678,9 +1763,9 @@ static void main_program(void)
     sleep(1);		/* some time for threads to die */
     check_threads();
     warning(0, "Bearer box terminating.. hopefully threads, too");
-    print_threads(buf);
+    print_threads(buf, 0);
     info(0, "Threads:\n%s", buf);
-    print_queues(buf);
+    print_queues(buf, 0);
     info(0, "\n%s", buf);
 }
 
