@@ -176,6 +176,7 @@ for control_file in $sms_control_files;
             gw/wapbox -v $loglevel $conf_file > check_wap.tmp 2>&1 & wappid=$!
             sleep 2
             test/test_ppg -c $contents http://localhost:$push_port/cgi-bin/wap-push.cgi?username=$username'&'password=$password $content_file $control_file > check_ppg.tmp 2>&1 
+            sleep 2
 
             if ! grep "and type push response" check_ppg.tmp > /dev/null
             then
