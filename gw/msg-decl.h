@@ -103,6 +103,7 @@ MSG(sms,
 		OCTSTR(charset);
 		OCTSTR(boxc_id);
 		OCTSTR(binfo);
+		INTEGER(msg_left);
 	})
 
 MSG(ack,

@@ -364,6 +364,11 @@ static void prepend_catenation_udh(Msg *sms, int part_no, int num_messages,
     octstr_format_append(sms->sms.udhdata, "%c\3%c%c%c", 
     	    	    	 0, msg_sequence, num_messages, part_no);
 
+     /* Set the number of messages left, if any */
+     if (part_no < num_messages)
+     	sms->sms.msg_left = num_messages - part_no;
+     else
+     	sms->sms.msg_left = 0;
     /* 
      * Now that we added the concatenation information the
      * length is all wrong. we need to recalculate it. 

@@ -1447,6 +1447,15 @@ static struct packet *packet_encode_message(Msg *msg, Octstr *sender_prefix, SMS
     if (msg->sms.pid > 0)
         packet_add_int_parm(packet, P_PROTOCOL_IDENTIFIER, msg->sms.pid, conn);
  
+	/* If there are more messages to the same destination, then set the
+	* More Messages to Send flag. This allow faster delivery of many messages 
+	* to the same destination
+	*/
+    if (msg->sms.msg_left > 0)
+        packet_add_int_parm(packet, P_MORE_MESSAGES_TO_SEND, 1, conn);
+    else
+        packet_add_int_parm(packet, P_MORE_MESSAGES_TO_SEND, 0, conn);
+	
     truncated = 0;
 
     spaceleft = 140;
