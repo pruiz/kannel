@@ -8,6 +8,7 @@
 /* The EMI specification doesn't document how connections should be
  * opened/used. The way they currently work might need to be changed. */
 
+
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <unistd.h>
@@ -893,6 +894,7 @@ static int emi2_handle_smscreq (SMSCConn *conn, Connection *server)
     Octstr	  *str;
     struct emimsg *emimsg;
     PrivData *privdata = conn->data;
+    int relogin=0;
     
     /* Read acks/nacks/ops from the server */
     while ((str = conn_read_packet(server, 2, 3))) {
@@ -1008,16 +1010,82 @@ static int emi2_handle_smscreq (SMSCConn *conn, Connection *server)
 			bb_smscconn_sent(conn,
 					 PRIVDATA(conn)->slots[emimsg->trn].sendmsg);
 		    } else {
-			bb_smscconn_send_failed(conn,
+			long errorcode;
+			octstr_parse_long(&errorcode, emimsg->fields[1], 0, 10);
+			if(errorcode == 4) {
+			    relogin=51;
+			} else {
+			    bb_smscconn_send_failed(conn,
 						PRIVDATA(conn)->slots[emimsg->trn].sendmsg,
 						SMSCCONN_FAILED_REJECTED);
+			}
 		    }
 		} else if (emimsg->ot == 31) {
-		    /* We don't use the data in the reply */
-		    ;
+		    if (octstr_get_char(emimsg->fields[0], 0) == 'N') {
+			long errorcode;
+			octstr_parse_long(&errorcode, emimsg->fields[1], 0, 10);
+			if(errorcode == 4) {
+			    relogin=31;
+			}
+		    }
 		} else {
 		    panic(0, "EMI2[%s]: Bug, ACK handler missing for sent packet",
 			  octstr_get_cstr(privdata->name));
+		}
+
+		if(relogin) {
+		    info(0, "EMI2[%s]: SMSC is asking for auth again, better reconnect", 
+			    octstr_get_cstr(privdata->name));
+
+		    /* XXX I've tryed to resend authentication, but socket gets EOF
+		     * after it, so it's safer, for now, to just reconnect */
+
+//		    if (privdata->username && privdata->password) {
+//			int result;
+//			struct emimsg *emimsg60;
+//
+//			emimsg60 = make_emi60(privdata);
+//			emi2_emimsg_send(conn, server, emimsg60);
+//			emimsg_destroy(emimsg60);
+//			result = wait_for_ack(privdata, server, 60, 30);
+//			if (result == -2) {
+//			    /* Are SMSCs going to return any temporary errors? If so,
+//			     * testing for those error codes should be added here. */
+//			    error(0, "EMI2[%s]: Server rejected our login, giving up",
+//			    	    octstr_get_cstr(privdata->name));
+//			    return -1;
+//			}
+//			else if (result == 0) {
+//			    error(0, "EMI2[%s]: Got no reply to login attempt "
+//				    "within 30 s", octstr_get_cstr(privdata->name));
+//			    return -1;
+//			}
+//			else if (result == -1) { /* Broken connection, already logged */
+//			    return -1;
+//			}
+//			privdata->last_activity_time = 0; /* to force keepalive after login */
+//			privdata->can_write = 1;
+//
+//			PRIVDATA(conn)->slots[emimsg->trn].sendtime = time(NULL);
+//			list_produce(PRIVDATA(conn)->outgoing_queue,
+//				PRIVDATA(conn)->slots[emimsg->trn].sendmsg);
+//
+//		    } else {
+//			if(relogin == 51) {
+//			    bb_smscconn_send_failed(conn,
+//				    PRIVDATA(conn)->slots[emimsg->trn].sendmsg,
+//				    SMSCCONN_FAILED_REJECTED);
+//			}
+//		    }
+//		    relogin = 0;
+
+		    if(relogin == 51) {
+			PRIVDATA(conn)->slots[emimsg->trn].sendtime = time(NULL);
+			bb_smscconn_send_failed(conn, PRIVDATA(conn)->slots[emimsg->trn].sendmsg,
+				SMSCCONN_FAILED_TEMPORARILY);
+		    }
+		    emimsg_destroy(emimsg);
+		    return -1;
 		}
 	    }
 	}

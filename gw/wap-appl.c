@@ -604,7 +604,7 @@ static void return_reply(int status, Octstr *content_body, List *headers,
                 if ((sm = find_session_machine_by_id(session_id)) != NULL) {
                     set_referer_url(url, sm);
                 } else {
-                    error("wap.wsp",0,"WSP: Failed to find session machine for ID %ld",
+                    error(0,"WSP: Failed to find session machine for ID %ld",
                           session_id);
                 }
             }

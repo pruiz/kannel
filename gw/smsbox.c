@@ -414,7 +414,7 @@ long get_tag(Octstr *body, Octstr *tag, Octstr **value, long pos, int nostrip) {
 	    return -1;
 	}
     } else {
-	debug("sms", 0, "XMLParsing: tag <%s> not found", octstr_get_cstr(tag));
+	// debug("sms", 0, "XMLParsing: tag <%s> not found", octstr_get_cstr(tag));
 	return -1;
     }
 }
@@ -430,7 +430,8 @@ static void get_x_kannel_from_xml(int requesttype , Octstr **type, Octstr **body
                                   int *coding, int *compress, 
                                   int *validity, int *deferred,
                                   int *dlr_mask, Octstr **dlr_url,
-                                  Octstr **account, int *pid, int *alt_dcs)
+                                  Octstr **account, int *pid, int *alt_dcs,
+                                  List **tolist)
 {                                    
 
 /*
@@ -496,17 +497,22 @@ static void get_x_kannel_from_xml(int requesttype , Octstr **type, Octstr **body
 	}
 
 	/* to (da/number) Multiple tags */ 
+	*tolist = list_create();
 	where = get_tag(*body, octstr_imm("da"), &tmp, 0, 0);
 	if(tmp) {
 	    get_tag(tmp, octstr_imm("number"), to, 0, 0);
+	    list_append(*tolist, octstr_duplicate(*to));
+	    O_DESTROY(*to);
+
 	    while(tmp && where != -1) {
 		O_DESTROY(tmp);
 		where = get_tag(*body, octstr_imm("da"), &tmp, where, 0);
 		if(tmp) {
 		    get_tag(tmp, octstr_imm("number"), &tmp2, 0, 0);
-		    octstr_append_char(*to, ' ');
-		    octstr_append(*to, tmp2);
-		    O_DESTROY(tmp2);
+		    if(tmp2 != NULL) {
+			list_append(*tolist, octstr_duplicate(tmp2));
+			O_DESTROY(tmp2);
+		    }
 		}
 	    }
 	}
@@ -838,7 +844,7 @@ static void url_result_thread(void *arg)
 		get_x_kannel_from_xml(mt_reply, &type, &replytext, reply_headers, &from, &to, &udh,
 				NULL, NULL, &smsc, &mclass, &mwi, &coding,
 				&compress, &validity, &deferred,
-				&dlr_mask, &dlr_url, &account, &pid, &alt_dcs);
+				&dlr_mask, &dlr_url, &account, &pid, &alt_dcs, NULL);
 	    } else if (octstr_case_compare(type, octet_stream) == 0) {
 		replytext = octstr_duplicate(reply_body);
                 octstr_destroy(reply_body);
@@ -1530,11 +1536,12 @@ static Octstr *smsbox_req_handle(URLTranslation *t, Octstr *client_ip,
 				 int mclass, int mwi, int coding, int compress, 
 				 int validity, int deferred, 
 				 int *status, int dlr_mask, Octstr *dlr_url, 
-				 Octstr *account, int pid, int alt_dcs)
+				 Octstr *account, int pid, int alt_dcs,
+				 List *receiver)
 {				     
     Msg *msg = NULL;
     Octstr *newfrom, *returnerror, *receiv;
-    List *receiver, *failed_id, *allowed, *denied;
+    List *failed_id, *allowed, *denied;
     int no_recv, ret = 0, i;
     long del;
 
@@ -1542,8 +1549,11 @@ static Octstr *smsbox_req_handle(URLTranslation *t, Octstr *client_ip,
      * Multi-cast messages with several receivers in 'to' are handled
      * in a loop. We only change sms.time and sms.receiver within the
      * loop below, because everything else is identical for all receivers.
+     * If receiver is not null, to list is already present on it
      */
-    receiver = octstr_split_words(to);
+    if(receiver == NULL) {
+	receiver = octstr_split_words(to);
+    }
     no_recv = list_len(receiver);
 
     /*
@@ -1552,16 +1562,6 @@ static Octstr *smsbox_req_handle(URLTranslation *t, Octstr *client_ip,
      */
     if (udh != NULL && (octstr_len(udh) != octstr_get_char(udh, 0) + 1)) {
 	returnerror = octstr_create("UDH field misformed, rejected");
-	goto fielderror2;
-    }
-
-    /*
-     * Check if there are any illegal characters in the 'to' scheme
-     */
-    if (strspn(octstr_get_cstr(to), sendsms_number_chars) < octstr_len(to)) {
-	info(0,"Illegal characters in 'to' string ('%s') vs '%s'",
-	     octstr_get_cstr(to), sendsms_number_chars);
-	returnerror = octstr_create("Garbage 'to' field, rejected.");
 	goto fielderror2;
     }
 
@@ -1579,6 +1579,15 @@ static Octstr *smsbox_req_handle(URLTranslation *t, Octstr *client_ip,
     for (i = 0; i < no_recv; i++) {
         receiv = list_get(receiver, i); 
             
+	/*
+	 * Check if there are any illegal characters in the 'to' scheme
+	 */
+	if (strspn(octstr_get_cstr(receiv), sendsms_number_chars) < octstr_len(receiv)) {
+	    info(0,"Illegal characters in 'to' string ('%s') vs '%s'",
+		octstr_get_cstr(receiv), sendsms_number_chars);
+            list_append_unique(denied, receiv, octstr_item_match);
+	}
+
         /*
          * First of all fill the two lists systematicaly by the rules,
          * then we will revice the lists.
@@ -1645,7 +1654,7 @@ static Octstr *smsbox_req_handle(URLTranslation *t, Octstr *client_ip,
          octstr_get_cstr(urltrans_username(t)),
          octstr_get_cstr(newfrom),
          octstr_get_cstr(client_ip),
-         octstr_get_cstr(to),
+         ( to == NULL ? "multi-cast" : octstr_get_cstr(to) ),
          ( text == NULL ? "" : octstr_get_cstr(text) ));
     
     /*
@@ -1741,6 +1750,8 @@ static Octstr *smsbox_req_handle(URLTranslation *t, Octstr *client_ip,
 	goto fielderror;
     }
 
+    msg->sms.receiver = NULL;
+
     /* 
      * All checks are done, now add multi-cast request support by
      * looping through 'allowed'. This should work for any
@@ -1751,7 +1762,9 @@ static Octstr *smsbox_req_handle(URLTranslation *t, Octstr *client_ip,
 
     while ((receiv = list_extract_first(allowed)) != NULL) {
         
+	O_DESTROY(msg->sms.receiver);
         msg->sms.receiver = octstr_duplicate(receiv);
+
         msg->sms.time = time(NULL);
         /* send the message and return number of splits */
         ret = send_message(t, msg);
@@ -2019,7 +2032,7 @@ static Octstr *smsbox_req_sendsms(List *args, Octstr *client_ip, int *status)
     return smsbox_req_handle(t, client_ip, from, to, text, charset, udh, 
 			     smsc, mclass, mwi, coding, compress, validity, 
 			     deferred, status, dlr_mask, dlr_url, account,
-			     pid, alt_dcs);
+			     pid, alt_dcs, NULL);
     
 }
 
@@ -2037,10 +2050,12 @@ static Octstr *smsbox_sendsms_post(List *headers, Octstr *body,
     Octstr *type, *charset;
     Octstr *dlr_url;
     Octstr *account;
+    List *tolist;
     int dlr_mask = 0;
     int mclass, mwi, coding, compress, validity, deferred, pid, alt_dcs;
  
     from = to = user = pass = udh = smsc = dlr_url = account = NULL;
+    tolist = NULL;
    
     ret = NULL;
     
@@ -2050,8 +2065,8 @@ static Octstr *smsbox_sendsms_post(List *headers, Octstr *body,
     if(octstr_case_compare(type, octstr_imm("text/xml")) == 0) {
 	get_x_kannel_from_xml(mt_push, &type, &body, headers, &from, &to, &udh,
 		       	&user, &pass, &smsc, &mclass, &mwi, &coding,
-		       	&compress, &validity, &deferred,
-		       	&dlr_mask, &dlr_url, &account, &pid, &alt_dcs);
+		       	&compress, &validity, &deferred, &dlr_mask, &dlr_url, 
+			&account, &pid, &alt_dcs, &tolist);
     } else {
 	get_x_kannel_from_headers(headers, &from, &to, &udh,
 			      &user, &pass, &smsc, &mclass, &mwi, &coding,
@@ -2065,12 +2080,12 @@ static Octstr *smsbox_sendsms_post(List *headers, Octstr *body,
 	*status = HTTP_FORBIDDEN;
 	ret = octstr_create("Authorization failed for sendsms");
     }
-    else if (to == NULL) {
+    else if (to == NULL && tolist == NULL) {
 	error(0, "%s got insufficient headers", octstr_get_cstr(sendsms_url));
 	*status = HTTP_BAD_REQUEST;
 	ret = octstr_create("Insufficient headers, rejected");
     } 
-    else if (octstr_case_compare(to,
+    else if (to != NULL && octstr_case_compare(to,
 				octstr_imm("")) == 0) {
 	error(0, "%s got empty to cgi variable", octstr_get_cstr(sendsms_url));
 	*status = HTTP_BAD_REQUEST;
@@ -2095,8 +2110,8 @@ static Octstr *smsbox_sendsms_post(List *headers, Octstr *body,
 	if (ret == NULL)
 	    ret = smsbox_req_handle(t, client_ip, from, to, body, charset,
 				    udh, smsc, mclass, mwi, coding, compress, 
-				    validity, deferred, status, 
-				    dlr_mask, dlr_url, account, pid, alt_dcs);
+				    validity, deferred, status, dlr_mask, 
+				    dlr_url, account, pid, alt_dcs, tolist);
 
 	octstr_destroy(type);
 	octstr_destroy(charset);

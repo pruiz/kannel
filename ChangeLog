@@ -1,3 +1,18 @@
+2002-05-13  Bruno Rodrigues  <bruno.rodrigues@litux.org>
+    * : The "Why don't you love me anymore?" patch
+    * gw/smsc_emi2.c: if SMSC reply with a NACK and error 04, we should 
+      resend authentication. I couldn't do it (When I send the login packet, 
+      socket gets eof and disconnects), so kannel just reconnects for now
+    * gw/smsbox.c: remove information if a tag is not present on xml-post;
+      If we know that there will be more than one "to", pass the to list 
+      instead of joining and spliting it in "to" string; moved checking 
+      illegal chars in "to" below, checking one by one instead of the full
+      multi-to string, that could even not exists if the list is received
+    * gw/wap-appl.c: fix a warning
+    * gw/smsc_at2.c: applied patch from Oded Arbel to fix debugging messages
+    * Makefile.in: applied patch from Benjamin Lee to add DESTDIR in two 
+      missing spots
+
 2002-05-13  Stipe Tolj <tolj@wapme-systems.de>
     * gw/wap-appl.c: fixed a minor assertion bug in return_reply()
 

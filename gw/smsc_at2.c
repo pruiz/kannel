@@ -595,7 +595,7 @@ void at2_read_sms_memory(PrivAT2data* privdata)
 
     /* get memory status */
     if (at2_check_sms_memory(privdata) == -1) {
-        debug("bb.smsc.at2", 0, "AT2[%s]: memory check error", octstr_get_cstr(privdata->device));
+        debug("bb.smsc.at2", 0, "AT2[%s]: memory check error", octstr_get_cstr(privdata->name));
         return ;
     }
 
@@ -629,7 +629,7 @@ void at2_read_sms_memory(PrivAT2data* privdata)
         int message_count = 0; /* cound number of messages collected */
 
         debug("bb.smsc.at2", 0, "AT2[%s]: %d messages waiting in memory", 
-              octstr_get_cstr(privdata->device), privdata->sms_memory_usage);
+              octstr_get_cstr(privdata->name), privdata->sms_memory_usage);
 
         /*
          * loop till end of memory or collected enouch messages
@@ -642,14 +642,14 @@ void at2_read_sms_memory(PrivAT2data* privdata)
             at2_write_line(privdata, cmd);
             if (at2_wait_modem_command(privdata, 0, 0, &message_count) != 0) {
                 debug("bb.smsc.at2", 0, "AT2[%s]: failed to get message %d.", 
-                      octstr_get_cstr(privdata->device), i);
+                      octstr_get_cstr(privdata->name), i);
                 continue; /* failed to read the message - skip to next message */
             }
 
             /* no need to delete if no message collected */
             if (old_message_count == message_count) { 
                 debug("bb.smsc.at2", 0, "AT2[%s]: not deleted.", 
-                      octstr_get_cstr(privdata->device));
+                      octstr_get_cstr(privdata->name));
                 continue;
             }
 
@@ -665,7 +665,7 @@ void at2_read_sms_memory(PrivAT2data* privdata)
                  * we'll see it next time around. 
                  */                
                 debug("bb.smsc.at2", 0, "AT2[%s]: failed to delete message %d.", 
-                      octstr_get_cstr(privdata->device), i);
+                      octstr_get_cstr(privdata->name), i);
                 continue; 
 
             }
@@ -713,7 +713,7 @@ int at2_check_sms_memory(PrivAT2data *privdata)
         if (index < 4) { 
             /* didn't get all memory data - I don't why, so I'll bail */
             debug("bb.smsc.at2", 0, "AT2[%s]: couldn't parse all memory locations : %d:'%s'.",
-                  octstr_get_cstr(privdata->device), index, 
+                  octstr_get_cstr(privdata->name), index, 
                   &(octstr_get_cstr(privdata->lines)[pos]));
             O_DESTROY(search_cpms);
             return -1;
@@ -734,7 +734,7 @@ int at2_check_sms_memory(PrivAT2data *privdata)
 
     } else {
         debug("bb.smsc.at2", 0, "AT2[%s]: no correct header for CPMS response.", 
-              octstr_get_cstr(privdata->device));
+              octstr_get_cstr(privdata->name));
 
         /* didn't get a +CPMS response - this is clearly an error */
         ret = -1; 

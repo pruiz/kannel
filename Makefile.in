@@ -229,12 +229,12 @@ benchmarks/report.xml: dummy
 dummy:
 
 install: all
-	$(INSTALL) -d $(bindir)
+	$(INSTALL) -d $(DESTDIR)$(bindir)
 	for prog in $(binprogs); do \
 		$(INSTALL) $$prog \
 		    $(DESTDIR)$(bindir)/`basename $$prog`$(suffix); \
 	done
-	$(INSTALL) -d $(sbindir)
+	$(INSTALL) -d $(DESTDIR)$(sbindir)
 	for prog in $(sbinprogs); do \
 		$(INSTALL) $$prog \
 		    $(DESTDIR)$(sbindir)/`basename $$prog`$(suffix); \
