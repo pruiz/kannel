@@ -203,7 +203,7 @@ static long string_to_number(Octstr *ostr, struct table *table)
 static long string_to_versioned_number(Octstr *ostr, struct table *table, 
                                        int version)
 {
-    unsigned int i, ret;
+    long i, ret;
 
     gw_assert(initialized);
 
@@ -216,7 +216,7 @@ static long string_to_versioned_number(Octstr *ostr, struct table *table,
         }
     }
 
-    debug("wsp.strings",0,"WSP: Mapping `%s', WSP 1.%d to 0x%04x.", 
+    debug("wsp.strings",0,"WSP: Mapping `%s', WSP 1.%d to 0x%04lx.", 
           octstr_get_cstr(ostr), version, ret);
 
     return ret;

@@ -1,3 +1,8 @@
+2004-08-26  Stipe Tolj  <stolj@wapme.de>
+    * wap/wsp_string.c: fixed a mis-interpretated datatype change from rev 1.3
+      to 1.4. Thanks to Slava for this hint and patch.
+      [Msg-ID: <412ADEEE.2030608@lmt.lv>]
+
 2004-08-25 Alexander Malysh <amalysh at kannel.org>
     * gwlib/semaphore.c: changed 'HAVE_SEMAPHORE_H' to 'HAVE_SEMAPHORE' and
       removed workaround for DARWIN.
