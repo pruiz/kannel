@@ -304,7 +304,7 @@ $(testprogs): $(testobjs) $(libs)
 $(checkprogs): $(checkobjs) $(libs)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(@:@EXE_EXT@=).o $(libs) $(LIBS)
 
-pkg:
-        (cd solaris; mk-solaris-package.sh)
-        echo Package is now in solaris directory
+pkg: all
+	(cd solaris; mk-solaris-package.sh)
+	echo Package is now in solaris directory
 
