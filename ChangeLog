@@ -1,4 +1,11 @@
 2003-10-12  Alexander Malysh  <a.malysh@centrium.de>
+    * gw/bb_boxc.c: don't remove producer of incoming list if that is a global
+      incoming list. Otherwise we have panic.
+    * gw/urltrans.c: don't panic if msgdata == NULL in urltrans_find(...).
+    * gw/shared.[ch]: made program_status var. volatile, because changed in the 
+      signal handler and should not be cashed.
+
+2003-10-12  Alexander Malysh  <a.malysh@centrium.de>
     * gwlib/thread.[ch]: added mutex_try_lock(...) function.
 
 2003-10-12  Alexander Malysh  <a.malysh@centrium.de>

@@ -468,7 +468,9 @@ static void run_smsbox(void *arg)
     boxc_receiver(newconn);
     list_remove_producer(newconn->outgoing);
 
-    list_remove_producer(newconn->incoming);
+    /* remove producer only if that not a global incoming list */
+    if (incoming_sms != newconn->incoming)
+        list_remove_producer(newconn->incoming);
     gwthread_join(sender);
 
 cleanup:    

@@ -23,7 +23,7 @@
 #endif
 
 
-enum program_status program_status = starting_up;
+volatile enum program_status program_status = starting_up;
 
 
 void report_versions(const char *boxname)

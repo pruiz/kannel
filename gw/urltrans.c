@@ -213,7 +213,11 @@ URLTranslation *urltrans_find(URLTranslationList *trans, Octstr *text,
     URLTranslation *t;
     int reject = 0;
     
-    words = octstr_split_words(text);
+    /* do not panic if text == NULL */
+    if (text != NULL)
+        words = octstr_split_words(text);
+    else
+        words = list_create();
     
     t = find_translation(trans, words, smsc, sender, receiver, &reject);
     list_destroy(words, octstr_destroy_item);

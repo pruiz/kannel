@@ -21,7 +21,7 @@
  * Program status. Set this to shutting_down to make read_from_bearerbox
  * return even if the bearerbox hasn't closed the connection yet.
  */
-extern enum program_status {
+extern volatile enum program_status {
     starting_up,
     running,
     shutting_down
