@@ -12,6 +12,8 @@
 
 #include "gwlib/gwlib.h"
 
+#define MSG_PARAM_UNDEFINED -1
+
 enum msg_type {
 	#define MSG(type, stmt) type,
 	#include "msg-decl.h"

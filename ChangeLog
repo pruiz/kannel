@@ -1,4 +1,10 @@
 2003-10-13  Alexander Malysh  <a.malysh@centrium.de>
+    * gw/msg.h: defined MSG_PARAM_UNDEFINED as -1 for init. values of all
+      messages.
+    * gw/msg.c: got rid of ugly sms initializing.Added using of MSG_PARAM_UNDEFINED.
+    * gw/sms.h: added using of MSG_PARAM_UNDEFINED that now equal to SMS_PARAM_UNDEFINED.
+      
+2003-10-13  Alexander Malysh  <a.malysh@centrium.de>
     * gwlib/http.c: fixed panic in http_something_accepted(...) that NULL was
       passed to octstr_case_compare(...).
 

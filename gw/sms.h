@@ -32,7 +32,7 @@
 
 #include "msg.h"
 
-#define SMS_PARAM_UNDEFINED  -1
+#define SMS_PARAM_UNDEFINED  MSG_PARAM_UNDEFINED
 
 #define MC_UNDEF   SMS_PARAM_UNDEFINED
 #define MC_CLASS0  0

@@ -39,22 +39,11 @@ Msg *msg_create(enum msg_type type)
     msg = gw_malloc(sizeof(Msg));
 
     msg->type = type;
-#define INTEGER(name) p->name = 0
+#define INTEGER(name) p->name = MSG_PARAM_UNDEFINED;
 #define OCTSTR(name) p->name = NULL
 #define MSG(type, stmt) { struct type *p = &msg->type; stmt }
 #include "msg-decl.h"
 
-    if(type == sms) { /* reset */
-	msg->sms.sender = msg->sms.receiver = msg->sms.udhdata = 
-	    msg->sms.msgdata = msg->sms.smsc_id = msg->sms.service = 
-	    msg->sms.account = msg->sms.dlr_url = msg->sms.charset = 
-	    msg->sms.boxc_id = msg->sms.auth_code = msg->sms.hplmn = NULL;
-	msg->sms.time = (time_t) -1;
-	msg->sms.id = msg->sms.mclass = msg->sms.mwi = msg->sms.coding = 
-	    msg->sms.compress = msg->sms.validity = msg->sms.deferred = 
-	    msg->sms.dlr_mask = msg->sms.pid = msg->sms.alt_dcs = 
-	    msg->sms.rpi = -1; 
-    }
     return msg;
 }
 
