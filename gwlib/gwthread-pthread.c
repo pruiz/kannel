@@ -21,8 +21,8 @@ struct threadinfo {
 	const char *name;
 	Threadfunc *func;
 	long number;
-	int wakefd_send;
 	int wakefd_recv;
+	int wakefd_send;
 	pthread_cond_t exiting;
 };
 
@@ -99,10 +99,10 @@ struct threadinfo *ti) {
 	if (pipe(pipefds) < 0) {
 		panic(errno, "cannot allocate wakeup pipe for new thread");
 	}
-	ti->wakefd_send = pipefds[0];
-	ti->wakefd_recv = pipefds[1];
-	socket_set_blocking(ti->wakefd_send, 0);
+	ti->wakefd_recv = pipefds[0];
+	ti->wakefd_send = pipefds[1];
 	socket_set_blocking(ti->wakefd_recv, 0);
+	socket_set_blocking(ti->wakefd_send, 0);
 
 	ret = pthread_cond_init(&ti->exiting, NULL);
 	if (ret != 0) {
@@ -145,8 +145,8 @@ static void delete_threadinfo(void) {
 	threadinfo = getthreadinfo();
 	pthread_cond_broadcast(&threadinfo->exiting);
 	pthread_cond_destroy(&threadinfo->exiting);
-	close(threadinfo->wakefd_send);
 	close(threadinfo->wakefd_recv);
+	close(threadinfo->wakefd_send);
 	/* The main thread may still try call gwthread_self, when
 	 * logging stuff.  So we need to set this to a safe value. */
 #if 0 /* XXX for some reason, this makes shutdown hang --liw */
@@ -327,7 +327,27 @@ void gwthread_join(long thread) {
 	}
 }
 
-void gwthread_join_all(Threadfunc *func) {
+void gwthread_join_all(void) {
+	long i;
+	long our_thread = gwthread_self();
+
+	for (i = 0; i < THREADTABLE_SIZE; ++i) {
+		if (THREAD(our_thread) != THREAD(i))
+			gwthread_join(i);
+	}
+}
+
+void gwthread_wakeup_all(void) {
+	long i;
+	long our_thread = gwthread_self();
+
+	for (i = 0; i < THREADTABLE_SIZE; ++i) {
+		if (THREAD(our_thread) != THREAD(i))
+			gwthread_wakeup(i);
+	}
+}
+
+void gwthread_join_every(Threadfunc *func) {
 	long i;
 	struct threadinfo *ti;
 	int ret;

@@ -238,7 +238,7 @@ void wtp_shutdown(void) {
      gw_assert(run_status == running);
      run_status = terminating;
      list_remove_producer(queue);
-     gwthread_join_all(main_thread);
+     gwthread_join_every(main_thread);
      debug("wap.wtp", 0, "wtp_shutdown: %ld machines left",
      	   list_len(machines));
      while (list_len(machines) > 0)

@@ -81,8 +81,8 @@ void wap_appl_shutdown(void) {
 	list_remove_producer(queue);
 	run_status = terminating;
 	
-	gwthread_join_all(main_thread);
-	gwthread_join_all(fetch_thread);
+	gwthread_join_every(main_thread);
+	gwthread_join_every(fetch_thread);
 	
 	while ((e = list_extract_first(queue)) != NULL)
 		wap_event_destroy(e);

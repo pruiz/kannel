@@ -124,7 +124,7 @@ void wsp_shutdown(void) {
 	gw_assert(run_status == running);
 	run_status = terminating;
 	list_remove_producer(queue);
-	gwthread_join_all(main_thread);
+	gwthread_join_every(main_thread);
 
 	while ((e = list_extract_first(queue)) != e)
 		wap_event_destroy(e);

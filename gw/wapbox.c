@@ -362,8 +362,8 @@ int main(int argc, char **argv) {
 
 	run_status = aborting;
 	list_remove_producer(queue);
-	gwthread_join_all(send_heartbeat_thread);
-	gwthread_join_all(empty_queue_thread);
+	gwthread_join_every(send_heartbeat_thread);
+	gwthread_join_every(empty_queue_thread);
 	wap_appl_shutdown();
 	wsp_shutdown();
 	destroy_queue();

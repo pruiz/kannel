@@ -31,7 +31,12 @@ void gwthread_join(long thread);
 
 /* Wait for all threads whose main function is `func' to terminate.
  * Return immediately if none are running. */
-void gwthread_join_all(Threadfunc *func);
+void gwthread_join_every(Threadfunc *func);
+
+/* Wait for all threads to terminate.  Return immediately if none
+ * are running.  This function is not intended to be called if new
+ * threads are still being created, and it may not notice such threads. */
+void gwthread_join_all(void);
 
 /* Return the thread id of this thread. */
 long gwthread_self(void);
@@ -40,6 +45,9 @@ long gwthread_self(void);
  * make it return immediately.  Otherwise, make it return immediately the
  * next time it calls one of those functions. */
 void gwthread_wakeup(long thread);
+
+/* Wake up all threads */
+void gwthread_wakeup_all(void);
 
 /* Wrapper around the poll() system call, for one file descriptor.
  * "events" is a set of the flags defined in <sys/poll.h>, usually

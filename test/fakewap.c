@@ -674,7 +674,7 @@ int main(int argc, char **argv)
     client_session(NULL);
 
     /* Wait for the other sessions to complete */
-    gwthread_join_all(client_session);
+    gwthread_join_every(client_session);
 
     info(0, "fakewap complete.");
     info(0, "fakewap: %d client threads made total %d transactions.", 
