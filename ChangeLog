@@ -1,5 +1,13 @@
 2001-01-25  Lars Wirzenius  <liw@iki.fi>
 
+    	* gw/bb_udp.c, gwlib/cfg.def: Applied and adapted patch from
+	Laurent Foulonneau to implement UDP packet filtering based on
+	sender IP number.
+
+	* doc/userguide/userguide.xml: Documented the new options.
+
+2001-01-25  Lars Wirzenius  <liw@iki.fi>
+
 	* gw/smsc.c, gw/smsc_at.c, gw/smsc_p.h, gwlib/cfg.def: Applied
 	and slightly adapted patch from Bjarne Saltbæk for implementing
 	a validity period option for the GSM phone driver.

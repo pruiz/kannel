@@ -698,13 +698,23 @@ admin-password = f00bar
     <row><entry><literal>box-deny-ip</literal></entry>
      <entry morerows=1>IP-list</entry>
      <entry morerows=1 valign=bottom>
-        These lists can be used to prevent connection from given IP 
+        These lists can be used to prevent box connections from given IP 
         addresses. Each list can have several addresses, 
         separated with semicolons (';'). An asterisk ('*') can be used
         as a wildcard in place of any ONE number, so *.*.*.*
         matches any IP.
      </entry></row>
-    <row><entry><literal>bow-allow-ip</literal></entry></row>
+    <row><entry><literal>box-allow-ip</literal></entry></row>
+
+    <row><entry><literal>udp-deny-ip</literal></entry>
+     <entry morerows=1>IP-list</entry>
+     <entry morerows=1 valign=bottom>
+        These lists can be used to prevent UDP packets from given IP 
+        addresses, thus preventing unwanted use of the WAP gateway.
+	Used the same way as <literal>box-deny-ip</literal> and
+	<literal>box-allow-ip</literal>.
+     </entry></row>
+    <row><entry><literal>udp-allow-ip</literal></entry></row>
 
     <row><entry><literal>wdp-interface-name (c)</literal></entry>
      <entry>IP or '*'</entry>

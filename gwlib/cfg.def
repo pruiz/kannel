@@ -28,6 +28,8 @@ SINGLE_GROUP(core,
     OCTSTR(wapbox-port)
     OCTSTR(box-deny-ip)
     OCTSTR(box-allow-ip)
+    OCTSTR(udp-deny-ip)
+    OCTSTR(udp-allow-ip)
     OCTSTR(wdp-interface-name)
     OCTSTR(log-file)
     OCTSTR(log-level)

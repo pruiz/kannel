@@ -49,6 +49,13 @@ typedef struct _udpc {
 } Udpc;
 
 
+/*
+ * IP numbers which are allowed or denied us of the bearerbox via UDP.
+ */
+static Octstr *allow_ip;
+static Octstr *deny_ip;
+
+
 /* forward declarations */
 
 static void udpc_destroy(Udpc *udpc);
@@ -63,13 +70,14 @@ static void udp_receiver(void *arg)
     int ret;
     Msg *msg;
     Udpc *conn = arg;
+    Octstr *ip;
 
     list_add_producer(incoming_wdp);
     list_add_producer(flow_threads);
     gwthread_wakeup(MAIN_THREAD_ID);
     
     /* remove messages from socket until it is closed */
-    while(bb_status != BB_DEAD && bb_status != BB_SHUTDOWN) {
+    while (bb_status != BB_DEAD && bb_status != BB_SHUTDOWN) {
 
 	list_consume(isolated);	/* block here if suspended/isolated */
 
@@ -89,19 +97,34 @@ static void udp_receiver(void *arg)
 	    error(errno, "Failed to receive an UDP - Fatal");
 	    break;
 	}
-	debug("bb.udp", 0, "datagram received");
-	msg = msg_create(wdp_datagram);
 
-	msg->wdp_datagram.source_address = udp_get_ip(cliaddr);
-	msg->wdp_datagram.source_port    = udp_get_port(cliaddr);
-	msg->wdp_datagram.destination_address = udp_get_ip(conn->addr);
-	msg->wdp_datagram.destination_port    = udp_get_port(conn->addr);
-	msg->wdp_datagram.user_data = datagram;
+	/* discard the message if the client is not allowed */
+    	ip = udp_get_ip(cliaddr);
+	if (!is_allowed_ip(allow_ip ? octstr_get_cstr(allow_ip) : 0, 
+			   deny_ip ? octstr_get_cstr(deny_ip) : 0, 
+			   ip))
+	{
+    	    warning(0, "UDP: Discarding packet from %s, IP is denied.",
+		       octstr_get_cstr(ip));
+    	    octstr_destroy(datagram);
+	} else {
+	    octstr_destroy(ip);
+    
+	    debug("bb.udp", 0, "datagram received");
+	    msg = msg_create(wdp_datagram);
+    
+	    msg->wdp_datagram.source_address = udp_get_ip(cliaddr);
+	    msg->wdp_datagram.source_port    = udp_get_port(cliaddr);
+	    msg->wdp_datagram.destination_address = udp_get_ip(conn->addr);
+	    msg->wdp_datagram.destination_port    = udp_get_port(conn->addr);
+	    msg->wdp_datagram.user_data = datagram;
+    
+	    list_produce(incoming_wdp, msg);
+	    counter_increase(incoming_wdp_counter);
+	}
 
 	octstr_destroy(cliaddr);
-
-	list_produce(incoming_wdp, msg);
-	counter_increase(incoming_wdp_counter);
+	octstr_destroy(ip);
     }    
     list_remove_producer(incoming_wdp);
     list_remove_producer(flow_threads);
@@ -262,6 +285,9 @@ int udp_start(Cfg *cfg)
 	return -1;
     }
     
+    allow_ip = cfg_get(grp, octstr_imm("udp-allow-ip"));
+    deny_ip = cfg_get(grp, octstr_imm("udp-deny-ip"));
+    
     udpc_list = list_create();	/* have a list of running systems */
 
     add_service(9200, octstr_get_cstr(interface_name));	   /* wsp 	*/
@@ -336,6 +362,12 @@ int udp_die(void)
     }
     list_destroy(udpc_list, NULL);
     udp_running = 0;
+    
+    octstr_destroy(allow_ip);
+    octstr_destroy(deny_ip);
+    allow_ip = NULL;
+    deny_ip = NULL;
+    
     return 0;
 }
 
@@ -356,6 +388,3 @@ int udp_outgoing_queue(void)
     list_unlock(udpc_list);
     return q;
 }
-
-
-
