@@ -113,6 +113,9 @@
 /* Define if you have <syslog.h>.  */
 #undef HAVE_SYSLOG_H
 
+/* Define if you have <iconv.h>.  */
+#undef HAVE_ICONV_H
+
 /* Define if you have and want to use the ssl library (-lssl) */
 #undef HAVE_LIBSSL
 
