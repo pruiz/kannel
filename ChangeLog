@@ -1,3 +1,8 @@
+2001-01-26  Uoti Urpala  <uau@wapit.com>
+
+	* gw/urltrans.c: Converted to use octstr_create_urlcoded instead
+	of file-specific function.
+
 2001-01-25  Uoti Urpala  <uau@wapit.com>
 
 	* gw/smsc.c, gw/smsc_p.h, gw/smsc_fake.c, gw/smsc_fake2.c,

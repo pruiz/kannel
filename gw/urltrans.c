@@ -75,7 +75,6 @@ static void destroy_onetrans(void *ot);
 static URLTranslation *find_translation(URLTranslationList *trans, 
 					List *words, Octstr *smsc);
 static URLTranslation *find_default_translation(URLTranslationList *trans);
-static Octstr *encode_for_url(Octstr *str);
 
 
 /***********************************************************************
@@ -247,13 +246,13 @@ Octstr *urltrans_get_pattern(URLTranslation *t, Msg *request)
 
 	switch (octstr_get_char(t->pattern, pos + 1)) {
 	case 'k':
-		enc = encode_for_url(list_get(word_list, 0));
+		enc = octstr_create_urlcoded(list_get(word_list, 0));
 		octstr_append(result, enc);
 		octstr_destroy(enc);
 		break;
 
 	case 's':
-	    enc = encode_for_url(list_get(word_list, nextarg));
+	    enc = octstr_create_urlcoded(list_get(word_list, nextarg));
 	    octstr_append(result, enc);
 	    octstr_destroy(enc);
 	    ++nextarg;
@@ -272,7 +271,7 @@ Octstr *urltrans_get_pattern(URLTranslation *t, Msg *request)
 
 	case 'r':
 	    for (j = nextarg; j < num_words; ++j) {
-		enc = encode_for_url(list_get(word_list, j));
+		enc = octstr_create_urlcoded(list_get(word_list, j));
 		if (j != nextarg)
 		    octstr_append_char(result, '+');
 		octstr_append(result, enc);
@@ -285,13 +284,13 @@ Octstr *urltrans_get_pattern(URLTranslation *t, Msg *request)
 	 *    we want original receiver and vice versa
 	 */
 	case 'P':
-	    enc = encode_for_url(request->sms.sender);
+	    enc = octstr_create_urlcoded(request->sms.sender);
 	    octstr_append(result, enc);
 	    octstr_destroy(enc);
 	    break;
 
 	case 'p':
-	    enc = encode_for_url(request->sms.receiver);
+	    enc = octstr_create_urlcoded(request->sms.receiver);
 	    octstr_append(result, enc);
 	    octstr_destroy(enc);
 	    break;
@@ -300,12 +299,12 @@ Octstr *urltrans_get_pattern(URLTranslation *t, Msg *request)
 	    if (strncmp(octstr_get_cstr(request->sms.sender), "00", 2) == 0) {
 		temp = octstr_copy(request->sms.sender, 2, 
 		    	    	  octstr_len(request->sms.sender));
-		enc = encode_for_url(temp);
+		enc = octstr_create_urlcoded(temp);
 		octstr_format_append(result, "%%2B%S", enc);
 		octstr_destroy(enc);
 		octstr_destroy(temp);
 	    } else {
-		enc = encode_for_url(request->sms.sender);
+		enc = octstr_create_urlcoded(request->sms.sender);
 		octstr_append(result, enc);
 		octstr_destroy(enc);
 	    }
@@ -315,12 +314,12 @@ Octstr *urltrans_get_pattern(URLTranslation *t, Msg *request)
 	    if (strncmp(octstr_get_cstr(request->sms.receiver), "00", 2) == 0) {
 		temp = octstr_copy(request->sms.receiver, 2, 
 		    	    	  octstr_len(request->sms.receiver));
-		enc = encode_for_url(temp);
+		enc = octstr_create_urlcoded(temp);
 		octstr_format_append(result, "%%2B%S", enc);
 		octstr_destroy(enc);
 		octstr_destroy(temp);
 	    } else {
-		enc = encode_for_url(request->sms.receiver);
+		enc = octstr_create_urlcoded(request->sms.receiver);
 		octstr_append(result, enc);
 		octstr_destroy(enc);
 	    }
@@ -328,7 +327,7 @@ Octstr *urltrans_get_pattern(URLTranslation *t, Msg *request)
 
 	case 'a':
 	    for (j = 0; j < num_words; ++j) {
-		enc = encode_for_url(list_get(word_list, j));
+		enc = octstr_create_urlcoded(list_get(word_list, j));
 		if (j > 0)
 		    octstr_append_char(result, '+');
 		octstr_append(result, enc);
@@ -688,41 +687,6 @@ static URLTranslation *find_default_translation(URLTranslationList *trans)
     }
     return t;
 }
-
-
-
-/*
- * Encode `str' for insertion into a URL. Return result.
- * 
- * RFC 2396 defines the list of characters that need to be encoded.
- */
-static Octstr *encode_for_url(Octstr *str) {
-    static unsigned char *safe = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-	    "abcdefghijklmnopqrstuvwxyz-_.!~*'()";
-    static char is_safe[UCHAR_MAX + 1];
-    static int init = 0;
-    Octstr *enc;
-    long i, len;
-    int c;
-    
-    if (!init) {
-	for (i = 0; safe[i] != '\0'; ++i)
-	    is_safe[safe[i]] = 1;
-	init = 1;
-    }
-	
-    enc = octstr_create("");
-    len = octstr_len(str);
-    for (i = 0; i < len; ++i) {
-	c = octstr_get_char(str, i);
-	if (is_safe[c])
-	    octstr_append_char(enc, c);
-	else
-	    octstr_format_append(enc, "%%%02x", c);
-    }
-    return enc;
-}
-
 
 
 /*
