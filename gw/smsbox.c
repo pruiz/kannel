@@ -2083,7 +2083,7 @@ static Octstr *smsbox_req_sendsms(List *args, Octstr *client_ip, int *status)
     	dlr_mask = 0;
 
     mclass = mwi = coding = compress = validity = 
-	deferred = pid = alt_dcs = 0;
+	deferred = pid = alt_dcs = rpi = 0;
 
     tmp_string = NULL;
     tmp_string = http_cgi_variable(args, "flash");
