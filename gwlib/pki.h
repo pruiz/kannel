@@ -15,4 +15,4 @@ void dump_cert(X509 *x509);
 void dump_privkey(RSA *priv_key);
 
 
-#endif PKI_H
+#endif /* PKI_H */
