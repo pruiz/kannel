@@ -1160,41 +1160,6 @@ admin-password = f00bar
         can duplicate when system is taken down violently. 
      </entry></row>
 
-    <row><entry><literal>mysql-host</literal></entry>
-     <entry>hostname or IP</entry>
-     <entry valign=bottom>
-        Hostname or IP of a server running a MySQL database to connect to 
-	for use with delivery reports persistant storage. When building 
-	Kannel with --enable-mysql-dlr it will attempt to connect to this 
-	database for storing delivery report data. By default this is set 
-	to 'localhost',	so unless your MySQL server is running on the same 
-	server as Kannel, then you need to set this.
-     </entry></row>
-
-    <row><entry><literal>mysql-username</literal></entry>
-     <entry>username</entry>
-     <entry valign=bottom>
-        User name for connecting to MySQL database for storing delivery reports
-	persistant data. By default this is set to 'username', so you probably 
-	want to set this if you use MySQL for delivery reports persistancy.
-     </entry></row>
-
-    <row><entry><literal>mysql-password</literal></entry>
-     <entry>password</entry>
-     <entry valign=bottom>
-        Password for connecting to MySQL database for storing delivery reports
-	persistant data. By default this is set to 'password', so you probably
-	want to set this if you use MySQL for delivery reports persistancy.
-     </entry></row>
-
-    <row><entry><literal>mysql-dbname</literal></entry>
-     <entry>string</entry>
-     <entry valign=bottom>
-        Name of database in MySQL database server to connect to for storing delivery
-	reports persistant data. by default this is set to 'DLR'. unless you want to use
-	multiple Kannels with the same MySQL server you wouldn't want to change that.
-     </entry></row>
-
     <row><entry><literal>http-proxy-host</literal></entry>
      <entry>hostname</entry>
      <entry morerows=1 valign=bottom>
@@ -1261,6 +1226,14 @@ admin-password = f00bar
 	  </entry>
     </row>
 
+    <row><entry><literal>dlr-storage</literal></entry>
+     <entry>type</entry>
+     <entry valign=bottom>
+        Defines the way DLRs are stored. If you have build-in external 
+		  DLR storage support, i.e. using MySQL you may define here the 
+		  alternative storage type like 'mysql'. Supported types are:
+		  internal, mysql. By default this is set to 'internal'.
+     </entry></row>
 
   </tbody>
   </tgroup>
@@ -4411,6 +4384,156 @@ forced-smsc = SOL
    SMS.</para>
 
 </sect2>
+
+
+<sect2>
+<title>External delivery report (DLR) storage</title>
+
+   <para>Delivery reports are supported by default internaly, which
+	means all DLRs are stored in the memory of the bearerbox process.
+	This is problematic if bearerbox crashes or you take the process
+	down in a controlled way, but there are still DLRs open. Therefore
+	you may use external DLR storage places, i.e. a MySQL database. 
+	</para>
+	<para>Following are the supported DLR storage types and how to use 
+	them:</para>
+
+	<sect3>
+	<title>Internal DLR storage</title>
+
+   <para>This is the default way in handling DLRs and does not 
+	require any special configuration. In order to configure bearerbox
+	to use internal DLR storage use <literal>dlr-storage = internal</literal>
+	in the <literal>core</literal> group.
+	</para>
+
+   </sect3>
+
+	<sect3>
+	<title>MySQL DLR storage</title>
+	<para>To store DLR information into a MySQL database you may use the
+	<literal>dlr-storeage = mysql</literal> configuration directive in the
+	<literal>core</literal> group.
+	</para>
+	<para>In addition to that you must have a <literal>dlr-mysql</literal>
+	group defined that specifies the table field names that are used to the
+	DLR attributes and a <literal>mysql-connection</literal> group that 
+	defines the connection to the MySQL server itself.
+	</para>
+	<para>Here is the example configuration from <literal>doc/dlr-mysql.conf
+	</literal>:
+	
+<programlisting>
+group = mysql-connection
+id = dlr-db
+host = localhost
+mysql-username = foo
+mysql-password = bar
+database = dlr
+
+group = dlr-mysql
+mysql-id = dlr-db
+table = dlr
+field-smsc = smsc
+field-timestamp = ts
+field-destination = destination
+field-service = service
+field-url = url
+field-mask = mask
+field-status = status
+</programlisting>
+
+	</para>
+	
+	</sect3>
+
+</sect2>	  
+
+<sect2>
+<title>MySQL connection configuration</title>
+
+   <para>For several reasons external storage may be required to 
+	handle dynamical issues, i.e. DLRs, sms-service, sendsms-user, 
+	ota-setting, ota-bookmark definitions and so on. To define a 
+	MySQL database connection you simple need to specify a
+	<literal>mysql-connection</literal> group as follows:
+	</para>
+	
+ <table frame=none>
+  <title>MySQL Connection Group Variables</title>
+  <tgroup cols=3>
+  <thead>
+   <row>
+     <entry>Variable</entry>
+     <entry>Value</entry>
+     <entry>Description</entry>
+   </row>
+  </thead>
+  <tbody>
+   <row><entry><literal>group</literal></entry>
+     <entry><literal>mysql-connection</literal></entry>
+     <entry valign=bottom>
+       This is a mandatory variable
+     </entry></row>
+
+   <row><entry><literal>id (m)</literal></entry>
+     <entry><literal>string</literal></entry>
+     <entry valign=bottom>
+	     An optional name or id to identify this MySQL connection
+		  for internal reference with other MySQL related configuration
+		  groups. Any string is acceptable, but semicolon ';' may cause 
+		  problems, so avoid it and any other special non-alphabet characters. 
+     </entry></row>
+
+   <row><entry><literal>host (m)</literal></entry>
+     <entry>hostname or IP</entry>
+     <entry valign=bottom>
+        Hostname or IP of a server running a MySQL database to connect to.
+     </entry></row>
+
+    <row><entry><literal>mysql-username (m)</literal></entry>
+     <entry>username</entry>
+     <entry valign=bottom>
+        User name for connecting to MySQL database.
+     </entry></row>
+
+    <row><entry><literal>mysql-password (m)</literal></entry>
+     <entry>password</entry>
+     <entry valign=bottom>
+        Password for connecting to MySQL database.
+     </entry></row>
+
+    <row><entry><literal>database (m)</literal></entry>
+     <entry>string</entry>
+     <entry valign=bottom>
+        Name of database in MySQL database server to connect to.
+     </entry></row>
+
+  </tbody>
+  </tgroup>
+ </table>
+
+  <para>A sample 'mysql-connection' group:
+
+<programlisting>
+group = mysql-connection
+id = dlr-db
+host = localhost
+mysql-username = foo
+mysql-password = bar
+database = dlr
+</programlisting>
+
+  </para>
+  <para>In case you use different MySQL connections for several storage
+  issues, i.e. one for DLR and another different one for sms-service you
+  may use the <literal>include</literal> configuration statement to extract
+  the MySQL related configuration groups to a seperate <literal>mysql.conf
+  </literal> file.
+  </para>
+
+</sect2>
+
 
 <sect2>
 <title>Over-The-Air configurations</title>
