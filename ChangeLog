@@ -1,3 +1,7 @@
+Fri Jun  9 06:20:12 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* gw/wtp.c: Combined wtp_machine_create and wtp_machine_create_empty.
+
 Fri Jun  9 05:39:06 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* gw/wsp-session.c, gw/wsp_machine-decl.h, gw/wsp_state-decl.h:

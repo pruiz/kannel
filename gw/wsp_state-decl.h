@@ -81,6 +81,8 @@ ROW(CONNECTING,
 				sm2 = list_get(old_sessions, i);
 				if (sm2 != sm)
 					machine_destroy(sm2);
+				else
+					list_append(session_machines, sm);
 			}
 			list_destroy(old_sessions);
 		}

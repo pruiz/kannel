@@ -101,6 +101,11 @@ static WSPMachine *find_machine(WAPEvent *event, WSP_PDU *pdu);
 
 
 
+/***********************************************************************
+ * Public functions.
+ */
+
+
 void wsp_session_init(void) {
 	queue = list_create();
 	list_add_producer(queue);
@@ -109,7 +114,6 @@ void wsp_session_init(void) {
 	run_status = running;
 	gwthread_create(main_thread, NULL);
 }
-
 
 
 void wsp_session_shutdown(void) {
@@ -131,7 +135,6 @@ void wsp_session_shutdown(void) {
 	list_destroy(session_machines);
 	counter_destroy(session_id_counter);
 }
-
 
 
 void wsp_session_dispatch_event(WAPEvent *event) {

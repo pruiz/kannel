@@ -9,6 +9,11 @@
 #include "wtp.h" 
 #include "wtp_pdu.h" 
 
+/***********************************************************************
+ * Internal data structures.
+ */
+
+
 /*
  * Abort types (i.e., provider abort codes defined by WAP)
  */
@@ -25,14 +30,12 @@ enum {
 	MESSAGETOOLARGE = 0x09
 };    
 
-/***********************************************************************
- * Internal data structures:
- */
 
 /*
  * List of WTPMachines.
  */
 static List *machines = NULL;
+
 
 /*
  * Counter for WTPMachine id numbers, to make sure they are unique.
@@ -68,7 +71,7 @@ static List *queue = NULL;
  * Create an uniniatilized wtp state machine.
  */
 
-static WTPMachine *wtp_machine_create_empty(void);
+static WTPMachine *wtp_machine_create(WAPAddrTuple *tuple, long tid, long tcl);
 static void wtp_machine_destroy(WTPMachine *sm);
 
 
@@ -95,7 +98,6 @@ static void wtp_handle_event(WTPMachine *machine, WAPEvent *event);
  * Creates wtp machine having addsress quintuple and transaction class 
  * iniatilised. If machines list is busy, just waits.
  */ 
-static WTPMachine *wtp_machine_create(WAPAddrTuple *tuple, long tid, long tcl);
 
 /*
  * Print a wtp event or a wtp machine state name as a string.
@@ -437,6 +439,7 @@ static int is_wanted_machine(void *a, void *b) {
 		wap_addr_tuple_same(m->addr_tuple, pat->tuple);
 }
 
+
 static WTPMachine *wtp_machine_find(WAPAddrTuple *tuple, long tid, long mid) {
 	struct machine_pattern pat;
 	WTPMachine *m;
@@ -449,14 +452,11 @@ static WTPMachine *wtp_machine_find(WAPAddrTuple *tuple, long tid, long mid) {
 	return m;
 }
 
-/*
- * Iniatilizes wtp machine and adds it to machines list. 
- */
-static WTPMachine *wtp_machine_create_empty(void){
-       WTPMachine *machine = NULL;
 
+WTPMachine *wtp_machine_create(WAPAddrTuple *tuple, long tid, long tcl) {
+	WTPMachine *machine;
+	
         machine = gw_malloc(sizeof(WTPMachine));
-	machine->mid = counter_increase(machine_id_counter);
         
         #define INTEGER(name) machine->name = 0;
         #define ENUM(name) machine->name = LISTEN;
@@ -471,11 +471,17 @@ static WTPMachine *wtp_machine_create_empty(void){
 
 	list_append(machines, machine);
 
+	machine->mid = counter_increase(machine_id_counter);
+	machine->addr_tuple = wap_addr_tuple_duplicate(tuple);
+	machine->tid = tid;
+	machine->tcl = tcl;
+	
 	debug("wap.wtp", 0, "WTP: Created WTPMachine %p (%ld)", 
 		(void *) machine, machine->mid);
 
-        return machine;
-}
+	return machine;
+} 
+
 
 /*
  * Destroys a WTPMachine. Assumes it is safe to do so. Assumes it has already
@@ -498,24 +504,6 @@ static void wtp_machine_destroy(WTPMachine *machine){
         #include "wtp_machine-decl.h"
 	gw_free(machine);
 }
-
-/*
- * Create a new WTPMachine for a given transaction, identified by the five-tuple 
- * in the arguments. In addition, update the transaction class field of the 
- * machine. If machines list is busy, just wait.
- */
-WTPMachine *wtp_machine_create(WAPAddrTuple *tuple, long tid, long tcl) {
-	WTPMachine *machine;
-	
-	machine = wtp_machine_create_empty();
-	
-	machine->addr_tuple = wap_addr_tuple_duplicate(tuple);
-	machine->tid = tid;
-	machine->tcl = tcl;
-	
-	return machine;
-} 
-
 
 /*
  * Create a TR-Invoke.ind event.
