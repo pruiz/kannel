@@ -42,9 +42,9 @@
  * always work.
  */
 struct Octstr {
-	unsigned char *data;
-	size_t len;
-	size_t size;
+    unsigned char *data;
+    size_t len;
+    size_t size;
 };
 
 
@@ -53,8 +53,8 @@ struct Octstr {
  */
 typedef struct Node Node;
 struct Node {
-	Octstr *ostr;
-	Node *next;
+    Octstr *ostr;
+    Node *next;
 };
 
 
@@ -62,7 +62,7 @@ struct Node {
  * List of octet strings.
  */
 struct OctstrList {
-	Node *head, *tail;
+    Node *head, *tail;
 };
 
 
@@ -79,18 +79,18 @@ struct OctstrList {
 
 
 Octstr *octstr_create_empty(void) {
-	Octstr *ostr;
-	
-	ostr = gw_malloc(sizeof(Octstr));
-	ostr->data = NULL;
-	ostr->size = 0;
-	ostr->len = 0;
-	return ostr;
+    Octstr *ostr;
+    
+    ostr = gw_malloc(sizeof(Octstr));
+    ostr->data = NULL;
+    ostr->size = 0;
+    ostr->len = 0;
+    return ostr;
 }
 
 
 Octstr *octstr_create(char *cstr) {
-	return octstr_create_from_data(cstr, strlen(cstr));
+    return octstr_create_from_data(cstr, strlen(cstr));
 }
 
 
@@ -107,65 +107,66 @@ Octstr *octstr_create_tolower(unsigned char *cstr) {
     int i;
     int len = strlen(cstr);
     Octstr *ret;
-
+    
     ret = octstr_create_from_data(cstr, len);
-
+    
     for (i = 0; i < len; i ++)
         octstr_set_char(ret, i, tolower(octstr_get_char(ret, i)));
-
+    
     return ret;
 }
 
 
 Octstr *octstr_create_from_data(char *data, size_t len) {
-	Octstr *ostr;
-	
-	ostr = octstr_create_empty();
-	if (ostr != NULL) {
-		ostr->len = len;
-		ostr->size = len + 1;
-		ostr->data = gw_malloc(ostr->size);
-		memcpy(ostr->data, data, len);
-		ostr->data[len] = '\0';
-	}
-	return ostr;
+    Octstr *ostr;
+    
+    ostr = octstr_create_empty();
+    if (ostr != NULL) {
+	ostr->len = len;
+	ostr->size = len + 1;
+	ostr->data = gw_malloc(ostr->size);
+	memcpy(ostr->data, data, len);
+	ostr->data[len] = '\0';
+    }
+    return ostr;
 }
 
 
 void octstr_destroy(Octstr *ostr) {
-	if (ostr != NULL) {
-		gw_free(ostr->data);
-		gw_free(ostr);
-	}
+    if (ostr != NULL) {
+	gw_free(ostr->data);
+	gw_free(ostr);
+    }
 }
 
 
 size_t octstr_len(Octstr *ostr) {
-	return ostr->len;
+    return ostr->len;
 }
 
 
 Octstr *octstr_copy(Octstr *ostr, size_t from, size_t len) {
-	if (from >= ostr->len)
-		return octstr_create_empty();
-	
-	if (from + len > ostr->len)
-		len = ostr->len - from;
-
-	return octstr_create_from_data(ostr->data + from, len);
+    if (from >= ostr->len)
+	return octstr_create_empty();
+    
+    if (from + len > ostr->len)
+	len = ostr->len - from;
+    
+    return octstr_create_from_data(ostr->data + from, len);
 }
 
 
+
 Octstr *octstr_duplicate(Octstr *ostr) {
-	return octstr_create_from_data(ostr->data, ostr->len);
+    return octstr_create_from_data(ostr->data, ostr->len);
 }
 
 
 Octstr *octstr_cat(Octstr *ostr1, Octstr *ostr2) {
-	Octstr *ostr;
-	
-	ostr = octstr_create_empty();
-	if (ostr == NULL)
+    Octstr *ostr;
+    
+    ostr = octstr_create_empty();
+    if (ostr == NULL)
 		return NULL;
 
 	ostr->len = ostr1->len + ostr2->len;
@@ -266,6 +267,44 @@ int octstr_ncompare(Octstr *ostr1, Octstr *ostr2, size_t n) {
 	}
 	return ret;
 }
+
+
+
+int octstr_search_char(Octstr *ostr, char ch) {
+    size_t pos = 0;
+    int tmp_int;
+    
+    while( (tmp_int = octstr_get_char(ostr, pos)) != ch && tmp_int != -1 )
+	pos++;
+    if(tmp_int == -1)
+	return tmp_int;
+    else
+	return 1;
+}
+
+
+
+int octstr_search_str(Octstr *ostr, char *str) {
+    size_t pos_a, pos_b = 0, len = 0; 
+    Octstr *tmp_oct = NULL;
+    
+    len = octstr_len( tmp_oct = octstr_create(str) );
+    
+    
+    for(pos_a = 0  ;  pos_a < octstr_len(ostr)  ;  pos_a++)
+	if( octstr_get_char(ostr, pos_a) == octstr_get_char(tmp_oct, pos_b)){
+	    pos_b++;
+	    if( pos_b == octstr_len(tmp_oct) )
+		return (pos_a - len + 1); /* returns the start position of the found substring */
+	}
+	else
+	    pos_b = 0;
+    
+    /* for ends */
+    /* string wasn't there*/
+    return -1;
+}
+
 
 
 int octstr_print(FILE *f, Octstr *ostr) {

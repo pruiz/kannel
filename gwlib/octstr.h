@@ -152,6 +152,18 @@ int octstr_print(FILE *f, Octstr *ostr);
 
 
 /*
+ * Search the character from octet string. Returns the position of the char in
+ * string, -1 if not found.
+ */
+int octstr_search_char(Octstr *ostr, char ch);
+
+/*
+ * Search the string from octet string. Returns the start position of
+ * the substring, -1 if not found.
+ */
+int octstr_search_str(Octstr *ostr, char *str) ;
+
+/*
  * Write contents of octet string to a file, in human readable form. 
  * Return -1 for error, 0 for OK. Octets that are not printable characters
  * are printed using C-style escape notation.
