@@ -103,6 +103,20 @@ Octstr *octstr_create_limited(char *cstr, int max_len) {
 }
 
 
+Octstr *octstr_create_tolower(unsigned char *cstr) {
+    int i;
+    int len = strlen(cstr);
+    Octstr *ret;
+
+    ret = octstr_create_from_data(cstr, len);
+
+    for (i = 0; i < len; i ++)
+        octstr_set_char(ret, i, tolower(octstr_get_char(ret, i)));
+
+    return ret;
+}
+
+
 Octstr *octstr_create_from_data(char *data, size_t len) {
 	Octstr *ostr;
 	
@@ -173,6 +187,25 @@ int octstr_get_char(Octstr *ostr, size_t pos) {
 }
 
 
+Octstr *octstr_cat_char(Octstr *ostr1, int ch) {
+	Octstr *ostr;
+	
+	ostr = octstr_create_empty();
+	if (ostr == NULL)
+		return NULL;
+
+	ostr->len = ostr1->len + 1;
+	ostr->size = ostr->len + 1;
+	ostr->data = gw_malloc(ostr->size);
+	
+	memcpy(ostr->data, ostr1->data, ostr1->len);
+	ostr->data[ostr->len-1] = ch;
+	ostr->data[ostr->len] = '\0';
+	
+	return ostr;
+}
+
+
 void octstr_set_char(Octstr *ostr, size_t pos, int ch) {
 	if (pos < ostr->len)
 		ostr->data[pos] = (unsigned char) ch;
@@ -203,6 +236,24 @@ int octstr_compare(Octstr *ostr1, Octstr *ostr2) {
 		len = ostr1->len;
 	else
 		len = ostr2->len;
+
+	if (len == 0)
+		return 0;
+
+	return octstr_ncompare(ostr1, ostr2, len);
+}
+
+
+int octstr_ncompare(Octstr *ostr1, Octstr *ostr2, size_t n) {
+	int ret;
+	size_t len;
+
+	if ((ostr1->len < ostr2->len) && (ostr1->len < n))
+		len = ostr1->len;
+	else if ((ostr2->len < ostr1->len) && (ostr2->len < n))
+		len = ostr2->len;
+	else
+		len = n;
 
 	if (len == 0)
 		return 0;
@@ -470,7 +521,6 @@ OctstrList *octstr_split_words(Octstr *ostr) {
 void octstr_dump(Octstr *ostr) {
 	char *p, buf[40];
 	size_t pos;
-	unsigned char c;
 
 	if (ostr == NULL)
 		return;
@@ -491,24 +541,6 @@ void octstr_dump(Octstr *ostr) {
 		}
 	}
 	debug(0, "  data: %s", buf);
-/* Added hex FXH */
-	p = buf;
-	for (pos = 0; pos < octstr_len(ostr); ++pos) {
-		c=octstr_get_char(ostr, pos);
-		if(c<0x20) 
-			{
-				c='.';
-			}
-		sprintf(p, " %c",c);
-		p = strchr(p, '\0');
-		if (p - buf > sizeof(buf) - 5) {
-			debug(0, "  data: %s", buf);
-			buf[0] = '\0';
-			p = buf;
-		}
-	}
-	debug(0, "  data: %s", buf);
-/* Added hex FXH */
 }
 
 int octstr_send(int fd, Octstr *ostr) {

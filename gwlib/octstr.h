@@ -43,6 +43,11 @@ Octstr *octstr_create(char *cstr);
 Octstr *octstr_create_limited(char *cstr, int max_len);
 
 /*
+ * as octstr_create except that the string is converted to lower case
+ */
+Octstr *octstr_create_tolower(unsigned char *cstr);
+
+/*
  * Create an octet string from arbitrary binary data. The length of the
  * data is given, so it can contain NUL characters.
  */
@@ -100,6 +105,13 @@ void octstr_set_char(Octstr *ostr, size_t pos, int ch);
 
 
 /*
+ * Create a new octet string by catenating an existing one and one character. 
+ * Return pointer to the new object.
+ */
+Octstr *octstr_cat_char(Octstr *ostr1, int ch);
+
+
+/*
  * Copy characters from octet string into char buffer.
  */
 void octstr_get_many_chars(char *buf, Octstr *ostr, size_t pos, size_t len);
@@ -125,6 +137,12 @@ char *octstr_get_cstr(Octstr *ostr);
  * and positive if greater.
  */
 int octstr_compare(Octstr *ostr1, Octstr *ostr2);
+
+
+/*
+ * as above, but comparing is done only up to n bytes
+ */
+int octstr_ncompare(Octstr *ostr1, Octstr *ostr2, size_t n);
 
 
 /*
