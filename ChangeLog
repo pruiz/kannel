@@ -1,3 +1,9 @@
+2000-07-10  Yann Muller  <ymuller@3glab.com>
+
+	* gw/smsc_at.c: now removes SMSC address at beginning of PDU sent
+	by the Wavecom. Better handling of messages with UDH (no 7bit encoding
+	of UDH yet).
+
 2000-07-10  Kalle Marjola  <rpr@wapit.com>
 
 	* gw/urltrans.c (find_translation): fixed string matching of

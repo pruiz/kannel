@@ -3,12 +3,13 @@
  *
  * Yann Muller - 3G Lab, 2000.
  *
- * $Id: smsc_at.c,v 1.6 2000-06-19 16:18:14 derry Exp $
+ * $Id: smsc_at.c,v 1.7 2000-07-10 15:54:50 3glab Exp $
  * 
  * Make sure your kannel configuration file contains the following lines
  * to be able to use the AT SMSC:
  *     group = smsc
  *     smsc = at
+ *     modemtype = wavecom | premicell | siemens
  *     device = /dev/xxx 
  */
 
@@ -39,14 +40,14 @@
  */
 static int at_data_read(int fd, Octstr *ostr);
 static int send_modem_command(int fd, char *cmd, int multiline);
-static int pdu_extract(Octstr *buffer, Octstr **ostr);
+static int pdu_extract(SMSCenter *smsc, Octstr **ostr);
 static Msg *pdu_decode(Octstr *data);
 static Msg *pdu_decode_deliver_sm(Octstr *data);
 static int pdu_encode(Msg *msg, unsigned char *pdu);
 static Octstr *convertpdu(Octstr *pdutext);
 static int hexchar(char hexc);
-static int encode7bituncompressed(Octstr *input, unsigned char *encoded, int maxlen);
-static int encode8bituncompressed(Octstr *input, unsigned char *encoded, int maxlen);
+static int encode7bituncompressed(Octstr *input, unsigned char *encoded);
+static int encode8bituncompressed(Octstr *input, unsigned char *encoded);
 static void decode7bituncompressed(Octstr *input, int len, Octstr *decoded);
 static int numtext(int num);
 
@@ -216,7 +217,7 @@ int at_pending_smsmessage(SMSCenter *smsc) {
 	} 
 
 	ret = 0;
-	while( pdu_extract(smsc->at_inbuffer, &pdu) == 1) {
+	while( pdu_extract(smsc, &pdu) == 1) {
 		msg = pdu_decode(pdu);
 		if(msg != NULL) {
 			list_append(smsc->at_received, (void *)msg);
@@ -237,7 +238,7 @@ error:
  * Send a message
  */
 int at_submit_msg(SMSCenter *smsc, Msg *msg) {
-	unsigned char command[350], pdu[281];
+	unsigned char command[500], pdu[500];
 	int ret = -1; 
 	char sc[3];
 
@@ -342,7 +343,7 @@ unblock:
 static int send_modem_command(int fd, char *cmd, int multiline) {
 	Octstr *ostr;
 	int ret, i;
-	
+
 	ostr = octstr_create_empty();
 
 	/* debug */
@@ -356,7 +357,8 @@ static int send_modem_command(int fd, char *cmd, int multiline) {
 	 * This is not perfect but OK for now */
 	for( i=0; i<1000; i++) {
 		ret = at_data_read(fd, ostr);
-		/* if(octstr_len(ostr)) {
+		/* debug */
+		/*if(octstr_len(ostr)) {
 			printf("Read from modem: ");
 			for(i=0; i<octstr_len(ostr); i++) {
 				if(octstr_get_char(ostr, i) <32)
@@ -376,11 +378,11 @@ static int send_modem_command(int fd, char *cmd, int multiline) {
 		}
 		if(multiline)
 			ret = octstr_search_cstr(ostr, ">");
-		else
+		else {
 			ret = octstr_search_cstr(ostr, "OK");
 			if(ret == -1)
 				ret = octstr_search_cstr(ostr, "READY");
-			
+		}
 		if(ret != -1) {
 			octstr_destroy(ostr);
 			return 0;
@@ -402,18 +404,15 @@ error:
 /******************************************************************************
  * Extract the first PDU in the string
  */
-static int pdu_extract(Octstr *buffer, Octstr **pdu) {
+static int pdu_extract(SMSCenter *smsc, Octstr **pdu) {
+	Octstr *buffer;
 	long len = 0;
 	int pos = 0;
-	/*int i;  just for debug */
+	int tmp;
+	/*int i, c;  just for debug */
 
-	/* debug info */
-	/*printf("Extracting: ");
-	for(i=0; i<octstr_len(buffer); i++) {
-		printf("%c", octstr_get_char(buffer, i));
-	}
-	printf("\n");*/
-
+	buffer = smsc->at_inbuffer;
+	
 	/* find the beginning of a message from the modem*/	
 	pos = octstr_search_cstr(buffer, "+CMT:");
 	if(pos == -1) 
@@ -433,10 +432,16 @@ static int pdu_extract(Octstr *buffer, Octstr **pdu) {
 	while( isspace(octstr_get_char(buffer, pos)))
 		pos++;
 	
-	/* FIXME : skip first 8 bytes until I understand what they mean */
-	if(octstr_get_char(buffer, pos+1) == '7')
-		pos += 16;
-
+	/* skip the SMSC address on the Wavecom (don't know about other modems -
+	 * Premicell doesn't need it) */
+	if(strcmp(smsc->at_modemtype, WAVECOM) == 0) {
+		tmp = hexchar(octstr_get_char(buffer, pos))*16
+		    + hexchar(octstr_get_char(buffer, pos+1));
+		tmp = 2 + tmp * 2;
+		printf("skipping... %d\n", tmp);
+		pos += tmp;
+	}
+	
 	/* check if the buffer is long enough to contain the full message */
 	if( octstr_len(buffer) < len * 2 + pos)
 		goto nomsg;
@@ -445,6 +450,16 @@ static int pdu_extract(Octstr *buffer, Octstr **pdu) {
 	*pdu = octstr_copy(buffer, pos, len*2);
 	octstr_delete(buffer, 0, pos+len*2);
 
+	/*printf("extracted pdu = ");
+	for(i=0; i<octstr_len(pdu); i++) {
+		c = octstr_get_char(pdu, i);
+		if(c<32)
+			printf("[%02x]", c);
+		else
+			printf("%c", c);
+	}
+	printf("\n");*/
+	
 	return 1;
 
 nomsg:
@@ -581,7 +596,8 @@ static Msg *pdu_decode_deliver_sm(Octstr *data) {
  */
 static int pdu_encode(Msg *msg, unsigned char *pdu) {
 	int pos = 0, i,len;
-
+	int c; /* debug only */
+	
 	/* The message is encoded directly in the text representation of 
 	 * the hex values that will be sent to the modem.
 	 * Each octet is coded with two characters. */
@@ -630,8 +646,12 @@ static int pdu_encode(Msg *msg, unsigned char *pdu) {
 
 	/* user data length - include length of UDH if it exists*/
 	len = octstr_len(msg->smart_sms.msgdata);
-	if(msg->smart_sms.flag_udh != 0)
-		len += octstr_len(msg->smart_sms.udhdata);
+	if(msg->smart_sms.flag_udh != 0) {
+		if(msg->smart_sms.flag_8bit != 0)
+			len += octstr_len(msg->smart_sms.udhdata) + 1;
+		else
+			len += octstr_len(msg->smart_sms.udhdata) / 2 * 8 / 7 + 1;
+	}
 	pdu[pos] = numtext((len & 240) >> 4);
 	pos++;
 	pdu[pos] = numtext(len & 15);
@@ -639,20 +659,37 @@ static int pdu_encode(Msg *msg, unsigned char *pdu) {
 	
 	/* udh */
 	if(msg->smart_sms.flag_udh != 0) {
-		for(i=0; i<octstr_len(msg->smart_sms.udhdata); i++) {
-			pdu[pos] = octstr_get_char(msg->smart_sms.udhdata, i); pos++;
-		}
+		len = octstr_len(msg->smart_sms.udhdata);
+		/* udh length */
+		pdu[pos] = numtext((len & 240) >> 4);
+		pos++;
+		pdu[pos] = numtext(len & 15);
+		pos++;
+		/* FIXME: problem with 7bit encoding */
+		pos += encode8bituncompressed(msg->smart_sms.udhdata, &pdu[pos]);
 	}
 
 	/* user data */
 	/* if the data is too long, it is cut 
 	 * FIXME: add support for concatenated short messages */
 	if(msg->smart_sms.flag_8bit == 1) {
-		pos += encode8bituncompressed(msg->smart_sms.msgdata, &pdu[pos], 140-pos/2);
+		pos += encode8bituncompressed(msg->smart_sms.msgdata, &pdu[pos]);
 	} else {
-		pos += encode7bituncompressed(msg->smart_sms.msgdata, &pdu[pos], 140-pos/2);
+		pos += encode7bituncompressed(msg->smart_sms.msgdata, &pdu[pos]);
 	}
 	pdu[pos] = 0;
+
+	/* debug */
+	/*printf("pdu= ");
+	for(i=0; i<strlen(pdu); i++) {
+		c = pdu[i];
+		if(c<32)
+			printf("[%02x]", c);
+		else
+			printf("%c", c);
+	}
+	printf("\n");*/
+
 	return 1;
 }
 
@@ -678,7 +715,7 @@ static Octstr *convertpdu(Octstr *pdutext) {
 int ermask[8] = { 0, 1, 3, 7, 15, 31, 63, 127 };
 int elmask[8] = { 0, 64, 96, 112, 120, 124, 126, 127 };
 
-static int encode7bituncompressed(Octstr *input, unsigned char *encoded, int maxlen) {
+static int encode7bituncompressed(Octstr *input, unsigned char *encoded) {
 	unsigned char prevoctet, tmpenc;
 	int i;
 	int c = 1;
@@ -687,8 +724,8 @@ static int encode7bituncompressed(Octstr *input, unsigned char *encoded, int max
 	int len;
 
 	len = octstr_len(input);
-	if( len > maxlen)
-		len = maxlen;
+	/*if( len > maxlen)
+		len = maxlen;*/
 
 	prevoctet = octstr_get_char(input ,0);
 	for(i=1; i<octstr_len(input); i++) {
@@ -715,15 +752,19 @@ static int encode7bituncompressed(Octstr *input, unsigned char *encoded, int max
 /**********************************************************************
  * Encode 8bit uncompressed user data
  */
-static int encode8bituncompressed(Octstr *input, unsigned char *encoded, int maxlen) {
-	int len;
+static int encode8bituncompressed(Octstr *input, unsigned char *encoded) {
+	int len, i;
+	char tmpc[3];
 
 	len = octstr_len(input);
-	if( len > maxlen)
-		len = maxlen;
+	/*if( len > maxlen)
+		len = maxlen;*/
 	
-	octstr_get_many_chars(encoded, input, 0, len);
-	return len;
+	for(i=0; i<len; i++) {
+		encoded[i*2] = numtext((octstr_get_char(input, i) & 240) >> 4);
+		encoded[i*2+1] = numtext(octstr_get_char(input, i) & 15);
+	}
+	return len*2;
 }
 
 /**********************************************************************
