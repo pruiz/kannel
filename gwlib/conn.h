@@ -173,13 +173,13 @@ long conn_outbuf_len(Connection *conn);
 /* Return the length of the unprocessed data ready for reading, in octets. */
 long conn_inbuf_len(Connection *conn);
 
-/* Return 1 iff there was an end-of-file indication from the last read or
+/* Return 1 if there was an end-of-file indication from the last read or
  * wait operation. */
 int conn_eof(Connection *conn);
 
-/* Return 1 iff there was an error indication from the last read or wait
+/* Return 1 if there was an error indication from the last read or wait
  * operation. */
-int conn_read_error(Connection *conn);
+int conn_error(Connection *conn);
 
 /* Try to write data in chunks of this size or more.  Set it to 0 to
  * get an unbuffered connection.  See the discussion on output buffering

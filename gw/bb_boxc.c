@@ -163,7 +163,7 @@ static Msg *read_from_box(Boxc *boxconn)
 	    gw_claim_area(pack);
 	    if (pack != NULL)
 	        break;
-	    if (conn_read_error(boxconn->conn)) {
+	    if (conn_error(boxconn->conn)) {
 	        info(0, "Read error when reading from box <%s>, disconnecting",
 		         octstr_get_cstr(boxconn->client_ip));
 	        return NULL;

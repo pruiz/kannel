@@ -827,7 +827,7 @@ int cgw_wait_command(PrivData *privdata, SMSCConn *conn, Connection *server, int
 		    if (cgwop != NULL) cgwop_destroy(cgwop);
 		    return -1;
 		}
-		if (conn_read_error(server)) {
+		if (conn_error(server)) {
 		    error(0, "cgw: Error trying to read ACKs from SMSC");
 		    if (cgwop != NULL) cgwop_destroy(cgwop);
 		    return -1;
@@ -1037,7 +1037,7 @@ static void cgw_receiver(SMSCConn *conn, Connection *server)
             info(0, "cgw: receive connection closed by SMSC");
             return ;
         }
-        if (conn_read_error(server)) {
+        if (conn_error(server)) {
             error(0, "cgw: receive connection broken");
             return ;
         }

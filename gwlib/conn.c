@@ -132,7 +132,7 @@ struct Connection
     long inbufpos;    /* start of unread data in inbuf */
 
     int read_eof;     /* we encountered eof on read */
-    int read_error;   /* we encountered error on read */
+    int io_error;   /* we encountered error on IO operation */
 
     /* Protected by both locks when updating, so you need only one
      * of the locks when reading. */
@@ -332,7 +332,7 @@ static void unlocked_read(Connection *conn)
         else
 #endif /* HAVE_LIBSSL */
             error(errno, "Error reading from fd %d:", conn->fd);
-        conn->read_error = 1;
+        conn->io_error = 1;
         if (conn->registered)
             unlocked_register_pollin(conn, 0);
         return;
@@ -543,7 +543,7 @@ Connection *conn_wrap_fd(int fd, int ssl)
     conn->fd = fd;
     conn->connected = yes;
     conn->read_eof = 0;
-    conn->read_error = 0;
+    conn->io_error = 0;
     conn->output_buffering = DEFAULT_OUTPUT_BUFFERING;
 
     conn->registered = NULL;
@@ -668,12 +668,12 @@ int conn_eof(Connection *conn)
     return eof;
 }
 
-int conn_read_error(Connection *conn)
+int conn_error(Connection *conn)
 {
     int err;
 
     lock_in(conn);
-    err = conn->read_error;
+    err = conn->io_error;
     unlock_in(conn);
 
     return err;
@@ -708,9 +708,25 @@ static void poll_callback(int fd, int revents, void *data)
     /* Get result of nonblocking connect, before any reads and writes
      * we must check result (it must be handled in initial callback) */
     if (conn->connected == no) {
-      if (conn->callback)
-          conn->callback(conn, conn->callback_data);
-      return;
+        if (conn->callback)
+            conn->callback(conn, conn->callback_data);
+        return;
+    }
+
+    /* If got POLLERR or POLHUP, then unregister the descriptor from the
+     * fdset and set the error condition variable to let the upper layer
+     * close and destroy the connection. */
+    if (revents & (POLLERR|POLLHUP)) {
+        lock_in(conn);
+        lock_out(conn);
+        if (conn->listening_pollin)
+            unlocked_register_pollin(conn, 0);
+        if (conn->listening_pollout)
+            unlocked_register_pollout(conn, 0);
+        conn->io_error = 1;
+        unlock_in(conn);
+        unlock_out(conn);
+        do_callback = 1;
     }
 
     /* If unlocked_write manages to write all pending data, it will
@@ -718,19 +734,20 @@ static void poll_callback(int fd, int revents, void *data)
     if (revents & POLLOUT) {
         lock_out(conn);
         unlocked_write(conn);
-	if (unlocked_outbuf_len(conn) == 0)
-	    do_callback = 1;
+        if (unlocked_outbuf_len(conn) == 0)
+            do_callback = 1;
         unlock_out(conn);
     }
 
-    /* If unlocked_read hits eof or error, it will tell the fdset to
-     * stop listening for POLLIN. */
-    if (revents & (POLLIN | POLLERR)) {
+    /* We read only in unlocked_read in we received POLLIN, cause the 
+     * descriptor is already broken and of no use anymore. */
+    if (revents & POLLIN) {
         lock_in(conn);
         unlocked_read(conn);
         unlock_in(conn);
-	do_callback = 1;
+        do_callback = 1;
     }
+
     if (do_callback && conn->callback)
         conn->callback(conn, conn->callback_data);
 }
@@ -763,7 +780,7 @@ int conn_register(Connection *conn, FDSet *fdset,
         events = 0;
 	/* For nonconnected socket we must lesten both directions */
         if (conn->connected == yes) {
-            if (conn->read_eof == 0 && conn->read_error == 0)
+            if (conn->read_eof == 0 && conn->io_error == 0)
                 events |= POLLIN;
             if (unlocked_outbuf_len(conn) > 0)
                 events |= POLLOUT;
@@ -849,7 +866,7 @@ int conn_wait(Connection *conn, double seconds)
 
     /* We need the in lock to query read_eof */
     lock_in(conn);
-    if ((conn->read_eof == 0 && conn->read_error == 0) || events == 0)
+    if ((conn->read_eof == 0 && conn->io_error == 0) || events == 0)
         events |= POLLIN;
     unlock_in(conn);
 

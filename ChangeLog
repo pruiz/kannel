@@ -1,4 +1,12 @@
 2004-02-16 Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/bb_boxc.c, gw/shared.c, gw/smsc/smsc_[cgw|emi|fake|smasi|smpp].c,
+      gwlib/conn.[ch], gwlib/http.c, test/drive_smpp.c, test/fakesmsc.c,
+      test/test_smsc.c: renamed conn_read_error() to conn_error() to imply
+      that this is a generical IO error condition we use for abortion.
+      Also within gwlib/conn.c fixes handling of POLLHUP and POLLERR 
+      according to BUG#107.
+
+2004-02-16 Stipe Tolj  <tolj@wapme-systems.de>
     * gw/wml_compiler.c: fixed compiler warnings.
 
 2004-02-10  Alexander Malysh  <a.malysh@centrium.de>

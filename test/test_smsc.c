@@ -398,7 +398,7 @@ static void smpp_emu_reader(void *arg)
 		    error(0, "Client sent garbage, closing connection.");
 		    goto error;
 		} else if (len == 0) {
-		    if (conn_eof(p->conn) || conn_read_error(p->conn))
+		    if (conn_eof(p->conn) || conn_error(p->conn))
 		    	goto error;
 		    break;
 		}
@@ -417,7 +417,7 @@ static void smpp_emu_reader(void *arg)
 		    smpp_pdu_destroy(pdu);
 		}
 		octstr_destroy(os);
-	    } else if (conn_eof(p->conn) || conn_read_error(p->conn))
+	    } else if (conn_eof(p->conn) || conn_error(p->conn))
 	    	goto error;
 	    else
 		break;

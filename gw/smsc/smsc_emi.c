@@ -193,7 +193,7 @@ static int wait_for_ack(PrivData *privdata, Connection *server, int ot, int t)
 		  octstr_get_cstr(privdata->name));
 	    return -1;
 	}
-	if (conn_read_error(server)) {
+	if (conn_error(server)) {
 	    error(0, "EMI2[%s]: connection error in wait_for_ack",
 		  octstr_get_cstr(privdata->name));
 	    return -1;
@@ -1154,7 +1154,7 @@ static int emi2_handle_smscreq(SMSCConn *conn, Connection *server)
 	emimsg_destroy(emimsg);
     }
 
-    if (conn_read_error(server)) {
+    if (conn_error(server)) {
 	error(0, "EMI2[%s]: Error trying to read ACKs from SMSC",
 	      octstr_get_cstr(privdata->name));
 	return -1;
@@ -1323,7 +1323,7 @@ static void emi2_send_loop(SMSCConn *conn, Connection **server)
 	}
 
 	if (*server != NULL) {
-	    if (conn_read_error(*server)) {
+	    if (conn_error(*server)) {
 		warning(0, "EMI2[%s]: Error reading from the main connection",
 			octstr_get_cstr(privdata->name));
 		break;
@@ -1405,7 +1405,7 @@ static void emi2_receiver(SMSCConn *conn, Connection *server)
 		 octstr_get_cstr(privdata->name));
 	    return;
 	}
-	if (conn_read_error(server)) {
+	if (conn_error(server)) {
 	    error(0, "EMI2[%s]: receive connection broken",
 		  octstr_get_cstr(privdata->name));
 	    return;

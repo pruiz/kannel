@@ -438,7 +438,7 @@ static void read_chunked_body_len(HTTPEntity *ent, Connection *conn)
     
     os = conn_read_line(conn);
     if (os == NULL) {
-        if (conn_read_error(conn) || conn_eof(conn))
+        if (conn_error(conn) || conn_eof(conn))
 	    ent->state = body_error;
         return;
     }
@@ -463,7 +463,7 @@ static void read_chunked_body_data(HTTPEntity *ent, Connection *conn)
 
     os = conn_read_fixed(conn, ent->chunked_body_chunk_len);
     if (os == NULL) {
-        if (conn_read_error(conn) || conn_eof(conn))
+        if (conn_error(conn) || conn_eof(conn))
 	    ent->state = body_error;
     } else {
         octstr_append(ent->body, os);
@@ -479,7 +479,7 @@ static void read_chunked_body_crlf(HTTPEntity *ent, Connection *conn)
 
     os = conn_read_line(conn);
     if (os == NULL) {
-        if (conn_read_error(conn) || conn_eof(conn))
+        if (conn_error(conn) || conn_eof(conn))
 	    ent->state = body_error;
     } else {
         octstr_destroy(os);
@@ -508,7 +508,7 @@ static void read_body_until_eof(HTTPEntity *ent, Connection *conn)
         octstr_append(ent->body, os);
         octstr_destroy(os);
     }
-    if (conn_read_error(conn))
+    if (conn_error(conn))
 	ent->state = body_error;
     if (conn_eof(conn))
 	ent->state = entity_done;
@@ -761,7 +761,7 @@ static Connection *conn_pool_get(Octstr *host, int port, int ssl, Octstr *certke
 	    /* Check whether the server has closed the connection while
 	     * it has been in the pool. */
 	    conn_wait(conn, 0);
-	    if (!conn_eof(conn) && !conn_read_error(conn))
+	    if (!conn_eof(conn) && !conn_error(conn))
 		break;
 	    conn_destroy(conn);
 	}
@@ -876,7 +876,7 @@ static int client_read_status(HTTPServer *trans)
 
     line = conn_read_line(trans->conn);
     if (line == NULL) {
-	if (conn_eof(trans->conn) || conn_read_error(trans->conn))
+	if (conn_eof(trans->conn) || conn_error(trans->conn))
 	    return -1;
     	return 1;
     }
@@ -2016,7 +2016,7 @@ static void receive_request(Connection *conn, void *data)
 	case reading_request_line:
     	    line = conn_read_line(conn);
 	    if (line == NULL) {
-		if (conn_eof(conn) || conn_read_error(conn))
+		if (conn_eof(conn) || conn_error(conn))
 		    goto error;
 	    	return;
 	    }
@@ -2045,13 +2045,16 @@ static void receive_request(Connection *conn, void *data)
 	    return;
 
 	case sending_reply:
+        /* Implicite conn_unregister() and _destroy */
+        if (conn_error(conn))
+            goto error;
 	    if (conn_outbuf_len(conn) > 0)
-		return;
+            return;
 	    /* Reply has been sent completely */
 	    if (!client->persistent_conn) {
-                conn_unregister(conn);
-		client_destroy(client);
-		return;
+            conn_unregister(conn);
+            client_destroy(client);
+            return;
 	    }
 	    /* Start reading another request */
 	    client_reset(client);

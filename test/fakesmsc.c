@@ -297,7 +297,7 @@ int main(int argc, char **argv)
             if (num_sent >= max_send)
                 delta = -1;
             conn_wait(server, delta);
-            if (conn_read_error(server) || conn_eof(server) || sigint_received)
+            if (conn_error(server) || conn_eof(server) || sigint_received)
                 goto over;
 
             /* read as much as the smsc module provides us */

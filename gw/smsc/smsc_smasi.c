@@ -688,7 +688,7 @@ static int read_pdu(SMASI *smasi, Connection *conn, SMASI_PDU **pdu)
     
     os = smasi_pdu_read(conn);
     if (os == NULL) {
-        if (conn_eof(conn) || conn_read_error(conn)) 
+        if (conn_eof(conn) || conn_error(conn)) 
             return -1;
         return 0;
     }

@@ -314,7 +314,7 @@ static void receive_smpp_thread(void *arg)
 		    error(0, "Client sent garbage, closing connection.");
 		    goto error;
 		} else if (len == 0) {
-		    if (conn_eof(esme->conn) || conn_read_error(esme->conn))
+		    if (conn_eof(esme->conn) || conn_error(esme->conn))
 		    	goto error;
 		    break;
 		}
@@ -333,7 +333,7 @@ static void receive_smpp_thread(void *arg)
 		    smpp_pdu_destroy(pdu);
 		}
 		octstr_destroy(os);
-	    } else if (conn_eof(esme->conn) || conn_read_error(esme->conn))
+	    } else if (conn_eof(esme->conn) || conn_error(esme->conn))
 	    	goto error;
 	    else
 		break;
@@ -382,7 +382,7 @@ static void smsbox_thread(void *arg)
     	for (;;) {
 	    os = conn_read_withlen(conn);
 	    if (os == NULL) {
-		if (conn_eof(conn) || conn_read_error(conn))
+		if (conn_eof(conn) || conn_error(conn))
 		    goto error;
 		break;
 	    }

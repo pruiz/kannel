@@ -296,7 +296,7 @@ static int read_pdu(SMPP *smpp, Connection *conn, long *len, SMPP_PDU **pdu)
                   octstr_get_cstr(smpp->conn->id)); 
             return -1; 
         } else if (*len == 0) { 
-            if (conn_eof(conn) || conn_read_error(conn)) 
+            if (conn_eof(conn) || conn_error(conn)) 
                 return -1; 
             return 0; 
         } 
@@ -304,7 +304,7 @@ static int read_pdu(SMPP *smpp, Connection *conn, long *len, SMPP_PDU **pdu)
      
     os = smpp_pdu_read_data(conn, *len); 
     if (os == NULL) { 
-        if (conn_eof(conn) || conn_read_error(conn)) 
+        if (conn_eof(conn) || conn_error(conn)) 
             return -1; 
         return 0; 
     } 

@@ -251,7 +251,7 @@ static void main_connection_loop(SMSCConn *conn, Connection *client)
         while (!conn->is_stopped && !privdata->shutdown &&
                 (line = conn_read_line(client)))
             msg_to_bb(conn, line);
-        if (conn_read_error(client))
+        if (conn_error(client))
             goto error;
         if (conn_eof(client))
             goto eof;
@@ -307,7 +307,7 @@ static void main_connection_loop(SMSCConn *conn, Connection *client)
             return;
         }
         conn_wait(client, -1);
-        if (conn_read_error(client))
+        if (conn_error(client))
             goto error;
         if (conn_eof(client))
             goto eof;

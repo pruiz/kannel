@@ -257,7 +257,7 @@ Msg *read_from_bearerbox_real(Connection *conn, double seconds)
         if (pack != NULL)
             break;
 
-        if (conn_read_error(conn)) {
+        if (conn_error(conn)) {
             info(0, "Error reading from bearerbox, disconnecting.");
             return NULL;
         }
