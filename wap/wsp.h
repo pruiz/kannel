@@ -22,7 +22,11 @@ enum wsp_abort_values {
 	WSP_ABORT_MOREXCEEDED = 0xe7,
 	WSP_ABORT_PEERREQ = 0xe8,
 	WSP_ABORT_NETERR = 0xe9,
-	WSP_ABORT_USERREQ = 0xea
+	WSP_ABORT_USERREQ = 0xea,
+        WSP_ABORT_USERRFS = 0xeb,
+        WSP_ABORT_USERPND = 0xec,
+        WSP_ABORT_USERDCR = 0xed,
+        WSP_ABORT_USERDCU = 0xee
 };
 
 

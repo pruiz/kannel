@@ -341,6 +341,13 @@ WAPEVENT(S_ConfirmedPush_Cnf, "S-ConfirmedPush.cnf",
 	INTEGER(session_id)
         )
 
+WAPEVENT(S_PushAbort_Ind, "S-PushAbort.ind",
+        INTEGER(push_id)
+        INTEGER(reason)
+
+        INTEGER(session_id)
+        )
+
 /*
  * The specification of S-PushAbort seems to assume that only the
  * client can issue an S-PushAbort.req, and only the server can get
@@ -352,13 +359,6 @@ WAPEVENT(S_ConfirmedPush_Cnf, "S-ConfirmedPush.cnf",
 WAPEVENT(S_PushAbort_Req, "S-PushAbort.req",
 	INTEGER(push_id)
         INTEGER(reason)
-
-	INTEGER(session_handle)
-	)
-
-WAPEVENT(S_PushAbort_Ind, "S-PushAbort.ind",
-	INTEGER(push_id)
-	INTEGER(reason)
 
 	INTEGER(session_handle)
 	)
@@ -509,6 +509,20 @@ WAPEVENT(Pom_Disconnect_Ind, "Pom-Disconnect.ind",
 	 INTEGER(session_handle)
         )
 
+WAPEVENT(Pom_Suspend_Ind, "Pom-Suspend.ind",
+         INTEGER(reason)
+
+	 INTEGER(session_id) 
+        )
+
+WAPEVENT(Pom_Resume_Ind, "Pom-Resume.ind",
+         ADDRTUPLE(addr_tuple)
+	 HTTPHEADER(client_headers)
+         HTTPHEADER(bearer_indication)
+
+	 INTEGER(session_id)
+        )
+
 WAPEVENT(Po_Push_Req, "Po-Push.req",
          HTTPHEADER(push_headers)
          INTEGER(authenticated)
@@ -544,6 +558,13 @@ WAPEVENT(Po_Unit_Push_Req, "Po-Unit-Push.req",
          INTEGER(trusted)
          INTEGER(last)
          OPTIONAL_OCTSTR(push_body)
+        )
+
+WAPEVENT(Po_PushAbort_Req, "Po-PushAbort.req",
+         INTEGER(push_id)
+         INTEGER(reason)
+
+         INTEGER(session_id)
         )
 
 WAPEVENT(Po_PushAbort_Ind, "Po-PushAbort.ind",

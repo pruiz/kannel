@@ -71,9 +71,36 @@ void wap_push_ppg_shutdown(void)
 
 void wap_push_ppg_dispatch_event(WAPEvent *e)
 {
+    gw_assert(run_status == running);
     list_produce(ppg_queue, e);
 }
 
+/*
+ * Check do we have established a session with an initiator for this push.
+ * Initiators are identified by their address tuple (ppg main module does not
+ * know wsp sessions until told). 
+ */
+int wap_push_ppg_have_push_session_for(WAPAddrTuple *tuple)
+{
+    int session_exist;
+
+    session_exist = 0;
+
+    return session_exist;
+}
+
+/*
+ * Now initiators are identified by their session id. This function are used
+ * after wsp has indicated session establishment
+ */
+int wap_push_ppg_have_push_session_for_sid(long sid)
+{
+    int session_exist;
+
+    session_exist = 0;
+
+    return session_exist;
+}
 
 /*****************************************************************************
  *
@@ -94,6 +121,8 @@ static void handle_ppg_event(WAPEvent *e)
 {
     switch(e->type) {
     case Pom_Connect_Ind:
+         debug("wap.push.ppg", 0, "having connection for push");
+         wap_event_dump(e);
     break;
 
     case Pom_Disconnect_Ind:
@@ -113,3 +142,4 @@ static void handle_ppg_event(WAPEvent *e)
 
     wap_event_destroy(e);
 }
+

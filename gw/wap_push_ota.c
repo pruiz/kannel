@@ -23,10 +23,9 @@
 #include "wap_push_ota.h"
 #include "gwlib/gwlib.h"
 #include "gwlib/gw_inet.h"
+#include "wap/wsp.h"
 #include "wap/wsp_strings.h"
 #include "wap/wsp_pdu.h"
-
-#define ANY_ADDRESS "0.0.0.0"
 
 /**************************************************************************
  *
@@ -72,6 +71,7 @@ static void make_session_request(WAPEvent *e);
 static void make_push_request(WAPEvent *e);
 static void make_confirmed_push_request(WAPEvent *e);
 static void make_unit_push_request(WAPEvent *e);
+static void abort_push(WAPEvent *e);
 
 /*
  * Add push flag into push headers. Push flag is defined in PushOTA, p. 17-18.
@@ -91,6 +91,7 @@ static void check_session_request_headers(List *headers);
  */
 static Octstr *pack_sia(List *headers);
 static void flags_assert(WAPEvent *e);
+static void reason_assert(long reason);
 static Octstr *pack_server_address(void);
 static Octstr *pack_appid_list(List *headers);
 
@@ -135,6 +136,7 @@ void wap_push_ota_shutdown(void)
 
 void wap_push_ota_dispatch_event(WAPEvent *e)
 {
+    gw_assert(run_status == running); 
     list_produce(ota_queue, e);
 }
 
@@ -188,8 +190,12 @@ static void handle_ota_event(WAPEvent *e)
         make_unit_push_request(e);;
     break;
 
+    case Po_PushAbort_Req:
+        abort_push(e);
+    break;
+
     default:
-        debug("wap_ota", 0, "Unhandled ota event");
+        debug("wap.push.ota", 0, "Unhandled ota event");
         wap_event_dump(e);
     break;
     }
@@ -200,23 +206,22 @@ static void handle_ota_event(WAPEvent *e)
 static void make_session_request(WAPEvent *e)
 {
     WAPEvent *wsp_event;
-    List *appid_headers;
+    List *appid_headers, *push_headers;
 
     gw_assert(e->type == Pom_SessionRequest_Req);
-    check_session_request_headers(
-        e->u.S_Unit_Push_Req.push_headers);
+    push_headers = e->u.Pom_SessionRequest_Req.push_headers;
+
+    check_session_request_headers(push_headers);
 
     wsp_event = wap_event_create(S_Unit_Push_Req);
     wsp_event->u.S_Unit_Push_Req.addr_tuple = 
         wap_addr_tuple_duplicate(e->u.Pom_SessionRequest_Req.addr_tuple);
     wsp_event->u.S_Unit_Push_Req.push_id = e->u.Pom_SessionRequest_Req.push_id;
     wsp_event->u.S_Unit_Push_Req.push_headers = 
-        http_header_duplicate(e->u.Pom_SessionRequest_Req.push_headers);
+        http_header_duplicate(push_headers);
 
-    appid_headers = http_header_find_all(
-        e->u.Pom_SessionRequest_Req.push_headers, "X-WAP-Application-Id");
-    wsp_event->u.S_Unit_Push_Req.push_body = 
-        pack_sia(appid_headers);
+    appid_headers = http_header_find_all(push_headers, "X-WAP-Application-Id");
+    wsp_event->u.S_Unit_Push_Req.push_body = pack_sia(appid_headers);
 
     dispatch_to_wsp_unit(wsp_event);
 }
@@ -224,13 +229,13 @@ static void make_session_request(WAPEvent *e)
 static void make_push_request(WAPEvent *e)
 {
     WAPEvent *wsp_event;
+    List *push_headers;
 
     gw_assert(e->type == Po_Push_Req);
-
+    push_headers = add_push_flag(e);
+    
     wsp_event = wap_event_create(S_Push_Req);
-    e->u.Po_Push_Req.push_headers = add_push_flag(e);
-    wsp_event->u.S_Push_Req.push_headers = 
-        http_header_duplicate(e->u.Po_Push_Req.push_headers);
+    wsp_event->u.S_Push_Req.push_headers = http_header_duplicate(push_headers);
     if (e->u.Po_Push_Req.push_body != NULL)
         wsp_event->u.S_Push_Req.push_body = 
             octstr_duplicate(e->u.Po_Push_Req.push_body);
@@ -244,15 +249,16 @@ static void make_push_request(WAPEvent *e)
 static void make_confirmed_push_request(WAPEvent *e)
 {
     WAPEvent *wsp_event;
+    List *push_headers;
 
     gw_assert(e->type == Po_ConfirmedPush_Req);
+    push_headers = add_push_flag(e);
 
     wsp_event = wap_event_create(S_ConfirmedPush_Req);
     wsp_event->u.S_ConfirmedPush_Req.server_push_id = 
         e->u.Po_ConfirmedPush_Req.server_push_id;
-    e->u.S_ConfirmedPush_Req.push_headers = add_push_flag(e);
     wsp_event->u.S_ConfirmedPush_Req.push_headers =
-        http_header_duplicate(e->u.S_ConfirmedPush_Req.push_headers);
+        http_header_duplicate(push_headers);
 
     if (e->u.Po_ConfirmedPush_Req.push_body != NULL)
         wsp_event->u.S_ConfirmedPush_Req.push_body =
@@ -269,16 +275,17 @@ static void make_confirmed_push_request(WAPEvent *e)
 static void make_unit_push_request(WAPEvent *e)
 {
     WAPEvent *wsp_event;
+    List *push_headers;
 
     gw_assert(e->type == Po_Unit_Push_Req);
+    push_headers = add_push_flag(e);
 
     wsp_event = wap_event_create(S_Unit_Push_Req);
     wsp_event->u.S_Unit_Push_Req.addr_tuple = 
         wap_addr_tuple_duplicate(e->u.Po_Unit_Push_Req.addr_tuple);
     wsp_event->u.S_Unit_Push_Req.push_id = e->u.Po_Unit_Push_Req.push_id;
-    e->u.Po_Unit_Push_Req.push_headers = add_push_flag(e);
     wsp_event->u.S_Unit_Push_Req.push_headers = 
-        http_header_duplicate(e->u.Po_Unit_Push_Req.push_headers);
+        http_header_duplicate(push_headers);
 
     if (e->u.Po_Unit_Push_Req.push_body != NULL)
         wsp_event->u.S_Unit_Push_Req.push_body =
@@ -287,6 +294,24 @@ static void make_unit_push_request(WAPEvent *e)
         wsp_event->u.S_Unit_Push_Req.push_body = NULL;
 
     dispatch_to_wsp_unit(wsp_event);
+}
+
+static void abort_push(WAPEvent *e)
+{
+    WAPEvent *wsp_event;
+    long reason;
+    
+    reason = e->u.Po_PushAbort_Req.reason;
+    gw_assert(e->type == Po_PushAbort_Req);
+    reason_assert(reason);
+
+    wsp_event = wap_event_create(S_PushAbort_Req);
+    wsp_event->u.S_PushAbort_Req.push_id = e->u.Po_PushAbort_Req.push_id;
+    wsp_event->u.S_PushAbort_Req.reason = reason;
+    wsp_event->u.S_PushAbort_Req.session_handle = 
+        e->u.Po_PushAbort_Req.session_id;
+
+    dispatch_to_wsp(wsp_event);    
 }
 
 /*
@@ -299,9 +324,8 @@ static List *add_push_flag(WAPEvent *e)
     authenticated,
     last;
 
-    List *headers;
-
     Octstr *buf;
+    List *headers;
 
     flags_assert(e);
 
@@ -372,11 +396,22 @@ static void flags_assert(WAPEvent *e)
 }
 
 /*
+ * Accepted reasons are defined in OTA 6.3.3.
+ */
+static void reason_assert(long reason)
+{
+    gw_assert(reason == WSP_ABORT_USERREQ || reason == WSP_ABORT_USERRFS || 
+              reason == WSP_ABORT_USERPND || reason == WSP_ABORT_USERDCR || 
+              reason == WSP_ABORT_USERDCU);
+}
+
+/*
  * When server is requesting a session with a client, content type and applic-
  * ation headers must be present (this behaviour is defined in PushOTA, p. 14).
  * We check headers for them and add them if they are not already present. 
  * Default client application is wml ua (see PushOTA, s. 14) Application ids 
  * are defined in http://www.wapforum.org/wina/push-app-id.htm.
+ * 
  */
 static void check_session_request_headers(List *headers)
 {
@@ -436,8 +471,8 @@ static Octstr *pack_appid_list(List *headers)
     Octstr *appid_os,
            *header_name,
            *header_value;
-    unsigned char header_token,
-                  value_token;
+    char header_token,
+         value_token;
     long i,
          j;
 
@@ -461,8 +496,12 @@ static Octstr *pack_appid_list(List *headers)
         
         value_token = wsp_string_to_application_id(header_value);       
 
-        octstr_append_char(appid_os, header_token);
-        octstr_append_char(appid_os, value_token);
+        if (value_token != -1) {
+            octstr_append_char(appid_os, header_token);
+            octstr_append_char(appid_os, value_token);
+        } else
+	    error(0, "Unknown application name %s, skipping", 
+                  octstr_get_cstr(header_value));
 
         octstr_destroy(header_name);
         octstr_destroy(header_value);

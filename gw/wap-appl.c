@@ -24,6 +24,9 @@
 #endif
 #include "wap/wap.h"
 #include "wap-appl.h"
+#include "wap_push_ppg.h"
+#include "wap/wsp_strings.h"
+#include "wap/wsp_caps.h"
 
 /*
  * Give the status the module:
@@ -119,7 +122,19 @@ static struct {
 };
 #define NUM_CONVERTERS ((long)(sizeof(converters) / sizeof(converters[0])))
 
-
+/*
+ * Following functions implement indications and conformations part of Push
+ * OTA protocol.
+ */
+static void indicate_push_connection(WAPEvent *e);
+static void indicate_push_disconnect(WAPEvent *e);
+static void indicate_push_suspend(WAPEvent *e);
+static void indicate_push_resume(WAPEvent *e);
+static void confirm_push(WAPEvent *e);
+static void indicate_push_abort(WAPEvent *e);
+static void split_header_list(List **headers, List **new_headers, char *name);
+static void check_application_headers(List **headers, List **app_headers);
+static void decode_bearer_indication(List **headers, List **bearer_headers);
 
 /***********************************************************************
  * The public interface to the application layer.
@@ -178,10 +193,18 @@ long wap_appl_get_load(void)
  * Private functions.
  */
 
-
+/*
+ * When we have a push event, create OTA indication or confirmation and send 
+ * it to ppg main module. 
+ * Because Accept Application and Bearer Indication are optional, we cannot 
+ * rely on them. We must ask ppg main module do we have an open push session 
+ * for this initiator. Push is identified by push id.
+ */
 static void main_thread(void *arg) 
 {
     WAPEvent *ind, *res;
+    long sid;
+    WAPAddrTuple *tuple;
     
     while (run_status == running && (ind = list_consume(queue)) != NULL) {
 	switch (ind->type) {
@@ -198,38 +221,57 @@ static void main_thread(void *arg)
 	case S_Unit_MethodInvoke_Ind:
 	    start_fetch(ind);
 	    break;
-/*
- * This event is interesting to when we are pushing: Pom-Connect is a confirmed
- * service.
- */
+
 	case S_Connect_Ind:
-	    res = wap_event_create(S_Connect_Res);
+            tuple = ind->u.S_Connect_Ind.addr_tuple;
+
+	    if (wap_push_ppg_have_push_session_for(tuple)) {
+                indicate_push_connection(ind);
+            } else {
+	        res = wap_event_create(S_Connect_Res);
 	    /* FIXME: Not yet used by WSP layer */
-	    res->u.S_Connect_Res.server_headers = NULL;
-	    res->u.S_Connect_Res.negotiated_capabilities =
-	        negotiate_capabilities(
-	            ind->u.S_Connect_Ind.requested_capabilities);
-	    res->u.S_Connect_Res.session_id = ind->u.S_Connect_Ind.session_id;
-	    wsp_session_dispatch_event(res);
-	    wap_event_destroy(ind);
-	    break;
-/*
- * Ditto this: we need to know, whether push delivery did not succeed.
- */	
+	       res->u.S_Connect_Res.server_headers = NULL;
+	       res->u.S_Connect_Res.negotiated_capabilities =
+	           negotiate_capabilities(
+	               ind->u.S_Connect_Ind.requested_capabilities);
+	       res->u.S_Connect_Res.session_id = 
+                   ind->u.S_Connect_Ind.session_id;
+	       wsp_session_dispatch_event(res);
+            }
+
+            wap_event_destroy(ind);
+            break;
+	
 	case S_Disconnect_Ind:
+	    sid = ind->u.S_Disconnect_Ind.session_handle;
+
+            if (wap_push_ppg_have_push_session_for_sid(sid)) 
+                indicate_push_disconnect(ind);
 	    wap_event_destroy(ind);
 	    break;
-	
+
 	case S_Suspend_Ind:
+	    sid = ind->u.S_Suspend_Ind.session_id;
+
+            if (wap_push_ppg_have_push_session_for_sid(sid)) 
+                indicate_push_suspend(ind);
 	    wap_event_destroy(ind);
 	    break;
-	
+
 	case S_Resume_Ind:
-	    res = wap_event_create(S_Resume_Res);
-	    res->u.S_Resume_Res.server_headers = NULL;
-	    res->u.S_Resume_Res.session_id = ind->u.S_Resume_Ind.session_id;
-	    wsp_session_dispatch_event(res);
-	    wap_event_destroy(ind);
+	    sid = ind->u.S_Resume_Ind.session_id;
+
+            if (wap_push_ppg_have_push_session_for_sid(sid)) 
+                indicate_push_resume(ind);
+            else {
+	        res = wap_event_create(S_Resume_Res);
+	        res->u.S_Resume_Res.server_headers = NULL;
+	        res->u.S_Resume_Res.session_id = 
+                    ind->u.S_Resume_Ind.session_id;
+	        wsp_session_dispatch_event(res);
+	        
+            }
+            wap_event_destroy(ind);
 	    break;
 	
 	case S_MethodResult_Cnf:
@@ -237,6 +279,8 @@ static void main_thread(void *arg)
 	    break;
 
         case S_ConfirmedPush_Cnf:
+            confirm_push(ind);
+            wap_event_destroy(ind);
 	    break;
 	
 	case S_MethodAbort_Ind:
@@ -245,6 +289,8 @@ static void main_thread(void *arg)
 	    break;
 
         case S_PushAbort_Ind:
+            indicate_push_abort(ind);
+            wap_event_destroy(ind);
 	    break;
 	
 	default:
@@ -963,3 +1009,261 @@ void wsp_http_map_destroy(void)
 	gw_free (q);
     }
 }
+
+/*
+ * Push OTA submodule implements indications and confirmations part of Push OTA
+ * module.
+ */
+
+/*
+ * If Accept-Application is empty, add header indicating default application 
+ * wml ua (see OTA 6.4.1). Otherwise decode application id (see http://www.
+ * wapforum.org/wina/push-app-id.htm). FIXME: capability negotiation (no-
+ * thing means default, if so negotiated).
+ * Function does not allocate memory neither for headers nor application_
+ * headers.
+ * Returns encoded application headers and input header list without them.
+ */
+static void check_application_headers(List **headers, 
+                                      List **application_headers)
+{
+    List *inh;
+    int i;
+    Octstr *appid_name, *coded_octstr;
+    char *appid_value, *coded_value;
+
+    split_header_list(headers, &inh, "Accept-Application");
+    
+    if (*headers == NULL || list_len(inh) == 0) {
+        http_header_add(*application_headers, "Accept-Application", "wml ua");
+        debug("wap.appl.push", 0, "OTA: No push application, assuming wml ua");
+        http_destroy_headers(inh);
+        return;
+    }
+
+    i = 0;
+    coded_value = NULL;
+    appid_value = NULL;
+
+    while (list_len(inh) > 0) {
+        http_header_get(inh, i, &appid_name, &coded_octstr);
+
+        /* Greatest value reserved by WINA is 0xFF00 0000*/
+        coded_value = octstr_get_cstr(coded_octstr);
+        if (coded_value != NULL)
+	   appid_value = wsp_application_id_to_cstr((long) coded_value);
+
+        if (appid_value != NULL && coded_value != NULL)
+            http_header_add(*application_headers, "Accept-Application", 
+                            appid_value);
+        else {
+	    error(0, "OTA: Unknown application is, skipping: ");
+            octstr_dump(coded_octstr, 0);
+        }
+
+        i++;  
+    }
+   
+    debug("wap.appl.push", 0, "application headers were");
+    http_header_dump(*application_headers);
+
+    http_destroy_headers(inh);
+    octstr_destroy(appid_name);
+    octstr_destroy(coded_octstr);
+}
+
+/*
+ * Bearer indication field is defined in OTA 6.4.1. 
+ * Skip the header, if it is malformed or if there is more than one bearer 
+ * indication.
+ * Function does not allocate memory neither for headers nor bearer_headers.
+ * Return encoded bearer indication header and input header list without it.
+ */
+static void decode_bearer_indication(List **headers, List **bearer_headers)
+{
+    List *inb;
+    Octstr *name, *coded_octstr;
+    char *value;
+    unsigned char coded_value;
+
+    if (*headers == NULL) {
+        debug("wap.appl.push", 0, "No client headers, continuing");
+        return;
+    }
+
+    split_header_list(headers, &inb, "Bearer-Indication");
+
+    if (list_len(inb) == 0) {
+        debug("wap.appl.push", 0, "OTA: No bearer indication headers,"
+              " continuing");
+        http_destroy_headers(inb);
+        return;  
+    }
+
+    if (list_len(inb) > 1) {
+        error(0, "OTA: To many bearer indication header(s), skipping"
+              " them");
+        http_destroy_headers(inb);
+        return;
+    }
+
+    http_header_get(inb, 0, &name, &coded_octstr);
+    http_destroy_headers(inb);
+
+  /* Greatest assigned number for a bearer type is 0xff, see WDP, appendix C */
+    coded_value = octstr_get_char(coded_octstr, 0);
+    value = wsp_bearer_indication_to_cstr(coded_value);
+
+    if (value != NULL && coded_value != 0) {
+       http_header_add(*bearer_headers, "Bearer-Indication", value);
+       debug("wap.appl.push", 0, "bearer indication header was");
+       http_header_dump(*bearer_headers);
+       return;
+    } else {
+       error(0, "OTA: Illegal bearer indication value, skipping");
+       octstr_dump(coded_octstr, 0);
+       http_destroy_headers(*bearer_headers);
+       return;
+    }
+}
+
+
+/*
+ * Separate headers into two lists, one having all headers named "name" and
+ * the other rest of them.
+ */
+static void split_header_list(List **headers, List **new_headers, char *name)
+{
+    if (*headers == NULL)
+        return;
+
+    *new_headers = http_header_find_all(*headers, name);
+    http_header_remove_all(*headers, name);  
+}
+
+/*
+ * Find headers Accept-Application and Bearer-Indication amongst push headers,
+ * decode them and add them to their proper field. 
+ */
+static void indicate_push_connection(WAPEvent *e)
+{
+    WAPEvent *ppg_event;
+    List *push_headers,
+         *application_headers,
+         *bearer_headers;
+
+    push_headers = http_header_duplicate(e->u.S_Connect_Ind.client_headers);
+    application_headers = http_create_empty_headers();
+    bearer_headers = http_create_empty_headers();
+    
+    ppg_event = wap_event_create(Pom_Connect_Ind);
+    ppg_event->u.Pom_Connect_Ind.addr_tuple = 
+        wap_addr_tuple_duplicate(e->u.S_Connect_Ind.addr_tuple);
+    ppg_event->u.Pom_Connect_Ind.requested_capabilities = 
+        wsp_cap_duplicate_list(e->u.S_Connect_Ind.requested_capabilities);
+
+    check_application_headers(&push_headers, &application_headers);
+    ppg_event->u.Pom_Connect_Ind.accept_application = application_headers;
+
+    decode_bearer_indication(&push_headers, &bearer_headers);
+
+    if (list_len(bearer_headers) == 0) {
+        http_destroy_headers(bearer_headers);
+        ppg_event->u.Pom_Connect_Ind.bearer_indication = NULL;
+    } else
+        ppg_event->u.Pom_Connect_Ind.bearer_indication = bearer_headers;
+
+    ppg_event->u.Pom_Connect_Ind.push_headers = push_headers;
+    ppg_event->u.Pom_Connect_Ind.session_id = e->u.S_Connect_Ind.session_id;
+
+    wap_push_ppg_dispatch_event(ppg_event);
+}
+
+static void indicate_push_disconnect(WAPEvent *e)
+{
+    WAPEvent *ppg_event;
+
+    ppg_event = wap_event_create(Pom_Disconnect_Ind);
+    ppg_event->u.Pom_Disconnect_Ind.reason_code = 
+        e->u.S_Disconnect_Ind.reason_code;
+    ppg_event->u.Pom_Disconnect_Ind.error_headers =
+        octstr_duplicate(e->u.S_Disconnect_Ind.error_headers);
+    ppg_event->u.Pom_Disconnect_Ind.error_body =
+        octstr_duplicate(e->u.S_Disconnect_Ind.error_body);
+    ppg_event->u.Pom_Disconnect_Ind.session_handle =
+        e->u.S_Disconnect_Ind.session_handle;
+
+    wap_push_ppg_dispatch_event(ppg_event);
+}
+
+/*
+ * We do not implement acknowledgement headers
+ */
+static void confirm_push(WAPEvent *e)
+{
+    WAPEvent *ppg_event;
+
+    ppg_event = wap_event_create(Po_ConfirmedPush_Cnf);
+    ppg_event->u.Po_ConfirmedPush_Cnf.server_push_id = 
+        e->u.S_ConfirmedPush_Cnf.server_push_id;
+    ppg_event->u.Po_ConfirmedPush_Cnf.session_handle = 
+         e->u.S_ConfirmedPush_Cnf.session_id;
+
+    wap_push_ppg_dispatch_event(ppg_event);
+}
+
+static void indicate_push_abort(WAPEvent *e)
+{
+    WAPEvent *ppg_event;
+
+    ppg_event = wap_event_create(Po_PushAbort_Ind);
+    ppg_event->u.Po_PushAbort_Ind.push_id = e->u.S_PushAbort_Ind.push_id;
+    ppg_event->u.Po_PushAbort_Ind.reason = e->u.S_PushAbort_Ind.reason;
+    ppg_event->u.Po_PushAbort_Ind.session_handle = 
+        e->u.S_PushAbort_Ind.session_id;
+
+    wap_push_ppg_dispatch_event(ppg_event);
+}
+
+static void indicate_push_suspend(WAPEvent *e)
+{
+    WAPEvent *ppg_event;
+
+    ppg_event = wap_event_create(Pom_Suspend_Ind);
+    ppg_event->u.Pom_Suspend_Ind.reason = e->u.S_Suspend_Ind.reason;
+    ppg_event->u.Pom_Suspend_Ind.session_id =  e->u.S_Suspend_Ind.session_id;
+
+    wap_push_ppg_dispatch_event(ppg_event);
+}
+
+/*
+ * Find Bearer-Indication amongst client headers, decode it and assign it to
+ * a separate field in the event structure.
+ */
+static void indicate_push_resume(WAPEvent *e)
+{
+    WAPEvent *ppg_event;
+    List *push_headers,
+         *bearer_headers;
+
+    push_headers = http_header_duplicate(e->u.S_Resume_Ind.client_headers);
+    bearer_headers = http_create_empty_headers();
+    
+    ppg_event = wap_event_create(Pom_Resume_Ind);
+    ppg_event->u.Pom_Resume_Ind.addr_tuple = wap_addr_tuple_duplicate(
+        e->u.S_Resume_Ind.addr_tuple);
+   
+    decode_bearer_indication(&push_headers, &bearer_headers);
+
+    if (list_len(bearer_headers) == 0) {
+        http_destroy_headers(bearer_headers);
+        ppg_event->u.Pom_Resume_Ind.bearer_indication = NULL;
+    } else 
+        ppg_event->u.Pom_Resume_Ind.bearer_indication = bearer_headers;
+
+    ppg_event->u.Pom_Resume_Ind.client_headers = push_headers;
+    ppg_event->u.Pom_Resume_Ind.session_id = e->u.S_Resume_Ind.session_id;
+
+    wap_push_ppg_dispatch_event(ppg_event);
+}
+
