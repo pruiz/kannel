@@ -1,3 +1,9 @@
+2001-11-20  Stipe Tolj  <tolj@wapme-systems.de>
+
+    * gateway/doc/userguide/userguide.xml: added documentation about SSL 
+      specific configuration directives and changed some typing from PPG
+      part for cosmetical reasons.  
+
 2001-11-15  Tuomas Luttinen  <Tuomas.Luttinen@reach-u.com>
 
     * gw/wml_definitions.h, gw/wml_compiler.c: Removed the windows character 
