@@ -1,3 +1,7 @@
+2001-01-29  Richard Braakman  <dark@wapit.com>
+
+	* gwlib/dict.c: Make dict_keys() lock its dictionary.
+
 2001-01-29  Kalle Marjola  <rpr@wapit.com>
 
 	* Makefile.in: clean now deletes */*.o, too. 

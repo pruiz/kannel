@@ -235,6 +235,7 @@ List *dict_keys(Dict *dict)
     
     list = list_create();
 
+    lock(dict);
     for (i = 0; i < dict->size; ++i) {
 	if (dict->tab[i] == NULL)
 	    continue;
@@ -243,6 +244,7 @@ List *dict_keys(Dict *dict)
 	    list_append(list, octstr_duplicate(item->key));
 	}
     }
+    unlock(dict);
     
     return list;
 }
