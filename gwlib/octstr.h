@@ -25,11 +25,6 @@
 
 typedef struct Octstr Octstr;
 
-/*
- * Create an empty octet string. Return pointer to the new object.
- */
-Octstr *octstr_create_empty(void);
-
 
 /*
  * Create an octet string from a NUL-terminated C string. Return pointer to
@@ -38,15 +33,18 @@ Octstr *octstr_create_empty(void);
 Octstr *octstr_create(const char *cstr);
 
 /*
- * as above except that the string is truncated after max_len
+ * Similar to octstr_create, except that the string is truncated after 
+ * max_len, if it is longer.
+ *
+ * XXX this is used only in gwlib/utils.c, is it really useful enough?
  */
-Octstr *octstr_create_limited(char *cstr, int max_len);
+Octstr *octstr_create_limited(const char *cstr, long max_len);
 
 /*
  * Create an octet string from arbitrary binary data. The length of the
  * data is given, so it can contain NUL characters.
  */
-Octstr *octstr_create_from_data(const void *data, long len);
+Octstr *octstr_create_from_data(const char *data, long len);
 
 
 /*
@@ -72,7 +70,7 @@ Octstr *octstr_copy(Octstr *ostr, long from, long len);
 
 
 /*
- * as copy but duplicates entirely
+ * Copy all of an octet string.
  */
 Octstr *octstr_duplicate(Octstr *ostr);
 
@@ -103,7 +101,7 @@ void octstr_set_char(Octstr *ostr, long pos, int ch);
 /*
  * Copy bytes from octet string into array.
  */
-void octstr_get_many_chars(void *buf, Octstr *ostr, long pos, long len);
+void octstr_get_many_chars(char *buf, Octstr *ostr, long pos, long len);
 
 
 /*
@@ -206,30 +204,17 @@ int octstr_print(FILE *f, Octstr *ostr);
 
 
 /*
- * Search the character from octet string. Returns the position (index) of 
- * the char in string, -1 if not found.
- */
-int octstr_search_char(Octstr *ostr, int ch);
-
-
-/*
  * Search the character from octet string starting from position pos. Returns 
  * the position (index) of the char in string, -1 if not found.
  */
-int octstr_search_char_from(Octstr *ostr, int ch, long pos);
+int octstr_search_char(Octstr *ostr, int ch, long pos);
 
 
 /*
- * Search for a substring in an octet string. Return the start
- * position (index) of the substring, -1 if not found.
+ * Search for a substring in an octet string, starting at position `pos'. 
+ * Return the start position (index) of the substring, -1 if not found.
  */
-int octstr_search_cstr(Octstr *ostr, char *str);
-
-
-/*
- * Like octstr_search_cstr, but start at a given position.
- */
-int octstr_search_cstr_from(Octstr *ostr, char *str, long pos);
+int octstr_search_cstr(Octstr *ostr, char *str, long pos);
 
 
 /*
@@ -317,24 +302,22 @@ void octstr_append_char(Octstr *ostr, int ch);
 
 
 /*
- * truncate length of octstr to 'new_len'. If new_len is same or more
- * than current, do nothing. cannot fail.
+ * Truncate octet string at `new_len'. If new_len is same or more
+ * than current, do nothing.
  */
 void octstr_truncate(Octstr *ostr, int new_len);
 
 
 /*
- * octstr_strip_blank - strips white space from start and end of a octet
- * string.
+ * Strip white space from start and end of a octet string.
  */
-void octstr_strip_blank(Octstr *text);
+void octstr_strip_blanks(Octstr *ostr);
 
 
 /*
- * octstr_shrink_blank - shrinks following white space characters into one 
- * white space.
+ * Shrink consecutive white space characters into one space.
  */
-void octstr_shrink_blank(Octstr *text);
+void octstr_shrink_blanks(Octstr *ostr);
 
 
 /*

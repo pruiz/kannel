@@ -48,16 +48,6 @@ struct Octstr {
 };
 
 
-/*
- * Node in list of octet strings.
- */
-typedef struct Node Node;
-struct Node {
-	Octstr *ostr;
-	Node *next;
-};
-
-
 /***********************************************************************
  * Declarations of internal functions. These are defined at the end of
  * the file.
@@ -80,18 +70,6 @@ static void seems_valid_real(Octstr *ostr, const char *filename, long lineno,
  */
 
 
-Octstr *octstr_create_empty(void) {
-	Octstr *ostr;
-	
-	ostr = gw_malloc(sizeof(Octstr));
-	ostr->data = NULL;
-	ostr->size = 0;
-	ostr->len = 0;
-	seems_valid(ostr);
-	return ostr;
-}
-
-
 /* Reserve space for at least 'size' octets */
 static void octstr_grow(Octstr *ostr, long size) {
 	seems_valid(ostr);
@@ -112,7 +90,7 @@ Octstr *octstr_create(const char *cstr) {
 }
 
 
-Octstr *octstr_create_limited(char *cstr, int max_len) {
+Octstr *octstr_create_limited(const char *cstr, long max_len) {
 	int len;
 
 	gw_assert(cstr != NULL);
@@ -126,15 +104,19 @@ Octstr *octstr_create_limited(char *cstr, int max_len) {
 }
 
 
-Octstr *octstr_create_from_data(const void *data, long len) {
+Octstr *octstr_create_from_data(const char *data, long len) {
 	Octstr *ostr;
 	
 	gw_assert(len >= 0);
 	if (data == NULL)
 		gw_assert(len == 0);
 
-	ostr = octstr_create_empty();
-	if (len > 0) {
+	ostr = gw_malloc(sizeof(*ostr));
+	if (len == 0) {
+		ostr->len = 0;
+		ostr->size = 0;
+		ostr->data = NULL;
+	} else {
 		ostr->len = len;
 		ostr->size = len + 1;
 		ostr->data = gw_malloc(ostr->size);
@@ -165,13 +147,11 @@ long octstr_len(Octstr *ostr) {
 
 Octstr *octstr_copy(Octstr *ostr, long from, long len) {
 	seems_valid(ostr);
-
-	seems_valid(ostr);
 	gw_assert(from >= 0);
 	gw_assert(len >= 0);
 
 	if (from >= ostr->len)
-		return octstr_create_empty();
+		return octstr_create("");
 	
 	if (from + len > ostr->len)
 		len = ostr->len - from;
@@ -195,7 +175,7 @@ Octstr *octstr_cat(Octstr *ostr1, Octstr *ostr2) {
 	seems_valid(ostr1);
 	seems_valid(ostr2);
 
-	ostr = octstr_create_empty();
+	ostr = octstr_create("");
 	ostr->len = ostr1->len + ostr2->len;
 	ostr->size = ostr->len + 1;
 	ostr->data = gw_malloc(ostr->size);
@@ -227,7 +207,7 @@ void octstr_set_char(Octstr *ostr, long pos, int ch) {
 }
 
 
-void octstr_get_many_chars(void *buf, Octstr *ostr, long pos, long len) {
+void octstr_get_many_chars(char *buf, Octstr *ostr, long pos, long len) {
 	gw_assert(buf != NULL);
 	seems_valid(ostr);
 
@@ -641,12 +621,7 @@ int octstr_str_compare (Octstr *ostr, char *str){
 }
 
 
-int octstr_search_char(Octstr *ostr, int ch) {
-	return octstr_search_char_from(ostr, ch, 0);
-}
-
-
-int octstr_search_char_from(Octstr *ostr, int ch, long pos) {
+int octstr_search_char(Octstr *ostr, int ch, long pos) {
 	unsigned char *p;
 	
 	seems_valid(ostr);
@@ -664,12 +639,7 @@ int octstr_search_char_from(Octstr *ostr, int ch, long pos) {
 }
 
 
-int octstr_search_cstr(Octstr *ostr, char *str) {
-	return octstr_search_cstr_from(ostr, str, 0);
-}
-
-
-int octstr_search_cstr_from(Octstr *ostr, char *str, long pos) {
+int octstr_search_cstr(Octstr *ostr, char *str, long pos) {
 	int first;
 	long len;
 
@@ -687,11 +657,11 @@ int octstr_search_cstr_from(Octstr *ostr, char *str, long pos) {
 	 * occurrences, or if the rest of str can't possibly fit in
 	 * the rest of the ostr. */
 	first = str[0];
-	pos = octstr_search_char_from(ostr, first, pos);
+	pos = octstr_search_char(ostr, first, pos);
 	while (pos >= 0 && ostr->len - pos >= len) {
 		if (memcmp(ostr->data + pos, str, len) == 0)
 			return pos;
-		pos = octstr_search_char_from(ostr, first, pos + 1);
+		pos = octstr_search_char(ostr, first, pos + 1);
 	}
 
 	return -1;
@@ -710,19 +680,19 @@ int octstr_search(Octstr *haystack, Octstr *needle) {
 		return 0;
 
 	if (needle->len == 1)
-		return octstr_search_char(haystack, needle->data[0]);
+		return octstr_search_char(haystack, needle->data[0], 0);
 
 	/* For each occurrence of needle's first character in ostr,
 	 * check if the rest of needle follows.  Stop if there are no
 	 * more occurrences, or if the rest of needle can't possibly
 	 * fit in the haystack. */
 	first = needle->data[0];
-	pos = octstr_search_char(haystack, first);
+	pos = octstr_search_char(haystack, first, 0);
 	while (pos >= 0 && haystack->len - pos >= needle->len) {
 		if (memcmp(haystack->data + pos,
 				needle->data, needle->len) == 0)
 			return pos;
-		pos = octstr_search_char_from(haystack, first, pos + 1);
+		pos = octstr_search_char(haystack, first, pos + 1);
 	}
 
 	return -1;
@@ -878,7 +848,7 @@ void octstr_truncate(Octstr *ostr, int new_len) {
 }
 
 
-void octstr_strip_blank(Octstr *text) {
+void octstr_strip_blanks(Octstr *text) {
         int start = 0, end, len = 0;
 
 	seems_valid(text);
@@ -903,7 +873,7 @@ void octstr_strip_blank(Octstr *text) {
 }
 
 
-void octstr_shrink_blank(Octstr *text) {
+void octstr_shrink_blanks(Octstr *text) {
 	int i, j, end;
 	
 	seems_valid(text);
@@ -1005,7 +975,7 @@ Octstr *octstr_read_file(const char *filename) {
 		return NULL;
 	}
 
-	os = octstr_create_empty();
+	os = octstr_create("");
 	if (os == NULL)
 		goto error;
 
@@ -1381,36 +1351,6 @@ void octstr_set_bits(Octstr *ostr, long bitpos, int numbits,
 	seems_valid(ostr);
 }
 
-/**********************************************************************
- * Local functions.
- */
-
-static void seems_valid_real(Octstr *ostr, const char *filename, long lineno,
-const char *function) {
-	gwlib_assert_init();
-	gw_assert_place(ostr != NULL, 
-		filename, lineno, function);
-	gw_assert_allocated(ostr,
-		filename, lineno, function);
-	gw_assert_place(ostr->len >= 0,
-		filename, lineno, function);
-	gw_assert_place(ostr->size >= 0,
-		filename, lineno, function);
-	if (ostr->size == 0) {
-		gw_assert_place(ostr->len == 0,
-			filename, lineno, function);
-		gw_assert_place(ostr->data == NULL, 
-			filename, lineno, function);
-	} else {
-		gw_assert_place(ostr->len + 1 <= ostr->size, 
-			filename, lineno, function);
-		gw_assert_place(ostr->data != NULL,
-			filename, lineno, function);
-		gw_assert_place(ostr->data[ostr->len] == '\0',
-			filename, lineno, function);
-	}
-}
-
 
 void octstr_append_uintvar(Octstr *ostr, unsigned long value) {
 	/* A uintvar is defined to be up to 32 bits large, so it will
@@ -1460,4 +1400,34 @@ void octstr_append_decimal(Octstr *ostr, long value) {
 
 	sprintf(tmp, "%ld", value);
 	octstr_append_cstr(ostr, tmp);
+}
+
+/**********************************************************************
+ * Local functions.
+ */
+
+static void seems_valid_real(Octstr *ostr, const char *filename, long lineno,
+const char *function) {
+	gwlib_assert_init();
+	gw_assert_place(ostr != NULL, 
+		filename, lineno, function);
+	gw_assert_allocated(ostr,
+		filename, lineno, function);
+	gw_assert_place(ostr->len >= 0,
+		filename, lineno, function);
+	gw_assert_place(ostr->size >= 0,
+		filename, lineno, function);
+	if (ostr->size == 0) {
+		gw_assert_place(ostr->len == 0,
+			filename, lineno, function);
+		gw_assert_place(ostr->data == NULL, 
+			filename, lineno, function);
+	} else {
+		gw_assert_place(ostr->len + 1 <= ostr->size, 
+			filename, lineno, function);
+		gw_assert_place(ostr->data != NULL,
+			filename, lineno, function);
+		gw_assert_place(ostr->data[ostr->len] == '\0',
+			filename, lineno, function);
+	}
 }

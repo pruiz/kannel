@@ -414,7 +414,7 @@ Octstr *udp_create_address(Octstr *host_or_ip, int port) {
 		sa.sin_addr = *(struct in_addr *) h.h_addr_list[0];
 	}
 	
-	return octstr_create_from_data(&sa, sizeof(sa));
+	return octstr_create_from_data((char *) &sa, sizeof(sa));
 }
 
 
@@ -466,7 +466,7 @@ int udp_recvfrom(int s, Octstr **datagram, Octstr **addr) {
 	}
 	
 	*datagram = octstr_create_from_data(buf, bytes);
-	*addr = octstr_create_from_data(&sa, salen);
+	*addr = octstr_create_from_data((char *) &sa, salen);
 	
 	return 0;
 }

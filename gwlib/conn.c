@@ -200,9 +200,9 @@ Connection *conn_wrap_fd(int fd) {
 	conn->outlock = mutex_create();
 	conn->claimed = 0;
 
-	conn->outbuf = octstr_create_empty();
+	conn->outbuf = octstr_create("");
 	conn->outbufpos = 0;
-	conn->inbuf = octstr_create_empty();
+	conn->inbuf = octstr_create("");
 	conn->inbufpos = 0;
 
 	conn->fd = fd;
@@ -481,10 +481,10 @@ Octstr *conn_read_line(Connection *conn) {
 	/* 10 is the code for linefeed.  We don't rely on \n because that
 	 * might be a different value on some (strange) systems, and
 	 * we are reading from a network connection. */
-	pos = octstr_search_char_from(conn->inbuf, 10, conn->inbufpos);
+	pos = octstr_search_char(conn->inbuf, 10, conn->inbufpos);
 	if (pos < 0) {
 		unlocked_read(conn);
-		pos = octstr_search_char_from(conn->inbuf,
+		pos = octstr_search_char(conn->inbuf,
 					10, conn->inbufpos);
 		if (pos < 0) {
 			unlock_in(conn);
@@ -554,7 +554,7 @@ Octstr *conn_read_packet(Connection *conn, int startmark, int endmark) {
 			unlocked_read(conn);
 
 		/* Find startmark, and discard everything up to it */
-		startpos = octstr_search_char_from(conn->inbuf, startmark,
+		startpos = octstr_search_char(conn->inbuf, startmark,
 				conn->inbufpos);
 		if (startpos < 0) {
 			conn->inbufpos = octstr_len(conn->inbuf);
@@ -564,7 +564,7 @@ Octstr *conn_read_packet(Connection *conn, int startmark, int endmark) {
 		}
 
 		/* Find first endmark after startmark */
-		endpos = octstr_search_char_from(conn->inbuf, endmark,
+		endpos = octstr_search_char(conn->inbuf, endmark,
 				conn->inbufpos);
 		if (endpos < 0)
 			continue;

@@ -15,9 +15,9 @@
 #include "http.h"
 
 
-/*++++
+/*
  * The definition for the HTTPSocket data type.
- ++++*/
+ */
 struct HTTPSocket {
 	int in_use;
 	time_t last_used;
@@ -78,36 +78,11 @@ static int socket_write(HTTPSocket *p, Octstr *os);
  */
 static int parse_url(Octstr *url, Octstr **host, long *port, Octstr **path);
 
-/*
- * 
- * These were the build request operations defined by Lars:
- *
-
-static Octstr *build_request(Octstr *path_or_url, Octstr *host, long port, 
-	List *headers, List *form_fields, char* method_name);
-static HTTPSocket *send_request(Octstr *url, List *request_headers, List *form_fields,
-	char* method_name);
- *
- *
- * The build request specified below use an octet string as opposed to a 
- * list for passing the message body. A list may be a better alternative 
- * for future use, but for now all that is required is passing the octet 
- * string to the http server.
- *
- * Extra parameters:
- * Octstr *form_fields: This contains the message body which is passed in from the 
- *						wap client.
- *
- * char *method_name:	This is the name of the request, whether it is a "GET" request
- *						or a "POST" request.
- *
- */
-
 static Octstr *build_request(Octstr *path_or_url, Octstr *host, long port, 
 	List *headers, Octstr *request_body, char* method_name);
 
-static HTTPSocket *send_request(Octstr *url, List *request_headers, Octstr *request_body,
-	char* method_name);
+static HTTPSocket *send_request(Octstr *url, List *request_headers, 
+	Octstr *request_body, char *method_name);
 
 
 
@@ -191,7 +166,6 @@ List **reply_headers, Octstr **reply_body)  {
 	*reply_headers = NULL;
 	*reply_body = NULL;
 
-/* As it is a GET message, can pass NULL for the message body. */
 	p = send_request(url, request_headers, NULL, "GET");
 
 	if (p == NULL)
@@ -257,7 +231,7 @@ List **reply_headers, Octstr **reply_body) {
 			ret = -1;
 			break;
 		}
-		octstr_strip_blank(h);
+		octstr_strip_blanks(h);
 		octstr_destroy(*final_url);
 		*final_url = h;
 		while ((h = list_extract_first(*reply_headers)) != NULL)
@@ -318,9 +292,10 @@ int http_post(Octstr *url, List *request_headers, Octstr *request_body,
 	 * we will assume that if we receive more than 3 then there is
 	 * a problem with the http server.
 	 */
+	 
+	 /* XXX all 1xx codes should be skipped; check the spec */
 
 	while (status == 100 && escape_ctr < 3) {
-
 		debug("gwlib.http", 0, "100-Continue status received: Ignoring");
 		/* 
 		 * This is to remove header information in the network buffer. 
@@ -424,7 +399,7 @@ int http_post_real(Octstr *url, List *request_headers, Octstr *request_body,
 			ret = -1;
 			break;
 		}
-		octstr_strip_blank(h);
+		octstr_strip_blanks(h);
 		octstr_destroy(*final_url);
 		*final_url = h;
 		while ((h = list_extract_first(*reply_headers)) != NULL)
@@ -510,7 +485,7 @@ Octstr **body, List **cgivars) {
 	if (octstr_str_ncompare(line, "GET ") != 0)
 		goto error;
 	octstr_delete(line, 0, 4);
-	space = octstr_search_char(line, ' ');
+	space = octstr_search_char(line, ' ', 0);
 	if (space <= 0)
 		goto error;
 	*url = octstr_copy(line, 0, space);
@@ -661,7 +636,7 @@ void http_header_get(List *headers, long i, Octstr **name, Octstr **value) {
 	if (os == NULL)
 		colon = -1;
 	else
-		colon = octstr_search_char(os, ':');
+		colon = octstr_search_char(os, ':', 0);
 	if (colon == -1) {
 		error(0, "HTTP: Header does not contain a colon. BAD.");
 		*name = octstr_create("X-Unknown");
@@ -669,7 +644,7 @@ void http_header_get(List *headers, long i, Octstr **name, Octstr **value) {
 	} else {
 		*name = octstr_copy(os, 0, colon);
 		*value = octstr_copy(os, colon+1, octstr_len(os));
-		octstr_strip_blank(*value);
+		octstr_strip_blanks(*value);
 	}
 }
 
@@ -763,20 +738,20 @@ Octstr **charset) {
 	h = http_header_find_first(headers, "Content-Type");
 	if (h == NULL) {
 		*type = octstr_create("application/octet-stream");
-		*charset = octstr_create_empty();
+		*charset = octstr_create("");
 	} else {
-		octstr_strip_blank(h);
-		semicolon = octstr_search_char(h, ';');
+		octstr_strip_blanks(h);
+		semicolon = octstr_search_char(h, ';', 0);
 		if (semicolon == -1) {
 			*type = h;
-			*charset = octstr_create_empty();
+			*charset = octstr_create("");
 		} else {
 			*charset = octstr_copy(h, semicolon + 1, 
 					octstr_len(h));
-			octstr_strip_blank(*charset);
+			octstr_strip_blanks(*charset);
 
 			octstr_delete(h, semicolon, octstr_len(h));
-			octstr_strip_blank(h);
+			octstr_strip_blanks(h);
 			*type = h;
 		}
 	}
@@ -806,7 +781,8 @@ static char *istrdup (char *orig) {
     return result;
 }
 
-static int http_something_accepted(List *headers, char *header_name, char *what) {
+static int http_something_accepted(List *headers, char *header_name, 
+char *what) {
 	int found;
 	long i;
 	List *accepts;
@@ -848,10 +824,10 @@ int http_charset_accepted(List *headers, char *charset) {
  */
  
  
-/*++++
+/*
  * Like octstr_str_compare, but compare only strlen(cstr) first bytes of
  * the octet string.
- ++++*/
+ */
 static int octstr_str_ncompare(Octstr *os, char *cstr) {
 	long i, len;
 	unsigned char *p;
@@ -1064,7 +1040,7 @@ static HTTPSocket *socket_create_client(Octstr *host, int port) {
 	p->last_used = (time_t) -1;
 	p->host = octstr_duplicate(host);
 	p->port = port;
-	p->buffer = octstr_create_empty();
+	p->buffer = octstr_create("");
 
 	return p;
 }
@@ -1090,7 +1066,7 @@ static HTTPSocket *socket_create_server(int port) {
 	p->last_used = (time_t) -1;
 	p->host = octstr_create("server socket");
 	p->port = port;
-	p->buffer = octstr_create_empty();
+	p->buffer = octstr_create("");
 
 	return p;
 }
@@ -1131,7 +1107,7 @@ static HTTPSocket *socket_accept(HTTPSocket *server) {
 	client->socket = s;
 	client->host = host_ip(addr);
 	client->port = 0;
-	client->buffer = octstr_create_empty();
+	client->buffer = octstr_create("");
 
 	debug("gwlib.http", 0, "HTTP: Accepted client from <%s>",
 	      octstr_get_cstr(client->host));
@@ -1150,7 +1126,7 @@ static HTTPSocket *socket_accept(HTTPSocket *server) {
 static int socket_read_line(HTTPSocket *p, Octstr **line) {
 	int newline;
 	
-	while ((newline = octstr_search_char(p->buffer, '\n')) == -1) {
+	while ((newline = octstr_search_char(p->buffer, '\n', 0)) == -1) {
 		switch (octstr_append_from_socket(p->buffer, p->socket)) {
 		case -1:
 			return -1;
@@ -1244,7 +1220,7 @@ static int parse_url(Octstr *url, Octstr **host, long *port, Octstr **path) {
 	 *      means that URL is modified...
 	 */
 	octstr_convert_range(url, 0, 4, tolower);
-	if (octstr_search_cstr(url, prefix) != 0) {
+	if (octstr_search_cstr(url, prefix, 0) != 0) {
 		error(0, "URL <%s> doesn't start with `%s'",
 			octstr_get_cstr(url), prefix);
 		return -1;
@@ -1255,8 +1231,8 @@ static int parse_url(Octstr *url, Octstr **host, long *port, Octstr **path) {
 		return -1;
 	}
 
-	colon = octstr_search_char_from(url, ':', prefix_len);
-	slash = octstr_search_char_from(url, '/', prefix_len);
+	colon = octstr_search_char(url, ':', prefix_len);
+	slash = octstr_search_char(url, '/', prefix_len);
 	if (colon == prefix_len || slash == prefix_len) {
 		error(0, "URL <%s> is malformed.", octstr_get_cstr(url));
 		return -1;
@@ -1316,7 +1292,7 @@ List *headers, Octstr *request_body, char *method_name) {
 	char buf[1024];
 	int i;
 
-	request = octstr_create_empty();
+	request = octstr_create("");
 
 	octstr_append_cstr(request, method_name);
 	octstr_append_cstr(request, " ");
@@ -1386,8 +1362,7 @@ static int parse_status(Octstr *statusline) {
  */
 
 static HTTPSocket *send_request(Octstr *url, List *request_headers, 
-						Octstr *request_body, char *method_name) {
-
+Octstr *request_body, char *method_name) {
 	Octstr *host, *path, *request;
 	long port;
 	HTTPSocket *p;
@@ -1401,11 +1376,12 @@ static HTTPSocket *send_request(Octstr *url, List *request_headers,
 		goto error;
 
 	if (proxy_used_for_host(host)) {
-
-		request = build_request(url, host, port, request_headers, request_body, method_name);
+		request = build_request(url, host, port, request_headers, 
+				request_body, method_name);
 		p = pool_allocate(proxy_hostname, proxy_port);
 	} else {
-		request = build_request(path, host, port, request_headers, request_body, method_name);
+		request = build_request(path, host, port, request_headers, 
+				request_body, method_name);
 		p = pool_allocate(host, port);
 	}
 	if (p == NULL)
@@ -1499,7 +1475,7 @@ static int read_body(HTTPSocket *p, List *headers, Octstr **body)
 
 	h = http_header_find_first(headers, "Transfer-Encoding");
 	if (h != NULL) {
-		octstr_strip_blank(h);
+		octstr_strip_blanks(h);
 		if (octstr_str_compare(h, "chunked") != 0) {
 			error(0, "HTTP: Unknown Transfer-Encoding <%s>",
 				octstr_get_cstr(h));
@@ -1550,7 +1526,7 @@ static int read_chunked_body(HTTPSocket *p, Octstr **body, List *headers) {
 	long len;
 	List *trailer;
 
-	*body = octstr_create_empty();
+	*body = octstr_create("");
 	line = NULL;
 
 	for (;;) {
@@ -1614,7 +1590,7 @@ static List *parse_cgivars(Octstr *url) {
 	int query, et, equals;
 	Octstr *arg, *args;
 
-	query = octstr_search_char(url, '?');
+	query = octstr_search_char(url, '?', 0);
 	if (query == -1)
 		return list_create();
 	
@@ -1624,13 +1600,13 @@ static List *parse_cgivars(Octstr *url) {
 	list = list_create();
 
 	while (octstr_len(args) > 0) {
-		et = octstr_search_char(args, '&');
+		et = octstr_search_char(args, '&', 0);
 		if (et == -1)
 			et = octstr_len(args);
 		arg = octstr_copy(args, 0, et);
 		octstr_delete(args, 0, et + 1);
 
-		equals = octstr_search_char(arg, '=');
+		equals = octstr_search_char(arg, '=', 0);
 		if (equals == -1)
 			equals = octstr_len(arg);
 
@@ -1653,7 +1629,7 @@ static List *parse_cgivars(Octstr *url) {
 static int header_is_called(Octstr *header, char *name) {
 	long colon;
 	
-	colon = octstr_search_char(header, ':');
+	colon = octstr_search_char(header, ':', 0);
 	if (colon == -1)
 		return 0;
 	if ((long) strlen(name) != colon)

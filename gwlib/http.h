@@ -1,4 +1,4 @@
-/*++++
+/*
  * http.h - HTTP protocol implementation
  *
  * This header file defines the interface to the HTTP implementation
@@ -89,10 +89,10 @@
  *    At first a very simple system, without proxy support or a socket
  *    pool.
  * done 2. Test harness for http_get.
- * 3. Enough server things to get rid of old http.
+ * done 3. Enough server things to get rid of old http.
  * done 4. Multiple requests per tcp socket, client and server end.
  * done 5. Proxy support for client end.
- * 6. POST client and server end.
+ * done? 6. POST client and server end.
  * 7. Basic auth.
  *
  * Stuff that hasn't been implemented is marked with #if LIW_TODO.
@@ -130,15 +130,15 @@ enum { HTTP_MAX_FOLLOW = 5 };
  */
 
 enum {
-	HTTP_OK					= 200,
+	HTTP_OK				= 200,
 	HTTP_CREATED			= 201,
 	HTTP_ACCEPTED			= 202,
 	HTTP_NO_CONTENT			= 204,
 	HTTP_RESET_CONTENT		= 205,
-	HTTP_MOVED_PERMANENTLY	= 301,
-	HTTP_FOUND				= 302,
+	HTTP_MOVED_PERMANENTLY		= 301,
+	HTTP_FOUND			= 302,
 	HTTP_SEE_OTHER			= 303,
-	HTTP_TEMPORARY_REDIRECT = 307,
+	HTTP_TEMPORARY_REDIRECT 	= 307,
 	HTTP_NOT_FOUND			= 404
 };
 
@@ -196,41 +196,11 @@ int http_post_real(Octstr *url, List *request_headers, Octstr *request_body,
 		  Octstr **final_url, List **reply_headers, Octstr **reply_body);
 
 
-#if LIW_TODO
-/*
- * Functions for doing a POST request.
- */
-int http_post(Octstr *url, List *request_headers, List *form_fields,
-		List **reply_headers, Octstr **reply_body);
-int http_post_real(Octstr *url, List *request_headers, List *form_fields,
-		  List **reply_headers, Octstr **reply_body);
-#endif
-
-
-#if LIW_TODO
-/*
- * Functions for controlling the client side socket pool. http_set_max_sockets
- * sets the maximum number of open client side sockets in the pool.
- * http_close_all_connections closes all sockets in the pool (after the
- * requests via them have been finished) and http_close_old_connections
- * closes such sockets that have not been used for a while.
- *
- * http_close_old_connections SHOULD be called every now and then, if
- * there are no other client side socket functions called.
- *
- * XXX max_sockets total and per host and for the proxy?
- */
-void http_set_max_sockets(int max_sockets);
-void http_close_all_connections(void);
-void http_close_old_connections(void);
-#endif
-
-
 /*
  * Functions for controlling the well-known port of the server.
  * http_server_open sets it up, http_server_close closes it.
  */
-typedef struct HTTPSocket HTTPSocket;
+typedef struct HTTPSocket HTTPSocket;	/* XXX move to beginning of file */
 HTTPSocket *http_server_open(int port);
 void http_server_close(HTTPSocket *socket);
 

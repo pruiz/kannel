@@ -195,7 +195,7 @@ Octstr *parse_get_nul_string(Context *context) {
 
 	gw_assert(context != NULL);
 
-	pos = octstr_search_char_from(context->data, 0, context->pos);
+	pos = octstr_search_char(context->data, 0, context->pos);
 	if (pos < 0 || pos >= context->limit) {
 		context->error = 1;
 		return NULL;
