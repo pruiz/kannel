@@ -61,6 +61,7 @@
  * wapbox connections
  *
  * Kalle Marjola 2000 for project Kannel
+ * Alexander Malysh (various fixes)
  */
 
 #include <errno.h>
@@ -536,7 +537,7 @@ static Boxc *accept_boxc(int fd, int ssl)
 
     newfd = accept(fd, (struct sockaddr *)&client_addr, &client_addr_len);
     if (newfd < 0)
-	    return NULL;
+        return NULL;
 
     ip = host_ip(client_addr);
 
@@ -558,11 +559,7 @@ static Boxc *accept_boxc(int fd, int ssl)
         return NULL;
 #endif
 
-    if (ssl)
-        info(0, "Client connected from <%s> using SSL", octstr_get_cstr(ip));
-    else
-        info(0, "Client connected from <%s>", octstr_get_cstr(ip));
-
+    info(0, "Client connected from <%s> %s", octstr_get_cstr(ip), ssl?"using SSL":"");
 
     /* XXX TODO: do the hand-shake, baby, yeah-yeah! */
 
@@ -573,7 +570,6 @@ static Boxc *accept_boxc(int fd, int ssl)
 
 static void run_smsbox(void *arg)
 {
-    int fd;
     Boxc *newconn;
     long sender;
     Msg *msg;
@@ -581,12 +577,7 @@ static void run_smsbox(void *arg)
     Octstr *key;
 
     list_add_producer(flow_threads);
-    fd = (int)arg;
-    newconn = accept_boxc(fd, smsbox_port_ssl);
-    if (newconn == NULL) {
-	    list_remove_producer(flow_threads);
-	    return;
-    }
+    newconn = arg;
     newconn->incoming = list_create();
     list_add_producer(newconn->incoming);
     newconn->retry = incoming_sms;
@@ -596,9 +587,9 @@ static void run_smsbox(void *arg)
 
     sender = gwthread_create(boxc_sender, newconn);
     if (sender == -1) {
-	    error(0, "Failed to start a new thread, disconnecting client <%s>",
-	          octstr_get_cstr(newconn->client_ip));
-	    goto cleanup;
+        error(0, "Failed to start a new thread, disconnecting client <%s>",
+              octstr_get_cstr(newconn->client_ip));
+        goto cleanup;
     }
     /*
      * We register newconn in the smsbox_list here but mark newconn as routable
@@ -668,18 +659,12 @@ cleanup:
 
 static void run_wapbox(void *arg)
 {
-    int fd;
     Boxc *newconn;
     List *newlist;
     long sender;
 
     list_add_producer(flow_threads);
-    fd = (int)arg;
-    newconn = accept_boxc(fd, wapbox_port_ssl);
-    if (newconn == NULL) {
-	    list_remove_producer(flow_threads);
-	    return;
-    }
+    newconn = arg;
     newconn->is_wap = 1;
     
     /*
@@ -691,8 +676,8 @@ static void run_wapbox(void *arg)
     debug("bb", 0, "setting up systems for new wapbox");
     
     newlist = list_create();
-    list_add_producer(newlist);  /* this is released by the 
-    	    	    	    	    sender/receiver if it exits */
+    /* this is released by the sender/receiver if it exits */
+    list_add_producer(newlist);
     
     newconn->incoming = newlist;
     newconn->retry = incoming_wdp;
@@ -887,7 +872,7 @@ static void wdp_to_wapboxes(void *arg)
 
 
 static void wait_for_connections(int fd, void (*function) (void *arg), 
-    	    	    	    	 List *waited)
+    	    	    	    	 List *waited, int ssl)
 {
     int ret;
     int timeout = 10; /* 10 sec. */
@@ -896,32 +881,34 @@ static void wait_for_connections(int fd, void (*function) (void *arg),
     
     while(bb_status != BB_DEAD) {
 
-	/* if we are being shutdowned, as long as there is
-	 * messages in incoming list allow new connections, but when
-	 * list is empty, exit.
+        /* if we are being shutdowned, as long as there is
+         * messages in incoming list allow new connections, but when
+         * list is empty, exit.
          * Note: We have timeout (defined above) for which we allow new connections.
          *           Otherwise we wait here for ever!
-	 */
-	    if (bb_status == BB_SHUTDOWN) {
-	        ret = list_wait_until_nonempty(waited);
-	        if (ret == -1 || !timeout)
-                    break;
-                else
-                    timeout--;
-	    }
+         */
+        if (bb_status == BB_SHUTDOWN) {
+            ret = list_wait_until_nonempty(waited);
+            if (ret == -1 || !timeout)
+                break;
+            else
+                timeout--;
+        }
 
-            /* block here if suspended */
-            list_consume(suspended);
+        /* block here if suspended */
+        list_consume(suspended);
 
-            ret = gwthread_pollfd(fd, POLLIN, 1.0);
-	    if (ret > 0) {
-	        gwthread_create(function, (void *)fd);
-	        gwthread_sleep(1.0);
-	    } else if (ret < 0) {
-	        if(errno==EINTR) continue;
-	        if(errno==EAGAIN) continue;
-	        error(errno, "wait_for_connections failed");
-	    }
+        ret = gwthread_pollfd(fd, POLLIN, 1.0);
+        if (ret > 0) {
+            Boxc *newconn = accept_boxc(fd, ssl);
+            if (newconn != NULL) {
+                gwthread_create(function, newconn);
+                gwthread_sleep(1.0);
+            } else {
+                error(0, "Failed to create new boxc connection.");
+            }
+        } else if (ret < 0 && errno != EINTR && errno != EAGAIN)
+            error(errno, "bb_boxc::wait_for_connections failed");
     }
 }
 
@@ -937,10 +924,10 @@ static void smsboxc_run(void *arg)
     port = (int)arg;
     
     fd = make_server_socket(port, NULL); 
-    	/* XXX add interface_name if required */
+    /* XXX add interface_name if required */
 
     if (fd < 0) {
-	    panic(0, "Could not open smsbox port %d", port);
+        panic(0, "Could not open smsbox port %d", port);
     }
 
     /*
@@ -948,8 +935,7 @@ static void smsboxc_run(void *arg)
      * to shut down the system, SIGTERM is send and then
      * select drops with error, so we can check the status
      */
-
-    wait_for_connections(fd, run_smsbox, incoming_sms);
+    wait_for_connections(fd, run_smsbox, incoming_sms, smsbox_port_ssl);
 
     list_remove_producer(smsbox_list);
 
@@ -959,7 +945,6 @@ static void smsboxc_run(void *arg)
     /* all connections do the same, so that all must remove() before it
      * is completely over
      */
-
     while(list_wait_until_nonempty(smsbox_list) == 1)
         gwthread_sleep(1.0);
 
@@ -1001,7 +986,7 @@ static void wapboxc_run(void *arg)
 	    panic(0, "Could not open wapbox port %d", port);
     }
 
-    wait_for_connections(fd, run_wapbox, incoming_wdp);
+    wait_for_connections(fd, run_wapbox, incoming_wdp, wapbox_port_ssl);
 
     /* continue avalanche */
 

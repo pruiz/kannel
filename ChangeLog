@@ -1,3 +1,8 @@
+2005-01-23  Alexander Malysh <amalysh at kannel.org>
+    * gw/bb_boxc.c: applied patch that change behaviour in communication
+      thread creation. With this patch threads are created only after successful
+      accept and so eliminate possible DOS.
+
 2005-01-21  Alexander Malysh <amalysh at kannel.org>
     * gw/smsc/smsc_smpp.c: fixed bug #165. we now always send validity &
       deferred time in UTC.
