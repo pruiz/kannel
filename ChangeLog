@@ -1,3 +1,8 @@
+2000-11-01  Richard Braakman  <dark@wapit.com>
+
+	* gwlib/octstr.c: Make octstr_read_file use a smaller buffer,
+	to reduce stack usage.
+
 2000-11-01  Lars Wirzenius  <liw@iki.fi>
 
 	* gw/wap-appl.c: Implement magic URL kannel:alive, based on

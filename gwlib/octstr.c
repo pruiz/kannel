@@ -1241,7 +1241,7 @@ Octstr *octstr_read_file(const char *filename)
 {
     FILE *f;
     Octstr *os;
-    char buf[128*1024];
+    char buf[4096];
     long n;
 
     gw_assert(filename != NULL);
