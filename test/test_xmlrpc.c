@@ -62,9 +62,12 @@ int main(int argc, char **argv)
         panic(0, "Cannot read the XML document");
 
     msg = xmlrpc_call_parse(xml_doc);
+    output = xmlrpc_call_octstr(msg);
+    octstr_dump(output, 0);
 
     xmlrpc_call_destroy(msg);
     octstr_destroy(xml_doc);
+    octstr_destroy(output);
     gwlib_shutdown();
     return 0;
 }
