@@ -1247,8 +1247,8 @@ static Octstr *smsbox_req_handle(URLTranslation *t, Octstr *client_ip,
         }
     }
     msg_destroy(msg);
-    list_destroy(receiver, NULL);
-    list_destroy(allowed, NULL);
+    list_destroy(receiver, octstr_destroy_item);
+    list_destroy(allowed, octstr_destroy_item);
 
     /* have all receivers been denied by list rules?! */
     if (no_recv == list_len(denied)) {
@@ -1259,7 +1259,7 @@ static Octstr *smsbox_req_handle(URLTranslation *t, Octstr *client_ip,
     if (list_len(failed_id) > 0)
 	goto error;
     
-    list_destroy(failed_id, NULL);
+    list_destroy(failed_id, octstr_destroy_item);
     octstr_destroy(newfrom);
     *status = HTTP_ACCEPTED;
     returnerror = octstr_create("Sent.");
@@ -1274,7 +1274,7 @@ static Octstr *smsbox_req_handle(URLTranslation *t, Octstr *client_ip,
             octstr_format_append(returnerror, " %s", octstr_get_cstr(receiv));
         }
     }               
-    list_destroy(denied, NULL);  
+    list_destroy(denied, octstr_destroy_item);  
     return returnerror;
     
 
@@ -1307,8 +1307,8 @@ error:
     }
 
     octstr_destroy(receiv); 
-    list_destroy(failed_id, NULL);
-    list_destroy(denied, NULL);
+    list_destroy(failed_id, octstr_destroy_item);
+    list_destroy(denied, octstr_destroy_item);
     return returnerror;
 }
 
@@ -1559,6 +1559,7 @@ static Octstr *smsbox_sendsms_post(List *headers, Octstr *body,
     octstr_destroy(pass);
     octstr_destroy(udh);
     octstr_destroy(smsc);
+    octstr_destroy(dlr_url);
     octstr_destroy(account);
     return ret;
 }

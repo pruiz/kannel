@@ -1431,15 +1431,21 @@ static int client_is_persistent(List *headers, int use_version_1_0)
     Octstr *h = http_header_find_first(headers, "Connection");
 
     if (h == NULL) {
-	return !use_version_1_0;
+        return !use_version_1_0;
     } else {
         if (use_version_1_0) {
-	    if (octstr_compare(h, octstr_imm("keep-alive")) == 0)
-	        return 1;
-	    else
-		return 0;
-	} else if (octstr_compare(h, octstr_imm("close")) == 0)
-	    return 0;
+            if (octstr_compare(h, octstr_imm("keep-alive")) == 0) {
+                octstr_destroy(h);
+                return 1;
+            } else {
+                octstr_destroy(h);
+                return 0;
+            }
+	    } else if (octstr_compare(h, octstr_imm("close")) == 0) {
+            octstr_destroy(h);
+            return 0;
+        }
+        octstr_destroy(h);
     }
 
     return 1;
