@@ -626,9 +626,9 @@ int bb_stop_smsc(Octstr *id)
     return smsc2_stop_smsc(id);
 }
 
-int bb_start_smsc(Octstr *id)
+int bb_restart_smsc(Octstr *id)
 {
-    return smsc2_start_smsc(id);
+    return smsc2_restart_smsc(id);
 }
 
 int bb_restart(void)

@@ -171,7 +171,7 @@ static Octstr *httpd_stop_smsc(List *cgivars)
         return octstr_create("SMSC id not given");
 }
 
-static Octstr *httpd_start_smsc(List *cgivars)
+static Octstr *httpd_restart_smsc(List *cgivars)
 {
     Octstr *reply;
     Octstr *smsc;
@@ -181,7 +181,7 @@ static Octstr *httpd_start_smsc(List *cgivars)
     /* check if the smsc id is given */
     smsc = http_cgi_variable(cgivars, "smsc");
     if (smsc) {
-        if (bb_start_smsc(smsc) == -1)
+        if (bb_restart_smsc(smsc) == -1)
             return octstr_format("Could not re-start smsc-id `%s'", octstr_get_cstr(smsc));
         else
             return octstr_format("SMSC `%s' re-started", octstr_get_cstr(smsc));
@@ -265,7 +265,7 @@ static void httpd_serve(HTTPClient *client, Octstr *url, List *headers,
 	reply = httpd_stop_smsc(cgivars);
     } else if (octstr_str_compare(url, "/cgi-bin/start-smsc")==0
 	       || octstr_str_compare(url, "/start-smsc")==0) {
-	reply = httpd_start_smsc(cgivars);
+	reply = httpd_restart_smsc(cgivars);
     /*
      * reconfig? restart?
      */
