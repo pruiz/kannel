@@ -243,7 +243,11 @@ void conn_config_ssl(CfgGroup *grp);
  * SSL enabled outside of the scope of conn.c.
  */
 SSL *conn_get_ssl(Connection *conn);
-  
+
+
+X509 *conn_get_peer_certificate(Connection *conn);
+RSA *tmp_rsa_callback(SSL *ssl, int export, int key_len);
+void openssl_server_locking_function(int mode, int n, const char *file, int line);
 #endif /* HAVE_LIBSSL */
 
 int conn_get_id(Connection *conn);
