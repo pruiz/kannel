@@ -1,3 +1,8 @@
+2000-09-27  Richard Braakman  <dark@wapit.com>
+
+	* gw/wsp.c: Encode all known content types, not just the
+	most common ones.
+
 2000-09-26  Lars Wirzenius  <liw@iki.fi>
 
 	* gw/wap-appl.c: Added Via header to HTTP requests.
