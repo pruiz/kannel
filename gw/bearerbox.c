@@ -35,6 +35,9 @@ Counter *outgoing_sms_counter;
 Counter *incoming_wdp_counter;
 Counter *outgoing_wdp_counter;
 
+/* incoming/outgoing sms queue control */
+long max_incoming_sms_qlength;
+
 
 
 /* this is not a list of items; instead it is used as
@@ -378,6 +381,19 @@ static Cfg *init_bearerbox(Cfg *cfg)
     
     /* http-admin is REQUIRED */
     httpadmin_start(cfg);
+
+    if (cfg_get_integer(&max_incoming_sms_qlength, grp,
+                           octstr_imm("maximum-queue-length")) == -1)
+        max_incoming_sms_qlength = -1;
+    else {
+        warning(0, "Option 'maximum-queue-length' is deprecated! Please use"
+                          " 'sms-incoming-queue-length' instead!");
+    }
+
+    if (max_incoming_sms_qlength == -1 &&
+        cfg_get_integer(&max_incoming_sms_qlength, grp,
+                                  octstr_imm("sms-incoming-queue-length")) == -1)
+        max_incoming_sms_qlength = -1;
 
 #ifndef NO_SMS    
     {

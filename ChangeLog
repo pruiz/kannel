@@ -1,3 +1,27 @@
+2003-10-30  Alexander Malysh  <a.malysh@centrium.de>
+    * gw/bb_boxc.c: applied bb_boxc patch. This patch solve major problems within
+      bearerbox<->smsbox routing:
+	1) When an smsbox passes an MT message bearerbox will send an ACK for it,
+	that is passed to the "global" incoming queue. From this global
+	incoming queue all smsboxes are reading. Hence there is no garantee
+	that ACKs are delivered to the right smsbox.
+	2) smsbox routing doesn't work if bearerbox started after shutdown and 
+	messages were stored in store-file. (see bug #83)
+        3) mantis #80
+	3) shutdown can block for ever if incoming queue is not empty and no smsboxes 
+	will connect to bearerbox. Now we have timeout for this (it's hardcoded to 
+	10sec).
+      This patch split bearerbox incoming queue on per smsbox connection basis and 
+      makes smsbox routing more restrictive.
+      In order to reflect new smsbox connections behavior, new incoming queuing policy
+      was introduced. Incoming queue is now per smsbox connection and only if no appropriate
+      smsbox connection was found (e.g. smsbox routing is set but smsbox is gone), messages
+      will be queued within global incoming queue.
+      And as a bonus, allows clean shutdown on cygwin.
+    * gw/bb_smscconn.c, gw/bearerbox.c, gwlib/cfg.def: new config option
+      'sms-incoming-queue-length' instead of the old 'maximum-queue-length'. Old
+      option still supported but marked as deprecated.
+
 2003-10-30  Stipe Tolj  <tolj@wapme-systems.de>
     * configure[.in]: added Perl compatible regular expression (PCRE) library
       support via --enable-pcre configure option. 
@@ -19,12 +43,12 @@
     * test/test_regex.c: fixed missing deallocation.
 
 2003-10-30  Stipe Tolj  <tolj@wapme-systems.de>
-	* gwlib/regex.[ch]: made regex functions display calling function in case
-	  of error. This is usefully for later debugging purposes. Added functions
-	  gw_regex_[match|subst]_[pre]() for simple matchin and substituion
-	  operations on Octstr. Either passing the RE in plain text or as 
-	  pre-compiled structure.
-	* test/test_regex.c: added wrapper functions testing.
+    * gwlib/regex.[ch]: made regex functions display calling function in case
+      of error. This is usefully for later debugging purposes. Added functions
+      gw_regex_[match|subst]_[pre]() for simple matchin and substituion
+      operations on Octstr. Either passing the RE in plain text or as 
+      pre-compiled structure.
+    * test/test_regex.c: added wrapper functions testing.
 
 2003-10-29  Stipe Tolj  <tolj@wapme-systems.de>
     * configure[.in]: added checking of POSIX.1 regex functions and header

@@ -57,11 +57,9 @@ static Octstr *unified_prefix;
 static Numhash *black_list;
 static Numhash *white_list;
 
-static long maximum_queue_length;
-
 static long router_thread = -1;
 
-void route_incoming_to_boxc(Msg *sms);
+int route_incoming_to_boxc(Msg *sms);
 static int route_incoming_to_smsc(SMSCConn *conn, Msg *msg);
 
 static void log_sms(SMSCConn *conn, Msg *sms, char *message)
@@ -214,31 +212,7 @@ long bb_smscconn_receive(SMSCConn *conn, Msg *sms)
 {
     char *uf;
     int rc;
-
-    /* do some queue control */
-    if (maximum_queue_length != -1 && bb_status == BB_FULL &&
-            list_len(incoming_sms) <= maximum_queue_length) {
-        bb_status = BB_RUNNING;
-        warning(0, "started to accept messages again");
-    }
-
-    if (maximum_queue_length != -1 &&
-            list_len(incoming_sms) > maximum_queue_length) {
-        if (bb_status != BB_FULL)
-            bb_status = BB_FULL;
-        warning(0, "incoming messages queue too long, dropping a message");
-        if (sms->sms.sms_type == report)
-            log_sms(conn, sms, "DROPPED Received DLR");
-        else
-            log_sms(conn, sms, "DROPPED Received SMS");
-	msg_destroy(sms);
-        gwthread_sleep(0.1); /* letting the queue go down */
-     	return SMSCCONN_FAILED_QFULL;
-    }
-
-    /* else if (list_len(incoming_sms) > 100)
-     *	gwthread_sleep(0.5);
-     */
+    Msg *copy;
 
    /*
     * First normalize in smsc level and then on global level.
@@ -274,17 +248,14 @@ long bb_smscconn_receive(SMSCConn *conn, Msg *sms)
     if (store_save(sms) == -1)
 	return SMSCCONN_FAILED_TEMPORARILY;
 
-    if (sms->sms.sms_type != report)
-	log_sms(conn, sms, "Receive SMS");
-    else
-	log_sms(conn, sms, "DLR SMS");
+    copy = msg_duplicate(sms);
 
     /*
      * Try to reroute internally to an smsc-id without leaving
      * actually bearerbox scope.
      * Scope: internal routing (to smsc-ids)
      */
-    if (!(rc = route_incoming_to_smsc(conn, sms))) {
+    if (!(rc = route_incoming_to_smsc(conn, copy))) {
 
         /*
          * Now try to route the message to a specific smsbox
@@ -292,11 +263,36 @@ long bb_smscconn_receive(SMSCConn *conn, Msg *sms)
          * the registered receiver numbers for specific smsbox'es.
          * Scope: external routing (to smsbox connections)
          */
-        route_incoming_to_boxc(sms);
+        if (route_incoming_to_boxc(copy) == -1) {
+            warning(0, "incoming messages queue too long, dropping a message.");
+            if (sms->sms.sms_type == report)
+                log_sms(conn, sms, "DROPPED Received DLR");
+            else
+                log_sms(conn, sms, "DROPPED Received SMS");
+            msg_destroy(copy);
+            /* put nack into store-file */
+            copy = msg_create(ack);
+            copy->ack.id = sms->sms.id;
+            copy->ack.time = sms->sms.time;
+            copy->ack.nack = ack_failed;
+            store_save(copy);
+            msg_destroy(copy);
+
+            msg_destroy(sms);
+            gwthread_sleep(0.1); /* letting the queue go down */
+            return SMSCCONN_FAILED_QFULL;
+        }
     }
+
+    if (sms->sms.sms_type != report)
+	log_sms(conn, sms, "Receive SMS");
+    else
+	log_sms(conn, sms, "DLR SMS");
 
     counter_increase(incoming_sms_counter);
     if (conn != NULL) counter_increase(conn->received);
+
+    msg_destroy(sms);
 
     return 0;
 }
@@ -383,9 +379,6 @@ int smsc2_start(Cfg *cfg)
 
     grp = cfg_get_single_group(cfg, octstr_imm("core"));
     unified_prefix = cfg_get(grp, octstr_imm("unified-prefix"));
-    if (cfg_get_integer(&maximum_queue_length, grp, 
-                           octstr_imm("maximum-queue-length")) == -1)
-        maximum_queue_length = -1;
 
     white_list = black_list = NULL;
     os = cfg_get(grp, octstr_imm("white-list"));

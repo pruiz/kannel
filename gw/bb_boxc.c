@@ -35,6 +35,10 @@ extern List *outgoing_wdp;
 extern List *flow_threads;
 extern List *suspended;
 
+/* incoming/outgoing sms queue control */
+extern long max_incoming_sms_qlength;
+
+
 /* our own thingies */
 
 static volatile sig_atomic_t smsbox_running;
@@ -43,9 +47,9 @@ static List	*wapbox_list = NULL;
 static List	*smsbox_list = NULL;
 
 /* dictionaries for holding the smsbox routing information */
-static Dict *smsbox_by_id = NULL; 
-static Dict *smsbox_by_smsc = NULL; 
-static Dict *smsbox_by_receiver = NULL; 
+static Dict *smsbox_by_id = NULL;
+static Dict *smsbox_by_smsc = NULL;
+static Dict *smsbox_by_receiver = NULL;
 
 static long	smsbox_port;
 static int smsbox_port_ssl = 0;
@@ -57,7 +61,10 @@ static Octstr *box_deny_ip;
 
 
 static long	boxid = 0;
-extern Mutex *boxid_mutex; 
+extern Mutex *boxid_mutex;
+
+/* sms_to_smsboxes thread-id */
+static long sms_dequeue_thread;
 
 
 typedef struct _boxc {
@@ -72,8 +79,14 @@ typedef struct _boxc {
     List       	*outgoing;
     volatile sig_atomic_t alive;
     Octstr *boxc_id; /* identifies the connected smsbox instance */
-    Mutex *boxc_id_mutex; /* stops boxc_sender until smsbox identification*/
+    /* used to mark connection usable or still waiting for ident. msg */
+    volatile int routable;
 } Boxc;
+
+
+/* forward declaration */
+static void sms_to_smsboxes(void *arg);
+static int send_msg(Boxc *boxconn, Msg *pmsg);
 
 
 /*-------------------------------------------------
@@ -88,6 +101,7 @@ static Msg *read_from_box(Boxc *boxconn)
 
     pack = NULL;
     while (bb_status != BB_DEAD && boxconn->alive) {
+            /* XXX: if box doesn't send (just keep conn open) we block here while shutdown */
 	    pack = conn_read_withlen(boxconn->conn);
 	    gw_claim_area(pack);
 	    if (pack != NULL)
@@ -110,7 +124,7 @@ static Msg *read_from_box(Boxc *boxconn)
 	        return NULL;
 	    }
     }
-    
+
     if (pack == NULL)
     	return NULL;
 
@@ -132,14 +146,15 @@ static void deliver_sms_to_queue(Msg *msg, Boxc *conn)
     Msg *mack, *mack_store;
     int rc;
 
-    /* 
+    /*
      * save modifies ID and time, so if the smsbox uses it, save
-     * it FIRST for the reply message!!! 
+     * it FIRST for the reply message!!!
      */
     mack = msg_create(ack);
     gw_assert(mack != NULL);
     mack->ack.id = msg->sms.id;
     mack->ack.time = msg->sms.time;
+
     store_save(msg);
 
     rc = smsc2_rout(msg);
@@ -150,9 +165,9 @@ static void deliver_sms_to_queue(Msg *msg, Boxc *conn)
         case 0:
            mack->ack.nack = ack_buffered;
            break;
-        case -1:
+        case -1: /* no router at all */
            warning(0, "Message rejected by bearerbox, no router!");
-           /* 
+           /*
             * first create nack for store-file, in order to delete
             * message from store-file.
             */
@@ -160,12 +175,9 @@ static void deliver_sms_to_queue(Msg *msg, Boxc *conn)
            gw_assert(mack_store != NULL);
            mack_store->ack.id = msg->sms.id;
            mack_store->ack.time = msg->sms.time;
-           mack_store->ack.nack = ack_failed;
+           mack->ack.nack = mack_store->ack.nack = ack_failed;
            store_save(mack_store);
            msg_destroy(mack_store);
-
-           /* create failed nack */
-           mack->ack.nack = ack_failed;
 
            /* destroy original message */
            msg_destroy(msg);
@@ -173,14 +185,15 @@ static void deliver_sms_to_queue(Msg *msg, Boxc *conn)
     }
 
     /* put ack into incoming queue of conn */
-    list_produce(conn->incoming, mack);
+    send_msg(conn, mack);
+    msg_destroy(mack);
 }
 
 
 static void boxc_receiver(void *arg)
 {
     Boxc *conn = arg;
-    Msg *msg;
+    Msg *msg, *mack;
 
     /* remove messages from socket until it is closed */
     while (bb_status != BB_DEAD && conn->alive) {
@@ -194,15 +207,34 @@ static void boxc_receiver(void *arg)
             break;
         }
 
+        /* we don't accept new messages in shutdown phase */
+        if ((bb_status == BB_SHUTDOWN || bb_status == BB_DEAD) && msg_type(msg) == sms) {
+            mack = msg_create(ack);
+            mack->ack.id = msg->sms.id;
+            mack->ack.time = msg->sms.time;
+            mack->ack.nack = ack_failed_tmp;
+            msg_destroy(msg);
+            send_msg(conn, mack);
+            msg_destroy(mack);
+            continue;
+        }
+
         if (msg_type(msg) == sms && conn->is_wap == 0) {
             debug("bb.boxc", 0, "boxc_receiver: sms received");
 
             /* deliver message to queue */
             deliver_sms_to_queue(msg, conn);
 
+            if (conn->routable == 0) {
+                conn->routable = 1;
+                /* wakeup the dequeue thread */
+                gwthread_wakeup(sms_dequeue_thread);
+            }
         } else if (msg_type(msg) == wdp_datagram  && conn->is_wap) {
             debug("bb.boxc", 0, "boxc_receiver: got wdp from wapbox");
-            
+
+            /* XXX we should block these in SHUTDOWN phase too, but
+               we need ack/nack msgs implemented first. */
             list_produce(conn->outgoing, msg);
 
         } else if (msg_type(msg) == sms  && conn->is_wap) {
@@ -211,6 +243,11 @@ static void boxc_receiver(void *arg)
             /* should be a WAP push message, so tried it the same way */
             deliver_sms_to_queue(msg, conn);
 
+            if (conn->routable == 0) {
+                conn->routable = 1;
+                /* wakeup the dequeue thread */
+                gwthread_wakeup(sms_dequeue_thread);
+            }
         } else {
             if (msg_type(msg) == heartbeat) {
                 if (msg->heartbeat.load != conn->load)
@@ -224,41 +261,40 @@ static void boxc_receiver(void *arg)
             }
             /* if this is an identification message from an smsbox instance */
             else if (msg_type(msg) == admin && msg->admin.command == cmd_identify) {
-                
-                /* 
+
+                /*
                  * any smsbox sends this command even if boxc_id is NULL,
                  * but we will only consider real identified boxes
                  */
                 if (msg->admin.boxc_id != NULL) {
-                    List *newlist;
 
                     /* and add the boxc_id into conn for boxc_status() output */
-                    if (conn->boxc_id == NULL)
-                        conn->boxc_id = octstr_duplicate(msg->admin.boxc_id);
-                    /* 
-                     * re-link the incoming queue for this connection to 
-                     * an own independent queue
-                     */
-                    newlist = list_create();
-                    list_add_producer(newlist);
-                    conn->incoming = newlist;
-                    conn->retry = newlist;
+                    if (conn->boxc_id != NULL) {
+                        dict_remove(smsbox_by_id, msg->admin.boxc_id);
+                        octstr_destroy(conn->boxc_id);
+                    }
 
-                    /* add this identified smsbox to the dictionary */       
-                    dict_put(smsbox_by_id, msg->admin.boxc_id, conn);
+                    conn->boxc_id = msg->admin.boxc_id;
+                    msg->admin.boxc_id = NULL;
+
+                    /* add this identified smsbox to the dictionary */
+                    /* XXX check for equal boxc_id in Dict, otherwise we overwrite it */
+                    dict_put(smsbox_by_id, conn->boxc_id, conn);
                     debug("bb.boxc", 0, "boxc_receiver: got boxc_id <%s> from <%s>",
-                          octstr_get_cstr(msg->admin.boxc_id),
+                          octstr_get_cstr(conn->boxc_id),
                           octstr_get_cstr(conn->client_ip));
                 }
-                debug("bb.boxc", 0, "boxc_receiver: unlocking sender");
-                mutex_unlock(conn->boxc_id_mutex);
+
+                conn->routable = 1;
+                /* wakeup the dequeue thread */
+                gwthread_wakeup(sms_dequeue_thread);
             }
             else
                 warning(0, "boxc_receiver: unknown msg received from <%s>, "
                            "ignored", octstr_get_cstr(conn->client_ip));
             msg_destroy(msg);
         }
-    }    
+    }
 }
 
 
@@ -271,17 +307,24 @@ static int send_msg(Boxc *boxconn, Msg *pmsg)
     Octstr *pack;
 
     pack = msg_pack(pmsg);
+
+    if (pack == NULL)
+        return -1;
+
     if (boxconn->boxc_id != NULL)
         debug("bb.boxc", 0, "send_msg: sending msg to boxc: <%s>",
           octstr_get_cstr(boxconn->boxc_id));
     else
         debug("bb.boxc", 0, "send_msg: sending msg to box: <%s>",
           octstr_get_cstr(boxconn->client_ip));
+
     if (conn_write_withlen(boxconn->conn, pack) == -1) {
     	error(0, "Couldn't write Msg to box <%s>, disconnecting",
 	      octstr_get_cstr(boxconn->client_ip));
-	    return -1;
+        octstr_destroy(pack);
+        return -1;
     }
+
     octstr_destroy(pack);
     return 0;
 }
@@ -294,57 +337,43 @@ static void boxc_sender(void *arg)
 
     list_add_producer(flow_threads);
 
-    /* wait for smsbox identification */
-    if (bb_status != BB_DEAD && conn->alive && conn->is_wap == 0) {
-        mutex_lock(conn->boxc_id_mutex);
-        debug("bb.boxc", 0, "boxc_sender: sender unlocked");
-        mutex_unlock(conn->boxc_id_mutex);
-    }
-
     while (bb_status != BB_DEAD && conn->alive) {
 
-        /* Make sure there's no data left in the outgoing connection before
-         * doing the potentially blocking list_consume()s */
-	    conn_flush(conn->conn);
-
-	    list_consume(suspended);	/* block here if suspended */
-
         /*
-         * XXX This list_comsume() makes us block until *all* producers of 
-         * it have been removed, which is sort of a problem, because this
-         * thread keeps running, until there are no more clients connected.
+         * Make sure there's no data left in the outgoing connection before
+         * doing the potentially blocking list_consume()s
          */
-	    if ((msg = list_consume(conn->incoming)) == NULL) {
+        conn_flush(conn->conn);
 
-	    /* tell sms/wapbox to die */
-	        msg = msg_create(admin);
-	        msg->admin.command = restart ? cmd_restart : cmd_shutdown;
-	        send_msg(conn, msg);
-	        msg_destroy(msg);
-	        break;
-	    }
-	    if (msg_type(msg) == heartbeat) {
-	        debug("bb.boxc", 0, "boxc_sender: catch an heartbeat - we are alive");
-	        msg_destroy(msg);
-	        continue;
-	    }
-	    if (!conn->alive) {
-	    /* we got message here */
-	        list_produce(conn->retry, msg);
-	        break;
-	    }
-        if (send_msg(conn, msg) == -1) {
-	    /* if we fail to send, return msg to the list it came from
-	     * before dying off */
-	        list_produce(conn->retry, msg);
-	       break;
-	    }
-	    msg_destroy(msg);
-	    debug("bb.boxc", 0, "boxc_sender: sent message to <%s>",
-	          octstr_get_cstr(conn->client_ip));
+        list_consume(suspended);	/* block here if suspended */
+
+        if ((msg = list_consume(conn->incoming)) == NULL) {
+            /* tell sms/wapbox to die */
+            msg = msg_create(admin);
+            msg->admin.command = restart ? cmd_restart : cmd_shutdown;
+            send_msg(conn, msg);
+            msg_destroy(msg);
+            break;
+        }
+        if (msg_type(msg) == heartbeat) {
+            debug("bb.boxc", 0, "boxc_sender: catch an heartbeat - we are alive");
+            msg_destroy(msg);
+            continue;
+        }
+        if (!conn->alive || send_msg(conn, msg) == -1) {
+            /* we got message here */
+            list_produce(conn->retry, msg);
+            break;
+        }
+        msg_destroy(msg);
+        debug("bb.boxc", 0, "boxc_sender: sent message to <%s>",
+               octstr_get_cstr(conn->client_ip));
     }
     /* the client closes the connection, after that die in receiver */
     /* conn->alive = 0; */
+
+    /* set conn to unroutable */
+    conn->routable = 0;
 
     list_remove_producer(flow_threads);
 }
@@ -357,37 +386,35 @@ static void boxc_sender(void *arg)
 static Boxc *boxc_create(int fd, Octstr *ip, int ssl)
 {
     Boxc *boxc;
-    
+
     boxc = gw_malloc(sizeof(Boxc));
     boxc->is_wap = 0;
     boxc->load = 0;
     boxc->conn = conn_wrap_fd(fd, ssl);
-    mutex_lock(boxid_mutex); 
+    mutex_lock(boxid_mutex);
     boxc->id = boxid++;
     mutex_unlock(boxid_mutex);
     boxc->client_ip = ip;
     boxc->alive = 1;
     boxc->connect_time = time(NULL);
-    boxc->boxc_id_mutex = mutex_create();
-    mutex_lock(boxc->boxc_id_mutex);
     boxc->boxc_id = NULL;
+    boxc->routable = 0;
     return boxc;
-}    
+}
 
 static void boxc_destroy(Boxc *boxc)
 {
     if (boxc == NULL)
 	    return;
-    
+
     /* do nothing to the lists, as they are only references */
 
     if (boxc->conn)
 	    conn_destroy(boxc->conn);
     octstr_destroy(boxc->client_ip);
     octstr_destroy(boxc->boxc_id);
-    mutex_destroy(boxc->boxc_id_mutex);
     gw_free(boxc);
-}    
+}
 
 
 
@@ -416,7 +443,7 @@ static Boxc *accept_boxc(int fd, int ssl)
         return NULL;
     }
     newconn = boxc_create(newfd, ip, ssl);
-    
+
     /*
      * check if the SSL handshake was successfull, otherwise
      * this is no valid box connection any more
@@ -430,7 +457,7 @@ static Boxc *accept_boxc(int fd, int ssl)
         info(0, "Client connected from <%s> using SSL", octstr_get_cstr(ip));
     else
         info(0, "Client connected from <%s>", octstr_get_cstr(ip));
-        
+
 
     /* XXX TODO: do the hand-shake, baby, yeah-yeah! */
 
@@ -444,7 +471,8 @@ static void run_smsbox(void *arg)
     int fd;
     Boxc *newconn;
     long sender;
-    
+    Msg *msg;
+
     list_add_producer(flow_threads);
     fd = (int)arg;
     newconn = accept_boxc(fd, smsbox_port_ssl);
@@ -452,11 +480,10 @@ static void run_smsbox(void *arg)
 	    list_remove_producer(flow_threads);
 	    return;
     }
-    newconn->incoming = incoming_sms;
+    newconn->incoming = list_create();
+    list_add_producer(newconn->incoming);
     newconn->retry = incoming_sms;
     newconn->outgoing = outgoing_sms;
-    
-    list_append(smsbox_list, newconn);
 
     sender = gwthread_create(boxc_sender, newconn);
     if (sender == -1) {
@@ -464,25 +491,49 @@ static void run_smsbox(void *arg)
 	          octstr_get_cstr(newconn->client_ip));
 	    goto cleanup;
     }
+    /*
+     * We register newconn in the smsbox_list here but mark newconn as routable
+     * after identification or first message received from smsbox. So we can avoid
+     * a race condition for routable smsboxes (otherwise between startup and
+     * registration we will forward some messages to smsbox).
+     */
+    list_lock(smsbox_list);
+    list_append(smsbox_list, newconn);
+    list_unlock(smsbox_list);
+
     list_add_producer(newconn->outgoing);
     boxc_receiver(newconn);
     list_remove_producer(newconn->outgoing);
 
-    /* remove producer only if that not a global incoming list */
-    if (incoming_sms != newconn->incoming)
-        list_remove_producer(newconn->incoming);
-    gwthread_join(sender);
-
-cleanup:    
+    /* remove us from smsbox routing list */
+    list_lock(smsbox_list);
+    list_delete_equal(smsbox_list, newconn);
     if (newconn->boxc_id) {
         dict_remove(smsbox_by_id, newconn->boxc_id);
-        while (list_producer_count(newconn->incoming) > 0)
-            list_remove_producer(newconn->incoming);
-        gw_assert(list_len(newconn->incoming) == 0);
-        list_destroy(newconn->incoming, NULL);
     }
-    list_delete_equal(smsbox_list, newconn);
+    list_unlock(smsbox_list);
+
+    /*
+     * check if we in the shutdown phase and sms dequeueing thread
+     *   has removed the producer already
+     */
+    if (list_producer_count(newconn->incoming) > 0)
+        list_remove_producer(newconn->incoming);
+
+    gwthread_join(sender);
+
+    /* clear our send queue */
+    while((msg = list_extract_first(newconn->incoming)) != NULL) {
+        list_produce(incoming_sms, msg);
+    }
+
+cleanup:
+    gw_assert(list_len(newconn->incoming) == 0);
+    list_destroy(newconn->incoming, NULL);
     boxc_destroy(newconn);
+
+    /* wakeup the dequeueing thread */
+    gwthread_wakeup(sms_dequeue_thread);
 
     list_remove_producer(flow_threads);
 }
@@ -709,39 +760,37 @@ static void wdp_to_wapboxes(void *arg)
 }
 
 
-
-
-
-
 static void wait_for_connections(int fd, void (*function) (void *arg), 
     	    	    	    	 List *waited)
 {
-    fd_set rf;
-    struct timeval tv;
     int ret;
+    int timeout = 10; /* 10 sec. */
+
+    gw_assert(function != NULL);
     
     while(bb_status != BB_DEAD) {
 
-	/* XXX: if we are being shutdowned, as long as there is
+	/* if we are being shutdowned, as long as there is
 	 * messages in incoming list allow new connections, but when
-	 * list is empty, exit
+	 * list is empty, exit.
+         * Note: We have timeout (defined above) for which we allow new connections.
+         *           Otherwise we wait here for ever!
 	 */
 	    if (bb_status == BB_SHUTDOWN) {
 	        ret = list_wait_until_nonempty(waited);
-	        if (ret == -1) break;
+	        if (ret == -1 || !timeout)
+                    break;
+                else
+                    timeout--;
 	    }
 
-	    FD_ZERO(&rf);
-	    tv.tv_sec = 1;
-	    tv.tv_usec = 0;
-	
-	    if (bb_status != BB_SUSPENDED)
-	        FD_SET(fd, &rf);
+            /* block here if suspended */
+            list_consume(suspended);
 
-	    ret = select(FD_SETSIZE, &rf, NULL, NULL, &tv);
+            ret = gwthread_pollfd(fd, POLLIN, 1.0);
 	    if (ret > 0) {
 	        gwthread_create(function, (void *)fd);
-	        sleep(1);
+	        gwthread_sleep(1.0);
 	    } else if (ret < 0) {
 	        if(errno==EINTR) continue;
 	        if(errno==EAGAIN) continue;
@@ -776,6 +825,8 @@ static void smsboxc_run(void *arg)
 
     wait_for_connections(fd, run_smsbox, incoming_sms);
 
+    list_remove_producer(smsbox_list);
+
     /* continue avalanche */
     list_remove_producer(outgoing_sms);
 
@@ -783,12 +834,14 @@ static void smsboxc_run(void *arg)
      * is completely over
      */
 
-    /* XXX KLUDGE fix when list_wait_until_empty() exists */
-    while(list_wait_until_nonempty(smsbox_list)!= -1)
-	    sleep(1);
+    while(list_wait_until_nonempty(smsbox_list) == 1)
+        gwthread_sleep(1.0);
 
     /* close listen socket */
     close(fd);
+
+    gwthread_wakeup(sms_dequeue_thread);
+    gwthread_join(sms_dequeue_thread);
 
     list_destroy(smsbox_list, NULL);
     smsbox_list = NULL;
@@ -830,9 +883,8 @@ static void wapboxc_run(void *arg)
     /* wait for all connections to die and then remove list
      */
     
-    /* XXX KLUDGE fix when list_wait_until_empty() exists */
-    while(list_wait_until_nonempty(wapbox_list)== 1)
-	      sleep(1);
+    while(list_wait_until_nonempty(wapbox_list) == 1)
+        gwthread_sleep(1.0);
 
     /* wait for wdp_to_wapboxes to exit */
     while(list_consume(wapbox_list)!=NULL)
@@ -892,8 +944,9 @@ static void init_smsbox_routes(Cfg *cfg)
                 dict_put(smsbox_by_smsc, item, boxc_id);
             }
             list_destroy(items, octstr_destroy_item);
+            octstr_destroy(smsc_ids);
         }
-        
+
         if (shortcuts) {
             items = octstr_split(shortcuts, octstr_imm(";"));
             for (i = 0; i < list_len(items); i++) {
@@ -906,8 +959,11 @@ static void init_smsbox_routes(Cfg *cfg)
                 dict_put(smsbox_by_receiver, item, boxc_id);
             }
             list_destroy(items, octstr_destroy_item);
+            octstr_destroy(shortcuts);
         }
-    }       
+    }
+
+    list_destroy(list, NULL);
 }
 
 
@@ -948,9 +1004,13 @@ int smsbox_start(Cfg *cfg)
     init_smsbox_routes(cfg);
 
     list_add_producer(outgoing_sms);
+    list_add_producer(smsbox_list);
 
     smsbox_running = 1;
     
+    if ((sms_dequeue_thread = gwthread_create(sms_to_smsboxes, NULL)) == -1)
+ 	    panic(0, "Failed to start a new thread for smsbox routing");
+
     if (gwthread_create(smsboxc_run, (void *)smsbox_port) == -1)
 	    panic(0, "Failed to start a new thread for smsbox connections");
 
@@ -1085,7 +1145,7 @@ Octstr *boxc_status(int status_type)
 	       list_unlock(wapbox_list);
         }
         if (smsbox_list) {
-	        list_lock(smsbox_list);
+            list_lock(smsbox_list);
 	    for(i=0; i < list_len(smsbox_list); i++) {
 	        bi = list_get(smsbox_list, i);
 	        if (bi->alive == 0)
@@ -1094,10 +1154,12 @@ Octstr *boxc_status(int status_type)
             if (status_type == BBSTATUS_XML)
 	            octstr_format_append(tmp, "<box>\n\t\t<type>smsbox</type>\n"
                     "\t\t<id>%s</id>\n\t\t<IP>%s</IP>\n"
+                    "\t\t<queue>%ld</queue>\n"
                     "\t\t<status>on-line %ldd %ldh %ldm %lds</status>\n"
                     "\t\t<ssl>%s</ssl>\n\t</box>",
                     (bi->boxc_id ? octstr_get_cstr(bi->boxc_id) : ""),
 		            octstr_get_cstr(bi->client_ip),
+		            list_len(bi->incoming),
 		            t/3600/24, t/3600%24, t/60%60, t%60,
 #ifdef HAVE_LIBSSL
                     conn_get_ssl(bi->conn) != NULL ? "yes" : "no"
@@ -1106,9 +1168,9 @@ Octstr *boxc_status(int status_type)
 #endif
                     );
             else
-                octstr_format_append(tmp, "%ssmsbox:%s, IP %s (on-line %ldd %ldh %ldm %lds) %s %s",
+                octstr_format_append(tmp, "%ssmsbox:%s, IP %s (%ld queued), (on-line %ldd %ldh %ldm %lds) %s %s",
                     ws, (bi->boxc_id ? octstr_get_cstr(bi->boxc_id) : "(none)"), 
-                    octstr_get_cstr(bi->client_ip),
+                    octstr_get_cstr(bi->client_ip), list_len(bi->incoming),
 		            t/3600/24, t/3600%24, t/60%60, t%60, 
 #ifdef HAVE_LIBSSL
                     conn_get_ssl(bi->conn) != NULL ? "using SSL" : "",
@@ -1169,10 +1231,12 @@ void boxc_cleanup(void)
  * optimized, because every single MO message passes this function and we 
  * have to ensure that no unncessary overhead is done.
  */
-void route_incoming_to_boxc(Msg *msg)
+int route_incoming_to_boxc(Msg *msg)
 {
-    Boxc *bc = NULL;
+    Boxc *bc = NULL, *best = NULL;
     Octstr *s, *r;
+    long len, b, i;
+    int full_found = 0;
 
     s = r = NULL;
     gw_assert(msg_type(msg) == sms);
@@ -1183,37 +1247,176 @@ void route_incoming_to_boxc(Msg *msg)
      * We have a specific route to pass this msg to smsbox-id 
      * Lookup the connection in the dictionary.
      */
+    list_lock(smsbox_list);
+    if (list_len(smsbox_list) == 0) {
+        list_unlock(smsbox_list);
+    	warning(0, "smsbox_list empty!");
+        if (max_incoming_sms_qlength < 0 || max_incoming_sms_qlength > list_len(incoming_sms)) {
+            list_produce(incoming_sms, msg);
+	    return 0;
+         }
+         else
+             return -1;
+    }
+
     if (msg->sms.boxc_id != NULL) {
         
         bc = dict_get(smsbox_by_id, msg->sms.boxc_id);
-        if (bc == 0) {
-            /* 
-             * something is wrong, this was the smsbox connection we used 
+        if (bc == NULL) {
+            /*
+             * something is wrong, this was the smsbox connection we used
              * for sending, so it seems this smsbox is gone
              */
-            error(0,"Could not route message to smsbox id <%s>, smsbox is gone!",
+            warning(0,"Could not route message to smsbox id <%s>, smsbox is gone!",
                   octstr_get_cstr(msg->sms.boxc_id));
-        } 
+        }
     }
-
-    /*
-     * Check if we have a "smsbox-route" for this msg.
-     * Where the shortcut route has a higher priority then the smsc-id rule.
-     */
-    if (bc == NULL) {
+    else {
+        /*
+         * Check if we have a "smsbox-route" for this msg.
+         * Where the shortcut route has a higher priority then the smsc-id rule.
+         */
         s = (msg->sms.smsc_id ? dict_get(smsbox_by_smsc, msg->sms.smsc_id) : NULL);
         r = (msg->sms.receiver ? dict_get(smsbox_by_receiver, msg->sms.receiver) : NULL);
         bc = r ? dict_get(smsbox_by_id, r) : (s ? dict_get(smsbox_by_id, s) : NULL);
     }
 
-    /* 
+    /* check if we found our routing */
+    if (bc != NULL) {
+        if (max_incoming_sms_qlength < 0 || max_incoming_sms_qlength > list_len(bc->incoming)) {
+            list_produce(bc->incoming, msg);
+            list_unlock(smsbox_list);
+            return 1; /* we are done */
+        }
+        else {
+            list_unlock(smsbox_list);
+            return -1;
+        }
+    }
+    else if (s != NULL || r != NULL || msg->sms.boxc_id != NULL) {
+        list_unlock(smsbox_list);
+        /*
+         * we have routing defined, but no smsbox connected at the moment.
+         * put msg into global incoming queue and wait until smsbox with
+         * such boxc_id connected.
+         */
+        if (max_incoming_sms_qlength < 0 || max_incoming_sms_qlength > list_len(incoming_sms)) {
+            list_produce(incoming_sms, msg);
+            return 0;
+        }
+        else
+            return -1;
+    }
+
+    /*
      * ok, none of the routing things applied previously, so route it to
-     * a random smsbox via the shared incoming_sms queue, otherwise to the
-     * smsc specific incoming queue
+     * a random smsbox.
      */
-    if (bc == NULL)
-        list_produce(incoming_sms, msg);
-    else
-        list_produce(bc->incoming, msg);
+
+    /* take random smsbox from list, and then check all smsboxes
+     * and select the one with lowest load level - if tied, the first
+     * one
+     */
+    len = list_len(smsbox_list);
+    b = gw_rand() % len;
+
+    for(i = 0; i < list_len(smsbox_list); i++) {
+	bc = list_get(smsbox_list, (i+b) % len);
+
+        if (bc->boxc_id != NULL || bc->routable == 0)
+            bc = NULL;
+
+        if (bc != NULL && max_incoming_sms_qlength > 0 &&
+            list_len(bc->incoming) > max_incoming_sms_qlength) {
+            full_found = 1;
+            bc = NULL;
+        }
+
+        if ((bc != NULL && best != NULL && bc->load < best->load) ||
+             (bc != NULL && best == NULL)) {
+	    best = bc;
+        }
+    }
+
+    if (best != NULL) {
+        best->load++;
+        list_produce(best->incoming, msg);
+    }
+
+    list_unlock(smsbox_list);
+
+    if (best == NULL && full_found == 0) {
+	warning(0, "smsbox_list empty!");
+        if (max_incoming_sms_qlength < 0 || max_incoming_sms_qlength > list_len(incoming_sms)) {
+            list_produce(incoming_sms, msg);
+	    return 0;
+         }
+         else
+             return -1;
+    }
+    else if (best == NULL && full_found == 1)
+        return -1;
+
+    return 1;
 }
 
+static void sms_to_smsboxes(void *arg)
+{
+    Msg *newmsg, *startmsg, *msg;
+    long i, len;
+    int ret = -1;
+    Boxc *boxc;
+
+    list_add_producer(flow_threads);
+
+    newmsg = startmsg = msg = NULL;
+
+    while(bb_status != BB_DEAD) {
+
+        if (newmsg == startmsg) {
+            /* check if we are in shutdown phase */
+            if (list_producer_count(smsbox_list) == 0)
+                break;
+
+            if (ret == 0 || ret == -1) {
+                /* debug("", 0, "time to sleep"); */
+                gwthread_sleep(60.0);
+                /* debug("", 0, "wake up list len %ld", list_len(incoming_sms)); */
+                /* shutdown ? */
+                if (list_producer_count(smsbox_list) == 0 && list_len(smsbox_list) == 0)
+                    break;
+            }
+            startmsg = msg = list_consume(incoming_sms);
+            /* debug("", 0, "list_consume done 1"); */
+            newmsg = NULL;
+        }
+        else {
+            newmsg = msg = list_consume(incoming_sms);
+        }
+
+        if (msg == NULL)
+            break;
+
+        gw_assert(msg_type(msg) == sms);
+
+        /* debug("bb.sms", 0, "sms_boxc_router: handling message (%p vs %p)",
+	          msg, startmsg); */
+
+        ret = route_incoming_to_boxc(msg);
+        if (ret == 1)
+            startmsg = newmsg = NULL;
+        else if (ret == -1) {
+            list_produce(incoming_sms, msg);
+        }
+    }
+
+    list_lock(smsbox_list);
+    len = list_len(smsbox_list);
+    for (i=0; i < len; i++) {
+        boxc = list_get(smsbox_list, i);
+        list_remove_producer(boxc->incoming);
+    }
+    list_unlock(smsbox_list);
+
+    list_remove_producer(flow_threads);
+}
