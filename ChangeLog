@@ -1,3 +1,9 @@
+2004-03-10  Alexander Malysh  <a.malysh@centrium.de>
+    * gw/bb_alog.c: fixed bug introduced by last change that "%s" was not
+      passed to alog(...) call. Thanks to "Robert Galach" <kanelek@tenbit.pl>
+      for catching it.
+      Msg-Id: <004d01c4068d$d6058d60$320da8c0@tenbit.com>.
+
 2004-03-09  Alexander Malysh  <a.malysh@centrium.de>
     * gw/urltrans.c: applied patch from "Angel Fradejas" <afradejas@mediafusion.es>
       that fixes the bug #117.

@@ -375,7 +375,7 @@ void bb_alog_sms(SMSCConn *conn, Msg *sms, char *message)
         octstr_destroy(udh);
     } else {
         text = get_pattern(conn, sms, message);
-        alog(octstr_get_cstr(text));
+        alog("%s", octstr_get_cstr(text));
     }
 
     octstr_destroy(text);
