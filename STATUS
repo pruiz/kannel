@@ -1,5 +1,5 @@
 KANNEL 1.x STATUS: 
-  Last modified at [$Id: STATUS,v 1.28 2002-08-20 08:41:13 stolj Exp $]
+  Last modified at [$Id: STATUS,v 1.29 2002-09-04 08:58:50 syvanen Exp $]
 
 Release:
 
@@ -52,7 +52,7 @@ RELEASE NON-SHOWSTOPPERS BUT WOULD BE REAL NICE TO WRAP THESE UP:
     * add check for empty messages in check_sendsms
     Posted by: Aarno =?iso-8859-1?Q?Syv=E4nen?= <aarno@wiral.com>
     Message-ID: <3C848209.FAE8FCB7@wiral.com>
-    Status: Aarno will add it
+    Status: Done
 
     * XML-RPC support for sendsms and sendota HTTP interface
     Posted by: Stipe Tolj <tolj@wapme-systems.de>
