@@ -349,7 +349,7 @@ int main(int argc, char **argv) {
 #endif
      
     if (http_open_port(port, ssl) == -1)
-	panic(0, "http_open_server failed");
+        panic(0, "http_open_server failed");
 
     /*
      * Do the real work in a separate thread so that the main
@@ -359,6 +359,8 @@ int main(int argc, char **argv) {
         threads[i] = gwthread_create(client_thread, file_contents);
     for (i = 0; i < use_threads; ++i)
         gwthread_join(threads[i]);
+
+    octstr_destroy(reply_text);
 
     debug("test.http", 0, "Program exiting normally.");
     gwlib_shutdown();
