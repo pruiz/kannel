@@ -1,3 +1,8 @@
+2000-12-19  Kalle Marjola  <rpr@wapit.com>
+
+	* gw/smsc_emi.c: fixed that NULL pointer is not tried to be
+	printed
+
 2000-12-18  Kalle Marjola  <rpr@wapit.com>
 
 	* gw/bb_smscconn_cb.*, gw/smscconn*, gw/smsc_wrapper.c: updated,
