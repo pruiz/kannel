@@ -365,7 +365,10 @@ Connection *conn_open_ssl(Octstr *host, int port, Octstr *certkeyfile,
     int connected = 0;
     time_t timeout;
 
-    ret = conn_open_tcp(host, port, our_host);
+    /* open the TCP connection */
+    if (!(ret = conn_open_tcp(host, port, our_host))) {
+        return NULL;
+    }
 
     ret->ssl = SSL_new(global_ssl_context);
     ret->ssl_mutex = mutex_create();
@@ -378,7 +381,7 @@ Connection *conn_open_ssl(Octstr *host, int port, Octstr *certkeyfile,
                                 SSL_FILETYPE_PEM);
         if (SSL_check_private_key(ret->ssl) != 1) {
             error(0, "conn_open_ssl: private key isn't consistent with the "
-		  "certificate from file %s (or failed reading the file)",
+                     "certificate from file %s (or failed reading the file)",
                   octstr_get_cstr(certkeyfile));
             goto error;
         }
@@ -444,10 +447,10 @@ Connection *conn_open_ssl(Octstr *host, int port, Octstr *certkeyfile,
         goto error;
     }
     
-    return(ret);
+    return ret;
 error:
     conn_destroy(ret);
-    return(NULL);
+    return NULL;
 }
 
 #endif /* HAVE_LIBSSL */
