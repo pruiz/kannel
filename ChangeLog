@@ -1,3 +1,7 @@
+2003-11-12  Alexander Malysh  <a.malysh@centrium.de>
+    * gwlib/protected.c: do not double check errors from reentrant gethostbyname
+      functions. This breaks resolution of the hostname for old glibc (e.g. Redhat 7.2).
+
 2003-11-11  Stipe Tolj  <tolj@wapme-systems.de>
     * gwlib/conn.c: enable non-blocking mode for SSL connections via read/write
       BIO and partial writing and buffer moving in ssl context. this is needed if 
