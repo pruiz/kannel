@@ -2303,3 +2303,94 @@ int octstr_is_all_hex(Octstr *os)
     return 1;
 }
 
+/*
+ * function octstr_convert_to_html_entities()
+ *      make data HTML safe by converting appropriate characters to HTML entities
+ * Input: data to be inserted in HTML
+ **/
+void octstr_convert_to_html_entities(Octstr* input)
+{
+    int i;
+
+    for (i = 0; i < octstr_len(input); ++i) {
+        switch (octstr_get_char(input, i)) {
+#define ENTITY(a,b) \
+    case a: \
+    octstr_delete(input, i, 1); \
+    octstr_insert(input, octstr_imm("&" b ";"), i); \
+    i += sizeof(b); break;
+#include "gwlib/html-entities.def"
+#undef ENTITY
+        }
+    }
+}
+
+/*
+ * This function is meant to find html entities in an octstr.
+ * The html-entities.def file must be sorted alphabetically for
+ * this function to work (according to current Locale in use).
+*/
+static int octstr_find_entity(Octstr* input, int startfind, int endfind)
+{
+#define ENTITY(a,b) { a, b },
+    struct entity_struct {
+        int entity;
+        char *entity_str;
+    };
+    const struct entity_struct entities[] = {
+#include "html-entities.def"
+        { -1, "" } /* pivot */
+    };
+#undef ENTITY
+    int center;         /* position in table that we are about to compare */
+    int matchresult;    /* result of match agains found entity name. indicates less, equal or greater */
+
+    if (endfind == 0) {
+        /* when calling this function we do not (nor even want to) know the
+         * sizeof(entities). Hence this check. */
+        endfind = (sizeof(entities) / sizeof(struct entity_struct)) - 1;
+    }
+    center = startfind + ((endfind - startfind) / 2);
+    matchresult = octstr_str_compare(input, entities[center].entity_str);
+    if (matchresult == 0) {
+        return entities[center].entity;
+    }
+    if (endfind - startfind <= 1) {
+        /* we are at the end of our results */
+        return -1;
+    }
+    if  (matchresult < 0) {
+        /* keep searching in first part of the table */
+        return octstr_find_entity(input, startfind, center);
+    } else {
+        /* keep searching in last part of the table */
+        return octstr_find_entity(input, center, endfind);
+    }
+}
+
+/*
+ * function octstr_convert_from_html_entities()
+ *   convert HTML safe data back to binary data by replacing HTML entities with their
+ *   respective character values
+ * Input: data to be inserted in HTML
+ **/
+void octstr_convert_from_html_entities(Octstr* input)
+{
+    int startpos = 0, endpos;
+    int entity;
+    Octstr *match;
+
+    while ((startpos = octstr_search_char(input, '&', startpos)) != -1) {
+        endpos = octstr_search_char(input, ';', startpos + 1);
+        if (endpos >= 0) {
+            match = octstr_copy(input, startpos + 1, endpos - startpos - 1);
+            entity = octstr_find_entity(match, 0, 0);
+            if (entity >= 0) {
+                octstr_delete(input, startpos, endpos - startpos + 1);
+                octstr_insert_char(input, startpos, entity);
+            }
+            octstr_destroy(match);
+        }
+        startpos++;
+    }
+}

@@ -123,5 +123,10 @@ int gw_isxdigit(int);
  */
 int roundup_div(int a, int b);
 
+/*
+ * generate a unique id 
+ * (not guarenteed to be unique, but it's extremly unlikely for it not to be)
+ */
+unsigned long long gw_generate_id();
 
 #endif

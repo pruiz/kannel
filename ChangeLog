@@ -1,3 +1,13 @@
+2003-07-20  Oded Arbel  <odeda@m-wise.com>
+    * gwlib/charset.c: fixed return value as per Bruno's suggestion
+    * gwlib/date.{c,h}: added ISO-8601 date functions used by SOAP driver
+    * gwlib/http.h: added "bad method" HTTP status code
+    * gwlib/octstr.{c,h}, gwlib/html-entities.def: added HTML entities 
+      conversion functions
+    * gwlib/utils.{c,h}: added 64 bit random generator used by SOAP driver
+    * gw/smsc/soap.c: changed error codes to use HTTP status enum
+      removed stubs for commited gwlib functions
+
 2003-07-19  Bruno Rodrigues  <bruno.rodrigues@litux.org>
     * gwlib/octstr.{c,h}: added octstr_search_chars similar to its singular 
       cousin, but enabling to do 'error if o_s_c(string, "/\n\r\0")'

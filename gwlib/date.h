@@ -45,7 +45,22 @@ Octstr *date_format_http(unsigned long unixtime);
  */
 long date_parse_http(Octstr *date);
 
+/*
+ * attempt to read an ISO-8601 format or similar, making no assumptions on 
+ * seperators and number of elements, adding 0 or 1 to missing fields
+ * For example, acceptable formats :
+ *  2002-05-15 13:23:44
+ *  02/05/15:13:23
+ * support of 2 digit years is done by assuming years 70 an over are 20th century. this will
+ * have to be revised sometime in the next 50 or so years
+ */
+int date_parse_iso(struct universaltime *ut, Octstr *os);
 
+/*
+ * create an ISO-8601 formated time stamp
+ */
+Octstr* date_create_iso(time_t unixtime);
+ 
 /*
  * Return the current date and time as a unix time value.
  */

@@ -636,5 +636,17 @@ void octstr_delete_matching(Octstr *haystack, Octstr *needle);
  */
 int octstr_is_all_hex(Octstr *os);                                                    
                                                     
+/*
+ * make data HTML safe by converting appropriate characters to HTML entities.
+ * conversion is done in place
+ */
+void octstr_convert_to_html_entities(Octstr* input);
+
+/*
+ * convert HTML safe data back to binary data by replacing HTML entities with their
+ * respective character values.
+ * conversion is done in place
+ */
+void octstr_convert_from_html_entities(Octstr* input);
 
 #endif

@@ -63,6 +63,7 @@
 #include <limits.h>
 
 #include "gwlib/gwlib.h"
+#include "gwlib/http.h"
 #include "smscconn.h"
 #include "smscconn_p.h"
 #include "bb_smscconn_cb.h"
@@ -92,15 +93,14 @@
 #define SOAP_ERROR_NO_DATA_MESSAGE			"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<Error>No data recieved</Error>"
 #define SOAP_ERROR_MALFORMED_DATA_MESSAGE	        "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<Error>Malformed data recieved</Error>"
 
-/* error codes for HTTP queries */
-/* XXX use the defines from gwlib/http.h here?! */
-#define SOAP_ERROR_NO_DLR_CODE				405
-#define SOAP_DEFAULT_CODE				404
-#define SOAP_ERROR_DLR_CODE				500
-#define SOAP_ERROR_MO_CODE				500
-#define SOAP_ERROR_NO_DATA_CODE				501
-#define SOAP_ERROR_MALFORMED_DATA_CODE	                502
-#define SOAP_QUERY_OK					200
+/* map HTTP status codes to SOAP HTTP reply codes */
+#define SOAP_ERROR_NO_DLR_CODE				HTTP_BAD_METHOD
+#define SOAP_DEFAULT_CODE				HTTP_NOT_FOUND
+#define SOAP_ERROR_DLR_CODE				HTTP_INTERNAL_SERVER_ERROR
+#define SOAP_ERROR_MO_CODE				HTTP_INTERNAL_SERVER_ERROR
+#define SOAP_ERROR_NO_DATA_CODE				HTTP_NOT_IMPLEMENTED
+#define SOAP_ERROR_MALFORMED_DATA_CODE	                HTTP_BAD_GATEWAY
+#define SOAP_QUERY_OK					HTTP_OK
 
 /* compile time configuration defines */
 #undef HUMAN_TIME
@@ -284,23 +284,6 @@ Octstr* soap_o2o_dlrmask_success_01_attribute(Msg* msg);
 /* searching 'key' in 'where' and return index of element or -1 */
 int soap_get_index(List* where, Octstr* key, int map_index);
 
-
-/* XXX DAVI: undefined functions. Stipe, would you please commit them ? */
-static int64 gw_generate_id() { 
-    panic(0, "gw_generate_id not implemented yet");
-    return 0;
-}
-static int date_parse_iso(struct universaltime *tm, Octstr *temp) { 
-    panic(0, "date_parse_iso not implemented yet");
-    return 0;
-}
-static Octstr *date_create_iso(long time) {
-    panic(0, "date_create_iso not implemented yet");
-    return NULL;
-}
-void octstr_convert_to_html_entities(Octstr *data) {
-    panic(0, "octstr_convert_to_html not implemented yet");
-}
 
 /**************************************************************************************
  * Implementation

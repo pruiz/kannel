@@ -96,6 +96,7 @@ enum {
     HTTP_UNAUTHORIZED              = 401,
     HTTP_FORBIDDEN                 = 403,
     HTTP_NOT_FOUND                 = 404,
+    HTTP_BAD_METHOD                = 405,
     HTTP_NOT_ACCEPTABLE            = 406,
     HTTP_REQUEST_ENTITY_TOO_LARGE  = 413,
     HTTP_UNSUPPORTED_MEDIA_TYPE    = 415,
