@@ -15,7 +15,7 @@ MSG(heartbeat,
 		INTEGER(load);
 	})
 
-MSG(smart_sms,
+MSG(sms,
 	{
 		OCTSTR(sender);
 		OCTSTR(receiver);

@@ -249,7 +249,7 @@ int at_submit_msg(SMSCenter *smsc, Msg *msg) {
 	if((strcmp(smsc->at_modemtype, WAVECOM) == 0) || (strcmp(smsc->at_modemtype, SIEMENS) == 0))
 		strcpy(sc, "00");
 	
-	if(msg_type(msg)==smart_sms) {
+	if(msg_type(msg)==sms) {
 		pdu_encode(msg, &pdu[0]);
 		
 		sprintf(command, "AT+CMGS=%d", strlen(pdu)/2);
@@ -582,18 +582,18 @@ static Msg *pdu_decode_deliver_sm(Octstr *data) {
 	}
 
 	/* build the message */		
-	message = msg_create(smart_sms);
-	message->smart_sms.sender = origin;
+	message = msg_create(sms);
+	message->sms.sender = origin;
 	/* Put a dummy address in the receiver for now (SMSC requires one) */
-	message->smart_sms.receiver = octstr_create_from_data("1234", 4);
-	/*message->smart_sms.receiver = destination;*/
+	message->sms.receiver = octstr_create_from_data("1234", 4);
+	/*message->sms.receiver = destination;*/
 	if (udhi) {
-		message->smart_sms.flag_udh = 1;
-		message->smart_sms.udhdata = udh;
+		message->sms.flag_udh = 1;
+		message->sms.udhdata = udh;
 	}
-	message->smart_sms.flag_8bit = eightbit;
-	message->smart_sms.msgdata = text;
-	message->smart_sms.time = (int)stime;
+	message->sms.flag_8bit = eightbit;
+	message->sms.msgdata = text;
+	message->sms.time = (int)stime;
 
 	/* cleanup */
 	octstr_destroy(pdu);
@@ -614,7 +614,7 @@ static int pdu_encode(Msg *msg, unsigned char *pdu) {
 	 * Each octet is coded with two characters. */
 	
 	/* message type SUBMIT */
-	pdu[pos] = (msg->smart_sms.flag_udh != 0) ? numtext(4) : numtext(0);
+	pdu[pos] = (msg->sms.flag_udh != 0) ? numtext(4) : numtext(0);
 	pos++;
 	pdu[pos] = numtext(AT_SUBMIT_SM);
 	pos++;
@@ -628,9 +628,9 @@ static int pdu_encode(Msg *msg, unsigned char *pdu) {
 	/* destination address
 	 * The numbering type needs to be fixed so
 	 * we use international for now */
-	pdu[pos] = numtext((octstr_len(msg->smart_sms.receiver) & 240) >> 4);
+	pdu[pos] = numtext((octstr_len(msg->sms.receiver) & 240) >> 4);
 	pos++;
-	pdu[pos] = numtext(octstr_len(msg->smart_sms.receiver) & 15);
+	pdu[pos] = numtext(octstr_len(msg->sms.receiver) & 15);
 	pos++;
 	pdu[pos] = numtext(8 + 1);
 	pos++;
@@ -639,16 +639,16 @@ static int pdu_encode(Msg *msg, unsigned char *pdu) {
 
 	/* make sure there is no blank in the phone number and encode
 	 * an even number of digits */
-	octstr_strip_blanks(msg->smart_sms.receiver);
-	len = octstr_len(msg->smart_sms.receiver);
+	octstr_strip_blanks(msg->sms.receiver);
+	len = octstr_len(msg->sms.receiver);
 	for(i=0; i<len; i+=2) {
 		if (i+1 < len) {
-			pdu[pos] = octstr_get_char(msg->smart_sms.receiver, i+1);
+			pdu[pos] = octstr_get_char(msg->sms.receiver, i+1);
 		} else {
 			pdu[pos] = numtext (15);
 		}
 		pos++;
-		pdu[pos] = octstr_get_char(msg->smart_sms.receiver, i);
+		pdu[pos] = octstr_get_char(msg->sms.receiver, i);
 		pos++;
 	}
 	
@@ -662,16 +662,16 @@ static int pdu_encode(Msg *msg, unsigned char *pdu) {
 	/* we only know about the 7/8 bit coding */
 	pdu[pos] = numtext(0);
 	pos++;
-	pdu[pos] = numtext(msg->smart_sms.flag_8bit << 2);
+	pdu[pos] = numtext(msg->sms.flag_8bit << 2);
 	pos++;
 
 	/* user data length - include length of UDH if it exists*/
-	len = octstr_len(msg->smart_sms.msgdata);
-	if(msg->smart_sms.flag_udh != 0) {
-		if(msg->smart_sms.flag_8bit != 0)
-			len += octstr_len(msg->smart_sms.udhdata) + 1;
+	len = octstr_len(msg->sms.msgdata);
+	if(msg->sms.flag_udh != 0) {
+		if(msg->sms.flag_8bit != 0)
+			len += octstr_len(msg->sms.udhdata) + 1;
 		else
-			len += octstr_len(msg->smart_sms.udhdata) / 2 * 8 / 7 + 1;
+			len += octstr_len(msg->sms.udhdata) / 2 * 8 / 7 + 1;
 	}
 	pdu[pos] = numtext((len & 240) >> 4);
 	pos++;
@@ -679,24 +679,24 @@ static int pdu_encode(Msg *msg, unsigned char *pdu) {
 	pos++;
 	
 	/* udh */
-	if(msg->smart_sms.flag_udh != 0) {
-		len = octstr_len(msg->smart_sms.udhdata);
+	if(msg->sms.flag_udh != 0) {
+		len = octstr_len(msg->sms.udhdata);
 		/* udh length */
 		pdu[pos] = numtext((len & 240) >> 4);
 		pos++;
 		pdu[pos] = numtext(len & 15);
 		pos++;
 		/* FIXME: problem with 7bit encoding */
-		pos += encode8bituncompressed(msg->smart_sms.udhdata, &pdu[pos]);
+		pos += encode8bituncompressed(msg->sms.udhdata, &pdu[pos]);
 	}
 
 	/* user data */
 	/* if the data is too long, it is cut 
 	 * FIXME: add support for concatenated short messages */
-	if(msg->smart_sms.flag_8bit == 1) {
-		pos += encode8bituncompressed(msg->smart_sms.msgdata, &pdu[pos]);
+	if(msg->sms.flag_8bit == 1) {
+		pos += encode8bituncompressed(msg->sms.msgdata, &pdu[pos]);
 	} else {
-		pos += encode7bituncompressed(msg->smart_sms.msgdata, &pdu[pos]);
+		pos += encode7bituncompressed(msg->sms.msgdata, &pdu[pos]);
 	}
 	pdu[pos] = 0;
 

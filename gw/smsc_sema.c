@@ -164,17 +164,17 @@ int sema_submit_msg(SMSCenter *smsc, Msg *msg)
 	    goto error;
 	}
 
-	if(msg_type(msg) != smart_sms) {
+	if(msg_type(msg) != sms) {
 	    error(0, "sema_submit_sms: Msg is WRONG TYPE");
 	    goto error;
 	}
 	/*  user data header is not supported in sm2000 X25 access
-	    if(msg->smart_sms.flag_8bit != 1){
+	    if(msg->sms.flag_8bit != 1){
 	    error(0, "sema_submit_sms: submit invoke support in IA5 encoding(8 bits chars)");
 	    goto error;
 	    }
 
-	    if(msg->smart_sms.flag_udh != 0){
+	    if(msg->sms.flag_udh != 0){
 	    error(0, "sema_submit_sms: submit invoke not support in IA5 encoding ");
 	    goto error;
 	    }
@@ -204,8 +204,8 @@ int sema_submit_msg(SMSCenter *smsc, Msg *msg)
 	/*time*/
 	submit_sm->validperiodrela = 1; /* from 0 to 143 , fomula is (V+1)*5 min*/
 	/*send msg without 00 header*/
-	submit_sm->msisdnlen= octstr_len(msg->smart_sms.receiver);
-	submit_sm->msisdn = octstr_copy(msg->smart_sms.receiver,0,submit_sm->msisdnlen);
+	submit_sm->msisdnlen= octstr_len(msg->sms.receiver);
+	submit_sm->msisdn = octstr_copy(msg->sms.receiver,0,submit_sm->msisdnlen);
 	/* X25 access will always append sender during data transfer */
 	submit_sm->origaddlen= 2; /* we need only to orignate address type */
 	submit_sm->origadd = octstr_create_from_data(x28sender,2);
@@ -222,9 +222,9 @@ int sema_submit_msg(SMSCenter *smsc, Msg *msg)
 	    submit_sm->statusreportrequest = 0;/* no report */
 	/* we support submit invoke only in IA5 line encoding*/
 	submit_sm->textsizeoctect = submit_sm->textsizeseptet =
-		octstr_len(msg->smart_sms.msgdata);
+		octstr_len(msg->sms.msgdata);
 	/*copy msg buffer*/
-	submit_sm->shortmsg = octstr_copy(msg->smart_sms.msgdata,
+	submit_sm->shortmsg = octstr_copy(msg->sms.msgdata,
 					  0, submit_sm->textsizeoctect);
 	
 	memset(submit_sm->smscrefnum,0,sizeof(submit_sm->smscrefnum));	
@@ -272,7 +272,7 @@ int sema_receive_msg(SMSCenter *smsc, Msg **msg)
  
     while(sema_msglist_pop(smsc->sema_mo, &rmsg) == 1 ) {
   
-	*msg = msg_create(smart_sms);
+	*msg = msg_create(sms);
 	if(*msg==NULL) goto error;
     
 	recieve_sm = (struct sm_deliver_invoke*) (*(rmsg->msgbody));
@@ -282,19 +282,19 @@ int sema_receive_msg(SMSCenter *smsc, Msg **msg)
 	 * and we do not support other line encoding scheme like binary or
 	 * hex encoding
 	 */
-	(*msg)->smart_sms.flag_8bit = 1;
+	(*msg)->sms.flag_8bit = 1;
 	/* OIS in X28 implementation does not include udh field */
-	(*msg)->smart_sms.flag_udh = 0;
+	(*msg)->sms.flag_udh = 0;
 
-	(*msg)->smart_sms.sender = octstr_create_from_data(
+	(*msg)->sms.sender = octstr_create_from_data(
 	    octstr_get_cstr(recieve_sm->origadd) +2,
 	    octstr_len(recieve_sm->origadd)-2);  
-	(*msg)->smart_sms.receiver = octstr_create_from_data(
+	(*msg)->sms.receiver = octstr_create_from_data(
 	    octstr_get_cstr(recieve_sm->destadd) +2,
 	    octstr_len(recieve_sm->destadd)-2);
   
-	(*msg)->smart_sms.msgdata = octstr_duplicate(recieve_sm->shortmsg);
-	(*msg)->smart_sms.udhdata = octstr_create("");
+	(*msg)->sms.msgdata = octstr_duplicate(recieve_sm->shortmsg);
+	(*msg)->sms.udhdata = octstr_create("");
 	gw_free(recieve_sm);
 	sema_msg_free(rmsg);
 	rmsg = NULL;

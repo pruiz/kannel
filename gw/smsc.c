@@ -328,8 +328,8 @@ int smscenter_receive_msg(SMSCenter *smsc, Msg **msg)
     smscenter_unlock(smsc);
 	
     /* If the SMSC didn't set the timestamp, set it here. */
-    if (ret == 1 && msg_type(*msg) == smart_sms && (*msg)->smart_sms.time == 0)
-	time(&(*msg)->smart_sms.time);
+    if (ret == 1 && msg_type(*msg) == sms && (*msg)->sms.time == 0)
+	time(&(*msg)->sms.time);
 
     return ret;
 
@@ -906,7 +906,7 @@ int smsc_get_message(SMSCenter *smsc, Msg **new)
 		    /* OK */
 
 		    /* if any smsc_id available, use it */
-		    newmsg->smart_sms.smsc_id = octstr_duplicate(smsc->smsc_id);
+		    newmsg->sms.smsc_id = octstr_duplicate(smsc->smsc_id);
 		    
 		} else if (ret == 0) { /* "NEVER" happens */
 		    warning(0, "SMSC: Pending message returned '1', "

@@ -89,7 +89,7 @@ static char *obey_request(URLTranslation *trans, Msg *msg)
 	int status;
 
 	gw_assert(msg != NULL);
-	gw_assert(msg_type(msg) == smart_sms);
+	gw_assert(msg_type(msg) == sms);
 
 	pattern = urltrans_get_pattern(trans, msg);
 	gw_assert(pattern != NULL);
@@ -99,8 +99,8 @@ static char *obey_request(URLTranslation *trans, Msg *msg)
 		debug("sms", 0, "formatted text answer: <%s>", pattern);
 		ret = pattern;
 		alog("SMS request sender:%s request: '%s' fixed answer: '%s'",
-		     octstr_get_cstr(msg->smart_sms.receiver),
-		     octstr_get_cstr(msg->smart_sms.msgdata),
+		     octstr_get_cstr(msg->sms.receiver),
+		     octstr_get_cstr(msg->sms.msgdata),
 		     pattern);
 		break;
 
@@ -110,8 +110,8 @@ static char *obey_request(URLTranslation *trans, Msg *msg)
 		ret = gw_strdup(octstr_get_cstr(replytext));
 		octstr_destroy(replytext);
 		alog("SMS request sender:%s request: '%s' file answer: '%s'",
-		     octstr_get_cstr(msg->smart_sms.receiver),
-		     octstr_get_cstr(msg->smart_sms.msgdata),
+		     octstr_get_cstr(msg->sms.receiver),
+		     octstr_get_cstr(msg->sms.msgdata),
 		     ret);
 		break;
 
@@ -121,8 +121,8 @@ static char *obey_request(URLTranslation *trans, Msg *msg)
 		status = http_get_real(url, request_headers, &final_url,
 					&reply_headers, &reply_body);
 		alog("SMS HTTP-request sender:%s request: '%s' url: '%s' reply: %d '%s'",
-		     octstr_get_cstr(msg->smart_sms.receiver),
-		     octstr_get_cstr(msg->smart_sms.msgdata),
+		     octstr_get_cstr(msg->sms.receiver),
+		     octstr_get_cstr(msg->sms.msgdata),
 		     pattern, status,
 		     (status == 200) ? "<< successful >>"
 		     : (reply_body != NULL) ? octstr_get_cstr(reply_body) : "");
@@ -176,8 +176,8 @@ static char *obey_request(URLTranslation *trans, Msg *msg)
 		error(0, "Unknown URL translation type %d", 
 			urltrans_type(trans));
 		alog("SMS request sender:%s request: '%s' FAILED unknown translation",
-		     octstr_get_cstr(msg->smart_sms.receiver),
-		     octstr_get_cstr(msg->smart_sms.msgdata));
+		     octstr_get_cstr(msg->sms.receiver),
+		     octstr_get_cstr(msg->sms.msgdata));
 		return NULL;
 	}
 	
@@ -242,14 +242,14 @@ static int do_split_send(Msg *msg, int maxmsgs, int maxdatalength, URLTranslatio
 	/* The concatenation adds some information in the UDH so the maximum length
 	 * of the data goes down */
 	if(concat) {
-		if(msg->smart_sms.flag_8bit) {
+		if(msg->sms.flag_8bit) {
 			maxdatalength -= CONCAT_IEL;
 		} else {
 			/* in 7bit mode it is easier to remove the length of the UDH and
 			 * calculate it again */
-			maxdatalength += roundup_div(octstr_len(msg->smart_sms.udhdata)*8, 7) + 1;
+			maxdatalength += roundup_div(octstr_len(msg->sms.udhdata)*8, 7) + 1;
 			maxdatalength -= roundup_div(
-			    (CONCAT_IEL + octstr_len(msg->smart_sms.udhdata)) * 8, 7);
+			    (CONCAT_IEL + octstr_len(msg->sms.udhdata)) * 8, 7);
 		}
 	}
 	
@@ -264,7 +264,7 @@ static int do_split_send(Msg *msg, int maxmsgs, int maxdatalength, URLTranslatio
 	    sc = NULL;
 	}
 
-	total_len = octstr_len(msg->smart_sms.msgdata);
+	total_len = octstr_len(msg->sms.msgdata);
 
 	/* number of messages that will be needed 
 	 * The value is rounded up */
@@ -272,7 +272,7 @@ static int do_split_send(Msg *msg, int maxmsgs, int maxdatalength, URLTranslatio
 
 	/* Go through the full message and send it in parts. The maximum number
 	 * of messages is respected even if the message has not been completely sent. */
-	p = octstr_get_cstr(msg->smart_sms.msgdata);
+	p = octstr_get_cstr(msg->sms.msgdata);
 	for(pos = 0; maxmsgs > 0 && pos < total_len; maxmsgs--)
 	{
 		if (total_len-pos < maxdatalength-fl-hl) { 	/* message ends */
@@ -309,27 +309,27 @@ static int do_split_send(Msg *msg, int maxmsgs, int maxdatalength, URLTranslatio
 			goto error;
 	
 		if (h != NULL) {	/* add header and message */
-			octstr_replace(split->smart_sms.msgdata, h, hl);
-			octstr_insert_data(split->smart_sms.msgdata, hl, p+pos, size);    
+			octstr_replace(split->sms.msgdata, h, hl);
+			octstr_insert_data(split->sms.msgdata, hl, p+pos, size);    
 		} else			/* just the message */
-			octstr_replace(split->smart_sms.msgdata, p+pos, size);
+			octstr_replace(split->sms.msgdata, p+pos, size);
 	
 		if (suf != NULL)
-			octstr_insert_data(split->smart_sms.msgdata, size+hl, suf, suflen);
+			octstr_insert_data(split->sms.msgdata, size+hl, suf, suflen);
 		
 		if (f != NULL)	/* add footer */
-			octstr_insert_data(split->smart_sms.msgdata, size+hl+suflen, f, fl);
+			octstr_insert_data(split->sms.msgdata, size+hl+suflen, f, fl);
 
 		/* for concatenated messages add the UDH Element */
 		if(concat == 1)
 		{
 			/* Add the UDH with the concatenation information */
-			octstr_append_char(split->smart_sms.udhdata, CONCAT_IEI); /* IEI */
-			octstr_append_char(split->smart_sms.udhdata, 3); /* IEI Length = 3 octets */
-			octstr_append_char(split->smart_sms.udhdata, msgref); /* ref */
-			octstr_append_char(split->smart_sms.udhdata, msgcount); /* total nbr of msg */
-			octstr_append_char(split->smart_sms.udhdata, msgseq); /* msg sequence */
-			split->smart_sms.flag_udh = 1;
+			octstr_append_char(split->sms.udhdata, CONCAT_IEI); /* IEI */
+			octstr_append_char(split->sms.udhdata, 3); /* IEI Length = 3 octets */
+			octstr_append_char(split->sms.udhdata, msgref); /* ref */
+			octstr_append_char(split->sms.udhdata, msgcount); /* total nbr of msg */
+			octstr_append_char(split->sms.udhdata, msgseq); /* msg sequence */
+			split->sms.flag_udh = 1;
 		}
 		
 		if (do_sending(split) < 0) {
@@ -378,44 +378,44 @@ static int send_sms(URLTranslation *trans, Msg *msg, int max_msgs)
 		/* If the maximum length of the SMS data hasn't been set in the 
 		 * config file, set it to the maximum length depending on the 
 		 * 7bit or 8bit settings. */ 
-		maxdatalength = (msg->smart_sms.flag_8bit != 0) ? MAX8BITLENGTH : MAX7BITLENGTH;
+		maxdatalength = (msg->sms.flag_8bit != 0) ? MAX8BITLENGTH : MAX7BITLENGTH;
 	}
 	if(maxdatalength == 0) {	/* Don't send a message is maxdatalength is 0 ! */
 		return -1;
 	}
 
-	if(msg->smart_sms.flag_8bit) {		/* 8 bit */
+	if(msg->sms.flag_8bit) {		/* 8 bit */
 		if(maxdatalength > MAX8BITLENGTH) {
 			maxdatalength = MAX8BITLENGTH;
 		}
-		if(msg->smart_sms.flag_udh) {
-    			maxdatalength -= octstr_len(msg->smart_sms.udhdata);
+		if(msg->sms.flag_udh) {
+    			maxdatalength -= octstr_len(msg->sms.udhdata);
     		}
     	} else {				/* 7 bit */
 		if(maxdatalength > MAX7BITLENGTH) {
 			maxdatalength = MAX7BITLENGTH;
 		}
-		if(msg->smart_sms.flag_udh) {
+		if(msg->sms.flag_udh) {
 			/* the length is in 7bit characters! +1 for the length of the UDH. */
-    			maxdatalength -= roundup_div(octstr_len(msg->smart_sms.udhdata)*8, 7) + 1;
+    			maxdatalength -= roundup_div(octstr_len(msg->sms.udhdata)*8, 7) + 1;
     		}
     	}
     	
-	if (octstr_len(msg->smart_sms.msgdata) <= (maxdatalength - fl - hl)
+	if (octstr_len(msg->sms.msgdata) <= (maxdatalength - fl - hl)
 	    || max_msgs == 1) { 
 
 		if (h != NULL)	/* if header set */
-			octstr_insert_data(msg->smart_sms.msgdata, 0, h, hl);
+			octstr_insert_data(msg->sms.msgdata, 0, h, hl);
 		
 		/* truncate if the message is too long (this only happens if
 	 	 *  max_msgs == 1) */
 
-		if (octstr_len(msg->smart_sms.msgdata)+fl > sms_max_length)
-			octstr_truncate(msg->smart_sms.msgdata, sms_max_length - fl);
+		if (octstr_len(msg->sms.msgdata)+fl > sms_max_length)
+			octstr_truncate(msg->sms.msgdata, sms_max_length - fl);
 	    
 		if (f != NULL)	/* if footer set */
-			octstr_insert_data(msg->smart_sms.msgdata,
-		                   octstr_len(msg->smart_sms.msgdata), f, fl);
+			octstr_insert_data(msg->sms.msgdata,
+		                   octstr_len(msg->sms.msgdata), f, fl);
 
 		return do_sending(msg);
 
@@ -445,7 +445,7 @@ static int send_message(URLTranslation *trans, Msg *msg)
 	else
 	    max_msgs = 1;
 	
-	if(msg_type(msg) != smart_sms) {
+	if(msg_type(msg) != sms) {
 		error(0, "Weird message type for send_message!");
 		msg_destroy(msg);
 		return -1;
@@ -457,12 +457,12 @@ static int send_message(URLTranslation *trans, Msg *msg)
 		return 0;
 	}
 
-	if((msg->smart_sms.flag_udh == 0) 
-	   && (octstr_len(msg->smart_sms.msgdata)==0)) {
+	if((msg->sms.flag_udh == 0) 
+	   && (octstr_len(msg->sms.msgdata)==0)) {
 	        if (trans != NULL && urltrans_omit_empty(trans) != 0) {
 			max_msgs = 0;
 		} else { 
-			octstr_replace(msg->smart_sms.msgdata, empty, 
+			octstr_replace(msg->sms.msgdata, empty, 
 				       strlen(empty));
 		}
 	}
@@ -549,8 +549,7 @@ void smsbox_req_thread(void *arg) {
     msg = arg;
     req_threads++;	/* possible overflow */
     
-    if (octstr_len(msg->smart_sms.sender) == 0 ||
-	octstr_len(msg->smart_sms.receiver) == 0) 
+    if (octstr_len(msg->sms.sender) == 0 || octstr_len(msg->sms.receiver) == 0) 
     {
 
 	error(0, "smsbox_req_thread: no sender/receiver, dump follows:");
@@ -562,41 +561,40 @@ void smsbox_req_thread(void *arg) {
 	return;
     }
 
-    if (octstr_compare(msg->smart_sms.sender, msg->smart_sms.receiver) == 0) {
+    if (octstr_compare(msg->sms.sender, msg->sms.receiver) == 0) {
 	info(0, "NOTE: sender and receiver same number <%s>, ignoring!",
-	     octstr_get_cstr(msg->smart_sms.sender));
+	     octstr_get_cstr(msg->sms.sender));
 	req_threads--;
 	return;
     }
 
-    trans = urltrans_find(translations, msg->smart_sms.msgdata,
-			  msg->smart_sms.smsc_id);
+    trans = urltrans_find(translations, msg->sms.msgdata, msg->sms.smsc_id);
     if (trans == NULL) goto error;
 
     info(0, "Starting to service <%s> from <%s> to <%s>",
-	 octstr_get_cstr(msg->smart_sms.msgdata),
-	 octstr_get_cstr(msg->smart_sms.sender),
-	 octstr_get_cstr(msg->smart_sms.receiver));
+	 octstr_get_cstr(msg->sms.msgdata),
+	 octstr_get_cstr(msg->sms.sender),
+	 octstr_get_cstr(msg->sms.receiver));
 
-	/*
-	 * now, we change the sender (receiver now 'cause we swap them later)
-	 * if faked-sender or similar set. Note that we ignore if the replacement
-	 * fails.
-	 */
-    tmp = octstr_duplicate(msg->smart_sms.sender);
+    /*
+     * now, we change the sender (receiver now 'cause we swap them later)
+     * if faked-sender or similar set. Note that we ignore if the replacement
+     * fails.
+     */
+    tmp = octstr_duplicate(msg->sms.sender);
 	
     p = urltrans_faked_sender(trans);
     if (p != NULL)
-	octstr_replace(msg->smart_sms.sender, p, strlen(p));
+	octstr_replace(msg->sms.sender, p, strlen(p));
     else if (global_sender != NULL)
-	octstr_replace(msg->smart_sms.sender, global_sender, strlen(global_sender));
+	octstr_replace(msg->sms.sender, global_sender, strlen(global_sender));
     else {
-	Octstr *t = msg->smart_sms.sender;
-	msg->smart_sms.sender = msg->smart_sms.receiver;
-	msg->smart_sms.receiver = t;
+	Octstr *t = msg->sms.sender;
+	msg->sms.sender = msg->sms.receiver;
+	msg->sms.receiver = t;
     }
-    octstr_destroy(msg->smart_sms.receiver);
-    msg->smart_sms.receiver = tmp;
+    octstr_destroy(msg->sms.receiver);
+    msg->sms.receiver = tmp;
 
     /* TODO: check if the sender is approved to use this service */
 
@@ -609,11 +607,11 @@ error:
 	trans = NULL;	/* do not use any special translation */
     }
 
-    octstr_replace(msg->smart_sms.msgdata, reply, strlen(reply));
+    octstr_replace(msg->sms.msgdata, reply, strlen(reply));
 
-    msg->smart_sms.flag_8bit = 0;
-    msg->smart_sms.flag_udh  = 0;
-    msg->smart_sms.time = time(NULL);	/* set current time */
+    msg->sms.flag_8bit = 0;
+    msg->sms.flag_udh  = 0;
+    msg->sms.time = time(NULL);	/* set current time */
 
 	/* send_message frees the 'msg' */
     if(send_message(trans, msg) < 0)
@@ -682,39 +680,39 @@ char *smsbox_req_sendsms(List *list, char *client_ip)
 	 * XXX here we should validate and split the 'to' field
 	 *   to allow multi-cast. Waiting for octstr_split...
 	 */
-	msg = msg_create(smart_sms);
+	msg = msg_create(sms);
 
-	msg->smart_sms.receiver = octstr_duplicate(to);
-	msg->smart_sms.sender = octstr_duplicate(from);
-	msg->smart_sms.msgdata = text ? octstr_duplicate(text) : octstr_create("");
-	msg->smart_sms.udhdata = udh ? octstr_duplicate(udh) : octstr_create("");
+	msg->sms.receiver = octstr_duplicate(to);
+	msg->sms.sender = octstr_duplicate(from);
+	msg->sms.msgdata = text ? octstr_duplicate(text) : octstr_create("");
+	msg->sms.udhdata = udh ? octstr_duplicate(udh) : octstr_create("");
 
 	/* new smsc-id argument - we should check this one, if able,
 	   but that's advanced logics -- Kalle */
 
 	if (urltrans_forced_smsc(t)) {
-	    msg->smart_sms.smsc_id = octstr_create(urltrans_forced_smsc(t));
+	    msg->sms.smsc_id = octstr_create(urltrans_forced_smsc(t));
 	    if (smsc)
 		info(0, "send-sms request smsc id ignored, as smsc id forced to %s",
 		     urltrans_forced_smsc(t));
 	} else if (smsc) {
-	    msg->smart_sms.smsc_id = octstr_duplicate(smsc);
+	    msg->sms.smsc_id = octstr_duplicate(smsc);
 	} else if (urltrans_default_smsc(t)) {
-	    msg->smart_sms.smsc_id = octstr_create(urltrans_default_smsc(t));
+	    msg->sms.smsc_id = octstr_create(urltrans_default_smsc(t));
 	} else
-	    msg->smart_sms.smsc_id = NULL;
+	    msg->sms.smsc_id = NULL;
 	    
 
 	if(udh==NULL) {
-		msg->smart_sms.flag_8bit = 0;
-		msg->smart_sms.flag_udh  = 0;
+		msg->sms.flag_8bit = 0;
+		msg->sms.flag_udh  = 0;
 	} else {
-		msg->smart_sms.flag_8bit = 1;
-		msg->smart_sms.flag_udh  = 1;
-		octstr_dump(msg->smart_sms.udhdata, 0);
+		msg->sms.flag_8bit = 1;
+		msg->sms.flag_udh  = 1;
+		octstr_dump(msg->sms.udhdata, 0);
 	}
 
-	msg->smart_sms.time = time(NULL);
+	msg->sms.time = time(NULL);
    
 	/* send_message frees the 'msg' */
 	ret = send_message(t, msg);
@@ -806,94 +804,94 @@ char *smsbox_req_sendota(List *list, char *client_ip)
 	if ((p = config_get(grp, "secret")) != NULL)
 		passwd = p;
 	
-	msg = msg_create(smart_sms);
+	msg = msg_create(sms);
 	if (msg == NULL) goto error;
 
-	msg->smart_sms.udhdata = octstr_create("");
+	msg->sms.udhdata = octstr_create("");
 
-	octstr_append_from_hex(msg->smart_sms.udhdata, "0504C34FC002");
+	octstr_append_from_hex(msg->sms.udhdata, "0504C34FC002");
 
-	msg->smart_sms.msgdata = octstr_create("");
+	msg->sms.msgdata = octstr_create("");
 	/* header for the data part of the message */
-	octstr_append_from_hex(msg->smart_sms.msgdata, "010604039481EA0001");
+	octstr_append_from_hex(msg->sms.msgdata, "010604039481EA0001");
 	/* unknow field */
-	octstr_append_from_hex(msg->smart_sms.msgdata, "45C60601");
+	octstr_append_from_hex(msg->sms.msgdata, "45C60601");
 	/* bearer type */
 	if(bearer != -1) {
-		octstr_append_from_hex(msg->smart_sms.msgdata, "8712");
-		octstr_append_char(msg->smart_sms.msgdata, bearer);
-		octstr_append_from_hex(msg->smart_sms.msgdata, ENDTAG);
+		octstr_append_from_hex(msg->sms.msgdata, "8712");
+		octstr_append_char(msg->sms.msgdata, bearer);
+		octstr_append_from_hex(msg->sms.msgdata, ENDTAG);
 	}
 	/* IP address */
 	if(ipaddr != NULL) {
-		octstr_append_from_hex(msg->smart_sms.msgdata , "87131103");
-		octstr_append_cstr(msg->smart_sms.msgdata, ipaddr);
-		octstr_append_from_hex(msg->smart_sms.msgdata, "0001");
+		octstr_append_from_hex(msg->sms.msgdata , "87131103");
+		octstr_append_cstr(msg->sms.msgdata, ipaddr);
+		octstr_append_from_hex(msg->sms.msgdata, "0001");
 	}
 	/* connection type */
 	if(connection != -1) {
-		octstr_append_from_hex(msg->smart_sms.msgdata, "8714");
-		octstr_append_char(msg->smart_sms.msgdata, connection);
-		octstr_append_from_hex(msg->smart_sms.msgdata, ENDTAG);
+		octstr_append_from_hex(msg->sms.msgdata, "8714");
+		octstr_append_char(msg->sms.msgdata, connection);
+		octstr_append_from_hex(msg->sms.msgdata, ENDTAG);
 	}
 	/* phone number */
 	if(phonenum != NULL) {
-		octstr_append_from_hex(msg->smart_sms.msgdata, "87211103");
-		octstr_append_cstr(msg->smart_sms.msgdata, phonenum);
-		octstr_append_from_hex(msg->smart_sms.msgdata, "0001");
+		octstr_append_from_hex(msg->sms.msgdata, "87211103");
+		octstr_append_cstr(msg->sms.msgdata, phonenum);
+		octstr_append_from_hex(msg->sms.msgdata, "0001");
 	}
 	/* authentication */
-	octstr_append_from_hex(msg->smart_sms.msgdata, "8722");
-	octstr_append_char(msg->smart_sms.msgdata, authent);
-	octstr_append_from_hex(msg->smart_sms.msgdata, ENDTAG);
+	octstr_append_from_hex(msg->sms.msgdata, "8722");
+	octstr_append_char(msg->sms.msgdata, authent);
+	octstr_append_from_hex(msg->sms.msgdata, ENDTAG);
 	/* user name */
 	if(username != NULL) {
-		octstr_append_from_hex(msg->smart_sms.msgdata, "87231103");
-		octstr_append_cstr(msg->smart_sms.msgdata, username);
-		octstr_append_from_hex(msg->smart_sms.msgdata, "0001");
+		octstr_append_from_hex(msg->sms.msgdata, "87231103");
+		octstr_append_cstr(msg->sms.msgdata, username);
+		octstr_append_from_hex(msg->sms.msgdata, "0001");
 	}
 	/* password */
 	if(passwd != NULL) {
-		octstr_append_from_hex(msg->smart_sms.msgdata, "87241103");
-		octstr_append_cstr(msg->smart_sms.msgdata, passwd);
-		octstr_append_from_hex(msg->smart_sms.msgdata, "0001");
+		octstr_append_from_hex(msg->sms.msgdata, "87241103");
+		octstr_append_cstr(msg->sms.msgdata, passwd);
+		octstr_append_from_hex(msg->sms.msgdata, "0001");
 	}
 	/* data call type */
 	if(calltype != -1) {
-		octstr_append_from_hex(msg->smart_sms.msgdata, "8728");
-		octstr_append_char(msg->smart_sms.msgdata, calltype);
-		octstr_append_from_hex(msg->smart_sms.msgdata, ENDTAG);
+		octstr_append_from_hex(msg->sms.msgdata, "8728");
+		octstr_append_char(msg->sms.msgdata, calltype);
+		octstr_append_from_hex(msg->sms.msgdata, ENDTAG);
 	}
 	/* speed */
-	octstr_append_from_hex(msg->smart_sms.msgdata, "8729");
-	octstr_append_from_hex(msg->smart_sms.msgdata, speed);
-	octstr_append_from_hex(msg->smart_sms.msgdata, ENDTAG);
-	octstr_append_from_hex(msg->smart_sms.msgdata, ENDTAG);
+	octstr_append_from_hex(msg->sms.msgdata, "8729");
+	octstr_append_from_hex(msg->sms.msgdata, speed);
+	octstr_append_from_hex(msg->sms.msgdata, ENDTAG);
+	octstr_append_from_hex(msg->sms.msgdata, ENDTAG);
 	/* homepage */
 	if(url != NULL) {
-		octstr_append_from_hex(msg->smart_sms.msgdata, "86071103");
-		octstr_append_cstr(msg->smart_sms.msgdata, url);
-		octstr_append_from_hex(msg->smart_sms.msgdata, "0001");
+		octstr_append_from_hex(msg->sms.msgdata, "86071103");
+		octstr_append_cstr(msg->sms.msgdata, url);
+		octstr_append_from_hex(msg->sms.msgdata, "0001");
 	}
 	/* unknow field */
-	octstr_append_from_hex(msg->smart_sms.msgdata, "C60801");
+	octstr_append_from_hex(msg->sms.msgdata, "C60801");
 	/* service description */
 	if(desc != NULL) {
-		octstr_append_from_hex(msg->smart_sms.msgdata, "87151103");
-		octstr_append_cstr(msg->smart_sms.msgdata, desc);
-		octstr_append_from_hex(msg->smart_sms.msgdata, "0001");
+		octstr_append_from_hex(msg->sms.msgdata, "87151103");
+		octstr_append_cstr(msg->sms.msgdata, desc);
+		octstr_append_from_hex(msg->sms.msgdata, "0001");
 	}
 	/* message footer */
-	octstr_append_from_hex(msg->smart_sms.msgdata, "0101");
+	octstr_append_from_hex(msg->sms.msgdata, "0101");
 
-	msg->smart_sms.receiver = octstr_duplicate(phonenumber);
-	/* msg->smart_sms.sender = from; */	
-	msg->smart_sms.flag_8bit = 1;
-	msg->smart_sms.flag_udh  = 1;
+	msg->sms.receiver = octstr_duplicate(phonenumber);
+	/* msg->sms.sender = from; */	
+	msg->sms.flag_8bit = 1;
+	msg->sms.flag_udh  = 1;
 
-	msg->smart_sms.time = time(NULL);
+	msg->sms.time = time(NULL);
 
-	octstr_dump(msg->smart_sms.msgdata, 0);
+	octstr_dump(msg->sms.msgdata, 0);
 
 	info(0, "/cgi-bin/sendota <%s>", octstr_get_cstr(phonenumber) );
   

@@ -80,27 +80,25 @@ static void sms_receiver(void *arg)
 	    /* XXX do we want to normalize receiver? it is like
 	     *     1234 anyway... */
 
-	    normalize_number(unified_prefix, &(msg->smart_sms.sender));
+	    normalize_number(unified_prefix, &(msg->sms.sender));
 	    if (white_list &&
-		numhash_find_number(white_list, msg->smart_sms.sender) < 1)
-	    {
+		numhash_find_number(white_list, msg->sms.sender) < 1) {
 		info(0, "Number <%s> is not in white-list, message discarded",
-		     octstr_get_cstr(msg->smart_sms.sender));
+		     octstr_get_cstr(msg->sms.sender));
 		msg_destroy(msg);
 		continue;
 	    }
 	    if (black_list &&
-		numhash_find_number(black_list, msg->smart_sms.sender) == 1)
-	    {
+		numhash_find_number(black_list, msg->sms.sender) == 1) {
 		info(0, "Number <%s> is in black-list, message discarded",
-		     octstr_get_cstr(msg->smart_sms.sender));
+		     octstr_get_cstr(msg->sms.sender));
 		msg_destroy(msg);
 		continue;
 	    }
 	    alog("Received a message - SMSC:%s sender:%s msg: '%s'",
 		 smsc_id(conn->smsc),
-		 octstr_get_cstr(msg->smart_sms.sender),
-		 octstr_get_cstr(msg->smart_sms.msgdata));
+		 octstr_get_cstr(msg->sms.sender),
+		 octstr_get_cstr(msg->sms.msgdata));
 	    list_produce(incoming_sms, msg);
 
 	    counter_increase(incoming_sms_counter);
@@ -134,16 +132,16 @@ static int sms_send(Smsc *conn, Msg *msg)
     if (ret == -1) {
 	alog("Send FAILED (retrying) - SMSC:%s receiver:%s msg: '%s'",
 	     smsc_id(conn->smsc),
-	     octstr_get_cstr(msg->smart_sms.receiver),
-	     octstr_get_cstr(msg->smart_sms.msgdata));
+	     octstr_get_cstr(msg->sms.receiver),
+	     octstr_get_cstr(msg->sms.msgdata));
 
 
 	return -1;
     } else {
 	alog("Sent a message - SMSC:%s receiver:%s msg: '%s'",
 	     smsc_id(conn->smsc),
-	     octstr_get_cstr(msg->smart_sms.receiver),
-	     octstr_get_cstr(msg->smart_sms.msgdata));
+	     octstr_get_cstr(msg->sms.receiver),
+	     octstr_get_cstr(msg->sms.msgdata));
 
 	counter_increase(outgoing_sms_counter);
 	return 0;
@@ -165,7 +163,7 @@ static void sms_sender(void *arg)
 	if ((msg = list_consume(conn->outgoing_list)) == NULL)
 	    break;
 
-	if (octstr_search_char(msg->smart_sms.receiver, ' ', 0) != -1) {
+	if (octstr_search_char(msg->sms.receiver, ' ', 0) != -1) {
 	    /*
 	     * multi-send: this should be implemented in corresponding
 	     *  SMSC protocol, but while we are waiting for that...
@@ -174,12 +172,12 @@ static void sms_sender(void *arg)
 	    /* split from spaces: in future, split with something more sensible,
 	     * this is dangerous... (as space is url-encoded as '+')
 	     */
-	    List *nlist = octstr_split_words(msg->smart_sms.receiver);
+	    List *nlist = octstr_split_words(msg->sms.receiver);
 
 	    for(i=0; i < list_len(nlist); i++) {
-		octstr_destroy(msg->smart_sms.receiver);
+		octstr_destroy(msg->sms.receiver);
 
-		msg->smart_sms.receiver = list_get(nlist, i);
+		msg->sms.receiver = list_get(nlist, i);
 		ret = sms_send(conn, msg);
 		if (ret == -1) {
 		    Msg *copy;
@@ -240,22 +238,22 @@ static void sms_router(void *arg)
 	if ((msg = list_consume(outgoing_sms)) == NULL)
 	    break;
 
-	gw_assert(msg_type(msg) == smart_sms);
+	gw_assert(msg_type(msg) == sms);
 
 	if (list_len(smsc_list) == 0) {
 	    warning(0, "No SMSCes to receive message, discarding it!");
 	    alog("SMS DISCARDED - SMSC:%s receiver:%s msg: '%s'",
-		 (msg->smart_sms.smsc_id) == NULL ?
-		 octstr_get_cstr(msg->smart_sms.smsc_id) : "unknown",
-		 octstr_get_cstr(msg->smart_sms.receiver),
-		 octstr_get_cstr(msg->smart_sms.msgdata));
+		 (msg->sms.smsc_id) == NULL ?
+		 octstr_get_cstr(msg->sms.smsc_id) : "unknown",
+		 octstr_get_cstr(msg->sms.receiver),
+		 octstr_get_cstr(msg->sms.msgdata));
 	    msg_destroy(msg);
 	    continue;
 	}
 	/* XXX we normalize the receiver - if set, but do we want
 	 *     to normalize the sender, too?
 	 */
-	normalize_number(unified_prefix, &(msg->smart_sms.receiver));
+	normalize_number(unified_prefix, &(msg->sms.receiver));
 	    
 	/* select in which list to add this
 	 * start - from random SMSC, as they are all 'equal'
@@ -264,16 +262,16 @@ static void sms_router(void *arg)
 	list_lock(smsc_list);
 
 	s = rand() % list_len(smsc_list);
-	number = octstr_get_cstr(msg->smart_sms.receiver);
+	number = octstr_get_cstr(msg->sms.receiver);
 	backup = NULL;
 	
 	for (i=0; i < list_len(smsc_list); i++) {
 	    si = list_get(smsc_list,  (i+s) % list_len(smsc_list));
 
-	    if (smsc_denied(si->smsc, number, msg->smart_sms.smsc_id)==1)
+	    if (smsc_denied(si->smsc, number, msg->sms.smsc_id)==1)
 		continue;
 
-	    if (smsc_preferred(si->smsc, number, msg->smart_sms.smsc_id)==1) {
+	    if (smsc_preferred(si->smsc, number, msg->sms.smsc_id)==1) {
 		debug("bb", 0, "sms_router: adding message to preferred <%s>",
 		      smsc_name(si->smsc));
 		list_produce(si->outgoing_list, msg);
@@ -290,10 +288,10 @@ static void sms_router(void *arg)
 	else {
 	    warning(0, "Cannot find SMSC for message to <%s>, discarded.", number);
 	    alog("SMS DISCARDED - SMSC:%s receiver:%s msg: '%s'",
-		 (msg->smart_sms.smsc_id) == NULL ?
-		 octstr_get_cstr(msg->smart_sms.smsc_id) : "unknown",
-		 octstr_get_cstr(msg->smart_sms.receiver),
-		 octstr_get_cstr(msg->smart_sms.msgdata));
+		 (msg->sms.smsc_id) == NULL ?
+		 octstr_get_cstr(msg->sms.smsc_id) : "unknown",
+		 octstr_get_cstr(msg->sms.receiver),
+		 octstr_get_cstr(msg->sms.msgdata));
 	    msg_destroy(msg);
 	}
     found:

@@ -117,9 +117,9 @@ static int socket_sender(Msg *pmsg)
 
 #if 0
     debug("sms", 0, "write <%.*s> [%ld]",
-	  (int) octstr_len(pmsg->smart_sms.msgdata),
-	  octstr_get_cstr(pmsg->smart_sms.msgdata),
-	  octstr_len(pmsg->smart_sms.udhdata));
+	  (int) octstr_len(pmsg->sms.msgdata),
+	  octstr_get_cstr(pmsg->sms.msgdata),
+	  octstr_len(pmsg->sms.udhdata));
 #endif
 
     octstr_destroy(pack);
@@ -144,8 +144,8 @@ static void new_request(Octstr *pack)
     msg = msg_unpack(pack);
     if (msg == NULL)
 	error(0, "Failed to unpack data!");
-    else if (msg_type(msg) != smart_sms)
-	warning(0, "Received other message than smart_sms, ignoring!");
+    else if (msg_type(msg) != sms)
+	warning(0, "Received other message than sms, ignoring!");
     else
 	gwthread_create(smsbox_req_thread, msg);
 }

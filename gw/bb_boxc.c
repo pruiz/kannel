@@ -98,7 +98,7 @@ static void boxc_receiver(void *arg)
 	}
 	octstr_destroy(pack);
 
-	if ((!conn->is_wap && msg_type(msg) == smart_sms)
+	if ((!conn->is_wap && msg_type(msg) == sms)
 	                  ||
 	    (conn->is_wap && msg_type(msg) == wdp_datagram))
 	{
@@ -154,7 +154,7 @@ static void boxc_sender(void *arg)
 	if ((msg = list_consume(conn->incoming)) == NULL)
 	    break;
 
-	gw_assert((!conn->is_wap && msg_type(msg) == smart_sms)
+	gw_assert((!conn->is_wap && msg_type(msg) == sms)
 		                 ||
 		  (conn->is_wap && msg_type(msg) == wdp_datagram));
 

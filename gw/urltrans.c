@@ -189,7 +189,7 @@ char *urltrans_get_pattern(URLTranslation *t, Msg *request)
 	if (t->type == TRANSTYPE_SENDSMS)
 	    return gw_strdup("");
 	
-	word_list = octstr_split_words(request->smart_sms.msgdata);
+	word_list = octstr_split_words(request->sms.msgdata);
 	n = list_len(word_list);
 	max_words = sizeof(words) / sizeof(words[0]);
 	if (n > max_words)
@@ -213,9 +213,9 @@ char *urltrans_get_pattern(URLTranslation *t, Msg *request)
 	len += count_occurences(pattern, "%r") * 
 			(maxword + 1) * n * ENCODED_LEN;
 	len += count_occurences(pattern, "%p") * 
-			octstr_len(request->smart_sms.sender) * ENCODED_LEN;
+			octstr_len(request->sms.sender) * ENCODED_LEN;
 	len += count_occurences(pattern, "%P") * 
-			octstr_len(request->smart_sms.receiver) * ENCODED_LEN;
+			octstr_len(request->sms.receiver) * ENCODED_LEN;
 	len += count_occurences(pattern, "%t") * strlen("YYYY-MM-DD+HH:MM");
 
 	buf = gw_malloc(len + 1);
@@ -260,30 +260,30 @@ char *urltrans_get_pattern(URLTranslation *t, Msg *request)
 			break;
 		case 'P':
 			encode_for_url(enc, 
-			    	octstr_get_cstr(request->smart_sms.sender));
+			    	octstr_get_cstr(request->sms.sender));
 			sprintf(s, "%s", enc);
 			break;
 		case 'p':
 			encode_for_url(enc, 
-			    	octstr_get_cstr(request->smart_sms.receiver));
+			    	octstr_get_cstr(request->sms.receiver));
 			sprintf(s, "%s", enc);
 			break;
 		case 'Q':
-			if (strncmp(octstr_get_cstr(request->smart_sms.sender),
+			if (strncmp(octstr_get_cstr(request->sms.sender),
 				    "00", 2) == 0) {
-				encode_for_url(enc, octstr_get_cstr(request->smart_sms.sender) + 2);
+				encode_for_url(enc, octstr_get_cstr(request->sms.sender) + 2);
 				sprintf(s, "%%2B%s", enc);
 			} else {
-				encode_for_url(enc, octstr_get_cstr(request->smart_sms.sender));
+				encode_for_url(enc, octstr_get_cstr(request->sms.sender));
 				sprintf(s, "%s", enc);
 			}
 			break;
 		case 'q':
-			if (strncmp(octstr_get_cstr(request->smart_sms.receiver), "00", 2) == 0) {
-				encode_for_url(enc, octstr_get_cstr(request->smart_sms.receiver) + 2);
+			if (strncmp(octstr_get_cstr(request->sms.receiver), "00", 2) == 0) {
+				encode_for_url(enc, octstr_get_cstr(request->sms.receiver) + 2);
 				sprintf(s, "%%2B%s", enc);
 			} else {
-				encode_for_url(enc, octstr_get_cstr(request->smart_sms.receiver));
+				encode_for_url(enc, octstr_get_cstr(request->sms.receiver));
 				sprintf(s, "%s", enc);
 			}
 			break;
@@ -298,7 +298,7 @@ char *urltrans_get_pattern(URLTranslation *t, Msg *request)
 			}
 			break;
 		case 't':
-			tm = gw_gmtime(request->smart_sms.time);
+			tm = gw_gmtime(request->sms.time);
 			sprintf(s, "%04d-%02d-%02d+%02d:%02d",
 				tm.tm_year + 1900,
 				tm.tm_mon + 1,

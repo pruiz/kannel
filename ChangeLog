@@ -1,5 +1,9 @@
 2000-10-09  Richard Braakman  <dark@wapit.com>
 
+	* Renamed Msg type smart_sms to sms.
+
+2000-10-09  Richard Braakman  <dark@wapit.com>
+
 	* gwlib/octstr.c: Rearranged immutable octstrs so that seems_valid()
 	correctly flags freed octstrs again.  Added !immutable assertions
 	to octstr_grow and octstr_set_char.
@@ -27,8 +31,8 @@
 
 2000-10-06  Richard Braakman  <dark@wapit.com>
 
-	* gw/smsc.c: Reactivate the code that sets the timestamp on a
-	smart_sms, if the SMSC didn't set it.  Thanks to Jarkko Kovala
+	* gw/smsc.c: Reactivate the code that sets the timestamp on an
+	sms message, if the SMSC didn't set it.  Thanks to Jarkko Kovala
 	for noticing.
 
 2000-10-06  Richard Braakman  <dark@wapit.com>

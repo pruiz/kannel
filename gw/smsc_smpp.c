@@ -358,37 +358,37 @@ int smpp_submit_msg(SMSCenter *smsc, Msg *msg) {
 	submit_sm = gw_malloc(sizeof(struct smpp_pdu_submit_sm));
 	memset(submit_sm, 0, sizeof(struct smpp_pdu_submit_sm));
 
-	if(msg_type(msg) != smart_sms) {
+	if(msg_type(msg) != sms) {
 		error(0, "smpp_submit_sms: Msg is WRONG TYPE");
 		msg_dump(msg, 0);
 		goto error;
 	}
 
-	if(msg->smart_sms.flag_8bit == 1) {
+	if(msg->sms.flag_8bit == 1) {
 		/* As per GSM 03.38. */
 		submit_sm->esm_class = 67;
 	} else {
 		submit_sm->esm_class = 0;
 	}
 
-	if(msg->smart_sms.flag_udh == 1) {
+	if(msg->sms.flag_udh == 1) {
 		/* As per GSM 03.38. */
 		submit_sm->data_coding = 245;
 	} else {
 		submit_sm->data_coding = 3;
 	}
 
-	strncpy(submit_sm->source_addr, octstr_get_cstr(msg->smart_sms.sender), 21);
-	strncat(submit_sm->dest_addr, octstr_get_cstr(msg->smart_sms.receiver)+2, 21);
+	strncpy(submit_sm->source_addr, octstr_get_cstr(msg->sms.sender), 21);
+	strncat(submit_sm->dest_addr, octstr_get_cstr(msg->sms.receiver)+2, 21);
 
-	submit_sm->sm_length = octstr_len(msg->smart_sms.udhdata) +
-		octstr_len(msg->smart_sms.msgdata);
+	submit_sm->sm_length = octstr_len(msg->sms.udhdata) +
+		octstr_len(msg->sms.msgdata);
 
-	octstr_get_many_chars(submit_sm->short_message, msg->smart_sms.udhdata, 0, 160);
+	octstr_get_many_chars(submit_sm->short_message, msg->sms.udhdata, 0, 160);
 
 	octstr_get_many_chars(
-		submit_sm->short_message + octstr_len(msg->smart_sms.udhdata),
-		msg->smart_sms.msgdata, 0, 160 - octstr_len(msg->smart_sms.udhdata));
+		submit_sm->short_message + octstr_len(msg->sms.udhdata),
+		msg->sms.msgdata, 0, 160 - octstr_len(msg->sms.udhdata));
 
 	charset_iso_to_smpp(submit_sm->short_message);
 
@@ -450,25 +450,25 @@ int smpp_receive_msg(SMSCenter *smsc, Msg **msg) {
 		strncat(deliver_sm->source_addr, newnum, sizeof(deliver_sm->source_addr)-2);
 		gw_free(newnum);
 
-		*msg = msg_create(smart_sms);
+		*msg = msg_create(sms);
 		if(*msg==NULL) goto error;
 
 		if( (deliver_sm->esm_class == 67) || (deliver_sm->data_coding == 245) ) {
-			(*msg)->smart_sms.flag_8bit = 1;
-			(*msg)->smart_sms.flag_udh = 1;
+			(*msg)->sms.flag_8bit = 1;
+			(*msg)->sms.flag_udh = 1;
 		} else if( (deliver_sm->esm_class == 3) || (deliver_sm->data_coding == 0) ) {
-			(*msg)->smart_sms.flag_8bit = 0;
-			(*msg)->smart_sms.flag_udh = 0;
+			(*msg)->sms.flag_8bit = 0;
+			(*msg)->sms.flag_udh = 0;
 		} else {
 			debug("bb.sms.smpp", 0, "problemss....");
 			msg_destroy(*msg);
 			*msg = NULL;
 		}
 
-		(*msg)->smart_sms.sender = octstr_create(deliver_sm->source_addr);
-		(*msg)->smart_sms.receiver = octstr_create(deliver_sm->dest_addr);
-		(*msg)->smart_sms.msgdata = octstr_create(deliver_sm->short_message);
-		(*msg)->smart_sms.udhdata = octstr_create("");
+		(*msg)->sms.sender = octstr_create(deliver_sm->source_addr);
+		(*msg)->sms.receiver = octstr_create(deliver_sm->dest_addr);
+		(*msg)->sms.msgdata = octstr_create(deliver_sm->short_message);
+		(*msg)->sms.udhdata = octstr_create("");
 
 		return 1;
 	}

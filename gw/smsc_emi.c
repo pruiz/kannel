@@ -884,13 +884,13 @@ static int internal_emi_parse_rawmessage_to_msg(
         strcpy(isotext, "");
     }
 
-    *msg = msg_create(smart_sms);
+    *msg = msg_create(sms);
     if (*msg == NULL) goto error;
 
-    (*msg)->smart_sms.sender = octstr_create(emivars[5]);
-    (*msg)->smart_sms.receiver = octstr_create(emivars[4]);
-    (*msg)->smart_sms.msgdata = octstr_create(isotext);
-    (*msg)->smart_sms.udhdata = NULL;
+    (*msg)->sms.sender = octstr_create(emivars[5]);
+    (*msg)->sms.receiver = octstr_create(emivars[4]);
+    (*msg)->sms.msgdata = octstr_create(isotext);
+    (*msg)->sms.udhdata = NULL;
 
     return msgnbr;
 
@@ -1009,37 +1009,37 @@ static int internal_emi_parse_msg_to_rawmessage(SMSCenter *smsc, Msg *msg, char 
     /* XXX internal_emi_parse_iso88591_to_emi shouldn't use NUL terminated
      * strings, but Octstr directly, or a char* and a length.
      */
-    if (msg->smart_sms.flag_udh == 1) {
+    if (msg->sms.flag_udh == 1) {
         char xserbuf[258];
         /* we need a properbly formated UDH here, there first byte contains his length
          * this will be formatted in the xser field of the EMI Protocol
          */
-        udh_len = octstr_get_char(msg->smart_sms.udhdata, 0) + 1;
+        udh_len = octstr_get_char(msg->sms.udhdata, 0) + 1;
         xserbuf[0] = 1;
         xserbuf[1] = udh_len;
-        octstr_get_many_chars(&xserbuf[2], msg->smart_sms.udhdata, 0, udh_len);
+        octstr_get_many_chars(&xserbuf[2], msg->sms.udhdata, 0, udh_len);
         internal_emi_parse_binary_to_emi(xserbuf, xser, udh_len + 2);
     } else {
         udh_len = 0;
     }
 
-    if (msg->smart_sms.flag_8bit != 1) {
+    if (msg->sms.flag_8bit != 1) {
         /* skip the probably existing UDH */
-        octstr_get_many_chars(msgtext, msg->smart_sms.msgdata, 0, octstr_len(msg->smart_sms.msgdata));
-        msgtext[octstr_len(msg->smart_sms.msgdata)] = '\0';
+        octstr_get_many_chars(msgtext, msg->sms.msgdata, 0, octstr_len(msg->sms.msgdata));
+        msgtext[octstr_len(msg->sms.msgdata)] = '\0';
         internal_emi_parse_iso88591_to_emi(msgtext, my_buffer2,
-                                           octstr_len(msg->smart_sms.msgdata),
+                                           octstr_len(msg->sms.msgdata),
                                            smsc->alt_charset);
 
         strcpy(snumbits, "");
         mt = '3';
         strcpy(mcl, "");
     } else {
-        octstr_get_many_chars(msgtext, msg->smart_sms.msgdata, 0, octstr_len(msg->smart_sms.msgdata));
+        octstr_get_many_chars(msgtext, msg->sms.msgdata, 0, octstr_len(msg->sms.msgdata));
 
-        internal_emi_parse_binary_to_emi(msgtext, my_buffer2, octstr_len(msg->smart_sms.msgdata));
+        internal_emi_parse_binary_to_emi(msgtext, my_buffer2, octstr_len(msg->sms.msgdata));
 
-        sprintf(snumbits, "%04ld", octstr_len(msg->smart_sms.msgdata)*8);
+        sprintf(snumbits, "%04ld", octstr_len(msg->sms.msgdata)*8);
         mt = '4';
         strcpy(mcl, "1");
     }
@@ -1047,8 +1047,8 @@ static int internal_emi_parse_msg_to_rawmessage(SMSCenter *smsc, Msg *msg, char 
     if (smsc->type == SMSC_TYPE_EMI) {
         sprintf(message_body,
                 "%s/%s/%s/%s/%s//%s////////////%c/%s/%s////%s//////%s//",
-                octstr_get_cstr(msg->smart_sms.receiver),
-                octstr_get_cstr(msg->smart_sms.sender),
+                octstr_get_cstr(msg->sms.receiver),
+                octstr_get_cstr(msg->sms.sender),
                 "",
                 "",
                 "",
@@ -1061,8 +1061,8 @@ static int internal_emi_parse_msg_to_rawmessage(SMSCenter *smsc, Msg *msg, char 
     } else {
         sprintf(message_body,
                 "%s/%s/%s/%s/%s//%s////////////%c/%s/%s////%s//////%s//",
-                octstr_get_cstr(msg->smart_sms.receiver),
-                octstr_get_cstr(msg->smart_sms.sender),
+                octstr_get_cstr(msg->sms.receiver),
+                octstr_get_cstr(msg->sms.sender),
                 "",
                 "",
                 "",

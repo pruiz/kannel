@@ -289,7 +289,7 @@ int ois_submit_msg(SMSCenter *smsc, const Msg *msg)
     SAY(2, "ois_submit_msg");
     ois_swap_buffering(smsc);
 
-    if (msg_type((Msg *)msg) != smart_sms) {
+    if (msg_type((Msg *)msg) != sms) {
 	error(0, "ois_submit_msg: can not handle message types other than smart_msg");
 	goto error;
     }
@@ -828,9 +828,9 @@ static int ois_append_msisdn(char *raw, const Msg *msg)
 
     SAY(3, "ois_append_msisdn");
 
-    len = octstr_len(msg->smart_sms.receiver);
+    len = octstr_len(msg->sms.receiver);
     raw[0] = (char) len;
-    memcpy(&raw[1], octstr_get_cstr(msg->smart_sms.receiver), len);
+    memcpy(&raw[1], octstr_get_cstr(msg->sms.receiver), len);
     return 1 + len;
 }
 
@@ -878,7 +878,7 @@ static int ois_append_data_coding_scheme(char *raw, const Msg *msg)
 
     /* 0x0f=ia5=gsm in 8bits, 0x00=gsm, */
     /* 0xf4=8bits to display, 0xf5=to memory, 0xf6=to sim, 0xf7=to terminal */
-    raw[0] = (char) (msg->smart_sms.flag_8bit ? 0xf4 : 0x0f);
+    raw[0] = (char) (msg->sms.flag_8bit ? 0xf4 : 0x0f);
     return 1;
 }
 
@@ -904,10 +904,10 @@ static int ois_append_submission_options(char *raw, const Msg *msg)
 
     /* bit field, bit 0=reply path, bit 1=udh, bits 3-4=dcs interpretation */
     raw[0] = (char) 0x00;
-    if (msg->smart_sms.flag_udh) {
+    if (msg->sms.flag_udh) {
 	raw[0] |= (char) 0x02;
     }
-    if (msg->smart_sms.flag_8bit) {
+    if (msg->sms.flag_8bit) {
 	raw[0] |= (char) 0x10;
     }
     return 1;
@@ -924,13 +924,13 @@ static int ois_append_sm_text(char *raw, const Msg *msg)
 
     /* calculate lengths */
 
-    if (msg->smart_sms.flag_udh) {
-	udhlen8 = octstr_len(msg->smart_sms.udhdata);
+    if (msg->sms.flag_udh) {
+	udhlen8 = octstr_len(msg->sms.udhdata);
     } else {
 	udhlen8 = 0;
     }
 
-    msglen8 = octstr_len(msg->smart_sms.msgdata);
+    msglen8 = octstr_len(msg->sms.msgdata);
 
     udhlen7 = udhlen8;
     msglen7 = msglen8;
@@ -940,12 +940,12 @@ static int ois_append_sm_text(char *raw, const Msg *msg)
 
     raw[0] = (char) (len);
     raw[1] = (char) (udhlen7 + msglen7);
-    memcpy(&raw[2], octstr_get_cstr(msg->smart_sms.udhdata), udhlen8);
-    memcpy(&raw[2+udhlen8], octstr_get_cstr(msg->smart_sms.msgdata), msglen8);
+    memcpy(&raw[2], octstr_get_cstr(msg->sms.udhdata), udhlen8);
+    memcpy(&raw[2+udhlen8], octstr_get_cstr(msg->sms.msgdata), msglen8);
 
     IOTRACE("encoding", &raw[2], len);
 
-    if (!msg->smart_sms.flag_8bit) {
+    if (!msg->sms.flag_8bit) {
 	ois_convert_from_iso88591(&raw[2], len);
     }
 
@@ -1009,7 +1009,7 @@ static int ois_deliver_sm_invoke(SMSCenter *smsc, const char *buffer)
 
     SAY(2, "ois_deliver_sm_invoke");
 
-    msg = msg_create(smart_sms);
+    msg = msg_create(sms);
 
     ret = ois_decode_deliver_sm_invoke(msg, buffer);
     if (ret < 0) {
@@ -1125,7 +1125,7 @@ static int ois_adjust_destination_address(Msg *msg, const char *raw)
     SAY(3, "ois_adjust_destination_address");
 
     len = raw[0] & 0xff;
-    msg->smart_sms.receiver = octstr_create_from_data(&raw[1+2], len-2);
+    msg->sms.receiver = octstr_create_from_data(&raw[1+2], len-2);
 
     return 1 + len;
 }
@@ -1154,7 +1154,7 @@ static int ois_adjust_originating_address(Msg *msg, const char *raw)
     SAY(3, "ois_adjust_originating_address");
 
     len = raw[0] & 0xff;
-    msg->smart_sms.sender = octstr_create_from_data(&raw[1+2], len-2);
+    msg->sms.sender = octstr_create_from_data(&raw[1+2], len-2);
 
     return 1 + len;
 }
@@ -1166,7 +1166,7 @@ static int ois_adjust_data_coding_scheme(Msg *msg, const char *raw)
     /* we set the value only temporarily: */
     /* ois_adjust_sm_text will set the correct value */
 
-    msg->smart_sms.flag_8bit = raw[0] & 0xff;
+    msg->sms.flag_8bit = raw[0] & 0xff;
 
     return 1;
 }
@@ -1189,7 +1189,7 @@ static int ois_adjust_additional_information(Msg *msg, const char *raw)
     /* we set the value only temporarily: */
     /* ois_adjust_sm_text will set the correct value */
 
-    msg->smart_sms.flag_udh = raw[0] & 0xff;
+    msg->sms.flag_udh = raw[0] & 0xff;
 
     return 1;
 }
@@ -1208,55 +1208,55 @@ static int ois_adjust_sm_text(Msg *msg, const char *raw)
 
     /* copy text, note: flag contains temporarily the raw type description */
 
-    switch (msg->smart_sms.flag_8bit & 0xff) {
+    switch (msg->sms.flag_8bit & 0xff) {
     case 0x00: /* gsm7 */
 	ois_expand_gsm7(buffer, &raw[2], msglen7);
 	ois_convert_to_iso88591(buffer, msglen7);
-	if (msg->smart_sms.flag_udh & 0x02) {
-	    msg->smart_sms.flag_udh = 1;
-	    msg->smart_sms.msgdata = octstr_create("");
-	    msg->smart_sms.udhdata = octstr_create_from_data(buffer, msglen7);
+	if (msg->sms.flag_udh & 0x02) {
+	    msg->sms.flag_udh = 1;
+	    msg->sms.msgdata = octstr_create("");
+	    msg->sms.udhdata = octstr_create_from_data(buffer, msglen7);
 	} else {
-	    msg->smart_sms.flag_udh = 0;
-	    msg->smart_sms.msgdata = octstr_create_from_data(buffer, msglen7);
-	    msg->smart_sms.udhdata = octstr_create("");
+	    msg->sms.flag_udh = 0;
+	    msg->sms.msgdata = octstr_create_from_data(buffer, msglen7);
+	    msg->sms.udhdata = octstr_create("");
 	}
-	msg->smart_sms.flag_8bit = 0;
+	msg->sms.flag_8bit = 0;
 	break;
     case 0x0f: /* ia5 */
 	memcpy(buffer, &raw[2], msglen8);
 	ois_convert_to_iso88591(buffer, msglen8);
-	if (msg->smart_sms.flag_udh & 0x02) {
-	    msg->smart_sms.flag_udh = 1;
-	    msg->smart_sms.msgdata = octstr_create("");
-	    msg->smart_sms.udhdata = octstr_create_from_data(buffer, msglen8);
+	if (msg->sms.flag_udh & 0x02) {
+	    msg->sms.flag_udh = 1;
+	    msg->sms.msgdata = octstr_create("");
+	    msg->sms.udhdata = octstr_create_from_data(buffer, msglen8);
 	} else {
-	    msg->smart_sms.flag_udh = 0;
-	    msg->smart_sms.msgdata = octstr_create_from_data(buffer, msglen8);
-	    msg->smart_sms.udhdata = octstr_create("");
+	    msg->sms.flag_udh = 0;
+	    msg->sms.msgdata = octstr_create_from_data(buffer, msglen8);
+	    msg->sms.udhdata = octstr_create("");
 	}
-	msg->smart_sms.flag_8bit = 0;
+	msg->sms.flag_8bit = 0;
 	break;
     default: /* 0xf4, 0xf5, 0xf6, 0xf7; 8bit to disp, mem, sim or term */ 
-	if (msg->smart_sms.flag_udh & 0x02) {
-	    msg->smart_sms.flag_udh = 1;
-	    msg->smart_sms.msgdata = octstr_create("");
-	    msg->smart_sms.udhdata = octstr_create_from_data(&raw[2], msglen8);
+	if (msg->sms.flag_udh & 0x02) {
+	    msg->sms.flag_udh = 1;
+	    msg->sms.msgdata = octstr_create("");
+	    msg->sms.udhdata = octstr_create_from_data(&raw[2], msglen8);
 	} else {
-	    msg->smart_sms.flag_udh = 0;
-	    msg->smart_sms.msgdata = octstr_create_from_data(&raw[2], msglen8);
-	    msg->smart_sms.udhdata = octstr_create("");
+	    msg->sms.flag_udh = 0;
+	    msg->sms.msgdata = octstr_create_from_data(&raw[2], msglen8);
+	    msg->sms.udhdata = octstr_create("");
 	}
-	msg->smart_sms.flag_8bit = 1;
+	msg->sms.flag_8bit = 1;
 	break;
     }
 
-    if (msg->smart_sms.flag_udh) {
-	IOTRACE("decoded udh", octstr_get_cstr(msg->smart_sms.udhdata),
-		octstr_len(msg->smart_sms.udhdata));
+    if (msg->sms.flag_udh) {
+	IOTRACE("decoded udh", octstr_get_cstr(msg->sms.udhdata),
+		octstr_len(msg->sms.udhdata));
     } else {
-	IOTRACE("decoded", octstr_get_cstr(msg->smart_sms.msgdata),
-		octstr_len(msg->smart_sms.msgdata));
+	IOTRACE("decoded", octstr_get_cstr(msg->sms.msgdata),
+		octstr_len(msg->sms.msgdata));
     }
 
     return 2 + msglen8;

@@ -1154,26 +1154,26 @@ static struct packet *packet_encode_message(Msg *msg) {
 	long truncated;
 
 	gw_assert(msg != NULL);
-	gw_assert(msg->type == smart_sms);
+	gw_assert(msg->type == sms);
 
-	if (!parm_valid_address(msg->smart_sms.receiver)) {
+	if (!parm_valid_address(msg->sms.receiver)) {
 		warning(0, "cimd2_submit_msg: non-digits in "
 			"destination phone number '%s', discarded",
-			octstr_get_cstr(msg->smart_sms.receiver));
+			octstr_get_cstr(msg->sms.receiver));
 		return NULL;
 	}
 
-	if (!parm_valid_address(msg->smart_sms.sender)) {
+	if (!parm_valid_address(msg->sms.sender)) {
 		warning(0, "cimd2_submit_msg: non-digits in "
 			"originating phone number '%s', discarded",
-			octstr_get_cstr(msg->smart_sms.sender));
+			octstr_get_cstr(msg->sms.sender));
 		return NULL;
 	}
 
 	packet = packet_create(SUBMIT_MESSAGE, BOGUS_SEQUENCE);
 
 	packet_add_address_parm(packet,
-		P_DESTINATION_ADDRESS, msg->smart_sms.receiver);
+		P_DESTINATION_ADDRESS, msg->sms.receiver);
 
 	/* We used to also set the originating address here, but CIMD2
  	 * interprets such numbers as a sub-address to our connection
@@ -1193,28 +1193,28 @@ static struct packet *packet_encode_message(Msg *msg) {
 	 * That's why we set it to 140 if either UDH or 8bit is true. 
          * Currently it does not matter, since they're always both true
 	 * or both false. */
-	if (msg->smart_sms.flag_udh || msg->smart_sms.flag_8bit) {
+	if (msg->sms.flag_udh || msg->sms.flag_8bit) {
 		spaceleft = 140;
 	} else {
 		spaceleft = 160;
 	}
 	truncated = 0;
 
-	if (msg->smart_sms.flag_udh) {
+	if (msg->sms.flag_udh) {
 		/* udhdata will be truncated and warned about if
 		 * it does not fit. */
 		packet_add_hex_parm(packet,
-			P_USER_DATA_HEADER, msg->smart_sms.udhdata);
-		spaceleft -= octstr_len(msg->smart_sms.udhdata);
+			P_USER_DATA_HEADER, msg->sms.udhdata);
+		spaceleft -= octstr_len(msg->sms.udhdata);
 		if (spaceleft < 0)
 			spaceleft = 0;
 	}
 
-	text = octstr_duplicate(msg->smart_sms.msgdata);
+	text = octstr_duplicate(msg->sms.msgdata);
 	if (octstr_len(text) > 0 && spaceleft == 0) {
 		warning(0, "CIMD2: message filled up with "
 			"UDH, no room for message text");
-	} else if (msg->smart_sms.flag_8bit) {
+	} else if (msg->sms.flag_8bit) {
 		if (octstr_len(text) > spaceleft) {
 			truncated = octstr_len(text) - spaceleft;
 			octstr_truncate(text, spaceleft);
@@ -1381,7 +1381,7 @@ static Msg *cimd2_accept_message(struct packet *request) {
 	/* Code elsewhere in the gateway always expects the sender and
 	 * receiver fields to be filled, so we discard messages that
  	 * lack them.  If they should not be discarded, then the code
-	 * handling smart_sms messages should be reviewed.  -- RB */
+	 * handling sms messages should be reviewed.  -- RB */
 	if (!destination || octstr_len(destination) == 0) {
 		info(0, "CIMD2: Got SMS without receiver, discarding.");
 		goto error;
@@ -1397,15 +1397,15 @@ static Msg *cimd2_accept_message(struct packet *request) {
 		goto error;
 	}
 
-	message = msg_create(smart_sms);
-	message->smart_sms.sender = origin;
-	message->smart_sms.receiver = destination;
+	message = msg_create(sms);
+	message->sms.sender = origin;
+	message->sms.receiver = destination;
 	if (UDH) {
-		message->smart_sms.flag_udh = 1;
-		message->smart_sms.udhdata = UDH;
+		message->sms.flag_udh = 1;
+		message->sms.udhdata = UDH;
 	}
-	message->smart_sms.flag_8bit = flag_8bit;
-	message->smart_sms.msgdata = text;
+	message->sms.flag_8bit = flag_8bit;
+	message->sms.msgdata = text;
 	return message;
 
 error:
