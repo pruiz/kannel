@@ -1,3 +1,7 @@
+2003-07-02  Stipe Tolj  <tolj@wapme-systems.de>
+    * wmscript/wsstdlib.c: added support for EFI inside WMLScript. 
+      Thanks to "Guido Meyer" <guido.meyer@robot.de> for this patch.
+
 2003-06-30  Bruno Rodrigues  <bruno.rodrigues@litux.org>
     * userguide.xml: added missing already implemented tags for XML Post - 
       vp/delay and timing/delay
