@@ -656,7 +656,7 @@ static void *wsp_http_thread(void *arg) {
 	Octstr *body;
 	WSPEvent *e;
 	int status;
-#if 1
+#if 0
 	struct wmlc *wmlc_data;
 #endif
 	char *url;
@@ -689,7 +689,7 @@ static void *wsp_http_thread(void *arg) {
 			data = gw_realloc(data, size + 1);
 			data[size] = '\0';
 
-#if 1
+#if 0
 /* It seems wmo2wmlc can't handle multiple calls per process lifetime. Ooops. */
 			debug(0, "WSP: calling wml2wmlc");
 			wmlc_data = wml2wmlc(data);
@@ -706,6 +706,7 @@ static void *wsp_http_thread(void *arg) {
 {
 	char name[10*1024];
 	char cmd[20*1024];
+	char *test_wml;
 	FILE *f;
 	char wmlc[100*1024];
 	size_t n;
@@ -718,7 +719,10 @@ static void *wsp_http_thread(void *arg) {
 		goto error;
 	fclose(f);
 	
-	sprintf(cmd, "./test_wml %s", name);
+	test_wml = getenv("TEST_WML");
+	if (test_wml == NULL)
+		test_wml = "./test_wml";
+	sprintf(cmd, "%s %s", test_wml, name);
 	debug(0, "WSP: WML cmd: <%s>", cmd);
 	f = popen(cmd, "r");
 	if (f == NULL)

@@ -104,7 +104,11 @@ progs: $(progs)
 tests: $(testprogs)
 docs: $(docs)
 
-#install:
+install: all
+	$(INSTALL) $(progs) $(bindir)
+# The following is a temporary kludge until we get a new WML compiler.
+	$(INSTALL) test/test_wml $(bindir)
+
 clean:
 	rm -f core $(progs) $(testprogs) $(objs) $(docs) *.a
 
