@@ -265,11 +265,12 @@ static void unlock(void) {
  */
 static void fill(void *p, size_t bytes, long pattern) 
 {
+	long *fillp = p;
+
 	while (bytes > sizeof(long)) {
-		memcpy(p, &pattern, sizeof(long));
-		p += sizeof(long);
+		*fillp++ = pattern;
 		bytes -= sizeof(long);
 	}
 	if (bytes > 0)
-		memcpy(p, &pattern, bytes);
+		memcpy(fillp, &pattern, bytes);
 }

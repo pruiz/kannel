@@ -1,3 +1,8 @@
+2000-04-27  Richard Braakman  <dark@wapit.com>
+
+	* gwlib/gwmem-check.c: In fill(), do arithmetic with long *
+	instead of void *.
+
 2000-04-27    <Kalle Marjola <rpr@wapit.com>>
 
 	* gw/smsc_sema.c: some fixes and updates by Hao Shi
