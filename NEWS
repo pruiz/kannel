@@ -1,9 +1,74 @@
-NEWS about Kannel: Open Source WAP and SMS Gateway version 0.13.1
+NEWS about Kannel: Open Source WAP and SMS Gateway version 1.1
 
 This is a DEVELOPMENT version. It should be usable for experimentation
-and testing, and is a release candidate for 0.14. Please do try it out
+and testing, and is a release candidate for 1.2. Please do try it out
 and report problems to devel@kannel.org (the development mailing list)
 or bugs@kannel.org (the bug tracking system).
+
+This version continues the 0.13.x series.  We named it 1.1 instead of
+0.13.2 in order to make clear that it isn't older than 1.0.
+
+NOTE: This is not an update to 1.0.  Updates to 1.0 will be numbered 1.0.x,
+until we decide to release 1.2.  See the VERSION file for details.
+
+Changes since version 0.13.1:
+
+
+Compatibility breakers:
+
+ * Replies from the bearerbox admin interface are now formatted according
+   to the Accept: headers sent by the client, preferring WML over HTML
+   over plain text.  They used to always be plain text.
+
+ * Filling in admin-password is now mandatory in the configuration file.
+
+ * In the configuration for UCP/EMI SMSCs, username and password are
+   now used if they are set, and not used if they are not.
+   They used to be mandatory even though they were never used, so they
+   are likely to contain dummy values in existing configurations.
+   (This was actually changed before 0.13.1, we forgot to note it then.)
+
+
+New features:
+
+ * New SMPP module.  Written for SMPP 3.4 but should support 3.3 as well.
+
+ * smsbox reports load to the bearerbox.
+
+ * Added status.wml, status.html, and status.txt commands to the bearerbox
+   admin interface, to return status in a specific format.
+
+ * If admin commands are tried with the wrong password, the response is
+   delayed, in order to limit brute force password cracking.
+
+ * New configuration variable status-password, which protects the status
+   admin command if it is set.
+
+ * Admin commands can be used without a /cgi-bin part in the URL.
+   So http://localhost:13000/cgi-bin/status can now become just
+   http://localhost:13000/status.
+
+ * New smsc configuration group variable 'allowed-smsc-id', which lets
+   you limit which messages can be sent to a specific SMSC.
+
+ * New architecture documentation.
+
+
+Bugfixes:
+
+ * The u-dieresis (u with two dots) was translated incorrectly to the
+   GSM character set, in the AT, CIMD2, and SMPP drivers.  Fixed.
+
+ * The EMI used to crash if username was not set.  Fixed.
+
+
+Development news:
+
+ * New SMSC interface in the bearerbox, which should allow much faster
+   implementations and better error handling. The new SMPP code already
+   uses it.
+
+ * Work started on WAP Push.
 
 
 Changes since version 0.13:

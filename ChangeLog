@@ -1,5 +1,9 @@
 2001-01-12  Richard Braakman  <dark@wapit.com>
 
+	* Updated NEWS file to prepare for 1.1.
+
+2001-01-12  Richard Braakman  <dark@wapit.com>
+
 	* gwlib/charset.c: Translate u-dieresis correctly from latin1 to GSM.
 	(It does exist in GSM Default, so it doesn't have to be approximated.)
 
