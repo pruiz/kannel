@@ -45,7 +45,7 @@ static Octstr *post_content_create(void)
 
 static void start_request(HTTPCaller *caller, List *reqh, long i)
 {
-    Octstr *url, *content;
+    Octstr *url, *content = NULL;
     long *id;
 
     if ((i % 1000) == 0)
