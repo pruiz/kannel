@@ -1,3 +1,8 @@
+2003-03-07  Stipe Tolj  <tolj@wapme-systems.de>
+    * gwlib/http.c: fixed the previous kludge by a clean solution. We call
+      parse_url() only once to populate the trans values. Added also dumping
+      of the HTTP response. Can be turned of by switching of an #define.
+
 2003-03-07  Bruno Rodrigues  <bruno.rodrigues@litux.org> 
     * Makefile.in: re-added make tests (closes: #3)
     * Makefile.in: clean automatic generated config.sub and config.guess in make
