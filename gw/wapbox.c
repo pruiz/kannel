@@ -17,7 +17,8 @@
 static char *bearerbox_host = BB_DEFAULT_HOST;
 static int bearerbox_port = BB_DEFAULT_WAPBOX_PORT;
 static int heartbeat_freq = BB_DEFAULT_HEARTBEAT;
-
+static char *logfile = NULL;
+static int logfilelevel = 0;
 
 static void read_config(char *filename) {
 	Config *cfg;
@@ -39,7 +40,15 @@ static void read_config(char *filename) {
 			bearerbox_port = atoi(s);
 		if ((s = config_get(grp, "heartbeat-freq")) != NULL)
 		        heartbeat_freq = atoi(s);
+		if ((s = config_get(grp, "log-file")) != NULL)
+		        logfile = s;
+		if ((s = config_get(grp, "log-level")) != NULL)
+		        logfilelevel = atoi(s);
 		grp = config_next_group(grp);
+	}
+	if (logfile != NULL) {
+		open_logfile(logfile, logfilelevel);
+	        info(0, "Starting to log to file %s level %d", logfile, logfilelevel);
 	}
 }
 
@@ -170,17 +179,20 @@ static void *empty_queue_thread(void *arg) {
 
 int main(int argc, char **argv) {
 	int bbsocket;
+	int cf_index;
 	Msg *msg;
 	WTPEvent *wtp_event = NULL;
         WTPMachine *wtp_machine = NULL;
 
+	cf_index = get_and_set_debugs(argc, argv, NULL);
+	
 	open_logfile("wapbox.log", DEBUG);
 
 	info(0, "------------------------------------------------------------");
 	info(0, "WAP box starting up.");
 
-	if (argc > 1)
-		read_config(argv[1]);
+	if (argc > cf_index)
+		read_config(argv[cf_index]);
 	else
 		read_config("wapbox.wapconf");
 		

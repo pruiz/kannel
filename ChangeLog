@@ -1,3 +1,12 @@
+2000-01-04    <rpr@rpr.wapit.com>
+
+	* gw/wapbox.c: removed automatic logfile opening and instead added
+	configuration variable log-file and log-level. Also added standard
+	command line options identical to smsbox and bearerbox.
+
+	* gw/wml.c: removed duplicate of 'write_variable_value' function
+	(original in gwlib/utils.c)
+
 2000-01-03    <rpr@rpr.wapit.com>
 
 	* gw/wapbox.c (send_heartbeat): added heartbeat sending. And

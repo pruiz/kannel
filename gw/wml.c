@@ -1446,28 +1446,3 @@ void init_new_variable ( struct variable * pointer )
 	pointer->next = NULL;
 }
 
-/***********************************************************************************/
-/*************************     write_variable_value      ***************************/
-/***********************************************************************************/
-
-int write_variable_value(MultibyteInt value, Octet *dest)
-{
-    int i, loc = 0;
-    Octet revbuffer[20];	/* we write it backwards */
-    
-    for (;;) {
-	revbuffer[loc++] = (value & 0x7F) + 0x80;	
-	if (value >= 0x80)
-	    value = value >> 7;
-	else
-	    break;
-    }
-    for(i=0; i < loc; i++)		/* reverse the buffer */
-	dest[i] = revbuffer[loc-i-1];
-    
-    dest[loc-1] &= 0x7F;	/* remove trailer-bit from last */
-
-    return loc;
-}
- 
-
