@@ -1,5 +1,11 @@
 2001-04-17  Lars Wirzenius  <liw@iki.fi>
 
+	* gwlib/http.c: When the http module is shut down, set run_status
+	to limbo so it can be restarted. Paul Keogh wanted this so that
+	(parts of) Kannel can run as a COM object.
+
+2001-04-17  Lars Wirzenius  <liw@iki.fi>
+
 	* doc/CodingStyle: Added a paragraph about CVS tags.
 
 2001-04-16  Richard Braakman  <dark@wapit.com>

@@ -2489,6 +2489,7 @@ void http_shutdown(void)
     client_shutdown();
     server_shutdown();
     proxy_shutdown();
+    run_status = limbo;
 }
 
 
