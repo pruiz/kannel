@@ -355,4 +355,11 @@ int octstr_recv(int fd, Octstr **ostr);
 
 int octstr_url_decode(Octstr *ostr);
 
+/*
+ * octstr_get_digit_from - search long int from position pos. return found
+ * integer or -1 if not found. in case of an overflow or underflow errno is
+ * set to ERANGE.
+ */
+long octstr_get_digit_from(Octstr *ostr, long pos);
+
 #endif

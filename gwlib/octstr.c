@@ -559,7 +559,6 @@ int octstr_search(Octstr *haystack, Octstr *needle) {
 
 	return -1;
 }
-
     
 int octstr_print(FILE *f, Octstr *ostr) {
 	gw_assert(f != NULL);
@@ -1043,6 +1042,30 @@ error:
     return -1;
 }
 
+
+long octstr_get_digit_from(Octstr *ostr, long pos){
+    
+    long len = 0, ret = 0;
+    /* 2^32 is 10 numbers long */
+    
+    seems_valid(ostr);
+    len = octstr_len(ostr);
+    if(pos >= len) return -1;
+
+    for(; pos < len && !isdigit(ostr->data[pos]); pos++);
+	 
+    if(pos == len) return -1;
+	
+    ret = strtol(&(ostr->data[pos]), NULL, 10);
+    
+    if(ret == LONG_MIN || ret == LONG_MAX){
+	warning(errno,
+		"octstr_search_digit_from: Digit was out of range");
+	return -1;
+    }
+    else
+	return ret;
+}
 
 
 /**********************************************************************

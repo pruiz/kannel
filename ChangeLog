@@ -1,3 +1,8 @@
+2000-04-17 Sanna Seppanen <sanna@wapit.com>
+
+	* gwlib/octstr.h,c: Added octstr_get_digit_from(). Searches long int 
+	from octstr.
+
 Sat Apr 15 19:45:50 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* utils/daily-patch: Skip changes to gateway/configure.
