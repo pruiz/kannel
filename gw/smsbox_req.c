@@ -240,37 +240,36 @@ error:
  */
 static int send_message(URLTranslation *trans, Msg *msg)
 {
-	Octstr *text;
 	int max_msgs;
 	static char *empty = "<Empty reply from service provider>";
     
 	max_msgs = urltrans_max_messages(trans);
 
-	if(msg_type(msg) == smart_sms)
-		text = msg->smart_sms.msgdata;
-	else
+	if(msg_type(msg) != smart_sms)
 		goto error;
     
-	if (octstr_len(text)==0) {
+	if (octstr_len(msg->smart_sms.msgdata)==0) {
+
 		if (urltrans_omit_empty(trans) != 0) {
 			max_msgs = 0;
 		} else { 
-			if (octstr_replace(text, empty, strlen(empty)) == -1) 
+			if (octstr_replace(msg->smart_sms.msgdata, empty, strlen(empty)) == -1) 
 				goto error;
 		}
+
 	}
 
-	if (max_msgs == 0)
+	if (max_msgs == 0) {
 
 		info(0, "No reply sent, denied.");
 
-	else if (octstr_len(text) <= sms_max_length) {
+	} else if (octstr_len(msg->smart_sms.msgdata) <= sms_max_length) {
 
 		if (do_sending(msg) < 0) goto error;
 
-	} else if (octstr_len(text) > sms_max_length && max_msgs == 1) {
+	} else if (octstr_len(msg->smart_sms.msgdata) > sms_max_length && max_msgs == 1) {
 
-		octstr_truncate(text, sms_max_length);	/* truncate reply */
+		octstr_truncate(msg->smart_sms.msgdata, sms_max_length);	/* truncate reply */
 		if (do_sending(msg) < 0) goto error;
 
 	} else {
