@@ -2400,6 +2400,32 @@ address-range = ""
 	a different one.
      </entry></row>
 
+    <row><entry><literal>enquire-link-interval</literal></entry>
+      <entry><literal>number</literal></entry>
+      <entry valign=bottom>
+      Optional the time lapse allowed between operations after which 
+      an SMPP entity should interrogate whether it's peer still has an 
+      active session. The default is 30 seconds.  
+     </entry></row>
+
+    <row><entry><literal>max-pending-submits</literal></entry>
+      <entry><literal>number</literal></entry>
+      <entry valign=bottom>
+      	Optional the maximum number of outstanding (i.e. acknowledged)
+        SMPP operations between an ESME and SMSC. This number
+        is not specified explicity in the SMPP Protocol Specification
+        and will be goverened by the SMPP implementation on the SMSC.
+        As a guideline it is recommended that no more than 10 (default)
+        SMPP messages are outstanding at any time.
+     </entry></row>
+
+    <row><entry><literal>reconnect-delay</literal></entry>
+      <entry><literal>number</literal></entry>
+      <entry valign=bottom>
+      Optional the time between attemps to connect an ESME to an SMSC 
+      having failed to connect initating or during an SMPP session. The default is 10 seconds.
+     </entry></row>
+
    </tbody></tgroup></informaltable>
  
 
