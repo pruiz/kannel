@@ -31,12 +31,12 @@ zip -9qr $base.zip $base/*
 )
 
 cp -a $base/doc/arch arch-$version
-cp $base/doc/arch/arch.ps .
+cp $base/doc/arch/arch.ps arch-$version.ps
 tar -c -z -f arch-$version.tar.gz arch-$version/*
 zip -9qr arch-$version.zip arch-$version/*
 
 cp -a $base/doc/userguide userguide-$version
-cp $base/doc/userguide/userguide.ps .
+cp $base/doc/userguide/userguide.ps userguide-$version.ps
 tar -c -z -f userguide-$version.tar.gz userguide-$version/*
 zip -9qr userguide-$version.zip userguide-$version/*
 

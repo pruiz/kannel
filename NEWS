@@ -1,9 +1,29 @@
-NEWS about Kannel: Open Source WAP and SMS Gateway version 0.6.1
+NEWS about Kannel: Open Source WAP and SMS Gateway version 0.7
 
-Change summary from version 0.6:
+Change summary from version 0.6.1:
 
-* Bug fix related to multithreaded use of the new WML compiler.
+* New WML compiler, based on the Gnome XML library, is now used. The old
+  one is included in the sources but not included in the program.
 
-* Minor bug fix to WMLScript compiler.
+* A generic, dynamic, thread safe list implementation added. This reduces
+  bugs and simplifies code when compared to implementing lists separately
+  everywhere.
 
-* Some minor code cleanups.
+* Scripts and wrappers for running Kannel as a daemon from init.d included.
+
+* Various code cleanups.
+
+* Bug fixes, including:
+
+	- HTTP header packing.
+	- Memory allocation and freeing bugs in HTTP, visible under
+	  heavy load.
+	- URL mapping not reported on INFO level anymore.
+	- Minor portability issues.
+	- Error messages in logs don't include spurious system error
+	  message quite as often as before.
+	- WML compiler is now thread safe, kludge to call it from one thread
+	  at a time removed.
+	- Old libxml versions had problems, requirement changed to 1.8.6.
+
+See ChangeLog for detailed information.
