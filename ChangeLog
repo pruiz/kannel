@@ -1,4 +1,4 @@
-2002-08-08  Harrie Hazewinkel <harrie@mod-snmp.com>
+2002-08-09  Harrie Hazewinkel <harrie@mod-snmp.com>
     * Moving the smsc code into a subdiretory gw/smsc.
       files moved (into gw/smsc):
       emimsg.c emimsg.h smpp_pdu.c smpp_pdu.def smpp_pdu.h
