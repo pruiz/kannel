@@ -85,9 +85,9 @@ static void client_thread(void *arg)
     }
     info(0, "This thread: %ld succeeded, %ld failed.", succeeded, failed);
 }
- 
 
-int main(int argc, char **argv) 
+
+int main(int argc, char **argv)
 {
     DBPool *pool;
     MySQLConf *conf;
@@ -97,7 +97,6 @@ int main(int argc, char **argv)
     int opt, ret;
     time_t start, end;
     double run_time;
-    char **s = NULL;
 
     gwlib_init();
 
@@ -201,7 +200,7 @@ int main(int argc, char **argv)
 
     /* check all active connections */
     debug("",0,"Connections within pool: %ld", dbpool_conn_count(pool));
-    info(0,"Checked pool, %ld connections still active and ok", dbpool_check(pool));
+    info(0,"Checked pool, %d connections still active and ok", dbpool_check(pool));
 
     info(0,"Destroying pool");
     dbpool_destroy(pool);

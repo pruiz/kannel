@@ -1,3 +1,6 @@
+2003-06-19  Alexander Malysh  <a.malysh@centrium.de>
+   * test/test_dbpool.c, gwlib/http.c: fixed compiler warning
+
 2003-06-19  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/smsc/smsc_cimd2.c: fixed a bug inside CIMD2 module.
       Thanks to Per Skaglund <per.skaglund@dialtone.fi> for the patch.

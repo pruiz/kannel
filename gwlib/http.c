@@ -2783,7 +2783,6 @@ void http_header_dump(List *headers)
 
 void http_cgivar_dump(List *cgiargs)
 {
-    long i;
     HTTPCGIVar *v;
 
     gwlib_assert_init();
