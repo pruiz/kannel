@@ -1136,6 +1136,14 @@ admin-password = f00bar
 		certificate and is used for the HTTPS server side only.
 	  </entry>
     </row>
+	 <row><entry><literal>ssl-trusted-ca-file</literal></entry>
+     <entry>filename</entry>
+     <entry valign=bottom>
+     This file contains the certificates Kannel is willing to trust when
+     working as a HTTPS client. If this option is not set, certificates 
+     are not validated and those the identity of the server is not proven.
+	  </entry>
+    </row>
 
 
   </tbody>

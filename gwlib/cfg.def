@@ -47,6 +47,7 @@ SINGLE_GROUP(core,
     OCTSTR(ssl-client-certkey-file)
     OCTSTR(ssl-server-cert-file)
     OCTSTR(ssl-server-key-file)
+    OCTSTR(ssl-trusted-ca-file)
 )
 
 

@@ -1,4 +1,9 @@
 2001-12-06 Jörg Pommnitz <jpo@condat.de>
+	* gwlib/cfg.def: introduce new config option ssl-trusted-ca-file
+	* gwlib/conn.c: implement client side SSL certificate verification
+	* doc/userguide/userguide.xml: document new option ssl-trusted-ca-file
+	
+2001-12-06 Jörg Pommnitz <jpo@condat.de>
 	* gwlib/conn.c, gwlib/conn.h: new function 
 	  void conn_config_ssl (CfgGroup *grp); to uniformly configure
 	  the SSL code

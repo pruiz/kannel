@@ -436,7 +436,7 @@ Connection *conn_wrap_fd(int fd, int ssl)
         conn->peer_certificate = NULL;
 
         SSL_set_fd(conn->ssl, conn->fd);
-        SSL_set_verify(conn->ssl, 0, NULL);
+        /* SSL_set_verify(conn->ssl, 0, NULL); */
         BIO_set_nbio(SSL_get_rbio(conn->ssl), 0);
         BIO_set_nbio(SSL_get_wbio(conn->ssl), 0);
 
@@ -1154,12 +1154,29 @@ void use_global_server_certkey_file(Octstr *certfile, Octstr *keyfile)
     info(0, "Using global server SSL key from file %s", octstr_get_cstr(keyfile));
 }
 
+static int verify_callback(int preverify_ok, X509_STORE_CTX *ctx)
+{
+    char    subject[256];
+    char    issuer [256];
+    char   *status;
+
+    X509_NAME_oneline(X509_get_subject_name(ctx->current_cert), subject, sizeof(subject));
+    X509_NAME_oneline(X509_get_issuer_name(ctx->current_cert), issuer, sizeof (issuer));
+
+    status = preverify_ok ? "Accepting" : "Rejecting";
+    
+    info(0, "%s certificate for \"%s\" signed by \"%s\"", status, subject, issuer);
+    
+    return preverify_ok;
+}
+
 void
 conn_config_ssl (CfgGroup *grp)
 {
     Octstr *ssl_client_certkey_file = NULL;
     Octstr *ssl_server_cert_file    = NULL;
     Octstr *ssl_server_key_file     = NULL;
+    Octstr *ssl_trusted_ca_file     = NULL;
 
     /*
      * check if SSL is desired for HTTP servers and then
@@ -1177,10 +1194,32 @@ conn_config_ssl (CfgGroup *grp)
         use_global_server_certkey_file(ssl_server_cert_file, 
 				       ssl_server_key_file);
     }
+
+    ssl_trusted_ca_file = cfg_get(grp, octstr_imm("ssl-trusted-ca-file"));
+    
+    if (ssl_trusted_ca_file != NULL) {
+	if (!SSL_CTX_load_verify_locations(global_ssl_context,
+					   octstr_get_cstr(ssl_trusted_ca_file),
+					   NULL)) {
+	    panic(0, "Failed to load SSL CA file: %s", octstr_get_cstr(ssl_trusted_ca_file));
+	} else {
+	    info(0, "Using CA root certificates from file %s",
+		 octstr_get_cstr(ssl_trusted_ca_file));
+	    SSL_CTX_set_verify(global_ssl_context,
+			       SSL_VERIFY_PEER,
+			       verify_callback);
+	}
+	
+    } else {
+	SSL_CTX_set_verify(global_ssl_context,
+			   SSL_VERIFY_NONE,
+			   NULL);
+    }
     
     octstr_destroy(ssl_client_certkey_file);
     octstr_destroy(ssl_server_cert_file);
     octstr_destroy(ssl_server_key_file);
+    octstr_destroy(ssl_trusted_ca_file);
 }
 
 #else
