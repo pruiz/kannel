@@ -664,21 +664,23 @@ static void pap_request_thread(void *arg)
          *cgivars;
     HTTPClient *client;
     
-    http_status = 202;                
+    http_status = 0;                
   
     while (run_status == running && (p = list_consume(pap_queue)) != NULL) {
+        http_status = HTTP_NOT_FOUND;
         pap_event_unpack(p, &ip, &url, &push_headers, &mime_content, 
                          &cgivars, &client);      
         pap_event_destroy(p);
 
         if (octstr_compare(url, ppg_url) != 0) {
-	    http_status = HTTP_NOT_FOUND;
             error(0,  "Request <%s> from <%s>: service not found", 
                   octstr_get_cstr(url), octstr_get_cstr(ip));
             not_found = octstr_imm("Service not specified\n");
             http_send_reply(client, http_status, push_headers, not_found);
             goto ferror;
         }
+
+        http_status = HTTP_UNAUTHORIZED;
 
         if (!ip_allowed_by_ppg(ip)) {
             error(0,  "Request <%s> from <%s>: ip forbidden, closing the"
@@ -698,6 +700,7 @@ static void pap_request_thread(void *arg)
 	    username = octstr_imm("");
 	}
 
+        http_status = HTTP_ACCEPTED;
         info(0, "PPG: Accept request <%s> from <%s>", octstr_get_cstr(url), 
              octstr_get_cstr(ip));
         
@@ -909,7 +912,7 @@ static int handle_push_message(WAPEvent *e, int status)
            *type;
 
     List *push_headers;
-
+   
     push_data = e->u.Push_Message.push_data;
     push_headers = e->u.Push_Message.push_headers;
     cliaddr = e->u.Push_Message.address_value;
