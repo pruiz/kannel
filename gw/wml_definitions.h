@@ -39,6 +39,8 @@
 #define CHILD_BIT   0x40
 #define ATTR_BIT    0x80
 
+#define STRING_TABLE_MIN 4    
+
 
 /***********************************************************************
  * Declarations of global variables. 

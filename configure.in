@@ -46,7 +46,6 @@ if test "$XML_CONFIG" = "no"; then
 	echo "You MUST have the gnome-xml library installed"; exit 1
 else
 	case `$XML_CONFIG --version` in 
-	*1.8.6[)] AC_DEFINE(HAVE_LIBXML_1_8_6) [;;] 
 	*1.8.7[)] [;;] 
 	*1.8.8[)] [;;] 
 	*1.8.9[)] [;;] 
@@ -54,7 +53,7 @@ else
 	*2.1.1[)] [;;] 
 	*2.2.0[)] [;;] 
 	*2.2.1[)] [;;] 
-	*[)] echo "Libxml is too old. You need at least 1.8.6." [;] exit 1 [;;] 
+	*[)] echo "Libxml is too old. You need at least 1.8.7." [;] exit 1 [;;] 
 	esac
 	LIBS="$LIBS `$XML_CONFIG --libs`"
 	CFLAGS="$CFLAGS `$XML_CONFIG --cflags`"

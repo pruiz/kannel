@@ -72,6 +72,15 @@ typedef struct {
   Octstr *string;
 } string_table_t;
 
+/*
+ * The string table proposal list node.
+ */
+
+typedef struct {
+  int count;
+  Octstr *string;
+} string_table_proposal_t;
+
 
 #include "wml_definitions.h"
 
@@ -127,7 +136,6 @@ static void wml_binary_output(Octstr *ostr, wml_binary_t *wbxml);
 /* Output into the wml_binary. */
 
 static void output_char(int byte, wml_binary_t **wbxml);
-static int output_terminated_string(Octstr *ostr, wml_binary_t **wbxml);
 static int output_convertable_string(Octstr *ostr, wml_binary_t **wbxml);
 static int output_plain_string(Octstr *ostr, wml_binary_t **wbxml);
 void output_variable(Octstr *variable, Octstr **output, var_esc_t escaped,
@@ -140,7 +148,15 @@ void output_variable(Octstr *variable, Octstr **output, var_esc_t escaped,
 
 static string_table_t *string_table_create(int offset, Octstr *ostr);
 static void string_table_destroy(string_table_t *node);
+static string_table_proposal_t *string_table_proposal_create(Octstr *ostr);
+static void string_table_proposal_destroy(string_table_proposal_t *node);
+static void string_table_build(xmlNodePtr node, wml_binary_t **wbxml);
+static void string_table_collect_strings(xmlNodePtr node, List *strings);
+static List *string_table_collect_words(List *strings);
+static List *string_table_sort_list(List *start);
+static List *string_table_add_many(List *sorted, wml_binary_t **wbxml);
 static unsigned long string_table_add(Octstr *ostr, wml_binary_t **wbxml);
+static int string_table_apply(Octstr *ostr, wml_binary_t **wbxml);
 static void string_table_output(Octstr *ostr, wml_binary_t **wbxml);
 
 /*
@@ -185,14 +201,7 @@ int wml_compile(Octstr *wml_text,
        * into binary.
        */
 
-#if HAVE_LIBXML_1_8_6
-      /* XXX this seems to work around a bug in libxml, which is even in
-	 1.8.6. --liw */
-      pDoc = xmlParseMemory(wml_c_text, size + 1);
-#else
-      /* XXX this should be the correct version. --liw */
       pDoc = xmlParseMemory(wml_c_text, size);
-#endif
 
       if(pDoc != NULL)
 	{
@@ -319,6 +328,7 @@ static int parse_document(xmlDocPtr document, Octstr *charset,
 			  wml_binary_t **wbxml)
 {
   Octstr *chars;
+  xmlNodePtr node;
 
   if (document == NULL)
     {
@@ -327,7 +337,7 @@ static int parse_document(xmlDocPtr document, Octstr *charset,
       return -1;
     }
 
-  /* A bad hack, WBXML version is assumed to be 1.1. */
+  /* XXX - A bad hack, WBXML version is assumed to be 1.1. -tuo */
   (*wbxml)->wbxml_version = 0x01; /* WBXML Version number 1.1 */
   (*wbxml)->wml_public_id = 0x04; /* WML 1.1 Public ID */
   (*wbxml)->string_table_length = 0x00; /* String table length=0 */
@@ -347,7 +357,10 @@ static int parse_document(xmlDocPtr document, Octstr *charset,
       octstr_destroy(chars);
     }
 
-  return parse_node(xmlDocGetRootElement(document), wbxml);
+  node = xmlDocGetRootElement(document);
+  string_table_build(node, wbxml);
+
+  return parse_node(node, wbxml);
 }
 
 
@@ -576,7 +589,8 @@ static int parse_attr_value(Octstr *attr_value, wml_attr_value_t *tokens,
    * with one byte codes. Note that the algorith is not foolproof; seaching 
    * is done in an order and the text before first hit is not checked for 
    * those tokens that are after the hit in the order. Most likely it would 
-   * be waste of time anyway.
+   * be waste of time anyway. String table is not used here, since at least 
+   * Nokia 7110 doesn't seem to understand string table references here.
    */
 
   for (i = 0; tokens[i].attr_value != NULL; i++)
@@ -902,19 +916,21 @@ static var_esc_t check_variable_syntax(Octstr *variable)
 
 /*
  * parse_octet_string - parse an octet string into wbxml_string, the string 
- * is checked for variables. Returns 0 for success, -1 for error.
+ * is checked for variables. If string is string table applicable, it will 
+ * be checked for string insrtances that are in the string table, otherwise 
+ * not. Returns 0 for success, -1 for error.
  */
 
 static int parse_octet_string(Octstr *ostr, wml_binary_t **wbxml)
 {
   Octstr *output, *var, *temp = NULL;
   int var_len;
-  int start = 0, pos = 0, len;
+  int start = 0, pos = 0, len, ret = 0;
 
   /* No variables? Ok, let's take the easy way... */
 
   if ((pos = octstr_search_char(ostr, '$')) < 0)
-    return output_terminated_string(ostr, wbxml);
+    return string_table_apply(ostr, wbxml);
 
   len = octstr_len(ostr);
   output = octstr_create_empty();
@@ -939,10 +955,10 @@ static int parse_octet_string(Octstr *ostr, wml_binary_t **wbxml)
 		octstr_insert(output, var, octstr_len(output));
 	      else
 		/* The string is output as a inline string and the variable 
-		   as a inline variable reference. */
+		   as a string table variable reference. */
 		{
 		  if (octstr_len(output) > 0)
-		    if (output_terminated_string(output, wbxml) == -1)
+		    if (string_table_apply(output, wbxml) == -1)
 		      return -1;
 		  octstr_truncate(output, 0);
 		  output_plain_string(var, wbxml);
@@ -975,13 +991,13 @@ static int parse_octet_string(Octstr *ostr, wml_binary_t **wbxml)
     }
 
   if (octstr_len(output) > 0)
-    if (output_terminated_string(output, wbxml) == -1)
-      return -1;
+    if (string_table_apply(output, wbxml) == -1)
+      ret = -1;
   
   octstr_destroy(output);
   octstr_destroy(var);
   
-  return 0;
+  return ret;
 }
 
 
@@ -1057,30 +1073,12 @@ static void output_char(int byte, wml_binary_t **wbxml)
 
 
 /*
- * output_terminated_string - output an octet string into wbxml_string as a 
- * inline string. Returns 0 for success, -1 for an error.
- */
-
-static int output_terminated_string(Octstr *ostr, wml_binary_t **wbxml)
-{
-  output_char(STR_I, wbxml);
-  if (output_convertable_string(ostr, wbxml) == 0)
-    {      
-      output_char(STR_END, wbxml);
-      return 0;
-    }
-  return -1;
-}
-
-
-
-/*
  * output_plain_octet_utf8map - remap ascii to utf8 and
  * output an octet string into wbxml.
  * Returns 0 for success, -1 for an error.
  */
 
-static int output_plain_octet_utf8map(Octstr *ostr, wml_binary_t **wbxml)
+static void output_plain_octet_utf8map(Octstr *ostr, wml_binary_t **wbxml)
 {
   long i ;
 
@@ -1094,8 +1092,6 @@ static int output_plain_octet_utf8map(Octstr *ostr, wml_binary_t **wbxml)
 	octstr_append_cstr((*wbxml)->wbxml_string, 
 			   (*wbxml)->utf8map + ((ch - 128) * 4)) ;
     }
-    
-  return 0 ;
 }
 
 
@@ -1153,20 +1149,14 @@ void output_variable(Octstr *variable, Octstr **output, var_esc_t escaped,
       break;
     }
 
-#if NO_STRING_TABLE
-  octstr_insert(*output, variable, octstr_len(*output));
-  octstr_append_char(*output, STR_END);
-  octstr_destroy (variable);
-#else
   octstr_append_uintvar(*output, string_table_add(variable, wbxml));
-#endif
 }
 
 
 
 /*
  * string_table_create - reserves memory for the string_table_t and sets the 
- * fields to zeroes and NULLs.
+ * fields.
  */
 
 static string_table_t *string_table_create(int offset, Octstr *ostr)
@@ -1198,6 +1188,226 @@ static void string_table_destroy(string_table_t *node)
 
 
 /*
+ * string_table_proposal_create - reserves memory for the 
+ * string_table_proposal_t and sets the fields.
+ */
+
+static string_table_proposal_t *string_table_proposal_create(Octstr *ostr)
+{
+  string_table_proposal_t *node;
+
+  node = gw_malloc(sizeof(string_table_proposal_t));
+  node->count = 1;
+  node->string = ostr;
+
+  return node;
+}
+
+
+
+/*
+ * string_table_proposal_destroy - frees the memory allocated for the 
+ * string_table_proposal_t.
+ */
+
+static void string_table_proposal_destroy(string_table_proposal_t *node)
+{
+  if (node != NULL)
+    {
+      octstr_destroy(node->string);
+      gw_free(node);
+    }
+}
+
+
+
+/*
+ * string_table_build - collects the strings from the WML source into a list, 
+ * adds those strings that appear more than once into string table. The rest 
+ * of the strings are sliced into words and the same procedure is executed to 
+ * the list of these words.
+ */
+
+static void string_table_build(xmlNodePtr node, wml_binary_t **wbxml)
+{
+  string_table_proposal_t *item = NULL;
+  List *list = NULL;
+
+  list = list_create();
+
+  string_table_collect_strings(node, list);
+
+  list = string_table_add_many(string_table_sort_list(list), wbxml);
+
+  list =  string_table_collect_words(list);
+
+  list = string_table_add_many(string_table_sort_list(list), wbxml);
+
+  /* Memory cleanup. */
+  while (list_len(list))
+    {
+      item = list_extract_first(list);
+      string_table_proposal_destroy(item);
+    }
+
+  list_destroy(list);
+}
+
+
+
+/*
+ * string_table_collect_strings - collects the strings from the WML 
+ * ocument into a list that is then further processed to build the 
+ * string table for the document.
+ */
+
+static void string_table_collect_strings(xmlNodePtr node, List *strings)
+{
+  Octstr *string;
+
+  switch (node->type) {
+  case XML_TEXT_NODE:
+    if (strlen(node->content) > STRING_TABLE_MIN)
+      {
+	string = octstr_create(node->content);
+
+	octstr_shrink_blank(string);
+	octstr_strip_blank(string);
+
+	if (octstr_len(string) > STRING_TABLE_MIN)
+	  list_append(strings, string);
+      }
+    break;
+  default:
+    break;
+  }
+
+#if defined(LIBXML_VERSION) && LIBXML_VERSION >= 20000
+
+  if (node->children != NULL)
+    string_table_collect_strings(node->children, strings);
+
+#else
+
+  if (node->childs != NULL)
+    string_table_collect_strings(node->childs, strings);
+
+#endif
+
+  if (node->next != NULL)
+    string_table_collect_strings(node->next, strings);
+  
+}
+
+
+
+/*
+ * string_table_sort_list - takes a list of octet strings and returns a list
+ * of string_table_proposal_t:s that contains the same strings with number of 
+ * instants of every string in the input list.
+ */
+
+static List *string_table_sort_list(List *start)
+{
+  int i;
+  Octstr *string = NULL;
+  string_table_proposal_t *item = NULL;
+  List *sorted = NULL;
+
+  sorted = list_create();
+
+  while (list_len(start))
+    {
+      string = list_extract_first(start);
+      
+      /* Check whether the string is unique. */
+      for (i = 0; i < list_len(sorted); i++)
+	{
+	  item = list_get(sorted, i);
+	  if (octstr_compare(item->string, string) == 0)
+	    {
+	      octstr_destroy(string);
+	      string = NULL;
+	      item->count ++;
+	      break;
+	    }
+	}
+      
+      if (string != NULL)
+	{
+	  item = string_table_proposal_create(string);
+	  list_append(sorted, item);
+	}
+    }
+
+  list_destroy(start);
+
+  return sorted;
+}
+
+
+
+/*
+ * string_table_add_many - takes a list of string with number of instants and
+ * adds those whose number is greater than 1 into the string table. Returns 
+ * the list ofrejected strings for memory cleanup.
+ */
+
+static List *string_table_add_many(List *sorted, wml_binary_t **wbxml)
+{
+  string_table_proposal_t *item = NULL;
+  List *list = NULL;
+
+  list = list_create();
+
+  while (list_len(sorted))
+    {
+      item = list_extract_first(sorted);
+
+      if (item->count > 1 && octstr_len(item->string) > STRING_TABLE_MIN)
+	{
+	  string_table_add(octstr_duplicate(item->string), wbxml);
+	  string_table_proposal_destroy(item);
+	}
+      else
+	list_append(list, item);
+    }
+
+  return list;
+}
+
+
+
+/*
+ * string_table_collect_words - takes a list of strings and returns a list 
+ * of words contained by those strings.
+ */
+
+static List *string_table_collect_words(List *strings)
+{
+  string_table_proposal_t *item = NULL;
+  List *list = NULL;
+
+  list = list_create();
+
+  while (list_len(strings))
+    {
+      item = list_extract_first(strings);
+
+      if (list_len(list) == 0)
+	list = octstr_split_words(item->string);
+      else
+	list = list_cat(octstr_split_words(item->string), list);
+    }
+
+  list_destroy(strings);
+
+  return list;
+}
+
+
+
+/*
  * string_table_add - adds a string to the string table. Duplicates are
  * discarded. The function returns the offset of the string in the 
  * string table; if the string is already in the table then the offset 
@@ -1208,8 +1418,6 @@ static unsigned long string_table_add(Octstr *ostr, wml_binary_t **wbxml)
 {
   string_table_t *item = NULL;
   unsigned long i, offset = 0;
-
-  octstr_append_char(ostr, STR_END);
 
   /* Check whether the string is unique. */
   for (i = 0; i < (unsigned long)list_len((*wbxml)->string_table); i++)
@@ -1228,10 +1436,82 @@ static unsigned long string_table_add(Octstr *ostr, wml_binary_t **wbxml)
   item = string_table_create(offset, ostr);
 
   (*wbxml)->string_table_length = 
-    (*wbxml)->string_table_length + octstr_len(ostr);
+    (*wbxml)->string_table_length + octstr_len(ostr) + 1;
   list_append((*wbxml)->string_table, item);
 
   return offset;
+}
+
+
+
+/*
+ * string_table_apply - takes a octet string of WML bnary and goes it 
+ * through searching for substrings that are in the string table and 
+ * replaces them with string table references.
+ */
+
+static int string_table_apply(Octstr *ostr, wml_binary_t **wbxml)
+{
+  Octstr *input = NULL;
+  string_table_t *item = NULL;
+  long i = 0, word_s = 0, word_e = 0;
+
+  input = octstr_create_empty();
+
+  for (i = 0; i < list_len((*wbxml)->string_table); i++)
+    {
+      item = list_get((*wbxml)->string_table, i);
+
+      if (octstr_len(item->string) > STRING_TABLE_MIN)
+	/* No use to replace 1 to 3 character substring, the reference 
+	   will eat the saving up. */
+	if ((word_s = octstr_search(ostr, item->string)) >= 0)
+	  {
+	    /* Check whether the octet string are equal if they are equal 
+	       in length. */
+	    if (octstr_len(ostr) == octstr_len(item->string))
+	      {
+		if ((word_s = octstr_compare(ostr, item->string)) == 0)
+		  {
+		    octstr_truncate(ostr, 0);
+		    octstr_append_char(ostr, STR_T);
+		    octstr_append_uintvar(ostr, item->offset);
+		    word_e = octstr_len(ostr);
+		  }
+	      }
+	    /* Check the possible substrings. */
+	    else if (octstr_len(ostr) > octstr_len(item->string))
+	      {
+		octstr_delete(ostr, word_s, octstr_len(item->string));
+
+		octstr_truncate(input, 0);
+		/* Substring in the start? No STR_END then. */
+		if (word_s > 0)
+		  octstr_append_char(input, STR_END);
+                  
+		octstr_append_char(input, STR_T);
+		octstr_append_uintvar(input, item->offset);
+
+		/* Subtring ending the string? No need to start a new one. */
+		if ( word_s < octstr_len(ostr))
+		  octstr_append_char(input, STR_I);
+
+		word_e = word_s + octstr_len(input);
+		octstr_insert(ostr, input, word_s);
+	      }
+	    /* If te string table entry is longer than the string, it can 
+	       be skipped. */
+	  }
+    }
+
+  octstr_destroy(input);
+
+  if (octstr_get_char(ostr, 0) != STR_T)
+    output_char(STR_I, wbxml);
+  if (word_e < octstr_len(ostr))
+    octstr_append_char(ostr, STR_END);    
+
+  return output_convertable_string(ostr, wbxml);
 }
 
 
@@ -1248,6 +1528,7 @@ static void string_table_output(Octstr *ostr, wml_binary_t **wbxml)
   while ((item = list_extract_first((*wbxml)->string_table)) != NULL)
     {
       octstr_insert(ostr, item->string, octstr_len(ostr));
+      octstr_append_char(ostr, STR_END);
       string_table_destroy(item);
     }
 }
