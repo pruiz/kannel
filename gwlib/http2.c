@@ -353,11 +353,13 @@ Octstr **charset) {
 			*type = h;
 			*charset = octstr_create_empty();
 		} else {
-			/* XXX this is bogus, but just barely good enough */
+			*charset = octstr_copy(h, semicolon + 1, 
+					octstr_len(h));
+			octstr_strip_blank(*charset);
+
 			octstr_delete(h, semicolon, octstr_len(h));
 			octstr_strip_blank(h);
 			*type = h;
-			*charset = octstr_create_empty();
 		}
 	}
 }

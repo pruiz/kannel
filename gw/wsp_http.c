@@ -312,8 +312,9 @@ void *wsp_http_thread(void *arg) {
 		type = octstr_create("text/plain");
 	} else {
 		http2_header_get_content_type(resp_headers, &type, &charset);
-		info(0, "WSP: Fetched <%s> (%s)", 
-			octstr_get_cstr(url), octstr_get_cstr(type));
+		info(0, "WSP: Fetched <%s> (%s, charset='%s')", 
+			octstr_get_cstr(url), octstr_get_cstr(type),
+			octstr_get_cstr(charset));
 		status = 200; /* OK */
 		
 		converter_failed = 0;

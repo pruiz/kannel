@@ -1,3 +1,11 @@
+Mon May 15 16:07:00 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* gw/wsp_http.c: Report character set when fetch is successful.
+	
+	* gwlib/http2.c: Fix parsing of character set from Content-Type.
+	
+	* test/test_http2.c: Report reply headers.
+
 Mon May 15 15:59:32 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* gw/wsp_http.c: Do not require resp_headers to be non-NULL.

@@ -36,12 +36,14 @@ static void *client_thread(void *arg) {
 			error(0, "http2_get failed");
 		} else {
 			++succeeded;
-			octstr_print(stdout, replyb);
+			debug("", 0, "Reply headers:");
 			while ((os = list_extract_first(replyh)) 
 			       != NULL) {
+				octstr_dump(os, 1);
 				octstr_destroy(os);
 			}
 			list_destroy(replyh);
+			octstr_print(stdout, replyb);
 			octstr_destroy(replyb);
 			octstr_destroy(url);
 			octstr_destroy(final_url);
