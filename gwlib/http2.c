@@ -13,6 +13,19 @@
 
 
 /*
+ * The definition for the HTTPSocket data type.
+ */
+struct HTTPSocket {
+	int in_use;
+	time_t last_used;
+	int socket;
+	Octstr *host;
+	int port;
+	Octstr *buffer;
+};
+
+
+/*
  * Data and functions needed to support proxy operations. If proxy_hostname 
  * is NULL, no proxy is used.
  */
@@ -206,6 +219,11 @@ void http2_server_close(HTTPSocket *socket) {
 }
 
 
+int http2_socket_fd(HTTPSocket *socket) {
+	return socket->socket;
+}
+
+
 HTTPSocket *http2_server_accept_client(HTTPSocket *socket) {
 	return socket_accept(socket);
 }
@@ -275,17 +293,23 @@ Octstr *body) {
 	Octstr *response;
 	char buf[1024];
 	int i, ret;
+	long len;
 	
 	sprintf(buf, "HTTP/1.1 %d Foo\r\n", status);
 	response = octstr_create(buf);
-	sprintf(buf, "Content-Length: %ld\r\n", octstr_len(body));
+	if (body == NULL)
+		len = 0;
+	else
+		len = octstr_len(body);
+	sprintf(buf, "Content-Length: %ld\r\n", len);
 	octstr_append_cstr(response, buf);
-	for (i = 0; i < list_len(headers); ++i) {
+	for (i = 0; headers != NULL && i < list_len(headers); ++i) {
 		octstr_append(response, list_get(headers, i));
 		octstr_append_cstr(response, "\r\n");
 	}
 	octstr_append_cstr(response, "\r\n");
-	octstr_append(response, body);
+	if (body != NULL)
+		octstr_append(response, body);
 	ret = socket_write(socket, response);
 	octstr_destroy(response);
 	return ret;
@@ -395,16 +419,6 @@ int proxy_used_for_host(Octstr *host) {
 
 
 enum { POOL_MAX_IDLE = 300 };
-
-
-struct HTTPSocket {
-	int in_use;
-	time_t last_used;
-	int socket;
-	Octstr *host;
-	int port;
-	Octstr *buffer;
-};
 
 
 static List *pool = NULL;

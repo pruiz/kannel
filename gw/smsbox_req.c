@@ -450,7 +450,20 @@ error:
 }
 
 
-char *smsbox_req_sendsms(CGIArg *list)
+static Octstr *cgi_variable(List *list, char *name) 
+{
+	int i;
+	HTTPCGIVar *v;
+	
+	for (i = 0; i < list_len(list); ++i) {
+		v = list_get(list, i);
+		if (octstr_str_compare(v->name, name) == 0)
+			return v->value;
+	}
+	return NULL;
+}
+
+char *smsbox_req_sendsms(List *list)
 {
 	Msg *msg = NULL;
 	URLTranslation *t = NULL;
@@ -458,22 +471,22 @@ char *smsbox_req_sendsms(CGIArg *list)
 	Octstr *text = NULL, *udh = NULL;
 	int ret;
 
-	if (cgiarg_get(list, "username", &user) == -1)
+	if ((user = cgi_variable(list, "username")) == NULL)
 	    t = urltrans_find_username(translations, "default");
 	else 
 	    t = urltrans_find_username(translations, octstr_get_cstr(user));
     
 	if (t == NULL || 
-	    cgiarg_get(list, "password", &val) == -1 ||
+	    (val = cgi_variable(list, "password")) == NULL ||
 	    strcmp(octstr_get_cstr(val), urltrans_password(t)) != 0)
 	{
 	    return "Authorization failed";
 	}
 
-	cgiarg_get(list, "udh", &udh);
-	cgiarg_get(list, "text", &text);
+	udh = cgi_variable(list, "udh");
+	text = cgi_variable(list, "text");
 
-	if (cgiarg_get(list, "to", &to) == -1 ||
+	if ((to = cgi_variable(list, "to")) == NULL ||
 	    (text == NULL && udh == NULL))
 	{
 		error(0, "/cgi-bin/sendsms got wrong args");
@@ -482,7 +495,7 @@ char *smsbox_req_sendsms(CGIArg *list)
 
 	if (urltrans_faked_sender(t) != NULL) {
 	    from = octstr_create(urltrans_faked_sender(t));
-	} else if (cgiarg_get(list, "from", &from) == 0 &&
+	} else if ((from = cgi_variable(list, "from")) != NULL &&
 		   octstr_len(from) > 0) 
 	{
 	    from = octstr_duplicate(from);

@@ -1,3 +1,17 @@
+Tue May  2 22:01:06 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* gw/bearerbox.c: sendsms_thread in internal smsbox commented
+	out, because it was pointless converting it to the new HTTP,
+	since it will disappear in the re-write.
+	
+	* gw/smsbox.c, gw/smsbox_req.c: Converted to use new HTTP.
+	
+	* gw/http2.[ch]: Wrote function http2_socket_fd.
+	http2_server_send_reply modified to accept NULL arguments for
+	headers and body.
+	
+	* gwlib/socket.[ch]: Wrote function socket_get_peer_ip.
+
 Tue May  2 20:19:45 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* gw/html.[ch]: Converted html_ functions to use Octstr instead

@@ -78,7 +78,7 @@ static char	*global_sender;
 static int	heartbeat_freq;
 
 static int 	socket_fd;
-static int 	http_fd;
+static HTTPSocket *http_server_socket;
 static char 	*http_allow_ip = NULL;
 static char 	*http_deny_ip = NULL;
 
@@ -155,56 +155,77 @@ static void new_request(Octstr *pack)
 
 static void *http_request_thread(void *arg)
 {
-    int client, ret;
-    char *path = NULL, *args = NULL, *client_ip = NULL;
-    char *answer;
-    CGIArg *arglist;
-    
-    client = httpserver_get_request(http_fd, &client_ip, &path, &args);
-    http_accept_pending = 0;
-    if (client == -1) {
-	error(0, "Failed to get request from client, killing thread");
-	return NULL;
-    }
-    ret = 0;
-    if (http_allow_ip != NULL)
-	ret = check_ip(http_allow_ip, client_ip, NULL);
-    if (ret < 1 && http_deny_ip != NULL)
-	if (check_ip(http_deny_ip, client_ip, NULL) == 1) {
+    HTTPSocket *client;
+    char *client_ip;
+    Octstr *os, *url, *body, *answer;
+    List *hdrs, *args, *reply_hdrs;
+    HTTPCGIVar *v;
+
+    reply_hdrs = list_create();
+    list_append(reply_hdrs, octstr_create("Content-type: text/html"));
+
+    client = arg;
+    client_ip = socket_get_peer_ip(http2_socket_fd(client));
+    if (http_allow_ip != NULL &&
+	check_ip(http_allow_ip, client_ip, NULL) < 1 &&
+	http_deny_ip != NULL &&
+	check_ip(http_deny_ip, client_ip, NULL) == 1) {
 	    warning(0, "Non-allowed connect tried from <%s>, ignored",
 		    client_ip);
+	    (void) http2_server_send_reply(client, HTTP_NOT_FOUND, /* XXX */
+	    		NULL, NULL);
 	    goto done;
-	}
-
-    /* print client information */
-
-    info(0, "smsbox: Get HTTP request < %s > from < %s >", path, client_ip);
+    }
     
-    if (strcmp(path, "/cgi-bin/sendsms") == 0) {
+    while (http2_server_get_request(client, &url, &hdrs, &body, &args) > 0) {
+	info(0, "smsbox: Got HTTP request <%s> from <%s>",
+	    octstr_get_cstr(url),
+	    client_ip);
 
-	arglist = cgiarg_decode_to_list(args);
-	answer = smsbox_req_sendsms(arglist);
+	if (octstr_str_compare(url, "/cgi-bin/sendsms") == 0)
+	    answer = octstr_create(smsbox_req_sendsms(args));
+	else
+	    answer = octstr_create("unknown request\n");
+        debug("sms.http", 0, "Answer: <%s>", octstr_get_cstr(answer));
 
-	cgiarg_destroy_list(arglist);
-    } else
-	answer = "unknown request";
-    info(0, "%s", answer);
+	octstr_destroy(url);
+	while ((os = list_extract_first(hdrs)) != NULL)
+		octstr_destroy(os);
+	list_destroy(hdrs);
+	octstr_destroy(body);
+	while ((v = list_extract_first(args)) != NULL) {
+		octstr_destroy(v->name);
+		octstr_destroy(v->value);
+		gw_free(v);
+	}
+	list_destroy(args);
+	
+	if (http2_server_send_reply(client, HTTP_OK, reply_hdrs, answer) == -1)
+		goto done;
+/* XXX we have a problem with responding with HTTP/1.1 when client
+   (read: lynx) talked with HTTP/1.0. Urgh. By closing the client socket
+   after the first request, we can do work around this in the short
+   run. */
+	goto done;
+    }
 
-    if (httpserver_answer(client, answer) == -1)
-	error(0, "Error responding to client. Too bad.");
-
-done:    
-    /* answer closes the socket */
-    gw_free(path);
-    gw_free(args);
+done:
     gw_free(client_ip);
+    while ((os = list_extract_first(reply_hdrs)) != NULL)
+	    octstr_destroy(os);
+    list_destroy(reply_hdrs);
+    http2_server_close_client(client);
     return NULL;
 }
 
 
 static void http_start_thread(void)
 {
-    (void)start_thread(1, http_request_thread, NULL, 0);
+    HTTPSocket *client;
+    
+    client = http2_server_accept_client(http_server_socket);
+    (void) start_thread(1, http_request_thread, client, 0);
+    http_accept_pending = 0;
 }
 
 
@@ -302,13 +323,13 @@ static void init_smsbox(Config *cfg)
 	open_logfile(logfile, lvl);
     }
     if (sendsms_port > 0) {
-	http_fd = httpserver_setup(sendsms_port);
-	if (http_fd < 0)
+	http_server_socket = http2_server_open(sendsms_port);
+	if (http_server_socket == NULL)
 	    error(0, "Failed to open HTTP socket, ignoring it");
 	else
 	    info(0, "Set up send sms service at port %d", sendsms_port);
     } else
-	http_fd = -1;
+	http_server_socket = NULL;
     
     return;
 }
@@ -344,7 +365,7 @@ static void main_loop(void)
     fd_set rf;
     struct timeval to;
 
-    if (http_fd < 0)
+    if (http_server_socket == NULL)
 	http_accept_pending = -1;
     else
 	http_accept_pending = 0;
@@ -361,7 +382,7 @@ static void main_loop(void)
 	FD_ZERO(&rf);
 	FD_SET(socket_fd, &rf);
 	if (http_accept_pending == 0)
-	    FD_SET(http_fd, &rf);
+	    FD_SET(http2_socket_fd(http_server_socket), &rf);
 	to.tv_sec = 0;
 	to.tv_usec = 0;
 
@@ -372,7 +393,8 @@ static void main_loop(void)
 	    if(errno==EAGAIN) continue;
 	    error(errno, "Select failed");
 	    goto error;
-	} if (ret > 0 && http_accept_pending == 0 && FD_ISSET(http_fd, &rf)) {
+	} if (ret > 0 && http_accept_pending == 0 && 
+	      FD_ISSET(http2_socket_fd(http_server_socket), &rf)) {
 
 	    http_accept_pending = 1;
 	    http_start_thread();
@@ -474,6 +496,7 @@ int main(int argc, char **argv)
 
     info(0, "Smsbox terminating.");
 
+    http2_server_close(http_server_socket);
     http2_shutdown();
     mutex_destroy(socket_mutex);
     urltrans_destroy(translations);

@@ -1323,6 +1323,9 @@ static void http_start_thread(void)
 
 static void *sendsms_thread(void *arg)
 {
+#if 1
+    return NULL;
+#else
     int client;
     char *path = NULL, *args = NULL, *client_ip = NULL;
     char *answer;
@@ -1360,6 +1363,7 @@ static void *sendsms_thread(void *arg)
     gw_free(args);
     gw_free(client_ip);
     return NULL;
+#endif
 }
 
 

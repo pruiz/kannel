@@ -253,6 +253,20 @@ int socket_set_blocking(int fd, int blocking) {
 	return 0;
 }
 
+char *socket_get_peer_ip(int s) {
+	socklen_t len;
+	struct sockaddr_in addr;
+	
+	len = sizeof(addr);
+	if (getsockname(s, (struct sockaddr *) &addr, &len) == -1) {
+		error(errno, "getsockname failed");
+		return gw_strdup("0.0.0.0");
+	}
+	
+	gw_assert(addr.sin_family == AF_INET);
+	return gw_strdup(inet_ntoa(addr.sin_addr)); /* XXX not thread safe */
+}
+
 int read_line(int fd, char *line, int max) {
         char *start;
         int ret;

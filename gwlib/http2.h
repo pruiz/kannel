@@ -240,6 +240,7 @@ int http2_server_get_request(HTTPSocket *client_socket, Octstr **url,
 	List **headers, Octstr **body, List **cgivars);
 int http2_server_send_reply(HTTPSocket *client_socket, int status, 
 	List *headers, Octstr *body);
+int http2_socket_fd(HTTPSocket *socket);
 
 
 /*
