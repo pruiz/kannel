@@ -634,7 +634,7 @@ static void url_result_thread(void *arg)
 	validity = deferred = 0;
 	account = NULL;
 	
-    	if (status == HTTP_OK) {
+    	if (status == HTTP_OK || status == HTTP_ACCEPTED) {
 	    http_header_get_content_type(reply_headers, &type, &charset);
 	    if (octstr_case_compare(type, text_html) == 0 ||
 		octstr_case_compare(type, text_wml) == 0) {
@@ -650,6 +650,7 @@ static void url_result_thread(void *arg)
 					  &account, &pid, &alt_dcs);
 	    } else if (octstr_case_compare(type, text_plain) == 0) {
 		replytext = octstr_duplicate(reply_body);
+                octstr_destroy(reply_body);
 		reply_body = NULL;
 		octstr_strip_blanks(replytext);
     	    	get_x_kannel_from_headers(reply_headers, &from, &to, &udh,
@@ -666,6 +667,7 @@ static void url_result_thread(void *arg)
 				&dlr_mask, &dlr_url, &account, &pid, &alt_dcs);
 	    } else if (octstr_case_compare(type, octet_stream) == 0) {
 		replytext = octstr_duplicate(reply_body);
+                octstr_destroy(reply_body);
 		octets = 1;
 		reply_body = NULL;
     	    	get_x_kannel_from_headers(reply_headers, &from, &to, &udh,
@@ -794,7 +796,7 @@ static int obey_request(Octstr **result, URLTranslation *trans, Msg *msg)
 
     case TRANSTYPE_GET_URL:
 	request_headers = http_create_empty_headers();
-	http_header_add(request_headers, "User-Agent", "Kannel " VERSION);
+        http_header_add(request_headers, "User-Agent", "Kannel " VERSION);
 	if (urltrans_send_sender(trans)) {
 	    http_header_add(request_headers, "X-Kannel-From",
 			    octstr_get_cstr(msg->sms.receiver));
@@ -2042,6 +2044,7 @@ static Octstr *smsbox_req_sendota(List *list, Octstr *client_ip, int *status)
         /*
          * We are doing the XML OTA compiler mode for this request
          */
+        debug("sms", 0, "OTA service with XML document");
         ota_doc = octstr_duplicate(ota_doc);
         if ((doc_type = http_cgi_variable(list, "type")) == NULL) {
 	    doc_type = octstr_format("%s", "settings");
@@ -2713,8 +2716,6 @@ int main(int argc, char **argv)
     counter_destroy(num_outstanding_requests);
     counter_destroy(catenated_sms_counter);
     octstr_destroy(bb_host);
-    octstr_destroy(sendsms_url);
-    octstr_destroy(sendota_url);
     octstr_destroy(global_sender);
     octstr_destroy(reply_emptymessage);
     octstr_destroy(reply_requestfailed);
@@ -2757,3 +2758,15 @@ int charset_processing (Octstr *charset, Octstr *body, int coding) {
     
     return resultcode;
 }
+
+
+
+
+
+
+
+
+
+
+
+
