@@ -658,7 +658,7 @@ static void pap_request_thread(void *arg)
            *url,
            *ip,
            *not_found,
-           *username;
+           *username = NULL;
     int compiler_status,
         http_status;
     List *push_headers,                /* MIME headers themselves */
