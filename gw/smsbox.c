@@ -80,7 +80,6 @@ static int	heartbeat_freq;
 static char	*accepted_chars = NULL;
 
 static int 	socket_fd;
-static HTTPSocket *http_server_socket;
 static char 	*http_proxy_host = NULL;
 static int  	http_proxy_port = -1;
 static List 	*http_proxy_exceptions = NULL;
@@ -90,7 +89,6 @@ static int	only_try_http = 0;
 /* thread handling */
 
 static Mutex	 	*socket_mutex;
-static volatile sig_atomic_t 	http_accept_pending = 0;
 static volatile sig_atomic_t 	abort_program = 0;
 
 
@@ -163,59 +161,42 @@ static void new_request(Octstr *pack)
 
 static void http_request_thread(void *arg)
 {
-    HTTPSocket *client;
-    char *client_ip;
-    Octstr *url, *body, *answer;
+    HTTPClient *client;
+    Octstr *ip, *url, *body, *answer;
     List *hdrs, *args, *reply_hdrs;
 
     reply_hdrs = list_create();
-    list_append(reply_hdrs, octstr_create("Content-type: text/html"));
+    http_header_add(reply_hdrs, "Content-type", "text/html");
 
-    client = arg;
-    client_ip = gw_strdup(octstr_get_cstr(http_socket_ip(client)));
-    
-    while (http_server_get_request(client, &url, &hdrs, &body, &args) > 0) {
+    for (;;) {
+    	client = http_accept_request(&ip, &url, &hdrs, &body, &args);
+	if (client == NULL)
+	    break;
+
 	info(0, "smsbox: Got HTTP request <%s> from <%s>",
-	    octstr_get_cstr(url),
-	    client_ip);
+	    octstr_get_cstr(url), octstr_get_cstr(ip));
 
 	if (octstr_str_compare(url, "/cgi-bin/sendsms") == 0)
-	    answer = octstr_create(smsbox_req_sendsms(args, client_ip));
+	    answer = octstr_create(smsbox_req_sendsms(args, 
+	    	    	    	    	    	      octstr_get_cstr(ip)));
 	else if (octstr_str_compare(url, "/cgi-bin/sendota") == 0)
-	    answer = octstr_create(smsbox_req_sendota(args, client_ip));
+	    answer = octstr_create(smsbox_req_sendota(args, 
+	    	    	    	    	    	      octstr_get_cstr(ip)));
 	else
 	    answer = octstr_create("unknown request\n");
         debug("sms.http", 0, "Answer: <%s>", octstr_get_cstr(answer));
 
+	octstr_destroy(ip);
 	octstr_destroy(url);
 	http_destroy_headers(hdrs);
 	octstr_destroy(body);
 	http_destroy_cgiargs(args);
 	
-	if (http_server_send_reply(client, HTTP_OK, reply_hdrs, answer) == -1) {
-		octstr_destroy(answer);
-		goto done;
-	}
-
-	goto done;
+	http_send_reply(client, HTTP_OK, reply_hdrs, answer);
     }
 
-done:
-    gw_free(client_ip);
-    list_destroy(reply_hdrs, octstr_destroy_item);
-    http_server_close_client(client);
+    http_destroy_headers(reply_hdrs);
 }
-
-
-static void http_start_thread(void)
-{
-    HTTPSocket *client;
-    
-    client = http_server_accept_client(http_server_socket);
-    gwthread_create(http_request_thread, client);
-    http_accept_pending = 0;
-}
-
 
 
 /*------------------------------------------------------------*/
@@ -338,17 +319,17 @@ static void init_smsbox(Config *cfg)
 	alog_open(p, 1);	/* XXX should be able to use gmtime, too */
 
     if (sendsms_port > 0) {
-	http_server_socket = http_server_open(sendsms_port);
-	if (http_server_socket == NULL) {
+	if (http_open_server(sendsms_port) == -1) {
 	    if (only_try_http)
 		error(0, "Failed to open HTTP socket, ignoring it");
 	    else
 		panic(0, "Failed to open HTTP socket");
 	}
-	else
+	else {
 	    info(0, "Set up send sms service at port %d", sendsms_port);
-    } else
-	http_server_socket = NULL;
+	    gwthread_create(http_request_thread, NULL);
+	}
+    }
 
     if (http_proxy_host != NULL && http_proxy_port > 0) {
 	Octstr *os;
@@ -357,9 +338,8 @@ static void init_smsbox(Config *cfg)
     	http_use_proxy(os, http_proxy_port, http_proxy_exceptions);
 	octstr_destroy(os);
     }
-    
-    return;
 }
+
 
 /*
  * send the heartbeat packet
@@ -392,11 +372,6 @@ static void main_loop(void)
     fd_set rf;
     struct timeval to;
 
-    if (http_server_socket == NULL)
-	http_accept_pending = -1;
-    else
-	http_accept_pending = 0;
-    
     start = t = time(NULL);
     mutex_lock(socket_mutex);
     while(!abort_program) {
@@ -408,8 +383,6 @@ static void main_loop(void)
 	}
 	FD_ZERO(&rf);
 	FD_SET(socket_fd, &rf);
-	if (http_accept_pending == 0)
-	    FD_SET(http_socket_fd(http_server_socket), &rf);
 	to.tv_sec = 0;
 	to.tv_usec = 0;
 
@@ -420,12 +393,6 @@ static void main_loop(void)
 	    if(errno==EAGAIN) continue;
 	    error(errno, "Select failed");
 	    goto error;
-	} if (ret > 0 && http_accept_pending == 0 && 
-	      FD_ISSET(http_socket_fd(http_server_socket), &rf)) {
-
-	    http_accept_pending = 1;
-	    http_start_thread();
-	    continue;
 	}
 	else if (ret > 0 && FD_ISSET(socket_fd, &rf)) {
 
@@ -536,8 +503,7 @@ int main(int argc, char **argv)
     info(0, "Smsbox terminating.");
 
     alog_close();
-    if (http_server_socket)
-	http_server_close(http_server_socket);
+    http_close_all_servers();
     mutex_destroy(socket_mutex);
     urltrans_destroy(translations);
     config_destroy(cfg);

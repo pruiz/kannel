@@ -1,5 +1,16 @@
 2000-11-07  Lars Wirzenius  <liw@iki.fi>
 
+	* checks/check_sendsms.sh: Sleep for five seconds before starting
+	smsbox; this prevents the smsbox from crashing before the
+	bearerbox is ready to accept its connection.
+	
+	* gw/smsbox.c: Adapted to new HTTP server API.
+	
+	* gwlib/http.c: Bugfix. If we fail to re-use a connection, and
+	re-open it, we must then quit the handler for the old connection.
+
+2000-11-07  Lars Wirzenius  <liw@iki.fi>
+
 	* checks/check_sendsms.sh: Wrote.
 
 2000-11-07  Lars Wirzenius  <liw@iki.fi>

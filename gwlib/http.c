@@ -2228,6 +2228,7 @@ static void handle_transaction(Connection *conn, void *data)
 		    trans->retrying = 1;
 		    trans->state = request_not_sent;
 		    list_produce(pending_requests, trans);
+		    return;
 		}
 	    } else if (trans->status > 0) {
 		/* Got the status, go read headers next. */

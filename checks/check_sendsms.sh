@@ -17,6 +17,7 @@ test/fakesmsc -i $interval -m $times '123 234 nop' \
 gw/bearerbox -v $loglevel gw/smskannel.conf > check_sendsms_bb.log 2>&1 &
 bbpid=$!
 
+sleep 5
 gw/smsbox -v $loglevel gw/smskannel.conf > check_sendsms_sms.log 2>&1 &
 
 i=0
