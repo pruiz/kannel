@@ -1,3 +1,8 @@
+2000-09-27  Tuomas Luttinen  <tuo@wapit.com>
+
+	* configure[.in]: Support for libxml1 removed, only 2.2.0 and
+	up now.
+
 2000-09-27  Richard Braakman  <dark@wapit.com>
 
 	* gw/smsc_emi.c: Correct calculation of message length for
