@@ -1,3 +1,13 @@
+2004-01-26 Aarno Syv\132nen <aarno@gni.ch>
+    Committed bugfixes by Paul Bagyenda.
+    * gwlib/date.c: Bugfix in function making ISO dates
+    * gwlib/mime.c: Add random characters to the boundary. Safer way to
+      detect "non-standard" mime entity ending (\n, not \r\n). Correct
+      a misspelling.
+    * wap/wsp_headers.[c|h] More public functions. Accept '"' in addi-
+      tion of WSP_QUOTE. Correct handling of quoted parameters.
+    Thanks a lot to Paul !
+
 2004-01-26 Stipe Tolj  <tolj@wapme-systems.de>
     * gwlib/dbpool_mysq.c, gwlib/utils.c: some source code beautifying. 
       No logic change.
@@ -12,6 +22,7 @@
       This patch breaks currently kannel build when no 'regexp.h' found. David
       is working on resolution and most modern OSs has regexp support anyway.
       Msg-Id: <400D4417.9010306@wapme-systems.de>.
+
 
 2004-01-23  Alexander Malysh  <a.malysh@centrium.de>
     * gw/bb_boxc.c: fixed double free.
