@@ -1462,7 +1462,8 @@ static void update_queue_watcher()
     if (c % 20 == 19)
 	check_queues();
     
-    if (c >= 120) {
+    if (c >= 120 && (rq_last_mod(bbox->request_queue) < 60 ||
+		     rq_last_mod(bbox->reply_queue) < 60)) {
 	char buf[1024];
 	print_queues(buf);
 	debug(0, "\n%s", buf);
