@@ -55,6 +55,16 @@ static Numhash *white_list;
 
 
 
+static void log_sms(SMSCConn *conn, Msg *sms, char *message)
+{
+    alog("%s [SMSC:%s] [from:%s] [to:%s] [msg:%s]",
+	 message,
+	 smscconn_id(conn) ? octstr_get_cstr(smscconn_id(conn)) : "",
+	 octstr_get_cstr(sms->sms.sender),
+	 octstr_get_cstr(sms->sms.receiver),
+	 sms->sms.flag_udh ? "<<UDH>>" :
+	 octstr_get_cstr(sms->sms.msgdata));
+}
 
 /*---------------------------------------------------------------------------
  * CALLBACK FUNCTIONS
@@ -82,11 +92,11 @@ void bb_smscconn_killed(void)
 void bb_smscconn_sent(SMSCConn *conn, Msg *sms)
 {
     counter_increase(outgoing_sms_counter);
-    alog("Sent a message - SMSC:%s receiver:%s msg: '%s'",
-	 smscconn_id(conn),
-	 octstr_get_cstr(sms->sms.receiver),
-	 octstr_get_cstr(sms->sms.msgdata));
 
+    /* XXX add write SMS-ACK to sms-store and generate
+     *     smsc-delivered notice */ 
+
+    log_sms(conn, sms, "Sent SMS");
     msg_destroy(sms);
 }
 
@@ -101,10 +111,11 @@ void bb_smscconn_send_failed(SMSCConn *conn, Msg *sms, int reason)
 	break;
     default:
 	/* XXX yell etc. here */
-	alog("Send FAILED - SMSC:%s receiver:%s msg: '%s'",
-             smscconn_id(conn),
-             octstr_get_cstr(sms->sms.receiver),
-             octstr_get_cstr(sms->sms.msgdata));
+	/* XXX add write SMS-NACK to sms-store and generate
+	 *     smsc-delivered notice */ 
+
+	
+	log_sms(conn, sms, "FAILED Send SMS");
 	msg_destroy(sms);
     }
 }    
@@ -125,6 +136,7 @@ int bb_smscconn_receive(SMSCConn *conn, Msg *sms)
 	numhash_find_number(white_list, sms->sms.sender) < 1) {
 	info(0, "Number <%s> is not in white-list, message discarded",
 	     octstr_get_cstr(sms->sms.sender));
+	log_sms(conn, sms, "REJECTED - not white-listed SMS");
 	msg_destroy(sms);
         return -1;
     }
@@ -132,18 +144,14 @@ int bb_smscconn_receive(SMSCConn *conn, Msg *sms)
 	numhash_find_number(black_list, sms->sms.sender) == 1) {
 	info(0, "Number <%s> is in black-list, message discarded",
 	     octstr_get_cstr(sms->sms.sender));
+	log_sms(conn, sms, "REJECTED - black-listed SMS");
 	msg_destroy(sms);
 	return -1;
     }
 
-    /*
-     * XXX  WAP on SMS - assembling WDP packets should be somehow here
-     */
+    /* XXX Add SMS to sms-store, if enabled */
     
-    alog("Received a message - SMSC:%s sender:%s msg: '%s'",
-	 smscconn_name(conn),
-	 octstr_get_cstr(sms->sms.sender),
-	 octstr_get_cstr(sms->sms.msgdata));
+    log_sms(conn, sms, "Receive SMS");
 
     list_produce(incoming_sms, sms);
     counter_increase(incoming_sms_counter);

@@ -294,6 +294,8 @@ static int starter(Cfg *cfg)
     if (log != NULL) {
 	alog_open(octstr_get_cstr(log), 1);
 	/* use localtime; XXX let user choose that */
+
+	octstr_destroy(log);
     }
     
 	

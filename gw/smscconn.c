@@ -44,7 +44,7 @@ SMSCConn *smscconn_create(CfgGroup *grp, int start_as_stopped)
     conn->send_msg = NULL;
     conn->stop_conn = NULL;
     conn->start_conn = NULL;
-    
+
 #define GET_OPTIONAL_VAL(x, n) x = cfg_get(grp, octstr_imm(n))
     
     GET_OPTIONAL_VAL(conn->id, "smsc-id");

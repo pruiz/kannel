@@ -1,3 +1,16 @@
+2001-02-07  Kalle Marjola  <rpr@wapit.com>
+
+	* gw/bearerbox.c: Bugfix. Fixed memory leak caused by access log /
+	new config
+
+	* doc/userguide/userguide.xml: made it clearer that sms-service is
+	selected by keyword and number of parameters
+
+	* gw/bb_smscconn.c: Bugfix: fixed access log to use Octstring return value
+
+	* gw/bb_smscconn.c: Compatibility breaker: modified access log
+	output
+	
 2001-02-07  Yann Muller  <ymuller@3glab.com>
 
 	* gw/smsc_at.c: added support for Ericsson GSM modems (patch from
