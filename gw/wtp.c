@@ -300,8 +300,8 @@ static void wtp_handle_event(WTPMachine *machine, WAPEvent *event){
      WAPEvent *wsp_event = NULL;
      WAPEvent *timer_event = NULL;
 
-     debug("wap.wtp", 0, "WTP: machine %p, state %s, event %s.", 
-	   (void *) machine, 
+     debug("wap.wtp", 0, "WTP: machine %ld, state %s, event %s.", 
+	   machine->mid, 
 	   name_state(machine->state), 
 	   wap_event_name(event->type));
 
@@ -312,6 +312,7 @@ static void wtp_handle_event(WTPMachine *machine, WAPEvent *event){
 		(condition)) { \
 		action \
 		machine->state = next_state; \
+		debug("wap.wtp", 0, "WTP: New state %s", #next_state); \
 	     } else 
      #include "wtp_state-decl.h"
 	     {
@@ -325,7 +326,7 @@ static void wtp_handle_event(WTPMachine *machine, WAPEvent *event){
 	wap_event_destroy(event);  
      }
 
-     if (!machine->in_use)
+     if (machine->state == LISTEN)
      	wtp_machine_destroy(machine);
 }
 
@@ -485,6 +486,9 @@ static WTPMachine *wtp_machine_create_empty(void){
 
 	list_append(machines, machine);
 
+	debug("wap.wtp", 0, "WTP: Created WTPMachine %p (%ld)", 
+		(void *) machine, machine->mid);
+
         return machine;
 }
 
@@ -493,6 +497,9 @@ static WTPMachine *wtp_machine_create_empty(void){
  * been deleted from the machines list.
  */
 static void wtp_machine_destroy(WTPMachine *machine){
+	debug("wap.wtp", 0, "WTP: Destroying WTPMachine %p (%ld)", 
+		(void *) machine, machine->mid);
+	
 	list_delete_equal(machines, machine);
         #define INTEGER(name) machine->name = 0;
         #define ENUM(name) machine->name = LISTEN;
@@ -544,14 +551,16 @@ static WAPEvent *pack_wsp_event(WAPEventName wsp_name, WAPEvent *wtp_event,
                      event->TR_Invoke_Ind.wsp_tid = wtp_tid_next();
                      event->TR_Invoke_Ind.tid = machine->tid;
                      event->TR_Invoke_Ind.mid = machine->mid;
+                     event->TR_Invoke_Ind.addr_tuple = 
+		     	wap_addr_tuple_duplicate(machine->addr_tuple);
                 break;
 
 	        case TR_Invoke_Cnf:
 		     gw_assert(wtp_event->type == TR_Invoke_Ind);
                      event->TR_Invoke_Cnf.wsp_tid =
                             event->TR_Invoke_Ind.wsp_tid;
-                     event->TR_Invoke_Cnf.tid = machine->tid;
-                     event->TR_Invoke_Cnf.mid = machine->mid;
+                     event->TR_Invoke_Cnf.addr_tuple = 
+		     	wap_addr_tuple_duplicate(machine->addr_tuple);
                 break;
                 
 	        case TR_Result_Cnf:
@@ -561,8 +570,8 @@ static WAPEvent *pack_wsp_event(WAPEventName wsp_name, WAPEvent *wtp_event,
                      event->TR_Result_Cnf.exit_info_present = 0;
 /*                            wtp_event->RcvInvoke.exit_info_present; */
                      event->TR_Result_Cnf.wsp_tid = machine->tid;
-                     event->TR_Result_Cnf.tid = machine->tid;
-                     event->TR_Result_Cnf.mid = machine->mid;
+                     event->TR_Result_Cnf.addr_tuple = 
+		     	wap_addr_tuple_duplicate(machine->addr_tuple);
                 break;
 
 	        case TR_Abort_Ind:
@@ -573,6 +582,8 @@ static WAPEvent *pack_wsp_event(WAPEventName wsp_name, WAPEvent *wtp_event,
                             event->TR_Invoke_Ind.wsp_tid;
                      event->TR_Abort_Ind.tid = machine->tid;
                      event->TR_Abort_Ind.mid = machine->mid;
+		     event->TR_Abort_Ind.addr_tuple = 
+		     	wap_addr_tuple_duplicate(machine->addr_tuple);
                 break;
                 
 	        default:

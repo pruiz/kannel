@@ -17,6 +17,7 @@ WAPEVENT(TR_Invoke_Ind,
           INTEGER(wsp_tid)
 	  INTEGER(tid)
 	  INTEGER(mid)
+	  ADDRTUPLE(addr_tuple)
 	  )
 
 WAPEVENT(TR_Invoke_Cnf,
@@ -24,8 +25,7 @@ WAPEVENT(TR_Invoke_Cnf,
           INTEGER(exit_info_present)
           INTEGER(wsp_pdu)
           INTEGER(wsp_tid)
-	  INTEGER(tid)
-	  INTEGER(mid)
+	  ADDRTUPLE(addr_tuple);
           )
 
 WAPEVENT(TR_Result_Cnf,
@@ -33,8 +33,7 @@ WAPEVENT(TR_Result_Cnf,
           INTEGER(exit_info_present)
           INTEGER(wsp_pdu)
           INTEGER(wsp_tid)
-	  INTEGER(tid)
-	  INTEGER(mid)
+	  ADDRTUPLE(addr_tuple)
           )
 
 WAPEVENT(TR_Abort_Ind,
@@ -43,6 +42,7 @@ WAPEVENT(TR_Abort_Ind,
           INTEGER(wsp_tid)
 	  INTEGER(tid)
 	  INTEGER(mid)
+	  ADDRTUPLE(addr_tuple)
           )
 
 WAPEVENT(S_Connect_Res,

@@ -170,8 +170,6 @@ static void main_thread(void *arg) {
 		}
 	
 		sm = find_machine(e, pdu);
-		debug("wap.wsp", 0, "WSP: Got event %p, for %p",
-			(void *) e, (void *) sm);
 		if (sm != NULL)
 			handle_event(sm, e, pdu);
 		
@@ -186,23 +184,28 @@ static WSPMachine *find_machine(WAPEvent *event, WSP_PDU *pdu) {
 	long mid;
 	WAPAddrTuple *tuple;
 	
+	tuple = NULL;
 	mid = -1;
 	
 	switch (event->type) {
 	case TR_Invoke_Ind:
-		mid = event->TR_Invoke_Ind.mid;
+		tuple = wap_addr_tuple_duplicate(
+				event->TR_Invoke_Ind.addr_tuple);
 		break;
 
 	case TR_Invoke_Cnf:
-		mid = event->TR_Invoke_Cnf.mid;
+		tuple = wap_addr_tuple_duplicate(
+				event->TR_Invoke_Cnf.addr_tuple);
 		break;
 
 	case TR_Result_Cnf:
-		mid = event->TR_Result_Cnf.mid;
+		tuple = wap_addr_tuple_duplicate(
+				event->TR_Result_Cnf.addr_tuple);
 		break;
 
 	case TR_Abort_Ind:
-		mid = event->TR_Abort_Ind.mid;
+		tuple = wap_addr_tuple_duplicate(
+				event->TR_Abort_Ind.addr_tuple);
 		break;
 
 	case S_Connect_Res:
@@ -232,10 +235,12 @@ static WSPMachine *find_machine(WAPEvent *event, WSP_PDU *pdu) {
 		return NULL;
 	}
 	
-	gw_assert(mid != -1);
-	if (wtp_get_address_tuple(mid, &tuple) == -1) {
+	gw_assert(mid != -1 || tuple != NULL);
+	if (mid != -1 && wtp_get_address_tuple(mid, &tuple) == -1) {
 		error(0, "Couldn't find WTP state machine %ld.", mid);
 		error(0, "This is an internal error.");
+		wap_event_dump(event);
+		panic(0, "foo");
 		return NULL;
 	}
 	gw_assert(tuple != NULL);
