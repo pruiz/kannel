@@ -68,7 +68,7 @@ ROW(CONNECTING,
 		wtp_event = wtp_event_create(TRResult);
 		if (wtp_event == NULL)
 			panic(0, "wtp_event_create failed");
-		wtp_event->TRResult.tid = wtp_tid_next();
+		wtp_event->TRResult.tid = e->machine->tid;
 		wtp_event->TRResult.user_data = pdu;
 		debug(0, "WSP: sending TR-Result.req event to old WTPMachine");
 		wtp_handle_event(e->machine, wtp_event);

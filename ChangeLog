@@ -1,3 +1,8 @@
+Fri Dec 17 17:25:18 1999  Lars Wirzenius  <liw@wapit.com>
+
+	* gw/wsp.c: use TID of the machine that receives the event,
+	instead of generating a new one.
+
 1999-16-12 Aarno Syvänen <syvanen@wapit.com>
 
 	* wtp.c: Fixing still wtp_machine_find_create. Now it can handle many
