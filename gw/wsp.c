@@ -47,10 +47,7 @@ static int unpack_octstr(Octstr **ret, int len, Octstr *os, int *off);
 WSPEvent *wsp_event_create(WSPEventType type) {
 	WSPEvent *event;
 	
-	event = malloc(sizeof(WSPEvent));
-	if (event == NULL)
-		goto error;
-	
+	event = gw_malloc(sizeof(WSPEvent));
 	event->type = type;
 	event->next = NULL;
 

@@ -1,3 +1,7 @@
+Tue Nov 30 17:37:58 1999  Lars Wirzenius  <liw@wapit.com>
+
+	* gw/wsp.c: Replaced call to malloc with call to gw_malloc.
+
 Tue Nov 30 17:13:36 1999  Lars Wirzenius  <liw@wapit.com>
 
 	* gw/wtp.c, gw/wtp.h, gw/wtp_machine-decl.h: Added event queues
