@@ -1173,9 +1173,9 @@ else
   echo "$ac_t""no" 1>&6
 fi
 
-echo $ac_n "checking for pthread_create in -lpthread""... $ac_c" 1>&6
-echo "configure:1178: checking for pthread_create in -lpthread" >&5
-ac_lib_var=`echo pthread'_'pthread_create | sed 'y%./+-%__p_%'`
+echo $ac_n "checking for pthread_exit in -lpthread""... $ac_c" 1>&6
+echo "configure:1178: checking for pthread_exit in -lpthread" >&5
+ac_lib_var=`echo pthread'_'pthread_exit | sed 'y%./+-%__p_%'`
 if eval "test \"`echo '$''{'ac_cv_lib_$ac_lib_var'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
@@ -1187,10 +1187,10 @@ cat > conftest.$ac_ext <<EOF
 /* Override any gcc2 internal prototype to avoid an error.  */
 /* We use char because int might match the return type of a gcc2
     builtin and then its argument prototype would still apply.  */
-char pthread_create();
+char pthread_exit();
 
 int main() {
-pthread_create()
+pthread_exit()
 ; return 0; }
 EOF
 if { (eval echo configure:1197: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
@@ -1221,9 +1221,9 @@ else
 fi
 
 if test -z "$pthread"; then
-	echo $ac_n "checking for pthread_create in -lc_r""... $ac_c" 1>&6
-echo "configure:1226: checking for pthread_create in -lc_r" >&5
-ac_lib_var=`echo c_r'_'pthread_create | sed 'y%./+-%__p_%'`
+	echo $ac_n "checking for pthread_exit in -lc_r""... $ac_c" 1>&6
+echo "configure:1226: checking for pthread_exit in -lc_r" >&5
+ac_lib_var=`echo c_r'_'pthread_exit | sed 'y%./+-%__p_%'`
 if eval "test \"`echo '$''{'ac_cv_lib_$ac_lib_var'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
@@ -1235,10 +1235,10 @@ cat > conftest.$ac_ext <<EOF
 /* Override any gcc2 internal prototype to avoid an error.  */
 /* We use char because int might match the return type of a gcc2
     builtin and then its argument prototype would still apply.  */
-char pthread_create();
+char pthread_exit();
 
 int main() {
-pthread_create()
+pthread_exit()
 ; return 0; }
 EOF
 if { (eval echo configure:1245: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then

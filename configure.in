@@ -31,9 +31,9 @@ dnl Checks for libraries.
 AC_CHECK_LIB(m, log)
 AC_CHECK_LIB(socket, accept)
 AC_CHECK_LIB(nsl, inet_ntoa)
-AC_CHECK_LIB(pthread, pthread_create)
+AC_CHECK_LIB(pthread, pthread_exit)
 if test -z "$pthread"; then
-	AC_CHECK_LIB(c_r, pthread_create, [LIBS="$LIBS -lc_r"])
+	AC_CHECK_LIB(c_r, pthread_exit, [LIBS="$LIBS -lc_r"])
 fi
 
 AC_CHECK_LIB(z, gzopen)
