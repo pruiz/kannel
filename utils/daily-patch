@@ -13,24 +13,31 @@
 
 set -e
 
-addr=""
-CVSROOT=":pserver:anonymoua@cvs.kannel.org:/home/cvs"
+addr="liw"
+#CVSROOT=":pserver:anonymoua@cvs.kannel.org:/home/cvs"
+
+tagsuffix="debug"
+newtag="new_daily_patch_tag$tagsuffix"
+tag="daily_patch_tag$tagsuffix"
 
 temp=/tmp/daily-patch.$$
 
 for module in "$@"
 do
-	cvs -Q -d$CVSROOT rtag -F -a -D now new_daily_patch_tag $module
-	cvs -Q -d$CVSROOT rdiff -r daily_patch_tag -r new_daily_patch_tag \
-		-u $module > $temp
+	cvs -Q -d$CVSROOT rtag -F -a -D now $newtag $module
+	rm -f $temp
+	cvs -Q -d$CVSROOT rdiff -s -r $tag -r $newtag -u $module >> $temp
 	if [ -s "$temp" ]
 	then
+		echo "" >> $temp
+		echo "" >> $temp
+		echo "" >> $temp
+		cvs -Q -d$CVSROOT rdiff -r $tag -r $newtag -u $module >> $temp
 		cat $temp
 	else
 		echo "No changes in $module since yesterday."
 	fi | mail -s "Daily patch: $module" $addr
 	rm -f $temp
 
-	cvs -Q -d$CVSROOT rtag -F -a -r new_daily_patch_tag daily_patch_tag \
-		$module
+	cvs -Q -d$CVSROOT rtag -F -a -r $newtag $tag $module
 done

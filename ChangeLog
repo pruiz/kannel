@@ -1,3 +1,7 @@
+Thu Mar 30 00:24:52 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* daily-patch: Added a summary to beginning of report.
+
 Thu Mar 30 00:01:35 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* Makefile.in: Removed -I options from CFLAGS. We're supposed to
