@@ -31,6 +31,7 @@ typedef struct privdata {
     List	*outgoing_queue;
     long	receiver_thread;
     long	sender_thread;
+    int		retry;	  	/* Retry always to connect to smsc */
     int		shutdown;	  /* Internal signal to shut down */
     int		listening_socket; /* File descriptor */
     int		send_socket;
@@ -208,13 +209,15 @@ static Connection *open_send_connection(SMSCConn *conn)
 		bb_smscconn_send_failed(conn, msg,
 					SMSCCONN_FAILED_TEMPORARILY);
 	    }
-	    info(0, "smsc_emi2: waiting for %d minutes before trying to "
-		 "connect again", wait);
-	    gwthread_sleep(wait * 60);
-	    wait = wait > 5 ? 10 : wait * 2;
+	    info(0, "smsc_emi2: waiting for %d %s before trying to "
+		 "connect again", (wait < 60 ? wait : wait/60), 
+		 (wait < 60 ? "seconds" : "minutes"));
+	    gwthread_sleep(wait);
+	    wait = wait > (privdata->retry ? 3600 : 600) ? 
+		(privdata->retry ? 3600 : 600) : wait * 2;
 	}
 	else
-	    wait = 1;
+	    wait = 15;
 
 	server = conn_open_tcp_with_port(privdata->host, privdata->port,
 					 privdata->our_port, NULL
@@ -240,7 +243,10 @@ static Connection *open_send_connection(SMSCConn *conn)
 		error(0, "smsc_emi2: Server rejected our login, giving up");
 		conn->why_killed = SMSCCONN_KILLED_WRONG_PASSWORD;
 		conn_destroy(server);
-		return NULL;
+		if(! privdata->retry) 
+		    return NULL;
+		else
+		    continue;
 	    }
 	    else if (result == 0) {
 		error(0, "smsc_emi2: Got no reply to login attempt "
@@ -1328,6 +1334,7 @@ int smsc_emi2_create(SMSCConn *conn, CfgGroup *cfg)
     long window;
     	/* has to be long because of cfg_get_integer */
     int i;
+    int retry;
 
     privdata = gw_malloc(sizeof(PrivData));
     privdata->outgoing_queue = list_create();
@@ -1360,6 +1367,8 @@ int smsc_emi2_create(SMSCConn *conn, CfgGroup *cfg)
 	deny_ip = NULL;
     privdata->username = cfg_get(cfg, octstr_imm("smsc-username"));
     privdata->password = cfg_get(cfg, octstr_imm("smsc-password"));
+
+    cfg_get_bool(&privdata->retry, cfg, octstr_imm("retry"));
 
     if (privdata->username == NULL || cfg_get_integer(&keepalive, cfg, octstr_imm("keepalive")) < 0)
 	privdata->keepalive = 0;

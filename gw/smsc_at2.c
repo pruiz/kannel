@@ -116,6 +116,7 @@ typedef struct PrivAT2data
     int 	phase2plus;
     Octstr	*validityperiod;    
     int		alt_dcs;
+    int 	retry;
 } PrivAT2data;
 
 
@@ -150,7 +151,7 @@ int	at2_pdu_encode(Msg *msg, unsigned char *pdu, PrivAT2data *privdata);
 int 	at2_encode7bituncompressed(Octstr *input, unsigned char *encoded,int offset);
 int	at2_encode8bituncompressed(Octstr *input, unsigned char *encoded);
 int 	at2_numtext(int num);
-void	at2_detect_speed(PrivAT2data *privdata);
+int	at2_detect_speed(PrivAT2data *privdata);
 int	at2_detect_modem_type(PrivAT2data *privdata);
 int	at2_modem2id(char *name);
 
@@ -839,28 +840,63 @@ void at2_device_thread(void *arg)
     SMSCConn	*conn = arg;
     PrivAT2data	*privdata = conn->data;
 
-    int l;
+    int l, wait=0;
    
     conn->status = SMSCCONN_CONNECTING;
     
-    if(privdata->speed == 0)
-    	at2_detect_speed(privdata);
-    	
-    if(privdata->modemid == AT2_AUTODETECT)
-    	at2_detect_modem_type(privdata);
-   
-    if( at2_open_device(privdata) )
-    {
-    	error(errno, "at2_device_thread: open_at2_device(%s) failed. Terminating",octstr_get_cstr(privdata->device));
-    	return;
-    }
+    
+    do {
+	if (wait) {
+	    if (conn->status == SMSCCONN_ACTIVE) {
+		mutex_lock(conn->flow_mutex);
+		conn->status = SMSCCONN_RECONNECTING;
+		mutex_unlock(conn->flow_mutex);
+	    }
+	    info(0, "smsc_at2: waiting for %d %s before trying to "
+		    "connect again", (wait < 60 ? wait : wait/60),
+	            (wait < 60 ? "seconds" : "minutes"));
+	    gwthread_sleep(wait);
+	    wait = wait > (privdata->retry ? 3600 : 600) ?
+	    (privdata->retry ? 3600 : 600) : wait * 2;
+	}
+	else
+	    wait = 15;
 
-    if (at2_init_device(privdata) != 0)
-    {
-    	privdata->shutdown = 1;
-    	error(0, "AT2[%s]: Opening failed. Terminating",octstr_get_cstr(privdata->device));
-    	return;
-    }
+	if(privdata->speed == 0) {
+	    if(-1 == at2_detect_speed(privdata)) {
+		if(!privdata->retry)
+		    return;
+		else
+		    continue;
+	    }
+	}
+    	
+	if(privdata->modemid == AT2_AUTODETECT) {
+	    if(-1 == at2_detect_modem_type(privdata)) {
+		if(!privdata->retry)
+		    return;
+		else
+		    continue;
+	    }
+	}
+   
+	if( at2_open_device(privdata) ) {
+	    error(errno, "at2_device_thread: open_at2_device(%s) failed. Terminating",octstr_get_cstr(privdata->device));
+	    if(!privdata->retry)
+		return;
+	    else
+		continue;
+	}
+
+	if (at2_init_device(privdata) != 0) {
+	    error(0, "AT2[%s]: Opening failed. Terminating",octstr_get_cstr(privdata->device));
+	    if(!privdata->retry) {
+		privdata->shutdown = 1;
+		return;
+	    } else
+		continue;
+	}
+    } while(privdata->retry && ! privdata->shutdown); 
     
     conn->status = SMSCCONN_ACTIVE;
     bb_smscconn_connected(conn);
@@ -957,6 +993,8 @@ int  smsc_at2_create(SMSCConn *conn, CfgGroup *cfg)
 
     privdata->speed = 0;
     cfg_get_integer(&privdata->speed, cfg, octstr_imm("speed"));
+
+    cfg_get_bool(&privdata->retry, cfg, octstr_imm("retry"));
 
     privdata->device = cfg_get(cfg, octstr_imm("device"));
     if (privdata->device == NULL)
@@ -1667,7 +1705,7 @@ int at2_numtext(int num)
  * try to detect modem speeds
  */
 
-void at2_detect_speed(PrivAT2data *privdata)
+int at2_detect_speed(PrivAT2data *privdata)
 {
     int autospeeds[] = { 38400, 19200, 9600 };
     int i;
@@ -1677,7 +1715,9 @@ void at2_detect_speed(PrivAT2data *privdata)
 
     for(i=0;i< (sizeof(autospeeds) / sizeof(int));i++)
     {
-	at2_open_device1(privdata);
+	if(-1 == at2_open_device1(privdata)) 
+	    return -1;
+
 	at2_set_speed(privdata,autospeeds[i]);
         res = at2_send_modem_command(privdata,"",1,0); /* send a return so the modem can detect the speed */
 
@@ -1693,7 +1733,12 @@ void at2_detect_speed(PrivAT2data *privdata)
 	}
 	at2_close_device(privdata);
     }
+    if(privdata->speed == 0) {
+	info(0, "AT2[%s]: cannot detect speed",octstr_get_cstr(privdata->device));
+	return -1;
+    }
     info(0, "AT2[%s]: detect speed is %ld",octstr_get_cstr(privdata->device),privdata->speed);
+    return 0;
 }
 
 /**********************************************************************
@@ -1707,7 +1752,8 @@ int at2_detect_modem_type(PrivAT2data *privdata)
     
     debug("bb.smsc.at2",0,"AT2[%s]: detecting modem type",octstr_get_cstr(privdata->device));
  
-    at2_open_device1(privdata);
+    if(-1 == at2_open_device1(privdata))
+	return -1;
     at2_set_speed(privdata,privdata->speed);
     
     res = at2_send_modem_command(privdata,"",1,0); /* send a return so the modem can detect the speed */

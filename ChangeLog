@@ -1,6 +1,18 @@
 2002-02-22  Bruno Rodrigues  <bruno.rodrigues@litux.org>
+    * gw/smsc_emi2.c, gw/smsc_at2.c, gwlib/cfg.def: Added retry configuration
+    boolean value to force these to smsc to always try to reconnect.  The 
+    idea is that if the connection went ok once, it should retry it.
+    Example: M20 sometimes don't start. EMI with multiple smsc's or a bad
+    terminated connection could reply with a "Too many sessions".
+    * gw/smsc_at2.c: In initialization, the modem could be probbed for speed
+    and modemtype. Changed code to exit or retry if one of these fail; in
+    detect_speed, if every speed probe fail, speed would be 0. Now it returns
+    an error
+    * doc/userguide/userguide.xml: added retry configuration information
+
+2002-02-22  Bruno Rodrigues  <bruno.rodrigues@litux.org>
     * gw/smsbox.c: fixed a bug when reply_requestfailed message was used, 
-    because it wasn't duplicated
+    because the memory wasn't duplicated and is deleted later
 
 2002-02-21  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/smsc_at2.c: fixing memory leak

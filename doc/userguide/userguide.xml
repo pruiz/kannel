@@ -2070,6 +2070,14 @@ smsc-password = bar
         use this variable. (optional)
      </entry></row>
 
+    <row><entry><literal>retry</literal></entry>
+      <entry><literal>boolean</literal></entry>
+      <entry valign=bottom>
+        Assuming that kannel is well configured and we had one sucessful
+	connection, if retry is true, kannel will always retry the connection
+	even if some related error ocur.
+     </entry></row>
+
    </tbody></tgroup></informaltable>
    
 
@@ -2430,6 +2438,14 @@ pin = 2345
 	 will try to send the message to the recipient. Encoded as per
 	 the GSM 03.40 standard, section 9.2.3.12. Default is
 	 167, meaning 24 hours.
+     </entry></row>
+
+    <row><entry><literal>retry</literal></entry>
+      <entry><literal>boolean</literal></entry>
+      <entry valign=bottom>
+        Assuming that kannel is well configured and we had one sucessful
+	connection, if retry is true, kannel will always retry the connection
+	even if some related error ocur.
      </entry></row>
 
    </tbody></tgroup></informaltable>

@@ -183,6 +183,8 @@ MULTI_GROUP(smsc,
     OCTSTR(idle-timeout)
     OCTSTR(no-sep)
     OCTSTR(appname)
+    OCTSTR(appname)
+    OCTSTR(retry)
 )
 
 
