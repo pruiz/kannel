@@ -43,6 +43,7 @@
 #include "dict.h"
 #include "semaphore.h"
 #include "xmlrpc.h"
+#include "md5.h"
 
 void gwlib_assert_init(void);
 void gwlib_init(void);
