@@ -37,6 +37,7 @@
 #include "parse.h"
 #include "protected.h"
 #include "accesslog.h"
+#include "dict.h"
 
 void gwlib_assert_init(void);
 void gwlib_init(void);
