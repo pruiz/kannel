@@ -1,3 +1,15 @@
+2001-07-17 Aarno Syvänen <aarno@wiral.com>
+
+	* test/test_ppg.c: Added parameter for content type. Some of these
+	(nil, multipart) are for testing. A bugfix.
+        * gw/wap_push_pap.c: Fixed a memory leak.
+	* gw/wap_push_ppg.c: Added handling of a SI source (this is not 
+	compiled yet). Accept all content types, compiling only wap related
+	ones. NOT_SPECIFIED is handled like UNCONFIRMED (suggestion by 
+	Bernard Valton). Regard the message non-transformable when we have
+	no content type. Fixed a memory leak. A bugfix. Committed bugfixes
+	by Bernard Valton.
+
 2001-07-16 Andreas Fink <andreas@fink.org
 	* gw/smsbox.c gw/smsc_http.c: fixed some uninitialized values for flash
 	* gw/bb_smscconn.c: changed status page to include SMSC name
