@@ -1,4 +1,18 @@
 2003-07-14  Bruno Rodrigues  <bruno.rodrigues@litux.org>
+    * gw/wap-appl.c: added multipart/form-data decompiler
+    * gw/wap-appl.c: added preliminary and comment mms decompiler, which
+      will require Stipe's code
+    * gw/wap-appl.c, gw/wml-compiler.c: cleanup warnings
+    * gw/wml-compiler.c: fix attribute values charset encoding (Closes: #37).
+    * gw/smsc/smsc_soap.c: fix warnings by creating dummy function that would
+      panic on call. Stipe, would you please fix this ?
+    * gwlib/list.c: fix warning
+    * wap/wsp_headers.c: added support for new Cache-Control wsp value; added
+      support of well-known values to Bearer-Indication and Accept-Application
+    * wap/wsp_strings.def: added some new wsp well-known values
+    * wap/wsp_headers.c: added quoting to parameters, like name="foo"
+
+2003-07-14  Bruno Rodrigues  <bruno.rodrigues@litux.org>
     * *: fix comment style from "//" to "/* */"
 
 2003-07-13  Bruno Rodrigues  <bruno.rodrigues@litux.org>

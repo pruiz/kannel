@@ -34,6 +34,38 @@
  * Declarations of data types. 
  */
 
+struct wml_externalid_t {
+    char *string;
+    char value;
+};
+
+typedef struct wml_externalid_t wml_externalid_t;
+
+static wml_externalid_t wml_externalid[] = {
+    { "-//WAPFORUM//DTD WML 1.3//EN", 0x0A },
+    { "-//WAPFORUM//DTD WML 1.2//EN", 0x09 },
+    { "-//WAPFORUM//DTD WML 1.1//EN", 0x04 },
+    { "-//WAPFORUM//DTD WML 1.0//EN", 0x02 }
+};
+
+#define NUMBER_OF_WML_EXTERNALID sizeof(wml_externalid)/sizeof(wml_externalid[0])
+
+struct wbxml_version_t {
+    char *string;
+    char value;
+};
+
+typedef struct wbxml_version_t wbxml_version_t;
+
+static wbxml_version_t wbxml_version[] = {
+    { "1.3", 0x03 },
+    { "1.2", 0x02 },
+    { "1.1", 0x01 },
+};
+
+#define NUMBER_OF_WBXML_VERSION sizeof(wbxml_version)/sizeof(wbxml_version[0])
+
+
 typedef enum { NOESC, ESC, UNESC, FAILED } var_esc_t;
 
 
@@ -152,7 +184,7 @@ static int parse_node(xmlNodePtr node, wml_binary_t **wbxml);
 static int parse_element(xmlNodePtr node, wml_binary_t **wbxml);
 static int parse_attribute(xmlAttrPtr attr, wml_binary_t **wbxml);
 static int parse_attr_value(Octstr *attr_value, List *tokens, 
-			    wml_binary_t **wbxml);
+			    wml_binary_t **wbxml, int charset);
 static int parse_text(xmlNodePtr node, wml_binary_t **wbxml);
 static int parse_cdata(xmlNodePtr node, wml_binary_t **wbxml);
 static int parse_st_octet_string(Octstr *ostr, int cdata, wml_binary_t **wbxml);
@@ -693,10 +725,10 @@ static int parse_attribute(xmlAttrPtr attr, wml_binary_t **wbxml)
 
 	    if (check_if_url(wbxml_hex))
 		status = parse_attr_value(p, wml_URL_values_list,
-					  wbxml);
+					  wbxml, attr->doc->charset);
 	    else
 		status = parse_attr_value(p, wml_attr_values_list,
-					  wbxml);
+					  wbxml, attr->doc->charset);
 	    if (status != 0)
 		error(0, 
 		      "WML compiler: could not output attribute "
@@ -721,11 +753,26 @@ static int parse_attribute(xmlAttrPtr attr, wml_binary_t **wbxml)
  */
 
 static int parse_attr_value(Octstr *attr_value, List *tokens,
-			    wml_binary_t **wbxml)
+			    wml_binary_t **wbxml, int charset)
 {
     int i, pos, wbxml_hex;
     wml_hash_t *temp = NULL;
     Octstr *cut_text = NULL;
+
+    /*
+     * Beware that libxml2 does internal encoding in UTF-8 while parsing.
+     * So if our orginal WML source had a different encoding set, we have
+     * to transcode at least here. Only transcode if target encoding differs
+     * from libxml2's internal encoding (UTF-8).
+     */
+    if (charset != XML_CHAR_ENCODING_UTF8 && 
+        charset_convert(attr_value, "UTF-8", 
+                        (char*) xmlGetCharEncodingName(charset)) != 0) {
+        error(0, "Failed to convert XML attribute value from charset "
+                 "<%s> to <%s>, will leave as is.", "UTF-8", 
+                 xmlGetCharEncodingName(charset));
+    }
+
 
     /*
      * The attribute value is search for text strings that can be replaced 
@@ -781,7 +828,7 @@ static int parse_attr_value(Octstr *attr_value, List *tokens,
 
 	if ((int) octstr_len(attr_value) > 0) {
 	    if (i < list_len(tokens))
-		parse_attr_value(attr_value, tokens, wbxml);
+		parse_attr_value(attr_value, tokens, wbxml, charset);
 	    else
 		if (parse_st_octet_string(attr_value, 0, wbxml) != 0)
 		    return -1;

@@ -28,6 +28,7 @@
 #include "wmlscript/ws.h"
 #include "xml_shared.h"
 #include "wml_compiler.h"
+#include "mime_decompiler.h"
 #include "wap/wap.h"
 #include "wap-appl.h"
 #include "wap_push_ppg.h"
@@ -122,8 +123,9 @@ static void  dev_null(const char *data, size_t len, void *context);
 
 static Octstr *convert_wml_to_wmlc(struct content *content);
 static Octstr *convert_wmlscript_to_wmlscriptc(struct content *content);
-static Octstr *convert_multipart_mixed(struct content *content);
+/* DAVI: To-Do static Octstr *convert_multipart_mixed(struct content *content); */
 static Octstr *deconvert_multipart_formdata(struct content *content);
+/* DAVI: To-Do static Octstr *deconvert_mms_message(struct content *content); */
 static void wsp_http_map_url(Octstr **osp);
 static List *negotiate_capabilities(List *req_caps);
 
@@ -138,7 +140,7 @@ static struct {
     { "text/vnd.wap.wmlscript",
       "application/vnd.wap.wmlscriptc",
       convert_wmlscript_to_wmlscriptc },
-/* XXX DAVI: to implement
+/* DAVI: To-Do
     { "multipart/mixed",
       "application/vnd.wap.multipart.mixed",
       convert_multipart_mixed }, 
@@ -154,6 +156,11 @@ static struct {
     { "application/vnd.wap.multipart.form-data",
       "multipart/form-data; boundary=kannel_boundary",
       deconvert_multipart_formdata },
+/* DAVI: To-Do
+    { "application/vnd.wap.mms-message",
+      "multipart/related; type=application/smil; boundary=kannel_boundary; start=<t0>",
+      deconvert_mms_message },
+*/
 };
 #define NUM_DECONVERTERS ((long)(sizeof(deconverters) / sizeof(deconverters[0])))
 
@@ -357,8 +364,7 @@ static int convert_content(struct content *content, List *request_headers)
 {
     Octstr *new_body;
     int failed = 0;
-    int i, j;
-    Octstr *name, *value;
+    int i;
 
     for (i = 0; i < NUM_CONVERTERS; i++) {
         if (octstr_str_compare(content->type, converters[i].type) == 0 &&
@@ -373,7 +379,7 @@ static int convert_content(struct content *content, List *request_headers)
                 content->body = new_body;
                 content->type = octstr_create(converters[i].result_type);
                 debug("wap.convert",0,"WSP::CONVERT: success, content-type is "
-                      "now %s, size %d->%d", 
+                      "now %s, size %ld->%ld", 
                       converters[i].result_type, s, octstr_len(new_body));
                 octstr_dump(new_body, 0);
                 return 1;
@@ -399,7 +405,14 @@ static int deconvert_content(struct content *content)
     Octstr *new_body;
     int failed = 0;
     int i;
+
+    if(content == NULL || content->body == NULL) {
+	warning(0, "WSP::DECONVERT: empty body (null), not deconverting");
+        return -1;
+    }
     
+    debug("wap.deconvert",0,"WSP::DECONVERT: Trying to deconvert:"); 
+    octstr_dump(content->body, 0);
     for (i = 0; i < NUM_DECONVERTERS; i++) {
         if (octstr_str_compare(content->type, deconverters[i].type) == 0) {
             debug("wap.deconvert",0,"WSP::DECONVERT: Tring to deconvert from %s to %s", 
@@ -413,8 +426,9 @@ static int deconvert_content(struct content *content)
                 content->body = new_body;
                 content->type = octstr_create(deconverters[i].result_type);
                 debug("wap.deconvert",0,"WSP::DECONVERT: success, content-type is "
-                      "now %s, size %d->%d", 
+                      "now %s, size %ld->%ld", 
 		      deconverters[i].result_type, s, octstr_len(new_body));
+                debug("wap.deconvert",0,"WSP::DECONVERT: Deconverted to:"); 
 		octstr_dump(new_body, 0);
                 return 1;
             }
@@ -715,14 +729,30 @@ static void return_reply(int status, Octstr *content_body, List *headers,
             octstr_search(content.type, octstr_imm("application/xhtml+xml"), 0) >= 0 ||
             octstr_search(content.type, octstr_imm("application/vnd.wap.xhtml+xml"), 0) >= 0) {
              Octstr *charset = find_charset_encoding(content.body);
-             if(!http_charset_accepted(request_headers, octstr_get_cstr(charset))) {
-                 if(!http_charset_accepted(request_headers, "UTF-8")) {
+             if(charset == NULL)
+                 charset = octstr_imm("UTF-8"); 
+             /* convert to utf-8 if original charset is not utf-8 and device supports it */
+             if(octstr_case_compare(charset, octstr_imm("UTF-8")) < 0 &&
+                !http_charset_accepted(device_headers, octstr_get_cstr(charset))) {
+                 if(!http_charset_accepted(device_headers, "UTF-8")) {
                      warning(0, "Device doesn't support charset [%s] neither UTF-8", 
                                 octstr_get_cstr(charset));
                  } else {
                      debug("wsp", 0, "Converting wml/xhtml from charset [%s] to UTF-8", 
                                      octstr_get_cstr(charset));
                      charset_convert(content.body, octstr_get_cstr(charset), "UTF-8");
+                 }
+            } 
+	    /* convert to iso-8859-1 if original charset is not iso and device supports it */
+	    else if(octstr_case_compare(charset, octstr_imm("ISO-8859-1")) < 0 &&
+                !http_charset_accepted(device_headers, octstr_get_cstr(charset))) {
+                 if(!http_charset_accepted(device_headers, "ISO-8859-1")) {
+                     warning(0, "Device doesn't support charset [%s] neither ISO-8859-1", 
+                                octstr_get_cstr(charset));
+                 } else {
+                     debug("wsp", 0, "Converting wml/xhtml from charset [%s] to ISO-8859-1", 
+                                     octstr_get_cstr(charset));
+                     charset_convert(content.body, octstr_get_cstr(charset), "ISO-8859-1");
                  }
             }
         }
@@ -1003,8 +1033,8 @@ static void start_fetch(WAPEvent *event)
         p->url = url;
         p->x_wap_tod = x_wap_tod;
         p->request_headers = actual_headers;
-	if(octstr_str_compare(method, "POST") == 0 && request_body) {
-	    Octstr *content_type, *charset;
+	if(octstr_str_compare(method, "POST") == 0 && request_body && 
+	   octstr_len(request_body)) {
 	    struct content content;
 	    int converted;
 
@@ -1099,112 +1129,52 @@ static Octstr *convert_wmlscript_to_wmlscriptc(struct content *content)
     return wmlscriptc;
 }
 
+/* DAVI: To-Do
 static Octstr *convert_multipart_mixed(struct content *content)
 {
     Octstr *result = NULL;
 
-    /* XXX There's a big bug in http_get_content_type that 
+    / * XXX There's a big bug in http_get_content_type that 
      * assumes that header parameter is charset without looking at
      * parameter key. Good!. I'll use its value to catch boundary
      * value for now
      * Ex: "Content-Type: (foo/bar);something=(value)" it gets value
-     * without caring about what is "something" */
+     * without caring about what is "something" * /
     debug("wap.wsp.multipart.mixed", 0, "WSP.Multipart.Mixed, boundary=[%s]", 
 		    octstr_get_cstr(content->charset));
 
-    /* XXX DAVI: To Implement */
-    return octstr_duplicate(content->body);
+    / * XXX DAVI: To Implement * /
+    result = octstr_duplicate(content->body);
+    return result;
 }
+*/
 
 
 static Octstr *deconvert_multipart_formdata(struct content *content)
 {
-    Octstr *result = NULL;
+    Octstr *mime;
+    int ret;
+   
+    ret = mime_decompile(content->body, &mime);
+    if (ret == 0)
+        return mime;
 
-    debug("wap.wsp.multipart.form.data", 0, "WSP.Multipart.Form.Data");
-    octstr_dump(content->body, 0);
-
-    /* DAVI: to implement, this is just for testing... */
-    result = octstr_create("--kannel_boundary\nContent-Type: text/plain\ncontent-disposition: form-data; name=\"name1\"\n\nvalue1\n--kannel_boundary\nContent-Type: text/plain\ncontent-disposition: form-data; name=\"name2\"\n\nvalue2\n--kannel_boundary--\n"); 
-
-    return result;
-
-/* DAVI: To Delete!!!
- 
-Mime [WSP:8.5.3]
-
-SE-T610 example:
-02 - mime header (uintvar) - 2 parts
-* mime 1
-0e - headers length (uintvar) - 14 bytes
-11 - data length (uintvar) - 17 bytes
-* content-type [WSP:8.4.2.24]
-03 - length [00-19 = length, 80-x=well known, 20-79(alpha)=text]
-83 - text/plain [charsets.txt]
-81 - charset keyword [WSP:A:Table38]
-84 - iso-8859-1 (80 + 4) [WSP:A:Table42]
-headers:
-ae - content-disposition [wsp:8.4.2.53]
-08 - length 8 (2 + 6:name1)
-80 - form-data (81=attachment, 82=inline)
-85 - name keyword [WSP:A:Table38]
-6e 61 6d 65 31 00 - name1 (6)
-data:
-76 61 6c 2d 61 c3 a3 61 c3 a7 c3 87 2d 75 65 31 00 - val... (17)
-* mime 2
-0e - headers length (uintvar) - 14
-07 - data length (uintvar) - 7
-* content-type [WSP:8.4.2.24]
-03 - length [00-19 = length, 80-x=well known, 20-79(alpha)=text]
-83 - text/plain [charsets.txt]
-81 - charset keyword [WSP:A:Table38]
-84 - iso-8859-1 (80 + 4) [WSP:A:Table42]
-headers:
-ae - content-disposition [wsp:8.4.2.53]
-08 - length 8 (2 + 6:name1)
-80 - form-data (81=attachment, 82=inline)
-85 - name keyword [WSP:A:Table38]
-6e 61 6d 65 32 00 - name2 (6)
-data:
-76 61 6c 75 65 32 - value2 (6) ???? should be 7!!
-
-Nokia7650 differences:
-data length=0x10 and data doesn't end with 0x00
-
-Sharp GX20 example:
-02 - mime header (uintvar) - 2 parts
-* mime 1
-1c - headers length (28)
-16 - data length (24)
-content-type: 74 65 78 74 2f 70 6c 61 69 6e 00 - text/plain (11)
-* headers:  (content-disposition: form-data; name="name1"
-ae - content-disposition = 2e a=10 1010 = 80 + 2e
-0c - length (1+5:name+6:name1)
-80 - form-data (81=attachment, 82=inline)
-6e 61 6d 65 00 - name
-6e 61 6d 65 31 00 - name 1
-ae - content-disposition
-01 - length
-80 - form-data (81=attachment, 82=inline)
-* data
-76 61 6c 2d 61 c3 83 c2 a3 61 c3 83 c2 a7 c3 83 c2 87 2d 75 65 31 - va....lue
-* mime 2
-1c - headers length (28)
-06 - data len 
-74 65 78 74 2f 70 6c 61 69 6e 00  - text/plain
-* headers:  (content-disposition: form-data; name="name1"
-ae - content-disposition = 2e a=10 1010 = 80 + 2e
-0c - length (1+5:name+6:name1)
-80 - form-data (81=attachment, 82=inline)
-6e 61 6d 65 00 - name
-6e 61 6d 65 32 00 - name 2
-ae - content-disposition
-01 - length
-80 - form-data (81=attachment, 82=inline)
-* data:
-76 61 6c 75 65 32 - value2
-*/
+    return NULL;
 }
+
+/* DAVI: To-Do
+static Octstr *deconvert_mms_message(struct content *content)
+{
+    Octstr *mime;
+    int ret;
+   
+    ret = mms_decompile(content->body, &mime);
+    if (ret == 0)
+        return mime;
+
+    return NULL;
+}
+*/
 
 
 

@@ -285,6 +285,23 @@ Octstr* soap_o2o_dlrmask_success_01_attribute(Msg* msg);
 int soap_get_index(List* where, Octstr* key, int map_index);
 
 
+/* XXX DAVI: undefined functions. Stipe, would you please commit them ? */
+static int64 gw_generate_id() { 
+    panic(0, "gw_generate_id not implemented yet");
+    return 0;
+}
+static int date_parse_iso(struct universaltime *tm, Octstr *temp) { 
+    panic(0, "date_parse_iso not implemented yet");
+    return 0;
+}
+static Octstr *date_create_iso(long time) {
+    panic(0, "date_create_iso not implemented yet");
+    return NULL;
+}
+void octstr_convert_to_html_entities(Octstr *data) {
+    panic(0, "octstr_convert_to_html not implemented yet");
+}
+
 /**************************************************************************************
  * Implementation
  */

@@ -56,6 +56,7 @@ struct List
 #define GET(list, i)	((list)->tab[INDEX(list, i)])
 
 
+long gwthread_self(void);
 
 static void lock(List *list);
 static void unlock(List *list);

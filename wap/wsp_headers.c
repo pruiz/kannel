@@ -372,7 +372,10 @@ static int unpack_parameter(ParseContext *context, Octstr *decoded)
                 if (octstr_get_char(value, 0) == '"') {
                     /* Quoted-string */
                     octstr_append_char(value, '"');
-                }
+                } else { // DAVI!
+		    octstr_insert(value, octstr_imm("\""), 0);
+                    octstr_append_char(value, '"');
+		}
             }
         }
     }
@@ -1027,6 +1030,8 @@ static void unpack_well_known_field(List *unpacked, int field_type,
             break;
 
         case WSP_HEADER_CACHE_CONTROL:
+        case WSP_HEADER_CACHE_CONTROL_V13:
+        case WSP_HEADER_CACHE_CONTROL_V14:
             ch = wsp_cache_control_to_cstr(val);
             if (!ch)
                 warning(0, "Unknown cache-control value 0x%02x.", val);
@@ -1062,6 +1067,18 @@ static void unpack_well_known_field(List *unpacked, int field_type,
             decoded = octstr_create("");
             octstr_append_decimal(decoded, val);
             break;
+
+        case WSP_HEADER_BEARER_INDICATION:
+             ch = wsp_bearer_indication_to_cstr(val);
+             if (!ch)
+                 warning(0, "Unknown Bearer-Indication field name 0x%02x.", val);
+             break;
+
+        case WSP_HEADER_ACCEPT_APPLICATION:
+             ch = wsp_application_id_to_cstr(val);
+             if (!ch)
+                 warning(0, "Unknown Accept-Application field name 0x%02x.", val);
+             break;
 
         default:
             if (headername) {
@@ -1377,6 +1394,8 @@ struct headerinfo headerinfo[] =
         { WSP_HEADER_ALLOW, pack_method, LIST },
         { WSP_HEADER_AUTHORIZATION, pack_credentials, BROKEN_LIST },
         { WSP_HEADER_CACHE_CONTROL, pack_cache_control, LIST },
+        { WSP_HEADER_CACHE_CONTROL_V13, pack_cache_control, LIST },
+        { WSP_HEADER_CACHE_CONTROL_V14, pack_cache_control, LIST },
         { WSP_HEADER_CONNECTION, pack_connection, LIST },
         { WSP_HEADER_CONTENT_BASE, pack_uri, 0 },
         { WSP_HEADER_CONTENT_ENCODING, pack_encoding, LIST },
