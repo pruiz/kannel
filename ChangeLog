@@ -1,3 +1,21 @@
+2003-08-01  Stipe Tolj  <tolj@wapme-systems.de>
+    * gwlib/http.[ch]: rewrote parse_url() to parse the URL into an 
+      HTTPURLParse struct that holds all relevant components of an URL, ie.
+      scheme, hostname, port, etc. Added therefore http_urlparse_create() and
+      http_urlparse_destroy(). Now parse_url() is not populating given 
+      variables, but does return an HTTPURLParse pointer to the caller, so
+      the caller can grep for the required information. Routine parse2trans()
+      has also been added to allow internal mapping of the HTTPURLParse 
+      struct to the HTTPServer struct and the corresponding URL components.
+      This rewrite *should* not change HTTP client behaviour. Removed unused
+      parse_url_path() because this can be done now via parse_url() and the 
+      resulting struct. Added 'conn_time' to HTTPClient struct. This will
+      be our future timeout reference for letting the keep-alive sessions
+      die if a certain timeout is reached. Currently we *never* destroy 
+      reseted HTTPClient's, which is a possible security consideration.
+      We need to implement an cleaner_thread() that drops all idle keep-alive
+      connections.
+
 2003-07-31  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/wap-maps.[ch]: removed wap_map_[url|user]_config_info(). This is 
       done directly in the wapbox.c:config_reload() section. Reorganized
