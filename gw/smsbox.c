@@ -105,18 +105,20 @@ enum { CATENATE_UDH_LEN = 5 };
 static Counter *catenated_sms_counter;
 
 
-static void prepend_catenation_udh(Msg *sms, int msg_sequence, int num_messages,
-    	    	    	    	   int part_no )
+static void prepend_catenation_udh(Msg *sms, int part_no, int num_messages,
+    	    	    	    	   int msg_sequence)
 {
     gw_assert(sms->sms.udhdata != NULL);
-    if (octstr_len(sms->sms.udhdata) == 0) {
+
+    if (octstr_len(sms->sms.udhdata) == 0)
 	octstr_append_char(sms->sms.udhdata, CATENATE_UDH_LEN);
-    }
     octstr_format_append(sms->sms.udhdata, "%c\3%c%c%c", 
     	    	    	 0, msg_sequence, num_messages, part_no);
 
-    /* Now that we added the concatenation information the
-     * length is all wrong. we need to recalculate it. */
+    /* 
+     * Now that we added the concatenation information the
+     * length is all wrong. we need to recalculate it. 
+     */
     octstr_set_char(sms->sms.udhdata, 0, octstr_len(sms->sms.udhdata) - 1 );
     
     sms->sms.flag_udh = 1;
@@ -161,20 +163,20 @@ static Octstr *extract_msgdata_part(Octstr *msgdata, Octstr *split_chars,
  * It is an error to use catenation and UDH together, or catenation and 7
  * bit mode toghether; in these cases, catenation is silently ignored.
  * 
- * If `catenate' is true, catref is used as the sequence number for the logical
- * message. The catenation UDH contain three numbers: the concatenated
- * message reference, which is constant for all parts of the logical message,
- * the total number of parts in the logical message, and the sequence number
- * of the current part.
+ * If `catenate' is true, `msg_sequence' is used as the sequence number for
+ * the logical message. The catenation UDH contain three numbers: the
+ * concatenated message reference, which is constant for all parts of
+ * the logical message, the total number of parts in the logical message,
+ * and the sequence number of the current part.
  *
- * Note that `catref' must have a value in the range 0..255.
+ * Note that `msg_sequence' must have a value in the range 0..255.
  * 
  * `max_octets' gives the maximum number of octets in on message, including
  * UDH, and after 7 bit characters have been packed into octets.
  */
 static List *sms_split(Msg *orig, Octstr *header, Octstr *footer, 
 		       Octstr *nonlast_suffix, Octstr *split_chars, 
-		       int catenate, int catref, int max_messages,
+		       int catenate, int msg_sequence, int max_messages,
 		       int max_octets)
 {
     long max_part_len;
@@ -182,15 +184,6 @@ static List *sms_split(Msg *orig, Octstr *header, Octstr *footer,
     List *list;
     Msg *part;
     Octstr *msgdata;
-
-
-
-#if 0
-    /* Forget about catenation, if `orig' has UDH. */
-    /* W H Y ? ? ?   -- Yann (removed until I understand it) */
-    if (catenate && (orig->sms.flag_udh || !orig->sms.flag_8bit))
-    	catenate = 0;
-#endif
 
     /* Compute maximum number of unpacked octets in each part. */
     if (orig->sms.flag_8bit)
@@ -227,7 +220,7 @@ static List *sms_split(Msg *orig, Octstr *header, Octstr *footer,
 	    octstr_append(part->sms.msgdata, nonlast_suffix);
 	
 	if (catenate)
-	    prepend_catenation_udh(part, catref, num_messages, i+1);
+	    prepend_catenation_udh(part, i+1, num_messages, msg_sequence);
 	
 	list_append(list, part);
     }
@@ -246,7 +239,7 @@ static int send_message(URLTranslation *trans, Msg *msg)
 {
     int max_msgs;
     Octstr *header, *footer, *suffix, *split_chars;
-    int catenate, catref;
+    int catenate, msg_sequence;
     List *list;
     Msg *part;
     static char *empty = "<Empty reply from service provider>";
@@ -290,10 +283,12 @@ static int send_message(URLTranslation *trans, Msg *msg)
     }
 
     if (catenate)
-    	catref = counter_increase(catenated_sms_counter) & 0xFF;
+    	msg_sequence = counter_increase(catenated_sms_counter) & 0xFF;
+    else
+    	msg_sequence = 0;
 
     list = sms_split(msg, header, footer, suffix, split_chars, catenate,
-    	    	     catref, max_msgs, sms_max_length);
+    	    	     msg_sequence, max_msgs, sms_max_length);
     msg_destroy(msg);
 
     while ((part = list_extract_first(list)) != NULL)

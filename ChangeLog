@@ -1,3 +1,16 @@
+2000-12-06  Lars Wirzenius  <liw@iki.fi>
+
+	* gw/smsbox.c: Removed compilation warning about `catref' being
+	possibly used without initialization in send_message. While doing
+	this, fixed some formatting (long lines, comment style), frivolous
+	argument order changes, and renamed catref to msg_sequence,
+	so as to use the same name everywhere.
+	
+	Also removed the commented-out part that disabled catenation
+	on messages with UDH. It was enabled since the code before the
+	rewrite didn't seem to deal with this case properly, and I hadn't
+	time to find out the correct way to handle this.
+
 2000-12-06  Richard Braakman  <dark@wapit.com>
 
 	* Not Finnish and not independent.  (Ruled by a queen)
