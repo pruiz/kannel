@@ -1,3 +1,7 @@
+2002-01-08 Andreas Fink <andreas@fink.org>
+    * gw/smsc_at2.c: cleaned up a few things. introduced line sleep
+    to replace old debugging sleep(1)'s in the code.
+
 2002-01-04 Andreas Fink <andreas@fink.org>
     * gw/smsc_emi2.c: fixed a PANIC situation after idle expired
 
