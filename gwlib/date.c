@@ -272,7 +272,7 @@ Octstr* date_create_iso(time_t unixtime)
 
     tm = gw_localtime((time_t) unixtime);
     
-    return octstr_format("%d-%02d-%02d %02d:%02d:%02d", 
+    return octstr_format("%d-%02d-%02dT%02d:%02d:%02dZ", 
         tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);    
 }
 
