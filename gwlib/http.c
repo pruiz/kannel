@@ -306,6 +306,182 @@ error:
 }
 
 
+
+
+
+
+
+
+
+
+/**********************************************************************
+ *Http client Get with (given) universal headers
+ *
+ */
+
+int http_get_u(char *urltext, char **type, char **data, size_t *size,  HTTPHeader *header)
+{
+    
+    URL *url = NULL;
+    HTTPRequest *request = NULL, *response = NULL;
+    char *ptr = NULL;
+    char *authorization = NULL;
+    int how_many_moves = 0;
+  
+    HTTPHeader *tmp_hdr = NULL;
+  
+
+/* Initializing... */
+    
+    /* ..request */
+    if( (url = internal_url_create(urltext)) == NULL) {
+	error(errno, "http_get: creating URL failed");
+	goto error;
+    }
+
+    /* ..url */
+    if( (request = httprequest_create(url, NULL)) == NULL) {
+	error(errno, "http_get: creating HTTPRequest failed");
+	goto error;
+    }
+    internal_url_destroy(url);    
+
+    /* .. the common headers... */
+    httprequest_add_header(request, "Host", request->url->host);
+    httprequest_add_header(request, "Connection", "close");
+    httprequest_add_header(request, "User-Agent", "Mozilla/2.0 (compatible; Open Source WAP Gateway)");
+
+/*   ..the user defined headers */
+    for(;;){
+	if(header == NULL)break;
+	httprequest_add_header(request, header->key, tmp_hdr->value);
+	header = header->next;
+    }
+    
+    
+    /* ..username, although this is not used now */
+    if(request->url->username != NULL) {
+	ptr = gw_malloc(1024);
+	sprintf(ptr, "%s:%s", 
+		request->url->username, request->url->password);
+	authorization = internal_base6t4(ptr);
+	if(authorization == NULL) goto error;
+	sprintf(ptr, "Basic %s", authorization);
+	httprequest_add_header(request, "Authorization", ptr);
+	gw_free(authorization);
+	gw_free(ptr);
+    }
+    
+
+    
+/* 
+   info(0, "url->scheme   = <%s>", request->url->scheme);
+   info(0, "url->host     = <%s>", request->url->host);
+   info(0, "url->port     = <%i>", request->url->port);
+   info(0, "url->abs_path = <%s>", request->url->abs_path);
+   info(0, "url->username = <%s>", request->url->username);
+   info(0, "url->password = <%s>", request->url->password);
+*/
+    
+    
+    
+    
+    
+    for(;;) {
+	
+	/* Open connection, send request, get response. */
+	response = httprequest_execute(request);
+	if(response == NULL) goto error;
+    
+	/* Great, the server responded "200 OK" */
+	if(response->status == 200) break;
+    
+	/* We are redirected to another URL */
+	else if( (response->status == 301) || 
+		 (response->status == 302) || 
+		 (response->status == 303) ) {
+	    
+	    url = internal_url_create(httprequest_get_header_value(response, "Location"));
+	    if(url==NULL) goto error;
+	    httprequest_destroy(request);
+	    httprequest_destroy(response);
+	    
+	    /* Abort if we feel like we might be pushed around in 
+	       an endless loop. 10 is just an arbitrary number. */
+	    if(how_many_moves > 10) {
+		error(0, "http_get: too many redirects");
+		goto error;
+	    }
+	    how_many_moves++;
+	    
+	    /* let's create the request all over again */
+	    request = httprequest_create(url, NULL);
+	    internal_url_destroy(url);
+	    if(request == NULL) goto error;
+	    httprequest_add_header(request, "Host", request->url->host);
+	    httprequest_add_header(request, "Connection", "close");
+	    httprequest_add_header(request, "User-Agent", "Mozilla/2.0 (compatible; Open Source WAP Gateway)");
+	    /* adding user defined headers.. */
+	    tmp_hdr = header;
+	    while( tmp_hdr != NULL ){
+		httprequest_add_header(request, tmp_hdr->key, tmp_hdr->value);
+		tmp_hdr = tmp_hdr->next;
+	    }
+	} /* else-if ends*/
+	
+	
+        /* Server returned "404 Authorization Required" */
+	else if(response->status == 401) break;
+	
+	/* Server returned "404 Not Found" */
+	else if(response->status == 404) break;
+	
+	/* Server returned "501 Not Implemented" */
+	else if(response->status == 501) break;
+	
+	/* If we haven't handled the response code this far, abort. */
+	else break;
+    
+    } /* for ends */
+    
+    /* Check the content of the "Content-Type" header. */
+    if( (ptr = httprequest_get_header_value(response, "Content-Type")) != NULL ) {
+	*type = gw_strdup(ptr);
+    } else {
+	*type = NULL;
+    }
+    
+    /* Fill in the variables which we'll return. */
+    if( (response->data != NULL) && (response->data_length > 0) ) {
+	*data = gw_malloc(response->data_length+1);
+	memset(*data, 0, response->data_length+1);
+	memcpy(*data, response->data, response->data_length);
+	*size = response->data_length;
+    } else {
+	*data = NULL;
+	*size = 0;
+    }
+    
+    /* done, clean up */
+    httprequest_destroy(request);
+    httprequest_destroy(response);
+    return 0;
+    
+error:
+    error(errno, "http_get: failed");
+    httprequest_destroy(request);
+    httprequest_destroy(response);
+    return -1;
+}
+
+
+
+
+
+
+
+
+
 /*********************************************************************
 * Create a URL structure (see RFC2616/3.2.2)
 * Does NOT validate. Defaults to http://HOSTNAME:80/
