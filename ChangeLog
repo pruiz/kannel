@@ -1,3 +1,8 @@
+2000-05-17  Richard Braakman  <dark@wapit.com>
+
+	* test/drive_wapbox.c: Memory leak now fixed.  Added includes
+	needed by accept().
+
 2000-05-17  Aarno Syvänen <syvanen@wapit.com>
 
 	* wtp_state-decl.h: Two bugfixes: rid to 0, when the result is sended

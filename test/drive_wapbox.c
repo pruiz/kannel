@@ -7,8 +7,6 @@
  * Richard Braakman <dark@wapit.com>
  */
 
-/* TODO: Still leaks memory, I don't know where. */
-
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -16,6 +14,8 @@
 #include <signal.h>
 
 #include <sys/time.h>
+#include <sys/types.h>
+#include <sys/socket.h>
 
 #include "gwlib/gwlib.h"
 #include "gw/msg.h"
