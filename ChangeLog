@@ -1,5 +1,9 @@
 2000-12-04  Lars Wirzenius  <liw@iki.fi>
 
+	* gw/smsbox.c: Reformatted the PAM code. Hopefully it still works.
+
+2000-12-04  Lars Wirzenius  <liw@iki.fi>
+
 	* gw/smsbox.c: Rearranged code for clarity, plugged a memory leak
 	and fixed a memory freeing bug (memory was being freed twice).
 

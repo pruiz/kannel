@@ -698,8 +698,11 @@ static void obey_request_thread(void *arg)
  */
 
 
-/* Function that test the authentification via Plugable authentification module*/
 #ifdef HAVE_SECURITY_PAM_APPL_H /*Module for pam authentication */
+
+/*
+ * Use PAM (Pluggable Authentication Module) to check sendsms authentication.
+ */
 
 typedef const struct pam_message pam_message_type;
 
@@ -707,102 +710,109 @@ static const char *PAM_username;
 static const char *PAM_password;
 
 static int PAM_conv (int num_msg, pam_message_type **msg,
-	  struct pam_response **resp,
-	  void *appdata_ptr)
+		     struct pam_response **resp,
+		     void *appdata_ptr)
 {
-  int             count = 0, replies = 0;
-  struct pam_response *repl = NULL;
-  int             size = sizeof(struct pam_response);
+    int count = 0, replies = 0;
+    struct pam_response *repl = NULL;
+    int size = sizeof(struct pam_response);
 
 #define GET_MEM \
-	if (!(repl = (gw_realloc(repl, size)))) \
-  		return PAM_CONV_ERR; \
+	repl = gw_realloc(repl, size); \
 	size += sizeof(struct pam_response)
 #define COPY_STRING(s) (s) ? gw_strdup(s) : NULL
 
-  for (count = 0; count < num_msg; count++) {
-    switch (msg[count]->msg_style) {
-    case PAM_PROMPT_ECHO_ON:
-      GET_MEM;
-      repl[replies].resp_retcode = PAM_SUCCESS;
-      repl[replies++].resp = COPY_STRING(PAM_username);
-      /* PAM frees resp */
-      break;
-    case PAM_PROMPT_ECHO_OFF:
-      GET_MEM;
-      repl[replies].resp_retcode = PAM_SUCCESS;
-      repl[replies++].resp = COPY_STRING(PAM_password);
-      /* PAM frees resp */
-      break;
-    case PAM_TEXT_INFO:
-      printf("unexpected message from PAM: %s\n",
-	      msg[count]->msg);
-      break;
-    case PAM_ERROR_MSG:
-    default:
-      /* Must be an error of some sort... */
-      printf("unexpected error from PAM: %s\n",
-	     msg[count]->msg);
-      gw_free(repl);
-      return PAM_CONV_ERR;
+    for (count = 0; count < num_msg; count++) {
+	switch (msg[count]->msg_style) {
+	case PAM_PROMPT_ECHO_ON:
+	    GET_MEM;
+	    repl[replies].resp_retcode = PAM_SUCCESS;
+	    repl[replies++].resp = COPY_STRING(PAM_username);
+	    /* PAM frees resp */
+	    break;
+
+	case PAM_PROMPT_ECHO_OFF:
+	    GET_MEM;
+	    repl[replies].resp_retcode = PAM_SUCCESS;
+	    repl[replies++].resp = COPY_STRING(PAM_password);
+	    /* PAM frees resp */
+	    break;
+
+	case PAM_TEXT_INFO:
+	    printf("unexpected message from PAM: %s\n",
+	    msg[count]->msg);
+	    break;
+
+	case PAM_ERROR_MSG:
+	default:
+	    /* Must be an error of some sort... */
+	    printf("unexpected error from PAM: %s\n",
+	    msg[count]->msg);
+	    gw_free(repl);
+	    return PAM_CONV_ERR;
+	}
     }
-  }
-  if (repl)
-    *resp = repl;
-  return PAM_SUCCESS;
+    if (repl)
+	*resp = repl;
+    return PAM_SUCCESS;
 }
 
 static struct pam_conv PAM_conversation = {
-  &PAM_conv,
-  NULL
+    &PAM_conv,
+    NULL
 };
 
 
-int authenticate(const char *login, const char *passwd)
+static int authenticate(const char *login, const char *passwd)
 {
-  pam_handle_t	*pamh;
-  int		pam_error;
-
-  PAM_username = login;
-  PAM_password = passwd;
-
-  pam_error = pam_start("kannel", login, &PAM_conversation, &pamh);
-  if (pam_error != PAM_SUCCESS
-      || (pam_error = pam_authenticate(pamh, 0)) != PAM_SUCCESS) {
-    pam_end(pamh, pam_error);
-    return 0;
-  }
-  pam_end(pamh, PAM_SUCCESS);
-  return 1;
+    pam_handle_t *pamh;
+    int pam_error;
+    
+    PAM_username = login;
+    PAM_password = passwd;
+    
+    pam_error = pam_start("kannel", login, &PAM_conversation, &pamh);
+    if (pam_error != PAM_SUCCESS ||
+        (pam_error = pam_authenticate(pamh, 0)) != PAM_SUCCESS) {
+	pam_end(pamh, pam_error);
+	return 0;
+    }
+    pam_end(pamh, PAM_SUCCESS);
+    return 1;
 }
+
 
 /*
  * Check for matching username and password for requests.
  * Return an URLTranslation if successful NULL otherwise.
  */
 
-int pam_authorise_user(List *list) {
-  
-  Octstr *val, *user = NULL;
-  char *pwd, *login;
-  int result;
-  if ( (user=http_cgi_variable(list, "user"))==NULL  &&  (user=http_cgi_variable(list, "username") )==NULL )
-    return 0;
+static int pam_authorise_user(List *list) 
+{
+    Octstr *val, *user = NULL;
+    char *pwd, *login;
+    int result;
 
-  login =  octstr_get_cstr(user);
-  
-  if ( (val=http_cgi_variable(list, "password"))==NULL  &&  (val=http_cgi_variable(list, "pass"))==NULL )
-    return 0;
-  pwd   =  octstr_get_cstr(val);
-  
-  result=authenticate(login,pwd);
-  
-  return result;
+    if ((user = http_cgi_variable(list, "user")) == NULL &&
+        (user = http_cgi_variable(list, "username"))==NULL)
+	return 0;
+    login = octstr_get_cstr(user);
+    
+    if ((val = http_cgi_variable(list, "password")) == NULL &&
+        (val = http_cgi_variable(list, "pass")) == NULL)
+	return 0;
+
+    pwd = octstr_get_cstr(val);
+    result = authenticate(login, pwd);
+    
+    return result;
 }
+
 #endif /* HAVE_SECURITY_PAM_APPL_H */
 
+
 /*
- * Authentification whith the data base of kannel 
+ * Authentication whith the database of Kannel.
  * Check for matching username and password for requests.
  * Return an URLTranslation if successful NULL otherwise.
  */
