@@ -1,3 +1,8 @@
+Mon Jan 10 15:48:17 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* gw/wml.c: Applied patch from Petri Ahonen <peahonen@ahonen.net>
+	with fixes to WML encoding.
+
 Mon Jan 10 11:02:33 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* config.h.in, gw/bearerbox.c, gw/smsc_emi.c, gw/smsc_smpp.c,

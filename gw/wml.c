@@ -457,7 +457,7 @@ char * element(char *temp, unsigned char *hex, int *count, struct wmlc *binary_s
  	 /* tag with no content */
 	if (test == NO_CONTENT) {
 		
-		while (*temp!='>') {
+		while (*temp!='>') 
 			temp++;
 		temp++;
 		while (*temp!='>') 
@@ -466,7 +466,6 @@ char * element(char *temp, unsigned char *hex, int *count, struct wmlc *binary_s
 			(*count)++;
 		hex_memory = 0x00;
 		return(temp);
-		}
 	}
 	else if (test==NO_CONTENT_END) {
 		goto stop;
@@ -704,6 +703,11 @@ char * inline_string(char *temp, int *count, struct wmlc *binary_string, struct 
 			else {	
 				
 				temp--;
+
+				/* inline string stops here */
+				binary_string->wbxml[*count]=0x00;
+				(*count)++;
+
 				temp = put_variable_in_memory (temp, variable, binary_string, count);
 				variable = variable->next;
 				variable_memory = variable;
@@ -1258,7 +1262,7 @@ struct wmlc * wml2wmlc(char *string_pointer_from) {
 									/*** give the variables the corresponding reference to the string table ***/
 	count_temp = 0;
 	while (count_temp < count)
-	{	if (binary_string->wbxml[count_temp] == 0x80)
+	{	if (binary_string->wbxml[count_temp] == 0x82)
 		{	count_temp++;
 			if ( binary_string->wbxml[count_temp] == 0x00)
 			{	
@@ -1382,7 +1386,7 @@ char * put_variable_in_memory ( char * temp, struct variable * variable, struct 
 	variable = variable->next;
 
 	init_new_variable(variable);
-	binary_string->wbxml[*count]=0x80;
+	binary_string->wbxml[*count]=0x82;
 	(*count)++;
 	binary_string->wbxml[*count]=0x00;
 	(*count)++;
