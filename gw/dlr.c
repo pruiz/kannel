@@ -24,7 +24,6 @@
 #include <unistd.h>
 
 #include "gwlib/gwlib.h"
-#include "smsc_p.h"
 #include "sms.h"
 #include "dlr.h"
 

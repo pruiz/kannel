@@ -1,4 +1,7 @@
 2002-08-11 Harrie Hazewinkel <harrie@mod-snmp.com>
+    * Moved more smsc related code into gw/smsc/
+      gw/smsc.h -> gw/smsc/smsc.h
+      gw/smsc_p.h -> gw/smsc/smsc_p.h
     * gwlib.octstr.c: graceful handling of the Octstr* when it is
       NULL, instead of panicing.
       Oded Arbel <odeda@m-wise.com>
