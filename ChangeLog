@@ -1,3 +1,9 @@
+2004-06-03  Alexander Malysh  <a.malysh@centrium.de> 
+    * gwlib/http.c: applied patch that adds real reason phrases for http reply
+      line instead of just 'Foo'.
+      Thanks to Zoltán Dudás <zoltan.dudas@sei.hu> for provided patch.
+      [Msg-Id: <200406031200.28195.zoltan.dudas@sei.hu>].
+
 2004-05-18  Alexander Malysh  <a.malysh@centrium.de> 
     * doc/userguide/userguide.xml, doc/examples/dlr-sdb.conf: userguide
       documentation for LibSDB dbpool support.

@@ -2338,6 +2338,59 @@ HTTPClient *http_accept_request(int port, Octstr **client_ip, Octstr **url,
     return client;
 }
 
+/*
+ * The http_send_reply(...) uses this function to determinate the
+ * reason pahrase for a status code.
+ */
+static const char *http_reason_phrase(int status)
+{
+	switch (status) {
+	case HTTP_OK:
+		return "OK";						/* 200 */
+	case HTTP_CREATED:                   
+		return "Created";					/* 201 */
+	case HTTP_ACCEPTED:
+		return "Accepted";					/* 202 */
+	case HTTP_NO_CONTENT:
+		return "No Content";				/* 204 */
+	case HTTP_RESET_CONTENT: 
+		return "Reset Content";				/* 205 */
+	case HTTP_MOVED_PERMANENTLY:
+		return "Moved Permanently"; 		/* 301 */
+	case HTTP_FOUND:
+		return "Found";						/* 302 */
+	case HTTP_SEE_OTHER:
+		return "See Other";					/* 303 */
+	case HTTP_NOT_MODIFIED:
+		return "Not Modified";				/* 304 */
+	case HTTP_TEMPORARY_REDIRECT:
+		return "Temporary Redirect";		/* 307 */
+	case HTTP_BAD_REQUEST:
+		return "Bad Request";				/* 400 */
+	case HTTP_UNAUTHORIZED:
+		return "Unauthorized";				/* 401 */
+	case HTTP_FORBIDDEN:
+		return "Forbidden";					/* 403 */
+	case HTTP_NOT_FOUND:           	
+		return "Not Found";					/* 404 */
+	case HTTP_BAD_METHOD:
+		return "Method Not Allowed";		/* 405 */
+	case HTTP_NOT_ACCEPTABLE:
+		return "Not Acceptable";			/* 406 */
+	case HTTP_REQUEST_ENTITY_TOO_LARGE:
+		return "Request Entity Too Large";	/* 413 */
+	case HTTP_UNSUPPORTED_MEDIA_TYPE:
+		return "Unsupported Media Type";	/* 415 */
+	case HTTP_INTERNAL_SERVER_ERROR:
+		return "Internal Server Error";		/* 500 */
+	case HTTP_NOT_IMPLEMENTED:
+		return "Not Implemented";			/* 501 */
+	case HTTP_BAD_GATEWAY:
+		return "Bad Gateway";				/* 502 */
+	}
+	return "Foo";
+}
+
 
 void http_send_reply(HTTPClient *client, int status, List *headers, 
     	    	     Octstr *body)
@@ -2347,9 +2400,9 @@ void http_send_reply(HTTPClient *client, int status, List *headers,
     int ret;
 
     if (client->use_version_1_0)
-    	response = octstr_format("HTTP/1.0 %d Foo\r\n", status);
+    	response = octstr_format("HTTP/1.0 %d %s\r\n", status, http_reason_phrase(status));
     else
-    	response = octstr_format("HTTP/1.1 %d Foo\r\n", status);
+    	response = octstr_format("HTTP/1.1 %d %s\r\n", status, http_reason_phrase(status));
 
     /* identify ourselfs */
     octstr_format_append(response, "Server: " GW_NAME "/%s\r\n", GW_VERSION);
