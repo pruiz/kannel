@@ -1,3 +1,7 @@
+2000-10-02  Richard Braakman  <dark@wapit.com>
+
+	* doc/userguide/userguide.xml: Explained CIMD2 keepalive option.
+
 2000-10-02  Kalle Marjola  <rpr@wapit.com>
 
 	* README: updated. Removed old references to test_wml, ooutdated

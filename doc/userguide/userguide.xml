@@ -1235,7 +1235,7 @@ host = 100.101.102.103
 port = 600
 smsc-username = foo
 smsc-password = bar
-keepalive = ...
+keepalive = 5 
 </programlisting>
 
  <informaltable frame=none>
@@ -1273,7 +1273,11 @@ keepalive = ...
    <row><entry><literal>keepalive</literal></entry>
      <entry><literal>number</literal></entry>
      <entry valign=bottom>
-       <emphasis>Dark, can you explain this a bit..?</emphasis>
+       SMSC connection will not be left idle longer than this many
+       minutes.  The right value to use depends on how eager the SMSC
+       is to close idle connections.  5 minutes is a good guess.  If you
+       see many unexplained reconnects, try lowering this value.
+       Set it to 0 to disable this feature.
      </entry></row>
 
    </tbody></tgroup></informaltable>
