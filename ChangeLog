@@ -1,4 +1,7 @@
 2002-03-24  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/bearerbox.c, gw/dlr.[ch]: added DLR information to the status page
+
+2002-03-24  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/dlr.c: added octstr_get_cstr() wrapping for global Octstr* of
       the SQL statements
 
