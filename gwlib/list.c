@@ -125,6 +125,30 @@ void list_append(List *list, void *item)
 }
 
 
+void list_append_unique(List *list, void *item, int (*cmp)(void *, void *))
+{
+    void *it;
+    long i;
+
+    lock(list);
+    it = NULL;
+    for (i = 0; i < list->len; ++i) {
+        it = GET(list, i);
+        if (cmp(it, item)) {
+            break;
+        }
+    }
+    if (i == list->len) {
+        /* not yet in list, so add it */
+        make_bigger(list, 1);
+        list->tab[INDEX(list, list->len)] = item;
+        ++list->len;
+        pthread_cond_signal(&list->nonempty);
+    }
+    unlock(list);
+}
+        
+
 void list_insert(List *list, long pos, void *item)
 {
     long i;
