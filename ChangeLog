@@ -1,3 +1,9 @@
+2000-03-01    <rpr@rpr.wapit.com>
+
+	* README: added notes of the new sample files
+
+	* test/sample.*conf: new simple sample configuration files
+
 2000-03-01  Markku Rossi  <mtr@iki.fi>
 
 	* wmlscript/wslexer.c, wmlscript/wsstree.h: Fixed some warnings.

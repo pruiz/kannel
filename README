@@ -88,16 +88,34 @@ For developers only: autoconf, configure, config.status, and Makefile
 Configuring the gateway
 
 	The gw/bearerbox.conf, gw/smsbox.smsconf, and gw/wapbox.wapconf
-	files configure the gateway. The sample configuration files
-	contain explanations for changing them.
+	files configure the gateway. The defination configuration files
+	contain explanations for changing them. As sample configuration 
+	files, there is files test/sample.conf, test/sample.wapconf and 
+	test/sample.smsconf, which require only minimal editing before
+	using them.
 
 Running the gateway
 
 	You need to run the gw/bearerbox program (from the gw directory).
-	If you want SMS services, you also need to run gw/smsbox, and
-	if you want WAP services, you also need to run gw/wapbox.
-	
-	Note that to run the wapbox, you need to set the environment
+	If you want SMS services, you also need to run gw/smsbox (or
+	run smsbox as an 'internal smsbox'), and if you want WAP 
+	services, you also need to run gw/wapbox.
+
+	Running, in a simplest form, is done like this:
+
+		$ gw/bearerbox test/sample.conf
+		$ gw/smsbox test/sample.smsconf
+
+	..or if you use SMSes and want to run smsbox as an internal
+	version, just run the bearerbox like this:
+
+		$ gw/bearerbox test/sample.conf test/sample.smsconf
+
+	Note that those sample configuration files are NOT ready for
+	test use in SMS environment, but must be edited a bit before
+	the use.
+
+	To run the wapbox, you need to set the environment
 	variable TEST_WML to the path to the test_wml program. For
 	example:
 	
@@ -108,6 +126,8 @@ Running the gateway
 
 	Otherwise you'll get mysterious error messages. (This is a
 	temporary feature.)
+
+	None of the programs need to be run in root mode.
 
 Using the gateway with a Nokia 7110
 

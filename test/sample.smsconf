@@ -1,0 +1,34 @@
+#
+# SAMPLE configuration for SMS use
+#
+# For futher configuration variables etc. see the file
+# gw/smsbox.smsconf
+#
+bearerbox-host = "localhost"
+bearerbox-port = 20001
+sendsms-port = 22222
+
+
+### users
+
+username = test
+password = fubar
+
+# XXX add new users here XXX
+
+
+### services
+
+keyword = www
+aliases = http
+url = http://%S
+max-messages = 2
+
+# XXX add new services here XXX
+
+# note: default must be the last group in the configuration file
+
+keyword = default
+text = "No service specified"
+
+# XXX   DO NOT ADD ANYTHING HERE   XXX 

@@ -1,0 +1,9 @@
+#
+# SAMPLE configuration for WAP gateway use
+#
+# For futher configuration variables etc. see the file
+# gw/wapbox.wapconf
+#
+bearerbox-host = "localhost"
+bearerbox-port = 20002
+log-file = "/tmp/wap_kannel.log"
