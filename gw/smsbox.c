@@ -640,7 +640,7 @@ static void obey_request_thread(void *arg)
 	p = urltrans_faked_sender(trans);
 	if (p != NULL) {
 	    octstr_destroy(msg->sms.sender);
-	    msg->sms.sender = p;
+	    msg->sms.sender = octstr_duplicate(p);
 	} else if (global_sender != NULL) {
 	    octstr_destroy(msg->sms.sender);
 	    msg->sms.sender = octstr_duplicate(global_sender);

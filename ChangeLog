@@ -1,3 +1,7 @@
+2001-03-27  Richard Braakman  <dark@xs4all.nl>
+
+	* gw/smsbox.c: Fix bad memory management of faked_sender string.
+
 2001-03-26  Richard Braakman  <dark@xs4all.nl>
 
 	* gw/smsbox.c: Converted some char * to Octstr *.
