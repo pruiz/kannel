@@ -1,16 +1,9 @@
-NEWS about Kannel: Open Source WAP and SMS Gateway version 0.4
+NEWS about Kannel: Open Source WAP and SMS Gateway version 0.5
 
-Change summary from version 0.3:
+Change summary from version 0.4:
 
-* Gateway now has a name: Kannel.
+* Headers from the phone are used in HTTP requests.
 
-* DocBook is disabled if not found by configure or using --without-docs
-  option to configure.
+* Error handling of broken session (not very good, though).
 
-* Formatted documentation added to distribution, though not to CVS.
-
-* Bison output files added to CVS and distribution.
-
-* Initial code for decoding headers during WAP sessions.
-
-* Bug fixes.
+* Many bug fixes.
