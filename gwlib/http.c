@@ -1921,7 +1921,7 @@ static void start_server_thread(void)
 }
 
 
-int http_open_port(int port, int ssl)
+int http_open_port_if(int port, int ssl, Octstr *interface)
 {
     struct server *p;
 
@@ -1930,8 +1930,7 @@ int http_open_port(int port, int ssl)
     p = gw_malloc(sizeof(*p));
     p->port = port;
     p->ssl = ssl;
-    p->fd = make_server_socket(port, NULL);
-	/* XXX add interface_name if required */
+    p->fd = make_server_socket(port, (interface ? octstr_get_cstr(interface) : NULL));
     if (p->fd == -1) {
 	gw_free(p);
     	return -1;
@@ -1944,6 +1943,12 @@ int http_open_port(int port, int ssl)
     gwthread_wakeup(server_thread_id);
 
     return 0;
+}
+
+
+int http_open_port(int port, int ssl)
+{
+    return http_open_port_if(port, ssl, NULL);
 }
 
 
