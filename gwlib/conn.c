@@ -559,19 +559,24 @@ Connection *conn_wrap_fd(int fd, int ssl)
         int rc;
 
         conn->ssl = SSL_new(global_server_ssl_context);
+        conn->ssl_mutex = mutex_create();
         conn->peer_certificate = NULL;
 
-        SSL_set_fd(conn->ssl, conn->fd);
+	/* SSL_set_fd can fail, so check it */
+        if (SSL_set_fd(conn->ssl, conn->fd) == 0) {
+	    /* SSL_set_fd failed, log error and return NULL */
+	    error(0, "SSL: OpenSSL: %.256s", ERR_error_string(ERR_get_error(), NULL));
+	    conn_destroy(conn);
+	    return NULL;
+	}
         /* SSL_set_verify(conn->ssl, 0, NULL); */
         BIO_set_nbio(SSL_get_rbio(conn->ssl), 0);
         BIO_set_nbio(SSL_get_wbio(conn->ssl), 0);
 
-        conn->ssl_mutex = mutex_create();
-
-        /* 
+        /*
          * now enter the SSL handshake phase
-         */    
-     
+         */
+
         /*
          * For non-blocking BIO we may return from SSL_accept(). In this 
          * case we check for SSL_get_error() = SSL_ERROR_WANT_[READ|WRITE]
@@ -690,14 +695,14 @@ void conn_destroy(Connection *conn)
             mutex_lock(conn->ssl_mutex);
             SSL_shutdown(conn->ssl);
             SSL_free(conn->ssl);
-            if (conn->peer_certificate != NULL) 
+            if (conn->peer_certificate != NULL)
                 X509_free(conn->peer_certificate);
             mutex_unlock(conn->ssl_mutex);
             mutex_destroy(conn->ssl_mutex);
-	    }
+	}
         else
 #endif /* HAVE_LIBSSL */
-        unlocked_write(conn);
+            unlocked_write(conn);
 
         ret = close(conn->fd);
         if (ret < 0)

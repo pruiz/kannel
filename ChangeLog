@@ -1,4 +1,8 @@
 2003-07-16  Alexander Malysh  <a.malysh@centrium.de>
+    * gwlib/conn.c: SSL_set_fd(...) can fail, so check return code and
+      handle error gracefully.
+
+2003-07-16  Alexander Malysh  <a.malysh@centrium.de>
     * gw/bb_smscconn.c: memory leak.
 
 2003-07-17  Bruno Rodrigues  <bruno.rodrigues@litux.org>
