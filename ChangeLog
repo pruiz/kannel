@@ -1,3 +1,8 @@
+Fri Feb 18 20:05:40 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* gw/wsp_http.c: Strip type parameters. This is ugly, but at least
+	it will work somewhat if they are there.
+
 Fri Feb 18 19:54:12 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* gwlib/octstr.c: octstr_dump now also prints the printable characters
