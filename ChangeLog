@@ -1,4 +1,4 @@
-2002-11-20  Stipe Tolj  <tolj@wapme-systems.de>
+2002-12-02  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/smsc/smsc_emi2.c, gwlib/http.h, gwlib/charset.h: fixed some minor
       compiler warnings.
 
