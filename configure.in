@@ -270,13 +270,14 @@ AC_ARG_ENABLE(docs,
   fi
 ])
 
-if test "x$HTML_DSL" = "x" -o "x$TEX_DSL"   = "x"  \
+if test "x$HTML_DSL" = "x" -o "x$TEX_DSL"   = "x" \
     || test "$JADE"       = "no" \
     || test "$JADETEX"    = "no" \
     || test "$PDFJADETEX" = "no" \
-    || test "$DVIPS"      = "no"  \
-    || test "$FIG2DEV"    = "no"  \
-    || test "$CONVERT"    = "no"
+    || test "$DVIPS"      = "no" \
+    || test "$FIG2DEV"    = "no" \
+    || test "$CONVERT"    = "no" \
+    || test "$DOCSTARGET" = "no-docs"
 then
   DOCSTARGET="no-docs"
 else
