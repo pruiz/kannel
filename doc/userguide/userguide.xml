@@ -873,6 +873,65 @@ x	should now be able to run the Kannel init.d script that will
 </sect2>
 
 <sect2>
+<title>Inclusion of configuration files</title>
+
+	<para>A configuration file may contain a special directive 
+	called <literal>include</literal> to include an other 
+	configuration file to the configuration processing.</para>
+ 
+	<para>This allows to segment the specific configuration groups
+	required for several services and boxes to different files and
+	hence to have more control in larger setups.</para>
+
+	<para>Here is an example that illustrates the <literal>include
+	</literal> statement :
+
+<programlisting>
+group = core
+admin-port = 13000
+wapbox-port = 13002
+admin-password = bar
+wdp-interface-name = "*"
+log-file = "/var/log/bearerbox.log"
+log-level = 1
+box-deny-ip = "*.*.*.*"
+box-allow-ip = "127.0.0.1"
+
+include = "wapbox.conf"
+</programlisting>
+
+	This is the main <literal>kannel.conf</literal> configuration
+	file that includes the following <literal>wapbox.conf</literal>
+	file with all required directives for the specific box.
+
+<programlisting>
+group = wapbox
+bearerbox-host = localhost
+log-file = "/var/log/wapbox.log"
+log-level = 0
+syslog-level = none
+</programlisting>
+
+
+	The above <literal>include</literal> statement may be defined
+	at any point in the configuration file and at any inclusion 
+	depth. Hence you can cascade numerious inclusions if necessary.
+	</para>
+
+	
+	snippet defines the keyword <literal>nop</literal>
+	for an SMS service, and a default action for situation when
+	the keyword in the SMS message does not match any defined
+	service.</para>
+	
+	<para>At process start time inclusion of configuration files 
+	breaks if either the included file can not be opened and 
+	processed or the included file has been processed already in 
+	the stack and a recursive cycling has been detected.</para>
+	
+</sect2>
+
+<sect2>
 <title>Core configuration</title>
 
   <para>Configuration for Kannel <emphasis>MUST</emphasis> always
