@@ -933,8 +933,8 @@ static int pam_authorise_user(List *list)
 
 
 static Octstr *smsbox_req_handle(URLTranslation *t, Octstr *client_ip,
-				 Octstr *from, Octstr *to,
-				 Octstr *text, Octstr *udh, Octstr *smsc)
+				 Octstr *from, Octstr *to, Octstr *text,
+				 int binary, Octstr *udh, Octstr *smsc)
 {				     
     Msg *msg = NULL;
     Octstr *newfrom;
@@ -999,12 +999,15 @@ static Octstr *smsbox_req_handle(URLTranslation *t, Octstr *client_ip,
 	msg->sms.smsc_id = octstr_duplicate(urltrans_default_smsc(t));
     } else
 	msg->sms.smsc_id = NULL;
-    
-    if (udh==NULL) {
-	msg->sms.flag_8bit = 0;
-	msg->sms.flag_udh  = 0;
-    } else {
+
+    if (binary)
 	msg->sms.flag_8bit = 1;
+    else
+	msg->sms.flag_8bit = 0;
+	
+    if (udh==NULL)
+	msg->sms.flag_udh  = 0;
+    else {
 	msg->sms.flag_udh  = 1;
 	octstr_dump(msg->sms.udhdata, 0);
     }
@@ -1107,8 +1110,9 @@ static URLTranslation *authorise_user(List *list, Octstr *client_ip)
 static Octstr *smsbox_req_sendsms(List *args, Octstr *client_ip)
 {
     URLTranslation *t = NULL;
-    Octstr *from = NULL, *to;
-    Octstr *text = NULL, *udh = NULL, *smsc = NULL;
+    Octstr *from, *to;
+    Octstr *text, *udh, *smsc;
+    int binary;
     
     /* check the username and password */
     t = authorise_user(args, client_ip);
@@ -1122,12 +1126,21 @@ static Octstr *smsbox_req_sendsms(List *args, Octstr *client_ip)
     from = http_cgi_variable(args, "from");
     to = http_cgi_variable(args, "to");
     
+    
     if (to == NULL || (text == NULL && udh == NULL)) {
 	error(0, "/sendsms got wrong args");
 	return octstr_create("Wrong sendsms args, rejected");
     }
-    
-    return smsbox_req_handle(t, client_ip, from, to, text, udh, smsc);
+    binary = 1;
+    /*
+     * XXX   in future, we should allow both 7bit or 8bit data as 'text',
+     *      maybe as data vs. text argument, and then set binary accordingly.
+     *      But that would be a compatibility breaker, so have to think about
+     *      that a bit more...
+     */
+
+    return smsbox_req_handle(t, client_ip, from, to, text, binary,
+			     udh, smsc);
     
 }
 
@@ -1141,12 +1154,15 @@ static Octstr *smsbox_sendsms_post(List *headers, Octstr *body, Octstr *client_i
     URLTranslation *t = NULL;
     Octstr *from, *to, *user, *pass, *udh, *smsc;
     Octstr *ret;
-
+    Octstr *type, *charset;
+    int binary = 0;
+    
     from = to = user = pass = udh = smsc = NULL;
 
     get_x_kannel_from_headers(headers, &from, &to, &udh,
 			      &user, &pass, &smsc);
     
+    ret = NULL;
     
     /* check the username and password */
     t = authorise_username(user, pass, client_ip);
@@ -1156,11 +1172,29 @@ static Octstr *smsbox_sendsms_post(List *headers, Octstr *body, Octstr *client_i
     else if (to == NULL) {
 	error(0, "/sendsms got insufficient headers");
 	ret = octstr_create("Insufficient headers, rejected");
-    } else
+    } else {
 	/* XXX here we should take into account content-type of body
 	 */
-	ret = smsbox_req_handle(t, client_ip, from, to, body, udh, smsc);
+	http_header_get_content_type(headers, &type, &charset);
 
+	if (octstr_compare(type,
+			   octstr_imm("application/octet-stream")) == 0)
+	    binary = 1;
+	else if (octstr_compare(type,
+				octstr_imm("text/plain")) == 0)
+	    binary = 0;
+	else {
+	    error(0, "/sendsms got weird content type %s",
+		  octstr_get_cstr(type));
+	    ret = octstr_create("Unsupported content-type, rejected");
+	}
+	if (ret == NULL)
+	    ret = smsbox_req_handle(t, client_ip, from, to, body,
+				    binary, udh, smsc);
+
+	octstr_destroy(type);
+	octstr_destroy(charset);
+    }
     octstr_destroy(from);
     octstr_destroy(to);
     octstr_destroy(user);
@@ -1169,6 +1203,9 @@ static Octstr *smsbox_sendsms_post(List *headers, Octstr *body, Octstr *client_i
     octstr_destroy(smsc);
     return ret;
 }
+
+
+
 
 
 
