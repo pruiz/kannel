@@ -246,6 +246,12 @@ Octstr *urltrans_get_pattern(URLTranslation *t, Msg *request)
 	    break;
 
 	switch (octstr_get_char(t->pattern, pos + 1)) {
+	case 'k':
+		enc = encode_for_url(list_get(word_list, 0));
+		octstr_append(result, enc);
+		octstr_destroy(enc);
+		break;
+
 	case 's':
 	    enc = encode_for_url(list_get(word_list, nextarg));
 	    octstr_append(result, enc);

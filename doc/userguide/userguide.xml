@@ -2125,6 +2125,11 @@ url = "http://%S"
   <tgroup cols=2>
   <tbody>
 
+<row><entry><literal>%k</literal></entry><entry>
+the keyword in the SMS request (i.e., the first word in the SMS message)
+                 
+</entry></row>
+
 <row><entry><literal>%s</literal></entry><entry>
 next word from the SMS message, starting with
                          the second one (i.e., the first word, the

@@ -1,3 +1,10 @@
+2001-01-15  Lars Wirzenius  <liw@iki.fi>
+
+	* gw/urltrans.c: Implemented %k in URL translations, based on
+	suggestion from steveu@infowebtelecom.com.
+	
+	* doc/userguide/userguide.xml: Updated docs.
+
 2001-01-15  Aarno Syvänen <syvanen@wapit.com>
 
 	* gw/wap-appl.c: Wrote conformations and indications part of Push
