@@ -645,9 +645,16 @@ int smsc_get_message(SMSCenter *smsc, RQueueItem **new)
 		msg = rqi_new(R_MSG_CLASS_SMS, R_MSG_TYPE_MO);
 		if (msg==NULL) goto error;
 
-		if( smscenter_receive_msg(smsc, &newmsg) == 1 ) {
+		ret = smscenter_receive_msg(smsc, &newmsg);
+		if( ret == 1 ) {
 			/* OK */
 			msg->msg = newmsg;
+		} else if (ret == 0) { /* "NEVER" happens */
+		    /* XXX note that we leak memory here... but this
+		     *     should never happen */
+		    warning(0, "SMSC: Pending message returned '1', "
+			    "but nothing to receive!");
+		    return 0;
 		} else {
 			error(0, "Failed to receive the message, reconnecting...");
 			/* reopen the connection etc. invisible to other end */

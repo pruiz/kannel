@@ -56,9 +56,11 @@ int XXX_submit_msg(SMSCenter *smsc, Msg *msg);
  */
 int XXX_pending_smsmessage(SMSCenter *smsc);
 
-/* Receive message from SMSC. 
- * Return 1 if a message received, 0 if not (should NOT happen, as
- *  smsc is always first checked with 'pending') and -1 on error
+/* Receive message from SMSC. Called only after pending message returns 1,
+ * so this function may block otherwise.
+ *
+ * Return 1 if a message received, 0 if not (should NOT happen!)
+ * and -1 on error
  */ 
 int XXX_receive_msg(SMSCenter *smsc, Msg **msg);
 
