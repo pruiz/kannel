@@ -32,7 +32,7 @@
  * Retransmission until acknowledgement guarantees reliability of the transaction,
  * if the peer stays up. It is implemented by using retransmissions controlled by
  * timers and counters. There are two kind of timers, retransmission and acknow-
- * ledgement timers. (Actually, there is one timer iniatilised with two intervals.  * But let us keep the language simple). These are used in concert with 
+ * ledgement timers. (Actually, there is one timer iniatilised with two intervals.   * But let us keep the language simple). These are used in concert with 
  * corresponding counters, RCR (retransmission counter) and AEC (acknowledgement 
  * expiration counter). AEC counts expired acknowledgement intervals.
  *
@@ -44,7 +44,7 @@
  *
  * WTP ignores invoke pdus having same tid as the current transaction. This 
  * quarantees rejection of the duplicates. Note, however, how reliability is 
- * achieved WTP is doing tid verification (next chapter).
+ * achieved when WTP is doing tid verification (next chapter).
  *
  * Tid verification is done if tid validation fails (which happens when the 
  * message is a duplicate or when tid wrapping-up could confuse the protocol). In 
@@ -112,9 +112,8 @@ ROW(LISTEN,
      machine->u_ack = event->RcvInvoke.up_flag;
      machine->tcl = event->RcvInvoke.tcl;
      current_primitive = TR_Invoke_Ind;
-     wsp_event = pack_wsp_event(current_primitive, event, machine);
-     machine->invoke_indication = wsp_event;
-     debug("wtp", 0, "generating invoke indication, tid being invalid");
+     machine->invoke_indication = pack_wsp_event(current_primitive, event, machine);
+     debug("wap.wtp", 0, "generating invoke indication, tid being invalid");
      machine->rid = 1;
     },
     TIDOK_WAIT)
@@ -153,8 +152,6 @@ ROW(TIDOK_WAIT,
     (machine->tcl == 2 || machine->tcl == 1) && event->RcvAck.tid_ok == 1,
     { 
      wsp_event = wsp_event_duplicate(machine->invoke_indication);
-     debug("wap.wtp", 0, "RcvAck: generated TR-Invoke.ind for WSP");
-     wsp_event_dump(wsp_event);
      wsp_dispatch_event(machine, wsp_event);
      
      timer_event = wtp_event_create(TimerTO_A);
@@ -255,7 +252,7 @@ ROW(INVOKE_RESP_WAIT,
 
 ROW(INVOKE_RESP_WAIT,
     TimerTO_A,
-    machine->aec < AEC_MAX,
+    machine->aec < AEC_MAX && machine->tcl == 2 && machine->u_ack == 1,
     { 
      ++machine->aec;
      wtp_timer_stop(machine->timer);
@@ -306,6 +303,7 @@ ROW(RESULT_WAIT,
      timer_event = wtp_event_create(TimerTO_R);
      wtp_timer_start(machine->timer, L_R_WITH_USER_ACK, machine, timer_event);
      msg_destroy(machine->result);
+     machine->rid = 0;
      machine->result = wtp_send_result(machine, event);
      machine->rid = 1;
     },
@@ -476,7 +474,7 @@ ROW(RESULT_RESP_WAIT,
     {
      wtp_machine_mark_unused(machine);
      wtp_send_abort(PROVIDER, NORESPONSE, machine, event); 
-     
+      
      current_primitive = TR_Abort_Ind;
      /*wsp_event = pack_wsp_event(current_primitive, event, machine);*/
      /*wsp_dispatch_event(machine, wsp_event);*/
