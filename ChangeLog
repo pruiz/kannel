@@ -1,3 +1,12 @@
+2000-11-23  Kalle Marjola  <rpr@wapit.com>
+
+	* doc/userguide/userguide.xml: Added some explanation of SMS and
+	what is an SMS gateway - might need editing, but neverthless there
+	is some text
+
+	* doc/userguide/sms-gateway.fig: New picture to support that
+	explanation
+
 2000-11-22  Richard Braakman  <dark@wapi.com>
 
 	* gw/smsc.c, gw/smsc_cimd.c: Reformatted.

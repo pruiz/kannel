@@ -58,8 +58,8 @@
 <title>Introduction</title>
 
 	<highlights>
-	<para>This chapter introduces WAP in general terms, and explains the
-	role of the gateway in WAP, outlining its duties and features. It
+	<para>This chapter introduces WAP and SMS in general terms, and explains the
+	role of the gateway in WAP and SMS, outlining their duties and features. It
 	also explains why the Kannel project was started in the first place,
 	and why it is open source.</para>
 	</highlights>
@@ -168,6 +168,57 @@
 
 </sect1>
 	
+<sect1>
+<title>Overview of SMS</title>
+
+      <para>SMS, short messaging service, is a way to send short (160
+      character) messages from one GSM phone to another. It can also
+      be used to send operator logos, ringing tones, business cards
+      and phone configurations.</para>
+
+      <para><emphasis>SMS services</emphasis> are content services
+      initiated by SMS message to certain (usually short) phone
+      number, which then answers with requested content, if available.</para>
+
+      <para>When SMS services are used, the client sends an SMS
+      message to certain number, usually a very short specialized
+      number, which is the number of an SMS center. This SMS center
+      then sends the message onward to specified receiver in intra- or
+      Internet, using an SMS center specific protocol. For example, a
+      Nokia SMS center uses CIMD protocol.</para>
+
+      <para>As every different kind of SMS center uses different
+      protocol, an <emphasis>SMS gateway</emphasis> is used to handle
+      connections with SMS centers and to rely them onward in an
+      unified form.</para>
+
+        <figure>
+        <title>Logical position of SMS gateway between a phone and a content server.</title>
+        <graphic fileref="sms-gateway&figtype;"></graphic>
+        </figure>
+
+      <para>An SMS gateway can also be used to rely SMS messages from
+      one GSM network to another, if the networks do not roam messages
+      normally.</para>
+
+      <para>Kannel works as an SMS gateway, talking with many
+      different kind of SMS centers, and relying the messages onward
+      to content providers, as HTTP queries. Content providers then
+      answer to this HTTP query and the answer is sent back to mobile
+      terminal, with specified SMS center connections using SMS center
+      specific protocol.</para>
+
+      <para>In addition to serving mobile originated (MO) SMS messages
+      Kannel also works as an SMS push gateway - content providers can
+      request Kannel to send SMS messages to terminals. Kannel then
+      determines the correct SMS center to rely the SMS message and
+      sends the SMS message to that SMS center, again using SMS center
+      specific protocol. This way the content provider does not need
+      to know any SMS center specific protocol, just unified Kannel
+      SMS sending interface.</para>
+
+</sect1>
+
 	
 <sect1>
 <title>Features</title>
@@ -212,8 +263,7 @@
 	<para>Hardware requirements are fluffier. We haven't benchmarked Kannel
 	yet, so there are no hard numbers, but a reasonably fast PC workstation
 	(400 MHz Pentium II, 128 MB RAM) should serve several concurrent
-	users without problems. The goal is to support hundreds of concurrent
-	users on that kind of hardware.</para>
+	users or tens of SMS messages per second without problems.</para>
 
 </sect1>
 
