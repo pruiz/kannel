@@ -1924,9 +1924,9 @@ static long parse_ipv4_fragment(Octstr **address, long pos)
     while (i <= 3 && ((c = octstr_get_char(*address, pos)) != '.' &&  c != '=')
             && pos >= 0) {
         if (isdigit(c)) {
-	    --pos;
+            --pos;
             debug("wap.push.pap.compiler", 0, "got character %c, new position"
-                 " is %d", c, pos);
+                 " is %ld", c, pos);
             ++i;
         } else {
 	    debug("wap.push.pap.compiler", 0, "parse_ipv4_fragment: non-digit"
