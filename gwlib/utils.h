@@ -114,13 +114,5 @@ void encode_network_long(unsigned char *data, unsigned long value);
 /* kannel implementation of cfmakeraw, which is an extension in GNU libc */
 void kannel_cfmakeraw (struct termios *tio);
 
-/*
- * Convert a unix time value to a value of the form
- * Sun, 06 Nov 1994 08:49:37 GMT
- * This is the format required by the HTTP protocol (RFC 2068),
- * and it is defined in RFC 822 as updated by RFC 1123;
- */
-Octstr *rfc2068_date_format(unsigned long unixtime);
-
 
 #endif

@@ -1,5 +1,23 @@
 2000-09-22  Richard Braakman  <dark@wapit.com>
 
+	* gw/timers.c: Correctly record elapse-event in gwtimer_start.  Oops.
+	This also fixes a memory leak.
+
+2000-09-22  Richard Braakman  <dark@wapit.com>
+
+	* gwlib/protected.[ch]: Removed gw_getlocale().  Despite
+	protection, toggling locale settings is inherently not
+	thread-safe.
+
+	* gwlib/date.[ch]: Started file for date handling functions.
+	Contains date_format_http(). It is a reimplementation of
+	rfc2068_date_format() but does not use setlocale trickery.
+
+	* Removed rfc2068_date_format() from gwlib/utils.[ch] and
+	made gw/wsp_headers.c call the new function.
+
+2000-09-22  Richard Braakman  <dark@wapit.com>
+
 	* gw/wsp-session.c: Corrected capabilities negotiation.  This
 	is not the promised rewrite, and its replies are still longer
 	than they need to be, but it follows the standard now.

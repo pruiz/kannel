@@ -382,7 +382,7 @@ static Octstr *unpack_date_value(ParseContext *context) {
 	}
 
 	timeval = unpack_multi_octet_integer(context, length);
-	return rfc2068_date_format(timeval);
+	return date_format_http(timeval);
 }
 
 /* Accept-general-form is defined in 8.4.2.7 */

@@ -14,7 +14,6 @@ enum {
 	GMTIME,
 	RAND,
 	GETHOSTBYNAME,
-	GETLOCALE,
 	NUM_LOCKS
 };
 
@@ -92,19 +91,4 @@ int gw_gethostbyname(struct hostent *ent, const char *name) {
 	}
 	unlock(GETHOSTBYNAME);
 	return ret;
-}
-
-
-Octstr *gw_getlocale(int category) {
-	Octstr *locale;
-	char *localestring;
-
-	lock(GETLOCALE);
-	localestring = setlocale(category, NULL);
-	if (localestring == NULL)
-		locale = NULL;
-	else
-		locale = octstr_create(localestring);
-	unlock(GETLOCALE);
-	return locale;
 }

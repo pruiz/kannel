@@ -209,12 +209,6 @@ void gwtimer_start(Timer *timer, int interval, WAPEvent *event)
         timer->elapses = interval;
         gw_assert(timers->heap->tab[timer->index] == timer);
         wakeup |= heap_adjust(timers->heap, timer->index);
-
-        /* Then set its new event, if necessary. */
-        if (event != NULL) {
-            wap_event_destroy(timer->event);
-            timer->event = event;
-        }
     } else {
         /* Setting a new timer, or resetting an elapsed one.
          * First deal with a possible elapse event that may
@@ -226,6 +220,11 @@ void gwtimer_start(Timer *timer, int interval, WAPEvent *event)
         gw_assert(timer->index < 0);
         heap_insert(timers->heap, timer);
         wakeup = timer->index == 0;  /* Do we have a new top? */
+    }
+
+    if (event != NULL) {
+	wap_event_destroy(timer->event);
+	timer->event = event;
     }
 
     unlock(timers);
