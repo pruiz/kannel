@@ -1,42 +1,41 @@
-NEWS about Kannel: Open Source WAP and SMS Gateway version 0.9.2
+NEWS about Kannel: Open Source WAP and SMS Gateway version 0.9.3
 
 This is a DEVELOPMENT version. It should be usable for experimentation
-and testing but is not intended for production use.  Please do try it
+and testing, and is a release canditate for 0.10.  Please do try it
 out and report problems to devel@kannel.org (the development mailing list)
 or bugs@kannel.org (the bug tracking system).
 
-Change summary from version 0.9.1:
+Change summary from version 0.9.2:
 
-* WSP Connectionless mode implemented.
+* SMSC for wireless modems support by 3G Lab, supports PremiCell, Wavecom, 
+  Siemens M20
 
-* WSP and WTP machines are destroyed as soon as they go back to their
-  initial state.  This is now possible because there are no
-  pointers to them floating around in other parts of the code.
+* HTTP cookies
 
-* WSP method state machine is explicitly separated from the session
-  state machine.  This brings them much closer to the spec, and in the
-  future will allow the client to make multiple requests simultaneously.
+* added X-WAP-Gateway to HTTP requests
 
-* WML compiler supports more character sets.
-
-* "checking" memory allocator replaced with a new version, so that it's
-  no longer a speed bottleneck.
-
-* Improvements to drive_wapbox (one of the testing tools).
-
-* WAPEvent structure is now a union, uses far less memory.
+* Full WSP table and abort values
 
 * Bug fixes:
 
-	* WTP was broken in 0.9.1, fixed again.
-	* fakewap works better on Solaris.
-	* Several memory leaks fixed.
-	* Wapbox longer panics when re-using headers from a previous
-	  HTTP request.
+	* wmlcompiler: can handle larger string tables than 127 characters
+	* huge number of fixes to wapbox
+	* smsbox: replies are now correctly parsed (broken in 0.9.2),
+	  split-send fixed to work corrently with Octstrs
+	* smsbox: fixed find operations in urltranslations
+	* wtp: error messages restored
+	* bearerbox: possible synchronization problem during start-up fixed
 
 * Known problems:
 
-	* Still "cannot handle TR-Invoke.ind" in the logfiles.
 	* wapbox shutdown sometimes gets stuck and requires kill -9.
+	* HTTP library might get locked up for several minutes in certain 
+	  environments
+
+* Known limitations:
+
+	* http: POST missing
+	* wdp: wdp on sms missing
+	* wsp: missing Push and Suspend/Resume
 
 See ChangeLog for detailed information.

@@ -60,6 +60,14 @@ Compiling and installing the gateway
 		CFLAGS='-pthread' ./configure
 	
 	The above, for instance, seems to be required on FreeBSD.
+
+	You may also give extra arguments to disable and enable certain 
+	features of the build, of which the most interesting are:
+
+		--disable-docs		Build no documentation
+		--with-malloc=native	Use standard malloc implementation
+		--with-malloc=check	Use checking malloc, slower but
+					very useful for debugging (default)
 	
 	If you want to develop Kannel, you probably want to add CFLAGS
 	that make your compiler use warning messages. For example, for
