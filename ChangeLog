@@ -1,5 +1,14 @@
 2000-08-01  Richard Braakman  <dark@wapit.com>
 
+	* gw/smsbox_req.c: When logging "message sent", use errno 0
+	instead of 1. (?)
+
+	* doc/userguide/newconf.txt: Change recommended unified-prefix
+	string for Finland, because smscenters no longer accept "00"
+	prefix as of today.
+
+2000-08-01  Richard Braakman  <dark@wapit.com>
+
 	* gw/smsc_cimd2.c: When complaining about format of sender number,
 	actually log the sender number rather than the receiver number.
 

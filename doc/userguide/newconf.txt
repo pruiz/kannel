@@ -111,9 +111,9 @@ used:
  #	  reply to original message). Format is so that first is the
  #       unified prefix, then all prefixes which are replaced by the
  #       unified prefix, separated with comma (','). For example,
- #       for Finland an unified-prefix "00358,0" should do the trick. 
+ #       for Finland an unified-prefix "+358,00358,0;+,00" should do the trick. 
  #       If there are several unified prefixes, separate their rules with
- #       semicolon (';'), like "0035850,050;0035840,040"
+ #       semicolon (';'), like "+35850,050;+35840,040"
  #
  white-list = <url>
  #       Load a list of accepted senders of SMS messages. If a sender
@@ -469,7 +469,7 @@ box-deny-ip = "*.*.*.*"
 box-allow-ip = "127.0.0.1"
 admin-deny-ip = "*.*.*.*"
 admin-allow-ip = "127.0.0.1"
-unified-prefix = "00358,0"
+unified-prefix = "+358,00358,0;+,00"
 white-list = "http://localhost/whitelist.txt"
 
 

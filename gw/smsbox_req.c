@@ -183,7 +183,7 @@ static int do_sending(Msg *msg)
     if (sender(msg) < 0)
 	goto error;
 
-    debug("smsbox_req", 1, "message sent\n");
+    debug("smsbox_req", 0, "message sent\n");
     /* sender does the freeing (or uses msg as it sees fit) */
 
     return 0;
