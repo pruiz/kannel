@@ -883,6 +883,9 @@ static void http_queue_thread(void *arg)
         if (http_queue_delay > 0) 
             gwthread_sleep(http_queue_delay);
 
+        debug("sms.http",0,"HTTP: Queue contains %ld outstanding requests",  
+              list_len(smsbox_http_requests));
+
         /* 
          * Get all required HTTP request data from the queue and reconstruct 
          * the id pointer for later lookup in url_result_thread.
