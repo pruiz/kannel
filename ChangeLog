@@ -1,3 +1,12 @@
+Sun Jun  4 04:38:02 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* gw/wsp.c, gw/wsp_state-decl.h: Use WSP_PDU's, instead of
+	packing things ourselves, as far is possible. Some fields have
+	special packing encodings, those we do partly ourselves still.
+	
+	* gw/wsp_pdu.c: Don't crash if OCTSTR field is NULL, just ignore
+	it.
+
 Sun Jun  4 03:45:45 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* gw/wap-events.c: wap_event_dump now reports name of Octstr

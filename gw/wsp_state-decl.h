@@ -234,14 +234,21 @@ ROW(PROCESSING,
 	1,
 	{
 		WAPEvent *wtp_event;
+		WSP_PDU *new_pdu;
 		
+		new_pdu = wsp_pdu_create(Reply);
+		new_pdu->u.Reply.status = 
+			convert_http_status_to_wsp_status(e->status);
+		new_pdu->u.Reply.headers = 
+			encode_http_headers(e->response_type);
+		new_pdu->u.Reply.data = octstr_duplicate(e->response_body);
+
 		/* Send TR-Result.req to WTP */
 		wtp_event = wap_event_create(TR_Result_Req);
 		wtp_event->TR_Result_Req.tid = e->machine->tid;
-		wtp_event->TR_Result_Req.user_data = 
-			make_reply_pdu(e->status, e->response_type,
-					e->response_body);
+		wtp_event->TR_Result_Req.user_data = wsp_pdu_pack(new_pdu);
 		wtp_handle_event(e->machine, wtp_event);
+		wsp_pdu_destroy(new_pdu);
 	},
 	REPLYING)
 

@@ -93,10 +93,9 @@ static void append_uint8(Octstr *pdu, long n);
 static void append_uintvar(Octstr *pdu, long n);
 static void append_octstr(Octstr *pdu, Octstr *os);
 
-static Octstr *make_connectionmode_pdu(long type);
 static Octstr *make_connectreply_pdu(WSPMachine *m, long session_id);
-static Octstr *make_reply_pdu(long status, long type, Octstr *body);
 
+static Octstr *encode_http_headers(long content_type);
 static long convert_http_status_to_wsp_status(long http_status);
 
 static long new_server_transaction_id(void);
@@ -244,8 +243,10 @@ static WSPMachine *find_machine(WAPEvent *event, WSP_PDU *pdu) {
 
 	if (sm == NULL) {
 		sm = machine_create();
+#if 0
 		debug("wap.wsp", 0, "WSP: wtp_sm:");
 		wtp_machine_dump(wtp_sm);
+#endif
 		sm->client_address = octstr_duplicate(wtp_sm->source_address);
 		sm->client_port = wtp_sm->source_port;
 		sm->server_address = 
@@ -555,15 +556,6 @@ static long wsp_next_session_id(void) {
 }
 
 
-static Octstr *make_connectionmode_pdu(long type) {
-	Octstr *pdu;
-	
-	pdu = octstr_create_empty();
-	append_uint8(pdu, type);
-	return pdu;
-}
-
-
 static void append_uint8(Octstr *pdu, long n) {
 	unsigned char c;
 	
@@ -596,79 +588,73 @@ static void append_octstr(Octstr *pdu, Octstr *os) {
 
 
 static Octstr *make_connectreply_pdu(WSPMachine *m, long session_id) {
-	Octstr *pdu, *caps = NULL, *hdrs = NULL, *tmp;
+	WSP_PDU *pdu;
+	Octstr *os, *caps, *tmp;
 	
-	pdu = make_connectionmode_pdu(ConnectReply_PDU);
-	append_uintvar(pdu, session_id);
-	/* set CapabilitiesLen */
+	pdu = wsp_pdu_create(ConnectReply);
+
+	pdu->u.ConnectReply.sessionid = session_id;
+
+
 	if (m->set_caps) {
-	    caps = octstr_create_empty();
-	    tmp = octstr_create_empty();
-
-	    /* XXX put negotiated capabilities into octstr */
-
-	    if (m->set_caps & WSP_CSDU_SET) {
-		octstr_truncate(tmp, 0);
-		append_uint8(tmp, WSP_CAPS_SERVER_SDU_SIZE);
-		append_uintvar(tmp, m->client_SDU_size);
-
-		append_uintvar(caps, octstr_len(tmp));
-		append_octstr(caps, tmp);
-	    }
-	    if (m->set_caps & WSP_SSDU_SET) {
-		octstr_truncate(tmp, 0);
-		append_uint8(tmp, WSP_CAPS_SERVER_SDU_SIZE);
-		append_uintvar(tmp, m->server_SDU_size);
-
-		append_uintvar(caps, octstr_len(tmp));
-		append_octstr(caps, tmp);
-	    }
-
-	    if (m->set_caps & WSP_MMOR_SET) {
-		append_uintvar(caps, 2);
-		append_uint8(caps, WSP_CAPS_METHOD_MOR);
-		append_uint8(caps, m->MOR_method);
-	    }
-	    if (m->set_caps & WSP_PMOR_SET) {
-		append_uintvar(caps, 2);
-		append_uint8(caps, WSP_CAPS_PUSH_MOR);
-		append_uint8(caps, m->MOR_push);
-	    }
-	    /* rest are not supported, yet */
-	    
-	    append_uintvar(pdu, octstr_len(caps));
-	    octstr_destroy(tmp);
+		caps = octstr_create_empty();
+		tmp = octstr_create_empty();
+		
+		/* XXX put negotiated capabilities into octstr */
+		
+		if (m->set_caps & WSP_CSDU_SET) {
+			octstr_truncate(tmp, 0);
+			append_uint8(tmp, WSP_CAPS_SERVER_SDU_SIZE);
+			append_uintvar(tmp, m->client_SDU_size);
+		
+			append_uintvar(caps, octstr_len(tmp));
+			append_octstr(caps, tmp);
+		}
+		if (m->set_caps & WSP_SSDU_SET) {
+			octstr_truncate(tmp, 0);
+			append_uint8(tmp, WSP_CAPS_SERVER_SDU_SIZE);
+			append_uintvar(tmp, m->server_SDU_size);
+		
+			append_uintvar(caps, octstr_len(tmp));
+			append_octstr(caps, tmp);
+		}
+		
+		if (m->set_caps & WSP_MMOR_SET) {
+			append_uintvar(caps, 2);
+			append_uint8(caps, WSP_CAPS_METHOD_MOR);
+			append_uint8(caps, m->MOR_method);
+		}
+		if (m->set_caps & WSP_PMOR_SET) {
+			append_uintvar(caps, 2);
+			append_uint8(caps, WSP_CAPS_PUSH_MOR);
+			append_uint8(caps, m->MOR_push);
+		}
+		/* rest are not supported, yet */
+		
+		pdu->u.ConnectReply.capabilities = caps;
+		octstr_destroy(tmp);
 	} else
-	    append_uintvar(pdu, 0);
+		pdu->u.ConnectReply.capabilities = NULL;
 
-	/* set HeadersLen */
-	append_uintvar(pdu, 0);
+	pdu->u.ConnectReply.headers = NULL;
+	
+	os = wsp_pdu_pack(pdu);
+	wsp_pdu_destroy(pdu);
 
-	if (caps != NULL) {
-	    append_octstr(pdu, caps);
-	    octstr_destroy(caps);
-	}
-	if (hdrs != NULL) {
-	    append_octstr(pdu, hdrs);
-	    octstr_destroy(hdrs);
-	}
-	return pdu;
+	return os;
 }
 
 
-static Octstr *make_reply_pdu(long status, long type, Octstr *body) {
-	Octstr *pdu;
+static Octstr *encode_http_headers(long type) {
+	Octstr *os;
 	
-	/* XXX this is a hardcoded kludge */
-	pdu = make_connectionmode_pdu(Reply_PDU);
-	append_uint8(pdu, convert_http_status_to_wsp_status(status));
-	append_uintvar(pdu, 1);
 	gw_assert(type >= 0x00);
 	gw_assert(type < 0x80);
-	append_uint8(pdu, type | 0x80);
-	if (body != NULL)
-		append_octstr(pdu, body);
-	return pdu;
+
+	os = octstr_create_empty();
+	append_uint8(os, type | 0x80);
+	
+	return os;
 }
 
 
