@@ -63,6 +63,14 @@ static void read_config(char *filename) {
 		if ((s = config_get(grp, "test-heartbeat-thread")) != NULL)
 		        test_heartbeat_thread = atoi(s);
 #endif
+		if ((s = config_get(grp, "device-home")) != NULL)
+			wsp_http_map_url_config_device_home(s);
+		/* This would be really nice, if config_get would return
+		 * all map-url lines in seperate calls; right now only
+		 * the last map-url line in the configuration file survives.
+		 */
+		if ((s = config_get(grp, "map-url")) != NULL)
+			wsp_http_map_url_config(s);
 		grp = config_next_group(grp);
 	}
 	if (heartbeat_freq == -600)
@@ -73,6 +81,7 @@ static void read_config(char *filename) {
 		open_logfile(logfile, logfilelevel);
 	        info(0, "Starting to log to file %s level %d", logfile, logfilelevel);
 	}
+	wsp_http_map_url_config_info();	/* debugging aid */
 }
 
 

@@ -1,3 +1,9 @@
+Sat Feb 26 16:57:40 CET 2000	Patrick Schaaf	<bof@bof.de>
+
+	* gw/wsp_http.c, gw/wsp.h, gw/wapbox.c: added configuration
+	options device-home and map-url; see gw/wapbox.wapconf for
+	a description of how they work.
+
 Sat Feb 26 11:29:10 CET 2000	Patrick Schaaf	<bof@bof.de>
 
 	* gw/wsp.c, gw/wsp_http.c: hacked to start working with

@@ -31,7 +31,16 @@
 #
 # test-heartbeat-thread = (0 or 1)
 #	temporary: log lots of output to test new heartbeat thread construct.
-*	default: 0
+#	default: 0
+#
+# device-home = "http://some.where/else"
+#	adds a mapping for the URL DEVICE:home (as sent by Phone.com browsers)
+#	to the given destination URL. There is no default mapping.
+#
+# map-url = "http://from.here/ http://some.where/"
+#	adds a mapping for the left side URL to the given destination URL.
+#	Right now you can only configure one mapping in addition to the
+#	mapping using the device-home command.
 #
 # Those not present use default values, which are following ones:
 # (read from file bb.h, check that, too)
@@ -44,3 +53,5 @@ hearbeat-freq = -600
 # pid-file = "/tmp/smsbox.pid"
 # log-file = "/tmp/wapbox.log"
 log-level = 0
+# device-home = "http://some.where/"
+# map-url = "http://kannel http://some.where.else/index.wml"

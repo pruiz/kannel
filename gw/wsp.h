@@ -169,5 +169,15 @@ int wsp_deduce_pdu_type(Octstr *pdu, int connectionless);
 
 void *wsp_http_thread(void *arg);
 
+/* configure an URL mapping; parses string on whitespace, uses left
+ * part for the source URL, and right part for the destination URL
+ */
+void wsp_http_map_url_config(char *);
+
+/* configure an URL mapping from source DEVICE:home to given string */
+void wsp_http_map_url_config_device_home(char *);
+
+/* show all configured URL mappings */
+void wsp_http_map_url_config_info(void);
 
 #endif

@@ -5,9 +5,6 @@
  * Capabilities/headers by Kalle Marjola <rpr@wapit.com>
  */
 
-#define DEVICE_HOME_IN	"DEVICE:home"
-#define DEVICE_HOME_OUT	"http://localhost/"
-
 #include <assert.h>
 #include <string.h>
 
@@ -15,7 +12,6 @@
 #include "wsp.h"
 #include "ws.h"
 #include "wml_compiler.h"
-
 
 static void  dev_null(const char *data, size_t len, void *context);
 static int encode_content_type(const char *type);
@@ -25,6 +21,109 @@ static Octstr *convert_wml_to_wmlc_old(Octstr *wml, char *url);
 static Octstr *convert_wml_to_wmlc_new(Octstr *wml, char *url);
 static Octstr *convert_wmlscript_to_wmlscriptc(Octstr *wmlscript, char *url);
 
+struct wsp_http_map {
+	struct wsp_http_map *next;
+	char *in;
+	int in_len;
+	char *out;
+	int out_len;
+};
+
+static struct wsp_http_map *wsp_http_map = 0;
+static struct wsp_http_map *wsp_http_map_last = 0;
+
+/* wsp_http_map_url_do_config() - add mapping for src URL to dst URL. */
+static void wsp_http_map_url_do_config(char *src, char *dst)
+{
+	struct wsp_http_map *new_map;
+
+	new_map = gw_malloc(sizeof(*new_map));
+	new_map->next = NULL;
+	new_map->in = gw_strdup(src);
+	new_map->in_len = strlen(src) + 1;	/* include terminating \0 */
+	new_map->out = gw_strdup(dst);
+	new_map->out_len = strlen(dst) + 1;	/* include terminating \0 */
+	info(0, "WSP: Adding mapping <%s> (%d) to <%s> (%d)",
+		new_map->in, new_map->in_len,
+		new_map->out, new_map->out_len);
+	if (wsp_http_map == NULL) {
+		wsp_http_map = wsp_http_map_last = new_map;
+	} else {
+		wsp_http_map_last->next = new_map;
+		wsp_http_map_last = new_map;
+	}
+}
+
+/* wsp_http_map_url_config() - could be called during configuration read,
+ * once for each "map-url" statement. Interprets parameter value as
+ * a space-separated two-tuple, with the first element being a full
+ * URL which should be rewritten to the second element.
+ */
+void wsp_http_map_url_config(char *s)
+{
+	char *in, *out;
+
+	s = gw_strdup(s);
+	in = strtok(s, " \t");
+	if (!in) return;
+	out = strtok(NULL, " \t");
+	if (!out) return;
+	wsp_http_map_url_do_config(in, out);
+	gw_free(s);
+}
+
+/* wsp_http_map_url_config_device_home() - called during configuration read,
+ * adds a mapping for the source URL "DEVICE:home", to the given destination.
+ */
+void wsp_http_map_url_config_device_home(char *to)
+{
+	if (to) {
+		wsp_http_map_url_do_config("DEVICE:home", to);
+	}
+}
+
+/* debugging aid - show whole mapping list after configuration */
+void wsp_http_map_url_config_info(void)
+{
+	struct wsp_http_map *run;
+
+	for (run = wsp_http_map; run; run = run->next)
+		info(0, "WSP: Configured mapping <%s> (%d) to <%s> (%d)",
+			run->in, run->in_len,
+			run->out, run->out_len);
+}
+
+/* wsp_http_map_find() - search list of mappings for given URL */
+static struct wsp_http_map *wsp_http_map_find(char *s)
+{
+	struct wsp_http_map *run;
+
+	for (run = wsp_http_map; run; run = run->next)
+		if (0 == strncasecmp(s, run->in, run->in_len))
+			break;
+	if (run) {
+		info(0, "WSP: found mapping for url <%s>", s);
+	} else {
+		info(0, "WSP: no mapping for url <%s>", s);
+	}
+	return run;
+}
+
+/* wsp_http_map_url() - maybe rewrite URL, if matching */
+static void wsp_http_map_url(Octstr **osp)
+{
+	struct wsp_http_map *map;
+	Octstr *old = *osp;
+	char *oldstr = octstr_get_cstr(old);
+
+	map = wsp_http_map_find(oldstr);
+	if (map) {
+		*osp = octstr_create_from_data(map->out, map->out_len);
+		debug("wap.wsp.http", 0, "WSP: url <%s> mapped to <%s>",
+			oldstr, octstr_get_cstr(*osp));
+		octstr_destroy(old);
+	}
+}
 
 void *wsp_http_thread(void *arg) {
 	char *type, *data;
@@ -83,16 +182,9 @@ void *wsp_http_thread(void *arg) {
 	debug("wap.wsp.http", 0, "WSP: Sending S-MethodInvoke.Res to WSP");
 	wsp_dispatch_event(wtp_sm, event);
 
+	wsp_http_map_url(&event->SMethodInvokeResult.url);
 	url = octstr_get_cstr(event->SMethodInvokeResult.url);
 	debug("wap.wsp.http", 0, "WSP: url is <%s>", url);
-	if (0 == strcmp(url, DEVICE_HOME_IN)) {
-		octstr_destroy(event->SMethodInvokeResult.url);
-		event->SMethodInvokeResult.url =
-		octstr_create_from_data(DEVICE_HOME_OUT,
-					sizeof(DEVICE_HOME_OUT) - 1);
-		url = octstr_get_cstr(event->SMethodInvokeResult.url);
-		debug("wap.wsp.http", 0, "WSP: url changed to <%s>", url);
-	}
 
 	body = NULL;
 
