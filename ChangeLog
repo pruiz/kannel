@@ -1,3 +1,11 @@
+Tue Mar 21 12:57:35 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* gwlib/list.[ch]: Wrote function list_extract_first.
+	
+	* gw/wsp.c: Modified to use list_extract_first instead of doing
+	it manually with list_lock/unlock and list_len and list_get
+	and list_delete.
+
 Tue Mar 21 12:38:52 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* gw/wsp.c, gw/wsp_machine-decl.h, gw/wsp_state-decl.h: Converted

@@ -187,6 +187,22 @@ void *list_get(List *list, long pos) {
 }
 
 
+void *list_extract_first(List *list) {
+	void *item;
+
+	lock(list);
+	if (list->len == 0)
+		item = NULL;
+	else {
+		item = GET(list, 0);
+		list->start = (list->start + 1) % list->tab_size;
+		list->len -= 1;
+	}
+	unlock(list);
+	return item;
+}
+
+
 void list_lock(List *list) {
 	mutex_lock(list->permanent_lock);
 }
@@ -260,7 +276,7 @@ void *list_search(List *list, void *pattern, int (*cmp)(void *, void *)) {
 	void *item;
 	long i;
 	
-	list_lock(list);
+	lock(list);
 	item = NULL;
 	for (i = 0; i < list->len; ++i) {
 		item = GET(list, i);
@@ -269,7 +285,7 @@ void *list_search(List *list, void *pattern, int (*cmp)(void *, void *)) {
 	}
 	if (i == list->len)
 		item = NULL;
-	list_unlock(list);
+	unlock(list);
 	
 	return item;
 }
@@ -283,14 +299,14 @@ List *list_search_all(List *list, void *pattern, int (*cmp)(void *, void *)) {
 	
 	new_list = list_create();
 
-	list_lock(list);
+	lock(list);
 	item = NULL;
 	for (i = 0; i < list->len; ++i) {
 		item = GET(list, i);
 		if (cmp(item, pattern))
 			list_append(new_list, item);
 	}
-	list_unlock(list);
+	unlock(list);
 	
 	if (list_len(new_list) == 0) {
 		list_destroy(new_list);

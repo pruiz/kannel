@@ -455,25 +455,11 @@ static void unpack_caps(Octstr *caps, WSPMachine *m)
 }
 
 static void append_to_event_queue(WSPMachine *machine, WSPEvent *event) {
-	list_lock(machine->event_queue);
 	list_append(machine->event_queue, event);
-	list_unlock(machine->event_queue);
 }
 
 static WSPEvent *remove_from_event_queue(WSPMachine *machine) {
-	WSPEvent *event;
-	
-	/* Note: Can't use list_consume here, since no-one is registered
-	   as a producer. */
-	list_lock(machine->event_queue);
-	if (list_len(machine->event_queue) == 0)
-		event = NULL;
-	else {
-		event = list_get(machine->event_queue, 0);
-		list_delete(machine->event_queue, 0, 1);
-	}
-	list_unlock(machine->event_queue);
-	return event;
+	return list_extract_first(machine->event_queue);
 }
 
 

@@ -102,6 +102,14 @@ void *list_get(List *list, long pos);
 
 
 /*
+ * Remove and return the first item in the list. Return NULL if list is
+ * empty. Note that unlike list_consume, this won't sleep until there is
+ * something in the list.
+ */
+void *list_extract_first(List *list);
+
+
+/*
  * Lock the list. This protects the list from other threads that also
  * lock the list with list_lock, but not from threads that do not.
  * (This is intentional.)
