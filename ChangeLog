@@ -1,3 +1,6 @@
+2001-07-19 Jörg Pommnitz <jpo@condat.de>
+	* fix userguide.xml to get through Jade.
+
 2001-07-19 Bruno Rodrigues <bruno.rodrigues@litux.org>
 
 	* gw/msg-decl.h, gw/smsbox.c and gw/smsc_emi2.c: Changed "flash" 
