@@ -65,7 +65,7 @@ static void client_thread(void *arg) {
 		}
 		octstr_destroy(url);
 	}
-	list_destroy(reqh, NULL);
+	http_destroy_headers(reqh);
 	http_caller_destroy(caller);
 	info(0, "This thread: %ld succeeded, %ld failed.", succeeded, failed);
 }

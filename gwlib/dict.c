@@ -86,6 +86,7 @@ static long key_to_index(Dict *dict, Octstr *key)
 Dict *dict_create(long size_hint, void (*destroy_value)(void *))
 {
     Dict *dict;
+    long i;
     
     dict = gw_malloc(sizeof(*dict));
 
@@ -94,7 +95,9 @@ Dict *dict_create(long size_hint, void (*destroy_value)(void *))
      */
     dict->size = size_hint * 2;
 
-    dict->tab = gw_malloc(sizeof(*dict->tab) * dict->size);
+    dict->tab = gw_malloc(sizeof(dict->tab[0]) * dict->size);
+    for (i = 0; i < dict->size; ++i)
+    	dict->tab[i] = list_create();
     dict->lock = mutex_create();
     dict->destroy_value = destroy_value;
     

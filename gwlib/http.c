@@ -94,6 +94,7 @@ static enum { limbo, running, terminating } run_status = limbo;
  */
 static void start_background_threads(void);
 static void write_request_thread(void *);
+static void read_response_thread(void *);
 
 
 /*
@@ -113,11 +114,8 @@ static int proxy_used_for_host(Octstr *host);
  */
 static void pool_init(void);
 static void pool_shutdown(void);
-static HTTPSocket *pool_allocate(Octstr *host, int port);
-static void pool_free(HTTPSocket *p);
-static void pool_free_and_close(HTTPSocket *p);
-static void pool_kill_old_ones(void);
-static int pool_socket_old_and_unused(void *a, void *b);
+static HTTPSocket *pool_get(Octstr *host, int port);
+static void pool_put(HTTPSocket *p);
 
 
 /*
@@ -184,6 +182,7 @@ void http_shutdown(void)
     run_status = terminating;
     list_remove_producer(pending_requests);
     gwthread_join_every(write_request_thread);
+    gwthread_join_every(read_response_thread);
 
     http_close_proxy();
     list_destroy(proxy_exceptions, NULL);
@@ -192,6 +191,7 @@ void http_shutdown(void)
     pool_shutdown();
     counter_destroy(request_id_counter);
     list_destroy(pending_requests, transaction_destroy);
+    list_destroy(started_requests_queue, transaction_destroy);
     mutex_destroy(background_threads_lock);
     /* XXX destroy caller ids */
 }
@@ -1069,116 +1069,92 @@ static int proxy_used_for_host(Octstr *host)
  * Socket pool management.
  */
 
+#if 0
+static void pool_init(void) { }
+static void pool_shutdown(void) { }
+static HTTPSocket *pool_get(Octstr *host, int port)
+{
+    return socket_create_client(host, port);
+}
+static void pool_put(HTTPSocket *p)
+{
+    socket_destroy(p);
+}
+#else
 
-enum { POOL_MAX_IDLE = 300 };
+
+static Dict *pool = NULL;
+static Mutex *pool_lock = NULL;
 
 
-static List *pool = NULL;
+static void pool_destroy_item(void *list)
+{
+    HTTPSocket *p;
+    
+    while ((p = list_extract_first(list)) != NULL)
+    	socket_destroy(p);
+    list_destroy(list, NULL);
+}
 
 
 static void pool_init(void)
 {
-    pool = list_create();
+    pool = dict_create(1024, pool_destroy_item);
+    pool_lock = mutex_create();
 }
 
 
 static void pool_shutdown(void)
 {
-    HTTPSocket *p;
-
-    while ((p = list_extract_first(pool)) != NULL)
-        socket_destroy(p);
-    list_destroy(pool, NULL);
+    dict_destroy(pool);
+    mutex_destroy(pool_lock);
 }
 
 
-static HTTPSocket *pool_allocate(Octstr *host, int port)
+static HTTPSocket *pool_get(Octstr *host, int port)
 {
+    Octstr *key;
+    List *list;
     HTTPSocket *p;
-    int i;
-    long pool_len;
+    
+    key = octstr_format("%S:%d", host, port);
 
-    list_lock(pool);
+    mutex_lock(pool_lock);
+    list = dict_get(pool, key);
+    if (list == NULL)
+    	p = NULL;
+    else
+	p = list_extract_first(list);
+    mutex_unlock(pool_lock);
+	
+    if (p == NULL)
+	p = socket_create_client(host, port);
 
-    p = NULL;
-    pool_len = list_len(pool);
-    for (i = 0; i < pool_len; ++i) {
-        p = list_get(pool, i);
-        if (!p->in_use && p->port == port &&
-            octstr_compare(p->host, host) == 0) {
-            break;
-        }
-    }
-
-    if (i == pool_len) {
-        /* Temporarily unlock pool, because socket_create_client
-         * can block for a long time.  We can do this safely because
-         * we don't rely on the values i and p, and pool_len
-         * currently have. */
-        list_unlock(pool);
-        p = socket_create_client(host, port);
-        if (p == NULL)
-            return NULL;
-        list_lock(pool);
-        pool_kill_old_ones();
-        list_append(pool, p);
-    }
-
-    p->in_use = 1;
-    list_unlock(pool);
-
+    octstr_destroy(key);
     return p;
 }
 
 
-static void pool_free(HTTPSocket *p)
+static void pool_put(HTTPSocket *p)
 {
-    gw_assert(p != NULL);
-    gw_assert(p->in_use);
-    time(&p->last_used);
-    p->in_use = 0;
-}
-
-
-static void pool_free_and_close(HTTPSocket *p)
-{
-    gw_assert(p->in_use);
-
-    list_lock(pool);
-    list_delete_equal(pool, p);
-    list_unlock(pool);
-
-    socket_destroy(p);
-}
-
-
-/* Assume pool is locked already. */
-static void pool_kill_old_ones(void)
-{
-    time_t now;
+    Octstr *key;
     List *list;
-    HTTPSocket *p;
 
-    time(&now);
-    list = list_extract_matching(pool, &now, pool_socket_old_and_unused);
-    if (list != NULL) {
-        while ((p = list_extract_first(list)) != NULL)
-            socket_destroy(p);
-        list_destroy(list, NULL);
-    }
+    key = octstr_format("%S:%d", p->host, p->port);
+
+    mutex_lock(pool_lock);
+    list = dict_get(pool, key);
+    if (list == NULL) {
+    	list = list_create();
+	list_append(list, p);
+	dict_put(pool, key, list);
+    } else
+    	list_append(list, p);
+    mutex_unlock(pool_lock);
+    
+    octstr_destroy(key);
 }
-
-
-static int pool_socket_old_and_unused(void *a, void *b)
-{
-    HTTPSocket *p;
-    time_t now;
-
-    p = a;
-    now = *(time_t *) b;
-    return !p->in_use && p->last_used != (time_t) - 1 &&
-           difftime(now, p->last_used) > POOL_MAX_IDLE;
-}
+#endif
 
 
 /***********************************************************************
@@ -1571,11 +1547,11 @@ static HTTPSocket *send_request(Octstr *url, List *request_headers,
     if (proxy_used_for_host(host)) {
         request = build_request(url, host, port, request_headers,
                                 request_body, method_name);
-        p = pool_allocate(proxy_hostname, proxy_port);
+        p = pool_get(proxy_hostname, proxy_port);
     } else {
         request = build_request(path, host, port, request_headers,
                                 request_body, method_name);
-        p = pool_allocate(host, port);
+        p = pool_get(host, port);
     }
     if (p == NULL)
         goto error;
@@ -1592,11 +1568,10 @@ static HTTPSocket *send_request(Octstr *url, List *request_headers,
     return p;
 
 error:
+    pool_put(p);
     octstr_destroy(host);
     octstr_destroy(path);
     octstr_destroy(request);
-    if (p != NULL)
-        pool_free(p);
     error(0, "Couldn't send request to <%s>", octstr_get_cstr(url));
     return NULL;
 }
@@ -1950,7 +1925,8 @@ static void read_response_thread(void *arg)
 	    if (trans->retrying) {
 		goto error;
 	    } else {
-		pool_free_and_close(trans->socket);
+		socket_destroy(trans->socket);
+		trans->socket = NULL;
 		trans->retrying = 1;
 		list_produce(pending_requests, trans);
 		continue;
@@ -1967,10 +1943,12 @@ static void read_response_thread(void *arg)
 	case -1:
 	    goto error;
 	case 0:
-	    pool_free_and_close(trans->socket);
+	    socket_destroy(trans->socket);
+	    trans->socket = NULL;
 	    break;
 	default:
-	    pool_free(trans->socket);
+	    pool_put(trans->socket);
+	    trans->socket = NULL;
 	    break;
 	}
 
@@ -1990,7 +1968,8 @@ static void read_response_thread(void *arg)
 	continue;
     
     error:
-    	pool_free(trans->socket);
+    	pool_put(trans->socket);
+    	trans->socket = NULL;
 	error(0, "Couldn't fetch <%s>", octstr_get_cstr(trans->url));
 	trans->status = -1;
 	list_produce(trans->caller, trans);

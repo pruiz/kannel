@@ -1,5 +1,21 @@
 2000-10-26  Lars Wirzenius  <liw@iki.fi>
 
+	* gwlib/dict.c: Initialize hash table elements to be Lists, instead
+	of garbage.
+	
+    	* test/test_dict.c: Wrote.
+
+	* gwlib/http.c: Cleanups: Wait for read_response_thread to
+	terminate at http_shutdown and destroy the started_requests_queue.
+	Also re-implemented the HTTPSocket pool with dict, so that it
+	no longer does linear searches; the code is a bit simpler now
+	as well.
+	
+	* test/test_http.c: Use http_destroy_headers instead of
+	list_destroy. This also fixes a memory leak of one header.
+
+2000-10-26  Lars Wirzenius  <liw@iki.fi>
+
 	* gwlib/octstr.c: Give unsigned int as the type to expect to
 	va_arg when converting %u and %hu and similar cases.
 
