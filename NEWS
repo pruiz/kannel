@@ -22,8 +22,8 @@ Change summary from version 0.8:
 
 * WML compiler has support for 8-bit character sets that are not ISO 8859-1.
 
-* WML compiler now uses string table to compress its output, so that it
-  fits better in size limit.
+* WML compiler now uses the string table to compress its output, to generate
+  smaller pages that fit in more phones.
 
 * EMI implementation should support UDH now. Also, initialization of TRN
   fixed.
