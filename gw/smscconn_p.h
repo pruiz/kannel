@@ -67,32 +67,38 @@
 
  5) Callback bb_smscconn_ready is automatically called by main
     smscconn_create. New implementation MAY NOT call it directly
+
+ 6) SMSC Connection driver must obey is_stopped/stopped variable to
+    suspend receiving (it can still send/re-connect), or must set
+    appropriate function calls. When connection is stopped, it is not
+    allowed to receive any new messages
 */
  
 #include <signal.h>
 #include "gwlib/gwlib.h"
 
 struct smscconn {
+    /* variables set by appropriate SMSCConn driver */
     int		status;		/* see smscconn.h */
     int 	load;	       	/* load factor, 0 = no load */
     int		why_killed;	/* time to die with reason */
     time_t 	connect_time;	/* When connection to SMSC was established */
 
-    Mutex 	*flow_mutex;	/* used for thread synchronization */
-    List	*stopped;	/* list-trick for suspend/isolate */ 
-    int 	is_stopped;
-
-    /* connection specific counters */
+    /* connection specific counters (created in smscconn.c, updated
+     *  by specific driver) */
     Counter *received;
     Counter *sent;
     Counter *failed;
 
+    Mutex 	*flow_mutex;	/* used to lock SMSCConn structure (both
+				 *  in smscconn.c and specific driver) */
+
+    /* SMSCConn variables set in smscconn.c */
+    int 	is_stopped;
+
     Octstr *name;		/* Descriptive name filled from connection info */
     Octstr *id;			/* Abstract name spesified in configuration and
 				   used for logging and routing */
-
-
-    /* Routing Octstrings common to all SMSC Connections */
     Octstr *allowed_smsc_id;
     Octstr *denied_smsc_id;
     Octstr *preferred_smsc_id;
@@ -104,6 +110,8 @@ struct smscconn {
     /* XXX: move rest global data from Smsc here
      */
 
+    /* pointers set by specific driver, but initiated to NULL by smscconn */
+    
     /* pointer to function called when smscconn_shutdown called.
        Note that this function is not needed always. */
     int (*shutdown) (SMSCConn *conn, int finish_sending);
@@ -117,6 +125,12 @@ struct smscconn {
      * to SMSCConn structure (above)
      */
     long (*queued) (SMSCConn *conn);
+
+    /* pointers to functions called when connection started/stopped
+     * (suspend/resume), if not NULL */
+    
+    void (*start_conn) (SMSCConn *conn);
+    void (*stop_conn) (SMSCConn *conn);
     
     void *data;			/* SMSC specific stuff */
 

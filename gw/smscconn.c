@@ -28,14 +28,11 @@ SMSCConn *smscconn_create(ConfigGroup *grp, int start_as_stopped)
     conn = gw_malloc(sizeof(SMSCConn));
 
     conn->why_killed = SMSCCONN_ALIVE;
-    conn->status = SMSCCONN_STARTING;
+    conn->status = SMSCCONN_CONNECTING;
     conn->connect_time = -1;
     conn->load = 0;
 
-    conn->stopped = list_create();
     conn->is_stopped = start_as_stopped;
-    if (start_as_stopped)
-	list_add_producer(conn->stopped);
     
     conn->received = counter_create();
     conn->sent = counter_create();
@@ -76,6 +73,8 @@ SMSCConn *smscconn_create(ConfigGroup *grp, int start_as_stopped)
 	return NULL;
     }
     gw_assert(conn->send_msg != NULL);
+    if (start_as_stopped && conn->stop_conn)
+	conn->stop_conn(conn);
 
     bb_smscconn_ready(conn);
     
@@ -117,7 +116,6 @@ int smscconn_destroy(SMSCConn *conn)
     octstr_destroy(conn->preferred_prefix);
     
     mutex_destroy(conn->flow_mutex);
-    list_destroy(conn->stopped, NULL);
     
     gw_free(conn);
     return 0;
@@ -130,8 +128,14 @@ int smscconn_stop(SMSCConn *conn)
     if (conn->status == SMSCCONN_KILLED || conn->is_stopped
 	|| conn->why_killed != SMSCCONN_ALIVE)
 	return -1;
+
+    mutex_lock(conn->flow_mutex);
     conn->is_stopped = 1;
-    list_add_producer(conn->stopped);
+
+    if (conn->stop_conn)
+	conn->stop_conn(conn);
+    
+    mutex_unlock(conn->flow_mutex);
     return 0;
 }
 
@@ -141,8 +145,13 @@ void smscconn_start(SMSCConn *conn)
     gw_assert(conn != NULL);
     if (conn->status == SMSCCONN_KILLED || conn->is_stopped == 0)
 	return;
+
+    mutex_lock(conn->flow_mutex);
     conn->is_stopped = 0;
-    list_remove_producer(conn->stopped);
+
+    if (conn->stop_conn)
+	conn->stop_conn(conn);
+    mutex_unlock(conn->flow_mutex);
 }
 
 
@@ -264,6 +273,8 @@ int smscconn_info(SMSCConn *conn, StatusInfo *infotable)
     if (conn == NULL || infotable == NULL)
 	return -1;
 
+    mutex_lock(conn->flow_mutex);
+    
     infotable->status = conn->status;
     infotable->killed = conn->why_killed;
     infotable->is_stopped = conn->is_stopped;
@@ -280,6 +291,8 @@ int smscconn_info(SMSCConn *conn, StatusInfo *infotable)
 
     infotable->load = conn->load;
     
+    mutex_unlock(conn->flow_mutex);
+
     return 0;
 }
 

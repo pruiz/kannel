@@ -18,6 +18,7 @@
 typedef struct smsc_wrapper {
     SMSCenter	*smsc;
     List	*outgoing_queue;
+    List	*stopped;	/* list-trick for suspend/isolate */ 
     long     	receiver_thread;
     long	sender_thread;
 } SmscWrapper;
@@ -112,6 +113,7 @@ static void wrapper_receiver(void *arg)
 {
     Msg 	*msg;
     SMSCConn 	*conn = arg;
+    SmscWrapper *wrap = conn->data;
     /* SmscWrapper *wrap = conn->data; ** non-used */
     double 	sleep = 0.0001;
     
@@ -119,7 +121,7 @@ static void wrapper_receiver(void *arg)
     /* remove messages from SMSC until we are killed */
     while(conn->why_killed == SMSCCONN_ALIVE) {
 
-        list_consume(conn->stopped); /* block here if suspended/isolated */
+        list_consume(wrap->stopped); /* block here if suspended/isolated */
 
 	msg = sms_receive(conn);
 	if (msg) {
@@ -184,7 +186,7 @@ static void wrapper_sender(void *arg)
      * no producer anymore (we are set to shutdown) */
     while(conn->status != SMSCCONN_KILLED) {
 
-        list_consume(conn->stopped); /* block here if suspended/isolated */
+        list_consume(wrap->stopped); /* block here if suspended/isolated */
 
 	if ((msg = list_consume(wrap->outgoing_queue)) == NULL)
             break;
@@ -224,7 +226,7 @@ static void wrapper_sender(void *arg)
     conn->why_killed = SMSCCONN_KILLED_SHUTDOWN;
 
     if (conn->is_stopped) {
-	list_remove_producer(conn->stopped);
+	list_remove_producer(wrap->stopped);
 	conn->is_stopped = 0;
     }
 
@@ -241,6 +243,7 @@ static void wrapper_sender(void *arg)
 	bb_smscconn_send_failed(conn, msg, SMSCCONN_FAILED_SHUTDOWN);
     }
     list_destroy(wrap->outgoing_queue, NULL);
+    list_destroy(wrap->stopped, NULL);
     smsc_close(wrap->smsc);
     gw_free(wrap);
     conn->data = NULL;
@@ -288,6 +291,21 @@ static int wrapper_shutdown(SMSCConn *conn, int finish_sending)
     return 0;
 }
 
+static void wrapper_stop(SMSCConn *conn)
+{
+    SmscWrapper *wrap = conn->data;
+
+    list_add_producer(wrap->stopped);
+
+}
+
+static void wrapper_start(SMSCConn *conn)
+{
+    SmscWrapper *wrap = conn->data;
+
+    list_remove_producer(wrap->stopped);
+}
+
 
 static long wrapper_queued(SMSCConn *conn)
 {
@@ -322,6 +340,7 @@ int smsc_wrapper_create(SMSCConn *conn, ConfigGroup *cfg)
     conn->name = octstr_create(smsc_name(wrap->smsc));
     
     wrap->outgoing_queue = list_create();
+    wrap->stopped = list_create();
     list_add_producer(wrap->outgoing_queue);
     
     conn->status = SMSCCONN_ACTIVE;
@@ -343,6 +362,8 @@ int smsc_wrapper_create(SMSCConn *conn, ConfigGroup *cfg)
 
     conn->shutdown = wrapper_shutdown;
     conn->queued = wrapper_queued;
+    conn->stop_conn = wrapper_stop;
+    conn->start_conn = wrapper_start;
     
     return 0;
 
