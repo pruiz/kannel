@@ -1,4 +1,7 @@
-2002-08-25  Stipe Tolj  <tolj@wapme-systems.de>
+2002-08-26  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/bb_store.c: obey if we log in localtime for the store-status
+
+2002-08-26  Stipe Tolj  <tolj@wapme-systems.de>
     * test/test_cfg.c: added error code return for int main() to indicate if a
       configuration syntax was ok or not. This can be used in control shell
       scripts to check Kannel's configuration files.
