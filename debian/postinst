@@ -11,7 +11,7 @@ set -e
 if chown kannel.root /var/log/kannel 2>/dev/null
 then
     :
-elif adduser --system --home /var/log/kannel --group kannel
+elif adduser --system --group kannel
 then
     chown kannel.root /var/log/kannel
 fi

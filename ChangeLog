@@ -1,5 +1,10 @@
 2000-10-10  Lars Wirzenius  <liw@iki.fi>
 
+	* debian/postinst: Don't use /var/log/kannel as home directory
+	for user kannel.
+
+2000-10-10  Lars Wirzenius  <liw@iki.fi>
+
 	* debian/postinst: Now updates rc.d links and starts Kannel.
 	
 	* debian/postrm: Wrote. Removes rc.d links.
