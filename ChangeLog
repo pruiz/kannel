@@ -1,3 +1,6 @@
+2003-07-14  Alexander Malysh  <a.malysh@centrium.de>
+    * gw/sms.c: fixed active/inactive flag in dcs_to_fields.
+
 2003-07-14  Bruno Rodrigues  <bruno.rodrigues@litux.org>
     * gw/wap-appl.c: added multipart/form-data decompiler
     * gw/wap-appl.c: added preliminary and comment mms decompiler, which

@@ -99,7 +99,7 @@ int dcs_to_fields(Msg **msg, int dcs) {
     else if ((dcs & 0xC0) == 0xC0) { 
         (*msg)->sms.alt_dcs = 0;
         (*msg)->sms.coding = ((dcs & 0x30) == 0x30) ? DC_UCS2 : DC_7BIT;
-        if (dcs & 0x08)
+        if (!(dcs & 0x08))
             dcs |= 0x04; /* if bit 3 is active, have mwi += 4 */
         dcs &= 0x07;
         (*msg)->sms.mwi = 1 + dcs ; /* grab bits 1,0 */
