@@ -1,3 +1,17 @@
+2001-01-15  Aarno Syvänen <syvanen@wapit.com>
+
+	* gw/wap-appl.c: Wrote conformations and indications part of Push
+	OTA protocol.
+
+	* gw/wap_push_ppg.[ch]: Started writing test version of PPG main
+	module
+
+	* gw/wap_push_ota.c: Still streamlining and fixing bugs
+
+	* wap/wap_events.def: Added new push related events
+
+	* wap/wsp.h: Added push related error codes
+
 2001-01-12  Tuomas Luttinen  <tuo@wapit.com>
 
 	* gw/wml_compiler.c: Now compiler can handle a libxml compiled with 
