@@ -70,6 +70,7 @@ typedef struct {
     Octstr *username;
     Octstr *password;
     Octstr *address_range;
+    Octstr *our_host;
     int transmit_port;
     int receive_port;
     int quitting;
@@ -80,7 +81,7 @@ typedef struct {
 static SMPP *smpp_create(SMSCConn *conn, Octstr *host, int transmit_port, 
     	    	    	 int receive_port, Octstr *system_type, 
 			 Octstr *username, Octstr *password,
-    	    	    	 Octstr *address_range)
+    	    	    	 Octstr *address_range, Octstr *our_host)
 {
     SMPP *smpp;
     
@@ -97,6 +98,7 @@ static SMPP *smpp_create(SMSCConn *conn, Octstr *host, int transmit_port,
     smpp->username = octstr_duplicate(username);
     smpp->password = octstr_duplicate(password);
     smpp->address_range = octstr_duplicate(address_range);
+    smpp->our_host = octstr_duplicate(our_host);
     smpp->transmit_port = transmit_port;
     smpp->receive_port = receive_port;
     smpp->quitting = 0;
@@ -118,6 +120,7 @@ static void smpp_destroy(SMPP *smpp)
 	octstr_destroy(smpp->password);
 	octstr_destroy(smpp->system_type);
 	octstr_destroy(smpp->address_range);
+	octstr_destroy(smpp->our_host);
 	gw_free(smpp);
     }
 }
@@ -332,8 +335,7 @@ static Connection *open_transmitter(SMPP *smpp)
     SMPP_PDU *bind;
     Connection *conn;
 
-    conn = conn_open_tcp(smpp->host, smpp->transmit_port, NULL
-		    /* smpp->our_host */);
+    conn = conn_open_tcp(smpp->host, smpp->transmit_port, smpp->our_host );
     if (conn == NULL) {
     	error(0, "SMPP: Couldn't connect to server.");
 	return NULL;
@@ -368,8 +370,7 @@ static Connection *open_receiver(SMPP *smpp)
     SMPP_PDU *bind;
     Connection *conn;
 
-    conn = conn_open_tcp(smpp->host, smpp->receive_port, NULL
-		    /* smpp->our_host */);
+    conn = conn_open_tcp(smpp->host, smpp->receive_port, smpp->our_host );
     if (conn == NULL) {
     	error(0, "SMPP: Couldn't connect to server.");
 	return NULL;
@@ -804,6 +805,7 @@ int smsc_smpp_create(SMSCConn *conn, CfgGroup *grp)
     Octstr *system_id;
     Octstr *system_type;
     Octstr *address_range;
+    Octstr *our_host;
     SMPP *smpp;
     int ok;
     
@@ -816,6 +818,7 @@ int smsc_smpp_create(SMSCConn *conn, CfgGroup *grp)
     password = cfg_get(grp, octstr_imm("smsc-password"));
     system_type = cfg_get(grp, octstr_imm("system-type"));
     address_range = cfg_get(grp, octstr_imm("address-range"));
+    our_host = cfg_get(grp, octstr_imm("our-host"));
     
     system_id = cfg_get(grp, octstr_imm("system-id"));
     if (system_id != NULL) {
@@ -845,7 +848,7 @@ int smsc_smpp_create(SMSCConn *conn, CfgGroup *grp)
     	return -1;
 
     smpp = smpp_create(conn, host, port, receive_port, system_type, 
-    	    	       username, password, address_range);
+    	    	       username, password, address_range, our_host);
     conn->data = smpp;
     conn->name = octstr_format("SMPP:%S:%d/%d:%S:%S", 
     	    	    	       host, port,
@@ -857,6 +860,7 @@ int smsc_smpp_create(SMSCConn *conn, CfgGroup *grp)
     octstr_destroy(password);
     octstr_destroy(system_type);
     octstr_destroy(address_range);
+    octstr_destroy(our_host);
 
     conn->status = SMSCCONN_CONNECTING;
       

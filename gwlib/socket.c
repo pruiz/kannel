@@ -117,7 +117,7 @@ int tcpip_connect_to_server_with_port(char *hostname, int port, int our_port, co
     addr.sin_port = htons(port);
     addr.sin_addr = *(struct in_addr *) hostinfo.h_addr;
 
-    if (our_port > 0) {
+    if (our_port > 0 || (interface_name != NULL && strcmp(interface_name, "*") != 0))  {
         int reuse;
 
         o_addr = empty_sockaddr_in;

@@ -2294,6 +2294,14 @@ address-range = ""
        Doesn't seem to work, though.
      </entry></row>
 
+   <row><entry><literal>our-host</literal></entry>
+     <entry><literal>string</literal></entry>
+     <entry valign=bottom>
+       Specicy the outgoing IP address for connections
+       from a multi-homed machine. If this is not defined
+       the default device of the machine will be used.
+     </entry></row>
+
    </tbody></tgroup></informaltable>
  
 
