@@ -59,11 +59,14 @@ static ota_2table_t ota_elements[] = {
  * chapter 8.2. Some values are presented as inline strings; in this case 
  * value "INLINE" is used. (Note a quirk: there is an attribute with name 
  * "VALUE".)
+ *
+ * For a documentation of the single attributes see gw/ota_prov_attr.h.
  */
 
 static ota_3table_t ota_attributes[] = {
     { "TYPE", "ADDRESS", 0x06 },
     { "TYPE", "URL", 0x07 },
+    { "TYPE", "MMSURL", 0x7c },
     { "TYPE", "NAME", 0x08 },
     { "TYPE", "ID", 0x7d },
     { "TYPE", "BOOKMARK", 0x7f },
