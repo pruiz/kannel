@@ -6,6 +6,9 @@
 
 #include <sys/utsname.h>
 #include <xmlversion.h>
+#ifdef HAVE_LIBSSL 
+#include <openssl/opensslv.h>
+#endif
 
 #include "gwlib/gwlib.h"
 #include "shared.h"
@@ -34,13 +37,19 @@ Octstr *version_report_string(const char *boxname)
     	    	    	 "System %s, release %s, version %s, machine %s.\n"
 			 "Hostname %s, IP %s.\n"
 			 "Libxml version %s.\n"
-                         "Using %s malloc.\n",
+#ifdef HAVE_LIBSSL
+             "Using %s.\n"
+#endif
+             "Using %s malloc.\n",
 			 boxname, VERSION,
 			 u.sysname, u.release, u.version, u.machine,
 			 octstr_get_cstr(get_official_name()),
 			 octstr_get_cstr(get_official_ip()),
 			 LIBXML_VERSION_STRING,
-                         octstr_get_cstr(gwmem_type()));
+#ifdef HAVE_LIBSSL
+             OPENSSL_VERSION_TEXT,
+#endif
+             octstr_get_cstr(gwmem_type()));
 }
 
 
@@ -52,13 +61,23 @@ Octstr *version_report_string(const char *boxname)
 static Connection *bb_conn;
 
 
-void connect_to_bearerbox(Octstr *host, int port, Octstr *our_host)
+void connect_to_bearerbox(Octstr *host, int port, int ssl, Octstr *our_host)
 {
+#ifdef HAVE_LIBSSL
+	if (ssl) 
+	    bb_conn = conn_open_ssl(host, port, NULL, our_host);
+        /* XXX add certkeyfile to be given to conn_open_ssl */
+	else
+#endif /* HAVE_LIBSSL */
     bb_conn = conn_open_tcp(host, port, our_host);
     if (bb_conn == NULL)
     	panic(0, "Couldn't connect to the bearerbox.");
-    info(0, "Connected to bearerbox at %s port %d.",
-	 octstr_get_cstr(host), port);
+    if (ssl)
+        info(0, "Connected to bearerbox at %s port %d using SSL.",
+	         octstr_get_cstr(host), port);
+    else
+        info(0, "Connected to bearerbox at %s port %d.",
+	         octstr_get_cstr(host), port);
 }
 
 
