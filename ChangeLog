@@ -1,3 +1,8 @@
+Fri Jun  9 06:48:42 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* gw/wap-appl.c: Combine headers for HTTP request after the
+	actual list of headers has been collected.
+
 Fri Jun  9 02:58:00 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* Implemented WSP connectionless service. This meant moving

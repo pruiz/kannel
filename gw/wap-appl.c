@@ -229,6 +229,8 @@ static void fetch_thread(void *arg) {
 		sprintf(buf, "%ld", session_id);
 		http2_header_add(actual_headers, "X-WAP-Session-ID", buf);
 	}
+	
+	http2_header_pack(actual_headers);
 
 	ret = http2_get_real(url, actual_headers, 
 			     &final_url, &resp_headers, &resp_body);
