@@ -824,11 +824,11 @@ reconnect:
         } else
             wait = 15;
 
-	/* If modems->speed is defined, try to use it, else autodetect */
+        /* If modems->speed is defined, try to use it, else autodetect */
         if (privdata->speed == 0 && privdata->modem != NULL && 
 	    privdata->modem->speed != 0) {
 
-	    info(0, "AT2[%s]: trying to use speed <%d> from modem definition", 
+	    info(0, "AT2[%s]: trying to use speed <%ld> from modem definition", 
 	         octstr_get_cstr(privdata->name), privdata->modem->speed);
 	    if(0 == at2_test_speed(privdata, privdata->modem->speed)) { 
 		privdata->speed = privdata->modem->speed;

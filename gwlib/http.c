@@ -25,6 +25,7 @@
 
 #include "gwlib.h"
 
+#define USE_KEEPALIVE 0
 
 
 /***********************************************************************
@@ -695,7 +696,7 @@ static Connection *conn_pool_get(Octstr *host, int port, int ssl, Octstr *certke
     return conn;
 }
 
-
+#ifdef USE_KEEPALIVE
 static void conn_pool_put(Connection *conn, Octstr *host, int port)
 {
     Octstr *key;
@@ -712,7 +713,7 @@ static void conn_pool_put(Connection *conn, Octstr *host, int port)
     octstr_destroy(key);
     mutex_unlock(conn_pool_lock);
 }
-
+#endif
 
 
 /*
@@ -901,7 +902,7 @@ static void handle_transaction(Connection *conn, void *data)
 	trans->persistent = 0;
     octstr_destroy(h);
 
-#if 0 /* Reuse disabled again until this gets fixed... */
+#ifdef USE_KEEPALIVE /* Reuse disabled again until this gets fixed... */
     if (trans->persistent)
         conn_pool_put(trans->conn, trans->host, trans->port);
     else
