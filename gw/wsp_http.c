@@ -36,6 +36,7 @@ struct wsp_http_map {
 static struct wsp_http_map *wsp_http_map = 0;
 static struct wsp_http_map *wsp_http_map_last = 0;
 
+
 /* wsp_http_map_url_do_config() - add mapping for src URL to dst URL. */
 static void wsp_http_map_url_do_config(char *src, char *dst)
 {
@@ -467,9 +468,16 @@ static Octstr *convert_wml_to_wmlc_new(Octstr *wml, char *url) {
 #if HAVE_LIBXML
 	Octstr *wmlc, *wmlscripts;
 	int ret;
+	static Mutex *kludge = NULL;
 	
+	/* XXX This initializion code isn't thread safe, but ignore. */
+	if (kludge == NULL)
+		kludge = mutex_create();
+
 	debug("wap.wsp.http", 0, "WSP: Compiling WML using Tuomas's compiler.");
+	mutex_lock(kludge);
 	ret = wml_compile(wml, &wmlc, &wmlscripts);
+	mutex_unlock(kludge);
 	debug("wap.wsp.http", 0, "WSP: wml_compile returned %d", ret);
 	octstr_destroy(wmlscripts);
 	if (ret == 0)
