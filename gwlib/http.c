@@ -237,7 +237,13 @@ typedef struct {
 	request_not_sent,
 	reading_status,
 	reading_headers,
-	reading_body,
+	reading_chunked_body_len,
+	reading_chunked_body_data,
+	reading_chunked_body_crlf,
+	reading_chunked_body_trailer,
+	reading_body_until_eof,
+	reading_body_with_length,
+	invalid_body_format,
 	transaction_done
     } state;
     int status;
@@ -248,13 +254,8 @@ typedef struct {
     long port;
     int retrying;
     int follow_remaining;
-    enum {
-	reading_chunk_len,
-	reading_chunk,
-	reading_chunk_crlf,
-	reading_trailer
-    } chunked_body_state;
     long chunked_body_chunk_len;
+    long body_len;
 } HTTPServer;
 
 
@@ -279,8 +280,8 @@ static HTTPServer *server_create(HTTPCaller *caller, Octstr *url,
     trans->port = 0;
     trans->retrying = 0;
     trans->follow_remaining = follow_remaining;
-    trans->chunked_body_state = reading_chunk_len;
     trans->chunked_body_chunk_len = 0;
+    trans->body_len = 0;
     return trans;
 }
 
@@ -436,96 +437,124 @@ static Octstr *get_redirection_location(HTTPServer *trans)
 }
 
 
-/*
- * Read body that has been Transfer-Encoded as "chunked". Return -1 for
- * error, 0 for OK. If there are any trailing headers (see RFC 2616, 3.6.1)
- * they are appended to `headers'.
- */
-static int client_read_chunked_body(HTTPServer *trans)
+static int read_chunked_body_len(HTTPServer *trans)
 {
     Octstr *os;
     long len;
+    
+    os = conn_read_line(trans->conn);
+    if (os == NULL) {
+	if (conn_read_error(trans->conn) || conn_eof(trans->conn))
+	    return -1;
+	return 0;
+    }
+    if (octstr_parse_long(&len, os, 0, 16) == -1) {
+	octstr_destroy(os);
+	return -1;
+    }
+    octstr_destroy(os);
+    if (len == 0)
+	trans->state = reading_chunked_body_trailer;
+    else {
+	trans->state = reading_chunked_body_data;
+	trans->chunked_body_chunk_len = len;
+    }
+    return 0;
+}
+
+
+static int read_chunked_body_data(HTTPServer *trans)
+{
+    Octstr *os;
+
+    os = conn_read_fixed(trans->conn, trans->chunked_body_chunk_len);
+    if (os == NULL) {
+	if (conn_read_error(trans->conn) || conn_eof(trans->conn))
+	    return -1;
+	return 1;
+    }
+    octstr_append(trans->response_body, os);
+    octstr_destroy(os);
+    trans->state = reading_chunked_body_crlf;
+    return 0;
+}
+
+
+static int read_chunked_body_crlf(HTTPServer *trans)
+{
+    Octstr *os;
+
+    os = conn_read_line(trans->conn);
+    if (os == NULL) {
+	if (conn_read_error(trans->conn) || conn_eof(trans->conn))
+	    return -1;
+	return 1;
+    }
+    trans->state = reading_chunked_body_len;
+    return 0;
+}
+
+
+static int read_chunked_body_trailer(HTTPServer *trans)
+{
     int ret;
 
-    for (;;) {
-	switch (trans->chunked_body_state) {
-	case reading_chunk_len:
-	    os = conn_read_line(trans->conn);
-	    if (os == NULL) {
-		if (conn_eof(trans->conn))
-		    return -1;
-		return 1;
-	    }
-	    if (octstr_parse_long(&len, os, 0, 16) == -1) {
-		octstr_destroy(os);
-		return -1;
-	    }
-	    octstr_destroy(os);
-	    if (len == 0)
-		trans->chunked_body_state = reading_trailer;
-	    else {
-		trans->chunked_body_state = reading_chunk;
-		trans->chunked_body_chunk_len = len;
-	    }
-	    break;
-	    
-	case reading_chunk:
-	    os = conn_read_fixed(trans->conn, trans->chunked_body_chunk_len);
-	    if (os == NULL) {
-		if (conn_eof(trans->conn))
-		    return -1;
-		return 1;
-	    }
-	    octstr_append(trans->response_body, os);
-	    octstr_destroy(os);
-	    trans->chunked_body_state = reading_chunk_crlf;
-	    break;
-	    
-	case reading_chunk_crlf:
-	    os = conn_read_line(trans->conn);
-	    if (os == NULL) {
-		if (conn_eof(trans->conn))
-		    return -1;
-		return 1;
-	    }
-	    trans->chunked_body_state = reading_chunk_len;
-	    break;
-	    
-	case reading_trailer:
-	    ret = read_some_headers(trans->conn, trans->response_headers);
-	    if (ret == -1)
-	    	return -1;
-	    else if (ret == 0)
-	    	return 0;
-	    break;
-	    
-	default:
-	    panic(0, "Internal error: "
-		  "HTTPServer invaluded chunked body state.");
-	}
+    ret = read_some_headers(trans->conn, trans->response_headers);
+    if (ret == -1)
+	return -1;
+    if (ret == 0)
+    	trans->state = transaction_done;
+    return 0;
+}
+
+
+static int read_body_until_eof(HTTPServer *trans)
+{
+    Octstr *os;
+
+    while ((os = conn_read_everything(trans->conn)) != NULL) {
+	octstr_append(trans->response_body, os);
+	octstr_destroy(os);
     }
+    if (conn_read_error(trans->conn))
+	return -1;
+    if (conn_eof(trans->conn))
+	trans->state = transaction_done;
+    return 0;
+}
+
+
+static int read_body_with_length(HTTPServer *trans)
+{
+    Octstr *os;
+
+    os = conn_read_fixed(trans->conn, trans->body_len);
+    if (os == NULL)
+	return 0;
+    octstr_destroy(trans->response_body);
+    trans->response_body = os;
+    trans->state = transaction_done;
+    return 0;
 }
 
 
 /*
- * Read the body of a response. Return -1 for error, 0 for body received,
- * 1 for waiting for more body.
+ * Return the proper state for reading the body of an HTTP response.
  */
-static int client_read_body(HTTPServer *trans)
+static int deduce_body_state(HTTPServer *trans)
 {
-    Octstr *h, *os;
-    long body_len;
+    Octstr *h;
 
     h = http_header_find_first(trans->response_headers, "Transfer-Encoding");
     if (h != NULL) {
         octstr_strip_blanks(h);
         if (octstr_str_compare(h, "chunked") != 0) {
             error(0, "HTTP: Unknown Transfer-Encoding <%s>",
-                  octstr_get_cstr(h));
+	    	  octstr_get_cstr(h));
             goto error;
         }
         octstr_destroy(h);
-        return client_read_chunked_body(trans);
+	return reading_chunked_body_len;
     } else {
         h = http_header_find_first(trans->response_headers, "Content-Length");
         if (h == NULL) {
@@ -533,28 +562,15 @@ static int client_read_body(HTTPServer *trans)
 	     * No length information available, so the server will signal
              * the end of data by closing the socket.
              */
-            while ((os = conn_read_everything(trans->conn)) != NULL) {
-	  	octstr_append(trans->response_body, os);
-		octstr_destroy(os);
-	    }
-	    if (conn_read_error(trans->conn))
-		goto error;
-	    if (conn_eof(trans->conn))
-	        return 0;
-            return 1;
+    	    return reading_body_until_eof;
         } else {
-            if (octstr_parse_long(&body_len, h, 0, 10) == -1) {
+            if (octstr_parse_long(&trans->body_len, h, 0, 10) == -1) {
                 error(0, "HTTP: Content-Length header wrong: <%s>", 
 		      octstr_get_cstr(h));
                 goto error;
             }
             octstr_destroy(h);
-	    os = conn_read_fixed(trans->conn, body_len);
-	    if (os == NULL)
-	    	return 1;
-	    octstr_destroy(trans->response_body);
-	    trans->response_body = os;
-            return 0;
+	    return reading_body_with_length;
         }
     }
 
@@ -675,29 +691,51 @@ static void handle_transaction(Connection *conn, void *data)
 				      trans->response_headers);
 	    if (ret == -1)
 		goto error;
-	    else if (ret == 0)
-		trans->state = reading_body;
-	    else
-		return;
+	    else if (ret == 0) {
+		trans->state = deduce_body_state(trans);
+		if (trans->state == invalid_body_format)
+		    goto error;
+	    }
 	    break;
 	    
-	case reading_body:
-	    ret = client_read_body(trans);
-	    if (ret == -1)
-		goto error;
-	    else if (ret == 0) {
-		conn_unregister(trans->conn);
-		conn_pool_put(trans->conn, trans->host, trans->port);
-		trans->conn = NULL;
-		trans->state = transaction_done;
-	    } else 
-		return;
-	    break;
-    
+    	case reading_chunked_body_len:
+	    if (read_chunked_body_len(trans) == -1)
+	    	goto error;
+    	    break;
+
+    	case reading_chunked_body_data:
+	    if (read_chunked_body_data(trans) == -1)
+	    	goto error;
+    	    break;
+
+    	case reading_chunked_body_crlf:
+	    if (read_chunked_body_crlf(trans) == -1)
+	    	goto error;
+    	    break;
+
+    	case reading_chunked_body_trailer:
+	    if (read_chunked_body_trailer(trans) == -1)
+	    	goto error;
+    	    break;
+
+    	case reading_body_until_eof:
+	    if (read_body_until_eof(trans) == -1)
+	    	goto error;
+    	    break;
+
+    	case reading_body_with_length:
+	    if (read_body_with_length(trans) == -1)
+	    	goto error;
+    	    break;
+
 	default:
 	    panic(0, "Internal error: Invalid HTTPServer state.");
 	}
     }
+
+    conn_unregister(trans->conn);
+    conn_pool_put(trans->conn, trans->host, trans->port);
+    trans->conn = NULL;
 
     h = get_redirection_location(trans);
     if (h != NULL) {

@@ -1,5 +1,11 @@
 2000-11-14  Lars Wirzenius  <liw@iki.fi>
 
+	* gwlib/http.c: Simplified code a bit by combining the two
+	different states (reading_body and reading various parts of a
+	chunked body) into one.
+
+2000-11-14  Lars Wirzenius  <liw@iki.fi>
+
 	* gwlib/http.c: Implemented, I hope, proxy_add_authentication(),
 	but I can't test it, since I don't have a proxy that requires
 	authentication. If it doesn't work, hopefully people will tell me.
