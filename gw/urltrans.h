@@ -146,6 +146,12 @@ char *urltrans_faked_sender(URLTranslation *t);
 int urltrans_max_messages(URLTranslation *t);
 
 /*
+ * Return the concatenation status for SMS messages that should be generated from
+ * the web page directed by the URL translation. (1=enabled)
+ */
+int urltrans_concatenation(URLTranslation *t);
+
+/*
  * Return (recommended) delimiter characters when splitting long
  * replies into several messages
  */
