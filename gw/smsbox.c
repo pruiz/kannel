@@ -16,6 +16,8 @@
 #include "heartbeat.h"
 #include "html.h"
 #include "urltrans.h"
+#include "wap_ota_prov.h"
+
 
 #ifdef HAVE_SECURITY_PAM_APPL_H
 #include <security/pam_appl.h>
@@ -1411,40 +1413,20 @@ static Octstr *smsbox_sendsms_post(List *headers, Octstr *body,
 }
 
 
-
-
-
-
-
-
-/*
- * Constants related to sendota.
- */
-
-#define	CONN_TEMP	0x60
-#define	CONN_CONT	0x61
-#define	CONN_SECTEMP	0x62
-#define	CONN_SECCONT	0x63
-#define AUTH_NORMAL	0x70
-#define AUTH_SECURE	0x71
-#define BEARER_DATA	0x45
-#define CALL_ISDN	0x73
-#define SPEED_9600	"6B"
-#define SPEED_14400	"6C"
-#define ENDTAG		"01"
-
 /*
  * Create and send an SMS OTA (auto configuration) message from an HTTP 
  * request.
  * Args: list contains the CGI parameters
+ * 
+ * Official Nokia and Ericsson WAP OTA configuration settings coded 
+ * by Stipe Tolj <tolj@wapme-systems.de>, Wapme Systems AG.
  * 
  * This will be changed later to use an XML compiler.
  */
 static Octstr *smsbox_req_sendota(List *list, Octstr *client_ip, int *status)
 {
     Octstr *url, *desc, *ipaddr, *phonenum, *username, *passwd, *id, *from;
-    char *speed;
-    int bearer, calltype, connection, security, authent;
+    int speed, bearer, calltype, connection, security, authent;
     CfgGroup *grp;
     List *grplist;
     Octstr *p;
@@ -1462,9 +1444,9 @@ static Octstr *smsbox_req_sendota(List *list, Octstr *client_ip, int *status)
     id = NULL;
     bearer = -1;
     calltype = -1;
-    connection = CONN_CONT;
+    connection = WBXML_TOK_VALUE_PORT_9201;
     security = 0;
-    authent = AUTH_NORMAL;
+    authent = WBXML_TOK_VALUE_AUTH_PAP;
     phonenumber = NULL;
 
     /* check the username and password */
@@ -1525,36 +1507,36 @@ found:
     p = cfg_get(grp, octstr_imm("bearer"));
     if (p != NULL) {
 	if (strcasecmp(octstr_get_cstr(p), "data") == 0)
-	    bearer = BEARER_DATA;
+	    bearer = WBXML_TOK_VALUE_GSM_CSD;
 	else
 	    bearer = -1;
-	octstr_destroy(p);
+    octstr_destroy(p);
     }
     p = cfg_get(grp, octstr_imm("calltype"));
     if (p != NULL) {
 	if (strcasecmp(octstr_get_cstr(p), "calltype") == 0)
-	    calltype = CALL_ISDN;
+	    calltype = WBXML_TOK_VALUE_CONN_ISDN;
 	else
 	    calltype = -1;
-	octstr_destroy(p);
+    octstr_destroy(p);
     }
 	
-    speed = SPEED_9600;
+    speed = WBXML_TOK_VALUE_SPEED_9600;
     p = cfg_get(grp, octstr_imm("speed"));
     if (p != NULL) {
 	if (octstr_compare(p, octstr_imm("14400")) == 0)
-	    speed = SPEED_14400;
-	octstr_destroy(p);
+	    speed = WBXML_TOK_VALUE_SPEED_14400;
+    octstr_destroy(p);
     }
 
     /* connection mode and security */
     p = cfg_get(grp, octstr_imm("connection"));
     if (p != NULL) {
 	if (strcasecmp(octstr_get_cstr(p), "temp") == 0)
-	    connection = CONN_TEMP;
+	    connection = WBXML_TOK_VALUE_PORT_9200;
 	else
-	    connection = CONN_CONT;
-	octstr_destroy(p);
+	    connection = WBXML_TOK_VALUE_PORT_9201;
+    octstr_destroy(p);
     }
 
     p = cfg_get(grp, octstr_imm("pppsecurity"));
@@ -1562,104 +1544,201 @@ found:
 	if (strcasecmp(octstr_get_cstr(p), "on") == 0)
 	    security = 1;
 	else
-	    security = CONN_CONT;
-	octstr_destroy(p);
+	    security = WBXML_TOK_VALUE_PORT_9201;
+    octstr_destroy(p);
     }
     if (security == 1)
-	connection = (connection == CONN_CONT)? CONN_SECCONT : CONN_SECTEMP;
+	connection = (connection == WBXML_TOK_VALUE_PORT_9201)? 
+        WBXML_TOK_VALUE_PORT_9203 : WBXML_TOK_VALUE_PORT_9202;
     
     p = cfg_get(grp, octstr_imm("authentication"));
     if (p != NULL) {
 	if (strcasecmp(octstr_get_cstr(p), "secure") == 0)
-	    authent = AUTH_SECURE;
+	    authent = WBXML_TOK_VALUE_AUTH_CHAP;
 	else
-	    authent = AUTH_NORMAL;
-	octstr_destroy(p);
+	    authent = WBXML_TOK_VALUE_AUTH_PAP;
+    octstr_destroy(p);
     }
     
     username = cfg_get(grp, octstr_imm("login"));
     passwd = cfg_get(grp, octstr_imm("secret"));
-
+    
     msg = msg_create(sms);
+
+    /*
+     * Append the User Data Header (UDH) including the lenght (UDHL)
+     * WDP layer (start WDP headers)
+     */
     
     msg->sms.sms_type = mt_push;
     msg->sms.udhdata = octstr_create("");
 
-    /* UDH including the lenght (UDHL) */
-    octstr_append_from_hex(msg->sms.udhdata, "060504C34FC002");
+    octstr_append_from_hex(msg->sms.udhdata, "0B0504C34FC0020003040201");
+    /* WDP layer (end WDP headers) */
+
+    /*
+     * WSP layer (start WSP headers)
+     */
     
     msg->sms.msgdata = octstr_create("");
-    /* header for the data part of the message */
-    octstr_append_from_hex(msg->sms.msgdata, "010604039481EA0001");
-    /* unknow field */
-    octstr_append_from_hex(msg->sms.msgdata, "45C60601");
+    /* PUSH ID, PDU type, header length, value length */
+    octstr_append_from_hex(msg->sms.msgdata, "01062C1F2A");
+    /* MIME-type: application/x-wap-prov.browser-settings */
+    octstr_append_from_hex(msg->sms.msgdata, "6170706C69636174696F");
+    octstr_append_from_hex(msg->sms.msgdata, "6E2F782D7761702D7072");
+    octstr_append_from_hex(msg->sms.msgdata, "6F762E62726F77736572");
+    octstr_append_from_hex(msg->sms.msgdata, "2D73657474696E677300");
+    /* charset UTF-8 */
+    octstr_append_from_hex(msg->sms.msgdata, "81EA");
+    /* WSP layer (end WSP headers) */
+
+    /*
+     * WSP layer (start WSP data field)
+     */
+
+    /* WBXML version 1.1 */
+    octstr_append_from_hex(msg->sms.msgdata, "0101");
+    /* charset UTF-8 */
+    octstr_append_from_hex(msg->sms.msgdata, "6A00");
+
+    /* CHARACTERISTIC_LIST */
+    octstr_append_from_hex(msg->sms.msgdata, "45");
+    /* CHARACTERISTIC with content and attributes */
+    octstr_append_from_hex(msg->sms.msgdata, "C6");
+    /* TYPE=ADDRESS */
+    octstr_append_char(msg->sms.msgdata, WBXML_TOK_TYPE_ADDRESS);
+    octstr_append_char(msg->sms.msgdata, WBXML_TOK_END);
+
     /* bearer type */
     if (bearer != -1) {
-	octstr_append_from_hex(msg->sms.msgdata, "8712");
-	octstr_append_char(msg->sms.msgdata, bearer);
-	octstr_append_from_hex(msg->sms.msgdata, ENDTAG);
+        /* PARM with attributes */
+        octstr_append_from_hex(msg->sms.msgdata, "87");
+        /* NAME=BEARER, VALUE=GSM_CSD */
+        octstr_append_char(msg->sms.msgdata, WBXML_TOK_NAME_BEARER);
+        octstr_append_char(msg->sms.msgdata, bearer);
+        octstr_append_char(msg->sms.msgdata, WBXML_TOK_END);
     }
     /* IP address */
     if (ipaddr != NULL) {
-	octstr_append_from_hex(msg->sms.msgdata , "87131103");
-	octstr_append(msg->sms.msgdata, ipaddr);
-	octstr_append_from_hex(msg->sms.msgdata, "0001");
+        /* PARM with attributes */
+        octstr_append_from_hex(msg->sms.msgdata, "87");
+        /* NAME=PROXY, VALUE, inline string */
+        octstr_append_char(msg->sms.msgdata, WBXML_TOK_NAME_PROXY);
+        octstr_append_char(msg->sms.msgdata, WBXML_TOK_VALUE);
+        octstr_append_char(msg->sms.msgdata, WBXML_TOK_STR_I);
+        octstr_append(msg->sms.msgdata, ipaddr);
+        octstr_append_char(msg->sms.msgdata, WBXML_TOK_END_STR_I);
+        octstr_append_char(msg->sms.msgdata, WBXML_TOK_END);
     }
     /* connection type */
     if (connection != -1) {
-	octstr_append_from_hex(msg->sms.msgdata, "8714");
-	octstr_append_char(msg->sms.msgdata, connection);
-	octstr_append_from_hex(msg->sms.msgdata, ENDTAG);
+        /* PARM with attributes */
+        octstr_append_from_hex(msg->sms.msgdata, "87");
+        /* NAME=PORT, VALUE */
+        octstr_append_char(msg->sms.msgdata, WBXML_TOK_NAME_PORT);
+        octstr_append_char(msg->sms.msgdata, connection);
+        octstr_append_char(msg->sms.msgdata, WBXML_TOK_END);
     }
     /* phone number */
     if (phonenum != NULL) {
-	octstr_append_from_hex(msg->sms.msgdata, "87211103");
-	octstr_append(msg->sms.msgdata, phonenum);
-	octstr_append_from_hex(msg->sms.msgdata, "0001");
+        /* PARM with attributes */
+        octstr_append_from_hex(msg->sms.msgdata, "87");
+        /* NAME=CSD_DIALSTRING, VALUE, inline string */
+        octstr_append_char(msg->sms.msgdata, WBXML_TOK_NAME_CSD_DIALSTRING);
+        octstr_append_char(msg->sms.msgdata, WBXML_TOK_VALUE);
+        octstr_append_char(msg->sms.msgdata, WBXML_TOK_STR_I);
+        octstr_append(msg->sms.msgdata, phonenum);
+        octstr_append_char(msg->sms.msgdata, WBXML_TOK_END_STR_I);
+        octstr_append_char(msg->sms.msgdata, WBXML_TOK_END);
     }
     /* authentication */
-    octstr_append_from_hex(msg->sms.msgdata, "8722");
+    /* PARM with attributes */
+    octstr_append_from_hex(msg->sms.msgdata, "87");
+     /* NAME=PPP_AUTHTYPE, VALUE */
+    octstr_append_char(msg->sms.msgdata, WBXML_TOK_NAME_PPP_AUTHTYPE);
     octstr_append_char(msg->sms.msgdata, authent);
-    octstr_append_from_hex(msg->sms.msgdata, ENDTAG);
+    octstr_append_char(msg->sms.msgdata, WBXML_TOK_END);
     /* user name */
     if (username != NULL) {
-	octstr_append_from_hex(msg->sms.msgdata, "87231103");
-	octstr_append(msg->sms.msgdata, username);
-	octstr_append_from_hex(msg->sms.msgdata, "0001");
+        /* PARM with attributes */
+        octstr_append_from_hex(msg->sms.msgdata, "87");
+        /* NAME=PPP_AUTHNAME, VALUE, inline string */
+        octstr_append_char(msg->sms.msgdata, WBXML_TOK_NAME_PPP_AUTHNAME);
+        octstr_append_char(msg->sms.msgdata, WBXML_TOK_VALUE);
+        octstr_append_char(msg->sms.msgdata, WBXML_TOK_STR_I);
+        octstr_append(msg->sms.msgdata, username);
+        octstr_append_char(msg->sms.msgdata, WBXML_TOK_END_STR_I);
+        octstr_append_char(msg->sms.msgdata, WBXML_TOK_END);
     }
     /* password */
     if (passwd != NULL) {
-	octstr_append_from_hex(msg->sms.msgdata, "87241103");
-	octstr_append(msg->sms.msgdata, passwd);
-	octstr_append_from_hex(msg->sms.msgdata, "0001");
+        /* PARM with attributes */
+        octstr_append_from_hex(msg->sms.msgdata, "87");
+        /* NAME=PPP_AUTHSECRET, VALUE, inline string */
+        octstr_append_char(msg->sms.msgdata, WBXML_TOK_NAME_PPP_AUTHSECRET);
+        octstr_append_char(msg->sms.msgdata, WBXML_TOK_VALUE);
+        octstr_append_char(msg->sms.msgdata, WBXML_TOK_STR_I);
+        octstr_append(msg->sms.msgdata, passwd);
+        octstr_append_char(msg->sms.msgdata, WBXML_TOK_END_STR_I);
+        octstr_append_char(msg->sms.msgdata, WBXML_TOK_END);
     }
     /* data call type */
     if (calltype != -1) {
-	octstr_append_from_hex(msg->sms.msgdata, "8728");
-	octstr_append_char(msg->sms.msgdata, calltype);
-	octstr_append_from_hex(msg->sms.msgdata, ENDTAG);
+        /* PARM with attributes */
+        octstr_append_from_hex(msg->sms.msgdata, "87");
+        /* NAME=CSD_CALLTYPE, VALUE */
+        octstr_append_char(msg->sms.msgdata, WBXML_TOK_NAME_CSD_CALLTYPE);
+        octstr_append_char(msg->sms.msgdata, calltype);
+        octstr_append_char(msg->sms.msgdata, WBXML_TOK_END);
     }
     /* speed */
-    octstr_append_from_hex(msg->sms.msgdata, "8729");
-    octstr_append_from_hex(msg->sms.msgdata, speed);
-    octstr_append_from_hex(msg->sms.msgdata, ENDTAG);
-    octstr_append_from_hex(msg->sms.msgdata, ENDTAG);
+    /* PARM with attributes */
+    octstr_append_from_hex(msg->sms.msgdata, "87");
+    /* NAME=CSD_CALLSPEED, VALUE */
+    octstr_append_char(msg->sms.msgdata, WBXML_TOK_NAME_CSD_CALLSPEED);
+    octstr_append_char(msg->sms.msgdata, speed);
+    octstr_append_char(msg->sms.msgdata, WBXML_TOK_END);
+
+    /* end CHARACTERISTIC TYPE=ADDRESS */
+    octstr_append_char(msg->sms.msgdata, WBXML_TOK_END);
+
     /* homepage */
     if (url != NULL) {
-	octstr_append_from_hex(msg->sms.msgdata, "86071103");
-	octstr_append(msg->sms.msgdata, url);
-	octstr_append_from_hex(msg->sms.msgdata, "0001");
+        /* CHARACTERISTIC with attributes */
+        octstr_append_from_hex(msg->sms.msgdata, "86");
+        /* TYPE=URL */
+        octstr_append_char(msg->sms.msgdata, WBXML_TOK_TYPE_URL);
+        octstr_append_char(msg->sms.msgdata, WBXML_TOK_VALUE);
+        octstr_append_char(msg->sms.msgdata, WBXML_TOK_STR_I);
+        octstr_append(msg->sms.msgdata, url);
+        octstr_append_char(msg->sms.msgdata, WBXML_TOK_END_STR_I);
+        octstr_append_char(msg->sms.msgdata, WBXML_TOK_END);
     }
-    /* unknow field */
-    octstr_append_from_hex(msg->sms.msgdata, "C60801");
+
+    /* CHARACTERISTIC with content and attributes */
+    octstr_append_from_hex(msg->sms.msgdata, "C6");
+    /* TYPE=NAME */
+    octstr_append_char(msg->sms.msgdata, WBXML_TOK_TYPE_NAME);
+    octstr_append_char(msg->sms.msgdata, WBXML_TOK_END);
+
     /* service description */
     if (desc != NULL) {
-	octstr_append_from_hex(msg->sms.msgdata, "87151103");
-	octstr_append(msg->sms.msgdata, desc);
-	octstr_append_from_hex(msg->sms.msgdata, "0001");
+        /* PARAM with attributes */
+        octstr_append_from_hex(msg->sms.msgdata, "87");
+        /* NAME=NAME, VALUE, inline */
+        octstr_append_char(msg->sms.msgdata, WBXML_TOK_NAME_NAME);
+        octstr_append_char(msg->sms.msgdata, WBXML_TOK_VALUE);
+        octstr_append_char(msg->sms.msgdata, WBXML_TOK_STR_I);
+        octstr_append(msg->sms.msgdata, desc);
+        octstr_append_char(msg->sms.msgdata, WBXML_TOK_END_STR_I);
+        octstr_append_char(msg->sms.msgdata, WBXML_TOK_END);
     }
-    /* message footer */
-    octstr_append_from_hex(msg->sms.msgdata, "0101");
+
+    /* end of CHARACTERISTIC */
+    octstr_append_char(msg->sms.msgdata, WBXML_TOK_END);
+    /* end of CHARACTERISTIC-LIST */
+    octstr_append_char(msg->sms.msgdata, WBXML_TOK_END);
+    /* WSP layer (end WSP data field) */
 
     msg->sms.sender = from;
     msg->sms.receiver = octstr_duplicate(phonenumber);
