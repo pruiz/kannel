@@ -558,6 +558,7 @@ int parse_element(xmlNodePtr node)
 	error(0, "WML compiler: adding end tag to attribute list failed.");
     }
 
+  octstr_destroy(name);
   return add_end_tag;
 }
 
@@ -618,20 +619,24 @@ int parse_attribute(xmlAttrPtr attr)
 	       octstr_compare(attr_i,
 			      octstr_create(wml_attributes[j].attribute))
 		 == 0; j++)
-	    if (wml_attributes[j].a_value != NULL && value != NULL &&
-		(val_j = octstr_create(wml_attributes[j].a_value)) == 0 &&
-		octstr_ncompare(val_j,
-				value, 
-				coded_length = octstr_len(val_j)) 
-		== 0)
-	      wbxml_hex = wml_attributes[j].token;
-	    else
-	      {
-		wbxml_hex = wml_attributes[i].token;
-		coded_length = 0;
-	      }
+	    {
+	      val_j = octstr_create(wml_attributes[j].a_value);
+	      if (wml_attributes[j].a_value != NULL && value != NULL &&
+		  octstr_ncompare(val_j,
+				  value, 
+				  coded_length = octstr_len(val_j)) 
+		  == 0)
+		wbxml_hex = wml_attributes[j].token;
+	      else
+		{
+		  wbxml_hex = wml_attributes[i].token;
+		  coded_length = 0;
+		}
+	      octstr_destroy(val_j);
+	    }
 	  break;
 	}
+      octstr_destroy(attr_i);      
     }
   output_char(wbxml_hex);
 
@@ -670,6 +675,11 @@ int parse_attribute(xmlAttrPtr attr)
 	}
     }
 
+  /* Memory clean. */
+  octstr_destroy(attribute);
+  octstr_destroy(value);
+
+  /* Return the status. */
   if (wml_attributes[i].attribute == NULL)
     {
       error(0, "WML compiler: unknown attribute.");
