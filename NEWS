@@ -24,9 +24,10 @@ Compatibility breakers:
 
  * In the configuration for UCP/EMI SMSCs, username and password are
    now used if they are set, and not used if they are not.
-   They used to be mandatory even though they were never used, so they
-   are likely to contain dummy values in existing configurations.
-   (This was actually changed before 0.13.1, we forgot to note it then.)
+   They used to be mandatory even though they were never used, so in
+   existing configurations they are likely to contain dummy values
+   that will not work.  (This was actually changed before 0.13.1, we
+   forgot to note it then.)
 
 
 New features:
@@ -53,6 +54,15 @@ New features:
 
  * New architecture documentation.
 
+ * New SMS testing tool called fake2.  It works like the old fakesmsc,
+   but can be started and stopped while Kannel is running, which makes
+   it easier to use.
+
+ * New URL translation %k in smsbox, which is replaced with the keyword
+   of the SMS request.
+
+ * Improved portability to FreeBSD by using less stack space per thread.
+
 
 Bugfixes:
 
@@ -61,12 +71,22 @@ Bugfixes:
 
  * The EMI used to crash if username was not set.  Fixed.
 
+ * WML compiler can handle a libxml that was compiled with
+   the -DXML_USE_BUFFER_CONTENT flag.
+
+ * WML compiler: If charset is not supplied in a WML file, the
+   one from the HTTP content-type header is used instead, if available.
+
+ * Fixed signal handling on Solaris and other systems with POSIX threads.
+
 
 Development news:
 
  * New SMSC interface in the bearerbox, which should allow much faster
-   implementations and better error handling. The new SMPP code already
-   uses it.
+   implementations and better error handling.  There is a wrapper for
+   the old interface, because no SMSC drivers have been converted yet.
+
+ * New configuration file interface that uses Octstrs.
 
  * Work started on WAP Push.
 

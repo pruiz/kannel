@@ -1,4 +1,4 @@
-cvs
+1.1
 This file contains the version number of the gateway.
 It is stored on the first line. Nothing else should
 be there. 
@@ -9,6 +9,6 @@ it avoids confusion with real releases.
 
 Starting with version 0.8, version numbers that have an even
 second part are STABLE versions and those with odd ones are
-DEVELOPMENT versions. Thus, 0.8 is stable, 0.9 is development.
+DEVELOPMENT versions. Thus, 1.0 is stable, 1.1 is development.
 Don't use development versions for production unless you
 really know what you do.
