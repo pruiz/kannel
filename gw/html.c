@@ -1,7 +1,7 @@
 /*
  * html.c - routines for manipulating HTML.
  *
- * Lars Wirzenius for WapIT Ltd.
+ * Lars Wirzenius
  */
 
 
