@@ -15,7 +15,7 @@
 #include <time.h>
 
 #include "gwlib/gwlib.h"
-#include "bb_msg.h"
+#include "msg.h"
 
 /*
  * A data structure representing an SMS center. This data structure
@@ -70,12 +70,11 @@ int smsc_receiver(SMSCenter *smsc, char *number);
 int smsc_close(SMSCenter *smsc);
 
 
-/* Send an SMS message via an SMS center. If the message is not an ACK/NACK,
- *  add ACK or NACK according to status intp request queue
- *
- *  Return -1 for FATAL error, 0 for OK/message ignored
+/* Send an SMS message via an SMS center.
+ *  Return -1 for FATAL error (msg is not destroyed),
+ *  0 for OK/message ignored, in which case msg is destroyed
  */
-int smsc_send_message(SMSCenter *smsc, RQueueItem *msg, RQueue *request_queue);
+int smsc_send_message(SMSCenter *smsc, Msg *msg);
 
 
 /* receive a message from SMS center.
@@ -83,7 +82,7 @@ int smsc_send_message(SMSCenter *smsc, RQueueItem *msg, RQueue *request_queue);
  * 0 if nothing new (or message creation fails) and 1 if new message,
  * which is then set to 'new', which is otherwise set as NULL
  */
-int smsc_get_message(SMSCenter *smsc, RQueueItem **new);
+int smsc_get_message(SMSCenter *smsc, Msg **new);
 
 /*
  * this function is used to signal smsc by other thread that it must

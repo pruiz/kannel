@@ -1,5 +1,13 @@
 2000-05-25    Kalle Marjola <rpr@wapit.com>
 
+	* gw/smsc.h|c: got rid of bb_msg
+
+	* gw/bb_smsc.c: modified to use just plain Msg
+	
+	* gw/bb_msg.*, gw/boxc.*, gw/wdp_udp.*: removed, not used anymore
+
+2000-05-25    Kalle Marjola <rpr@wapit.com>
+
 	* gw/bb_smsc.c: added number normalization/unifying, via
 	configuration variable unified-prefix. 
 

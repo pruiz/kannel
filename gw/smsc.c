@@ -20,7 +20,7 @@
 #include "gwlib/gwlib.h"
 #include "smsc.h"
 #include "smsc_p.h"
-#include "bb_msg.h"
+#include "msg.h"
 
 /*
  * Maximum number of characters for read_into_buffer to read at a time.
@@ -705,66 +705,43 @@ int smsc_close(SMSCenter *smsc)
 
 
 
-int smsc_send_message(SMSCenter *smsc, RQueueItem *msg, RQueue *request_queue)
+int smsc_send_message(SMSCenter *smsc, Msg *msg)
 {
     int ret;
     int wait = 1, l;
     
-    if (msg->msg_class == R_MSG_CLASS_WAP) {
-	error(0, "SMSC:WAP messages not yet supported, tough");
-	return -1;
-    }	
-
-    if (msg->msg_type == R_MSG_TYPE_ACK) {
-	debug("bb.sms", 0, "SMSC:Read ACK [%d] from queue, ignoring.", msg->id);
-	ret = 0;
-    } else if (msg->msg_type == R_MSG_TYPE_NACK) {
-	debug("bb.sms", 0, "SMSC:Read NACK [%d] from queue, ignoring.", msg->id);
-	ret = 0;
-    }  else if (msg->msg_type == R_MSG_TYPE_MT) {
-
 retry:
-	ret = smscenter_submit_msg(smsc, msg->msg);
+    ret = smscenter_submit_msg(smsc, msg);
 
-	if (ret == -1) {
-	    ret = smsc_reopen(smsc);
-	    if (ret == -2) {
-		error(0, "Submit failed and cannot reopen");
-		return -1;
-	    }
-	    else if (ret == -1) {
-		error(0, "Reopen failed, retrying after %d minutes...", wait);
-		for(l = 0; l < wait*60; l++) {
-		    if (smsc->killed)	/* only after failed re-open..*/
-			return -1;
-		    sleep(1);
-		}
-		wait = wait > 10 ? 10 : wait*2 + 1;
-		goto retry;
-	    }
+    if (ret == -1) {
+	ret = smsc_reopen(smsc);
+	if (ret == -2) {
+	    error(0, "Submit failed and cannot reopen");
+	    return -1;
 	}
-	wait = 1;
-	/*
-	 * put ACK to queue.. in the future!
-	 *
-	 msg->msg_type = R_MSG_TYPE_ACK;
-	 rq_push_msg_ack(request_queue, msg);
-	 return ret;
-	*/
+	else if (ret == -1) {
+	    error(0, "Reopen failed, retrying after %d minutes...", wait);
+	    for(l = 0; l < wait*60; l++) {
+		if (smsc->killed)	/* only after failed re-open..*/
+		    return -1;
+		sleep(1);
+	    }
+	    wait = wait > 10 ? 10 : wait*2 + 1;
+	    goto retry;
+	}
     }
-    else {
-	error(0, "SMSC:Unknown message type '%d' to be sent by SMSC, ignored",
-	      msg->msg_type);
-    }
-    rqi_delete(msg);
+    wait = 1;
+    /*
+     * XXX put ACK to queue.. in the future!
+     */
 
+    msg_destroy(msg);
     return 0;
 }
 
 
-int smsc_get_message(SMSCenter *smsc, RQueueItem **new)
+int smsc_get_message(SMSCenter *smsc, Msg **new)
 {
-	RQueueItem *msg = NULL;
 	Msg *newmsg = NULL;
 	int ret;
 	int l, wait = 1;
@@ -773,21 +750,18 @@ int smsc_get_message(SMSCenter *smsc, RQueueItem **new)
     
 	if (smscenter_pending_smsmessage(smsc) == 1) {
 
-		msg = rqi_new(R_MSG_CLASS_SMS, R_MSG_TYPE_MO);
-		if (msg==NULL) goto error;
-
 		ret = smscenter_receive_msg(smsc, &newmsg);
 		if( ret == 1 ) {
 			/* OK */
-			msg->msg = newmsg;
+		    ;
 		} else if (ret == 0) { /* "NEVER" happens */
 		    warning(0, "SMSC: Pending message returned '1', "
 			    "but nothing to receive!");
-		    rqi_delete(msg);
+		    msg_destroy(newmsg);
 		    return 0;
 		} else {
 			error(0, "Failed to receive the message, reconnecting...");
-		        rqi_delete(msg);
+		        msg_destroy(newmsg);
 			/* reopen the connection etc. invisible to other end */
 		retry:
 			ret = smsc_reopen(smsc);
@@ -807,14 +781,10 @@ int smsc_get_message(SMSCenter *smsc, RQueueItem **new)
 			return 0;		/* iterate */
 		}
 
-		*new = msg;
+		*new = newmsg;
 		return 1;
 	}
 
-	return 0;
-error:
-	error(0, "smsc_get_message: Failed to create message");
-	rqi_delete(msg);
 	return 0;
 }
 

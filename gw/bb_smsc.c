@@ -23,9 +23,6 @@
 #include "bearerbox.h"
 #include "smsc.h"
 
-#include "bb_msg.h"   /* XXX until smsc interface changed */
-
-
 /* passed from bearerbox core */
 
 extern volatile sig_atomic_t bb_status;
@@ -62,8 +59,6 @@ static void *sms_receiver(void *arg)
     Smsc *conn = arg;
     int ret;
 
-    RQueueItem *tmp;	/* XXX until smsc interface fixed */
-    
     debug("bb.thread", 0, "START: sms_receiver");
     list_add_producer(flow_threads);
     list_add_producer(incoming_sms);
@@ -73,15 +68,11 @@ static void *sms_receiver(void *arg)
 
 	list_consume(isolated);	/* block here if suspended/isolated */
 
-	ret = smsc_get_message(conn->smsc, &tmp);
+	ret = smsc_get_message(conn->smsc, &msg);
 	if (ret == -1)
 	    break;
 
 	if (ret == 1) {
-	    msg = msg_duplicate(tmp->msg);
-	    gw_assert(msg_type(msg) == smart_sms);
-	    rqi_delete(tmp);
-
 	    /* XXX do we want to normalize receiver? it is like 1234 anyway... */
 
 	    normalize_number(unified_prefix, &(msg->smart_sms.sender));
@@ -109,7 +100,6 @@ static void *sms_sender(void *arg)
     Msg *msg;
     Smsc *conn = arg;
     int ret;
-    RQueueItem *tmp;	/* XXX until smsc interface changed */
 
     debug("bb.thread", 0, "START: sms_sender");
     list_add_producer(flow_threads);
@@ -123,12 +113,15 @@ static void *sms_sender(void *arg)
 
 	debug("bb.sms", 0, "sms_sender: sending message");
 	
-	tmp = rqi_new(R_MSG_CLASS_SMS, R_MSG_TYPE_MT);
-	tmp->msg = msg;
-	ret = smsc_send_message(conn->smsc, tmp, NULL);
-	/* send_message destroys both the tmp and msg */
-	
-	counter_increase(outgoing_sms_counter);
+	ret = smsc_send_message(conn->smsc, msg);
+	if (ret == -1) {
+	    /* XXX: do not discard! */
+	    error(0, "sms_sender: failed, message discarded for now");
+	    msg_destroy(msg);
+	} else {
+	    /* send_message destroys both the tmp and msg */
+	    counter_increase(outgoing_sms_counter);
+	}
     }
     list_delete_equal(smsc_list, conn);
 
