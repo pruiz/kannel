@@ -47,7 +47,7 @@ for now.
 
 */
 
-int httpserver_get_request(int socket, char **path, char **args);
+int httpserver_get_request(int socket, char **client_ip, char **path, char **args);
 
 /* 
 */
