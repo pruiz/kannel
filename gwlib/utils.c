@@ -197,7 +197,7 @@ static int become_daemon(void)
 
 #define PANIC_SCRIPT_MAX_LEN 4096
 
-static PRINTFLIKE(2,3) void execute_panic_script(const char *panic_script, const char *format, ...)
+static void execute_panic_script(const char *panic_script, const char *format, ...)
 {
     char *args[3];
     char buf[PANIC_SCRIPT_MAX_LEN + 1];
@@ -244,7 +244,7 @@ static void parachute_start(const char *myname, const char *panic_script) {
 	    return;
         }
 	else if (child_pid < 0) {
-	    error(errno, "Could not start child process ! Will retry in 5 sec.");
+	    error(errno, "Could not start child process! Will retry in 5 sec.");
 	    gwthread_sleep(5.0);
             continue;
 	}
@@ -359,12 +359,12 @@ static int change_user(const char *user)
     gw_claim_area(pass->pw_shell);
 
     if (-1 == setgid(pass->pw_gid)) {
-        error(errno, "Could not change group id %ld -> %ld.", (long) getgid(), (long) pass->pw_gid);
+        error(errno, "Could not change group id from %ld to %ld.", (long) getgid(), (long) pass->pw_gid);
         goto out;
     }
 
     if (-1 == setuid(pass->pw_uid)) {
-        error(errno, "Could not change user id %ld -> %ld.", (long) getuid(), (long) pass->pw_uid);
+        error(errno, "Could not change user id from %ld to %ld.", (long) getuid(), (long) pass->pw_uid);
         goto out;
     }
 
@@ -435,7 +435,6 @@ Octet reverse_octet(Octet source)
 }
 
 
-
 int get_and_set_debugs(int argc, char **argv,
 		       int (*find_own) (int index, int argc, char **argv))
 {
@@ -446,91 +445,78 @@ int get_and_set_debugs(int argc, char **argv,
     char *debug_places = NULL;
     char *panic_script = NULL, *user = NULL;
     int parachute = 0, daemonize = 0;
-    
-    for(i=1; i < argc; i++) {
-	if (strcmp(argv[i],"-v")==0 ||
-	    strcmp(argv[i],"--verbosity")==0) {
 
-	    if (i+1 < argc) {
-		debug_lvl = atoi(argv[i+1]);
-		i++;
-	    } else
-		panic(0, "Missing argument for option %s\n", argv[i]); 
-	} else if (strcmp(argv[i],"-F")==0 ||
-		   strcmp(argv[i],"--logfile")==0) {
-	    if (i+1 < argc && *(argv[i+1]) != '-') {
-		log_file = argv[i+1];
-		i++;
-	    } else
-		panic(0, "Missing argument for option %s\n", argv[i]); 
-	} else if (strcmp(argv[i],"-V")==0 ||
-		   strcmp(argv[i],"--fileverbosity")==0) {
-	    if (i+1 < argc) {
-		file_lvl = atoi(argv[i+1]);
-		i++;
-	    } else
-		panic(0, "Missing argument for option %s\n", argv[i]); 
-	} else if (strcmp(argv[i],"-D")==0 ||
-		   strcmp(argv[i],"--debug")==0) {
-	    if (i+1 < argc) {
-		debug_places = argv[i+1];
-		i++;
-	    } else
-		panic(0, "Missing argument for option %s\n", argv[i]); 
-	} else if (strcmp(argv[i], "-X")==0 ||
-                   strcmp(argv[i], "--panic-script")==0) {
-	    if (i+1 < argc) {
-		panic_script = argv[i+1];
-		i++;
-	    }
-	    else
-		panic(0, "Missing argument for option %s\n", argv[i]);
-	} else if (strcmp(argv[i], "-P")==0 ||
-                   strcmp(argv[i], "--parachute")==0) {
-	    parachute = 1;
-	} else if (strcmp(argv[i], "-d")==0 ||
-	           strcmp(argv[i], "--daemonize")==0) {
-	    daemonize = 1;
-        } else if (strcmp(argv[i], "-p")==0 ||
-                   strcmp(argv[i], "--pid-file")==0) {
+    for (i=1; i < argc; i++) {
+        if (strcmp(argv[i],"-v")==0 || strcmp(argv[i],"--verbosity")==0) {
+            if (i+1 < argc) {
+                debug_lvl = atoi(argv[i+1]);
+                i++;
+            } else
+                panic(0, "Missing argument for option %s\n", argv[i]); 
+        } else if (strcmp(argv[i],"-F")==0 || strcmp(argv[i],"--logfile")==0) {
+            if (i+1 < argc && *(argv[i+1]) != '-') {
+                log_file = argv[i+1];
+                i++;
+            } else
+                panic(0, "Missing argument for option %s\n", argv[i]); 
+        } else if (strcmp(argv[i],"-V")==0 || strcmp(argv[i],"--fileverbosity")==0) {
+            if (i+1 < argc) {
+                file_lvl = atoi(argv[i+1]);
+                i++;
+            } else
+                panic(0, "Missing argument for option %s\n", argv[i]); 
+        } else if (strcmp(argv[i],"-D")==0 || strcmp(argv[i],"--debug")==0) {
+            if (i+1 < argc) {
+                debug_places = argv[i+1];
+                i++;
+            } else
+                panic(0, "Missing argument for option %s\n", argv[i]); 
+        } else if (strcmp(argv[i], "-X")==0 || strcmp(argv[i], "--panic-script")==0) {
+            if (i+1 < argc) {
+                panic_script = argv[i+1];
+                i++;
+            } else
+                panic(0, "Missing argument for option %s\n", argv[i]);
+        } else if (strcmp(argv[i], "-P")==0 || strcmp(argv[i], "--parachute")==0) {
+            parachute = 1;
+        } else if (strcmp(argv[i], "-d")==0 || strcmp(argv[i], "--daemonize")==0) {
+            daemonize = 1;
+        } else if (strcmp(argv[i], "-p")==0 || strcmp(argv[i], "--pid-file")==0) {
             if (i+1 < argc) {
                 pid_file = argv[i+1];
                 i++;
             } else
                 panic(0, "Missing argument for option %s\n", argv[i]);
-	} else if (strcmp(argv[i], "-u")==0 ||
-                   strcmp(argv[i], "--user")==0) {
-	    if (i+1 < argc) {
-	        user = argv[i+1];
+        } else if (strcmp(argv[i], "-u")==0 || strcmp(argv[i], "--user")==0) {
+            if (i+1 < argc) {
+                user = argv[i+1];
                 i++;
-	    } else
-	        panic(0, "Missing argument for option %s\n", argv[i]);
-	} else if (strcmp(argv[i], "-g")==0 ||
-	           strcmp(argv[i], "--generate")==0) {
-	    cfg_dump_all();
-	    exit(0);
-	} else if (strcmp(argv[i],"--")==0) {
-	    i++;
-	    break;
-	} else if(*argv[i] != '-') {
-	    break;
-	} else {
-	    if (find_own != NULL) {
-		ret = find_own(i, argc, argv);
-	    }
-	    if (ret < 0) {
-		fprintf(stderr, "Unknown option %s, exiting.\n", argv[i]);
-                panic(0, "Option parsing failed");
-	    }
-	    else
-		i += ret;	/* advance additional args */
-	}
+            } else
+                panic(0, "Missing argument for option %s\n", argv[i]);
+        } else if (strcmp(argv[i], "-g")==0 || strcmp(argv[i], "--generate")==0) {
+            cfg_dump_all();
+            exit(0);
+        } else if (strcmp(argv[i],"--")==0) {
+            i++;
+            break;
+        } else if (*argv[i] != '-') {
+            break;
+        } else {
+            if (find_own != NULL) {
+           	ret = find_own(i, argc, argv);
+        }
+        if (ret < 0) {
+            fprintf(stderr, "Unknown option %s, exiting.\n", argv[i]);
+            panic(0, "Option parsing failed");
+        } else
+            i += ret;	/* advance additional args */
+        }
     }
 
     if (user && -1 == change_user(user))
-        panic(0, "Couldnot change to user `%s'.", user);
+        panic(0, "Could not change to user `%s'.", user);
 
-    /* daemonize */
+    /* deamonize */
     if (daemonize && !become_daemon())
        exit(0);
 
@@ -559,17 +545,16 @@ int get_and_set_debugs(int argc, char **argv,
     }
 
     if (debug_lvl > -1)
-	log_set_output_level(debug_lvl);
+        log_set_output_level(debug_lvl);
     if (debug_places != NULL)
         log_set_debug_places(debug_places);
     if (log_file != NULL)
-	log_open(log_file, file_lvl, GW_NON_EXCL);
+        log_open(log_file, file_lvl, GW_NON_EXCL);
 
     info(0, "Debug_lvl = %d, log_file = %s, log_lvl = %d",
-	  debug_lvl, log_file ? log_file : "<none>", file_lvl);
+         debug_lvl, log_file ? log_file : "<none>", file_lvl);
     if (debug_places != NULL)
 	    info(0, "Debug places: `%s'", debug_places);
-
 
     return i;
 }
@@ -809,10 +794,6 @@ int gw_isdigit(int c)
     return isdigit(c);
 }
 
-int gw_isalnum(int c)
-{
-    return isalnum(c);
-}
 
 int gw_isxdigit(int c)
 {
@@ -824,10 +805,10 @@ int gw_isxdigit(int c)
 int roundup_div(int a, int b)
 {
     int t;
-	
+
     t = a / b;
     if (t * b != a)
-	t += 1;
+        t += 1;
 
     return t;
 }
@@ -844,3 +825,4 @@ unsigned long long gw_generate_id(void)
     
     return ((unsigned long long)timer << 32) + random;
 }
+

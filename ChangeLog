@@ -1,3 +1,12 @@
+2004-10-28  Stipe Tolj  <stolj@wapme.de>
+    * gwlib/utils.[ch]: source code reformating of get_and_set_debugs().
+      No logic change. Added global arguments to header file.
+    * test/fakesmsc.c: switching from -p to -r for port, since utils.c uses
+      -p for pid-file creation. This broke current cvs to use an other port
+      then the default 10000 to connect to the smsc_fake module of bearerbox.
+    * doc/userguide/userguide.xml: fixing the command line arguments list
+      for fakesmsc to reflect the change from -p to -r for the port.
+
 2004-10-21 Alexander Malysh <amalysh at kannel.org>
     * gw/smsc/smsc_smpp.c: fixed bug #129 (Incorrect handling of
       GSM_ADDR_TON_ALPHANUMERIC for destination address).

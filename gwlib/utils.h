@@ -89,8 +89,19 @@ int write_variable_value(MultibyteInt value, Octet *dest);
 /* reverse the value of an octet */
 Octet reverse_octet(Octet source);
 
-/* parse command line arguments and set options '-v', '-D', '-F' and '-V'
- * (or --verbosity, --debug, --logfile, --fileverbosity, respectively)
+/* parse command line arguments and set options for the following
+ * global arguments:
+ * 
+ *   -v or --verbosity
+ *   -D or --debug
+ *   -F or --logfile
+ *   -V or --fileverbosity
+ *   -X or --panic-script
+ *   -P or --parachute
+ *   -d or --daemonize
+ *   -p or --pid-file
+ *   -u or --user
+ *   -g or --generate
  *
  * Any other argument starting with '-' calls 'find_own' function,
  * which is provided by the user. If set to NULL, these are ignored
@@ -173,17 +184,19 @@ void kannel_cfmakeraw (struct termios *tio);
  */
 int gw_isdigit(int);
 int gw_isxdigit(int);
-int gw_isalnum(int);
+
 
 /*
  * Rounds up the result of a division
  */
 int roundup_div(int a, int b);
 
+
 /*
  * generate a unique id 
  * (not guarenteed to be unique, but it's extremly unlikely for it not to be)
  */
 unsigned long long gw_generate_id(void);
+
 
 #endif

@@ -8061,7 +8061,7 @@ test/fakesmsc -m 1 "100 500 udh %0eudh+stuff+here main+message"
        <literal>localhost</literal>.
      </entry></row>
 
-   <row><entry><literal>-p</literal></entry>
+   <row><entry><literal>-r</literal></entry>
      <entry><emphasis>port</emphasis></entry>
      <entry valign="bottom">
        Use port number <emphasis>port</emphasis> instead of default

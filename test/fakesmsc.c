@@ -161,7 +161,7 @@ static double get_current_time(void)
 /* our arguments */
 static int check_args(int i, int argc, char **argv) 
 {
-    if (strcmp(argv[i], "-p")==0 || strcmp(argv[i], "--port")==0)
+    if (strcmp(argv[i], "-r")==0 || strcmp(argv[i], "--port")==0)
         port = atoi(argv[i+1]);
     else if (!strcmp(argv[i], "-H") || !strcmp(argv[i], "--host"))
         host = octstr_create(argv[i+1]);
