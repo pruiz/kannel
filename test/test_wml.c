@@ -49,6 +49,7 @@ int main(int argc, char *argv[])
 		
 		os = octstr_create_from_data(wmlc_data->wbxml, 
 					     wmlc_data->wml_length);
+		open_logfile(argv[2], DEBUG);
 		octstr_dump(os);
 		octstr_pretty_print(stdout, os);
 	}

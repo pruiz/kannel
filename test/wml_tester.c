@@ -17,8 +17,15 @@ int main(int argc, char **argv)
   Octstr *wml_scripts = NULL;
 
   int ret;
+  int file = 0;
 
   /* You can give an wml text file as an argument './wap_compile main.wml' */
+  if (argc > 2)
+    {
+      open_logfile(argv[2], DEBUG);
+      file = 1;
+    } 
+
   if (argc > 1) 
     {
       if (strcmp(argv[1], "--debug") == 0)
@@ -33,13 +40,14 @@ int main(int argc, char **argv)
 	    return -1;
 	}
     } 
-  else 
+  else
     {
       printf("Give the wml file as a parameter.\n");
       return 0;
     }
 
-  set_output_level(DEBUG);
+  if (!file)
+    set_output_level(DEBUG);
 
   ret = wml_compile(wml_text, &wml_binary, &wml_scripts);
 

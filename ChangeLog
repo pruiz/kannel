@@ -1,3 +1,9 @@
+2000-02-21  Tuomas Luttinen  <tuo@tuo.wapit.fi>
+
+	* gw/wml_compiler.c: Some more bug fixes.
+	* test/wml_tester.c: Now a log file can specified a s an argument.
+	* test/test_wml.c: Same as above.
+
 Mon Feb 21 15:20:39 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* README, doc/userguide/userguide.xml: Documented requirement

@@ -424,8 +424,8 @@ int parse_node(xmlNodePtr node)
   }
 
   /* 
-   * If node is an element with content or attributes, it will need an end
-   * tag after it's children. The status for it is returned by parse_element.
+   * If node is an element with content, it will need an end tag after it's
+   * children. The status for it is returned by parse_element.
    */
   switch (status) {
   case 0:
@@ -525,7 +525,10 @@ int parse_element(xmlNodePtr node)
 	  if ((status_bits = element_check_content(node)) > 0)
 	    {
 	      wbxml_hex = wbxml_hex + status_bits;
-	      add_end_tag = 1;
+	      /* If this node has children, the end tag must be added after 
+		 them. */
+	      if ((status_bits & 0x40) == 0x40)
+		add_end_tag = 1;
 	    }
 	  if (output_char(wbxml_hex) != 0)
 	    {
@@ -626,10 +629,16 @@ int parse_attribute(xmlAttrPtr attr)
 
 		  if (octstr_ncompare(val_j, value, 
 				      coded_length = octstr_len(val_j)) == 0)
+		    {
 		      wbxml_hex = wml_attributes[j].token;
-
-		  octstr_destroy(val_j);
-		  break;
+		      octstr_destroy(val_j);
+		      break;
+		    }
+		  else
+		    {
+		      octstr_destroy(val_j);
+		      coded_length = 0;
+		    }
 		}
 	      else
 		{
@@ -721,6 +730,7 @@ int parse_text(xmlNodePtr node)
   if (output_char(STR_I) == -1)
       error(0, "WML compiler: couldn't output STR_I before a text field.");
   temp2 = octstr_duplicate(wbxml_string);
+  octstr_destroy(wbxml_string);
   wbxml_string = octstr_cat(temp2, temp1);
   if (output_char(STR_END) == -1)
       error(0, "WML compiler: couldn't output STR_END after a text field.");
