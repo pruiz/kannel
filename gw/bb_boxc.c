@@ -26,6 +26,7 @@
 /* passed from bearerbox core */
 
 extern volatile sig_atomic_t bb_status;
+extern volatile sig_atomic_t restart;
 extern List *incoming_sms;
 extern List *outgoing_sms;
 extern List *incoming_wdp;
@@ -307,7 +308,7 @@ static void boxc_sender(void *arg)
 
 	    /* tell sms/wapbox to die */
 	        msg = msg_create(admin);
-	        msg->admin.command = cmd_shutdown;
+	        msg->admin.command = restart ? cmd_restart : cmd_shutdown;
 	        send_msg(conn, msg);
 	        msg_destroy(msg);
 	        break;

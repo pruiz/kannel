@@ -44,7 +44,8 @@ enum {
     cmd_shutdown = 0,
     cmd_suspend = 1,
     cmd_resume = 2,
-    cmd_identify = 3
+    cmd_identify = 3,
+    cmd_restart = 4
 };
 
 /* ack message status */

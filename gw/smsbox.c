@@ -40,6 +40,9 @@ enum { MAX_SMS_OCTETS = 140 };
 #define HTTP_MAX_RETRIES    0
 #define HTTP_RETRY_DELAY    10 /* in sec. */
 
+/* have we received restart cmd from bearerbox? */
+volatile sig_atomic_t restart = 0;
+
 static Cfg *cfg;
 static long bb_port;
 static int bb_ssl = 0;
@@ -115,6 +118,10 @@ static void read_messages_from_bearerbox(void)
 	if (msg_type(msg) == admin) {
 	    if (msg->admin.command == cmd_shutdown) {
 		info(0, "Bearerbox told us to die");
+		program_status = shutting_down;
+	    } else if (msg->admin.command == cmd_restart) {
+		info(0, "Bearerbox told us to restart");
+		restart = 1;
 		program_status = shutting_down;
 	    }
 	    /*
@@ -3135,7 +3142,21 @@ int main(int argc, char **argv)
     numhash_destroy(black_list);
     numhash_destroy(white_list);
     cfg_destroy(cfg);
+
+    /* 
+     * Just sleep for a while to get bearerbox chance to restart.
+     * Otherwise we will fail while trying to connect to bearerbox!
+     */
+    if (restart) {
+        gwthread_sleep(5.0);
+    }
+
     gwlib_shutdown();
+
+    /* now really restart */
+    if (restart)
+        execvp(argv[0], argv);
+
     return 0;
 }
 

@@ -65,7 +65,7 @@ volatile sig_atomic_t bb_status;
 static Mutex *status_mutex;
 Mutex *boxid_mutex;
 static time_t start_time;
-int restart = 0;
+volatile sig_atomic_t restart = 0;
 
 
 /* to avoid copied code */

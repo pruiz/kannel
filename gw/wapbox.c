@@ -415,6 +415,7 @@ static void dispatch_datagram(WAPEvent *dgram)
 int main(int argc, char **argv) 
 {
     int cf_index;
+    int restart = 0;
     Msg *msg;
     Octstr *filename;
     Cfg *cfg;
@@ -498,6 +499,10 @@ int main(int argc, char **argv)
 	    if (msg->admin.command == cmd_shutdown) {
 		info(0, "Bearerbox told us to die");
 		program_status = shutting_down;
+	    } else if (msg->admin.command == cmd_restart) {
+		info(0, "Bearerbox told us to restart");
+		restart = 1;
+		program_status = shutting_down;
 	    }
 	    /*
 	     * XXXX here should be suspend/resume, add RSN
@@ -560,7 +565,21 @@ int main(int argc, char **argv)
     wsp_http_map_destroy();
     octstr_destroy(device_home);
     octstr_destroy(bearerbox_host);
+
+    /*
+     * Just sleep for a while to get bearerbox chance to restart.
+     * Otherwise we will fail while trying to connect to bearerbox!
+     */
+    if (restart) {
+        gwthread_sleep(5.0);
+    }
+
     gwlib_shutdown();
+
+    /* now really restart */
+    if (restart)
+        execvp(argv[0], argv);
+
     return 0;
 }
 
