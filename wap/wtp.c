@@ -348,8 +348,10 @@ WAPEvent *unpack_wdp_datagram_real(WAPEvent *datagram)
 
     data = datagram->u.T_DUnitdata_Ind.user_data;
 
-    if (truncated_datagram(datagram))
+    if (truncated_datagram(datagram)) {
+        warning(0, "WTP: got a truncated datagram, ignoring");
 	return NULL;
+    }
 
     pdu = wtp_pdu_unpack(data);
 
@@ -357,7 +359,7 @@ WAPEvent *unpack_wdp_datagram_real(WAPEvent *datagram)
  * Wtp_pdu_unpack returned NULL, we build a rcv error event. 
  */
     if (pdu == NULL) {
-        error(0, "pdu unpacking returned NULL");
+        error(0, "WTP: cannot unpack pdu, creating an error pdu");
         event = pack_error(datagram);
         return event;
     }   		
@@ -370,7 +372,7 @@ WAPEvent *unpack_wdp_datagram_real(WAPEvent *datagram)
         event = unpack_invoke(pdu, datagram->u.T_DUnitdata_Ind.addr_tuple);
         /* if an WTP initiator gets invoke, it would be an illegal pdu. */
         if (!wtp_event_is_for_responder(event)){
-            debug("wap.wtp", 0, "Invoke when initiator. Message was");
+            debug("wap.wtp", 0, "WTP: Invoke when initiator. Message was");
             wap_event_destroy(event);
             event = pack_error(datagram);
         }
@@ -384,7 +386,7 @@ WAPEvent *unpack_wdp_datagram_real(WAPEvent *datagram)
         event = unpack_result(pdu, datagram->u.T_DUnitdata_Ind.addr_tuple);
         /* if an WTP responder gets result, it would be an illegal pdu. */
         if (wtp_event_is_for_responder(event)){
-            debug("wap.wtp", 0, "Result when responder. Message was");
+            debug("wap.wtp", 0, "WTP: Result when responder. Message was");
             wap_event_destroy(event);
             event = pack_error(datagram);
         }
@@ -404,7 +406,7 @@ WAPEvent *unpack_wdp_datagram_real(WAPEvent *datagram)
 
 	default:
 	    event = pack_error(datagram);
-	    debug("wap.wtp", 0, "Unhandled PDU type. Message was");
+	    debug("wap.wtp", 0, "WTP: Unhandled PDU type. Message was");
             wap_event_dump(datagram);
 	    return event;
 	}
