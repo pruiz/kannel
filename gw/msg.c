@@ -53,7 +53,7 @@ Msg *msg_create(enum msg_type type)
 	msg->sms.id = msg->sms.mclass = msg->sms.mwi = msg->sms.coding = 
 	    msg->sms.compress = msg->sms.validity = msg->sms.deferred = 
 	    msg->sms.dlr_mask = msg->sms.pid = msg->sms.alt_dcs = 
-	    msg->sms.rpi = 0; 
+	    msg->sms.rpi = -1; 
     }
     return msg;
 }

@@ -1,3 +1,42 @@
+2003-07-20  Bruno Rodrigues  <bruno.rodrigues@litux.org>
+    * : The "breaking smsbox interface compatibility" patch
+    * WARNING: changes are:
+      - internal values are -1 for UNDEF and 0-x, enabling 0 as an accepted
+        value
+      - UNDEF says that you don't care what Kannel uses, other values askes
+        Kannel to respect your choice. for example, no "pid" argument (pid=-1)
+	says that you don't want to include pid in pdu (unless it's required).
+	pid=0 says that you want a pid value in pdu, with value 0
+      - mclass is now 0-3; coding is 0-2; alt-dcs is 0-1; mwi is 0-7 to comply
+        with ETSI values
+      - dlrmask and dlrurl query parameters are deprecated, but still
+	functional; please use dlr-mask and dlr-url; flash was removed
+      - documentation in next commit ;)
+    * gw/msg.c: numeric sms.parameters are now defaulted to 
+      -1 (SMS_PARAM_UNDEFINED)
+    * gw/sms.c, gw/sms.h: build fields_to_dcs and dcs_to_fields with
+      sms parameters values in range UNDEF (-1) and 0-n
+    * gw/smsc/smsc_smasi.c: fix (sms.parameter-1)
+    * gw/urltrans.c: added %h for hplmn and fixed charset values
+    * gw/smsbox.c: 
+      - as we now have msg sanitizing in msg.c, removed extra cleaning in here;
+      - added auth-code and hplmn parameters;
+      - now strips blanks from account parameter;
+      - send charset in content-type; send server's date (HTTP 14.18, to be 
+        able to compare against X-Kannel-Time sms's date) when doing a POST or 
+	POST XML;
+      - do some aditional checks on sms parameters, like rejecting some chars 
+        on account, or greater than 32 chars, checking dlr-url for http/https, 
+	dlr-mask for [-1...31];
+      - X-Kannel-UDH and XML's <udh> are now sent and received as url-encoded 
+        to be consistent with query-string; <ud> is also url-encoded (for
+	binary content, for example). A test for hex is still done, so be 
+	carefull with hexadecimal strings (like "313233");
+      - Standardized content-type behaviour between application POST and
+	application response. Kannel now also accepts html, wml and binary
+	in a POST against smsbox, like it did in an application response
+      - post-xml: fixed vp tag, added right charset to headers and <?xml line
+
 2003-07-20  Alexander Malysh  <a.malysh@centrium.de>
     * configure, configure.in: added search for stylesheets version 1.77.
       userguide.xml: fixed unclosed tags.

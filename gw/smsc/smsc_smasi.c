@@ -460,7 +460,7 @@ static SMASI_PDU *msg_to_pdu(SMASI *smasi, Msg *msg)
 
     /* Set messaging class - if within defined parameter range. */
     if (msg->sms.mclass != MC_UNDEF)
-        pdu->u.SubmitReq.Class = octstr_format("%ld", msg->sms.mclass - 1); /* DAVI fix me */
+        pdu->u.SubmitReq.Class = octstr_format("%ld", msg->sms.mclass);
 
     /* Set Protocol ID. */
     pdu->u.SubmitReq.ProtocolID = octstr_format("%ld", 
@@ -552,18 +552,15 @@ static Msg *pdu_to_msg(SMASI_PDU *pdu)
     }
 
     /* Read message class. */
-    if (pdu->u.DeliverReq.Class) {
-        if (octstr_parse_long(&msg->sms.mclass, 
-                              pdu->u.DeliverReq.Class, 0, 10) == -1)
+    if (pdu->u.DeliverReq.Class &&
+        octstr_parse_long(&msg->sms.mclass, 
+                          pdu->u.DeliverReq.Class, 0, 10) == -1)
             msg->sms.mclass = MC_UNDEF;    /* Set to unspecified. */
-        else
-            msg->sms.mclass++;      /* Correct value mapping. */ /* DAVI: fix me */
-    }
 
     /* Read protocol ID. */
-    if (pdu->u.DeliverReq.ProtocolId)
-        if (octstr_parse_long(&msg->sms.pid, 
-                              pdu->u.DeliverReq.ProtocolId, 0, 10) == -1)
+    if (pdu->u.DeliverReq.ProtocolId &&
+        octstr_parse_long(&msg->sms.pid, 
+                          pdu->u.DeliverReq.ProtocolId, 0, 10) == -1)
             msg->sms.pid = SMS_PARAM_UNDEFINED;
 
     return msg;

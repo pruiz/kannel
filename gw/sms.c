@@ -27,12 +27,12 @@ int fields_to_dcs(Msg *msg, int mode) {
 
     /* MWI */
     if (msg->sms.mwi != MWI_UNDEF) {
-	dcs = msg->sms.mwi - 1;  /* sets bits 1 and 0 */
+	dcs = msg->sms.mwi;  /* sets bits 2, 1 and 0 */
 
 	if (dcs & 0x04)	
 	    dcs = (dcs & 0x03) | 0xC0; /* MWI Inactive */
 	else {
-	    dcs = (dcs & 0x03) | 0x08;	/* MWI Active, sets bit 3 */
+	    dcs = (dcs & 0x03) | 0x08; /* MWI Active, sets bit 3 */
 
 	    if (! octstr_len(msg->sms.msgdata))
 		dcs |= 0xC0;	/* Discard */
@@ -47,25 +47,25 @@ int fields_to_dcs(Msg *msg, int mode) {
 
     /* Non-MWI */
     else {
-	/* mode 0 */
-	if (mode == 0 || msg->sms.coding == DC_UCS2 || msg->sms.compress) { 
+	/* mode 0 or mode UNDEF */
+	if (mode == 0 || mode == SMS_PARAM_UNDEFINED || msg->sms.coding == DC_UCS2 
+	    || msg->sms.compress == COMPRESS_ON) { 
 	    /* bits 7,6 are 0 */
-	    if (msg->sms.compress)
+	    if (msg->sms.compress == COMPRESS_ON)
 		dcs |= 0x20; /* sets bit 5 */
-	    if (msg->sms.mclass)
-		dcs |= 0x10 | (msg->sms.mclass - 1); /* sets bit 4,1,0 */
-	    if (msg->sms.coding)
-		dcs |= ((msg->sms.coding - 1) << 2); /* sets bit 3,2 */
+	    if (msg->sms.mclass != MC_UNDEF)
+		dcs |= (0x10 | msg->sms.mclass); /* sets bit 4,1,0 */
+	    if (msg->sms.coding != DC_UNDEF)
+		dcs |= (msg->sms.coding << 2); /* sets bit 3,2 */
 	} 
 	
 	/* mode 1 */
 	else {
 	    dcs |= 0xF0; /* sets bits 7-3 */
-	    dcs |= (msg->sms.coding - 1) << 2; /* only DC_7BIT or DC_8BIT, sets bit 2*/
-	    if (msg->sms.mclass == 0)
-		dcs |= 1; /* sets bit 1,0 */
-	    else
-		dcs |= (msg->sms.mclass - 1); /* sets bit 1,0 */
+	    if(msg->sms.coding != DC_UNDEF)
+		dcs |= (msg->sms.coding << 2); /* only DC_7BIT or DC_8BIT, sets bit 2*/
+	    if (msg->sms.mclass != MC_UNDEF)
+		dcs |= msg->sms.mclass; /* sets bit 1,0 */
 	}
     }
 
@@ -82,7 +82,7 @@ int dcs_to_fields(Msg **msg, int dcs) {
     if ((dcs & 0xF0) == 0xF0) { 
         dcs &= 0x07;
         (*msg)->sms.coding = (dcs & 0x04) ? DC_8BIT : DC_7BIT; /* grab bit 2 */
-        (*msg)->sms.mclass = 1 + (dcs & 0x03); /* grab bits 1,0 */
+        (*msg)->sms.mclass = dcs & 0x03; /* grab bits 1,0 */
         (*msg)->sms.alt_dcs = 1; /* set 0xFX data coding */
     }
     
@@ -90,9 +90,9 @@ int dcs_to_fields(Msg **msg, int dcs) {
     else if ((dcs & 0xC0) == 0x00) { 
         (*msg)->sms.alt_dcs = 0;
         (*msg)->sms.compress = ((dcs & 0x20) == 0x20) ? 1 : 0; /* grab bit 5 */
-        (*msg)->sms.mclass = ((dcs & 0x10) == 0x10) ? 1 + (dcs & 0x03) : 0; 
-	    /* grab bit 0,1 if bit 4 is on */
-        (*msg)->sms.coding = 1 + ((dcs & 0x0C) >> 2); /* grab bit 3,2 */
+        (*msg)->sms.mclass = ((dcs & 0x10) == 0x10) ? dcs & 0x03 : MC_UNDEF; 
+						/* grab bit 0,1 if bit 4 is on */
+        (*msg)->sms.coding = (dcs & 0x0C) >> 2; /* grab bit 3,2 */
     }
 
     /* MWI */
@@ -102,7 +102,7 @@ int dcs_to_fields(Msg **msg, int dcs) {
         if (!(dcs & 0x08))
             dcs |= 0x04; /* if bit 3 is active, have mwi += 4 */
         dcs &= 0x07;
-        (*msg)->sms.mwi = 1 + dcs ; /* grab bits 1,0 */
+        (*msg)->sms.mwi = dcs ; /* grab bits 1,0 */
     } 
     
     else {

@@ -32,31 +32,36 @@
 
 #include "msg.h"
 
-#define SMS_PARAM_UNDEFINED 0
+#define SMS_PARAM_UNDEFINED  -1
 
-#define MC_UNDEF 0
-#define MC_CLASS0 1
-#define MC_CLASS1 2
-#define MC_CLASS2 3
-#define MC_CLASS3 4
+#define MC_UNDEF   SMS_PARAM_UNDEFINED
+#define MC_CLASS0  0
+#define MC_CLASS1  1
+#define MC_CLASS2  2
+#define MC_CLASS3  3
 
-#define MWI_UNDEF 0
-#define MWI_VOICE_ON 1
-#define MWI_FAX_ON 2
-#define MWI_EMAIL_ON 3
-#define MWI_OTHER_ON 4
-#define MWI_VOICE_OFF 4
-#define MWI_FAX_OFF 6
-#define MWI_EMAIL_OFF 7
-#define MWI_OTHER_OFF 8
+#define MWI_UNDEF      SMS_PARAM_UNDEFINED
+#define MWI_VOICE_ON   0
+#define MWI_FAX_ON     1
+#define MWI_EMAIL_ON   2
+#define MWI_OTHER_ON   3
+#define MWI_VOICE_OFF  4
+#define MWI_FAX_OFF    5
+#define MWI_EMAIL_OFF  6
+#define MWI_OTHER_OFF  7
 
-#define DC_UNDEF 0
-#define DC_7BIT 1
-#define DC_8BIT 2
-#define DC_UCS2 3
+#define DC_UNDEF  SMS_PARAM_UNDEFINED
+#define DC_7BIT   0
+#define DC_8BIT   1
+#define DC_UCS2   2
 
+#define COMPRESS_UNDEF  SMS_PARAM_UNDEFINED
 #define COMPRESS_OFF    0
 #define COMPRESS_ON     1
+
+#define RPI_UNDEF  SMS_PARAM_UNDEFINED
+#define RPI_OFF    0
+#define RPI_ON     1
 
 #define SMS_7BIT_MAX_LEN 160
 #define SMS_8BIT_MAX_LEN 140
