@@ -288,8 +288,10 @@ int udp_start(Cfg *cfg)
 
     add_service(9200, octstr_get_cstr(interface_name));	   /* wsp 	*/
     add_service(9201, octstr_get_cstr(interface_name));	   /* wsp/wtp	*/
+#ifdef HAVE_WTLS_OPENSSL
     add_service(9202, octstr_get_cstr(interface_name));    /* wsp/wtls	*/
     add_service(9203, octstr_get_cstr(interface_name));    /* wsp/wtp/wtls */
+#endif
     /* add_service(9204, octstr_get_cstr(interface_name));  * vcard	*/
     /* add_service(9205, octstr_get_cstr(interface_name));  * vcal	*/
     /* add_service(9206, octstr_get_cstr(interface_name));  * vcard/wtls */
