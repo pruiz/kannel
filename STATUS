@@ -1,0 +1,69 @@
+KANNEL 1.x STATUS: 
+  Last modified at [$Id: STATUS,v 1.1 2002-01-29 00:23:00 stolj Exp $]
+
+Release:
+
+
+RELEASE SHOWSTOPPERS:
+
+    * HTTP/1.1 Keep-Alive connection handling causes heavy CPU cycling on 
+      Linux and system error on other platforms. Seems to be a file 
+      descriptor and/or polling issue. Any box is affected which uses the
+      HTTP server implementation.
+      Initial report by: Frederik Ammitzboll <fam@unwire.dk>
+    Posted by: Stipe Tolj <tolj@wapme-systems.de>
+    Message-ID: <3C5218BD.72E5495C@wapme-systems.de>
+    Status:
+
+RELEASE NON-SHOWSTOPPERS BUT WOULD BE REAL NICE TO WRAP THESE UP:
+
+    * forced-smsc not working with concatenated, probably routing issue 
+      between several configured smscs and concatenated messages
+    Posted by: Stefan Cars <stefan@globalwire.se>
+    Message-ID: <Pine.LNX.4.40.0201281929290.3610-100000@tjatte.globalwire.se>
+    Status: Stipe: workaround see <3C55D821.B930320C@wapme-systems.de>
+    
+Available Patches:
+
+    * Weighted round-robin SMS load balancer
+    Posted by: Choong Hong Cheng <chc79@yahoo.com>
+    Message-ID: <20011228013937.25092.qmail@web13805.mail.yahoo.com>
+    Status:
+
+    * SMSC specific sender number configuration
+    Posted by: "Angel Fradejas" <afradejas@mediafusion.es>
+    Message-ID: <FMEKKCFKIGBADHGIJKPJGENPCKAA.afradejas@mediafusion.es>
+    Status: Stipe -1 (conceptual clash to global-sender?!)
+
+Open issues:
+
+    * Clashing unified-prefix when several SMSCs send their incoming messages
+      with or without international prefix. 
+      Suggested solution: introduce unified-prefix on smsc group level
+    Posted by: jakob.gaardsted@coment.dk
+    Message-ID: <OF7A262989.8F1B64DC-ON41256B4C.002DEDAD@coment.dk>
+    Status:
+
+    * Configuring 2 HTTP interfaces for sendsms, one SSL-enabled and one not.
+      Config may look like this:
+
+        group = smsbox
+        ...
+        sendsms-port = 13013       # for plain HTTP 
+        sendsms-port-ssl = 13014   # for SSL-enabled HTTP
+
+      This would allow to let HTTP and HTTPS clients to connect to different
+      ports. If sendsms-port = send-port-ssl, then we assume we have only *one*
+      SSL-enabled HTTP interface at that port.
+    Posted by: <bbuettner@vodafone-telecommerce.de>
+    Message-ID: <NCBBLDCBEKKMINJKJNBPKECMCNAA.bbuettner@vodafone-telecommerce.de>
+    Status: Stipe: Apache + mod_ssl does this, we should derive that from there
+
+    * ring-service group for smsc_at2.c to enable triggering of services while
+      users call the GSM modem. 
+    Posted by: Stipe Tolj <tolj@wapme-systems.de>
+    Message-ID: <3C4F4BFE.AE3C687B@wapme-systems.de>
+    Status: Stipe: "Andrea Viscovich" <anviscov@tin.it> has done this for a 
+            own solutions, needs to be revised and cleaned up.
+
+
