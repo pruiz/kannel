@@ -1,3 +1,6 @@
+2003-08-07 Aarno Syvänen <aarno@gni.ch>
+    * gw/smsc/smsc_http.c: Dont add drlmsk to urls when dlrs are not asked for
+
 2003-08-06  Stipe Tolj  <tolj@wapme-systems.de>
     * test/test_ocstr_dump.c: added automatic convertion from hex values in
       text/plain files to be converted to binary before cumping the content.
