@@ -678,7 +678,7 @@ static void challenge(HTTPClient *c, List *push_headers)
 
     realm = octstr_format("%s", "Basic realm=");
     octstr_append(realm, get_official_name());
-    octstr_format_append(realm, "%s", "\"/cgi-bin/wap-push.cgi\"");
+    octstr_format_append(realm, "%s", "\"/wappush\"");
     reply_headers = http_create_empty_headers();
     http_header_add(reply_headers, "WWW-Authenticate", octstr_get_cstr(realm));
     http_status = HTTP_UNAUTHORIZED;
