@@ -272,6 +272,8 @@ int smpp_close(SMSCenter *smsc) {
 
 	struct smpp_pdu *pdu = NULL;
 
+	debug(0, "smpp_close: closing");
+
 	/* Push a UNBIND PDU on the [smsc->fifo_r_out] stack. */
 	pdu = pdu_new();
 	if(pdu == NULL) goto error;

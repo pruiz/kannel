@@ -474,7 +474,7 @@ error:
 static void *http_request_thread(void *arg)
 {
     int client;
-    char *path, *args, *client_ip;
+    char *path = NULL, *args = NULL, *client_ip = NULL;
     char *answer;
     CGIArg *arglist;
     
@@ -486,7 +486,7 @@ static void *http_request_thread(void *arg)
     }
     /* print client information */
 
-    info(0, "Get HTTP request < %s >", path);
+    info(0, "Get HTTP request < %s > from < %s >", path, client_ip);
     
     if (strcmp(path, "/cgi-bin/sendsms") == 0) {
 	
@@ -502,7 +502,8 @@ static void *http_request_thread(void *arg)
 	error(0, "Error responding to client. Too bad.");
 
     /* answer closes the socket */
-    
+	/* rpr, you need to free path and args too... -MG */
+	free(client_ip);
     return NULL;
 }
 

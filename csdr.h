@@ -9,8 +9,6 @@ typedef struct csdrouter {
 
 	char *interface_name;
 
-	fd_set rset;
-
 	int wsp, wsp_wtls;
 	int wsp_wtp, wsp_wtp_wtls;
 	int vcard, vcard_wtls;

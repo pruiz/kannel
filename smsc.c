@@ -515,6 +515,7 @@ int smsc_reopen(SMSCenter *smsc) {
 	case SMSC_TYPE_EMI:
 	    return emi_reopen(smsc);
 	case SMSC_TYPE_SMPP_IP:
+	    return smpp_reopen(smsc);
 	default:		/* Unknown SMSC type */
 	    return -2;		/* no use */
 	}
@@ -639,6 +640,7 @@ int smsc_send_message(SMSCenter *smsc, RQueueItem *msg, RQueue *request_queue)
 	if (ret == -1)
 	    /* rebuild connection? */
 	    ;
+
 	if (ret < 0)
 	    msg->msg_type = R_MSG_TYPE_NACK;
 	else

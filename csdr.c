@@ -32,10 +32,9 @@ CSDRouter *csdr_open(ConfigGroup *grp)
 
 	router = malloc(sizeof(CSDRouter));
 	if(router==NULL) goto error;
-	FD_ZERO(&router->rset);
 
         interface_name = config_get(grp, "interface-name");
-        ip_version = config_get(grp, "ip-version");
+        ip_version     = config_get(grp, "ip-version");
 
 	/* Initialize the sockets. */
 	router->wsp          = socket(PF_INET, SOCK_DGRAM, 0);
@@ -75,14 +74,71 @@ CSDRouter *csdr_open(ConfigGroup *grp)
 	servaddr.sin_port = htons(9207);
 	while( bind(router->vcal_wtls, &servaddr, sizeof(servaddr)) != 0 );
 
-	FD_SET(router->wsp, &router->rset);
-	FD_SET(router->wsp_wtp, &router->rset);
-	FD_SET(router->wsp_wtls, &router->rset);
-	FD_SET(router->wsp_wtp_wtls, &router->rset);
-	FD_SET(router->vcard, &router->rset);
-	FD_SET(router->vcal, &router->rset);
-	FD_SET(router->vcard_wtls, &router->rset);
-	FD_SET(router->vcal_wtls, &router->rset);
+	return router;
+
+error:
+	free(router);
+	return NULL;
+}
+
+int csdr_close(CSDRouter *csdr)
+{
+	if (csdr == NULL)
+		return 0;
+	free(csdr);
+	return 0;
+}
+
+RQueueItem *csdr_get_message(CSDRouter *router)
+{
+
+	fd_set rset;
+	int nready, length, fd;
+	RQueueItem *item = NULL;
+	char data[64*1024];
+
+	struct sockaddr_in cliaddr;
+	socklen_t len;
+
+	FD_ZERO(&rset);
+	FD_SET(router->wsp, &rset);
+	FD_SET(router->wsp_wtp, &rset);
+	FD_SET(router->wsp_wtls, &rset);
+	FD_SET(router->wsp_wtp_wtls, &rset);
+	FD_SET(router->vcard, &rset);
+	FD_SET(router->vcal, &rset);
+	FD_SET(router->vcard_wtls, &rset);
+	FD_SET(router->vcal_wtls, &rset);
+
+	for(;;) {
+		nready = select(FD_SETSIZE, &rset, NULL, NULL, NULL);
+		if(nready == -1) {
+			if(errno==EINTR) continue;
+			if(errno==EAGAIN) continue;
+			goto error;
+		} else {
+			break;
+		}
+	}
+
+	/* XXX This has to be fixed later for
+	   various saturation problems. -MG */
+
+	item = malloc(sizeof(RQueueItem));
+	if(item==NULL) goto error;
+	item->msg_class = R_MSG_CLASS_WAP;
+	item->msg_type = R_MSG_TYPE_MO;
+	
+	if(FD_ISSET(router->wsp, &rset)) fd = router->wsp;
+	if(FD_ISSET(router->wsp, &rset)) fd = router->wsp_wtp;
+	if(FD_ISSET(router->wsp, &rset)) fd = router->wsp_wtls;
+	if(FD_ISSET(router->wsp, &rset)) fd = router->wsp_wtp_wtls;
+	if(FD_ISSET(router->wsp, &rset)) fd = router->vcard;
+	if(FD_ISSET(router->wsp, &rset)) fd = router->vcal;
+	if(FD_ISSET(router->wsp, &rset)) fd = router->vcard_wtls;
+	if(FD_ISSET(router->wsp, &rset)) fd = router->vcal_wtls;
+
+	length = recvfrom(fd, data, sizeof(data), 0, &cliaddr, &len);
 
 #if 0
 	for(;;) {
@@ -100,24 +156,11 @@ CSDRouter *csdr_open(ConfigGroup *grp)
 				sizeof(request_data), 0, &cliaddr, &len);
 
 #endif
-	return router;
+
+	return item;
 
 error:
-	free(router);
 	return NULL;
-}
-
-int csdr_close(CSDRouter *csdr)
-{
-	if (csdr == NULL)
-		return 0;
-	free(csdr);
-	return 0;
-}
-
-RQueueItem *csdr_get_message(CSDRouter *csdr)
-{
-    return NULL;
 }
 
 int csdr_send_message(CSDRouter *csdr, RQueueItem *msg)

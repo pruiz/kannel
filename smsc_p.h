@@ -180,6 +180,7 @@ int emi_receive_smsmessage(SMSCenter *smsc, SMSMessage **msg);
  * Interface to Aldiscon SMS centers using SMPP 3.3.
  */
 SMSCenter *smpp_open(char *hostname, int port, char*, char*, char*, char*);
+int smpp_reopen(SMSCenter *smsc);
 int smpp_close(SMSCenter *smsc);
 int smpp_pending_smsmessage(SMSCenter *smsc);
 int smpp_submit_smsmessage(SMSCenter *smsc, SMSMessage *msg);
