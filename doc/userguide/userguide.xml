@@ -2122,7 +2122,7 @@ port = 600
 smsc-username = foo
 smsc-password = bar
 keepalive = 5 
-sender-prefix = "12345"
+my-number = "12345"
 </programlisting>
 
  <informaltable frame="none">
@@ -2161,13 +2161,13 @@ sender-prefix = "12345"
      <entry><literal>number</literal></entry>
      <entry valign="bottom">
        SMSC connection will not be left idle for longer than this many
-       minutes.  The right value to use depends on how eager the SMSC
-       is to close idle connections.  5 minutes is a good guess.  If you
-       see many unexplained reconnects, try lowering this value.
+       seconds.  The right value to use depends on how eager the SMSC
+       is to close idle connections. If you see many unexplained 
+       reconnects, try lowering this value.
        Set it to 0 to disable this feature.
      </entry></row>
 
-   <row><entry><literal>sender-prefix</literal></entry>
+   <row><entry><literal>my-number</literal></entry>
       <entry><literal>string</literal></entry>
       <entry valign="bottom">
         The number that the SMSC will add in front of the sender number
@@ -2175,13 +2175,20 @@ sender-prefix = "12345"
         a message, it will remove this prefix from the sender number
         so that the SMSC will add it again.  If the prefix was not present,
         Kannel will log a warning and will not send the sender number.
-        If <literal>sender-prefix</literal> is not set, or is set
+        If <literal>my-number</literal> is not set, or is set
         to <literal>"never"</literal>, then Kannel will not send the
         sender number to the SMSC at all.
         If you want Kannel to pass all sender numbers to the SMSC
         unchanged, then just set <literal>sender-prefix</literal> to the
         empty string <literal>""</literal>.
       </entry></row>
+
+   <row><entry><literal>our-port</literal></entry>
+     <entry><literal>port-number</literal></entry>
+     <entry valign="bottom">
+       Optional port number in which to bind the connection in our
+       end.
+     </entry></row>
 
    </tbody></tgroup></informaltable>
    
