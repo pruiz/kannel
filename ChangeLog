@@ -1,3 +1,12 @@
+2002-01-18  Stipe Tolj  <tolj@wapme-systems.de>
+    * configure.in: added EXE_EXT variable to be used for systems that
+      have executable extensions, i.e. Cygwin 1.x. This makes certain
+      Makefile targets working more cleanly.
+    * configure: the resulting outout of configure.in produced
+      by autoconf 2.13.
+    * Makefile.in: added @EXE_EXT@ substitution tags for the executable
+      extensions.
+
 2002-01-17 Andreas Fink <andreas@fink.org>
     * gw/smsc_emi2.c fixed small and rare memory leak 
     * gw/smsc_smpp.c  corrected sender of DLR
