@@ -121,7 +121,7 @@ Octstr *octstr_copy_real(Octstr *ostr, long from, long len);
 /*
  * Copy all of an octet string.
  */
-Octstr *octstr_duplicate_real(Octstr *ostr);
+Octstr *octstr_duplicate_real(const Octstr *ostr);
 #define octstr_duplicate(ostr) gw_claim_area(octstr_duplicate_real((ostr)))
 
 
@@ -165,7 +165,7 @@ void octstr_get_many_chars(char *buf, Octstr *ostr, long pos, long len);
  *
  * If the octet string is empty, an empty C string is returned, not NULL.
  */
-char *octstr_get_cstr_real(Octstr *ostr, const char *file, long line,
+char *octstr_get_cstr_real(const Octstr *ostr, const char *file, long line,
     	    	    	   const char *func);
 #define octstr_get_cstr(ostr) \
     (octstr_get_cstr_real(ostr, __FILE__, __LINE__, __func__))
@@ -244,7 +244,7 @@ void octstr_convert_range(Octstr *ostr, long pos, long len,
  * `ostr1' is less than `ostr2' (when compared octet-value by octet-value),
  * and positive if greater.
  */
-int octstr_compare(Octstr *ostr1, Octstr *ostr2);
+int octstr_compare(const Octstr *ostr1, const Octstr *ostr2);
 
 
 /*
@@ -252,20 +252,20 @@ int octstr_compare(Octstr *ostr1, Octstr *ostr2);
  * Note that this probably doesn't work for Unicode, but should work
  * for such 8-bit character sets as are supported by libc.
  */
-int octstr_case_compare(Octstr *ostr1, Octstr *ostr2);
+int octstr_case_compare(const Octstr *ostr1, const Octstr *ostr2);
 
 
 /*
  * as above, but comparing is done only up to n bytes
  */
-int octstr_ncompare(Octstr *ostr1, Octstr *ostr2, long n);
+int octstr_ncompare(const Octstr *ostr1, const Octstr *ostr2, long n);
 
 
 /*
  * Same as octstr_compare, but compares the content of the octet string to 
  * a C string.
  */
-int octstr_str_compare(Octstr *ostr1, const char *str);
+int octstr_str_compare(const Octstr *ostr1, const char *str);
 
 
 /*

@@ -92,7 +92,7 @@ static char is_safe[UCHAR_MAX + 1];
  */
 
 
-static void seems_valid_real(Octstr *ostr, const char *filename, long lineno,
+static void seems_valid_real(const Octstr *ostr, const char *filename, long lineno,
                              const char *function);
 #ifdef NO_GWASSERT
 #define seems_valid(ostr)
@@ -285,7 +285,7 @@ Octstr *octstr_copy_real(Octstr *ostr, long from, long len)
 
 
 
-Octstr *octstr_duplicate_real(Octstr *ostr)
+Octstr *octstr_duplicate_real(const Octstr *ostr)
 {
     if (ostr == NULL)
         return NULL;
@@ -351,7 +351,7 @@ void octstr_get_many_chars(char *buf, Octstr *ostr, long pos, long len)
 }
 
 
-char *octstr_get_cstr_real(Octstr *ostr, const char *file, long line, 
+char *octstr_get_cstr_real(const Octstr *ostr, const char *file, long line, 
     	    	    	   const char *func)
 {
     if (!ostr)
@@ -737,7 +737,7 @@ void octstr_convert_range(Octstr *ostr, long pos, long len,
 }
 
 
-int octstr_compare(Octstr *ostr1, Octstr *ostr2)
+int octstr_compare(const Octstr *ostr1, const Octstr *ostr2)
 {
     int ret;
     long len;
@@ -769,7 +769,7 @@ int octstr_compare(Octstr *ostr1, Octstr *ostr2)
 }
 
 
-int octstr_case_compare(Octstr *os1, Octstr *os2)
+int octstr_case_compare(const Octstr *os1, const Octstr *os2)
 {
     int c1, c2;
     long i, len;
@@ -815,7 +815,7 @@ int octstr_case_compare(Octstr *os1, Octstr *os2)
 }
 
 
-int octstr_ncompare(Octstr *ostr1, Octstr *ostr2, long n)
+int octstr_ncompare(const Octstr *ostr1, const Octstr *ostr2, long n)
 {
     long len;
 
@@ -836,7 +836,7 @@ int octstr_ncompare(Octstr *ostr1, Octstr *ostr2, long n)
 }
 
 
-int octstr_str_compare(Octstr *ostr, const char *str)
+int octstr_str_compare(const Octstr *ostr, const char *str)
 {
     seems_valid(ostr);
 
@@ -2117,7 +2117,7 @@ unsigned long octstr_hash_key(Octstr *ostr)
  * Local functions.
  */
 
-static void seems_valid_real(Octstr *ostr, const char *filename, long lineno,
+static void seems_valid_real(const Octstr *ostr, const char *filename, long lineno,
                              const char *function)
 {
     gw_assert(immutables_init);

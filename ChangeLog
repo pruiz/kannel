@@ -1,4 +1,8 @@
-2003-05-24  Bruno Rodrigues  <bruno.rodrigues@litux.org> 
+2003-05-24  Alexander Malysh  <a.malysh@centrium.de>
+    * gwlib/octstr.[ch]: Made functions arguments const, then it's clear
+      for caller whether we manipulate arguments.
+
+2003-05-24  Bruno Rodrigues  <bruno.rodrigues@litux.org>
     * contrib/mon/kannel.monitor: applied fix from Dariusz Markowicz
       <00a301c321fa$08edab00$d4e34cd5@oem>
 
