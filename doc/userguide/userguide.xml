@@ -5425,7 +5425,6 @@ type=settings
        Default for this variable is settings. 
        </para>
 
-</sect3>
 
        <para>
        Here is an example XML document (this one contains CSD settings for logging
