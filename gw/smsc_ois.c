@@ -938,6 +938,12 @@ static int ois_append_sm_text(char *raw, const Msg *msg)
 
     SAY(3, "ois_append_sm_text");
 
+    if (msg->sms.coding == DC_7BIT) {
+        charset_latin1_to_gsm(msg->sms.udhdata);
+        charset_latin1_to_gsm(msg->sms.msgdata);
+    }
+
+
     /* calculate lengths */
 
     udhlen8 = octstr_len(msg->sms.udhdata);
@@ -955,10 +961,6 @@ static int ois_append_sm_text(char *raw, const Msg *msg)
     memcpy(&raw[2+udhlen8], octstr_get_cstr(msg->sms.msgdata), msglen8);
 
     IOTRACE("encoding", &raw[2], len);
-
-    if (msg->sms.coding == DC_7BIT) {
-	ois_convert_from_iso88591(&raw[2], len);
-    }
 
     return 2 + len;
 }
