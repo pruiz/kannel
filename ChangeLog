@@ -2,6 +2,8 @@
 
 	* Added seems_valid assertion to end of octstr_format().
 
+	* gw/wap-appl.c: Fixed silly mistake that caused random panics.
+
 2000-10-05  Richard Braakman  <dark@wapit.com>
 
 	* gw/wap-appl.c: Bugfix, don't panic if resp_headers is NULL

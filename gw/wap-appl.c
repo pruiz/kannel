@@ -325,10 +325,13 @@ static void fetch_thread(void *arg) {
 	WAPAddrTuple *addr_tuple;
 	long session_id;
 	struct content content;
+	static struct content empty_content;
 	int method;		/* type of request, normally a get or a post */
 	Octstr *request_body;
 	
     	counter_increase(fetches);
+
+	content = empty_content;
 
 	event = arg;
 	if (event->type == S_MethodInvoke_Ind) {
