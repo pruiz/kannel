@@ -1,3 +1,28 @@
+2002-05-20  Stipe Tolj <tolj@wapme-systems.de>
+    * gwlib/xmlrpc.h, test/drive_smpp.conf: typo fixes
+
+2002-05-20  Stipe Tolj <tolj@wapme-systems.de>
+    * gw/smsc_smpp.c: added 'smsc-id' processing patch supplied by  
+      Dima Milentiev <Dima@m-wise.com>
+      [Msg-ID: <2CFC21DAF860CC49AF57333C4459DD4B05AB42@exchange.m-wise.com>]
+
+2002-05-20  Stipe Tolj <tolj@wapme-systems.de>
+    * configure[.in]: fixed Bruno's cvs checkout date extraction
+
+2002-05-20  Stipe Tolj <tolj@wapme-systems.de>
+    * gwlib/conn.c: fixed a possible segmentaion bug in conn_open_ssl() 
+      reported by Oded.
+      [Msg-ID: <2CFC21DAF860CC49AF57333C4459DD4B167F67@exchange.m-wise.com>]
+
+2002-05-20  Stipe Tolj <tolj@wapme-systems.de>
+    * doc/userguide/userguide.xml: some changes and extensions to sendota 
+      documentation
+    * test/test_http.c: fixed a bug for POST method and changed -b flag to -B
+      for the POST body content. Excluded -x flag. If -B is set this indicates
+      a POST request to be issues to the HTTP server.
+    * gw/smsbox.c: fixed segmentation fault bug in sendsms_thread() caused
+      by using args in smsbox_sendota_post().
+
 2002-05-17  Stipe Tolj <tolj@wapme-systems.de>
     * doc/userguide/userguide.xml, gw/smsbox.c: added 'to' GET variable to
       sendota request. The old parameter 'phonenumber' is yet still supported
