@@ -349,7 +349,6 @@
 	<member><filename>gw/bearerbox</filename></member>
 	<member><filename>gw/smsbox</filename></member>
 	<member><filename>gw/wapbox</filename></member>
-	<member><filename>test/test_wml</filename></member>
 	</simplelist>
 	
 	The filenames will get the version number of the gateway added
@@ -389,10 +388,16 @@
 <chapter>
 <title>Using the gateway</title>
 
-	<para>This chapter explains how the gateway configured and used.
+	<para>This chapter explains how the gateway core, bearerbox,
+        is configured and used.
 	It covers configuration file, keeping an eye on the gateway
 	while it is running, and using the HTTP interface to control
-	the gateway or using it for sending SMS messages.</para>
+	the gateway.</para>
+
+        <para>After this chapter there is distinct chapter for each
+        kind of gateway use: WAP gateway, SMS gateway and combined
+        gateway. These chapters explain configuration and other
+        aspects of gateway of that type.</para>
 
 	<para>There is only one configuration file for all parts of
 	Kannel, although when Kannel is distributed to several hosts
@@ -1103,68 +1108,255 @@ bearerbox-host = localhost
     not need to re-define sms-services nor routing systems if the IP
     of the SMS Center is changed, for example.</para>
 
-    <para>Full list of 'smsc' group variables is as follows:
+    <para>Common 'smsc' group variables are defined in the following
+    table. The first two (<literal>group</literal> and
+    <literal>smsc</literal>) are mandatory, but rest can be used as
+    needed to.</para>
+
+ <table frame=none>
+  <title>SMSC Group Variables</title>
+  <tgroup cols=3>
+  <thead>
+   <row>
+     <entry>Variable</entry>
+     <entry>Value</entry>
+     <entry>Description</entry>
+   </row>
+  </thead>
+  <tbody>
+   <row><entry><literal>group</literal></entry>
+     <entry><literal>smsc</literal></entry>
+     <entry valign=bottom>
+       This is mandatory variable
+     </entry></row>
+
+   <row><entry><literal>smsc</literal></entry>
+     <entry><literal>string</literal></entry>
+     <entry valign=bottom>
+       Identifies the SMS center type. See list below
+       for complete list.
+     </entry></row>
+
+
+   <row><entry><literal>smsc-id</literal></entry>
+     <entry><literal>string</literal></entry>
+     <entry valign=bottom>
+        An optional name or id for the smsc. Any string is
+        acceptable, but semicolon ';' may cause problems, so avoid
+        it, as you should any special non-alphabet characters. 
+        This 'id' is written into log files and can be used to
+        route SMS messages, and to specify used SMS-service. 
+        Several smsc'es can have same id. The name is case-insensitive.
+     </entry></row>
+
+   <row><entry><literal>denied-smsc-id</literal></entry>
+     <entry><literal>id-list</literal></entry>
+     <entry valign=bottom>
+        SMS messages with SMSC ID equal to any of IDs in this list
+        are never routed to this SMSC. Multiple entries are separated 
+        with semicolon (';')
+
+     </entry></row>
+
+   <row><entry><literal>preferred-smsc-id</literal></entry>
+     <entry><literal>id-list</literal></entry>
+     <entry valign=bottom>
+        SMS messages with SMSC ID in this list are sent to this SMSC
+        instead than to SMSC without that ID as preferred. Multiple
+        entries are separated with semicolon (';')
+     </entry></row>
+
+   <row><entry><literal>denied-prefix</literal></entry>
+     <entry><literal>prefix-list</literal></entry>
+     <entry valign=bottom>
+        A list of phone number prefixes which are NOT accepted to be
+        sent through this SMSC. Multiple entries are separated with 
+        semicolon (';'). For example, "040;050" permits sending of
+        any SMS message with prefix of 040 or 050 through this SMSC
+     </entry></row>
+
+   <row><entry><literal>preferred-prefix</literal></entry>
+     <entry><literal>prefix-list</literal></entry>
+     <entry valign=bottom>
+        As <literal>denied-prefix</literal>, but SMS messages with receiver starting
+        with any of these prefixes is prefereably sent through this
+        SMSC. In a case of multiple preferred, random one is selected
+        (likewise if there is none preferred, random SMSC is selected
+         from the existing ones)
+
+     </entry></row>
+
+   <row><entry><literal>alt-charset</literal></entry>
+     <entry><literal>number</literal></entry>
+     <entry valign=bottom>
+        As some SMS Centers do not follow the standards in character
+        coding, an <literal>alt-charset</literal> kludge is
+        presented. Currently implemented
+        alternative charsets are defined in "alt_charsets.h" and new ones
+        can be added to appropriate smsc-code.
+     </entry></row>
+
+  </tbody>
+  </tgroup>
+ </table>
+
+   <para>In addition to these common variables there is several
+   variables used by certain SMS center connections. Each currently
+   supported SMS center type is explained below, with configuration
+   group for each. Note that many of them use variables with same
+   name, but most also have some specific variables.</para>
+
+   <para><emphasis>NOTE: SMS center configuration variables are a bit 
+   incomplete, and will be updated as soon as people responsible for
+   protocols are contacted. Meanwhile, please have
+   patience.</emphasis></para>
+
+
+<sect3>
+<title>CIMD 1.37</title>
 
 <programlisting>
- group = smsc
- #       Mandatory
- #  
- smsc = smsc-type
- #       Identifies the smsc type. Currently supported ones are:
- #       fake, emi, emi_ip, cimd, cimd2, smpp and sema
+group = smsc
+smsc = cimd
+host = 100.101.102.103
+port = 600
+smsc-username = foo
+smsc-password = bar
+</programlisting>
 
-Message routing can be used to route incoming SMS messages to specific
-sms-services, and to route outgoing messages to preferred SMS Centers:
+ <informaltable frame=none>
+  <tgroup cols=3><thead><row>
+     <entry>Variable</entry>
+     <entry>Value</entry>
+     <entry>Description</entry>
+   </row></thead><tbody>
 
- smsc-id = id
- #       An optional name or id for the smsc. Any string is
- #       acceptable, but semicolon ';' may cause problems, so avoid
- #       it, as you should any special non-alphabet characters. 
- #       This 'id' is written into log files and can be used to
- #       route SMS messages, and to specify used SMS-service. 
- #       Several smsc'es can have same id. The name is case-insensitive.
- #
- denied-smsc-id = id-list
- #       SMS messages with SMSC ID equal to any of IDs in this list
- #       are never routed to this SMSC. Multiple entries are separated 
- #       with semicolon (';')
- #
- preferS message with prefix of 040 or 050 through this SMSC
- #
- preferred-prefix = prefix-list
- #       As denied-prefix, but SMS messages with receiver starting
- #       with any of these prefixes is prefereably sent through this
- #       SMSC. In a case of multiple preferred, random one is selected
- #       (likewise if there is none preferred, random SMSC is selected
- #        from the existing ones)
- 
-Remaining variables are smsc-dependant.
+   <row><entry><literal>host</literal></entry>
+     <entry><literal>hostname</literal></entry>
+     <entry valign=bottom>
+        Machine that runs the SMSC. As IP (100.100.100.100) 
+        or hostname (their.machine.here)
+     </entry></row>
 
- host = address
- #       machine that runs the SMSC. As IP (100.100.100.100) 
- #       or hostname (their.machine.here)
- #
- port = port-number
- #       port number in smsc host machine
- #
- # our-port = port-number
- #       if we need to bind our end of the connection to some port
- #       number. Currently supported only in EMI IP smsc.
- #
- receive-port = port-number
- #       the other port for receiving messages from the SMSC. In a case of
- #       EMI IP, this is the port we listen to. In a case of SMPP, this is
- #       the other port which we connect.
- #
- smsc-username = login-account
- #       username in the SMSC machine
- #
- smsc-password = login-password
- #       password in the SMSC machine needed to contact SMSC
- #
- device = device-name
- #       the device like /dev/ttyS0. Used with EMI accessed via modem
- #
+   <row><entry><literal>port</literal></entry>
+     <entry><literal>port-number</literal></entry>
+     <entry valign=bottom>
+       Port number in smsc host machine
+     </entry></row>
+
+   <row><entry><literal>smsc-username</literal></entry>
+     <entry><literal>string</literal></entry>
+     <entry valign=bottom>
+       Username in the SMSC machine/connection account
+     </entry></row>
+
+   <row><entry><literal>smsc-password</literal></entry>
+     <entry><literal>string</literal></entry>
+     <entry valign=bottom>
+        Password in the SMSC machine needed to contact SMSC
+     </entry></row>
+
+   </tbody></tgroup></informaltable>
+   
+</sect3>
+
+<sect3>
+<title>CIMD 2</title>
+             <para></para>
+</sect3>
+
+<sect3>
+<title>CMG EMI 2.0</title>
+
+  <para>Kannel supports two types of connections with CMG EMI 2.0 SMS
+  centers: direct TCP/IP connections (<literal>emi_ip</literal>) and
+  ISDN/modem connection (<literal>emp</literal>). Sample
+  configurations for these are:</para>
+  
+<programlisting>
+group = smsc
+smsc = emi_ip
+host = 103.102.101.100
+port = 600
+our-port = 600 (optional bind in our end)
+receive-port = 700 (the port in which the SMSC will contact)
+
+group = smsc
+smsc = emi
+host = 100.102.100.102
+device = /dev/tty0
+smsc-username = foo
+smsc-password = bar
+</programlisting>
+
+ <informaltable frame=none>
+  <tgroup cols=3><thead><row>
+     <entry>Variable</entry>
+     <entry>Value</entry>
+     <entry>Description</entry>
+   </row></thead><tbody>
+
+   <row><entry><literal>host</literal></entry>
+     <entry><literal>hostname</literal></entry>
+     <entry valign=bottom>
+        Machine that runs the SMSC. As IP (100.100.100.100) 
+        or hostname (their.machine.here)
+     </entry></row>
+
+   <row><entry><literal>port</literal></entry>
+     <entry><literal>port-number</literal></entry>
+     <entry valign=bottom>
+       Port number in smsc host machine
+     </entry></row>
+
+   <row><entry><literal>device</literal></entry>
+     <entry><literal>device-name</literal></entry>
+     <entry valign=bottom>
+          The device the modem is connected to, like /dev/ttyS0.
+          ISDN connection only.
+     </entry></row>
+
+   <row><entry><literal>our-port</literal></entry>
+     <entry><literal>port-number</literal></entry>
+     <entry valign=bottom>
+       Optional port number in which to bind the connection in our
+     end. TCP/IP connection only.
+     </entry></row>
+
+   <row><entry><literal>receive-port</literal></entry>
+     <entry><literal>port-number</literal></entry>
+     <entry valign=bottom>
+        The port number we have to listen to and which the SMS center
+        then connects when it has messages to be sent. TCP/IP
+        connection only.
+     </entry></row>
+
+   </tbody></tgroup></informaltable>
+   
+
+</sect3>
+
+<sect3>
+<title>SMPP 3.3</title>
+
+<programlisting>
+group = smsc
+smsc = smpp
+host = 127.0.0.1
+port = 600
+receive-port = 700      (receiver port if it a different one)
+system-id = "param, ask from dealer.. 'same' as username"
+smsc-password = foo
+system-type = "param, ask from dealer"
+address-range = "" (regex of received numbers)
+</programlisting>
+
+</sect3>
+
+<sect3>
+<title>OIS 4.0 SMS2000</title>
+
+<programlisting>
  smsc_nua = (X121 smsc address)
  #       The address of an SMSC for Sema SMS2000 protocols using an X.28 
  #       connection.
@@ -1174,89 +1366,101 @@ Remaining variables are smsc-dependant.
  #
  wait_report = 0/1 (0 means false, 1 means true)
  #       Report indicator used by the Sema SMS2000 protocol.
- #
- alt-charset = (number)
- #       As some SMS Centers do not follow the standards in character
- #       coding, an 'alt-charset' kludge is presented. Currently implemented
- #       alternative charsets are defined in "alt_charsets.h" and new ones
- #       can be added to appropriate smsc-code.
- #
-
-CIMD centers are accessed via TCP/IP, so we need the hostname (or IP
-number) and port number to which we should connect. Similarly, old EMI
-centers are accessed via ISDN/modems, so we need the phone number to
-call and the Unix device file (e.g., /dev/ttyS0) where the modem is
-connected to the computer. We need both a username and a password for
-logging in to most of the SMS centers (fake smsc does not need
- username nor password, nor does require some other centers which are
- accessed via TCP/IP)
-
-GSM modem as an SMSC:
-        
- group = smsc
- #       Mandatory
- #
- smsc = at
- #       Uses a GSM modem with AT commands
- #
- modemtype = (modem type)
- #       Modems from different manufacturers have slightly different
- #       behaviour. So we need to know what type of modem is used.
- #       Supported types are: wavecom, premicell, siemens.
- #
- device = /dev/xxx 
- #      The device the modem is connected to. like /dev/ttyS0.
- #
 </programlisting>
-  </para>
 
-  <para>Some sample SMS center configurations:
+</sect3>
+
+<sect3>
+<title>OIS 5.0 SMS2000</title>
 
 <programlisting>
-# group = smsc
-# smsc = fake
-# host = localhost
-# port = 10000
-#
-# group = smsc
-# smsc = cimd
-# host = 100.101.102.103
-# port = 600
-# smsc-username = foo
-# smsc-password = bar
-#
-# group = smsc
-# smsc = emi_ip
-# host = 103.102.101.100
-# port = 600
-# our-port = 600 (optional bind in our end)
-# receive-port = 700 (the port in which the SMSC will contact)
-#
-# group = smsc
-# smsc = emi
-# host = 100.102.100.102
-# device = /dev/tty0
-# smsc-username = foo
-# smsc-password = bar
-#
-# group = smsc
-# smsc = smpp
-# host = 127.0.0.1
-# port = 600
-# receive-port = 700      (receiver port if it a different one)
-# system-id = "param, ask from dealer.. 'same' as username"
-# smsc-password = foo
-# system-type = "param, ask from dealer"
-# address-range = "" (regex of received numbers)
-#
-# group = smsc
-# smsc = ois
-# host = 103.102.101.100
-# port = 10000
-# receive-port = 10000 (the port in which the SMSC will contact)
+group = smsc
+smsc = ois
+host = 103.102.101.100
+port = 10000
+receive-port = 10000 (the port in which the SMSC will contact)
 </programlisting>
- </para>
 
+</sect3>
+
+<sect3>
+<title>GSM Modem</title>
+
+<programlisting>
+group = smsc
+smsc = at
+modemtype = wavecom
+device = /dev/ttyS0
+</programlisting>
+
+ <informaltable frame=none>
+  <tgroup cols=3><thead><row>
+     <entry>Variable</entry>
+     <entry>Value</entry>
+     <entry>Description</entry>
+   </row></thead><tbody>
+
+   <row><entry><literal>modemtype</literal></entry>
+     <entry><literal>string</literal></entry>
+     <entry valign=bottom>
+        Modems from different manufacturers have slightly different
+        behaviour. So we need to know what type of modem is used.
+        Supported types are: <literal>wavecom</literal>, 
+        <literal>premicell</literal>, <literal>siemens</literal>.
+     </entry></row>
+
+   <row><entry><literal>device</literal></entry>
+     <entry><literal>device-name</literal></entry>
+     <entry valign=bottom>
+          The device the modem is connected to, like /dev/ttyS0.
+     </entry></row>
+
+   </tbody></tgroup></informaltable>
+
+</sect3>
+
+
+<sect3>
+<title>Fake SMSC</title>
+
+  <para>Fake SMSC is a simple protocol to test out Kannel. It is not
+  a real SMS center, and cannot be used to send or receive SMS
+  messages from real phones. So, it is ONLY used for testing purposes.
+  </para>
+
+  <para>Please note that if you use one or more fake SMSCs, you must
+  start them before starting the bearerbox.</para>
+
+<programlisting>
+group = smsc
+smsc = fake
+host = localhost
+port = 10000
+</programlisting>
+
+ <informaltable frame=none>
+  <tgroup cols=3><thead><row>
+     <entry>Variable</entry>
+     <entry>Value</entry>
+     <entry>Description</entry>
+   </row></thead><tbody>
+
+   <row><entry><literal>host</literal></entry>
+     <entry><literal>hostname</literal></entry>
+     <entry valign=bottom>
+        Machine that runs the SMSC. As IP (100.100.100.100) 
+        or hostname (their.machine.here)
+     </entry></row>
+
+   <row><entry><literal>port</literal></entry>
+     <entry><literal>port-number</literal></entry>
+     <entry valign=bottom>
+       Port number in smsc host machine
+     </entry></row>
+
+   </tbody></tgroup></informaltable>
+
+</sect3>
 
 
 <sect3>
@@ -1264,16 +1468,17 @@ GSM modem as an SMSC:
 
     <para>If you have several SMS center connections (multiple
     operators or number of GSM modems) you need to configure one smsc
-    group per SMS Center (or GSM modem). When doing this, you might
+    group per SMS center (or GSM modem). When doing this, you might
     want to use routing systems to rout messages to specific centers -
     for example, you have 2 operator SMS centers, and the other is
     much faster and cheaper to use.</para>
 
     <para>To set up routing systems, first give an unique ID for each
     SMS center - or if you want to treat multiple ones completely
-    identical, give them identical ID. Then use 'preferred-smsc-id'
-    and 'denied-smsc-id' to set up routing to your taste. See also SMS
-    PUSH settings, below.</para>
+    identical, give them identical ID. Then use 
+    <literal>preferred-smsc-id</literal> and
+    <literal>denied-smsc-id</literal> to set up routing to your
+    taste. See also SMS PUSH settings ('sendsms-user' groups), below.</para>
 </sect3>
 </sect2>
 
@@ -1349,7 +1554,7 @@ bearerbox-host = localhost
   </tgroup>
  </table>
 
-   <para>A typical 'smsbox' grou pcould be something like this:
+   <para>A typical 'smsbox' group could be something like this:
 
 <programlisting>
 group = smsbox
@@ -1370,8 +1575,17 @@ log-level = 0
 
     <para>Now that you have a SMS center connection to send and
     receive SMS messages you need to define services for incoming
-    messages. This is done via 'sms-service' configuration groups.
-    The simplest service group is like this:
+    messages. This is done via 'sms-service' configuration
+    groups.</para>
+
+    <para>These groups define SMS services in smsbox, so they are only
+    used by the smsbox. Each service is recognized from the first word
+    in an SMS message.  By adding a username and password in the URL
+    in the following manner
+    "http://luser:password@host.domain:port/path?query" we can perform
+    HTTP Basic authentication.</para>
+
+    <para>The simplest service group is like this:
 
 <programlisting>
 group = sms-service
@@ -1384,117 +1598,223 @@ url = "http://%S"
      message. Any result is sent back to phone (or requester), but is
      truncated to 160 characters, naturally.</para>
 
-    <para>Full list of 'sms-service' group variables is:
+ <table frame=none>
+  <title>SMS-Service Group Variables</title>
+  <tgroup cols=3>
+  <thead>
+   <row>
+     <entry>Variable</entry>
+     <entry>Value</entry>
+     <entry>Description</entry>
+   </row>
+  </thead>
+  <tbody>
+   <row><entry><literal>group</literal></entry>
+     <entry><literal>sms-service</literal></entry>
+     <entry valign=bottom>
+       This is mandatory variable
+     </entry></row>
 
-<programlisting>
-These groups define SMS services in smsbox, so they are only used by
-the smsbox. Each service is recognized from the first word in an SMS
-message.  By adding a username and password in the URL in the
-following manner `http://luser:password@host.domain:port/path?query'
-we can perform HTTP Basic authentication.
+   <row><entry><literal>keyword</literal></entry>
+     <entry>word</entry>
+     <entry valign=bottom>
+        Services are identified by the first word in the SMS Each
+        `%s' in the URL corresponds to one word in the SMS message.
+         Words are separated with spaces. A keyword is matched only if
+         the number of words in the SMS message is the same as the
+         number of `%s' fields in the URL. This allows you to
+        configure the gateway to use different URLs for the same
+        keyword depending on the number of words the SMS message
+        contains.
+     </entry></row>
 
- group = sms-service
- #       Mandatory identifier
- #
- keyword = word
- #       Services are identified by the first word in the SMS Each
- #       `%s' in the URL corresponds to one word in the SMS message.
- #       Words are separated with spaces. A keyword is matched only if
- #       the number of words in the SMS message is the same as the
- #       number of `%s' fields in the URL. This allows you to
- #       configure the gateway to use different URLs for the same
- #       keyword depending on the number of words the SMS message
- #       contains.
- #
- aliases = list
- #       If the service have aliases, they are listed as a list with 
- #       each entry separated with semicolon (';')
- #
- url = url
- #       requested URL. The url can include list of parameters, which are
- #       parsed before the url is fetched. Parameters are:
- #       
- #                %s      next word from the SMS message, starting with
- #                        the second one (i.e., the first word, the
- #                        keyword, is not included); problematic characters
- #                        for URLs are encoded (e.g., '+' becomes '%2B')
- #                
- #                %S      same as %s, but '*' is converted to '~' (useful
- #                        when user enters a URL) and URL encoding isn't done
- #                        (all others do URL encode)
- #
- #                %r      words not yet used by %s; e.g., if the message
- #                        is "FOO BAR FOOBAR BAZ", and the has been one %s,
- #                        %r will mean "FOOBAR BAZ"
- #                
- #                %a      all words of the SMS message, including the first
- #                        one
- #                
- #                %t      the time the message was sent, formatted as
- #                        "YYYY-MM-DD HH:MM", e.g., "1999-09-21 14:18"
- #                 
- #                %p      the phone number of the sender of the SMS message
- #                
- #                %P      the phone number of the receiver of the SMS message
- #                
- #                %q      like %p, but a leading `00' is replaced with `+'
- #
- #                %Q      like %P, but a leading `00' is replaced with `+'
- #                
- #
- file = file-name
- #       file read from local disc. Only if not url set. All escape codes
- #       in url-fetch are supported here also. The last character of the file
- #       (usually linefeed) is removed.
- #
- text = text
- #       predefined text answer. Only if not url or file set. Escape codes are
- #       usable here, too.
- #
- accepted-smsc = list
- #       accept ONLY sms messages arriving from smsc with matching Id.
- #       Separate multiple entries with ';'. EXAMPLE: If accepted-smsc
- #       is "RL;SON", accept messages which originate from SMSC with
- #       ID set as 'RL' or 'SON'
- #
- prefix = prefix
- suffix = suffix 
- #       stuff in answer that is cut away, only things between prefix
- #       and suffix is left. In-casesensitive. Matches for the first prefix
- #       and then for first suffix.
- #
- faked-sender = phone-number
- #       this number is set as sender. Some SMSCs ignore this. This option
- #       overrides all other Gateway sender setting methods.
- #
- max-messages = number
- #       the total maximum of SMSes in reply. Default is 1. If the max-messages
- #       is set to 0, no reply is sent, except for error messages. Note that
- #       'max-messages' do not support the real concanated messages, yet.
- #
- split-chars = character-list
- #       allowed characters to split the message split into several messages.
- #       So, with "#!" the message is split from last '#' or '!', which is 
- #       included in the previous part
- #
- split-suffix = string
- #       if the message is split into several ones, this string is appended to 
- #       each message except the last one
- #
- omit-empty = number
- #       if set to other than '0', 'no data' messages are not sent to receiver
- #       in a case of empty reply from the service provider.
- #       
- header = string
- #       if specified, this string is automatically added to each SMS send with
- #       this service. If message is split, it is added to each part
- #
- footer = string
- #       as header, but not inserted into head but appended to end
- #
+   <row><entry><literal>aliases</literal></entry>
+     <entry>word-list</entry>
+     <entry valign=bottom>
+        If the service have aliases, they are listed as a list with 
+        each entry separated with semicolon (';')
 
-</programlisting> 
-  </para>
+     </entry></row>
+
+   <row><entry><literal>url</literal></entry>
+     <entry>URL</entry>
+     <entry valign=bottom>
+        Requested URL. The url can include list of parameters, which are
+        parsed before the url is fetched. See table below for these
+        parameters.
+
+
+     </entry></row>
+
+
+   <row><entry><literal>file</literal></entry>
+     <entry>filename</entry>
+     <entry valign=bottom>
+        File read from local disc. Use this variable only if no
+        <literal>url</literal> set. All escape codes (parameters)
+        in <literal>url</literal> are supported in filename. 
+        The last character of the file (usually linefeed) is removed.
+
+     </entry></row>
+
+   <row><entry><literal>text</literal></entry>
+     <entry>string</entry>
+     <entry valign=bottom>
+        Predefined text answer. Only if no <literal>url</literal> nor 
+        <literal>file</literal> set. Escape codes (parameters) are
+        usable here, too.
+
+     </entry></row>
+
+   <row><entry><literal>accepted-smsc</literal></entry>
+     <entry>id-list</entry>
+     <entry valign=bottom>
+        Accept ONLY SMS messages arriving from smsc with matching Id.
+        Separate multiple entries with ';'. For example, if 
+         <literal>accepted-smsc</literal>
+        is "RL;SON", accept messages which originate from SMSC with
+        ID set as 'RL' or 'SON'
+
+     </entry></row>
+
+   <row><entry><literal>faked-sender</literal></entry>
+     <entry>phone-number</entry>
+     <entry valign=bottom>
+        This number is set as sender. Most SMS centers ignore this,
+        and instead use their fixed number. This option
+        overrides all other sender setting methods.
+     </entry></row>
+
+   <row><entry><literal>max-messages</literal></entry>
+     <entry>number</entry>
+     <entry valign=bottom>
+        The total maximum of SMSes in reply. Default is 1. If
+        <literal>max-messages</literal> is set to 0, no reply is sent, 
+        except for error messages. 
+     </entry></row>
+
+   <row><entry><literal>concetenation</literal></entry>
+     <entry>0 or 1</entry>
+     <entry valign=bottom>
+         If set to 1 enables the concatenation of SMS's for long
+         messages (otherwise they are send as just multiple SMSes)
+     </entry></row>
+
+   <row><entry><literal>split-chars</literal></entry>
+     <entry>string</entry>
+     <entry valign=bottom>
+        Allowed characters to split the message split into several messages.
+        So, with "#!" the message is split from last '#' or '!', which is 
+        included in the previous part
+
+     </entry></row>
+
+   <row><entry><literal>split-suffix</literal></entry>
+     <entry>string</entry>
+     <entry valign=bottom>
+        If the message is split into several ones, this string is appended to 
+        each message except the last one
+     </entry></row>
+
+   <row><entry><literal>omit-empty</literal></entry>
+     <entry>0 or 1</entry>
+     <entry valign=bottom>
+        If set to other than '0', 'no data' messages are not sent to receiver
+        in a case of empty reply from the service provider.
+
+     </entry></row>
+
+   <row><entry><literal>header</literal></entry>
+     <entry>string</entry>
+     <entry valign=bottom>
+        If specified, this string is automatically added to each SMS send with
+        this service. If message is split, it is added to each part
+
+     </entry></row>
+
+   <row><entry><literal>footer</literal></entry>
+     <entry>string</entry>
+     <entry valign=bottom>
+        As header, but not inserted into head but appended to end
+
+     </entry></row>
+
+   <row><entry><literal>prefix</literal></entry>
+     <entry>string</entry>
+     <entry morerows=1 valign=bottom>
+        Stuff in answer that is cut away, only things between prefix
+        and suffix is left. In-casesensitive. Matches for the first prefix
+        and then for first suffix.
+
+     </entry></row>
+
+   <row><entry><literal>suffix</literal></entry>
+     <entry>string</entry></row>
+
+  </tbody>
+  </tgroup>
+ </table>
+
+
+
+
+
+
+ <table frame=none>
+  <title>Parameters (Escape Codes)</title>
+  <tgroup cols=2>
+  <tbody>
+
+<row><entry><literal>%s</literal></entry><entry>
+next word from the SMS message, starting with
+                         the second one (i.e., the first word, the
+                         keyword, is not included); problematic characters
+                         for URLs are encoded (e.g., '+' becomes '%2B')
+                 
+</entry></row>
+
+<row><entry><literal>%S</literal></entry><entry>
+same as %s, but '*' is converted to '~' (useful
+                         when user enters a URL) and URL encoding isn't done
+                         (all others do URL encode)
+</entry></row>
+
+<row><entry><literal>%r</literal></entry><entry>
+words not yet used by %s; e.g., if the message
+                         is "FOO BAR FOOBAR BAZ", and the has been one %s,
+                         %r will mean "FOOBAR BAZ"
+</entry></row>
+
+<row><entry><literal>%a</literal></entry><entry>
+all words of the SMS message, including the first one
+</entry></row>
+
+<row><entry><literal>%t</literal></entry><entry>
+the time the message was sent, formatted as
+                         "YYYY-MM-DD HH:MM", e.g., "1999-09-21 14:18"
+</entry></row>
+
+<row><entry><literal>%p</literal></entry><entry>
+the phone number of the sender of the SMS message
+</entry></row>
+
+<row><entry><literal>%P</literal></entry><entry>
+the phone number of the receiver of the SMS message
+</entry></row>
+
+<row><entry><literal>%q</literal></entry><entry>
+like %p, but a leading `00' is replaced with `+'
+</entry></row>
+
+<row><entry><literal>%Q</literal></entry><entry>
+like %P, but a leading `00' is replaced with `+'
+</entry></row>
+
+</tbody>
+</tgroup>
+</table>
+
+
 
  <para>Some sample 'sms-service' groups:
 
@@ -1626,20 +1946,18 @@ url = "http://my.applet.machine/Servlet/weather?sender=%p&amp;operator=SOL&amp;t
         this one. No idea to use with forced-smsc.
      </entry></row>
 
-   <row><entry><literal>concetenation</literal></entry>
-     <entry>0 or 1</entry>
-     <entry valign=bottom>
-         If set to 1 enables the concatenation of SMS's for long messages 
-     </entry></row>
 
    <row><entry><literal>faked-sender</literal></entry>
      <entry>phone-number</entry>
-     <entry morerows=6 valign=bottom>
+     <entry morerows=7 valign=bottom>
         As in 'sms-service' groups
      </entry></row>
 
    <row><entry><literal>max-messages</literal></entry>
      <entry>number</entry></row>
+
+   <row><entry><literal>concetenation</literal></entry>
+     <entry>0 or 1</entry></row>
 
    <row><entry><literal>split-chars</literal></entry>
      <entry>string</entry></row>

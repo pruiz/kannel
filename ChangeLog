@@ -1,5 +1,12 @@
 2000-09-29  Kalle Marjola  <rpr@wapit.com>
 
+	* doc/userguide/userguide.xml: It has been done. Now (practically)
+	all data is rendered into XML and there is list of examples and
+	other things. However, we are missing settings for some SMS
+	centers and their exact names and things like that, help needed.
+
+2000-09-29  Kalle Marjola  <rpr@wapit.com>
+
 	* doc/userguide/userguide.xml: rest of the newconf.txt moved into
 	this, and some of it edited to XML
 
