@@ -17,6 +17,7 @@
 
 static Counter *counter = NULL;
 static long max_requests = 1;
+static int method = HTTP_METHOD_GET;
 static char **urls = NULL;
 static int num_urls = 0;
 static int verbose = 1;
@@ -26,6 +27,7 @@ static Octstr *msg_text = NULL;
 static Octstr *ssl_client_certkey_file = NULL;
 static Octstr *extra_headers = NULL;
 static Octstr *content_file = NULL; /* if set use POST method */
+static Octstr *method_name = NULL;
 static int file = 0;
 static List *split = NULL;
 
@@ -62,18 +64,21 @@ static void start_request(HTTPCaller *caller, List *reqh, long i)
         http_header_combine(reqh, split);
 
     /* 
-     * if a body content file has been specified, then we
-     * assume to send a POST request.
+     * if a body content file has been specified, then
+     * we assume this should be a POST
      */
-    if (content_file != NULL)
+    if (content_file != NULL) {
         content = post_content_create();
-                           
+        method = HTTP_METHOD_POST;
+    }
+                                
     /*
      * if this is a POST request then pass the required content as body to
      * the HTTP server, otherwise skip the body, the arguments will be
      * urlencoded in the URL itself.
      */
-    http_start_request(caller, url, reqh, content, 0, id, ssl_client_certkey_file);
+    http_start_request(caller, method,
+                       url, reqh, content, 0, id, ssl_client_certkey_file);
 
     debug("", 0, "Started request %ld with url:", *id);
     octstr_url_decode(url);
@@ -232,6 +237,8 @@ static void help(void)
     info(0, "-B filename");
     info(0, "    read content from file 'filename' and send it as body");
     info(0, "    of a POST method request (default: GET if no -B is set)");
+    info(0, "-m method");
+    info(0, "    use a specific HTTP method for request to server");
     info(0, "-s");
     info(0, "    use HTTPS scheme to access SSL-enabled HTTP server");
     info(0, "-c ssl_client_cert_key_file");
@@ -264,7 +271,7 @@ int main(int argc, char **argv)
     file = 0;
     fp = NULL;
     
-    while ((opt = getopt(argc, argv, "hv:qr:p:P:e:t:a:u:sc:H:B:")) != EOF) {
+    while ((opt = getopt(argc, argv, "hv:qr:p:P:e:t:a:u:sc:H:B:m:")) != EOF) {
 	switch (opt) {
 	case 'v':
 	    log_set_output_level(atoi(optarg));
@@ -354,6 +361,10 @@ int main(int argc, char **argv)
         content_file = octstr_create(optarg);
         break;
 
+	case 'm':
+	    method_name = octstr_create(optarg);
+	    break;
+
 	case '?':
 	default:
 	    error(0, "Invalid option %c", opt);
@@ -380,6 +391,10 @@ int main(int argc, char **argv)
         }
     }
 #endif
+
+    if (method_name != NULL) {
+        method = http_name2method(method_name);
+    }
     
     if (proxy != NULL && proxy_port > 0) {
         http_use_proxy(proxy, proxy_port, exceptions,
