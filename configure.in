@@ -11,11 +11,12 @@ AC_INIT(gw/alt_charsets.h)
 AC_CONFIG_HEADER(config.h)
 AC_SUBST(SHELL)
 AC_CONFIG_AUX_DIR(.)
+AC_SET_TERMINAL_SEQUENCES()
 
 dnl Check gateway version number.
 VERSION=`head -1 VERSION`
 AC_DEFINE_UNQUOTED(VERSION, "$VERSION")
-echo "configuring for Kannel gateway version... $VERSION"
+AC_CONFIG_SECTION([Configuring for Kannel gateway version $VERSION])
 if test "x$VERSION" = "xcvs"; then
   AC_MSG_CHECKING([cvs checkout date])
   cvs_date=`ls -lcda  . | awk '{print $6,$7,$8}'`
@@ -25,7 +26,7 @@ fi
 dnl Solaris pkgadd support definitions
 PKGADD_PKG="KANNELgateway"
 PKGADD_NAME="Kannel - WAP and SMS gateway"
-PKGADD_VENDOR="www.kannel.3glab.org"
+PKGADD_VENDOR="www.kannel.org"
 AC_SUBST(PKGADD_PKG)
 AC_SUBST(PKGADD_NAME)
 AC_SUBST(PKGADD_VENDOR)
@@ -35,6 +36,7 @@ AC_SUBST(docdir)
 docdir='${prefix}/share/doc/kannel'
 
 dnl Checks system type.
+AC_CONFIG_SECTION([Running system checks])
 AC_CANONICAL_HOST
 
 dnl Apply system specific rules.
@@ -69,26 +71,6 @@ AC_CHECK_LIB(bind, inet_ntop)
 AC_CHECK_LIB(pthread, pthread_exit)
 if test -z "$pthread"; then
 	AC_CHECK_LIB(c_r, pthread_exit, [LIBS="$LIBS -lc_r"])
-fi
-
-
-dnl Check if we have libxml2 installed and which version it is.
-dnl Kannel requires currently at least version 2.2.5 of libxml2.
-
-xml_ver_required="2.2.5"
-AC_PATH_PROGS(XML_CONFIG, xml2-config xml-config, no)
-if test "$XML_CONFIG" = "no"; then
-  AC_MSG_ERROR([You MUST have the libxml2 (aka gnome-xml) library installed])
-else
-  AC_MSG_CHECKING([libxml version])
-  xml_version=`$XML_CONFIG --version`
-  AC_MSG_RESULT([$xml_version])
-  AC_CHECK_VERSION($xml_version, $xml_ver_required, 
-  [ LIBS="$LIBS `$XML_CONFIG --libs`"
-    CFLAGS="$CFLAGS `$XML_CONFIG --cflags`"
-  ],[
-    AC_MSG_ERROR([libxml2 version $xml_version is too old. You need at least $xml_ver_required])
-  ])
 fi
 
 
@@ -148,7 +130,10 @@ GW_HAVE_FUNC_FROM(stdio.h, getopt, HAVE_GETOPT_IN_STDIO_H,
 GW_HAVE_FUNC_FROM(unistd.h, getopt, HAVE_GETOPT_IN_UNISTD_H,
     	    	  [Does <unistd.h> declare getopt()?])
 
+
 dnl Misfeature checks
+
+AC_CONFIG_SECTION([Checking POSIX threads support])
 AC_MSG_CHECKING(for working pthreads)
 AC_TRY_RUN([#include <pthread.h>
 #include <unistd.h>
@@ -173,10 +158,32 @@ void testpid(void* foo){
     }
 }
 ],echo yes , echo no ;CFLAGS="$CFLAGS -DBROKEN_PTHREADS=1", echo  Cross compiling - assuming they work)
+
+
+dnl Check if we have libxml2 installed and which version it is.
+dnl Kannel requires currently at least version 2.2.5 of libxml2.
+
+AC_CONFIG_SECTION([Checking for libxml2 support])
+xml_ver_required="2.2.5"
+AC_PATH_PROGS(XML_CONFIG, xml2-config xml-config, no)
+if test "$XML_CONFIG" = "no"; then
+  AC_MSG_ERROR([You MUST have the libxml2 (aka gnome-xml) library installed])
+else
+  AC_MSG_CHECKING([libxml version])
+  xml_version=`$XML_CONFIG --version`
+  AC_MSG_RESULT([$xml_version])
+  AC_CHECK_VERSION($xml_version, $xml_ver_required, 
+  [ LIBS="$LIBS `$XML_CONFIG --libs`"
+    CFLAGS="$CFLAGS `$XML_CONFIG --cflags`"
+  ],[
+    AC_MSG_ERROR([libxml2 version $xml_version is too old. You need at least $xml_ver_required])
+  ])
+fi
                                        
 
 dnl DocBook stuff
 
+AC_CONFIG_SECTION([Configuring DocBook support])
 AC_CHECK_PROG(JADE, jade, jade, :)
 AC_CHECK_PROG(JADETEX, jadetex, jadetex, :)
 AC_CHECK_PROG(DVIPS, dvips, dvips, :)
@@ -207,6 +214,31 @@ for loc in /usr /usr/local; do
 done
 
 
+dnl Implement --enable-docs option.
+
+AC_SUBST(DOCSTARGET)
+if test "x$HTML_DSL" = "x" -o "x$TEX_DSL" = "x"
+then
+	DOCSTARGET="no-docs"
+else
+	DOCSTARGET="docs"
+fi
+
+AC_ARG_ENABLE(docs,
+[  --enable-docs           enable building of documentation (default: enabled)], [
+  if test "$enableval" = "yes"
+  then
+      DOCSTARGET="docs"
+  else
+      DOCSTARGET="no-docs"
+  fi
+])
+case "$DOCSTARGET" in
+no-docs) echo Not building documentation. ;;
+docs) echo Documentation will be built as well. ;;
+esac
+
+
 dnl Implement --with-defaults=speed/debug option.
 
 AC_ARG_WITH(defaults,
@@ -230,8 +262,9 @@ AC_ARG_WITH(defaults,
 ])
 
 
-dnl Implement --with-malloc=native/check/slow option.
+dnl Implement --with-malloc=[native|check|slow] option.
 
+AC_CONFIG_SECTION([Configuring malloc wrapper])
 AC_ARG_WITH(malloc,
 [  --with-malloc           select malloc wrapper to use: native/check/slow (default: check)], [
   case "$withval" in
@@ -277,31 +310,6 @@ AC_ARG_ENABLE(assertions,
     AC_DEFINE(NO_GWASSERT)
   fi
 ])
-
-
-dnl Implement --enable-docs option.
-
-AC_SUBST(DOCSTARGET)
-if test "x$HTML_DSL" = "x" -o "x$TEX_DSL" = "x"
-then
-	DOCSTARGET="no-docs"
-else
-	DOCSTARGET="docs"
-fi
-
-AC_ARG_ENABLE(docs,
-[  --enable-docs           enable building of documentation (default: enabled)], [
-  if test "$enableval" = "yes"
-  then
-      DOCSTARGET="docs"
-  else
-      DOCSTARGET="no-docs"
-  fi
-])
-case "$DOCSTARGET" in
-no-docs) echo Not building documentation. ;;
-docs) echo Documentation will be built as well. ;;
-esac
 
 
 dnl Implement the --enable-pam option.
@@ -370,6 +378,7 @@ AC_SUBST(STARTSTOPDAEMONSRC)
 
 dnl Implement the --with-ssl option. 
 
+AC_CONFIG_SECTION([Configuring OpenSSL support])
 AC_ARG_WITH(ssl,
 [  --with-ssl[=DIR]        where to look for OpenSSL libs and header files
                           DIR points to the installation [/usr/local/ssl]],
@@ -467,48 +476,73 @@ dnl accordingly and enable the usage of the libmysqlclient routines.
 AC_ARG_WITH(mysql,
 [  --with-mysql[=DIR]      where to look for MySQL libs and header files
                           DIR points to the installation [/usr/local]],
-[AC_MSG_CHECKING(for MySQL client support in)
- if test "$withval" = "yes"; then
-   loc="/usr/local"
+[AC_CONFIG_SECTION([Configuring MySQL support])
+ AC_PATH_PROGS(MYSQL_CONFIG, mysql_config, no)
+ dnl check for MySQL 4.x style mysql_config information
+ if test "$MYSQL_CONFIG" = "no"; then
+   dnl mysql-3.x style 
+   AC_MSG_CHECKING([for MySQL client support in])
+   if test "$withval" = "yes"; then
+     loc="/usr/local"
+   else
+     loc="$withval"
+   fi
+   AC_MSG_RESULT($loc)
+   AC_CHECK_FILE("$loc/include/mysql/mysql.h", 
+     [CFLAGS="$CFLAGS -I$loc/include/mysql"; LIBS="$LIBS -L$loc/lib/mysql -lmysqlclient"],
+     [AC_CHECK_FILE("$loc/include/mysql.h", 
+       [CFLAGS="$CFLAGS -I$loc/include"; LIBS="$LIBS -L$loc/lib -lmysqlclient"],
+       [AC_MSG_ERROR(Unable to find mysql.h under $loc)]
+      )]
+   )
  else
-   loc="$withval"
+   dnl mysql-4.x style 
+   AC_MSG_CHECKING([mysql version])
+   mysql_version=`$MYSQL_CONFIG --version`
+   AC_MSG_RESULT([$mysql_version])
+   LIBS="$LIBS `$MYSQL_CONFIG --libs`"
+   CFLAGS="$CFLAGS `$MYSQL_CONFIG --cflags`"
  fi
- AC_MSG_RESULT($loc)
- AC_CHECK_FILE("$loc/include/mysql/mysql.h", 
-   [CFLAGS="$CFLAGS -I$loc/include/mysql"; LIBS="$LIBS -L$loc/lib/mysql"],
-   [AC_CHECK_FILE("$loc/include/mysql.h", 
-     [CFLAGS="$CFLAGS -I$loc/include"; LIBS="$LIBS -L$loc/lib"],
-     [AC_MSG_ERROR(Unable to find mysql.h under $loc)]
-    )]
- )
  AC_CHECK_HEADERS(mysql/mysql.h mysql/mysql_com.h mysql/mysql_version.h)
- AC_CHECK_LIB(mysqlclient, mysql_init, [LIBS="$LIBS -lmysqlclient"]) 
+ AC_CHECK_LIB(mysqlclient, mysql_init) 
  AC_DEFINE(HAVE_MYSQL)
  MYSQL="yes"
 ])
 
 
-dnl Implement the --enable-mysql-dlr option. 
+dnl Implement the --with-dlr option.
+dnl Checks which external DLR storage should be used. 
 
-AC_ARG_ENABLE(mysql-dlr,
-[  --enable-mysql-dlr      enable MySQL support for DLR (default: disabled)], 
-[if test "$enableval" = "yes"; then
-   if test "$MYSQL" != "yes"; then
-     AC_MSG_ERROR(Option --enable-mysql-dlr requires MySQL client support)
-   else
-     echo enabling MySQL support for DLR
-   fi
-   AC_DEFINE(MYSQL_DLR)
- fi
+AC_ARG_WITH(dlr,
+[  --with-dlr[=TYPE]       select DLR storage to use: internal/mysql (default: internal)], 
+[ AC_CONFIG_SECTION([Configuring DLR support]) 
+  AC_MSG_CHECKING([for DLR storage type])
+  AC_MSG_RESULT($withval)
+  case "$withval" in
+  internal)
+    ;;
+  mysql)
+    if test "$MYSQL" != "yes"; then
+      AC_MSG_ERROR(Option --with-dlr=mysql requires MySQL client support)
+    else
+      AC_DEFINE(DLR_MYSQL)
+    fi
+    ;;
+  *) 
+    AC_MSG_ERROR(Unknown DLR storage support!)
+    exit 1 
+    ;;
+  esac
 ])
 
 
-dnl Implement the --with-wrls option.
+dnl Implement the --with-wtls option.
 dnl Check to see if we should include WTLS support, and which library to use.
 
 AC_ARG_WITH(wtls,
-[  --with-wtls[=TYPE]      select WTLS version to use: openssl, baltimore], [
-  AC_MSG_CHECKING([for WTLS support])
+[  --with-wtls[=TYPE]      select WTLS version to use: openssl/baltimore], 
+[ AC_CONFIG_SECTION([Configuring WTLS support]) 
+  AC_MSG_CHECKING([for WTLS library])
   AC_MSG_RESULT($withval)
   case "$withval" in
   openssl) 
@@ -531,7 +565,7 @@ AC_ARG_WITH(wtls,
   esac
 ])
 
-
 dnl Final Output
 
+AC_CONFIG_SECTION([Generating output files]) 
 AC_OUTPUT(Makefile)

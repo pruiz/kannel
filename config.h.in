@@ -120,6 +120,6 @@
 #undef HAVE_MYSQL
 
 /* Define if you want to use the MySQL support for DLR (delivery reports) */
-#undef MYSQL_DLR
+#undef DLR_MYSQL
 
 #endif

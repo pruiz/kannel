@@ -48,4 +48,36 @@ AC_DEFUN(AC_CHECK_VERSION,
     $4 
    fi]) 
 ]) 
+    
 
+dnl Some optional terminal sequences for configure
+dnl Taken from the mod_ssl package by Ralf S. Engelschall.
+
+AC_DEFUN(AC_SET_TERMINAL_SEQUENCES,
+[
+  case $TERM in
+    xterm|xterm*|vt220|vt220*|cygwin)
+        T_MD=`echo dummy | awk '{ printf("%c%c%c%c", 27, 91, 49, 109); }'`
+        T_ME=`echo dummy | awk '{ printf("%c%c%c", 27, 91, 109); }'`
+        ;;
+    vt100|vt100*)
+        T_MD=`echo dummy | awk '{ printf("%c%c%c%c%c%c", 27, 91, 49, 109, 0, 0); }'`
+        T_ME=`echo dummy | awk '{ printf("%c%c%c%c%c", 27, 91, 109, 0, 0); }'`
+        ;;
+    default)
+        T_MD=''
+        T_ME=''
+        ;;
+  esac
+])
+
+
+dnl Display configure section name in bold white letters
+dnl if available on the terminal
+
+AC_DEFUN(AC_CONFIG_SECTION,
+[
+  nl='
+'
+  echo "${nl}${T_MD}$1 ...${T_ME}"
+])
