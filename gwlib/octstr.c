@@ -383,16 +383,17 @@ long octstr_parse_long(long *nump, Octstr *ostr, long pos, int base) {
 
 
 int octstr_check_range(Octstr *ostr, long pos, long len, octstr_func_t filter) {
-	long till = pos + len;
+	long end = pos + len;
 
 	seems_valid(ostr);
+	gw_assert(len >= 0);
 
 	if (pos >= ostr->len)
 		return 1;
-	if (till >= ostr->len)
-		till = ostr->len - 1;
+	if (end > ostr->len)
+		end = ostr->len;
 
-	for ( ; pos <= till; pos++) {
+	for ( ; pos < end; pos++) {
 		if (!filter(ostr->data[pos]))
 			return 0;
 	}
@@ -402,16 +403,17 @@ int octstr_check_range(Octstr *ostr, long pos, long len, octstr_func_t filter) {
 
 
 void octstr_convert_range(Octstr *ostr, long pos, long len, octstr_func_t map) {
-	long till = pos + len;
+	long end = pos + len;
 
 	seems_valid(ostr);
+	gw_assert(len >= 0);
 
 	if (pos >= ostr->len)
 		return;
-	if (till >= ostr->len - 1)
-		till = ostr->len;
+	if (end > ostr->len)
+		end = ostr->len;
 
-	for ( ; pos <= till; pos++) {
+	for ( ; pos < end; pos++) {
 		ostr->data[pos] = map(ostr->data[pos]);
 	}
 
