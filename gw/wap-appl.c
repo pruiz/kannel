@@ -808,8 +808,10 @@ static void start_fetch(WAPEvent *event)
         wap_event_destroy(event);
         http_destroy_headers(actual_headers);
     } else if (octstr_str_compare(method, "GET") == 0 ||
-               octstr_str_compare(method, "POST") == 0) {
-        if (request_body != NULL && octstr_str_compare(method, "GET") == 0) {
+               octstr_str_compare(method, "POST") == 0 ||
+               octstr_str_compare(method, "HEAD") == 0) {
+        if (request_body != NULL && (octstr_str_compare(method, "GET") == 0 ||
+                                     octstr_str_compare(method, "HEAD") == 0)) {
             octstr_destroy(request_body);
             request_body = NULL;
         }
