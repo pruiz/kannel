@@ -976,7 +976,6 @@ static void soap_send_loop(SMSCConn* conn)
         /* as long as we have some messages */
         ++counter;
 
-#warning FIXME
         if (uuid_is_null(msg->sms.id))   /* generate a message id */
             uuid_generate(msg->sms.id);
 
@@ -1165,11 +1164,12 @@ static void soap_read_response(SMSCConn *conn)
     { /* ack with msg ID */
         char tmpid[30];
 
-#warning FIXME
-#if 0
+        /*
+         * XXX UUID is used, fix this. 
+
         if (msgID == 0)
             msgID = msg->sms.id;
-#endif
+        */
 
         sprintf(tmpid,"%lld",msgID);
         debug("bb.soap.read_response",0,"SOAP[%s]: ACK - id: %lld", octstr_get_cstr(privdata->name), msgID);
@@ -1370,21 +1370,22 @@ static long soap_parse_mo(SMSCConn *conn, Octstr *request, Octstr **response)
 
     msg = msg_create(sms);
 
-#warning FIXME
-#if 0
+    /*
+     * XXX UUID is used, fix this. 
+
     if (msgid == -1) {
         error(0,"SOAP: parse_mo - failed to get message ID, generate by itself");
-        msg->sms.id = gw_generate_id(); /* generate a message id */
+        msg->sms.id = gw_generate_id(); 
     }
-#endif
+    */
 
     /* fill in the fields from the parsed arguments */
     msg->sms.sender = octstr_create(sender);
     msg->sms.receiver = octstr_create(receiver);
-#warning FIXME
-#if 0
+    /*
+     * XXX UUID is used, fix this. 
     msg->sms.id = msgid;
-#endif
+    */
     msg->sms.msgdata = octstr_create(msgdata);
 
     /* special processing and refill appropriate fields */
@@ -2060,7 +2061,6 @@ static Octstr* soap_convert_token(Msg* msg, Octstr* name, PrivData* privdata)
 #define OCTSTR(fieldname) \
         if (!octstr_str_compare(name, #fieldname)) \
                 return octstr_duplicate(p->fieldname);
-#warning FIXME
 #define UUID(fieldname) 
 
 #define MSG(type, stmt) \

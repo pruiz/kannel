@@ -122,8 +122,7 @@ int wsp_field_value(ParseContext *context, int *well_known_value)
     } else if (val > 127) {
         *well_known_value = val - 128;
         return WSP_FIELD_VALUE_ENCODED;
-    } else if (val == WSP_QUOTE || 
-	       val == '"') {  /* 127 or the ordinary quote. */
+    } else if (val == WSP_QUOTE) {  /* 127 */
         *well_known_value = -1;
         /* We already consumed the Quote */
         return WSP_FIELD_VALUE_NUL_STRING;
@@ -410,10 +409,10 @@ static int unpack_parameter(ParseContext *context, Octstr *decoded)
                 if (octstr_get_char(value, 0) == '"') {
                     /* Quoted-string */
                     octstr_append_char(value, '"');
-                } else { // DAVI!
-		    octstr_insert(value, octstr_imm("\""), 0);
+                } else { /* DAVI! */
+                    octstr_insert(value, octstr_imm("\""), 0);
                     octstr_append_char(value, '"');
-		}
+                }
             }
         }
     }
@@ -1248,7 +1247,7 @@ void wsp_unpack_well_known_field(List *unpacked, int field_type,
             }
             break;
 
-        /* case WSP_HEADER_PROXY_AUTHENTICATE: */
+        case WSP_HEADER_PROXY_AUTHENTICATE:
         case WSP_HEADER_WWW_AUTHENTICATE:
             decoded = unpack_challenge(context);
             break;
@@ -1469,8 +1468,8 @@ struct headerinfo headerinfo[] =
         { WSP_HEADER_LOCATION, pack_uri, 0 },
         { WSP_HEADER_MAX_FORWARDS, wsp_pack_integer_string, 0 },
         { WSP_HEADER_PRAGMA, pack_pragma, LIST },
-        /* { WSP_HEADER_PROXY_AUTHENTICATE, pack_challenge, BROKEN_LIST }, */
-        /* { WSP_HEADER_PROXY_AUTHORIZATION, proxy_pack_credentials, BROKEN_LIST }, */
+        { WSP_HEADER_PROXY_AUTHENTICATE, pack_challenge, BROKEN_LIST },
+        { WSP_HEADER_PROXY_AUTHORIZATION, pack_credentials, BROKEN_LIST },
         { WSP_HEADER_PUBLIC, pack_method, LIST },
         { WSP_HEADER_RANGE, pack_range, 0 },
         { WSP_HEADER_REFERER, pack_uri, 0 },
@@ -1590,21 +1589,16 @@ List *wsp_strip_parameters(Octstr *value)
         pos = end;
 
         if (octstr_get_char(value, pos) == '=') {
-	     int istring = 0;
             pos++;
             while (isspace(octstr_get_char(value, pos)))
                 pos++;
-            if (octstr_get_char(value, pos) == '"') {
-                end = pos + http_header_quoted_string_len(value, pos) - 1;
-		pos++; /* Skip over '"' */
-		istring = 1;
-            } else
+            if (octstr_get_char(value, pos) == '"')
+                end = pos + http_header_quoted_string_len(value, pos);
+            else
                 end = octstr_search_char(value, ';', pos);
             if (end < 0)
                 end = octstr_len(value);
-	    val = octstr_copy(value, pos, end - pos);
-	    if (istring)
-		 end++;
+            val = octstr_copy(value, pos, end - pos);
             octstr_strip_blanks(val);
             pos = end;
             pos = octstr_search_char(value, ';', pos);

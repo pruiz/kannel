@@ -172,7 +172,6 @@ int main(int argc, char **argv)
     wsp_strings_init();
 
     mptr = get_and_set_debugs(argc, argv, NULL);
-    argc - mptr;
     if (argc - mptr <= 0)
         panic(0, "Usage: test_headers [options] header-file");
 

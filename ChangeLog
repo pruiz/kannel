@@ -1,4 +1,20 @@
 2004-07-09  Stipe Tolj  <tolj@wapme-systems.de> 
+    * gw/smsc/smsc_soap.c: changing #ifdef #warning's to commented blocks to
+      get rid of the compiler warnings in the nightly build tests. This module
+      still _needs_ revision for the new UUIDs that are used.
+    * wap/wsp_headers.c: Bruno moved packing/unpacking of PROXY_AUTHxxx away
+      by commenting them out. This was in revision 1.10. And there is no reason
+      for this in the ChangeLog entry??? BTW, this makes the 
+      checks/check_headers.sh test fail for the relevant Proxy-Authxxx headers.
+      That is why I put things in again, as long as noone complains and tells
+      us why they have been commented in rev 1.10. Along with this Aarno did
+      break the quoted parameter parsing within revision 1.17. Reverting this
+      back to the previous behaviour to make test/test_headers.c happy again.
+    * test/test_header.c: fixing trivial compiler warning
+    * test/header_test: chaning the expected values to have quoted parameter
+      values to make the test program happy again.
+
+2004-07-09  Stipe Tolj  <tolj@wapme-systems.de> 
     * test/test_headers.c: fixing command line options and argument handling
       which breaks "make check" target.
     * checks/check_headers.sh: needs to pass the test/headers_test input file

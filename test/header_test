@@ -4,7 +4,7 @@
 
 < Accept: */*; q=0.5, text/html; level =1; q=0.8 ;foo=bar
 > Accept: */*; q=0.5
-> Accept: text/html; level=1; q=0.8; foo=bar
+> Accept: text/html; level=1; q=0.8; foo="bar"
 
 < Accept: application/vnd.wap.something; charset = iso-8859-1; q=1.0
 > Accept: application/vnd.wap.something; charset=iso-8859-1
@@ -202,10 +202,10 @@
 | Max-Forwards: 50
 
 | Pragma: no-cache
-| Pragma: foo=bar
+| Pragma: foo="bar"
 < Pragma: gnu="nasty; string, \"tester", bar=foo
 > Pragma: gnu="nasty; string, \"tester"
-> Pragma: bar=foo
+> Pragma: bar="foo"
 
 < Proxy-Authenticate: Basic realm="WallyWorld", Digest uri= "http://somewhere.org/test;q=0.4", realm ="No, where; near", Digest username = "peter", opaque = "something else; see?", testing = "bla", realm = "need one"
 > Proxy-Authenticate: Basic realm="WallyWorld"
