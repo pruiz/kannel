@@ -11,7 +11,6 @@
 /* XXX kill http_get_real */
 /* XXX the proxy exceptions list should be a dict, I guess */
 /* XXX set maximum number of concurrent connections to same host, total? */
-/* XXX basic auth is missing */
 /* XXX 100 status codes. */
 /* XXX stop destroying persistent connections when a request is redirected */
 
@@ -1037,7 +1036,7 @@ static Octstr *build_request(char *method_name, Octstr *path_or_url,
  * We assume HTTP URLs of the form specified in "3.2.2 http URL" in
  * RFC 2616:
  * 
- *  http_URL = "http:" "//" host [ ":" port ] [ abs_path [ "?" query ]]
+ *  http_URL = "http:" "//" [ userid : password "@"] host [ ":" port ] [ abs_path [ "?" query ]] 
  */
 static int parse_url(Octstr *url, Octstr **host, long *port, Octstr **path, 
 		     int *ssl, Octstr **username, Octstr **password)
