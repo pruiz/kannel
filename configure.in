@@ -185,6 +185,15 @@ AC_ARG_WITH(malloc,
   AC_DEFINE(USE_GWMEM_CHECK)
 ])
 
+dnl --enable-mutex-stats option.
+
+AC_ARG_ENABLE(mutex-stats,
+[  --enable-mutex-stats  produce information about lock contention], [
+  if test "$enableval" = yes; then
+      AC_DEFINE(MUTEX_STATS)
+  fi
+])
+
 dnl Final Output
 
 AC_OUTPUT(Makefile)

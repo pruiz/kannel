@@ -26,6 +26,12 @@ typedef void *Threadfunc(void *arg);
 typedef struct {
 	pthread_mutex_t mutex;
 	pthread_t owner;
+#ifdef MUTEX_STATS
+	unsigned char *filename;
+	int lineno;
+	long locks;
+	long collisions;
+#endif
 } Mutex;
 
 
@@ -43,8 +49,17 @@ pthread_t start_thread(int detached, Threadfunc *func, void *arg, size_t size);
 /*
  * Create a Mutex.
  */
-Mutex *mutex_create(void);
+#ifdef MUTEX_STATS
+#define mutex_create() mutex_create_measured(__FILE__, __LINE__)
+#else
+#define mutex_create() mutex_create_real()
+#endif
 
+/*
+ * Create a Mutex.  Call these functions via the macro defined above.
+ */
+Mutex *mutex_create_measured(unsigned char *filename, int lineno);
+Mutex *mutex_create_real(void);
 
 /*
  * Destroy a Mutex.

@@ -57,8 +57,20 @@ error:
 	return (pthread_t) -1;
 }
 
+#ifdef MUTEX_STATS
+Mutex *mutex_create_measured(unsigned char *filename, int lineno) {
+	Mutex *mutex;
 
-Mutex *mutex_create(void) {
+	mutex = mutex_create_real();
+	mutex->filename = filename;
+	mutex->lineno = lineno;
+	mutex->locks = 0;
+	mutex->collisions = 0;
+	return mutex;
+}
+#endif
+
+Mutex *mutex_create_real(void) {
 	Mutex *mutex;
 	
 	mutex = gw_malloc(sizeof(Mutex));
@@ -67,10 +79,17 @@ Mutex *mutex_create(void) {
 	return mutex;
 }
 
-
 void mutex_destroy(Mutex *mutex) {
 	if (mutex == NULL)
 		return;
+
+#ifdef MUTEX_STATS
+	if (mutex->locks > 0 || mutex->collisions > 0) {
+		info(0, "Mutex %s:%d: %ld locks, %ld collisions.",
+			mutex->filename, mutex->lineno,
+			mutex->locks, mutex->collisions);
+	}
+#endif
 
 	pthread_mutex_destroy(&mutex->mutex);
 	gw_free(mutex);
@@ -81,7 +100,16 @@ void mutex_lock(Mutex *mutex)
 {
 	int ret;
 
+#ifdef MUTEX_STATS
+	ret = pthread_mutex_trylock(&mutex->mutex);
+	if (ret != 0) {
+		ret = pthread_mutex_lock(&mutex->mutex);
+		mutex->collisions++;
+	}
+	mutex->locks++;
+#else
 	ret = pthread_mutex_lock(&mutex->mutex);
+#endif
 	if (ret != 0)
 		panic(ret, "mutex_lock: Mutex failure!");
 	if (mutex->owner == pthread_self())
@@ -111,10 +139,10 @@ int mutex_try_lock(Mutex *mutex)
 	if (pthread_equal(mutex->owner, pthread_self())) {
 		/* The lock succeeded, but some thread systems allow
 		 * the locking thread to lock it a second time.  We
-		 * don't want that because it's not portable, and we
-		 * can't test it unless we panic here, because our
-		 * development systems behave that way. */
-		panic(0, "mutex_try_lock: Managed to lock the mutex twice!");
+		 * don't want that because it's not portable, so we
+		 * pretend it didn't happen. */
+		pthread_mutex_unlock(&mutex->mutex);
+		return -1;
 	}
 
 	/* Hey, it's ours! Let's remember that... */

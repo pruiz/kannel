@@ -8,6 +8,10 @@
 #undef USE_GWMEM_NATIVE
 #undef USE_GWMEM_CHECK
 
+/* Define if you want information about lock collisions to be collected.
+ * These are useful for finding performance bottlenecks. */
+#undef MUTEX_STATS
+
 /* Define if you want log file timestamps in localtime instead of GMT. */
 #undef LOG_TIMESTAMP_LOCALTIME
 

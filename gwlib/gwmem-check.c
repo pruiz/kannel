@@ -15,6 +15,10 @@
 static int initialized = 0;
 
 static pthread_mutex_t mutex;
+#ifdef MUTEX_STATS
+static long locks = 0;
+static long collisions = 0;
+#endif
 static void lock(void);
 static void unlock(void);
 static void dump(void);
@@ -30,6 +34,10 @@ static void fill(void *p, size_t bytes, long pattern);
 
 void gw_check_init_mem(void) {
 	pthread_mutex_init(&mutex, NULL);
+#ifdef MUTEX_STATS
+	locks = 0;
+	collisions = 0;
+#endif
 	initialized = 1;
 }
 
@@ -231,6 +239,10 @@ static void check_leaks(void) {
 	      "Current allocations: %ld areas, %ld bytes", 
 	      num_allocations, bytes);
 	dump();
+#ifdef MUTEX_STATS
+	info(0, "Mutex gwmem-check.c:0: %ld locks, %ld collisions",
+		locks, collisions);
+#endif
 	unlock();
 }
 
@@ -248,10 +260,21 @@ static void dump(void) {
 }
 
 
+#ifdef MUTEX_STATS
+static void lock(void) {
+	if (pthread_mutex_trylock(&mutex) != 0) {
+		if (pthread_mutex_lock(&mutex) != 0)
+			panic(0, "pthread_mutex_lock failed in gwmem.");
+		collisions++;
+	}
+	locks++;
+}
+#else
 static void lock(void) {
 	if (pthread_mutex_lock(&mutex) != 0)
 		panic(0, "pthread_mutex_lock failed in gwmem. Aaargh.");
 }
+#endif
 
 
 static void unlock(void) {
