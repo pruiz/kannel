@@ -62,12 +62,6 @@ void msg_destroy(Msg *msg) {
 	free(msg);
 }
 
-
-enum msg_type msg_type(Msg *msg) {
-    return msg->type;
-}
-
-
 Octstr *msg_pack(Msg *msg) {
 	Octstr *os;
 	
@@ -178,6 +172,8 @@ error:
 }
 
 static int append_string(Octstr *os, Octstr *field) {
+	if (append_integer(os, octstr_len(field)) == -1)
+		return -1;
 	if (octstr_insert(os, field, octstr_len(os)) == -1)
 		return -1;
 	return 0;

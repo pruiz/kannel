@@ -1,6 +1,7 @@
 Thu Nov 11 19:41:40 1999  Lars Wirzenius  <liw@wapit.com>
 
-	* msg.c: Fixed warning of unused variable.
+	* msg.c: Fixed warning of unused variable and erroneous packing of
+	of strings.
 
 1999-11-11    <rpr@rpr.wapit.com>
 
