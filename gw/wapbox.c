@@ -662,7 +662,8 @@ int main(int argc, char **argv)
     while (program_status != shutting_down) {
 	WAPEvent *dgram;
 
-	msg = read_from_bearerbox();
+    /* block infinite for reading messages */
+	msg = read_from_bearerbox(INFINITE_TIME);
 	if (msg == NULL)
 	    break;
 	if (msg_type(msg) == admin) {

@@ -114,7 +114,8 @@ static void read_messages_from_bearerbox(void)
 
     start = t = time(NULL);
     while (program_status != shutting_down) {
-	msg = read_from_bearerbox();
+    /* block infinite for reading messages */
+	msg = read_from_bearerbox(INFINITE_TIME);
 	if (msg == NULL)
 	    break;
 
