@@ -411,6 +411,7 @@ static Octstr *push_content_create(void)
         /* Read the control file. (To control pushing)*/
         pap_content = octstr_format("%s", "Content-Type: application/xml");
         add_delimiter(&pap_content);
+        add_delimiter(&pap_content);
         if ((pap_file_content = 
                 octstr_read_file(octstr_get_cstr(pap_file))) ==  NULL)
 	        panic(0, "Stopping");

@@ -1,3 +1,6 @@
+2004-06-20  Alexander Malysh  <a.malysh@centrium.de> 
+    * test/test_ppg.c: fixed bug #131.
+
 2004-06-16  Alexander Malysh  <a.malysh@centrium.de> 
     * configure.in, configure: added "format warnings" if --enable-warnings defined.
 
