@@ -4,7 +4,6 @@
 #
 
 EXTRA_DIST = \
-	Makefile.orig \
 	README.autoconf README.docbook README.src \
 	Release-0.1 Rules.mk \
 	doc test utils

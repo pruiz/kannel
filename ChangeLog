@@ -1,3 +1,13 @@
+Fri Jan  7 12:01:09 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* AUTHORS, NEWS, README, Release-0.2, VERSION, gw/bearerbox.conf:
+	Preparing for release.
+	
+	* Makefile.am, Makefile.in: Removed stuff from EXTRA_DIST.
+	
+	* doc/fakewap-packets.txt: Wrote. This explains the packets that
+	the upcoming fakewap program will use.
+
 2000-01-05    <rpr@rpr.wapit.com>
 
 	* gw/bearerbox.c: fixed memmove calls (thanks to Yuri for pointing

@@ -1,56 +1,128 @@
-This is the new Gateway which shall eventually handle both the SMS 
-and WAP traffic, but the WAP portion  is currently under development.
-
-The new gateway is similar to old one in many ways, but there are
-many new features. To keep things short and simple, I only give here
-instructions on how to run the new gateway. Consult to old
-'SMSGateway' when you need more extensive documentation about SMS
-Services. Also read files 'bearerbox.conf' and 'smsboc.smsconf'
-
-So, the main difference to old 'SMSGateway' is that the gateway is
-divided into multiple parts:
-
- - Bearerbox is the routing/load balancing thing, that connects SMS
-   Centers (quite complex monster, after all). It uses configuration
-   files like 'test/fake.conf'.
-
- - SMS Box is a program that handles SMS messages and calls
-   appropriate services. It also handles 'sendsms' HTTP requests.
-   It uses configuration files like 'test/simple.smsconf'
-
-So, to get the basic functionality of the old SMSGateway, you have to
-run the bearerbox and at least one SMS Box. They can be run as two
-separate programs, or the Bearerbox can be run with internal SMS Box.
-
-To run a gateway with one internal SMS Box (practically same thing as
-old SMSGateway), type something like:
-
-   s1> gw/bearerbox -v 0 test/fake.conf test/simple.smsconf
-
-..where v is the verbosity level. The v-option is optional. See 
-wapitlib.h for standard options
-
-If you want to run separate bearerbox and SMS Box(es), just run each
-in separate shell: 
-
-   s2> gw/bearerbox -v 0 test/fake.conf
-   s3> gw/smsbox -v 0 test/simple.smsconf
-
-You are not limited to one machine! You can run the bearerbox in one
-and one or more SMS Boxes in any machines you like, as TCP/IP socket
-is used for communication. Just be sure that connection is not denied
-via 'denied-hosts' configuration parameter in bearerbox configuration.
-
-That's all this time. This version 0.1 is in alpha developer design
-version, so many things are missing and many things do not work
-well. Feel free to comment them and to send patches. A new version
-is released as soon as we get the WAP thing to work.
-
-	       &Kalle Marjola (rpr@wapit.com)
+README for WapIT Open Source WAP and SMS Gateway
 
 
+Abstract
 
+	This README describes the WapIT Open Source WAP and SMS gateway,
+	and how it can be used and installed.
 
+Status of README
 
+	Very raw draft.
 
+Introduction
 
+	The WapIT Open Source WAP and SMS gateway works as both an SMS
+	gateway, for implementing keyword based services via GSM text
+	messages, and a WAP gateway, via UDP. The SMS part is fairly
+	mature, the WAP part is very early in its development.	In this
+	release, the GET request for WML pages via HTTP works, and the
+	phone receives a compiled WML page. This is enough for serving
+	simple, static WML pages. WMLScript and other request types are
+	not supported. Only the data call bearer (UDP) is supported,
+	not SMS.
+	
+	This gateway was formerly known as "smsgateway", but has now been
+	rewritten to a new architectural design and is thus called just
+	"gateway" (a better name is fortcoming, suggestions welcome).
+	The old smsgateway becomes complely unsupported as of this
+	release.
+
+Requirements
+
+	You need a Unix-like operating system that supports Posix threads
+	(pthreads.h). We use Red Hat Linux 6.0 and 6.1 and Debian
+	development ("unstable" version) systems.
+
+Documentation
+
+	There is some documentation about how the gateway has been
+	implemented in the doc/arch directory. The doc/userguide directory
+	will contain a user manual, but that isn't written yet.
+
+Getting the gateway sources
+
+	You can download the gateway sources from 
+	http://www.wapgateway.org/sourcecode.shtml.
+
+Compiling and installing the gateway
+
+	See the file INSTALL for generic installation instructions.
+	The short form:
+	
+		./configure
+		make
+
+Configuring the gateway
+
+	The gw/bearerbox.conf, gw/smsbox.smsconf, and gw/wapbox.wapconf
+	files configure the gateway. The sample configuration files
+	contain explanations for changing them.
+
+Running the gateway
+
+	You need to run the gw/bearerbox program (from the gw directory).
+	If you want SMS services, you also need to run gw/smsbox, and
+	if you want WAP services, you need to run gw/wapbox.
+
+Using the gateway with a Nokia 7110
+
+	To configure a Nokia 7110 to use the gateway, fill in the
+	following (note that you need to provide your own dialup
+	line):
+	
+		Home page: http://www.wapit.com/~liw/hello.wml
+		(or any other WML page)
+		
+		Connection type: continuous
+		
+		Connection security: off
+		
+		Bearer: data
+		
+		Dial-up number: <your dialup line>
+		
+		IP address: <IP number of the host running bearer box>
+		
+		Authentication type: normal
+		
+		Data call type: <analog or isdn, depending on your line>
+		
+		Data call speed: 9600
+		
+		User name: <username for your dialup line>
+		
+		Password: <password for your dialup line>
+		
+	After you have modified the profile, activate it and load the
+	home page. If you use the sample page above, you should see
+	"hello, world" on the screen after a few moments.
+
+Controlling the gateway via HTTP
+
+	The gateway can be controlled with HTTP calls to the bearer box.
+	If the bearer box is running on host example.com. These are at
+	the moment undocumented except for comments in gw/bearerbox.conf.
+	
+	The SMS box also listens for HTTP calls so that it is possible
+	to send SMS messages via HTTP. This is also undocumented at
+	the moment.
+
+Feedback and more information
+
+	If you have trouble with this software, don't hesitate to ask
+	for help at
+	
+		feedback@wapgateway.org
+		
+	If you modify the code (whether to fix bugs or add features), and
+	want to have your changes included in the official version, send
+	them also to the above address.
+	
+	You may also want to subscribe the announce and devel lists at
+	wapgateway.org: send e-mail to
+	
+		announce-subscribe@wapgateway.org
+		devel-subscribe@wapgateway.org
+
+	(You'll get further instructions via automatic reply mails.)

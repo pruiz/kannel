@@ -1,0 +1,20 @@
+The gateway inside WapIT:
+
+	Lars Wirzenius <liw@wapit.com>
+	architecture design, wapbox (WSP), PHB
+
+	Kalle Marjola <rpr@wapit.com>
+	bearer box, smsbox
+	
+	Peter Grönholm <peter@wapit.com>
+	external relations, prototype WML converter
+	
+	Aarno Syvänen <syvanen@wapit.com>
+	wapbox (WTP), WAP specifications
+	
+	Formerly also:
+
+	Mikael Gueck <mikael@wapit.com>
+	smsbox (especially SMS center protocols)
+
+For patches sent from other people, see the ChangeLog.
