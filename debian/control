@@ -2,53 +2,57 @@ Source: kannel-cvs
 Section: net
 Priority: optional
 Maintainer: Bruno Rodrigues <bruno.rodrigues@litux.org>
-Build-Depends: debhelper (>> 4.0.0), libxml2-dev, libssl-dev, openssl, libmysqlclient10-dev, docbook-dsssl, jadetex, transfig, imagemagick, gs, libpam0g-dev
+Build-Depends: debhelper (>> 4.0.0), libxml2-dev, libssl-dev, openssl, libmysqlclient10-dev, libpam0g-dev
+Build-Depends-Indep: debhelper (>> 4.0.0), docbook-dsssl, jadetex, transfig, imagemagick, gs
 Standards-Version: 3.5.9
 
 Package: kannel-cvs
 Architecture: any
 Section: net
-Replaces: kannel, kannel-devel
-Conflicts: kannel, kannel-devel
 Priority: optional
 Depends: ${shlibs:Depends}
-Description: WAP and SMS gateway - Daily build from CVS
+Conflicts: kannel, kannel-devel
+Replaces: kannel, kannel-devel
+Description: WAP and SMS gateway (cvs)
  Kannel is a gateway for connecting WAP (Wireless Application Protocol)
  phones to the Internet. It also works as an SMS gateway, for providing
  SMS based services for GSM phones.
  .
- Compiled with ssl, mysql and native malloc
+ Compiled with ssl, mysql and native malloc.
  .
- Daily build from CVS
-
-Package: kannel-cvs-docs
-Architecture: any
-Section: net
-Replaces: kannel-docs, kannel-devel-docs
-Conflicts: kannel-docs, kannel-devel-docs
-Priority: optional
-Description: WAP and SMS gateway documentation
- Kannel is a gateway for connecting WAP (Wireless Application Protocol)
- phones to the Internet. It also works as an SMS gateway, for providing
- SMS based services for GSM phones.
- .
- Documentation
- .
- Daily build from CVS
+ Development and/or CVS versions are stable enough and encouraged to use
+ to enable constant testing. CVS bugs are usually fixed in one or to days
+ and a lot of developers use stable CVS versions in production.
 
 Package: kannel-cvs-extras
 Architecture: any
 Section: net
 Priority: optional
-Suggests: python
-Replaces: kannel-extras, kannel-devel-extras
-Conflicts: kannel-extras, kannel-devel-extras
+Suggests: kannel-cvs, python
 Depends: ${shlibs:Depends}
-Description: WAP and SMS gateway extras
+Description: WAP and SMS gateway extras (cvs)
  Kannel is a gateway for connecting WAP (Wireless Application Protocol)
  phones to the Internet. It also works as an SMS gateway, for providing
  SMS based services for GSM phones.
  .
- test and check utilities
+ Test utilities and contrib data.
  .
- Daily build from CVS
+ Development and/or CVS versions are stable enough and encouraged to use
+ to enable constant testing. CVS bugs are usually fixed in one or to days
+ and a lot of developers use stable CVS versions in production.
+
+Package: kannel-cvs-docs
+Architecture: all
+Section: net
+Suggests: kannel-cvs
+Priority: optional
+Description: WAP and SMS gateway documentation (cvs)
+ Kannel is a gateway for connecting WAP (Wireless Application Protocol)
+ phones to the Internet. It also works as an SMS gateway, for providing
+ SMS based services for GSM phones.
+ .
+ Documentation in html, rtf and pdf format.
+ .
+ Development and/or CVS versions are stable enough and encouraged to use
+ to enable constant testing. CVS bugs are usually fixed in one or to days
+ and a lot of developers use stable CVS versions in production.

@@ -1,3 +1,11 @@
+2003-04-05  Bruno Rodrigues  <bruno.rodrigues@litux.org> 
+    * debian/*: more updates - update Standards to 3.5.9; build "-docs"
+      packages as arch independent to have debian build system generate only
+      one -docs package and kannel* and kannel-extra* packages for every
+      architecture; updated conflicts - kannel, kannel-devel and kannel-cvs 
+      conflicts but -docs and -extras don't :) You can have all documentation
+      installed at the same time, but only one kannel instance
+
 2003-04-08  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/smsc/smsc_smpp.c: fixed some more typos. Thanks again to 
       "Rachman Chavik" <rachman.chavik@radius-ed.com> for this.
