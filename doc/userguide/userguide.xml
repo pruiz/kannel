@@ -5015,7 +5015,7 @@ text = "No action specified"
   &#60;submit&#62;
     &#60;da&#62;&#60;number&#62;destination number (to)&#60;/number&#62;&#60;/da&#62;
     &#60;oa&#62;&#60;number&#62;originating number (from)&#60;/number&#62;&#60;/oa&#62;
-    &#60;ud&#62;user data (text)&#60;/text&#62;
+    &#60;ud&#62;user data (text)&#60;/ud&#62;
     &#60;udh&#62;user data header (udh)&#60;/udh&#62;
     &#60;dcs&#62;
       &#60;mclass&#62;mclass&#60;/mclass&#62;
@@ -5043,12 +5043,17 @@ text = "No action specified"
 &#60;/message&#62;
 </programlisting>
 
+	<note><para>Don't forget to set POST Content-Type to 
+	<literal>text/xml</literal>!</para></note>
+
 	<para>There could be several <literal>da</literal> entries for <literal>sendsms-user
 	</literal> to enable multi-recipient messages. <literal>da</literal> doesn't make
 	sence in <literal>sms-service</literal>.</para>
 
+	<!--
 	<para><literal>ud</literal><note><para>Davi: I still have to test binary and unicode
 	&#60;ud&#62; content</para></note></para>
+	-->
 	
 	<para><literal>udh</literal> is the same format as <literal>X-Kannel-UDH</literal>.
 	Example: &#60;udh&#62;06050415820000&#60;/udh&#62;.</para>

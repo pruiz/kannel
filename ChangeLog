@@ -1,3 +1,6 @@
+2003-05-24  Bruno Rodrigues  <bruno.rodrigues@litux.org>
+    * userguide.xml: fixes in post-xml section
+
 2003-05-27  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/smsc/smsc_cimd2.c: Fixing wrong time for messages. 
       Thanks again to Angel for this fix.
