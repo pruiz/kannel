@@ -187,17 +187,15 @@ static void url_result_thread(void *arg)
 }
 
 
-/* Perform the service requested by the user: translate the request into
- * a pattern, if it is an URL, fetch it, and return a string, which must
- * be free'ed by the caller.
+/*
+ * Perform the service requested by the user: translate the request into
+ * a pattern, if it is an URL, start its fetch and return 0, otherwise
+ * return the string in `*result' and return 1. Return -1 for errors,
  */
-
-static char HTTP_RESULT[] = "http_result";
-
-static char *obey_request(URLTranslation *trans, Msg *msg)
+static int obey_request(Octstr **result, URLTranslation *trans, Msg *msg)
 {
-    char *pattern, *ret;
-    Octstr *url, *replytext;
+    char *pattern;
+    Octstr *url;
     List *request_headers;
     long id;
     
@@ -210,55 +208,47 @@ static char *obey_request(URLTranslation *trans, Msg *msg)
     switch (urltrans_type(trans)) {
     case TRANSTYPE_TEXT:
 	debug("sms", 0, "formatted text answer: <%s>", pattern);
-	ret = pattern;
+	*result = octstr_create(pattern);
 	alog("SMS request sender:%s request: '%s' fixed answer: '%s'",
-	octstr_get_cstr(msg->sms.receiver),
-	octstr_get_cstr(msg->sms.msgdata),
-	pattern);
+	     octstr_get_cstr(msg->sms.receiver),
+	     octstr_get_cstr(msg->sms.msgdata),
+	     pattern);
 	break;
     
     case TRANSTYPE_FILE:
-	replytext = octstr_read_file(pattern);
+	*result = octstr_read_file(pattern);
 	gw_free(pattern);
-	ret = gw_strdup(octstr_get_cstr(replytext));
-	octstr_destroy(replytext);
 	alog("SMS request sender:%s request: '%s' file answer: '%s'",
-	octstr_get_cstr(msg->sms.receiver),
-	octstr_get_cstr(msg->sms.msgdata),
-	ret);
+	     octstr_get_cstr(msg->sms.receiver),
+	     octstr_get_cstr(msg->sms.msgdata),
+	     octstr_get_cstr(*result));
 	break;
     
     case TRANSTYPE_URL:
 	url = octstr_create(pattern);
+	gw_free(pattern);
 	request_headers = list_create();
 	id = http_start_request(caller, url, request_headers, NULL, 1);
-	if (id == -1)
-	    goto error;
-	
-	gw_free(pattern);
 	octstr_destroy(url);
 	http_destroy_headers(request_headers);
-	
 	if (id == -1)
 	    goto error;
-	
 	remember_receiver(id, msg, trans);
-	ret = HTTP_RESULT;
-	break;
+	*result = NULL;
+	return 0;
     
     default:
-	error(0, "Unknown URL translation type %d", 
-	urltrans_type(trans));
+	error(0, "Unknown URL translation type %d", urltrans_type(trans));
 	alog("SMS request sender:%s request: '%s' FAILED unknown translation",
-	octstr_get_cstr(msg->sms.receiver),
-	octstr_get_cstr(msg->sms.msgdata));
-	return NULL;
+	     octstr_get_cstr(msg->sms.receiver),
+	     octstr_get_cstr(msg->sms.msgdata));
+	goto error;
     }
     
-    return ret;
+    return 1;
     
 error:
-    return NULL;
+    return -1;
 }
 
 
@@ -745,9 +735,9 @@ long smsbox_req_count(void)
 void smsbox_req_thread(void *arg) 
 {
     Msg *msg;
-    Octstr *tmp;
+    Octstr *tmp, *reply;
     URLTranslation *trans;
-    char *reply = NULL, *p;
+    char *p;
     
     while ((msg = list_consume(smsbox_requests)) != NULL) {
 	if (octstr_len(msg->sms.sender) == 0 ||
@@ -808,18 +798,19 @@ void smsbox_req_thread(void *arg)
     
 	/* TODO: check if the sender is approved to use this service */
     
-	reply = obey_request(trans, msg);
-	if (reply == NULL) {
+	switch (obey_request(&reply, trans, msg)) {
+	case -1:
     error:
 	    error(0, "request failed");
 	    /* XXX this can be something different, according to 
 	       urltranslation */
-	    reply = gw_strdup("Request failed");
+	    reply = octstr_create("Request failed");
 	    trans = NULL;	/* do not use any special translation */
-	}
-    
-    	if (reply != HTTP_RESULT) {
-	    octstr_replace(msg->sms.msgdata, reply, strlen(reply));
+    	    break;
+	    
+	case 1:
+	    octstr_destroy(msg->sms.msgdata);
+	    msg->sms.msgdata = reply;
 	
 	    msg->sms.flag_8bit = 0;
 	    msg->sms.flag_udh  = 0;
@@ -827,10 +818,11 @@ void smsbox_req_thread(void *arg)
 	
 	    if (send_message(trans, msg) < 0)
 		error(0, "request_thread: failed");
-	    
-	    gw_free(reply);
-	} else
+    	    break;
+    	
+	default:
 	    msg_destroy(msg);
+	}
     }
 }
 

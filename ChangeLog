@@ -1,5 +1,10 @@
 2000-11-27  Lars Wirzenius  <liw@iki.fi>
 
+	* gw/smsbox_req.c: Made obey_request return an Octstr, instead
+	of a C string.
+
+2000-11-27  Lars Wirzenius  <liw@iki.fi>
+
 	* gw/smsbox_req.c: Formatted to follow coding style.
 
 2000-11-27  Lars Wirzenius  <liw@iki.fi>
