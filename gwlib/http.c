@@ -3000,7 +3000,6 @@ static int http_something_accepted(List *headers, char *header_name,
     int found;
     long i;
     List *accepts;
-    Octstr *oswhat = NULL; /* make compiler happy */
 
     gwlib_assert_init();
     gw_assert(headers != NULL);
@@ -3012,11 +3011,10 @@ static int http_something_accepted(List *headers, char *header_name,
     found = 0;
     for (i = 0; !found && i < list_len(accepts); ++i) {
         Octstr *header_value = list_get(accepts, i);
-        if (octstr_case_compare(header_value, oswhat) == 0)
+        if (octstr_case_compare(header_value, octstr_imm(what)) == 0)
             found = 1;
     }
 
-    octstr_destroy(oswhat);
     http_destroy_headers(accepts);
     return found;
 }
