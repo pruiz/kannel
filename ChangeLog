@@ -1,3 +1,8 @@
+2000-03-23 Sanna Seppanen <sanna@wapit.com>
+
+	*gwlib/http.c: corrected error in httprequest_add_header. hope
+	it'll work now.
+
 Tue Mar 21 16:46:04 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* doc/CodingStyle: Modified the description of using panic.

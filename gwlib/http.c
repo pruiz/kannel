@@ -25,11 +25,12 @@
 #include "gwlib.h"
 
 
+
 /*****************************************************************************
 * Static Functions
 */
 
-static unsigned char *internal_base6t4(unsigned char *pass);
+static char *internal_base6t4(char *pass);
 
 static double round_to_closest_integer(double x);
 
@@ -79,8 +80,8 @@ int httpserver_get_request(int socket, char **client_ip, char **path, char **arg
     *client_ip = gw_strdup(accept_ip);
     
     gbsize = 1024;
-    growingbuff = gw_malloc(gbsize);
-    memset(growingbuff, 0, gbsize);
+    growingbuff = gw_malloc(gbsize + 1);
+    memset(growingbuff, 0, gbsize + 1);
     errno = 0;
 
     
@@ -154,7 +155,7 @@ int httpserver_get_request(int socket, char **client_ip, char **path, char **arg
 	while(isspace(*eol))
 	    eol++;
 	
-	newbuff = gw_malloc(i);
+	newbuff = gw_malloc(i+1);
 	
 	for( k=0; k<i; k++ ){
 	    newbuff[k] = *eol;
@@ -195,9 +196,9 @@ int httpserver_answer(int socket, char *text) {
     assert(text != NULL);
 
     bufsize = strlen(text) + 1024;
-    bigbuff = gw_malloc(bufsize);
+    bigbuff = gw_malloc(bufsize + 1);
 
-    sprintf(bigbuff, "HTTP/1.1 200 OK\r\nContent-Type:text/html\r\nContent-Length: %ul\r\n\r\n", (unsigned int) strlen(text));
+    sprintf(bigbuff, "HTTP/1.1 200 OK\r\nContent-Type:text/html\r\nContent-Length: %ul\r\n\r\n", (int) strlen(text));
     strcat(bigbuff, text);
 
     tmpint = write_to_socket(socket, bigbuff);
@@ -247,11 +248,12 @@ int http_get_u(char *urltext, char **type, char **data, size_t *size,  HTTPHeade
     
     URL *url = NULL;
     HTTPRequest *request = NULL, *response = NULL;
-    unsigned char *ptr = NULL, tempbuffer[4];
-    unsigned char *authorization = NULL;
+    char *ptr = NULL, tempbuffer[4];
+    char *authorization = NULL;
     int how_many_moves = 0;
     size_t temp =0;
-      
+
+
    /* Initializing... */
     /* ..request */
     if( (url = internal_url_create(urltext)) == NULL) {
@@ -259,8 +261,9 @@ int http_get_u(char *urltext, char **type, char **data, size_t *size,  HTTPHeade
 	goto error;
     }
 
+    
     /* ..url */
-    if( (request = httprequest_create(url, NULL)) == NULL) {
+    else if( (request = httprequest_create(url, NULL)) == NULL) {
 	error(errno, "http_get_u: Creating HTTPRequest failed");
 	internal_url_destroy(url);    
 	goto error;
@@ -269,7 +272,7 @@ int http_get_u(char *urltext, char **type, char **data, size_t *size,  HTTPHeade
     internal_url_destroy(url);    
     
     /* Adding useful stuff */
-
+    
     if( request->method_type == POST ){
 	memset(tempbuffer, 0, strlen(tempbuffer));
 	temp = (int) strlen(*data);
@@ -288,10 +291,12 @@ int http_get_u(char *urltext, char **type, char **data, size_t *size,  HTTPHeade
     httprequest_add_header(request, "Connection", "close");
     httprequest_add_header(request, "User-Agent",
 			   "Mozilla/2.0 (compatible; Open Source WAP Gateway)");
+
+    header_dump(request->baseheader);
     
     /* ..username */
     if(request->url->username != NULL) {
-	ptr = gw_malloc(1024);
+	ptr = gw_malloc(1024 + 1);
 	sprintf(ptr, "%s:%s", request->url->username, request->url->password);
 	if( (authorization = internal_base6t4(ptr)) == NULL){
 	    error(errno, "http_get_u: internal_base6t4 failed");
@@ -333,9 +338,7 @@ int http_get_u(char *urltext, char **type, char **data, size_t *size,  HTTPHeade
 
 
 	 /* We are redirected to another URL */
-	 else if( (response->status == 301) || 
-		  (response->status == 302) || 
-		  (response->status == 303) ) {
+	 else if((response->status == 301) || (response->status == 302) || (response->status == 303)){
 
 	     url = internal_url_create(httprequest_get_header_value(
 		 response, "Location"));
@@ -375,7 +378,7 @@ int http_get_u(char *urltext, char **type, char **data, size_t *size,  HTTPHeade
 
 	     /* ..username */
 	     if(request->url->username != NULL) {
-		 ptr = gw_malloc(1024);
+		 ptr = gw_malloc(1024 + 1);
 		 sprintf(ptr, "%s:%s", request->url->username,
 			 request->url->password);
 		 if( (authorization = internal_base6t4(ptr)) == NULL){
@@ -401,7 +404,10 @@ int http_get_u(char *urltext, char **type, char **data, size_t *size,  HTTPHeade
 	     
 	 } /* redirection handling ends*/
 
+	/* Bad Request */
+	else if(response->status == 400) break;
 
+	
 	/* Server returned "404 Authorization Required" */
 	else if(response->status == 401) break;
 	
@@ -435,8 +441,8 @@ int http_get_u(char *urltext, char **type, char **data, size_t *size,  HTTPHeade
     
     /* Fill in the variables which we'll return. */
     if( (response->data != NULL) && (response->data_length > 0) ) {
-	*data = gw_malloc(response->data_length+1);
-	memset(*data, 0, response->data_length+1);
+	*data = gw_malloc(response->data_length + 1);
+	memset(*data, 0, response->data_length + 1);
 	memcpy(*data, response->data, response->data_length);
 	*size = response->data_length;
     } else {
@@ -464,7 +470,7 @@ error:
 int http_post(char *urltext, char **type, char **data, size_t *size,  HTTPHeader *header)
 { 
 
-  URL *url = NULL;
+    URL *url = NULL;
     HTTPRequest *request = NULL, *response = NULL;
     char *ptr = NULL;
     char *authorization = NULL;
@@ -508,7 +514,7 @@ int http_post(char *urltext, char **type, char **data, size_t *size,  HTTPHeader
     
     /* ..username */
     if(request->url->username != NULL) {
-	ptr = gw_malloc(1024);
+	ptr = gw_malloc(1024 + 1);
 	sprintf(ptr, "%s:%s", 
 		request->url->username, request->url->password);
 	authorization = internal_base6t4(ptr);
@@ -595,8 +601,8 @@ int http_post(char *urltext, char **type, char **data, size_t *size,  HTTPHeader
     
     /* Fill in the variables which we'll return. */
     if( (response->data != NULL) && (response->data_length > 0) ) {
-	*data = gw_malloc(response->data_length+1);
-	memset(*data, 0, response->data_length+1);
+	*data = gw_malloc(response->data_length + 1);
+	memset(*data, 0, response->data_length + 1);
 	memcpy(*data, response->data, response->data_length);
 	*size = response->data_length;
     } else {
@@ -647,7 +653,7 @@ URL* internal_url_create(char *text) {
 
     if(text == NULL) {
 	debug("gwlib.http", 0,
-	      "url_create: someone just called me with NULL input");
+	      "internal_url_create: Bad input (empty).");
 	goto error;
     }
 
@@ -667,9 +673,7 @@ URL* internal_url_create(char *text) {
     tmpURL->username = NULL;
     tmpURL->password = NULL;
 
-    /* cut off query - stuff after '?' */
-    /* before: "scheme://username:password@server:port/abs_path?query" */
-    /* after: "scheme://username:password@server:port/abs_path" */
+    /* create tmpURL->query */
     query_start = strchr(mycopy, '?');
     if(query_start == NULL) { /* no query this time */
 	tmpURL->query = NULL;
@@ -678,11 +682,9 @@ URL* internal_url_create(char *text) {
 	*query_start = '\0';
     }
 
-    /* Now see if we're using HTTP or FTP or gopher... */
-    /* before: "scheme://username:password@server:port/abs_path" */
-    /* after: "username:password@server:port/abs_path" */
+    /* create tmpURL->scheme */
     scheme_end = strstr(mycopy, "://");
-    if (scheme_end != NULL) { /* awrighty! */
+    if (scheme_end != NULL) {
 	scheme_start = mycopy;
 	*scheme_end   = '\0';
 	tmpURL->scheme = gw_strdup(scheme_start);
@@ -692,11 +694,9 @@ URL* internal_url_create(char *text) {
 	host_start = mycopy;
     }
 
-    /* cut off the abs_path - stuff after and including the first / */
-    /* before: "username:password@server:port/abs_path" */
-    /* after: "username:password@server:port" */
+    /* create tmpURL->abs_path_start */
     abs_path_start = strchr(host_start, '/');
-    if(abs_path_start != NULL) { /* the hostname is followed by path */
+    if(abs_path_start != NULL) {
 	tmpURL->abs_path = gw_strdup(abs_path_start);
 	*abs_path_start = '\0';
     } else { /* default per RFC2616/3.2.2 */
@@ -704,9 +704,6 @@ URL* internal_url_create(char *text) {
     }
 
     /* cut off the cport */
-    /* before: "username:password@server:port" */
-    /* after: "username:password@server" */
-
     password_end = strchr(host_start, '@');
     if(password_end != NULL) {
 	username_end = strchr(host_start, ':');
@@ -762,7 +759,7 @@ URL* internal_url_create(char *text) {
     return tmpURL;
 
 error:
-    debug("gwlib.http", errno, "url_create: failed");
+    debug("gwlib.http", errno, "internal_url_create: failed");
     gw_free(mycopy);
     internal_url_destroy(tmpURL);
     return NULL;
@@ -907,20 +904,24 @@ HTTPRequest* httprequest_wrap(char *from, size_t size) {
     char *tmpbuff = NULL;
     int tmpint = 0, tmpint2 = 0;
     HTTPRequest *request = NULL;
-
+    size_t len = 0;
+    
     if( (from==NULL) || (size==0) ) {
 	error(0, "httprequest_wrap: faulty input");
 	goto error;
     }
-
-    mycopy = gw_malloc(size);
-    memcpy(mycopy, from, size);
-
+    
+    /* do not use the variable 'size' here, it's evil */
+    len = strlen(from) + 1;
+    mycopy = gw_malloc(len);
+    memcpy(mycopy, from, len);
+ 
+    
     request = gw_malloc(sizeof(HTTPRequest));
-    tmpbuff = gw_malloc(10*1024);
+    tmpbuff = gw_malloc(10*1024 + 1);
 
     memset(request, 0, sizeof(request));
-    memset(tmpbuff, 0, 10*1024);
+    memset(tmpbuff, 0, 10*1024 + 1);
 
     request->url = NULL;
     request->baseheader = NULL;
@@ -1007,7 +1008,8 @@ HTTPRequest* httprequest_wrap(char *from, size_t size) {
 		httprequest_get_header_value(request, "Content-Length"));
 	
 	/* No need to check Content-Length, just read it all in. */
-	request->data = gw_malloc(request->data_length+1);
+	request->data = gw_malloc(request->data_length + 1);
+	
 	memset(request->data, 0, request->data_length);
 	memcpy(request->data, ptr, request->data_length);
 	request->data[request->data_length] = '\0';
@@ -1020,7 +1022,8 @@ HTTPRequest* httprequest_wrap(char *from, size_t size) {
     } else if(strstr(midptr, "chunked") != NULL) {
 	/* yepp, data has encoding */	
 	/* Get enough space to hold all the data. */
-	request->data = gw_malloc(request->data_length);
+	request->data = gw_malloc(request->data_length + 1);
+	
 	memset(request->data, 0,  request->data_length);
 	
 	
@@ -1094,13 +1097,13 @@ char* httprequest_unwrap(HTTPRequest *request) {
     
     if(request==NULL) goto error; /* PEBKaC */
     
-    bigbuff = gw_malloc(16*1024);
-    tmpbuff = gw_malloc(1024);
-    tmpline = gw_malloc(1024);
+    bigbuff = gw_malloc(16*1024 + 1);
+    tmpbuff = gw_malloc(1024 + 1);
+    tmpline = gw_malloc(1024 + 1);
     
-    memset(bigbuff, 0, 16*1024);
-    memset(tmpbuff, 0, 1024);
-    memset(tmpline, 0,  1024);
+    memset(bigbuff, 0, 16*1024 + 1);
+    memset(tmpbuff, 0, 1024 + 1);
+    memset(tmpline, 0,  1024 + 1);
     
     if(request->action == HTTP_SERVER)
 	strcat(bigbuff, "HTTP/1.1 200 OK\r\n");
@@ -1262,12 +1265,17 @@ int httprequest_add_header(HTTPRequest *request, char *key, char *value) {
 	return -1;
     }
     hdr = request->baseheader;
-    while(hdr != NULL)
-	hdr = hdr->next;
-
-    hdr = header_create(key, value);
-    assert(hdr!=NULL);
-    return 0;
+    
+    if(hdr == NULL){
+	hdr = header_create(key, value);
+	request->baseheader = hdr;
+	return 0;
+    } else {
+	while(hdr->next != NULL)
+	    hdr = hdr->next;
+	hdr->next = header_create(key, value);
+	return 0;
+    }
 }
 
 /*****************************************************************************
@@ -1276,7 +1284,7 @@ int httprequest_add_header(HTTPRequest *request, char *key, char *value) {
  */
 int httprequest_replace_header(HTTPRequest *request, char *key, char *value)
 {
-    unsigned char *old = NULL;
+    char *old = NULL;
     HTTPHeader *hdr = NULL;
     
     if(request == NULL || key == NULL || value == NULL){
@@ -1285,8 +1293,8 @@ int httprequest_replace_header(HTTPRequest *request, char *key, char *value)
     }
     hdr = request->baseheader;
     while(hdr != NULL ){
-	if(!(strcasecmp(hdr->key, key))){
-	    /* strcasecmp return 0 for match */
+	if(strcasecmp(hdr->key, key) == 0 ){
+	    /* match */
 	    old = hdr->value;
 	    hdr->value = gw_strdup(value);
 	    gw_free(old);
@@ -1310,16 +1318,14 @@ HTTPHeader *header_create(char *key, char *value)
 {
     HTTPHeader *h;
 
-    if(key == NULL || value == NULL){
-	error(0,"header_create: Bad input.");
-	return NULL;
-    }
-
+    assert(key != NULL);
+    assert(value != NULL);
+    
     h = gw_malloc(sizeof(HTTPHeader));
     h->key = gw_strdup(key);
     h->value = gw_strdup(value);
     h->next = NULL;
-
+    
     return h;
 }
 
@@ -1362,7 +1368,7 @@ int header_destroy(HTTPHeader *hdr)
 
 
 /*
- * header_pack
+ * header_pack - find identical headers and merge them.
  */
 
 int header_pack(HTTPHeader *hdr)
@@ -1373,16 +1379,24 @@ int header_pack(HTTPHeader *hdr)
     size_t len = 0;
     
     while(hdr != NULL) {
-	/* find identical headers and merge them */
+	/* find identical headers */
 	for(prev = hdr, ptr = hdr->next; ptr != NULL; ptr = ptr->next) {
-	    if (strcasecmp(hdr->key, ptr->key)==0) {
-		len = strlen(hdr->value) + 2 + strlen(ptr->value); 
-		buf = gw_malloc(len);
+	    if (strcasecmp(hdr->key, ptr->key) == 0) {
+		/* match */
+		/* cat values */
+		len = strlen(hdr->value) + strlen(", ") + strlen(ptr->value); 
+
+		buf = gw_malloc(len + 1); 
 		ret = sprintf(buf, "%s, %s", hdr->value, ptr->value);
 		if(ret < len) return -1;
+		
+		debug("gwlib.http",0,"header_pack: buf: %s",buf);
+		/* replace with cat value */
 		gw_free(hdr->value);
 		hdr->value = gw_strdup(buf);
 		gw_free(buf);
+
+		/* free the identical header */
 		prev->next = ptr->next;
 		gw_free(ptr->key);
 		gw_free(ptr->value);
@@ -1415,8 +1429,8 @@ int httprequest_remove_header(HTTPRequest *request, char *key) {
     }
     hdr = request->baseheader;
     while(hdr!=NULL){
-	if(!(strcasecmp(hdr->key, key))){
-	    /* strcasecmp return 0 for match */
+	if(strcasecmp(hdr->key, key) == 0){
+	    /* match */
 	    prev->next = hdr->next;
 	    gw_free(hdr->key);
 	    gw_free(hdr->value);
@@ -1444,8 +1458,8 @@ char* httprequest_get_header_value(HTTPRequest *request, char *key) {
     }
     hdr = request->baseheader;
     while(hdr!=NULL){
-	if(!(strcasecmp(hdr->key, key)))
-	    /* strcasecmp return 0 for match */
+	if(strcasecmp(hdr->key, key) == 0)
+	    /* match */
 	    return hdr->value;
 	hdr = hdr->next;
     }
@@ -1459,14 +1473,15 @@ char* httprequest_get_header_value(HTTPRequest *request, char *key) {
  * encoded string.
  */
 
-static unsigned char *internal_base6t4(unsigned char *pass) {
+static char *internal_base6t4(char *pass) {
 
     int ictr,ctr2;
-    unsigned char onec, *result, temp[10];
+    char onec, *result, temp[10];
     long twentyfour;
-    unsigned char base64[64] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    char base64[64] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
-    result = gw_malloc(strlen(pass) + strlen(pass) / 4 + strlen(pass) % 4 + 5);
+    result = gw_malloc(strlen(pass) + strlen(pass) /
+		       4 + strlen(pass) % 4 + 5 + 1);
     result[0] = 0;
 
     twentyfour = 0;
