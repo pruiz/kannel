@@ -81,10 +81,6 @@
  * specially.
  */
 
-/*
- * XXX Need to support some extra return values for POST support.
- */
-
 enum {
 	HTTP_OK				= 200,
 	HTTP_CREATED			= 201,
@@ -101,6 +97,20 @@ enum {
 	HTTP_INTERNAL_SERVER_ERROR	= 500,
 	HTTP_NOT_IMPLEMENTED		= 501,
 	HTTP_BAD_GATEWAY		= 502
+};
+
+/*
+ * Groupings of the status codes listed above.
+ * See the http_status_class() function.
+ */
+
+enum {
+	HTTP_STATUS_PROVISIONAL = 100,
+	HTTP_STATUS_SUCCESSFUL = 200,
+	HTTP_STATUS_REDIRECTION = 300,
+	HTTP_STATUS_CLIENT_ERROR = 400,
+	HTTP_STATUS_SERVER_ERROR = 500,
+	HTTP_STATUS_UNKNOWN = 0
 };
 
 /*
@@ -424,5 +434,12 @@ int http_charset_accepted(List *headers, char *charset);
  */
 void http_add_basic_auth(List *headers, Octstr *username, Octstr *password);
 
+
+/*
+ * Return the general class of a status code.  For example, all
+ * 2xx codes are HTTP_STATUS_SUCCESSFUL.  See the list at the top
+ * of this file.
+ */
+int http_status_class(int code);
 
 #endif

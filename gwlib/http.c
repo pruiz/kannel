@@ -2167,3 +2167,18 @@ void http_shutdown(void)
     server_shutdown();
     proxy_shutdown();
 }
+
+
+/*
+ * This function relies on the HTTP_STATUS_* enum values being
+ * chosen to fit this.
+ */
+int http_status_class(int code)
+{
+    int class;
+
+    class = code - (code % 100);
+    if (class < 100 || class >= 600)
+        class = HTTP_STATUS_UNKNOWN;
+    return class;
+}

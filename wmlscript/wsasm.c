@@ -731,6 +731,17 @@ ws_asm_linearize(WsCompiler *compiler)
         }
     }
 
+    /*
+     * Avoid generating 0-length functions, because not all clients
+     * handle them correctly.
+     */
+    if (ws_buffer_len(&compiler->byte_code) == 0) {
+	if (!ws_encode_buffer(&compiler->byte_code,
+	   		      WS_ENC_BYTE, (WsByte) WS_ASM_RETURN_ES,
+			      WS_ENC_END))
+	    goto error;
+    }
+
     return;
 
     /*

@@ -1,3 +1,21 @@
+2001-02-03  Richard Braakman  <dark@wapit.com>
+
+	* wmlscript/wsasm.c: Avoid generating 0-length functions,
+	because not all clients can handle them.
+
+	* gw/wap-appl.c: If the response body does not fit in the
+	client SDU size, generate status code 502 ("Bad Gateway")
+	instead of 413 ("Request Entity Too Large").  413 is definitely
+	the wrong code because it refers to the request, not the
+	response.  502 means the gateway received an invalid response
+	from the server, which is pretty close.
+        Also, do not touch the status code at all if it already indicates
+	an error.  The upstream error is more interesting to the user
+	than knowing that the error page didn't fit.
+
+	* gwlib/http.[ch]: Add http_status_class() function to
+	distinguish success codes (2xx) from error codes.
+
 2001-02-02  Tuomas Luttinen  <tuo@wapit.com>
 
 	* test/decompile.[ch]: Applied the patch by Neil Hunter that 
