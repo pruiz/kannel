@@ -91,11 +91,12 @@
 		<firstname>Kalle</firstname>
 		<surname>Marjola</surname>
 		<affiliation>
-			<jobtitle>Manager</jobtitle>
-			<orgname>former Wapit Ltd</orgname>
-			<!--<address> <email>rpr@wapit.com</email>
-			<otheraddr>http://www.wapit.com</otheraddr>
-			</address>-->
+			<jobtitle>Senior Software Engineer</jobtitle>
+			<orgname>Enpocket</orgname>
+			<address> 
+				<email>marjola@enpocket.com</email>
+				<otheraddr>http://www.enpocket.com</otheraddr>
+			</address>
 		</affiliation>
 	</author>
 
