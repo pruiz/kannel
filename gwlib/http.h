@@ -217,6 +217,18 @@ long http_receive_result(HTTPCaller *caller, int *status, Octstr **final_url,
     	    	    	 List **headers, Octstr **body);
 
 
+typedef struct HTTPClient HTTPClient;
+int http_open_server(int port);
+HTTPClient *http_accept_request(Octstr **client_ip, Octstr **url, 
+    	    	    	    	List **headers, Octstr **body, 
+				List **cgivars);
+void http_send_reply(HTTPClient *client, int status, List *headers, 
+    	    	     Octstr *body);
+void http_close_client(HTTPClient *client);
+void http_close_all_servers(void);
+/* XXX http_close_port(port); http_close_all_ports(); */
+
+
 /*
  * Functions for controlling the well-known port of the server.
  * http_server_open sets it up, http_server_close closes it.

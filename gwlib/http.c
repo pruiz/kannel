@@ -5,11 +5,11 @@
  */
  
 /* XXX 100 status codes. */
-/* XXX make it possible to abort a transaction. */
 /* XXX re-implement socket pools, with idle connection killing to 
     	save sockets */
-/* XXX kill transactions if they don't complete in time */
+/* XXX implement http_abort */
 /* XXX give maximum input size */
+/* XXX kill http_get, http_get_real, and http_post */
 
 #include <ctype.h>
 #include <errno.h>
@@ -61,10 +61,12 @@ static Counter *request_id_counter = NULL;
  */
 static Mutex *background_threads_lock = NULL;
 static volatile sig_atomic_t background_threads_are_running = 0;
+static volatile sig_atomic_t server_thread_is_running = 0;
+static long server_thread_id = -1;
 
 
 /*
- * Data associated with an HTTP transaction.
+ * Data associated with the client end of an HTTP transaction.
  */
 typedef struct {
     HTTPCaller *caller;
@@ -101,6 +103,64 @@ static void transaction_destroy(void *trans);
 
 
 /*
+ * Server end of HTTP transaction.
+ */
+struct HTTPClient {
+    Connection *conn;
+    Octstr *ip;
+    enum {
+       reading_request_line,
+       reading_request_headers,
+       request_is_being_handled
+    } state;
+    Octstr *url;
+    int use_version_1_0;
+    List *headers;
+    Octstr *body;
+};
+
+static FDSet *server_fdset = NULL;
+static FDSet *client_fdset = NULL;
+static List *clients_with_requests = NULL;
+
+static HTTPClient *client_create(Connection *conn, Octstr *ip)
+{
+    HTTPClient *p;
+    
+    p = gw_malloc(sizeof(*p));
+    p->conn = conn;
+    p->ip = ip;
+    p->state = reading_request_line;
+    p->url = NULL;
+    p->use_version_1_0 = 0;
+    p->headers = list_create();
+    p->body = NULL;
+    return p;
+}
+
+static void client_destroy(void *client)
+{
+    HTTPClient *p;
+    
+    p = client;
+    conn_destroy(p->conn);
+    octstr_destroy(p->ip);
+    octstr_destroy(p->url);
+    http_destroy_headers(p->headers);
+    octstr_destroy(p->body);
+    gw_free(p);
+}
+
+
+/*
+ * XXX
+ */
+enum { MAX_SERVERS = 32 };
+static List *new_server_sockets = NULL;
+static int keep_servers_open = 0;
+
+
+/*
  * Status of this module.
  */
 static enum { limbo, running, terminating } run_status = limbo;
@@ -109,7 +169,9 @@ static enum { limbo, running, terminating } run_status = limbo;
 /*
  * XXX
  */
+static void start_server_thread(void);
 static void start_background_threads(void);
+static void server_thread(void *);
 static void write_request_thread(void *);
 
 
@@ -121,6 +183,7 @@ static Mutex *proxy_mutex = NULL;
 static Octstr *proxy_hostname = NULL;
 static int proxy_port = 0;
 static List *proxy_exceptions;
+/* XXX the proxy exceptions list should be a dict, I guess */
 
 static int proxy_used_for_host(Octstr *host);
 
@@ -186,6 +249,11 @@ void http_init(void)
     request_id_counter = counter_create();
     background_threads_lock = mutex_create();
     
+    new_server_sockets = list_create();
+    list_add_producer(new_server_sockets);
+    clients_with_requests = list_create();
+    list_add_producer(clients_with_requests);
+
     run_status = running;
 }
 
@@ -195,8 +263,14 @@ void http_shutdown(void)
     gwlib_assert_init();
 
     run_status = terminating;
+
     list_remove_producer(pending_requests);
     gwthread_join_every(write_request_thread);
+
+    list_remove_producer(new_server_sockets);
+    list_remove_producer(clients_with_requests);
+    gwthread_wakeup(server_thread_id);
+    gwthread_join_every(server_thread);
 
     http_close_proxy();
     list_destroy(proxy_exceptions, NULL);
@@ -207,6 +281,10 @@ void http_shutdown(void)
     list_destroy(pending_requests, transaction_destroy);
     mutex_destroy(background_threads_lock);
     /* XXX destroy caller ids */
+    
+    list_destroy(clients_with_requests, client_destroy);
+    fdset_destroy(server_fdset);
+    fdset_destroy(client_fdset);
 }
 
 
@@ -262,7 +340,7 @@ HTTPCaller *http_caller_create(void)
 
 void http_caller_destroy(HTTPCaller *caller)
 {
-    list_destroy(caller, NULL); /* XXX destroy items */
+    list_destroy(caller, transaction_destroy);
 }
 
 
@@ -352,6 +430,7 @@ int http_get_real(Octstr *url, List *request_headers, Octstr **final_url,
     	return -1;
     return status;
 }
+
 
 int http_post(Octstr *url, List *request_headers, Octstr *request_body,
               List **reply_headers, Octstr **reply_body)
@@ -514,6 +593,240 @@ int http_server_send_reply(HTTPSocket *socket, int status, List *headers,
     	socket_close(socket);
     
     return ret;
+}
+
+
+static int parse_request(Octstr **url, int *use_version_1_0, Octstr *line)
+{
+    long space;
+
+    if (octstr_search(line, octstr_create_immutable("GET "), 0) != 0)
+    	return -1;
+
+    octstr_delete(line, 0, 4);
+    space = octstr_search_char(line, ' ', 0);
+    if (space <= 0)
+        return -1;
+
+    *url = octstr_copy(line, 0, space);
+    octstr_delete(line, 0, space + 1);
+
+    if (octstr_str_compare(line, "HTTP/1.0") == 0)
+    	*use_version_1_0 = 1;
+    else if (octstr_str_compare(line, "HTTP/1.1") == 0)
+    	*use_version_1_0 = 0;
+    else {
+	octstr_destroy(*url);
+    	return -1;
+    }
+    return 0;
+}
+
+
+static void receive_request(Connection *conn, void *data)
+{
+    HTTPClient *client;
+    Octstr *line;
+    int ret;
+
+    if (run_status != running) {
+	conn_unregister(conn);
+	return;
+    }
+
+    client = data;
+    
+    for (;;) {
+	switch (client->state) {
+	case reading_request_line:
+    	    line = conn_read_line(conn);
+	    if (line == NULL)
+	    	return;
+	    ret = parse_request(&client->url, &client->use_version_1_0, 
+	    	    	    	line);
+	    octstr_destroy(line);
+	    if (ret == -1)
+	    	goto error;
+	    client->state = reading_request_headers;
+	    break;
+	    
+	case reading_request_headers:
+	    ret = client_read_headers(conn, client->headers);
+	    if (ret == -1)
+	    	goto error;
+	    if (ret == 0) {
+	    	client->state = request_is_being_handled;
+		conn_unregister(conn);
+		list_produce(clients_with_requests, client);
+	    }
+	    return;
+
+    	default:
+	    panic(0, "Internal error: HTTPClient state is wrong.");
+	}
+    }
+    
+error:
+    conn_destroy(conn);
+    client_destroy(client);
+}
+
+
+static void server_thread(void *dummy)
+{
+    struct pollfd tab[MAX_SERVERS];
+    long i, j, n, fd;
+    int *p;
+    struct sockaddr_in addr;
+    int addrlen;
+    Connection *conn;
+    HTTPClient *client;
+
+    n = 0;
+    while (run_status == running || keep_servers_open) {
+	if (n == 0 || (n < MAX_SERVERS && list_len(new_server_sockets) > 0)) {
+	    p = list_consume(new_server_sockets);
+	    if (p == NULL)
+	    	break;
+	    tab[n].fd = *p;
+	    tab[n].events = POLLIN;
+	    ++n;
+	    gw_free(p);
+	}
+
+	if (gwthread_poll(tab, n, -1.0) == -1)
+	    break;
+
+    	for (i = 0; i < n; ++i) {
+	    if (tab[i].revents & POLLIN) {
+		addrlen = sizeof(addr);
+		fd = accept(tab[i].fd, (struct sockaddr *) &addr, &addrlen);
+		if (fd == -1) {
+		    error(errno, "HTTP: Error accepting a client.");
+    	    	    (void) close(tab[i].fd);
+		    tab[i].fd = -1;
+		} else {
+		    conn = conn_wrap_fd(fd);
+    	    	    client = client_create(conn, host_ip(addr));
+		    conn_register(conn, server_fdset, receive_request, client);
+		}
+	    }
+	}
+	
+    	j = 0;
+	for (i = 0; i < n; ++i) {
+	    if (tab[i].fd != -1)
+	    	tab[j++] = tab[i];
+	}
+	n = j;
+    }
+    
+    for (i = 0; i < n; ++i)
+	(void) close(tab[i].fd);
+
+    list_remove_producer(clients_with_requests);
+}
+
+
+int http_open_server(int port)
+{
+    int *p;
+
+    debug("gwlib.http", 0, "HTTP: Opening server at port %d.", port);
+    p = gw_malloc(sizeof(*p));
+    *p = make_server_socket(port);
+    if (*p == -1) {
+	gw_free(p);
+    	return -1;
+    }
+
+    list_produce(new_server_sockets, p);
+    start_server_thread();
+
+    return 0;
+}
+
+
+void http_close_all_servers(void)
+{
+    if (server_thread_id != -1) {
+	keep_servers_open = 0;
+	gwthread_wakeup(server_thread_id);
+    }
+}
+
+
+HTTPClient *http_accept_request(Octstr **client_ip, Octstr **url, 
+    	    	    	    	List **headers, Octstr **body, 
+				List **cgivars)
+{
+    HTTPClient *client;
+
+    client = list_consume(clients_with_requests);
+    if (client == NULL)
+    	return NULL;
+
+    *client_ip = client->ip;
+    *url = client->url;
+    *headers = client->headers;
+    *body = client->body;
+    *cgivars = parse_cgivars(client->url);
+    
+    client->ip = NULL;
+    client->url = NULL;
+    client->headers = NULL;
+    client->body = NULL;
+    
+    return client;
+}
+
+
+void http_send_reply(HTTPClient *client, int status, List *headers, 
+    	    	     Octstr *body)
+{
+    Octstr *response;
+    long i;
+
+    if (client->use_version_1_0)
+    	response = octstr_format("HTTP/1.0 %d Foo\r\n", status);
+    else
+    	response = octstr_format("HTTP/1.1 %d Foo\r\n", status);
+
+    octstr_format_append(response, "Content-Length: %ld\r\n",
+    	    	    	 octstr_len(body));
+    for (i = 0; i < list_len(headers); ++i)
+    	octstr_format_append(response, "%S\r\n", list_get(headers, i));
+    octstr_format_append(response, "\r\n");
+    
+    if (body != NULL)
+    	octstr_append(response, body);
+	
+    (void) conn_write(client->conn, response);
+    octstr_destroy(response);
+
+    while (conn_flush(client->conn) == 1)
+    	continue;
+#if 0
+/* XXX the conn_register seems to block forever */
+    if (client->use_version_1_0)
+    	client_destroy(client);
+    else {
+	int ret;
+	client->state = reading_request_line;
+debug("xxx", 0, "foo");
+	ret = 
+	conn_register(client->conn, server_fdset, receive_request, client);
+debug("xxx", 0, "ret = %d", ret);
+    }
+#else
+    client_destroy(client);
+#endif
+}
+
+
+void http_close_client(HTTPClient *client)
+{
+    client_destroy(client);
 }
 
 
@@ -777,7 +1090,7 @@ void http_remove_hop_headers(List *headers)
 
 
 void http_header_mark_transformation(List *headers,
-Octstr *new_body, Octstr *new_type)
+    	    	    	    	     Octstr *new_body, Octstr *new_type)
 {
     Octstr *new_length = NULL;
 
@@ -1000,6 +1313,7 @@ void http_header_dump(List *headers)
 }
 
 
+/* XXX this needs to go away */
 static char *istrdup(char *orig)
 {
     int i, len = strlen(orig);
@@ -1980,9 +2294,6 @@ static void write_request_thread(void *arg)
     HTTPTransaction *trans;
     char *method;
     char buf[128];    
-    FDSet *fdset;
-
-    fdset = fdset_create();
 
     while (run_status == running) {
 	trans = list_consume(pending_requests);
@@ -2011,7 +2322,8 @@ static void write_request_thread(void *arg)
 	    list_produce(trans->caller, trans);
 	else {
 	    trans->state = reading_status;
-	    conn_register(trans->conn, fdset, handle_transaction, trans);
+	    conn_register(trans->conn, client_fdset, handle_transaction, 
+	    	    	  trans);
 	}
     }
 }
@@ -2028,8 +2340,30 @@ static void start_background_threads(void)
 	 */
 	mutex_lock(background_threads_lock);
 	if (!background_threads_are_running) {
+	    client_fdset = fdset_create();
 	    gwthread_create(write_request_thread, NULL);
 	    background_threads_are_running = 1;
+	}
+	mutex_unlock(background_threads_lock);
+    }
+}
+
+
+
+static void start_server_thread(void)
+{
+    if (!server_thread_is_running) {
+	/* 
+	 * To be really certain, we must repeat the test, but use the
+	 * lock first. If the test failed, however, we _know_ we've
+	 * already initialized. This strategy of double testing avoids
+	 * using the lock more than a few times at startup.
+	 */
+	mutex_lock(background_threads_lock);
+	if (!server_thread_is_running) {
+	    server_fdset = fdset_create();
+	    server_thread_id = gwthread_create(server_thread, NULL);
+	    server_thread_is_running = 1;
 	}
 	mutex_unlock(background_threads_lock);
     }
