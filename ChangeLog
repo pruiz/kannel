@@ -1,3 +1,6 @@
+2003-11-10 Stipe Tolj  <tolj@wapme-systems.de>
+    * Makefile.in: adding gw-config to be removed when target clean is called.
+
 2003-11-10 Igor Ivoilov <igor@francoudi.com>
     * gwlib/http.c: Fix for the BUG#95. Problem caused by octsrt_imm()
       on non-constant c-string in http_something_accepted()

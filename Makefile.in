@@ -299,7 +299,7 @@ install-docs:
 		$(INSTALL_DATA) doc/$$docfile/*.png $(DESTDIR)$(docdir)/$$docfile ; \
 	done
 clean:
-	rm -f */*.o gw/smsc/*.o *.a core $(progs) $(testprogs) $(checkprogs)
+	rm -f */*.o gw/smsc/*.o *.a core gw-config $(progs) $(testprogs) $(checkprogs)
 	rm -f $(figs) $(ps) $(docs)
 	rm -f $(benchoutputs)
 
