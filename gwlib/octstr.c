@@ -1514,7 +1514,7 @@ void octstr_url_encode(Octstr *ostr)
 
     seems_valid(ostr);
 
-    if (ostr->len == 0)
+    if (ostr->immutable || ostr->len == 0)
 	return;
 
     res = octstr_create("");
@@ -2005,9 +2005,9 @@ static void convert(Octstr *os, struct format *format, const char **fmt,
         new = octstr_duplicate(va_arg(VALST(args), Octstr *));
         if (!new)
             new = octstr_imm("(null)");
-	octstr_url_encode(new);
-	/*
-	 * note: we use blind truncate - encoded character can get cut half-way.
+        octstr_url_encode(new);
+        /*
+         * note: we use blind truncate - encoded character can get cut half-way.
          */
         if (format->has_prec)
             octstr_truncate(new, format->prec);

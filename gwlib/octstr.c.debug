@@ -1456,7 +1456,7 @@ void octstr_url_encode(Octstr *ostr)
 
     res = octstr_create("");
 
-    if (ostr->len == 0)
+    if (ostr->immutable || ostr->len == 0)
 	return;
 
     str = ostr->data;
