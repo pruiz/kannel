@@ -79,7 +79,7 @@ static char *obey_request(URLTranslation *trans, Msg *sms)
 		replytext[0] = '\0';
 		len = read(fd, replytext, 1024*10);
 		close(fd);
-		replytext[len-1] = '\0';	/* remove trainling '\n' */
+		replytext[len-1] = '\0';	/* remove trailing '\n' */
 
 		return strdup(replytext);
 	}
@@ -149,8 +149,6 @@ error:
  */
 static int do_sending(Msg *msg)
 {
-    debug(0, "Sending msg");
-
     if (sms_max_length < 0) return -1;
     
     if (sender(msg) < 0)
@@ -242,19 +240,18 @@ static int send_message(URLTranslation *trans, Msg *msg)
     static char *empty = "<Empty reply from service provider>";
     
     max_msgs = urltrans_max_messages(trans);
-	
+
     if(msg_type(msg) != smart_sms) {
-	info(0, "msgtype failed");
+	error(0, "Weird messagetype for send_message!");
 	goto error;
     }    
     if (octstr_len(msg->smart_sms.msgdata)==0) {
 	if (urltrans_omit_empty(trans) != 0) {
 	    max_msgs = 0;
 	} else { 
-	    if (octstr_replace(msg->smart_sms.msgdata, empty, strlen(empty)) == -1) {
-		info(0, "replace failed");
+	    if (octstr_replace(msg->smart_sms.msgdata,
+			       empty, strlen(empty)) == -1)
 		goto error;
-	    }
 	}
     }
     if (max_msgs == 0)
@@ -300,12 +297,12 @@ int smsbox_req_init(URLTranslationList *transls,
 {
 	translations = transls;
 	sms_max_length = sms_max;
+	sender = send;
 	if (global != NULL) {
 		global_sender = strdup(global);
 		if (global_sender == NULL)
 		    return -1;
 	}
-	sender = send;
 	return 0;
 }
 
