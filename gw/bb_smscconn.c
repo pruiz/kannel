@@ -423,7 +423,7 @@ int smsc2_restart_smsc(Octstr *id)
 {
     CfgGroup *grp;
     SMSCConn *conn;
-    Octstr *smscid;
+    Octstr *smscid = NULL;
     int i;
 
     /* find the specific smsc via id */
@@ -455,6 +455,7 @@ int smsc2_restart_smsc(Octstr *id)
         }
     }
     list_unlock(smsc_groups);
+    octstr_destroy(smscid);
     if (i > list_len(smsc_groups))
         return -1;
     
