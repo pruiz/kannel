@@ -1,3 +1,8 @@
+2000-04-05 Aarno Syvänen <syvanen@wapit.com>
+
+	* wsp*, wtp*: Changed primitive event names to conform even more 
+	closely names used by the specifications.
+
 Wed Apr  5 18:38:20 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* README.docbook: Added note about transfig being needed.
