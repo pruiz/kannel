@@ -17,27 +17,9 @@ dnl Check gateway version number.
 VERSION=`head -1 VERSION`
 if test "x$VERSION" = "xcvs"; then
   AC_MSG_CHECKING([cvs checkout date])
-  cvs_date=`grep ChangeLog CVS/Entries | cut -f4 -d/`
-  day=`echo $cvs_date | cut -c8-9 | tr " " "0"`
-  month=`echo $cvs_date | cut -c5-7`
-  case $month in
-    "Jan") month="01" ;;
-    "Feb") month="02" ;;
-    "Mar") month="03" ;;
-    "Apr") month="04" ;;
-    "May") month="05" ;;
-    "Jun") month="06" ;;
-    "Jul") month="07" ;;
-    "Aug") month="08" ;;
-    "Sep") month="09" ;;
-    "Oct") month="10" ;;
-    "Nov") month="11" ;;
-    "Dec") month="12" ;;
-  esac
-  year=`echo $cvs_date | cut -c21-24`
-  cvs_date="$year$month$day"
-  AC_MSG_RESULT([$cvs_date])
-  VERSION="$VERSION-$cvs_date"
+  AC_CVS_DATE(CVS_DATE)
+  AC_MSG_RESULT([$CVS_DATE])
+  VERSION="$VERSION-$CVS_DATE"
 fi
 AC_DEFINE_UNQUOTED(GW_NAME, "Kannel")
 AC_DEFINE_UNQUOTED(VERSION, "$VERSION")
