@@ -1,2 +1,8 @@
+2004-11-29  Alexander Malysh <amalysh at kannel.org>
+    * gwlib/charset.c: fixed bug in 'charset_convert' that could cause
+      converted string to be truncated.
+      Thanks to "Pommnitz Joerg" for the patch.
+      [Msg-Id: 4D93AAF95CB5A64E8F622EC796ECF5AC3FC3DF@exil.condat.de]
+
 2004-11-23  Stipe Tolj  <stolj@wapme.de> 
     * Making stable release 1.4.0.
