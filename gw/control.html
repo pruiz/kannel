@@ -6,67 +6,74 @@
 
 <h1>Gateway control form</h1> 
 
-<B>Note:</B> This form is a simple one querying Gateway running in
-localhost, with HTTP-adminstration port set as '13000'
+<B>Note:</B> This form is a simple example of how to control a Kannel 
+gateway running in localhost, with the HTTP-adminstration port number
+set to '13000'
 
 <table>
 <tr>
-<form method=get action="http://localhost:13000/cgi-bin/status">
-<td><input type=submit value="Status"> <I>Print general information</I></td>
-<td colspan=1>&nbsp;</td>
+<td><form method=get action="http://localhost:13000/cgi-bin/status"></td>
+<td><input type=submit value="Status"></td><td><I>Print general status information&nbsp;</I></td>
+<td>No password required</td>
 </form>
 </tr>
 
 <tr>
-<form method=get action="http://localhost:13000/cgi-bin/stop">
-<td><input type=submit value="Stop"><I>Suspend the Gateway</I></td>
-<td>Username: <input size=15 name=username><BR>
-Password: <input size=15 name=password></td>
+<td><form method=get action="http://localhost:13000/cgi-bin/suspend"></td>
+<td><input type=submit value="Suspend"></td><td><I>Suspend the Gateway</I></td>
+<td>Password: <input size=15 name=password></td>
 </form>
 </td>
 
 <tr>
-<form method=get action="http://localhost:13000/cgi-bin/start">
-<td><input type=submit value="Start"><I>Re-start the Gateway</I></td>
-<td>Username: <input size=15 name=username><BR>
-Password: <input size=15 name=password></td>
+<td><form method=get action="http://localhost:13000/cgi-bin/isolate"></td>
+<td><input type=submit value="Isolate"></td><td><I>Isolate the Gateway</I></td>
+<td>Password: <input size=15 name=password></td>
 </form>
 </tr>
 
 <tr>
-<form method=get action="http://localhost:13000/cgi-bin/kill">
-<td><input type=submit value="Kill"><I>Shutdown the Gateway</I></td>
-<td>Username: <input size=15 name=username><BR>
-Password: <input size=15 name=password></td>
+<td><form method=get action="http://localhost:13000/cgi-bin/shutdown"></td>
+<td><input type=submit value="Shutdown"></td><td><I>Shutdown the Gateway</I></td>
+<td>Password: <input size=15 name=password></td>
 </form>
 </tr>
 
-
 <tr>
-<form method=get action="http://localhost:13000/cgi-bin/disconnect">
-<td><input type=submit value="Disconnect">Id: <input size=5
-name=id><BR><I>Disconnect thread with given Id</I></td>
-<td>Username: <input size=15 name=username><BR>
-Password: <input size=15 name=password></td>
+<td><form method=get action="http://localhost:13000/cgi-bin/resume"></td>
+<td><input type=submit value="Resume"></td><td><I>Resume to running state</I></td>
+<td>Password: <input size=15 name=password></td>
 </form>
 </tr>
 </table>
 
-
 <HR>
  
-<B>Note:</B> This calls an SMSBOX in localhost, which is expected to
+<p><B>Note:</B> This calls an SMSBOX in localhost, which is expected to
 listen to HTTP-requests at port '13013'.
 
-<p>
+<p><B>Note:</B> To send to multiple receivers, separate each entry with space (' ', '+' url-encoded) - but
+note that this can be deactivated via 'sendsms-chars' in the 'smsbox' group.
+
+<table>
+
 <form method=get action="http://localhost:13013/cgi-bin/sendsms">
-From: <input size=15 name=from> 
-To:&nbsp;&nbsp; <input size=15 name=to> <br>
-Text: <input size=60 name=text> <br>
-Username: <input size=15 name=username>
-Password: <input size=15 name=password>
-<input type=submit value="Send SMS">
+
+<tr><td>From:</td> <td><input size=15 name=from></td></tr>
+
+<tr><td>To:</td> <td><input size=60 name=to></td></tr>
+
+<tr><td>Message:</td> <td><input size=60 name=text></td></tr>
+
+<tr><td>Username:</td> <td><input size=15 name=username></td></tr>
+
+<tr><td>Password:</td> <td><input size=15 name=password></td></tr>
+
+<tr><td><input type=submit value="Send SMS"></td></tr>
 </form>
+
+</table>
 
 </body>
 </html>
+

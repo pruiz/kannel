@@ -1,3 +1,8 @@
+2000-10-11  Peter Gronholm  <peter@wapit.com>
+
+	* gw/control.html: Updated the example file to reflect the new
+	http interface administration commands.
+
 2000-10-11  Kalle Marjola  <rpr@wapit.com>
 
 	* gw/bb_http.c: fixed that query parsing value '0' is not
