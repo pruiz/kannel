@@ -1,6 +1,10 @@
+2000-03-10  Markku Rossi  <mtr@iki.fi>
+
+	* wmlscript/: Fixed some warnings.
+
 2000-03-10 Sanna Seppanen <sanna@wapit.com>
 
-	* gwlib/http.c: httprequest_execute: memory freeing 
+	* gwlib/http.c: httprequest_execute: memory freeing
 	functions added. also changed some error() to warning() -functions
 
 Fri Mar 10 14:52:19 2000  Lars Wirzenius  <liw@wapit.com>
@@ -22,13 +26,13 @@ Fri Mar 10 13:34:59 2000  Lars Wirzenius  <liw@wapit.com>
 	* configure.in: Check for xmlDocGetRootElement instead of
 	xmlParseMemory so as to find only newer versions of libxml.
 	(Fix from Ben Fowler <wapdev@leedsnet.com>.)
-	
+
 	* gwlib/conffile.c: Removed spurious Ctrl-M from end of line.
 	(From Ben Fowler.)
-	
+
 2000-03-10    <rpr@rpr.wapit.com>
 
-	* gw/smsc_interface.def, gw/sms_msg.h: more data about 
+	* gw/smsc_interface.def, gw/sms_msg.h: more data about
 	SMSC interface
 
 2000-03-10    <rpr@rpr.wapit.com>
@@ -47,7 +51,7 @@ Thu Mar  9 11:05:14 CET 2000	Patrick Schaaf	<bof@bof.de>
 Thu Mar  9 19:17:43 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* gw/bearerbox.c: Commented out an assert that seems to be too much.
-	
+
 	* gw/smsbox.c: Added a missing mutex_lock to main_loop.
 
 Thu Mar  9 17:48:33 2000  Lars Wirzenius  <liw@wapit.com>
@@ -57,9 +61,9 @@ Thu Mar  9 17:48:33 2000  Lars Wirzenius  <liw@wapit.com>
 	(Also defined to 1, not empty, just in case.)
 
 2000-03-09    Derry Hamilton  <rasilon@tardis.ed.ac.uk>
-	
+
 	* Makefile.in:  Added -D_REENTRANT to CFLAGS
-	
+
 2000-03-09    <rpr@rpr.wapit.com>
 
 	* gwlib/octstr.c: fixed stupid error in octstr_recv
@@ -67,7 +71,7 @@ Thu Mar  9 17:48:33 2000  Lars Wirzenius  <liw@wapit.com>
 Wed Mar  8 16:53:24 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* gw/wtp.c: Fixed or commented away broken list handling.
-	
+
 	* gwlib/octstr.[ch]: Fixed octstr_search_char_from. Also changed its
 	prototype so that the character is passed as an int, since this does
 	not cause problems with 8-bit characters on platforms where the
@@ -75,7 +79,7 @@ Wed Mar  8 16:53:24 2000  Lars Wirzenius  <liw@wapit.com>
 
 2000-03-08  Tuomas Luttinen  <tuo@tuo.wapit.fi>
 
-	* gw/wml_compiler.c: Bug fix: no more squares (ie tabulator 
+	* gw/wml_compiler.c: Bug fix: no more squares (ie tabulator
 	characters) in the compiler output.
 
 2000-03-08    <rpr@rpr.wapit.com>
@@ -98,8 +102,8 @@ Tue Mar  7 16:40:49 CET 2000	Patrick Schaaf	<bof@bof.de>
 
 2000-03-07  Tuomas Luttinen  <tuo@tuo.wapit.fi>
 
-	* gw/wml_compiler.c (text_shrink_blank): A little bug fix. The first 
-	white space character in a row of them is now converted into a space, 
+	* gw/wml_compiler.c (text_shrink_blank): A little bug fix. The first
+	white space character in a row of them is now converted into a space,
 	the rest are deleted before compiling.
 
 2000-03-07    <rpr@rpr.wapit.com>
@@ -142,10 +146,10 @@ Fri Mar  3 13:32:30 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* gwlib/thread.c (mutex_destroy): Destroy the pthread_mutex_t
 	when the Mutex object is destroyed.
-	
+
 	* gwlib/thread.c (start_thread): Destroy thread attributes after
 	thread has been started.
-	
+
 	* gw/wsp_http.c: Enabled Tuomas's compiler by default.
 
 2000-03-03    <rpr@rpr.wapit.com>
@@ -156,7 +160,7 @@ Fri Mar  3 13:32:30 2000  Lars Wirzenius  <liw@wapit.com>
 2000-03-02    <rpr@rpr.wapit.com>
 
 	* gw/*.*conf: renamed old bearerbox.conf, smsbox.smsconf and
-	wapbox.wapconf as kannel.conf, kannel.smsconf and kannel.wapconf. 
+	wapbox.wapconf as kannel.conf, kannel.smsconf and kannel.wapconf.
 
 	* gw/*box.c: modified default configuration files accordingly
 
