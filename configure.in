@@ -496,6 +496,27 @@ AC_ARG_ENABLE(start-stop-daemon,
 AC_SUBST(STARTSTOPDAEMONSRC)
 
 
+dnl Implement --disable-wap and --disable-sms options.
+
+AC_ARG_ENABLE(wap,
+[  --disable-wap           disables WAP gateway parts in bearerbox], [
+  if test "$enableval" = "no"
+  then
+    echo disabling WAP gateway parts in bearerbox
+    AC_DEFINE(NO_WAP)
+  fi
+])
+
+AC_ARG_ENABLE(sms,
+[  --disable-sms           disables SMS gateway parts in bearerbox], [
+  if test "$enableval" = "no"
+  then
+    echo disabling SMS gateway parts in bearerbox
+    AC_DEFINE(NO_SMS)
+  fi
+])
+
+
 dnl Implement the --with-ssl option. 
 
 AC_CONFIG_SECTION([Configuring OpenSSL support])
@@ -771,6 +792,7 @@ AC_ARG_WITH(wtls,
     ;;
   esac
 ])
+
 
 dnl Final Output
 

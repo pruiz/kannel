@@ -247,7 +247,7 @@ static int check_config(Cfg *cfg)
     if (cfg_get_integer(&wapp, grp, octstr_imm("wapbox-port")) == -1)
     	wapp = -1;
     
-#ifndef KANNEL_NO_SMS    
+#ifndef NO_SMS    
     grp = cfg_get_single_group(cfg, octstr_imm("smsbox"));
     if (smsp != -1 && grp == NULL) {
 	error(0, "No 'smsbox' group in configuration, but smsbox-port set");
@@ -255,7 +255,7 @@ static int check_config(Cfg *cfg)
     }
 #endif
     
-#ifndef KANNEL_NO_WAP	
+#ifndef NO_WAP	
     grp = cfg_get_single_group(cfg, octstr_imm("wapbox"));
     if (wapp != -1 && grp == NULL) {
 	error(0, "No 'wapbox' group in configuration, but wapbox-port set");
@@ -367,7 +367,7 @@ static Cfg *init_bearerbox(Cfg *cfg)
     /* http-admin is REQUIRED */
     httpadmin_start(cfg);
 
-#ifndef KANNEL_NO_SMS    
+#ifndef NO_SMS    
     {
 	List *list;
 	
@@ -379,7 +379,7 @@ static Cfg *init_bearerbox(Cfg *cfg)
     }
 #endif
     
-#ifndef KANNEL_NO_WAP
+#ifndef NO_WAP
     grp = cfg_get_single_group(cfg, octstr_imm("core"));
     val = cfg_get(grp, octstr_imm("wdp-interface-name"));
     if (val != NULL && octstr_len(val) > 0)
@@ -398,7 +398,7 @@ static void empty_msg_lists(void)
 {
     Msg *msg;
 
-#ifndef KANNEL_NO_WAP
+#ifndef NO_WAP
 
     if (list_len(incoming_wdp) > 0 || list_len(outgoing_wdp) > 0)
 	warning(0, "Remaining WDP: %ld incoming, %ld outgoing",
@@ -421,7 +421,7 @@ static void empty_msg_lists(void)
     counter_destroy(outgoing_wdp_counter);
     
     
-#ifndef KANNEL_NO_SMS
+#ifndef NO_SMS
 
     /* XXX we should record these so that they are not forever lost...
      */
@@ -553,11 +553,11 @@ int bb_shutdown(void)
     store_shutdown();
     mutex_unlock(status_mutex);
 
-#ifndef KANNEL_NO_SMS
+#ifndef NO_SMS
     debug("bb", 0, "shutting down smsc");
     smsc2_shutdown();
 #endif
-#ifndef KANNEL_NO_WAP
+#ifndef NO_WAP
     debug("bb", 0, "shutting down udp");
     udp_shutdown();
 #endif

@@ -139,5 +139,11 @@
 
 /* Define if you want to have cookie support for the WSP */
 #undef ENABLE_COOKIES
+
+/* Define not to include the WAP gateway parts */
+#undef NO_WAP
+
+/* Define not to include the SMS gateway parts */
+#undef NO_SMS
                      
 #endif
