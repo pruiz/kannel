@@ -27,7 +27,7 @@ SMSCConn *smscconn_create(ConfigGroup *grp, int start_as_stopped)
     
     conn = gw_malloc(sizeof(SMSCConn));
 
-    conn->is_killed = 0;
+    conn->why_killed = SMSCCONN_ALIVE;
     conn->status = SMSCCONN_STARTING;
     conn->connect_time = -1;
     conn->load = 0;
@@ -62,6 +62,8 @@ SMSCConn *smscconn_create(ConfigGroup *grp, int start_as_stopped)
 		"automatically ignored");
     
     smsc_type = config_get(grp, "smsc");
+    if (smsc_type == NULL)
+	return NULL;
     
     /*
      * if (strcmp(smsc_type, "xxx")==0)
@@ -91,7 +93,7 @@ void smscconn_shutdown(SMSCConn *conn, int finish_sending)
     if (conn->shutdown)
 	conn->shutdown(conn, finish_sending);
     
-    conn->is_killed = 1;
+    conn->why_killed = SMSCCONN_KILLED_SHUTDOWN;
     return;
 }
 
@@ -125,7 +127,8 @@ int smscconn_destroy(SMSCConn *conn)
 int smscconn_stop(SMSCConn *conn)
 {
     gw_assert(conn != NULL);
-    if (conn->status == SMSCCONN_KILLED || conn->is_stopped || conn->is_killed)
+    if (conn->status == SMSCCONN_KILLED || conn->is_stopped
+	|| conn->why_killed != SMSCCONN_ALIVE)
 	return -1;
     conn->is_stopped = 1;
     list_add_producer(conn->stopped);
@@ -189,7 +192,7 @@ int smscconn_usable(SMSCConn *conn, Msg *msg)
     List *list;
 
     gw_assert(conn != NULL);
-    if (conn->status == SMSCCONN_KILLED || conn->is_killed)
+    if (conn->status == SMSCCONN_KILLED || conn->why_killed != SMSCCONN_ALIVE)
 	return -1;
 
     /* if allowed-smsc-id set, then only allow this SMSC if message
@@ -242,7 +245,7 @@ int smscconn_usable(SMSCConn *conn, Msg *msg)
 int smscconn_send(SMSCConn *conn, Msg *msg)
 {
     gw_assert(conn != NULL);
-    if (conn->status == SMSCCONN_KILLED || conn->is_killed)
+    if (conn->status == SMSCCONN_KILLED || conn->why_killed != SMSCCONN_ALIVE)
 	return -1;
     return conn->send_msg(conn, msg);
 }
@@ -262,6 +265,7 @@ int smscconn_info(SMSCConn *conn, StatusInfo *infotable)
 	return -1;
 
     infotable->status = conn->status;
+    infotable->killed = conn->why_killed;
     infotable->is_stopped = conn->is_stopped;
     infotable->online = time(NULL) - conn->connect_time;
     

@@ -35,7 +35,7 @@
     a) Each SMSC Connection MUST call callback function
        bb_smscconn_killed when it dies because it was put down earlier
        with bb_smscconn_shutdown or it simply cannot keep the connection
-       up (wrong password etc.) Reason must be supplied. When killed,
+       up (wrong password etc. When killed,
        SMSC Connection MUST release all memory it has taken EXCEPT for
        the basic SMSCConn struct, which is laterwards released by the
        bearerbox. 
@@ -52,8 +52,8 @@
 
  3) SMSC Connection MUST fill up SMSCConn structure as needed to, and is
     responsible for any concurrency timings. SMSCConn->status MAY NOT be
-    set to KILLED until the connection is really that. Use is_killed to
-    make internally dead.
+    set to KILLED until the connection is really that. Use why_killed to
+    make internally dead, supplied with reason.
 
  4) When SMSC Connection shuts down (shutdown called), it MUST try to send
     all messages so-far relied to it to be sent if 'finish_sending' is set
@@ -75,7 +75,7 @@
 struct smscconn {
     int		status;		/* see smscconn.h */
     int 	load;	       	/* load factor, 0 = no load */
-    int		is_killed;	/* time to die */
+    int		why_killed;	/* time to die with reason */
     time_t 	connect_time;	/* When connection to SMSC was established */
 
     Mutex 	*flow_mutex;	/* used for thread synchronization */

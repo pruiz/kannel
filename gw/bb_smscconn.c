@@ -69,7 +69,7 @@ void bb_smscconn_ready(SMSCConn *conn)
 }
 
 
-void bb_smscconn_killed(int reason)
+void bb_smscconn_killed(void)
 {
     /* NOTE: after status has been set to KILLED, bearerbox
      *   is free to release/delete 'conn'

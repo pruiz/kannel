@@ -24,13 +24,7 @@ void bb_smscconn_ready(SMSCConn *conn);
  * Note that after this has been called the bearerbox can call final
  * destroy for the connection
  */
-void bb_smscconn_killed(int reason);
-
-enum {
-    SMSCCONN_KILLED_WRONG_PASSWORD = 0,
-    SMSCCONN_KILLED_CANNOT_CONNECT,
-    SMSCCONN_KILLED_SHUTDOWN
-};
+void bb_smscconn_killed(void);
 
 
 /* called after successful sending of Msg 'sms'. This callbacks takes

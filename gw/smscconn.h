@@ -105,6 +105,7 @@ int smscconn_status(SMSCConn *smscconn);
 
 typedef struct smsc_state {
     int	status;		/* see enumeration, below */
+    int killed;		/* if we are killed, why */
     int is_stopped;	/* is connection currently in stopped state? */
     long received;	/* total number */
     long sent;		/* total number */
@@ -124,6 +125,13 @@ enum {
     SMSCCONN_RECONNECTING,
     SMSCCONN_DISCONNECTED,
     SMSCCONN_KILLED	/* ready to be cleaned */
+};
+
+enum {
+    SMSCCONN_ALIVE = 0,
+    SMSCCONN_KILLED_WRONG_PASSWORD = 1,
+    SMSCCONN_KILLED_CANNOT_CONNECT = 2,
+    SMSCCONN_KILLED_SHUTDOWN = 3
 };
 
 /* return current status of the SMSC connection, filled to infotable.

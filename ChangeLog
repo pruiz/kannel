@@ -1,3 +1,10 @@
+2001-01-08  Kalle Marjola  <rpr@wapit.com>
+
+	* gw/*smscconn*.*: removed reason from killed-callback,
+	instead it is used in why_killed field (previous is_killed)
+
+	* gw/smscconn.*: infotable now has killing reason included
+
 2001-01-08 Aarno Syvänen <syvanen@wapit.com>
 
 	* gw/wap_push_ota.c: Streamlined the code somewhat

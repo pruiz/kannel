@@ -50,7 +50,7 @@ static int reconnect(SMSCConn *conn)
     conn->status = SMSCCONN_RECONNECTING;
     
 
-    while(conn->is_killed == 0) {
+    while(conn->why_killed == SMSCCONN_ALIVE) {
 	ret = smsc_reopen(wrap->smsc);
 	if (ret == 0) {
 	    conn->status = SMSCCONN_ACTIVE;
@@ -117,7 +117,7 @@ static void wrapper_receiver(void *arg)
     
     
     /* remove messages from SMSC until we are killed */
-    while(conn->is_killed == 0) {
+    while(conn->why_killed == SMSCCONN_ALIVE) {
 
         list_consume(conn->stopped); /* block here if suspended/isolated */
 
@@ -143,7 +143,7 @@ static void wrapper_receiver(void *arg)
                 sleep = 1.999999;
         }
     }
-    conn->is_killed = 1;
+    conn->why_killed = SMSCCONN_KILLED_SHUTDOWN;
 
     /* this thread is joined at sender */
 }
@@ -221,7 +221,7 @@ static void wrapper_sender(void *arg)
     debug("bb.sms", 0, "SMSCConn %s sender died, waiting for receiver",
 	  octstr_get_cstr(conn->name));
     
-    conn->is_killed = 1;
+    conn->why_killed = SMSCCONN_KILLED_SHUTDOWN;
 
     if (conn->is_stopped) {
 	list_remove_producer(conn->stopped);
@@ -244,10 +244,11 @@ static void wrapper_sender(void *arg)
     smsc_close(wrap->smsc);
     gw_free(wrap);
     conn->data = NULL;
-
+    conn->why_killed = SMSCCONN_KILLED_SHUTDOWN;
+    
     mutex_unlock(conn->flow_mutex);
 
-    bb_smscconn_killed(SMSCCONN_KILLED_SHUTDOWN);
+    bb_smscconn_killed();
 }
 
 
@@ -350,7 +351,7 @@ error:
     if (wrap->smsc != NULL)
 	smsc_close(wrap->smsc);
     gw_free(wrap);
-    conn->is_killed = 1;
+    conn->why_killed = SMSCCONN_KILLED_CANNOT_CONNECT;
     conn->status = SMSCCONN_KILLED;
     return -1;
 }
