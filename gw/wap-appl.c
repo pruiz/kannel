@@ -59,173 +59,12 @@ static Octstr *convert_to_self(Octstr *stuff, Octstr *charset, char *url);
 static Octstr *convert_wml_to_wmlc(Octstr *wml, Octstr *charset, char *url);
 static Octstr *convert_wmlscript_to_wmlscriptc(Octstr *wmlscript, 
 					       Octstr *charset, char *url);
+static void wsp_http_map_url(Octstr **osp);
 
-/*
- * The following code implements the map-url mechanism
+
+/***********************************************************************
+ * The public interface to the application layer.
  */
-
-struct wsp_http_map {
-	struct wsp_http_map *next;
-	unsigned flags;
-#define WSP_HTTP_MAP_INPREFIX	0x0001	/* prefix-match incoming string */
-#define WSP_HTTP_MAP_OUTPREFIX	0x0002	/* prefix-replace outgoing string */
-#define WSP_HTTP_MAP_INOUTPREFIX 0x0003	/* combine the two for masking */
-	char *in;
-	int in_len;
-	char *out;
-	int out_len;
-};
-
-static struct wsp_http_map *wsp_http_map = 0;
-static struct wsp_http_map *wsp_http_map_last = 0;
-
-/*
- * Add mapping for src URL to dst URL.
- */
-static void wsp_http_map_url_do_config(char *src, char *dst)
-{
-	struct wsp_http_map *new_map;
-	int in_len = src ? strlen(src) : 0;
-	int out_len = dst ? strlen(dst) : 0;
-
-	if (!in_len) {
-		warning(0, "wsp_http_map_url_do_config: empty incoming string");
-		return;
-	}
-	gw_assert(in_len > 0);
-
-	new_map = gw_malloc(sizeof(*new_map));
-	new_map->next = NULL;
-	new_map->flags = 0;
-
-	/* incoming string
-	 * later, the incoming URL will be prefix-compared to new_map->in,
-	 * using exactly new_map->in_len characters for comparison.
-	 */
-	new_map->in = gw_strdup(src);
-	if (src[in_len-1] == '*') {
-		new_map->flags |= WSP_HTTP_MAP_INPREFIX;
-		in_len--;		/* do not include `*' in comparison */
-	} else {
-		in_len++;		/* include \0 in comparisons */
-	}
-	new_map->in_len = in_len;
-
-	/* replacement string
-	 * later, when an incoming URL matches, it will be replaced
-	 * or modified according to this string. If the replacement
-	 * string ends with an asterisk, and the match string indicates
-	 * a prefix match (also ends with an asterisk), the trailing
-	 * part of the matching URL will be appended to the replacement
-	 * string, i.e. we do a prefix replacement.
-	 */
-	new_map->out = gw_strdup(dst);
-	if (dst[out_len-1] == '*') {
-		new_map->flags |= WSP_HTTP_MAP_OUTPREFIX;
-		out_len--;			/* exclude `*' */
-	}
-	new_map->out_len = out_len;
-
-	/* insert at tail of existing list */
-	if (wsp_http_map == NULL) {
-		wsp_http_map = wsp_http_map_last = new_map;
-	} else {
-		wsp_http_map_last->next = new_map;
-		wsp_http_map_last = new_map;
-	}
-}
-
-/* Called during configuration read, once for each "map-url" statement.
- * Interprets parameter value as a space-separated two-tuple of src and dst.
- */
-void wsp_http_map_url_config(char *s)
-{
-	char *in, *out;
-
-	s = gw_strdup(s);
-	in = strtok(s, " \t");
-	if (!in) return;
-	out = strtok(NULL, " \t");
-	if (!out) return;
-	wsp_http_map_url_do_config(in, out);
-	gw_free(s);
-}
-
-/* Called during configuration read, this adds a mapping for the source URL
- * "DEVICE:home", to the given destination. The mapping is configured
- * as an in/out prefix mapping.
- */
-void wsp_http_map_url_config_device_home(char *to)
-{
-	int len;
-	char *newto = 0;
-
-	if (!to)
-		return;
-	len = strlen(to);
-	if (to[len] != '*') {
-		newto = gw_malloc(len+2);
-		strcpy(newto, to);
-		newto[len] = '*';
-		newto[len+1] = '\0';
-		to = newto;
-	}
-	wsp_http_map_url_do_config("DEVICE:home*", to);
-	if (newto)
-		gw_free(newto);
-}
-
-/* show mapping list at info level, after configuration is done. */
-void wsp_http_map_url_config_info(void)
-{
-	struct wsp_http_map *run;
-
-	for (run = wsp_http_map; run; run = run->next) {
-		char *s1 = (run->flags & WSP_HTTP_MAP_INPREFIX)  ? "*" : "";
-		char *s2 = (run->flags & WSP_HTTP_MAP_OUTPREFIX) ? "*" : "";
-		info(0, "map-url %.*s%s %.*s%s",
-			run->in_len, run->in, s1,
-			run->out_len, run->out, s2);
-	}
-}
-
-/* Search list of mappings for the given URL, returning the map structure. */
-static struct wsp_http_map *wsp_http_map_find(char *s)
-{
-	struct wsp_http_map *run;
-
-	for (run = wsp_http_map; run; run = run->next)
-		if (0 == strncasecmp(s, run->in, run->in_len))
-			break;
-	if (run) {
-		debug("wap.wsp.http", 0, "WSP: found mapping for url <%s>", s);
-	}
-	return run;
-}
-
-/* Maybe rewrite URL, if there is a mapping. This is where the runtime
- * lookup comes in (called from further down this file, wsp_http.c)
- */
-static void wsp_http_map_url(Octstr **osp)
-{
-	struct wsp_http_map *map;
-	Octstr *old = *osp;
-	char *oldstr = octstr_get_cstr(old);
-
-	map = wsp_http_map_find(oldstr);
-	if (!map)
-		return;
-	*osp = octstr_create_from_data(map->out, map->out_len);
-	/* 
-	 * If both prefix flags are set, append tail of incoming URL
-	 * to outgoing URL.
-	 */
-	if (WSP_HTTP_MAP_INOUTPREFIX == (map->flags & WSP_HTTP_MAP_INOUTPREFIX))
-		octstr_append_cstr(*osp, oldstr + map->in_len);
-	debug("wap.wsp.http", 0, "WSP: url <%s> mapped to <%s>",
-		oldstr, octstr_get_cstr(*osp));
-	octstr_destroy(old);
-}
 
 void wap_appl_init(void) {
 	gw_assert(run_status == limbo);
@@ -535,3 +374,173 @@ static Octstr *convert_wmlscript_to_wmlscriptc(Octstr *wmlscript,
 
 	return wmlscriptc;
 }
+
+
+
+/***********************************************************************
+ * The following code implements the map-url mechanism
+ */
+
+struct wsp_http_map {
+	struct wsp_http_map *next;
+	unsigned flags;
+#define WSP_HTTP_MAP_INPREFIX	0x0001	/* prefix-match incoming string */
+#define WSP_HTTP_MAP_OUTPREFIX	0x0002	/* prefix-replace outgoing string */
+#define WSP_HTTP_MAP_INOUTPREFIX 0x0003	/* combine the two for masking */
+	char *in;
+	int in_len;
+	char *out;
+	int out_len;
+};
+
+static struct wsp_http_map *wsp_http_map = 0;
+static struct wsp_http_map *wsp_http_map_last = 0;
+
+/*
+ * Add mapping for src URL to dst URL.
+ */
+static void wsp_http_map_url_do_config(char *src, char *dst)
+{
+	struct wsp_http_map *new_map;
+	int in_len = src ? strlen(src) : 0;
+	int out_len = dst ? strlen(dst) : 0;
+
+	if (!in_len) {
+		warning(0, "wsp_http_map_url_do_config: empty incoming string");
+		return;
+	}
+	gw_assert(in_len > 0);
+
+	new_map = gw_malloc(sizeof(*new_map));
+	new_map->next = NULL;
+	new_map->flags = 0;
+
+	/* incoming string
+	 * later, the incoming URL will be prefix-compared to new_map->in,
+	 * using exactly new_map->in_len characters for comparison.
+	 */
+	new_map->in = gw_strdup(src);
+	if (src[in_len-1] == '*') {
+		new_map->flags |= WSP_HTTP_MAP_INPREFIX;
+		in_len--;		/* do not include `*' in comparison */
+	} else {
+		in_len++;		/* include \0 in comparisons */
+	}
+	new_map->in_len = in_len;
+
+	/* replacement string
+	 * later, when an incoming URL matches, it will be replaced
+	 * or modified according to this string. If the replacement
+	 * string ends with an asterisk, and the match string indicates
+	 * a prefix match (also ends with an asterisk), the trailing
+	 * part of the matching URL will be appended to the replacement
+	 * string, i.e. we do a prefix replacement.
+	 */
+	new_map->out = gw_strdup(dst);
+	if (dst[out_len-1] == '*') {
+		new_map->flags |= WSP_HTTP_MAP_OUTPREFIX;
+		out_len--;			/* exclude `*' */
+	}
+	new_map->out_len = out_len;
+
+	/* insert at tail of existing list */
+	if (wsp_http_map == NULL) {
+		wsp_http_map = wsp_http_map_last = new_map;
+	} else {
+		wsp_http_map_last->next = new_map;
+		wsp_http_map_last = new_map;
+	}
+}
+
+/* Called during configuration read, once for each "map-url" statement.
+ * Interprets parameter value as a space-separated two-tuple of src and dst.
+ */
+void wsp_http_map_url_config(char *s)
+{
+	char *in, *out;
+
+	s = gw_strdup(s);
+	in = strtok(s, " \t");
+	if (!in) return;
+	out = strtok(NULL, " \t");
+	if (!out) return;
+	wsp_http_map_url_do_config(in, out);
+	gw_free(s);
+}
+
+/* Called during configuration read, this adds a mapping for the source URL
+ * "DEVICE:home", to the given destination. The mapping is configured
+ * as an in/out prefix mapping.
+ */
+void wsp_http_map_url_config_device_home(char *to)
+{
+	int len;
+	char *newto = 0;
+
+	if (!to)
+		return;
+	len = strlen(to);
+	if (to[len] != '*') {
+		newto = gw_malloc(len+2);
+		strcpy(newto, to);
+		newto[len] = '*';
+		newto[len+1] = '\0';
+		to = newto;
+	}
+	wsp_http_map_url_do_config("DEVICE:home*", to);
+	if (newto)
+		gw_free(newto);
+}
+
+/* show mapping list at info level, after configuration is done. */
+void wsp_http_map_url_config_info(void)
+{
+	struct wsp_http_map *run;
+
+	for (run = wsp_http_map; run; run = run->next) {
+		char *s1 = (run->flags & WSP_HTTP_MAP_INPREFIX)  ? "*" : "";
+		char *s2 = (run->flags & WSP_HTTP_MAP_OUTPREFIX) ? "*" : "";
+		info(0, "map-url %.*s%s %.*s%s",
+			run->in_len, run->in, s1,
+			run->out_len, run->out, s2);
+	}
+}
+
+/* Search list of mappings for the given URL, returning the map structure. */
+static struct wsp_http_map *wsp_http_map_find(char *s)
+{
+	struct wsp_http_map *run;
+
+	for (run = wsp_http_map; run; run = run->next)
+		if (0 == strncasecmp(s, run->in, run->in_len))
+			break;
+	if (run) {
+		debug("wap.wsp.http", 0, "WSP: found mapping for url <%s>", s);
+	}
+	return run;
+}
+
+/* Maybe rewrite URL, if there is a mapping. This is where the runtime
+ * lookup comes in (called from further down this file, wsp_http.c)
+  */
+static void wsp_http_map_url(Octstr **osp)
+{
+	struct wsp_http_map *map;
+	Octstr *old = *osp;
+	char *oldstr = octstr_get_cstr(old);
+
+	map = wsp_http_map_find(oldstr);
+	if (!map)
+		return;
+	*osp = octstr_create_from_data(map->out, map->out_len);
+	/* 
+	 * If both prefix flags are set, append tail of incoming URL
+	 * to outgoing URL.
+	 */
+	if (WSP_HTTP_MAP_INOUTPREFIX == (map->flags & WSP_HTTP_MAP_INOUTPREFIX))
+		octstr_append_cstr(*osp, oldstr + map->in_len);
+	debug("wap.wsp.http", 0, "WSP: url <%s> mapped to <%s>",
+		oldstr, octstr_get_cstr(*osp));
+	octstr_destroy(old);
+}
+
