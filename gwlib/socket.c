@@ -24,25 +24,6 @@
 #endif
 
 
-/* configure should get this, but doesn't. XXX fix this --liw */
-#if __sun && __sparc
-#define HAVE_INET_ATON 1 
-#endif
-
-
-#if !HAVE_INET_ATON
-
-int inet_aton(char *name, struct in_addr *ap)
-{
-	struct in_addr res;
-	res.s_addr = inet_addr(name);
-	if (res.s_addr == 0xffffffff) return 0;
-	if (ap) *ap = res;
-	return 1;
-}
-
-#endif
-
 #if !HAVE_GETNAMEINFO
 
 int getnameinfo (const struct sockaddr *sa,
@@ -126,9 +107,6 @@ int tcpip_connect_to_server_with_port(char *hostname, int port, int our_port) {
 	struct sockaddr_in addr;
 	struct sockaddr_in o_addr;
 	struct hostent *hostinfo;
-#if 0
-	struct linger dontlinger;
-#endif
 	int s;
 
 	s = socket(PF_INET, SOCK_STREAM, 0);
@@ -136,21 +114,6 @@ int tcpip_connect_to_server_with_port(char *hostname, int port, int our_port) {
 		error(errno, "Couldn't create new socket.");
 		goto error;
 	}
-
-#if 0
-	dontlinger.l_onoff = 1;
-	dontlinger.l_linger = 0;
-#if defined(BSD) && !defined(__NetBSD__)
-	setsockopt(s, SOL_TCP, SO_LINGER, &dontlinger, sizeof(dontlinger));
-#else
-{
-	#include <netdb.h>
-	/* XXX no error trapping */
-	struct protoent *p = getprotobyname("tcp");
-	setsockopt(s, p->p_proto, SO_LINGER, &dontlinger, sizeof(dontlinger));
-}
-#endif
-#endif
 
 	hostinfo = gethostbyname(hostname);
 	if (hostinfo == NULL) {

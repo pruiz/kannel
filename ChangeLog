@@ -1,5 +1,14 @@
 2000-05-03  Richard Braakman  <dark@wapit.com>
 
+	* inet_aton is not used anywhere.  Removed definition from
+	gwlib/socket.c, and removed all configure checks for its
+	existence.
+
+	* Removed unused linger() code from tcpip_connect_to_server.
+	We have CVS for storing dead code.
+
+2000-05-03  Richard Braakman  <dark@wapit.com>
+
 	* configure.in, config.h.in, configure: Added --enable-mutex-stats
 	option.
 
