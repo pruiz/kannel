@@ -1,3 +1,7 @@
+2003-10-10  Stipe Tolj  <tolj@wapme-systems.de>
+    * gwlib/http.c: removed unncessary convertion to upper case in function
+      http_something_accepted(). That's why we have octstr_case_compare() for.
+
 2003-10-09  Alexander Malysh  <a.malysh@centrium.de>
     * gwlib/http.c: fixed bug, that octstr was double freed.
 

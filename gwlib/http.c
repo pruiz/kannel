@@ -3006,16 +3006,13 @@ static int http_something_accepted(List *headers, char *header_name,
     gw_assert(headers != NULL);
     gw_assert(what != NULL);
 
-    /* conver to upper case */
-    oswhat = octstr_create(what);
-    octstr_convert_range(oswhat, 0, octstr_len(oswhat), toupper);
+    /* return all headers with this name */
     accepts = http_header_find_all(headers, header_name);
 
     found = 0;
     for (i = 0; !found && i < list_len(accepts); ++i) {
         Octstr *header_value = list_get(accepts, i);
-        octstr_convert_range(header_value, 0, octstr_len(header_value), toupper);
-        if (octstr_compare(header_value, oswhat) == 0)
+        if (octstr_case_compare(header_value, oswhat) == 0)
             found = 1;
     }
 
