@@ -1,5 +1,7 @@
-2002-07-04 Aarno Syvänen <aarno@global-networks.ch>
+2002-07-02  Stipe Tolj  <tolj@wapme-systems.de>
+    * Re-Making stable release 1.2.0.
 
+2002-07-04 Aarno Syvänen <aarno@global-networks.ch>
     * "Test_http_server reads black and white lists from files" patch:
     * test/test_http_server.c: Doing this
     * checks/check_ppg.sh: Use lists when starting http server responsible for distributing these
