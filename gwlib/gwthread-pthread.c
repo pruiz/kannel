@@ -294,7 +294,7 @@ long gwthread_create_real(Threadfunc *func, const char *name, void *arg) {
 	number = fill_threadinfo(id, name, func, p->ti);
 	unlock();
 	
-	debug("gwlib.gwthread", 0, "Started new thread %ld (%s)", 
+	debug("gwlib.gwthread", 0, "Started thread %ld (%s)", 
 		number, name);
 
 	return number;
