@@ -1,3 +1,14 @@
+2002-09-04  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/dlr.[ch], gw/urltrans.c: added a 'source' field to the DLR storage 
+      space, hence modified the dlr_add() call parameters.
+      Re-organized how the DLR msg structs are transfered to smsbox and the 
+      msg->sms.dlr_url is now used to get the DLR URL. This is more clean 
+      and makes DLR proxying accross different SMSC modules posible.
+    * gwlib/cfg.def: added 'field-source' for the mysql dlr definition
+    * gw/smsc/smsc_*.c: added source parameter to call dlr_add() and changed
+      msg->sms.msgdata handling after dlr_find()
+    * gw/smsc/smpp_pdu.h: added submit_sm and deliver_sm esm_class defines
+
 2002-09-04 Aarno Syv\212nen <aarno@gni.ch>
     * STATUS: updated
     * TODO: typo fix
