@@ -231,7 +231,6 @@ static WAPEvent *pack_into_push_datagram(WAPEvent *event) {
         Octstr *ospdu;
 	unsigned char push_id;
 
-        debug("wap.wsp_unit", 0, "Connectionless session request accepted");
         gw_assert(event->type == S_Unit_Push_Req);
         pdu = wsp_pdu_create(Push);
 	pdu->u.Push.headers = wsp_headers_pack(
@@ -246,6 +245,7 @@ static WAPEvent *pack_into_push_datagram(WAPEvent *event) {
         push_id = event->u.S_Unit_Push_Req.push_id;
 	octstr_insert_data(ospdu, 0, &push_id, 1);
 
+        debug("wap.wsp.unit", 0, "WSP_UNIT: Connectionless push accepted");
         datagram = wap_event_create(T_DUnitdata_Req);
         datagram->u.T_DUnitdata_Req.addr_tuple =
 		wap_addr_tuple_duplicate(event->u.S_Unit_Push_Req.addr_tuple);

@@ -381,8 +381,10 @@ static int parse_element(xmlNodePtr node, WAPEvent **e)
         ++i;
     }
 
-    if (i == NUM_ELEMENTS)
+    if (i == NUM_ELEMENTS) {
+      octstr_destroy(name);
         return -2;
+    }
 
     if (node->properties != NULL) {
         attribute = node->properties;

@@ -210,6 +210,7 @@ static void http_read_thread(void *arg)
         if ((compiler_status = pap_compile(pap_content, &ppg_event)) == -2) {
 	    send_bad_message_response(client, pap_content, PAP_BAD_REQUEST);
             warning(0, "PAP: http_read_thread: pap control entity erroneous");
+            goto no_compile;
         } else if (compiler_status == -1) {
             send_bad_message_response(client, pap_content, PAP_BAD_REQUEST);
             warning(0, "PAP: http_read_thread: non implemented pap feature"
@@ -233,6 +234,16 @@ static void http_read_thread(void *arg)
         octstr_destroy(push_data);
         octstr_destroy(rdf_content);
         octstr_destroy(boundary);
+        continue;
+
+no_compile:
+        http_destroy_headers(push_headers);
+        http_destroy_cgiargs(cgivars);
+        octstr_destroy(mime_content);
+        octstr_destroy(push_data);
+        octstr_destroy(rdf_content);
+        octstr_destroy(boundary);
+        octstr_destroy(url);
         continue;
 
 clean:

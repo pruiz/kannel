@@ -1,6 +1,11 @@
 /*
  * Very simple push initiator for testing push proxy gateway
  *
+ * Read pap control content and push content from files, pack them into a PAP
+ * protocol MIME message and send this content to a specified url. Use a hard-
+ * coded message boundary (asdlfkjiurwgasf), for simpler command line inter-
+ * face.
+ *
  * By Aarno Syvänen for Wiral Ltd
  */
 
@@ -143,8 +148,7 @@ static void start_push(HTTPCaller *caller, long i)
         pap_content = octstr_format("%s", "Content-Type: application/xml\r\n");
         if ((pap_file_content = octstr_read_file(pap_file)) ==  NULL)
 	    panic(0, "Stopping");
-        octstr_append(pap_content, 
-            pap_file_content = octstr_read_file(pap_file));
+        octstr_append(pap_content, pap_file_content);
         octstr_destroy(pap_file_content);
 
         if (wap_content == NULL || pap_content == NULL)
@@ -311,7 +315,6 @@ static void help(void)
 {
     info(0, "Usage: test_ppg [options] push_url [content_file pap_file]");
     info(0, "push content_file using control file pap_file to push_url");
-    info(0, "in a file pap_file");
     info(0, "where options are:");
     info(0, "-v number");
     info(0, "    set log level for stderr logging");
