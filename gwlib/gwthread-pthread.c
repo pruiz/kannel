@@ -459,6 +459,10 @@ int gwthread_poll(struct pollfd *fds, long numfds, double timeout) {
 	if (pollfds[0].revents)
 		flushpipe(pollfds[0].fd);
 
+        /* Copy the results back to the caller */
+	memcpy(fds, pollfds + 1, numfds * sizeof(*pollfds));
+        gw_free(pollfds);
+
 	return ret;
 }
 

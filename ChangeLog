@@ -1,5 +1,9 @@
 2000-10-23  Richard Braakman  <dark@wapit.com>
 
+	* Made gwthread_poll() actually return the results.
+
+2000-10-23  Richard Braakman  <dark@wapit.com>
+
 	* Bugfix: HTTP POST requests have a Content-Length again.
 	Thanks to Stipe Tolj for spotting the problem.
 
