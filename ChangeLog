@@ -1,3 +1,12 @@
+2000-10-09  Richard Braakman  <dark@wapit.com>
+
+	* gwlib/octstr.c: Rearranged immutable octstrs so that seems_valid()
+	correctly flags freed octstrs again.  Added !immutable assertions
+	to octstr_grow and octstr_set_char.
+	Reformatted octstr_append_from_hex.
+
+	* test/test_http.c: Fixed memory leak in case of server not responding.
+
 2000-10-09 Aarno Syvänen <syvanen@wapit.com>
 
 	* gw/wtp_init.c: Remove an unused variable.

@@ -58,12 +58,7 @@ struct Octstr
 
 #define MAX_IMMUTABLES 1024
 
-static struct
-{
-    int in_use;
-    Octstr os;
-} immutables[MAX_IMMUTABLES];
-
+static Octstr *immutables[MAX_IMMUTABLES];
 static Mutex immutables_mutex;
 static int immutables_init = 0;
 
@@ -100,6 +95,7 @@ static void seems_valid_real(Octstr *ostr, const char *filename, long lineno,
 /* Reserve space for at least 'size' octets */
 static void octstr_grow(Octstr *ostr, long size)
 {
+    gw_assert(!ostr->immutable);
     seems_valid(ostr);
     gw_assert(size >= 0);
 
@@ -124,9 +120,12 @@ void octstr_shutdown(void)
     long i, n;
 
     n = 0;
-    for (i = 0; i < MAX_IMMUTABLES; ++i)
-        if (immutables[i].in_use)
+    for (i = 0; i < MAX_IMMUTABLES; ++i) {
+        if (immutables[i] != NULL) {
+	    gw_free(immutables[i]);
             ++n;
+        }
+    }
     debug("gwlib.octstr", 0, "Immutable octet strings: %ld.", n);
     mutex_destroy(&immutables_mutex);
 }
@@ -180,7 +179,7 @@ Octstr *octstr_create_immutable(const char *cstr)
     mutex_lock(&immutables_mutex);
     i = index;
     for (; ; ) {
-        if (!immutables[i].in_use || immutables[i].os.data == data)
+	if (immutables[i] == NULL || immutables[i]->data == data)
             break;
         i = (i + 1) % MAX_IMMUTABLES;
         if (i == index)
@@ -188,13 +187,19 @@ Octstr *octstr_create_immutable(const char *cstr)
                   "Too many immutable strings, limit is %d.",
                   MAX_IMMUTABLES);
     }
-    os = &immutables[i].os;
-    if (!immutables[i].in_use) {
-        immutables[i].in_use = 1;
+    os = immutables[i];
+    if (os == NULL) {
+	/*
+	 * Can't use octstr_create() because it copies the string,
+	 * which would break our hashing.
+	 */
+	os = gw_malloc(sizeof(*os));
         os->data = data;
         os->len = strlen(data);
         os->size = os->len + 1;
         os->immutable = 1;
+	immutables[i] = os;
+	seems_valid(os);
     }
     mutex_unlock(&immutables_mutex);
 
@@ -289,6 +294,7 @@ int octstr_get_char(Octstr *ostr, long pos)
 void octstr_set_char(Octstr *ostr, long pos, int ch)
 {
     seems_valid(ostr);
+    gw_assert(!ostr->immutable);
     if (pos < ostr->len)
         ostr->data[pos] = ch;
     seems_valid(ostr);
@@ -318,14 +324,16 @@ char *octstr_get_cstr(Octstr *ostr)
 }
 
 
-void octstr_append_from_hex(Octstr *ostr, char *hex) {
-	Octstr *output;
+void octstr_append_from_hex(Octstr *ostr, char *hex)
+{
+    Octstr *output;
 	
-	seems_valid(ostr);
+    seems_valid(ostr);
+    gw_assert(!ostr->immutable);
 	
-	output = octstr_create(hex);
-	octstr_hex_to_binary(output);
-	octstr_append(ostr, output);
+    output = octstr_create(hex);
+    octstr_hex_to_binary(output);
+    octstr_append(ostr, output);
 }
 
 
@@ -788,7 +796,7 @@ int octstr_ncompare(Octstr *ostr1, Octstr *ostr2, long n)
 }
 
 
-int octstr_str_compare (Octstr *ostr, const char *str)
+int octstr_str_compare(Octstr *ostr, const char *str)
 {
     seems_valid(ostr);
 
@@ -1943,9 +1951,8 @@ static void seems_valid_real(Octstr *ostr, const char *filename, long lineno,
     gw_assert(immutables_init);
     gw_assert_place(ostr != NULL,
                     filename, lineno, function);
-    if (!ostr->immutable)
-        gw_assert_allocated(ostr,
-                            filename, lineno, function);
+    gw_assert_allocated(ostr,
+                        filename, lineno, function);
     gw_assert_place(ostr->len >= 0,
                     filename, lineno, function);
     gw_assert_place(ostr->size >= 0,
@@ -1960,6 +1967,9 @@ static void seems_valid_real(Octstr *ostr, const char *filename, long lineno,
                         filename, lineno, function);
         gw_assert_place(ostr->data != NULL,
                         filename, lineno, function);
+	if (!ostr->immutable)
+            gw_assert_allocated(ostr->data,
+                                filename, lineno, function);
         gw_assert_place(ostr->data[ostr->len] == '\0',
                         filename, lineno, function);
     }

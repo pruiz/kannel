@@ -53,9 +53,9 @@ static void client_thread(void *arg) {
 			if (print_body)
 				octstr_print(stdout, replyb);
 			octstr_destroy(replyb);
-			octstr_destroy(url);
 			octstr_destroy(final_url);
 		}
+		octstr_destroy(url);
 	}
 	list_destroy(reqh, NULL);
 	info(0, "This thread: %ld succeeded, %ld failed.", succeeded, failed);
