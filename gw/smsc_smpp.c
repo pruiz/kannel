@@ -158,37 +158,40 @@ static void smpp_destroy(SMPP *smpp)
  * length, but not the rest of the PDU - we need to remember the lenght 
  * for the next call). `*len' should be zero at the first call. 
  */ 
-static int read_pdu(Connection *conn, long *len, SMPP_PDU **pdu) 
+static int read_pdu(SMPP *smpp, Connection *conn, long *len, SMPP_PDU **pdu) 
 { 
     Octstr *os; 
  
     if (*len == 0) { 
-	*len = smpp_pdu_read_len(conn); 
-	if (*len == -1) { 
-	    error(0, "SMPP: Server sent garbage, ignored."); 
-	    return -1; 
-	} else if (*len == 0) { 
-	    if (conn_eof(conn) || conn_read_error(conn)) 
-		return -1; 
-	    return 0; 
-	} 
+        *len = smpp_pdu_read_len(conn); 
+        if (*len == -1) { 
+            error(0, "SMPP[%s]: Server sent garbage, ignored.",
+                  octstr_get_cstr(smpp->conn->id)); 
+            return -1; 
+        } else if (*len == 0) { 
+            if (conn_eof(conn) || conn_read_error(conn)) 
+                return -1; 
+            return 0; 
+        } 
     } 
      
     os = smpp_pdu_read_data(conn, *len); 
     if (os == NULL) { 
-	if (conn_eof(conn) || conn_read_error(conn)) 
-	    return -1; 
-	return 0; 
+        if (conn_eof(conn) || conn_read_error(conn)) 
+            return -1; 
+        return 0; 
     } 
     *len = 0; 
      
     *pdu = smpp_pdu_unpack(os); 
     if (*pdu == NULL) { 
-	error(0, "SMPP: PDU unpacking failed."); 
-	debug("bb.sms.smpp", 0, "SMPP: Failed PDU follows."); 
-	octstr_dump(os, 0); 
-	octstr_destroy(os); 
-	return -1; 
+        error(0, "SMPP[%s]: PDU unpacking failed.",
+              octstr_get_cstr(smpp->conn->id)); 
+        debug("bb.sms.smpp", 0, "SMPP[%s]: Failed PDU follows.",
+              octstr_get_cstr(smpp->conn->id)); 
+        octstr_dump(os, 0); 
+        octstr_destroy(os); 
+        return -1; 
     } 
      
     octstr_destroy(os); 
@@ -220,11 +223,11 @@ static Msg *pdu_to_msg(SMPP_PDU *pdu)
 static long smpp_status_to_smscconn_failure_reason(long status) 
 { 
     enum { 
-	ESME_RMSGQFUL = 0x00000014 
+        ESME_RMSGQFUL = 0x00000014 
     }; 
  
     if (status == ESME_RMSGQFUL) 
-	return SMSCCONN_FAILED_TEMPORARILY; 
+        return SMSCCONN_FAILED_TEMPORARILY; 
  
     return SMSCCONN_FAILED_REJECTED; 
 } 
@@ -248,8 +251,9 @@ static SMPP_PDU *msg_to_pdu(SMPP *smpp, Msg *msg)
     if(smpp->source_addr_ton > -1 && smpp->source_addr_npi > -1) { 
         pdu->u.submit_sm.source_addr_ton = smpp->source_addr_ton; 
         pdu->u.submit_sm.source_addr_npi = smpp->source_addr_npi; 
-        debug("bb.sms.smpp", 0, "Manually forced source addr ton = %d, source add npi = %d", 
-            smpp->source_addr_ton, smpp->source_addr_npi); 
+        debug("bb.sms.smpp", 0, "SMPP[%s]: Manually forced source addr ton = %d, source add npi = %d", 
+              octstr_get_cstr(smpp->conn->id), smpp->source_addr_ton, 
+              smpp->source_addr_npi); 
     } else { 
         /* setup default values */ 
         pdu->u.submit_sm.source_addr_ton = GSM_ADDR_TON_NATIONAL; /* national */ 
@@ -277,8 +281,9 @@ static SMPP_PDU *msg_to_pdu(SMPP *smpp, Msg *msg)
     if (smpp->dest_addr_ton > -1 && smpp->dest_addr_npi > -1) { 
         pdu->u.submit_sm.dest_addr_ton = smpp->dest_addr_ton; 
         pdu->u.submit_sm.dest_addr_npi = smpp->dest_addr_npi; 
-        debug("bb.sms.smpp", 0, "Manually forced dest addr ton = %d, source add npi = %d", 
-            smpp->dest_addr_ton, smpp->dest_addr_npi); 
+        debug("bb.sms.smpp", 0, "SMPP[%s]: Manually forced dest addr ton = %d, source add npi = %d", 
+              octstr_get_cstr(smpp->conn->id), smpp->dest_addr_ton, 
+              smpp->dest_addr_npi); 
     } else { 
         pdu->u.submit_sm.dest_addr_ton = GSM_ADDR_TON_NATIONAL; /* national */ 
         pdu->u.submit_sm.dest_addr_npi = GSM_ADDR_NPI_E164; /* ISDN number plan */ 
@@ -289,8 +294,8 @@ static SMPP_PDU *msg_to_pdu(SMPP *smpp, Msg *msg)
      * '+' and set number type to international instead  
      */ 
     if( octstr_get_char(pdu->u.submit_sm.destination_addr,0) == '+') { 
-    	octstr_delete(pdu->u.submit_sm.destination_addr, 0,1); 
-    	pdu->u.submit_sm.dest_addr_ton = GSM_ADDR_TON_INTERNATIONAL; 
+        octstr_delete(pdu->u.submit_sm.destination_addr, 0,1); 
+        pdu->u.submit_sm.dest_addr_ton = GSM_ADDR_TON_INTERNATIONAL; 
     } 
  
     /* 
@@ -301,7 +306,7 @@ static SMPP_PDU *msg_to_pdu(SMPP *smpp, Msg *msg)
         2 - msg->sms.alt_dcs : smpp->alt_dcs));
 
     if(msg->sms.pid) 
-	pdu->u.submit_sm.protocol_id = msg->sms.pid; 
+        pdu->u.submit_sm.protocol_id = msg->sms.pid; 
  
     if (octstr_len(msg->sms.udhdata)) { 
         pdu->u.submit_sm.short_message = 
@@ -365,11 +370,10 @@ static void send_enquire_link(SMPP *smpp, Connection *conn, long *last_sent)
     Octstr *os; 
  
     if (date_universal_now() - *last_sent < smpp->enquire_link_interval)
-    	return; 
+        return; 
     *last_sent = date_universal_now(); 
  
-    pdu = smpp_pdu_create(enquire_link,  
-			  counter_increase(smpp->message_id_counter)); 
+    pdu = smpp_pdu_create(enquire_link, counter_increase(smpp->message_id_counter)); 
     dump_pdu("Sending enquire link:", pdu); 
     os = smpp_pdu_pack(pdu); 
     conn_write(conn, os); /* Write errors checked by caller. */ 
@@ -398,24 +402,24 @@ static void send_messages(SMPP *smpp, Connection *conn, long *pending_submits)
     Octstr *os; 
  
     if (*pending_submits == -1) 
-    	return; 
+        return; 
  
     while (*pending_submits < smpp->max_pending_submits) {
     	/* Get next message, quit if none to be sent */ 
     	msg = list_extract_first(smpp->msgs_to_send); 
-	if (msg == NULL) 
-	    break; 
+        if (msg == NULL) 
+            break; 
 	     
-	/* Send PDU, record it as waiting for ack from SMS center */ 
-	pdu = msg_to_pdu(smpp, msg); 
-	os = octstr_format("%ld", pdu->u.submit_sm.sequence_number); 
-	dict_put(smpp->sent_msgs, os, msg); 
-	octstr_destroy(os); 
-	send_pdu(conn, pdu); 
-    dump_pdu("Sent PDU:", pdu); 
-	smpp_pdu_destroy(pdu); 
+        /* Send PDU, record it as waiting for ack from SMS center */ 
+        pdu = msg_to_pdu(smpp, msg); 
+        os = octstr_format("%ld", pdu->u.submit_sm.sequence_number); 
+        dict_put(smpp->sent_msgs, os, msg); 
+        octstr_destroy(os); 
+        send_pdu(conn, pdu); 
+        dump_pdu("Sent PDU:", pdu); 
+        smpp_pdu_destroy(pdu); 
  
-	++(*pending_submits); 
+        ++(*pending_submits); 
     } 
 } 
  
@@ -432,19 +436,20 @@ static Connection *open_transmitter(SMPP *smpp)
  
     conn = conn_open_tcp(smpp->host, smpp->transmit_port, smpp->our_host ); 
     if (conn == NULL) { 
-    	error(0, "SMPP: Couldn't connect to server."); 
-	return NULL; 
+        error(0, "SMPP[%s]: Couldn't connect to server.",
+              octstr_get_cstr(smpp->conn->id)); 
+        return NULL; 
     } 
      
     bind = smpp_pdu_create(bind_transmitter, 
-			   counter_increase(smpp->message_id_counter)); 
+                counter_increase(smpp->message_id_counter)); 
     bind->u.bind_transmitter.system_id = octstr_duplicate(smpp->username); 
     bind->u.bind_transmitter.password = octstr_duplicate(smpp->password); 
     if (smpp->system_type == NULL) 
-	bind->u.bind_transmitter.system_type = octstr_create("VMA"); 
+        bind->u.bind_transmitter.system_type = octstr_create("VMA"); 
     else 
-	bind->u.bind_transmitter.system_type =  
-	    octstr_duplicate(smpp->system_type); 
+        bind->u.bind_transmitter.system_type =  
+	       octstr_duplicate(smpp->system_type); 
     bind->u.bind_transmitter.interface_version = smpp->version;
     bind->u.bind_transmitter.address_range =  
     	octstr_duplicate(smpp->address_range); 
@@ -467,7 +472,8 @@ static Connection *open_transceiver(SMPP *smpp)
      
     conn = conn_open_tcp(smpp->host, smpp->transmit_port, smpp->our_host ); 
     if (conn == NULL) {  
-       error(0, "SMPP: Couldn't connect to server."); 
+       error(0, "SMPP[%s]: Couldn't connect to server.",
+             octstr_get_cstr(smpp->conn->id)); 
        return NULL; 
     } 
  
@@ -500,22 +506,23 @@ static Connection *open_receiver(SMPP *smpp)
  
     conn = conn_open_tcp(smpp->host, smpp->receive_port, smpp->our_host ); 
     if (conn == NULL) { 
-    	error(0, "SMPP: Couldn't connect to server."); 
-	return NULL; 
+        error(0, "SMPP[%s]: Couldn't connect to server.",
+              octstr_get_cstr(smpp->conn->id)); 
+        return NULL; 
     } 
      
     bind = smpp_pdu_create(bind_receiver, 
-			   counter_increase(smpp->message_id_counter)); 
+                counter_increase(smpp->message_id_counter)); 
     bind->u.bind_receiver.system_id = octstr_duplicate(smpp->username); 
     bind->u.bind_receiver.password = octstr_duplicate(smpp->password); 
     if (smpp->system_type == NULL) 
-	bind->u.bind_receiver.system_type = octstr_create("VMA"); 
+        bind->u.bind_receiver.system_type = octstr_create("VMA"); 
     else 
-	bind->u.bind_receiver.system_type =  
-	    octstr_duplicate(smpp->system_type); 
+        bind->u.bind_receiver.system_type =  
+            octstr_duplicate(smpp->system_type); 
     bind->u.bind_receiver.interface_version = smpp->version;
     bind->u.bind_receiver.address_range =  
-    	octstr_duplicate(smpp->address_range); 
+        octstr_duplicate(smpp->address_range); 
     send_pdu(conn, bind); 
     smpp_pdu_destroy(bind); 
  
@@ -535,251 +542,249 @@ static void handle_pdu(SMPP *smpp, Connection *conn, SMPP_PDU *pdu,
     resp = NULL; 
  
     switch (pdu->type) { 
-    case deliver_sm: 
-	/* XXX UDH */ 
-	/* bb_smscconn_receive can fail, but we ignore that since we 
-	   have no way to usefull tell the SMS center about this 
-	   (no suitable error code for the deliver_sm_resp is defined) */ 
-         /* got a deliver ack? */ 
-         if ((pdu->u.deliver_sm.esm_class == 0x02 || pdu->u.deliver_sm.esm_class == 0x04)) 
-         { 
- 	    Octstr *reply, *respstr;    	 
- 	    Octstr *msgid = NULL; 
- 	    Octstr *stat = NULL; 
- 	    int dlrstat; 
- 	    long curr=0, vpos=0; 
+        case deliver_sm: 
+	        /* XXX UDH */ 
+            /* 
+             * bb_smscconn_receive can fail, but we ignore that since we 
+             * have no way to usefull tell the SMS center about this 
+             * (no suitable error code for the deliver_sm_resp is defined) 
+             */ 
+            /* got a deliver ack? */ 
+            if ((pdu->u.deliver_sm.esm_class == 0x02 || 
+                 pdu->u.deliver_sm.esm_class == 0x04)) { 
+                Octstr *reply, *respstr;    	 
+                Octstr *msgid = NULL; 
+                Octstr *stat = NULL; 
+                int dlrstat; 
+                long curr = 0, vpos = 0; 
      		 
-     	    debug("smsc_smpp.handle_pdu",0,"**********>>>>>>>>>>>>>>  SMPP handle_pdu Got DELIVER REPORT\n"); 
+                debug("bb.sms.smpp",0,"SMPP[%s] handle_pdu, got DLR",
+                      octstr_get_cstr(smpp->conn->id)); 
      					 
- 	    respstr = pdu->u.deliver_sm.short_message; 
+                respstr = pdu->u.deliver_sm.short_message; 
  		 
- 	    /* get server message id */ 
-   	    if ((curr = octstr_search(respstr, octstr_imm("id:"), 0)) != -1) 
-     	    {    
-	        vpos = octstr_search_char(respstr, ' ',curr ); 
-    	        if ((vpos-curr >0) && (vpos != -1)) 
- 	           msgid = octstr_copy(respstr, curr+3, vpos-curr-3); 
- 	    } 
- 	    else 
- 	    { 
- 	        msgid = NULL; 
- 	    }  		 
- 	    /* get err & status code */ 
- 	    if ((curr = octstr_search(respstr, octstr_imm("stat:"), 0)) != -1) 
- 	    {   
- 	        vpos = octstr_search_char(respstr, ' ',curr ); 
- 	        if ((vpos-curr >0) && (vpos != -1)) 
- 		    stat = octstr_copy(respstr, curr+5, vpos-curr-5); 
- 	    } 
- 	    else 
- 	    { 
- 	        stat = NULL; 
- 	    }	 
- 	     /* we get the following status: DELIVRD, ACCEPTD,  
- 	     EXPIRED, DELETED, UNDELIV, UNKNOWN, REJECTD */ 
+                /* get server message id */ 
+                if ((curr = octstr_search(respstr, octstr_imm("id:"), 0)) != -1) {    
+                    vpos = octstr_search_char(respstr, ' ', curr); 
+                    if ((vpos-curr >0) && (vpos != -1)) 
+                        msgid = octstr_copy(respstr, curr+3, vpos-curr-3); 
+                } else { 
+                    msgid = NULL; 
+                }
+  		 
+                /* get err & status code */ 
+                if ((curr = octstr_search(respstr, octstr_imm("stat:"), 0)) != -1) {   
+                    vpos = octstr_search_char(respstr, ' ', curr); 
+                    if ((vpos-curr >0) && (vpos != -1)) 
+                        stat = octstr_copy(respstr, curr+5, vpos-curr-5); 
+                } else { 
+                    stat = NULL; 
+                }
+	 
+                /* 
+                 * we get the following status: 
+                 * DELIVRD, ACCEPTD, EXPIRED, DELETED, UNDELIV, UNKNOWN, REJECTD 
+                 */ 
  		 
- 	    if ((stat != NULL) && ((octstr_compare(stat,octstr_imm("DELIVRD"))==0) 
- 	        || (octstr_compare(stat,octstr_imm("ACCEPTD"))==0))) 
-	        dlrstat = DLR_SUCCESS; 
- 	    else 
- 	        dlrstat = DLR_FAIL; 
+                if ((stat != NULL) && ((octstr_compare(stat, octstr_imm("DELIVRD")) == 0) || 
+                    (octstr_compare(stat, octstr_imm("ACCEPTD")) == 0))) 
+                    dlrstat = DLR_SUCCESS; 
+                else 
+                    dlrstat = DLR_FAIL; 
  			 
- 	    if (msgid !=NULL) 
- 	    { 
- 	        Octstr *tmp; 
- 	        tmp = octstr_format("%ld",strtol(octstr_get_cstr(msgid),NULL,10)); 
- 	        dlrmsg = dlr_find(octstr_get_cstr(smpp->conn->id),  
- 		    octstr_get_cstr(tmp), /* smsc message id */ 
- 		    octstr_get_cstr(pdu->u.deliver_sm.destination_addr), /* destination */ 
- 		    dlrstat); 
-                octstr_destroy(tmp); 
- 	    } 
- 	    if (dlrmsg != NULL) 
- 	    { 
- 	        reply = octstr_duplicate(respstr); 
- 	        /* having a / in the text breaks it so lets replace it with a space */ 
-	        len = octstr_len(reply); 
-		for(idx=0;idx<len;idx++) 
-	    	if(octstr_get_char(reply,idx)=='/') 
-	    	    octstr_set_char(reply,idx,'.'); 
- 	        octstr_append_char(reply, '/'); 
- 	        octstr_insert(dlrmsg->sms.msgdata, reply, 0); 
- 	        octstr_destroy(reply); 
- 	        bb_smscconn_receive(smpp->conn, dlrmsg); 
-	    } 
- 	    else 
-	    { 
-	    	error(0,"Got DELIV REPORT but couldnt find message or was not interested in it");    	 
- 	    }		 
-     	    resp = smpp_pdu_create(deliver_sm_resp,  
-            pdu->u.deliver_sm.sequence_number); 
+                if (msgid != NULL) { 
+                    Octstr *tmp; 
+                    tmp = octstr_format("%ld", strtol(octstr_get_cstr(msgid), NULL, 10)); 
+                    dlrmsg = dlr_find(octstr_get_cstr(smpp->conn->id),  
+                                      octstr_get_cstr(tmp), /* smsc message id */ 
+                                      octstr_get_cstr(pdu->u.deliver_sm.destination_addr), /* destination */ 
+                                      dlrstat); 
+                    octstr_destroy(tmp); 
+                } 
+                if (dlrmsg != NULL) { 
+                    reply = octstr_duplicate(respstr); 
+                    /* having a / in the text breaks it so lets replace it with a space */ 
+                    len = octstr_len(reply); 
+                    for (idx = 0; idx < len; idx++) 
+                        if (octstr_get_char(reply, idx) == '/') 
+                            octstr_set_char(reply, idx, '.'); 
+                    octstr_append_char(reply, '/'); 
+                    octstr_insert(dlrmsg->sms.msgdata, reply, 0); 
+                    octstr_destroy(reply); 
+                    bb_smscconn_receive(smpp->conn, dlrmsg); 
+                } else { 
+                    error(0,"SMPP[%s]: got DLR but could not find message or was not interested in it",
+                          octstr_get_cstr(smpp->conn->id));    	 
+                }		 
+                resp = smpp_pdu_create(deliver_sm_resp,  
+                pdu->u.deliver_sm.sequence_number); 
  					        
- 	    if (msgid != NULL) 
- 	    	octstr_destroy(msgid);	     
- 	    if (stat != NULL) 
- 	    	octstr_destroy(stat); 
+                if (msgid != NULL) 
+                    octstr_destroy(msgid);	     
+                if (stat != NULL) 
+                    octstr_destroy(stat); 
  	     
- 	} 
- 	else /* MO-SMS */ 
- 	{ 
-        /* ensure the smsc-id is set */ 
-        msg = pdu_to_msg(pdu); 
+            } else /* MO-SMS */
+            {
+                /* ensure the smsc-id is set */ 
+                msg = pdu_to_msg(pdu); 
  
-	/* Replace MO destination number with my-number */ 
-	if(octstr_len(smpp->my_number)) { 
-	    octstr_destroy(msg->sms.receiver); 
-	    msg->sms.receiver = octstr_duplicate(smpp->my_number); 
-	} 
-        time(&msg->sms.time); 
-        msg->sms.smsc_id = octstr_duplicate(smpp->conn->id); 
-	    (void) bb_smscconn_receive(smpp->conn, msg); 
-	    resp = smpp_pdu_create(deliver_sm_resp,  
-		                       pdu->u.deliver_sm.sequence_number); 
-	} 
-	break; 
+                /* Replace MO destination number with my-number */ 
+                if (octstr_len(smpp->my_number)) { 
+                    octstr_destroy(msg->sms.receiver); 
+                    msg->sms.receiver = octstr_duplicate(smpp->my_number); 
+                } 
+                time(&msg->sms.time); 
+                msg->sms.smsc_id = octstr_duplicate(smpp->conn->id); 
+                (void) bb_smscconn_receive(smpp->conn, msg); 
+                resp = smpp_pdu_create(deliver_sm_resp,  
+                            pdu->u.deliver_sm.sequence_number); 
+            } 
+            break; 
 	 
-    case enquire_link: 
-	resp = smpp_pdu_create(enquire_link_resp,  
-			       pdu->u.enquire_link.sequence_number); 
-	break; 
+        case enquire_link: 
+            resp = smpp_pdu_create(enquire_link_resp,  
+                        pdu->u.enquire_link.sequence_number); 
+            break; 
  
-    case enquire_link_resp: 
-	break; 
+        case enquire_link_resp: 
+            break; 
  
-    case submit_sm_resp: 
-	os = octstr_format("%ld", pdu->u.submit_sm.sequence_number); 
-	msg = dict_remove(smpp->sent_msgs, os); 
-	octstr_destroy(os); 
-	if (msg == NULL) { 
-	    warning(0, "SMPP: SMSC sent submit_sm_resp " 
-		       "with wrong sequence number 0x%08lx",  
-		       pdu->u.submit_sm.sequence_number); 
-	} else if (pdu->u.submit_sm_resp.command_status != 0) 
-	{ 
-        error(0, "SMPP: SMSC returned error code 0x%08lx " 
-		     "in response to submit_sm.", 
-		     pdu->u.submit_sm_resp.command_status); 
-	    reason = smpp_status_to_smscconn_failure_reason( 
-			pdu->u.submit_sm.command_status); 
+        case submit_sm_resp: 
+            os = octstr_format("%ld", pdu->u.submit_sm.sequence_number); 
+            msg = dict_remove(smpp->sent_msgs, os); 
+            octstr_destroy(os); 
+            if (msg == NULL) { 
+                warning(0, "SMPP[%s]: SMSC sent submit_sm_resp " 
+                        "with wrong sequence number 0x%08lx",
+                        octstr_get_cstr(smpp->conn->id),
+                        pdu->u.submit_sm.sequence_number); 
+            } else if (pdu->u.submit_sm_resp.command_status != 0) { 
+                error(0, "SMPP[%s]: SMSC returned error code 0x%08lx " 
+                      "in response to submit_sm.",
+                      octstr_get_cstr(smpp->conn->id),
+                      pdu->u.submit_sm_resp.command_status); 
+                reason = smpp_status_to_smscconn_failure_reason( 
+                            pdu->u.submit_sm.command_status); 
  
- 	    /* gen DLR_SMSC_FAIL */		 
- 	    if (msg->sms.dlr_mask & (DLR_SMSC_FAIL|DLR_FAIL)) 
- 	    { 
- 		Octstr *reply; 
+                /* gen DLR_SMSC_FAIL */		 
+                if (msg->sms.dlr_mask & (DLR_SMSC_FAIL|DLR_FAIL)) { 
+                    Octstr *reply; 
  		 
- 		reply = octstr_format("0x%08lx",pdu->u.submit_sm_resp.command_status); 
- 		/* generate DLR */ 
- 		info(0,"creating DLR message"); 
- 		dlrmsg = msg_create(sms); 
- 		dlrmsg->sms.service = octstr_duplicate(msg->sms.service); 
- 		dlrmsg->sms.dlr_mask = DLR_SMSC_FAIL; 
- 		dlrmsg->sms.sms_type = report; 
- 		dlrmsg->sms.smsc_id = octstr_duplicate(smpp->conn->id); 
- 		dlrmsg->sms.sender = octstr_duplicate(msg->sms.receiver); 
- 		dlrmsg->sms.receiver = octstr_create("000"); 
- 		dlrmsg->sms.msgdata = octstr_duplicate(msg->sms.dlr_url); 
- 		time(&msg->sms.time); 
+                    reply = octstr_format("0x%08lx", 
+                                pdu->u.submit_sm_resp.command_status); 
+                    /* generate DLR */ 
+                    info(0,"SMPP[%s]: creating DLR message",
+                         octstr_get_cstr(smpp->conn->id)); 
+                    dlrmsg = msg_create(sms); 
+                    dlrmsg->sms.service = octstr_duplicate(msg->sms.service); 
+                    dlrmsg->sms.dlr_mask = DLR_SMSC_FAIL; 
+                    dlrmsg->sms.sms_type = report; 
+                    dlrmsg->sms.smsc_id = octstr_duplicate(smpp->conn->id); 
+                    dlrmsg->sms.sender = octstr_duplicate(msg->sms.receiver); 
+                    dlrmsg->sms.receiver = octstr_create("000"); 
+                    dlrmsg->sms.msgdata = octstr_duplicate(msg->sms.dlr_url); 
+                    time(&msg->sms.time); 
  			 
- 		octstr_append_char(reply, '/'); 
- 		octstr_insert(dlrmsg->sms.msgdata, reply, 0); 
- 		octstr_destroy(reply); 
+                    octstr_append_char(reply, '/'); 
+                    octstr_insert(dlrmsg->sms.msgdata, reply, 0); 
+                    octstr_destroy(reply); 
  			 
- 		info(0,"DLR = %s",octstr_get_cstr(dlrmsg->sms.msgdata)); 
- 			bb_smscconn_receive(smpp->conn, dlrmsg); 
- 	    } 
- 	    else 
- 	    { 
-	        bb_smscconn_send_failed(smpp->conn, msg, reason); 
-	    } 
-	    --(*pending_submits); 
-	} 
- 	else  
- 	{  
-	    Octstr *tmp; 
+                    info(0,"SMPP[%s]: DLR = %s", octstr_get_cstr(smpp->conn->id),
+                         octstr_get_cstr(dlrmsg->sms.msgdata)); 
+                    bb_smscconn_receive(smpp->conn, dlrmsg); 
+                } else { 
+                    bb_smscconn_send_failed(smpp->conn, msg, reason); 
+                } 
+                --(*pending_submits); 
+            } else {  
+                Octstr *tmp; 
 	 
-	    /* deliver gives mesg id in decimal, submit_sm in hex.. */ 
-	    tmp = octstr_format("%ld",strtol(octstr_get_cstr(pdu->u.submit_sm_resp.message_id),NULL,16)); 
-	    /* SMSC ACK.. now we have the message id. */ 
+                /* deliver gives mesg id in decimal, submit_sm in hex.. */ 
+                tmp = octstr_format("%ld", strtol(
+                        octstr_get_cstr(pdu->u.submit_sm_resp.message_id), NULL, 16)); 
+                /* SMSC ACK.. now we have the message id. */ 
  				 
-	    if (msg->sms.dlr_mask & (DLR_SMSC_SUCCESS|DLR_SUCCESS|DLR_FAIL|DLR_BUFFERED)) 
- 		dlr_add(octstr_get_cstr(smpp->conn->id), 
-	    	octstr_get_cstr(tmp), 
-	    octstr_get_cstr(msg->sms.receiver), 
-            octstr_get_cstr(msg->sms.service), 
-            octstr_get_cstr(msg->sms.dlr_url), 
-            msg->sms.dlr_mask); 
+                if (msg->sms.dlr_mask & (DLR_SMSC_SUCCESS|DLR_SUCCESS|DLR_FAIL|DLR_BUFFERED)) 
+                    dlr_add(octstr_get_cstr(smpp->conn->id), 
+                            octstr_get_cstr(tmp), 
+                            octstr_get_cstr(msg->sms.receiver), 
+                            octstr_get_cstr(msg->sms.service), 
+                            octstr_get_cstr(msg->sms.dlr_url), 
+                            msg->sms.dlr_mask); 
   
- 	    /* gen DLR_SMSC_SUCCESS */ 
- 	    if (msg->sms.dlr_mask & DLR_SMSC_SUCCESS) 
- 	    { 
- 		Octstr *reply; 
+                /* gen DLR_SMSC_SUCCESS */ 
+                if (msg->sms.dlr_mask & DLR_SMSC_SUCCESS) { 
+                    Octstr *reply; 
  		 
- 		reply = octstr_format("0x%08lx",pdu->u.submit_sm_resp.command_status); 
+                    reply = octstr_format("0x%08lx", pdu->u.submit_sm_resp.command_status); 
   
- 		dlrmsg = dlr_find(octstr_get_cstr(smpp->conn->id),  
- 		    octstr_get_cstr(tmp), /* smsc message id */ 
- 		    octstr_get_cstr(msg->sms.receiver), /* destination */ 
- 		    (DLR_SMSC_SUCCESS|((msg->sms.dlr_mask & (DLR_SUCCESS|DLR_FAIL))?DLR_BUFFERED:0))); 
+                    dlrmsg = dlr_find(octstr_get_cstr(smpp->conn->id),  
+                                      octstr_get_cstr(tmp), /* smsc message id */ 
+                                      octstr_get_cstr(msg->sms.receiver), /* destination */ 
+                                      (DLR_SMSC_SUCCESS|((msg->sms.dlr_mask & (DLR_SUCCESS|DLR_FAIL)) ? DLR_BUFFERED : 0))); 
  			 
- 		if (dlrmsg != NULL) 
- 		{ 
- 		    octstr_append_char(reply, '/'); 
- 		    octstr_insert(dlrmsg->sms.msgdata, reply, 0); 
- 		    octstr_destroy(reply); 
- 		    bb_smscconn_receive(smpp->conn, dlrmsg); 
- 		} 
- 		else 
- 		    error(0,"Got SMSC_ACK but couldnt find message"); 
- 	    } 
- 	    octstr_destroy(tmp); 
-	    bb_smscconn_sent(smpp->conn, msg); 
-	    --(*pending_submits); 
-	} /* end if for SMSC ACK */ 
-	break; 
+                    if (dlrmsg != NULL) { 
+                        octstr_append_char(reply, '/'); 
+                        octstr_insert(dlrmsg->sms.msgdata, reply, 0); 
+                        octstr_destroy(reply); 
+                        bb_smscconn_receive(smpp->conn, dlrmsg); 
+                    } else 
+                        error(0,"SMPP[%s]: Got SMSC_ACK but could not find message",
+                              octstr_get_cstr(smpp->conn->id)); 
+                } 
+                octstr_destroy(tmp); 
+                bb_smscconn_sent(smpp->conn, msg); 
+                --(*pending_submits); 
+            } /* end if for SMSC ACK */ 
+            break; 
  
-    case bind_transmitter_resp: 
-	if (pdu->u.bind_transmitter_resp.command_status != 0) { 
-	    error(0, "SMPP: SMSC rejected login to transmit, " 
-		     "code 0x%08lx.", 
-		     pdu->u.bind_transmitter_resp.command_status); 
-	} else { 
-	    *pending_submits = 0; 
-	    smpp->conn->status = SMSCCONN_ACTIVE; 
-	    smpp->conn->connect_time = time(NULL); 
-	    bb_smscconn_connected(smpp->conn); 
-	} 
-	break; 
+        case bind_transmitter_resp: 
+            if (pdu->u.bind_transmitter_resp.command_status != 0) { 
+                error(0, "SMPP[%s]: SMSC rejected login to transmit, " 
+		              "code 0x%08lx.",
+                      octstr_get_cstr(smpp->conn->id),
+                      pdu->u.bind_transmitter_resp.command_status); 
+            } else { 
+                *pending_submits = 0; 
+                smpp->conn->status = SMSCCONN_ACTIVE; 
+                smpp->conn->connect_time = time(NULL); 
+                bb_smscconn_connected(smpp->conn); 
+            } 
+            break; 
  
-    case bind_transceiver_resp: 
-        if (pdu->u.bind_transceiver_resp.command_status != 0) { 
-            error(0, "SMPP: SMSC rejected login to transmit, " 
-                     "code 0x%08lx.", 
-                     pdu->u.bind_transceiver_resp.command_status); 
-        } else { 
-            *pending_submits = 0; 
-            smpp->conn->status = SMSCCONN_ACTIVE; 
-            smpp->conn->connect_time = time(NULL); 
-            bb_smscconn_connected(smpp->conn); 
-        } 
-        break; 
+        case bind_transceiver_resp: 
+            if (pdu->u.bind_transceiver_resp.command_status != 0) { 
+                error(0, "SMPP[%s]: SMSC rejected login to transmit, " 
+                      "code 0x%08lx.",
+                      octstr_get_cstr(smpp->conn->id),
+                      pdu->u.bind_transceiver_resp.command_status); 
+            } else { 
+                *pending_submits = 0; 
+                smpp->conn->status = SMSCCONN_ACTIVE; 
+                smpp->conn->connect_time = time(NULL); 
+                bb_smscconn_connected(smpp->conn); 
+            } 
+            break; 
  
-    case bind_receiver_resp: 
-	if (pdu->u.bind_transmitter_resp.command_status != 0) { 
-	    error(0, "SMPP: SMSC rejected login to receive, " 
-		     "code 0x%08lx.", 
-		     pdu->u.bind_transmitter_resp.command_status); 
-	} 
-	break; 
+        case bind_receiver_resp: 
+            if (pdu->u.bind_transmitter_resp.command_status != 0) { 
+                error(0, "SMPP[%s]: SMSC rejected login to receive, " 
+                      "code 0x%08lx.", 
+                      octstr_get_cstr(smpp->conn->id),
+                      pdu->u.bind_transmitter_resp.command_status); 
+            } 
+            break; 
  
-    default: 
-	error(0, "SMPP: Unknown PDU type 0x%08lx, ignored.",  
-		 pdu->type); 
-	break; 
+        default: 
+            error(0, "SMPP[%s]: Unknown PDU type 0x%08lx, ignored.",
+                  octstr_get_cstr(smpp->conn->id), pdu->type); 
+            break; 
     } 
      
     if (resp != NULL) { 
     	send_pdu(conn, resp); 
-	smpp_pdu_destroy(resp); 
+        smpp_pdu_destroy(resp); 
     } 
 } 
  
@@ -828,62 +833,61 @@ static void io_thread(void *arg)
  
     conn = NULL; 
     while (!smpp->quitting) { 
-	if (transmitter == 1) 
-	    conn = open_transmitter(smpp); 
-    else if (transmitter == 2) 
-        conn = open_transceiver(smpp); 
-	else 
-	    conn = open_receiver(smpp); 
-	if (conn == NULL) { 
-        error(0, "SMPP: Couldn't connect to SMS center (retrying in %ld seconds).", 
-              smpp->reconnect_delay);
-        gwthread_sleep(smpp->reconnect_delay);
-	    smpp->conn->status = SMSCCONN_RECONNECTING; 
-	    continue; 
-	} 
+        if (transmitter == 1) 
+            conn = open_transmitter(smpp); 
+        else if (transmitter == 2) 
+            conn = open_transceiver(smpp); 
+        else 
+            conn = open_receiver(smpp); 
+        if (conn == NULL) { 
+            error(0, "SMPP[%s]: Couldn't connect to SMS center (retrying in %ld seconds).",
+                  octstr_get_cstr(smpp->conn->id), smpp->reconnect_delay);
+            gwthread_sleep(smpp->reconnect_delay);
+            smpp->conn->status = SMSCCONN_RECONNECTING; 
+            continue; 
+        } 
 	 
-	last_enquire_sent = date_universal_now(); 
-	pending_submits = -1; 
-	len = 0; 
-    	for (;;) { 
-        timeout = last_enquire_sent + smpp->enquire_link_interval
-                    - date_universal_now(); 
-    	    if (smpp->quitting || conn_wait(conn, timeout) == -1) 
-	    	break; 
+        last_enquire_sent = date_universal_now(); 
+        pending_submits = -1; 
+        len = 0; 
+        for (;;) { 
+            timeout = last_enquire_sent + smpp->enquire_link_interval
+                        - date_universal_now(); 
+        if (smpp->quitting || conn_wait(conn, timeout) == -1) 
+            break; 
  
-	    send_enquire_link(smpp, conn, &last_enquire_sent); 
+        send_enquire_link(smpp, conn, &last_enquire_sent); 
 	     
-	    while ((ret = read_pdu(conn, &len, &pdu)) == 1) { 
-    	    	/* Deal with the PDU we just got */ 
-		dump_pdu("Got PDU:", pdu); 
-		handle_pdu(smpp, conn, pdu, &pending_submits); 
-		smpp_pdu_destroy(pdu); 
+        while ((ret = read_pdu(smpp, conn, &len, &pdu)) == 1) { 
+            /* Deal with the PDU we just got */ 
+            dump_pdu("Got PDU:", pdu); 
+            handle_pdu(smpp, conn, pdu, &pending_submits); 
+            smpp_pdu_destroy(pdu); 
  
-    	    	/* Make sure we send enquire_link even if we read a lot */ 
-		send_enquire_link(smpp, conn, &last_enquire_sent); 
+            /* Make sure we send enquire_link even if we read a lot */ 
+            send_enquire_link(smpp, conn, &last_enquire_sent); 
  
-    	    	/* Make sure we send even if we read a lot */ 
-		if (transmitter) 
-		    send_messages(smpp, conn, &pending_submits); 
-	    } 
+            /* Make sure we send even if we read a lot */ 
+            if (transmitter) 
+                send_messages(smpp, conn, &pending_submits); 
+            } 
 	     
-	    if (ret == -1) { 
-		error(0, "SMPP: I/O error or other error. Re-connecting."); 
-		break; 
-	    } 
+            if (ret == -1) { 
+                error(0, "SMPP[%s]: I/O error or other error. Re-connecting.",
+                      octstr_get_cstr(smpp->conn->id)); 
+                break; 
+            } 
 	     
-	    if (transmitter) 
-		send_messages(smpp, conn, &pending_submits); 
-	} 
+            if (transmitter) 
+                send_messages(smpp, conn, &pending_submits); 
+        } 
 	 
-	conn_destroy(conn); 
-	conn = NULL; 
+        conn_destroy(conn); 
+        conn = NULL; 
     } 
-     
     conn_destroy(conn); 
 } 
- 
- 
+     
  
 /*********************************************************************** 
  * Functions called by smscconn.c via the SMSCConn function pointers. 
@@ -916,8 +920,8 @@ static int shutdown_cb(SMSCConn *conn, int finish_sending)
     SMPP *smpp; 
  
     debug("bb.smpp", 0, "Shutting down SMSCConn %s (%s)", 
-    	  octstr_get_cstr(conn->name), 
-	  finish_sending ? "slow" : "instant"); 
+          octstr_get_cstr(conn->name), 
+          finish_sending ? "slow" : "instant"); 
  
     conn->why_killed = SMSCCONN_KILLED_SHUTDOWN; 
  
@@ -932,7 +936,7 @@ static int shutdown_cb(SMSCConn *conn, int finish_sending)
     smpp_destroy(smpp); 
      
     debug("bb.smpp", 0, "SMSCConn %s shut down.",  
-    	  octstr_get_cstr(conn->name)); 
+          octstr_get_cstr(conn->name)); 
     conn->status = SMSCCONN_DEAD; 
     bb_smscconn_killed(); 
     return 0; 
@@ -978,9 +982,9 @@ int smsc_smpp_create(SMSCConn *conn, CfgGroup *grp)
  
     host = cfg_get(grp, octstr_imm("host")); 
     if (cfg_get_integer(&port, grp, octstr_imm("port")) == -1) 
-    	port = 0; 
+        port = 0; 
     if (cfg_get_integer(&receive_port, grp, octstr_imm("receive-port")) == -1) 
-    	receive_port = 0; 
+        receive_port = 0; 
     cfg_get_bool(&transceiver_mode, grp, octstr_imm("transceiver-mode")); 
     cfg_get_bool(&alt_dcs, grp, octstr_imm("alt-dcs")); 
     username = cfg_get(grp, octstr_imm("smsc-username")); 
@@ -992,24 +996,27 @@ int smsc_smpp_create(SMSCConn *conn, CfgGroup *grp)
      
     system_id = cfg_get(grp, octstr_imm("system-id")); 
     if (system_id != NULL) { 
-	warning(0, "SMPP: obsolete system-id variable is set, " 
+        warning(0, "SMPP: obsolete system-id variable is set, " 
 	    	   "use smsc-username instead."); 
-    	if (username == NULL) { 
-	    warning(0, "SMPP: smsc-username not set, using system-id instead"); 
-	    username = system_id; 
-	} else 
-	    octstr_destroy(system_id); 
+        if (username == NULL) { 
+            warning(0, "SMPP: smsc-username not set, using system-id instead"); 
+            username = system_id; 
+        } else 
+            octstr_destroy(system_id); 
     } 
 
     /* 
      * check if timing values have been configured, otherwise
      * use the predefined default values.
      */
-    if (cfg_get_integer(&enquire_link_interval, grp, octstr_imm("enquire-link-interval")) == -1)
+    if (cfg_get_integer(&enquire_link_interval, grp, 
+                        octstr_imm("enquire-link-interval")) == -1)
         enquire_link_interval = SMPP_ENQUIRE_LINK_INTERVAL;
-    if (cfg_get_integer(&max_pending_submits, grp, octstr_imm("max-pending-submits")) == -1)
+    if (cfg_get_integer(&max_pending_submits, grp, 
+                        octstr_imm("max-pending-submits")) == -1)
         max_pending_submits = SMPP_MAX_PENDING_SUBMITS;
-    if (cfg_get_integer(&reconnect_delay, grp, octstr_imm("reconnect-delay")) == -1)
+    if (cfg_get_integer(&reconnect_delay, grp, 
+                        octstr_imm("reconnect-delay")) == -1)
         reconnect_delay = SMPP_RECONNECT_DELAY;
  
     /* Check that config is OK */ 
@@ -1019,25 +1026,29 @@ int smsc_smpp_create(SMSCConn *conn, CfgGroup *grp)
         ok = 0; 
     }     
     if (username == NULL) { 
-	   error(0, "SMPP: Configuration file doesn't specify username."); 
-	   ok = 0; 
+	    error(0, "SMPP: Configuration file doesn't specify username."); 
+	    ok = 0; 
     } 
     if (password == NULL) { 
-	   error(0, "SMPP: Configuration file doesn't specify password."); 
-	   ok = 0; 
+	    error(0, "SMPP: Configuration file doesn't specify password."); 
+	    ok = 0; 
     } 
     if (!ok) 
-    	return -1; 
+        return -1; 
  
     /* if the ton and npi values are forced, set them, else set them to -1 */ 
-    if (cfg_get_integer(&source_addr_ton, grp, octstr_imm("source-addr-ton")) == -1) 
-       source_addr_ton = -1; 
-    if (cfg_get_integer(&source_addr_npi, grp, octstr_imm("source-addr-npi")) == -1) 
-       source_addr_npi = -1; 
-    if (cfg_get_integer(&dest_addr_ton, grp, octstr_imm("dest-addr-ton")) == -1) 
-       dest_addr_ton = -1; 
-    if (cfg_get_integer(&dest_addr_npi, grp, octstr_imm("dest-addr-npi")) == -1) 
-       dest_addr_npi = -1; 
+    if (cfg_get_integer(&source_addr_ton, grp, 
+                        octstr_imm("source-addr-ton")) == -1) 
+        source_addr_ton = -1; 
+    if (cfg_get_integer(&source_addr_npi, grp, 
+                        octstr_imm("source-addr-npi")) == -1) 
+        source_addr_npi = -1; 
+    if (cfg_get_integer(&dest_addr_ton, grp, 
+                        octstr_imm("dest-addr-ton")) == -1) 
+        dest_addr_ton = -1; 
+    if (cfg_get_integer(&dest_addr_npi, grp, 
+                        octstr_imm("dest-addr-npi")) == -1) 
+        dest_addr_npi = -1; 
 
     /* check for any specified interface version */
     if (cfg_get_integer(&version, grp, octstr_imm("interface-version")) == -1)
@@ -1061,8 +1072,8 @@ int smsc_smpp_create(SMSCConn *conn, CfgGroup *grp)
     conn->data = smpp; 
     conn->name = octstr_format("SMPP:%S:%d/%d:%S:%S",  
     	    	    	       host, port, 
-			       (receive_port ? receive_port : port),  
-			       username, system_type); 
+                               (receive_port ? receive_port : port),  
+                               username, system_type); 
  
     octstr_destroy(host); 
     octstr_destroy(username); 
@@ -1088,18 +1099,19 @@ int smsc_smpp_create(SMSCConn *conn, CfgGroup *grp)
      
     if ((port != 0 && smpp->transmitter == -1) ||  
         (receive_port != 0 && smpp->receiver == -1)) { 
-    	error(0, "SMPP: Couldn't start I/O threads."); 
-	smpp->quitting = 1; 
-	if (smpp->transmitter != -1) { 
-	    gwthread_wakeup(smpp->transmitter); 
-	    gwthread_join(smpp->transmitter); 
-	} 
-	if (smpp->receiver != -1) { 
-	    gwthread_wakeup(smpp->receiver); 
-	    gwthread_join(smpp->receiver); 
-	} 
+        error(0, "SMPP[%s]: Couldn't start I/O threads.",
+              octstr_get_cstr(smpp->conn->id)); 
+        smpp->quitting = 1; 
+        if (smpp->transmitter != -1) { 
+            gwthread_wakeup(smpp->transmitter); 
+            gwthread_join(smpp->transmitter); 
+        } 
+        if (smpp->receiver != -1) { 
+            gwthread_wakeup(smpp->receiver); 
+            gwthread_join(smpp->receiver); 
+        } 
     	smpp_destroy(conn->data); 
-	return -1; 
+        return -1; 
     } 
  
     conn->shutdown = shutdown_cb; 
@@ -1107,4 +1119,5 @@ int smsc_smpp_create(SMSCConn *conn, CfgGroup *grp)
     conn->send_msg = send_msg_cb; 
  
     return 0; 
-} 
+}
+ 
