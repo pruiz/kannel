@@ -1,3 +1,5 @@
+dnl configure.in -- main autoconf macro definition file
+dnl
 dnl Process this file with autoconf to produce a configure script.
 dnl This file is part of the Kannel WAP and SMS gateway project.
 
@@ -16,7 +18,8 @@ AC_DEFINE_UNQUOTED(VERSION, "$VERSION")
 echo "configuring for Kannel gateway version... $VERSION"
 if test "x$VERSION" = "xcvs"; then
   AC_MSG_CHECKING([cvs checkout date])
-  AC_MSG_RESULT([`ls -lcda  . | awk '{print $6,$7,$8}'`])
+  cvs_date=`ls -lcda  . | awk '{print $6,$7,$8}'`
+  AC_MSG_RESULT([$cvs_date])
 fi
 
 dnl Solaris pkgadd support definitions
@@ -55,14 +58,18 @@ dnl Checks for libraries.
 AC_CHECK_LIB(m, log)
 AC_CHECK_LIB(socket, accept)
 AC_CHECK_LIB(nsl, inet_ntoa)
+AC_CHECK_LIB(resolv, inet_ntop)
+AC_CHECK_LIB(bind, inet_ntop)
 AC_CHECK_LIB(pthread, pthread_exit)
 if test -z "$pthread"; then
 	AC_CHECK_LIB(c_r, pthread_exit, [LIBS="$LIBS -lc_r"])
 fi
 
+
 dnl Check if we have libxml2 installed and which version it is.
 dnl Kannel requires currently at least version 2.2.5 of libxml2.
 
+xml_ver_required="2.2.5"
 AC_PATH_PROGS(XML_CONFIG, xml2-config xml-config, no)
 if test "$XML_CONFIG" = "no"; then
   AC_MSG_ERROR([You MUST have the libxml2 (aka gnome-xml) library installed])
@@ -70,20 +77,13 @@ else
   AC_MSG_CHECKING([libxml version])
   xml_version=`$XML_CONFIG --version`
   AC_MSG_RESULT([$xml_version])
-  changequote(<<, >>)dnl
-  case $xml_version in 
-    *2.2.[5-9]*) ;;
-    *2.2.[1-9][0-9]*) ;;
-    *2.[3-9].[0-9]*) ;;
-    *) AC_MSG_ERROR(<<libxml2 version $xml_version is too old. You need at least 2.2.5>>) ;;
-  esac
-  changequote([, ])dnl
-  LIBS="$LIBS `$XML_CONFIG --libs`"
-  CFLAGS="$CFLAGS `$XML_CONFIG --cflags`"
+  AC_CHECK_VERSION($xml_version, $xml_ver_required, 
+  [ LIBS="$LIBS `$XML_CONFIG --libs`"
+    CFLAGS="$CFLAGS `$XML_CONFIG --cflags`"
+  ],[
+    AC_MSG_ERROR([libxml2 version $xml_version is too old. You need at least $xml_ver_required])
+  ])
 fi
-
-AC_CHECK_LIB(resolv, inet_ntop)
-AC_CHECK_LIB(bind, inet_ntop)
 
 
 dnl Checks for header files.
@@ -383,30 +383,6 @@ AC_ARG_ENABLE(start-stop-daemon,
 AC_SUBST(STARTSTOPDAEMONSRC)
 
 
-dnl Implement --enable-ssl option.
-
-AC_MSG_CHECKING([whether to compile with SSL support])
-AC_ARG_ENABLE(ssl,
-[  --enable-ssl            enable SSL client and server support (default: enabled)], [
-  if test "$enableval" = no ; then
-    AC_MSG_RESULT(disabled)
-  fi
-],[
-  for loc in /usr/lib /usr/local/ssl/lib /usr/local/openssl/lib; do 
-    if test -f "$loc/libssl.a"; then
-      ssllib="$loc"
-    fi
-  done
-  for loc in /usr/include/ssl /usr/include/openssl /usr/local/ssl/include \
-             /usr/local/openssl/include; do
-    if test -d "$loc"; then
-      sslinc="$loc"
-    fi
-  done
-  AC_MSG_RESULT($ssllib $sslinc)
-])
-
-
 dnl Implement the --with-ssl option. 
 
 AC_ARG_WITH(ssl,
@@ -421,6 +397,33 @@ AC_ARG_WITH(ssl,
 ])
 
 
+dnl Implement --enable-ssl option.
+
+AC_MSG_CHECKING([whether to compile with SSL support])
+AC_ARG_ENABLE(ssl,
+[  --enable-ssl            enable SSL client and server support (default: enabled)], [
+  if test "$enableval" = no ; then
+    AC_MSG_RESULT(disabled)
+  fi
+],[
+  dnl test only if --with-ssl has not been used
+  if test "x$ssllib" = "x" && test "x$sslinc" = "x"; then
+    for loc in /usr/lib /usr/local/ssl/lib /usr/local/openssl/lib; do 
+      if test -f "$loc/libssl.a"; then
+        ssllib="$loc"
+      fi
+    done
+    for loc in /usr/include/ssl /usr/include/openssl /usr/local/ssl/include \
+               /usr/local/openssl/include; do
+      if test -d "$loc"; then
+        sslinc="$loc"
+      fi
+    done
+  fi
+  AC_MSG_RESULT($ssllib $sslinc)
+])
+
+
 dnl Implement the SSL library checking routine. 
 dnl This will define HAVE_LIBSSL in config.h
 
@@ -431,7 +434,8 @@ if test "x$ssllib" != "x" && test "x$sslinc" != "x"; then
   AC_PATH_PROG(OPENSSL, openssl, no)
   if test "$OPENSSL" != "yes"; then
     AC_MSG_CHECKING([openssl version])
-    AC_MSG_RESULT(`$OPENSSL version | awk '{print $2}'`)
+    openssl_version=`$OPENSSL version | awk '{print $2}'`
+    AC_MSG_RESULT([$openssl_version])
   fi
   AC_CHECK_LIB(crypto, CRYPTO_lock,
   [ LIBS="$LIBS -lcrypto"
