@@ -1,3 +1,8 @@
+2000-10-31  Lars Wirzenius  <liw@iki.fi>
+
+	* gwlib/http.c: Converted HTTP transaction handling into a state
+	machine, so that FDSets can be easily be used with HTTP.
+
 2000-10-30  Lars Wirzenius  <liw@iki.fi>
 
 	* gwlib/gwstr.[ch]: Removed unused functions strndup and

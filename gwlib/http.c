@@ -69,12 +69,26 @@ typedef struct {
     Octstr *url;
     List *request_headers;
     Octstr *request_body;   /* NULL for GET, non-NULL for POST */
+    enum {
+	request_not_sent,
+	reading_status,
+	reading_headers,
+	reading_body,
+	transaction_done
+    } state;
     int status;
     List *response_headers;
     Octstr *response_body;
-    HTTPSocket *socket;
+    Connection *conn;
     int retrying;
     int follow_remaining;
+    enum {
+	reading_chunk_len,
+	reading_chunk,
+	reading_chunk_crlf,
+	reading_trailer
+    } chunked_body_state;
+    long chunked_body_chunk_len;
 } HTTPTransaction;
 
 static HTTPTransaction *transaction_create(HTTPCaller *caller, Octstr *url, 
@@ -114,21 +128,20 @@ static int proxy_used_for_host(Octstr *host);
  */
 static void pool_init(void);
 static void pool_shutdown(void);
+#if 0
 static HTTPSocket *pool_get(Octstr *host, int port);
 static void pool_put(HTTPSocket *p);
+#endif
 
 
 /*
  * Operations on HTTPSockets.
  */
-static HTTPSocket *socket_create_client(Octstr *host, int port);
 static HTTPSocket *socket_create_server(int port);
 static void socket_close(HTTPSocket *p);
 static void socket_destroy(HTTPSocket *p);
 static HTTPSocket *socket_accept(HTTPSocket *p);
 static int socket_read_line(HTTPSocket *p, Octstr **line);
-static int socket_read_bytes(HTTPSocket *p, Octstr **os, long bytes);
-static int socket_read_to_eof(HTTPSocket *p, Octstr **os);
 static int socket_write(HTTPSocket *p, Octstr *os);
 
 
@@ -141,16 +154,18 @@ static Octstr *build_request(Octstr *path_or_url, Octstr *host, long port,
                              List *headers, Octstr *request_body, 
 			     char* method_name);
 
-static HTTPSocket *send_request(Octstr *url, List *request_headers,
+static Connection *send_request(Octstr *url, List *request_headers,
                                 Octstr *request_body, char *method_name);
 
 
 
-static int read_status(HTTPSocket *p);
+static int client_read_status(Connection *p);
+static int client_read_headers(Connection *p, List *headers);
+static int client_read_body(HTTPTransaction *trans);
+static int client_read_chunked_body(HTTPTransaction *trans);
+
 static int read_headers(HTTPSocket *p, List **headers);
-static int read_body(HTTPSocket *p, List *headers, Octstr **body);
-static int read_chunked_body(HTTPSocket *p, Octstr **body, List *headers);
-static int read_raw_body(HTTPSocket *p, Octstr **body, long bytes);
+
 static List *parse_cgivars(Octstr *url);
 static int header_is_called(Octstr *header, char *name);
 static int http_something_accepted(List *headers, char *header_name, 
@@ -1074,9 +1089,11 @@ static int proxy_used_for_host(Octstr *host)
  * Socket pool management.
  */
 
-#if 0
+
+#if 1
 static void pool_init(void) { }
 static void pool_shutdown(void) { }
+#if 0
 static HTTPSocket *pool_get(Octstr *host, int port)
 {
     return socket_create_client(host, port);
@@ -1085,6 +1102,7 @@ static void pool_put(HTTPSocket *p)
 {
     socket_destroy(p);
 }
+#endif
 #else
 
 
@@ -1167,32 +1185,6 @@ static void pool_put(HTTPSocket *p)
  */
 
 
-/*
- * Create a new client side HTTPSocket.
- */
-static HTTPSocket *socket_create_client(Octstr *host, int port)
-{
-    HTTPSocket *p;
-
-    debug("gwlib.http", 0, "HTTP: Creating a new client socket <%s:%d>.",
-          octstr_get_cstr(host), port);
-    p = gw_malloc(sizeof(HTTPSocket));
-    p->conn = conn_open_tcp(host, port);
-
-    if (p->conn == NULL) {
-        gw_free(p);
-        return NULL;
-    }
-
-    p->server_socket = -1;
-    p->in_use = 0;
-    p->use_version_1_0 = 0;
-    p->last_used = (time_t) - 1;
-    p->host = octstr_duplicate(host);
-    p->port = port;
-
-    return p;
-}
 
 
 /*
@@ -1312,49 +1304,6 @@ static int socket_read_line(HTTPSocket *p, Octstr **line)
 	if (conn_eof(p->conn))
 	    return 0;
     }
-}
-
-
-/*
- * Read `bytes' bytes from the socket `socket'. Use the pool buffer and
- * and fill it with new data from the socket as necessary. Return -1 for
- * error, 0 for EOF, or >0 for OK (exactly `bytes' bytes in `os'
- * returned). If OK, caller must free `*os'.
- */
-static int socket_read_bytes(HTTPSocket *p, Octstr **os, long bytes)
-{
-    gw_assert(p->server_socket == -1);
-    if (p->conn == NULL)
-    	return 0;
-
-    for (;;) {
-	*os = conn_read_fixed(p->conn, bytes);
-	if (*os != NULL)
-	    return 1;
-	if (conn_wait(p->conn, -1) == -1)
-	    return -1;
-    	if (conn_eof(p->conn))
-	    return 0;
-    }
-}
-
-
-
-/*
- * Read all remaining data from socket. Return -1 for error, 0 for OK.
- */
-static int socket_read_to_eof(HTTPSocket *p, Octstr **os)
-{
-    gw_assert(p->server_socket == -1);
-    if (p->conn == NULL)
-    	return -1;
-    
-    do {
-	if (conn_wait(p->conn, -1) == -1)
-	    return -1;
-    } while (!conn_eof(p->conn));
-    *os = conn_read_fixed(p->conn, conn_inbuf_len(p->conn));
-    return 0;
 }
 
 
@@ -1534,17 +1483,17 @@ static int parse_status(Octstr *statusline)
  * response can be read or -1 for error.
  */
 
-static HTTPSocket *send_request(Octstr *url, List *request_headers,
+static Connection *send_request(Octstr *url, List *request_headers,
                                 Octstr *request_body, char *method_name)
 {
     Octstr *host, *path, *request;
     long port;
-    HTTPSocket *p;
+    Connection *conn;
 
     host = NULL;
     path = NULL;
     request = NULL;
-    p = NULL;
+    conn = NULL;
 
     if (parse_url(url, &host, &port, &path) == -1)
         goto error;
@@ -1552,28 +1501,28 @@ static HTTPSocket *send_request(Octstr *url, List *request_headers,
     if (proxy_used_for_host(host)) {
         request = build_request(url, host, port, request_headers,
                                 request_body, method_name);
-        p = pool_get(proxy_hostname, proxy_port);
+        conn = conn_open_tcp(proxy_hostname, proxy_port);
     } else {
         request = build_request(path, host, port, request_headers,
                                 request_body, method_name);
-        p = pool_get(host, port);
+        conn = conn_open_tcp(host, port);
     }
-    if (p == NULL)
+    if (conn == NULL)
         goto error;
 
     debug("wsp.http", 0, "HTTP: Sending request:");
     octstr_dump(request, 0);
-    if (socket_write(p, request) == -1)
+    if (conn_write(conn, request) == -1)
         goto error;
 
     octstr_destroy(host);
     octstr_destroy(path);
     octstr_destroy(request);
 
-    return p;
+    return conn;
 
 error:
-    pool_put(p);
+    conn_destroy(conn);
     octstr_destroy(host);
     octstr_destroy(path);
     octstr_destroy(request);
@@ -1584,20 +1533,190 @@ error:
 
 /*
  * Read and parse the status response line from an HTTP server.
- * Return the parsed status code. Return -1 for error.
+ * Return the parsed status code. Return -1 for error. Return 0 for
+ * status code not yet available.
  */
-static int read_status(HTTPSocket *p)
+static int client_read_status(Connection *conn)
 {
     Octstr *line;
     long status;
 
-    if (socket_read_line(p, &line) <= 0) {
-        warning(0, "HTTP: Couldn't read status line from server.");
-        return -1;
+    line = conn_read_line(conn);
+    if (line == NULL) {
+	if (conn_eof(conn))
+	    return -1;
+    	return 0;
     }
+
     status = parse_status(line);
     octstr_destroy(line);
     return status;
+}
+
+
+/*
+ * Read some headers, i.e., until the first empty line (read and discard
+ * the empty line as well). Return -1 for error, 0 for all headers read,
+ * 1 for more headers to follow.
+ */
+static int client_read_headers(Connection *conn, List *headers)
+{
+    Octstr *line, *prev;
+
+    if (list_len(headers) == 0)
+        prev = NULL;
+    else
+    	prev = list_get(headers, list_len(headers) - 1);
+
+    for (;;) {
+	line = conn_read_line(conn);
+	if (line == NULL) {
+	    if (conn_eof(conn))
+	    	return -1;
+	    return 1;
+	}
+        if (octstr_len(line) == 0) {
+            octstr_destroy(line);
+            break;
+        }
+        if (isspace(octstr_get_char(line, 0)) && prev != NULL) {
+            octstr_append(prev, line);
+            octstr_destroy(line);
+        } else {
+            list_append(headers, line);
+            prev = line;
+        }
+    }
+
+    return 0;
+}
+
+
+/* XXX
+ * Read the body of a response. Return -1 for error, 0 for OK (EOF on
+ * socket reached) or 1 for OK (socket can be used for another transaction).
+ */
+static int client_read_body(HTTPTransaction *trans)
+{
+    Octstr *h, *os;
+    long n, body_len;
+
+    h = http_header_find_first(trans->response_headers, "Transfer-Encoding");
+    if (h != NULL) {
+        octstr_strip_blanks(h);
+        if (octstr_str_compare(h, "chunked") != 0) {
+            error(0, "HTTP: Unknown Transfer-Encoding <%s>",
+                  octstr_get_cstr(h));
+            goto error;
+        }
+        octstr_destroy(h);
+        if (client_read_chunked_body(trans) == -1)
+            goto error;
+        return 1;
+    } else {
+        h = http_header_find_first(trans->response_headers, "Content-Length");
+        if (h == NULL) {
+	    n = conn_inbuf_len(trans->conn);
+	    if (n == 0)
+	    	return 1;
+	    os = conn_read_fixed(trans->conn, n);
+	    gw_assert(os != NULL);
+	    octstr_append(trans->response_body, os);
+	    if (conn_eof(trans->conn))
+	    	return 0;
+	    return 1;
+        } else {
+            if (octstr_parse_long(&body_len, h, 0, 10) == -1) {
+                error(0, "HTTP: Content-Length header wrong: <%s>", 
+		      octstr_get_cstr(h));
+                goto error;
+            }
+            octstr_destroy(h);
+	    os = conn_read_fixed(trans->conn, body_len);
+	    if (os == NULL)
+	    	return 1;
+	    octstr_destroy(trans->response_body);
+	    trans->response_body = os;
+            return 0;
+        }
+    }
+
+    panic(0, "This location in code must never be reached.");
+
+error:
+    octstr_destroy(h);
+    return -1;
+}
+
+
+/*
+ * Read body that has been Transfer-Encoded as "chunked". Return -1 for
+ * error, 0 for OK. If there are any trailing headers (see RFC 2616, 3.6.1)
+ * they are appended to `headers'.
+ */
+static int client_read_chunked_body(HTTPTransaction *trans)
+{
+    Octstr *os;
+    long len;
+    int ret;
+
+    for (;;) {
+	switch (trans->chunked_body_state) {
+	case reading_chunk_len:
+	    os = conn_read_line(trans->conn);
+	    if (os == NULL) {
+		if (conn_eof(trans->conn))
+		    return -1;
+		return 1;
+	    }
+	    if (octstr_parse_long(&len, os, 0, 16) == -1) {
+		octstr_destroy(os);
+		return -1;
+	    }
+	    octstr_destroy(os);
+	    if (len == 0)
+		trans->chunked_body_state = reading_trailer;
+	    else {
+		trans->chunked_body_state = reading_chunk;
+		trans->chunked_body_chunk_len = len;
+	    }
+	    break;
+	    
+	case reading_chunk:
+	    os = conn_read_fixed(trans->conn, trans->chunked_body_chunk_len);
+	    if (os == NULL) {
+		if (conn_eof(trans->conn))
+		    return -1;
+		return 1;
+	    }
+	    octstr_append(trans->response_body, os);
+	    octstr_destroy(os);
+	    trans->chunked_body_state = reading_chunk_crlf;
+	    break;
+	    
+	case reading_chunk_crlf:
+	    os = conn_read_line(trans->conn);
+	    if (os == NULL) {
+		if (conn_eof(trans->conn))
+		    return -1;
+		return 1;
+	    }
+	    trans->chunked_body_state = reading_chunk_len;
+	    break;
+	    
+	case reading_trailer:
+	    ret = client_read_headers(trans->conn, trans->response_headers);
+	    if (ret == -1)
+	    	return -1;
+	    else if (ret == 0)
+	    	return 0;
+	    break;
+	    
+	default:
+	    panic(0, "Internal error: "
+		  "HTTPTransaction invaluded chunked body state.");
+	}
+    }
 }
 
 
@@ -1636,123 +1755,6 @@ error:
     *headers = NULL;
     return -1;
 }
-
-
-/*
- * Read the body of a response. Return -1 for error, 0 for OK (EOF on
- * socket reached) or 1 for OK (socket can be used for another transaction).
- */
-static int read_body(HTTPSocket *p, List *headers, Octstr **body)
-{
-    Octstr *h;
-    long body_len;
-
-    h = http_header_find_first(headers, "Transfer-Encoding");
-    if (h != NULL) {
-        octstr_strip_blanks(h);
-        if (octstr_str_compare(h, "chunked") != 0) {
-            error(0, "HTTP: Unknown Transfer-Encoding <%s>",
-                  octstr_get_cstr(h));
-            goto error;
-        }
-        octstr_destroy(h);
-        h = NULL;
-        if (read_chunked_body(p, body, headers) == -1)
-            goto error;
-        return 1;
-    } else {
-        h = http_header_find_first(headers, "Content-Length");
-        if (h == NULL) {
-            if (socket_read_to_eof(p, body) == -1)
-                return -1;
-            return 0;
-        } else {
-            if (octstr_parse_long(&body_len, h, 0, 10)
-                == -1) {
-                error(0, "HTTP: Content-Length header "
-                      "wrong: <%s>", octstr_get_cstr(h));
-                goto error;
-            }
-            octstr_destroy(h);
-            h = NULL;
-            if (read_raw_body(p, body, body_len) == -1)
-                goto error;
-            return 1;
-        }
-
-    }
-
-    panic(0, "This location in code must never be reached.");
-
-error:
-    octstr_destroy(h);
-    return -1;
-}
-
-
-/*
- * Read body that has been Transfer-Encoded as "chunked". Return -1 for
- * error, 0 for OK. If there are any trailing headers (see RFC 2616, 3.6.1)
- * they are appended to `headers'.
- */
-static int read_chunked_body(HTTPSocket *p, Octstr **body, List *headers)
-{
-    Octstr *line, *chunk;
-    long len;
-    List *trailer;
-
-    *body = octstr_create("");
-    line = NULL;
-
-    for (; ; ) {
-        if (socket_read_line(p, &line) <= 0)
-            goto error;
-        if (octstr_parse_long(&len, line, 0, 16) == -1)
-            goto error;
-        octstr_destroy(line);
-        line = NULL;
-        if (len == 0)
-            break;
-        if (socket_read_bytes(p, &chunk, len) <= 0)
-            goto error;
-        octstr_append(*body, chunk);
-        octstr_destroy(chunk);
-        if (socket_read_line(p, &line) <= 0)
-            goto error;
-        if (octstr_len(line) != 0)
-            goto error;
-        octstr_destroy(line);
-    }
-
-    if (read_headers(p, &trailer) == -1)
-        goto error;
-    while ((line = list_extract_first(trailer)) != NULL)
-        list_append(headers, line);
-    list_destroy(trailer, NULL);
-
-    return 0;
-
-error:
-    octstr_destroy(line);
-    octstr_destroy(*body);
-    error(0, "HTTP: Error reading chunked body.");
-    return -1;
-}
-
-
-/*
- * Read a body whose length is know beforehand and which is not
- * encoded in any way. Return -1 for error, 0 for OK.
- */
-static int read_raw_body(HTTPSocket *p, Octstr **body, long bytes)
-{
-    if (socket_read_bytes(p, body, bytes) <= 0) {
-        error(0, "HTTP: Error reading response body.");
-        return -1;
-    }
-    return 0;
-}
-
 
 
 /*
@@ -1833,12 +1835,15 @@ static HTTPTransaction *transaction_create(HTTPCaller *caller, Octstr *url,
     trans->url = octstr_duplicate(url);
     trans->request_headers = http_header_duplicate(headers);
     trans->request_body = octstr_duplicate(body);
+    trans->state = request_not_sent;
     trans->status = -1;
-    trans->response_headers = NULL;
-    trans->response_body = NULL;
-    trans->socket = NULL;
+    trans->response_headers = list_create();
+    trans->response_body = octstr_create("");
+    trans->conn = NULL;
     trans->retrying = 0;
     trans->follow_remaining = follow_remaining;
+    trans->chunked_body_state = reading_chunk_len;
+    trans->chunked_body_chunk_len = 0;
     return trans;
 }
 
@@ -1873,6 +1878,8 @@ static void write_request_thread(void *arg)
 	if (trans == NULL)
 	    break;
 
+    	gw_assert(trans->state == request_not_sent);
+
     	if (trans->request_body == NULL)
 	    method = "GET";
 	else {
@@ -1887,12 +1894,14 @@ static void write_request_thread(void *arg)
 	    http_header_add(trans->request_headers, "Content-Length", buf);
 	}
 
-	trans->socket = send_request(trans->url, trans->request_headers,  
-	    	    	    	     trans->request_body, method);
-    	if (trans->socket == NULL)
+	trans->conn = send_request(trans->url, trans->request_headers,  
+				   trans->request_body, method);
+    	if (trans->conn == NULL)
 	    list_produce(trans->caller, trans);
-	else
+	else {
+	    trans->state = reading_status;
 	    list_produce(started_requests_queue, trans);
+	}
     }
     list_remove_producer(started_requests_queue);
 }
@@ -1918,43 +1927,64 @@ static void read_response_thread(void *arg)
 	trans = list_consume(started_requests_queue);
 	if (trans == NULL)
 	    break;
+	gw_assert(trans->state == reading_status);
 
-	trans->status = read_status(trans->socket);
-	if (trans->status < 0) {
-	    /*
-	     * Couldn't read the status from the socket. This may mean that 
-	     * the socket had been closed by the server after an idle 
-	     * timeout, so we close the connection and try again, opening a 
-	     * new socket, but only once.
-	     */
-	    if (trans->retrying) {
-		goto error;
-	    } else {
-		socket_destroy(trans->socket);
-		trans->socket = NULL;
-		trans->retrying = 1;
-		list_produce(pending_requests, trans);
-		continue;
+    	while (trans->state != transaction_done) {
+	    switch (trans->state) {
+	    case reading_status:
+		trans->status = client_read_status(trans->conn);
+		if (trans->status < 0) {
+		    /*
+		     * Couldn't read the status from the socket. This may mean that 
+		     * the socket had been closed by the server after an idle 
+		     * timeout, so we close the connection and try again, opening a 
+		     * new socket, but only once.
+		     */
+		    if (trans->retrying) {
+			goto error;
+		    } else {
+			conn_destroy(trans->conn);
+			trans->conn = NULL;
+			trans->retrying = 1;
+			trans->state = request_not_sent;
+			list_produce(pending_requests, trans);
+		    }
+		} else if (trans->status > 0) {
+		    /* Got the status, go read headers next. */
+		    trans->state = reading_headers;
+		} else {
+		    if (conn_wait(trans->conn, -1.0) == -1)
+			goto error;
+		}
+		break;
+		
+	    case reading_headers:
+	    	ret = client_read_headers(trans->conn, 
+		    	    	    	  trans->response_headers);
+    	    	if (ret == -1)
+		    goto error;
+		else if (ret == 0)
+		    trans->state = reading_body;
+    	    	else if (conn_wait(trans->conn, -1.0) == -1)
+		    goto error;
+		break;
+		
+	    case reading_body:
+		ret = client_read_body(trans);
+		if (ret == -1)
+		    goto error;
+		else if (ret == 0) {
+		    trans->state = transaction_done;
+		    conn_destroy(trans->conn);
+		    trans->conn = NULL;
+		} else if (conn_wait(trans->conn, -1.0) == -1)
+		    goto error;
+
+		break;
+	
+	    default:
+	    	panic(0, "Internal error: Invalid HTTPTransaction state.");
 	    }
-	}
-    
-	if (read_headers(trans->socket, &trans->response_headers) == -1)
-	    goto error;
-    
-	ret = read_body(trans->socket, 
-	    	    	trans->response_headers, 
-	    	    	&trans->response_body);
-	switch (ret) {
-	case -1:
-	    goto error;
-	case 0:
-	    socket_destroy(trans->socket);
-	    trans->socket = NULL;
-	    break;
-	default:
-	    pool_put(trans->socket);
-	    trans->socket = NULL;
-	    break;
 	}
 
     	h = get_redirection_location(trans);
@@ -1962,19 +1992,20 @@ static void read_response_thread(void *arg)
 	    octstr_strip_blanks(h);
 	    octstr_destroy(trans->url);
 	    trans->url = h;
+	    trans->state = request_not_sent;
 	    http_destroy_headers(trans->response_headers);
+	    trans->response_headers = list_create();
 	    octstr_destroy(trans->response_body);
+	    trans->response_body = octstr_create("");
 	    --trans->follow_remaining;
 	    list_produce(pending_requests, trans);
-	    continue;
-	}
-
-	list_produce(trans->caller, trans);
+	} else
+	    list_produce(trans->caller, trans);
 	continue;
     
     error:
-    	pool_put(trans->socket);
-    	trans->socket = NULL;
+    	conn_destroy(trans->conn);
+    	trans->conn = NULL;
 	error(0, "Couldn't fetch <%s>", octstr_get_cstr(trans->url));
 	trans->status = -1;
 	list_produce(trans->caller, trans);
