@@ -1,4 +1,8 @@
 2002-10-17  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/smsc/smsc_smasi.c: added enquire_link facility to sm/asi protocol.
+      Can be configured via 'enquire-link-interval' directive.
+
+2002-10-17  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/smsc/smsc_smpp.c: fixed a type in DLR error handling. 
       Thanks to Alexander Malysh <a.malysh@centrium.de> for spotting this.
       [Msg-ID: <200210161940.36328.a.malysh@centrium.de>]
