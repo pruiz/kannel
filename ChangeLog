@@ -1,4 +1,7 @@
 2004-06-08  Alexander Malysh  <a.malysh@centrium.de> 
+    * wmlscript/wsgram.[ch]: new bison-generated source/header files.
+
+2004-06-08  Alexander Malysh  <a.malysh@centrium.de> 
     * gwlib/dbpool_pgsql.c: added pgsql_[update|select] functions. Those were partially
       picked from below named SQLBox patch.
       Thanks a lot to "Rene Kluwen" <rene.kluwen (at) chimit.nl>.

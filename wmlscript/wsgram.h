@@ -1,61 +1,209 @@
-/* ==================================================================== 
- * The Kannel Software License, Version 1.0 
- * 
- * Copyright (c) 2001-2004 Kannel Group  
- * Copyright (c) 1998-2001 WapIT Ltd.   
- * All rights reserved. 
- * 
- * Redistribution and use in source and binary forms, with or without 
- * modification, are permitted provided that the following conditions 
- * are met: 
- * 
- * 1. Redistributions of source code must retain the above copyright 
- *    notice, this list of conditions and the following disclaimer. 
- * 
- * 2. Redistributions in binary form must reproduce the above copyright 
- *    notice, this list of conditions and the following disclaimer in 
- *    the documentation and/or other materials provided with the 
- *    distribution. 
- * 
- * 3. The end-user documentation included with the redistribution, 
- *    if any, must include the following acknowledgment: 
- *       "This product includes software developed by the 
- *        Kannel Group (http://www.kannel.org/)." 
- *    Alternately, this acknowledgment may appear in the software itself, 
- *    if and wherever such third-party acknowledgments normally appear. 
- * 
- * 4. The names "Kannel" and "Kannel Group" must not be used to 
- *    endorse or promote products derived from this software without 
- *    prior written permission. For written permission, please  
- *    contact org@kannel.org. 
- * 
- * 5. Products derived from this software may not be called "Kannel", 
- *    nor may "Kannel" appear in their name, without prior written 
- *    permission of the Kannel Group. 
- * 
- * THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESSED OR IMPLIED 
- * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES 
- * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE 
- * DISCLAIMED.  IN NO EVENT SHALL THE KANNEL GROUP OR ITS CONTRIBUTORS 
- * BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY,  
- * OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT  
- * OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR  
- * BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,  
- * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE  
- * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,  
- * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 
- * ==================================================================== 
- * 
- * This software consists of voluntary contributions made by many 
- * individuals on behalf of the Kannel Group.  For more information on  
- * the Kannel Group, please see <http://www.kannel.org/>. 
- * 
- * Portions of this software are based upon software originally written at  
- * WapIT Ltd., Helsinki, Finland for the Kannel project.  
- */ 
+/* A Bison parser, made by GNU Bison 1.875.  */
 
-typedef union
-{
+/* Skeleton parser for Yacc-like parsing with Bison,
+   Copyright (C) 1984, 1989, 1990, 2000, 2001, 2002 Free Software Foundation, Inc.
+
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2, or (at your option)
+   any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 59 Temple Place - Suite 330,
+   Boston, MA 02111-1307, USA.  */
+
+/* As a special exception, when this file is copied by Bison into a
+   Bison output file, you may use that output file without restriction.
+   This special exception was added by the Free Software Foundation
+   in version 1.24 of Bison.  */
+
+/* Tokens.  */
+#ifndef YYTOKENTYPE
+# define YYTOKENTYPE
+   /* Put the tokens into the symbol table, so that GDB and other debuggers
+      know about them.  */
+   enum yytokentype {
+     tINVALID = 258,
+     tTRUE = 259,
+     tFALSE = 260,
+     tINTEGER = 261,
+     tFLOAT = 262,
+     tSTRING = 263,
+     tIDENTIFIER = 264,
+     tACCESS = 265,
+     tAGENT = 266,
+     tBREAK = 267,
+     tCONTINUE = 268,
+     tIDIV = 269,
+     tIDIVA = 270,
+     tDOMAIN = 271,
+     tELSE = 272,
+     tEQUIV = 273,
+     tEXTERN = 274,
+     tFOR = 275,
+     tFUNCTION = 276,
+     tHEADER = 277,
+     tHTTP = 278,
+     tIF = 279,
+     tISVALID = 280,
+     tMETA = 281,
+     tNAME = 282,
+     tPATH = 283,
+     tRETURN = 284,
+     tTYPEOF = 285,
+     tUSE = 286,
+     tUSER = 287,
+     tVAR = 288,
+     tWHILE = 289,
+     tURL = 290,
+     tDELETE = 291,
+     tIN = 292,
+     tLIB = 293,
+     tNEW = 294,
+     tNULL = 295,
+     tTHIS = 296,
+     tVOID = 297,
+     tWITH = 298,
+     tCASE = 299,
+     tCATCH = 300,
+     tCLASS = 301,
+     tCONST = 302,
+     tDEBUGGER = 303,
+     tDEFAULT = 304,
+     tDO = 305,
+     tENUM = 306,
+     tEXPORT = 307,
+     tEXTENDS = 308,
+     tFINALLY = 309,
+     tIMPORT = 310,
+     tPRIVATE = 311,
+     tPUBLIC = 312,
+     tSIZEOF = 313,
+     tSTRUCT = 314,
+     tSUPER = 315,
+     tSWITCH = 316,
+     tTHROW = 317,
+     tTRY = 318,
+     tEQ = 319,
+     tLE = 320,
+     tGE = 321,
+     tNE = 322,
+     tAND = 323,
+     tOR = 324,
+     tPLUSPLUS = 325,
+     tMINUSMINUS = 326,
+     tLSHIFT = 327,
+     tRSSHIFT = 328,
+     tRSZSHIFT = 329,
+     tADDA = 330,
+     tSUBA = 331,
+     tMULA = 332,
+     tDIVA = 333,
+     tANDA = 334,
+     tORA = 335,
+     tXORA = 336,
+     tREMA = 337,
+     tLSHIFTA = 338,
+     tRSSHIFTA = 339,
+     tRSZSHIFTA = 340
+   };
+#endif
+#define tINVALID 258
+#define tTRUE 259
+#define tFALSE 260
+#define tINTEGER 261
+#define tFLOAT 262
+#define tSTRING 263
+#define tIDENTIFIER 264
+#define tACCESS 265
+#define tAGENT 266
+#define tBREAK 267
+#define tCONTINUE 268
+#define tIDIV 269
+#define tIDIVA 270
+#define tDOMAIN 271
+#define tELSE 272
+#define tEQUIV 273
+#define tEXTERN 274
+#define tFOR 275
+#define tFUNCTION 276
+#define tHEADER 277
+#define tHTTP 278
+#define tIF 279
+#define tISVALID 280
+#define tMETA 281
+#define tNAME 282
+#define tPATH 283
+#define tRETURN 284
+#define tTYPEOF 285
+#define tUSE 286
+#define tUSER 287
+#define tVAR 288
+#define tWHILE 289
+#define tURL 290
+#define tDELETE 291
+#define tIN 292
+#define tLIB 293
+#define tNEW 294
+#define tNULL 295
+#define tTHIS 296
+#define tVOID 297
+#define tWITH 298
+#define tCASE 299
+#define tCATCH 300
+#define tCLASS 301
+#define tCONST 302
+#define tDEBUGGER 303
+#define tDEFAULT 304
+#define tDO 305
+#define tENUM 306
+#define tEXPORT 307
+#define tEXTENDS 308
+#define tFINALLY 309
+#define tIMPORT 310
+#define tPRIVATE 311
+#define tPUBLIC 312
+#define tSIZEOF 313
+#define tSTRUCT 314
+#define tSUPER 315
+#define tSWITCH 316
+#define tTHROW 317
+#define tTRY 318
+#define tEQ 319
+#define tLE 320
+#define tGE 321
+#define tNE 322
+#define tAND 323
+#define tOR 324
+#define tPLUSPLUS 325
+#define tMINUSMINUS 326
+#define tLSHIFT 327
+#define tRSSHIFT 328
+#define tRSZSHIFT 329
+#define tADDA 330
+#define tSUBA 331
+#define tMULA 332
+#define tDIVA 333
+#define tANDA 334
+#define tORA 335
+#define tXORA 336
+#define tREMA 337
+#define tLSHIFTA 338
+#define tRSSHIFTA 339
+#define tRSZSHIFTA 340
+
+
+
+
+#if ! defined (YYSTYPE) && ! defined (YYSTYPE_IS_DECLARED)
+#line 34 "wmlscript/wsgram.y"
+typedef union YYSTYPE {
     WsUInt32 integer;
     WsFloat vfloat;
     char *identifier;
@@ -71,104 +219,28 @@ typedef union
     WsStatement *stmt;
     WsExpression *expr;
 } YYSTYPE;
-
-#ifndef YYLTYPE
-typedef
-  struct yyltype
-    {
-      int timestamp;
-      int first_line;
-      int first_column;
-      int last_line;
-      int last_column;
-      char *text;
-   }
-  yyltype;
-
-#define YYLTYPE yyltype
+/* Line 1240 of yacc.c.  */
+#line 223 "y.tab.h"
+# define yystype YYSTYPE /* obsolescent; will be withdrawn */
+# define YYSTYPE_IS_DECLARED 1
+# define YYSTYPE_IS_TRIVIAL 1
 #endif
 
-#define	tINVALID	257
-#define	tTRUE	258
-#define	tFALSE	259
-#define	tINTEGER	260
-#define	tFLOAT	261
-#define	tSTRING	262
-#define	tIDENTIFIER	263
-#define	tACCESS	264
-#define	tAGENT	265
-#define	tBREAK	266
-#define	tCONTINUE	267
-#define	tIDIV	268
-#define	tIDIVA	269
-#define	tDOMAIN	270
-#define	tELSE	271
-#define	tEQUIV	272
-#define	tEXTERN	273
-#define	tFOR	274
-#define	tFUNCTION	275
-#define	tHEADER	276
-#define	tHTTP	277
-#define	tIF	278
-#define	tISVALID	279
-#define	tMETA	280
-#define	tNAME	281
-#define	tPATH	282
-#define	tRETURN	283
-#define	tTYPEOF	284
-#define	tUSE	285
-#define	tUSER	286
-#define	tVAR	287
-#define	tWHILE	288
-#define	tURL	289
-#define	tDELETE	290
-#define	tIN	291
-#define	tLIB	292
-#define	tNEW	293
-#define	tNULL	294
-#define	tTHIS	295
-#define	tVOID	296
-#define	tWITH	297
-#define	tCASE	298
-#define	tCATCH	299
-#define	tCLASS	300
-#define	tCONST	301
-#define	tDEBUGGER	302
-#define	tDEFAULT	303
-#define	tDO	304
-#define	tENUM	305
-#define	tEXPORT	306
-#define	tEXTENDS	307
-#define	tFINALLY	308
-#define	tIMPORT	309
-#define	tPRIVATE	310
-#define	tPUBLIC	311
-#define	tSIZEOF	312
-#define	tSTRUCT	313
-#define	tSUPER	314
-#define	tSWITCH	315
-#define	tTHROW	316
-#define	tTRY	317
-#define	tEQ	318
-#define	tLE	319
-#define	tGE	320
-#define	tNE	321
-#define	tAND	322
-#define	tOR	323
-#define	tPLUSPLUS	324
-#define	tMINUSMINUS	325
-#define	tLSHIFT	326
-#define	tRSSHIFT	327
-#define	tRSZSHIFT	328
-#define	tADDA	329
-#define	tSUBA	330
-#define	tMULA	331
-#define	tDIVA	332
-#define	tANDA	333
-#define	tORA	334
-#define	tXORA	335
-#define	tREMA	336
-#define	tLSHIFTA	337
-#define	tRSSHIFTA	338
-#define	tRSZSHIFTA	339
+
+
+#if ! defined (YYLTYPE) && ! defined (YYLTYPE_IS_DECLARED)
+typedef struct YYLTYPE
+{
+  int first_line;
+  int first_column;
+  int last_line;
+  int last_column;
+} YYLTYPE;
+# define yyltype YYLTYPE /* obsolescent; will be withdrawn */
+# define YYLTYPE_IS_DECLARED 1
+# define YYLTYPE_IS_TRIVIAL 1
+#endif
+
+
+
 
