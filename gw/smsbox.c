@@ -1726,7 +1726,7 @@ static void obey_request_thread(void *arg)
         if (dreport) {
             if (msg->sms.service == NULL || (msg->sms.service != NULL &&
                  ppg_service_name != NULL &&
-                 octstr_compare(msg->sms.service, ppg_service_name) != 0)) {
+                 octstr_compare(msg->sms.service, ppg_service_name) == 0)) {
                 trans = NULL;
             } else {
                 trans = urltrans_find_service(translations, msg);
