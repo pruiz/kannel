@@ -1,4 +1,7 @@
 2002-03-27  Bruno Rodrigues  <bruno.rodrigues@litux.org>
+    * doc/userguide/userguide.xml: changed at2 speed information
+
+2002-03-27  Bruno Rodrigues  <bruno.rodrigues@litux.org>
     * test/test_http_server.c: Disable SSL checking if #SSL is disabled in 
       configure
     * NEWS, Changelog: some minor fixes ;)

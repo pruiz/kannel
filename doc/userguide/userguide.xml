@@ -2532,7 +2532,8 @@ pin = 2345
    <row><entry><literal>speed</literal></entry>
      <entry><literal>serial speed in bps</literal></entry>
      <entry valign=bottom>
-          The  speed in bits per second. default value 0 means autodetect.
+          The speed in bits per second. Default value 0 means to try to use
+	  speed from modem definition, or if it fails, try to autodetect.
      </entry></row>
 
    <row><entry><literal>pin</literal></entry>
@@ -2656,9 +2657,8 @@ pin = 2345
    <row><entry><literal>speed</literal></entry>
      <entry><literal>number</literal></entry>
      <entry valign=bottom>
-     	Serial port speed to use. Optional. 
-	Ommit to use default 9600 or speed defined in
-	at2 group. Use 0 to autodetect speed.
+     	Serial port hint speed to use. Optional. 
+	Defaults to smsc group speed or autodetect
      </entry></row>
 
    <row><entry><literal>enable-hwhs</literal></entry>
