@@ -536,6 +536,7 @@ static void smsboxc_run(void *arg)
     int port;
 
     list_add_producer(flow_threads);
+    gwthread_wakeup(MAIN_THREAD_ID);
     port = (int)arg;
     
     fd = make_server_socket(port);
@@ -575,6 +576,7 @@ static void wapboxc_run(void *arg)
     int fd, port;
 
     list_add_producer(flow_threads);
+    gwthread_wakeup(MAIN_THREAD_ID);
     port = (int)arg;
     
     fd = make_server_socket(port);

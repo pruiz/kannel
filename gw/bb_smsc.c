@@ -230,6 +230,7 @@ static void sms_router(void *arg)
     int i, s;
 
     list_add_producer(flow_threads);
+    gwthread_wakeup(MAIN_THREAD_ID);
 
     while(bb_status != BB_DEAD) {
 

@@ -1,3 +1,10 @@
+2000-10-12  Kalle Marjola  <rpr@wapit.com>
+
+	* gw/bearerbox.c, gw/bb_boxc.c, gw/bb_udp.c, gw/bb_smsc.c: Startup
+	improved; not based on 'hopefully they will get up by that time'
+	system but intra-thread wakeup call. Now the bearerbox starts up
+	very quickly.
+
 2000-10-11  Tuomas Luttinen  <tuo@wapit.com>
 
 	* gw/urltrans.c: Fixed the bug 111 by adding the unwise characters and 

@@ -66,6 +66,7 @@ static void udp_receiver(void *arg)
 
     list_add_producer(incoming_wdp);
     list_add_producer(flow_threads);
+    gwthread_wakeup(MAIN_THREAD_ID);
     
     /* remove messages from socket until it is closed */
     while(bb_status != BB_DEAD && bb_status != BB_SHUTDOWN) {

@@ -397,7 +397,7 @@ int main(int argc, char **argv)
     starter(cfg);
 
 
-    sleep(1);	/* give time to threads to register themselves */
+    gwthread_sleep(5.0); /* give time to threads to register themselves */
 
     info(0, "MAIN: Start-up done, entering mainloop");
     if (bb_status == BB_SUSPENDED)
