@@ -233,7 +233,7 @@ Octstr *wsp_pdu_pack(WSP_PDU *pdu) {
 #define UINTVAR(field, docstring) \
 	gw_assert(bitpos % 8 == 0); \
 	octstr_append_uintvar(data, p->field); \
-	bitpos = 8 * octstr_len(data);
+	bitpos += 8 * octstr_len(data);
 #define OCTSTR(field, docstring, lengthfield) \
 	gw_assert(bitpos % 8 == 0); \
 	octstr_append(data, p->field); \
@@ -297,4 +297,5 @@ void wsp_pdu_dump(WSP_PDU *pdu, int level) {
 		debug(dbg, 0, "%*s unknown type %u", level, "", pdu->type);
 		break;
 	}
+	debug("wap.wsp", 0, "%*sWSP PDU dump ends.", level, "");
 }

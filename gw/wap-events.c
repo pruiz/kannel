@@ -101,6 +101,7 @@ void wap_event_dump(WAPEvent *event) {
 			case name: \
 			{ struct name *p = &event->name; fields; break; }
 		#define OCTSTR(name) \
+			debug("wap.event", 0, "%s =", #name); \
 			octstr_dump(p->name, 1);
 		#define INTEGER(name) \
 			debug("wap.event", 0, "  %s = %ld", #name, p->name);

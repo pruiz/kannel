@@ -1,3 +1,13 @@
+Sun Jun  4 03:45:45 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* gw/wap-events.c: wap_event_dump now reports name of Octstr
+	fields.
+	
+	* gw/wsp_pdu.c: bit position is advanced correctly when unpacking
+	a Uintvar. Also, dump tells when the dump ends.
+	
+	* gw/wsp_state-decl.h: Duplicate the URL octet string.
+	
 Sun Jun  4 02:36:10 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* gw/wsp_pdu.[ch]: Added function wsp_pdu_create, which creates

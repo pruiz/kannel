@@ -128,7 +128,7 @@ ROW(CONNECTED,
 
 		new_event = wap_event_create(Release);
 		new_event->Release.machine = e->machine;
-		new_event->Release.url = pdu->u.Get.uri;
+		new_event->Release.url = octstr_duplicate(pdu->u.Get.uri);
 		new_event->Release.http_headers = headers;
 		wsp_dispatch_event(new_event);
 	},
@@ -145,7 +145,7 @@ ROW(CONNECTED,
 
 		new_event = wap_event_create(Release);
 		new_event->Release.machine = e->machine;
-		new_event->Release.url = pdu->u.Post.uri;
+		new_event->Release.url = octstr_duplicate(pdu->u.Post.uri);
 		wsp_dispatch_event(new_event);
 		/* XXX we should handle headers here as well --liw */
 	},
