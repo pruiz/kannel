@@ -1685,6 +1685,14 @@ bearerbox-host = localhost
 	 SAR communication is being tried by the gateway.
      </entry></row>
 
+	 <row><entry><literal>smart-errorsr</literal></entry>
+     <entry>bool</entry>
+     <entry valign=bottom>
+	 If set wapbox will return a valid WML deck describing the 
+	 eror that occured while processing an WSP request. This may
+	 be used to have a smarter gateway and let the user know what
+	 happend actually.
+	 </entry></row>
 
   </tbody>
   </tgroup>
