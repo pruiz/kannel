@@ -28,7 +28,7 @@
 #include "smscconn.h"
 
 #include "bb_smscconn_cb.h"    /* callback functions for connections */
-
+#include "smscconn_p.h"        /* to access counters */
 
 /* passed from bearerbox core */
 
@@ -102,7 +102,8 @@ void bb_smscconn_sent(SMSCConn *conn, Msg *sms)
     Msg *mack;
     
     counter_increase(outgoing_sms_counter);
-
+    counter_increase(conn->sent);
+    
     /* write ACK to store file */
 
     mack = msg_create(ack);
@@ -121,6 +122,7 @@ void bb_smscconn_sent(SMSCConn *conn, Msg *sms)
 
 void bb_smscconn_send_failed(SMSCConn *conn, Msg *sms, int reason)
 {
+    
     switch (reason) {
 
     case SMSCCONN_FAILED_SHUTDOWN:
@@ -133,6 +135,7 @@ void bb_smscconn_send_failed(SMSCConn *conn, Msg *sms, int reason)
 	 * NOTE: right now, if the sending fails, the message is retried
 	 *   when store is loaded, etc. */ 
 	
+	counter_increase(conn->failed);
 	log_sms(conn, sms, "FAILED Send SMS");
 	msg_destroy(sms);
     }
@@ -186,6 +189,7 @@ int bb_smscconn_receive(SMSCConn *conn, Msg *sms)
 
     list_produce(incoming_sms, sms);
     counter_increase(incoming_sms_counter);
+    counter_increase(conn->received);
 
     return 0;
 }

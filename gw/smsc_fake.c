@@ -148,7 +148,6 @@ static void msg_to_bb(SMSCConn *conn, Octstr *line)
     msg->sms.smsc_id = octstr_duplicate(conn->id);
 
     debug("bb.sms", 0, "smsc_fake: new message received");
-    counter_increase(conn->received);
     bb_smscconn_receive(conn, msg);
     return;
 error:
@@ -180,11 +179,9 @@ static void main_connection_loop(SMSCConn *conn, Connection *client)
 		/* Actually no quarantee of it having been really sent,
 		   but I suppose that doesn't matter since this interface
 		   is just for debugging anyway */
-		counter_increase(conn->sent);
 		bb_smscconn_sent(conn, msg);
 	    }
 	    else {
-		counter_increase(conn->failed);
 		bb_smscconn_send_failed(conn, msg,
 					SMSCCONN_FAILED_REJECTED);
 		goto error;

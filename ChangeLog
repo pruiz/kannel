@@ -1,5 +1,14 @@
 2001-03-23  Kalle Marjola  <rpr@wapit.com>
 
+	* gw/smscconn_p.h: made interface a bit more clarified and
+	moved counters to callback
+
+	* gw/bb_smscconn.c: added counter increases
+
+	* gw/smsc_wrapper.c, gw/smsc_fake.c: removed counter increases
+	
+2001-03-23  Kalle Marjola  <rpr@wapit.com>
+
 	* gw/smsc_http.c: various little fixes
 
 2001-03-23  Tuomas Luttinen  <tuo@wapit.com>

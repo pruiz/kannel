@@ -96,14 +96,14 @@ struct smscconn {
 				* shutdown called */
     time_t 	connect_time;	/* When connection to SMSC was established */
 
+    Mutex 	*flow_mutex;	/* used to lock SMSCConn structure (both
+				 *  in smscconn.c and specific driver) */
+
     /* connection specific counters (created in smscconn.c, updated
-     *  by specific driver) */
+     *  by callback functions in bb_smscconn.c, NOT used by specific driver) */
     Counter *received;
     Counter *sent;
     Counter *failed;
-
-    Mutex 	*flow_mutex;	/* used to lock SMSCConn structure (both
-				 *  in smscconn.c and specific driver) */
 
     /* SMSCConn variables set in smscconn.c */
     int 	is_stopped;
@@ -121,8 +121,6 @@ struct smscconn {
 
     /* XXX: move rest global data from Smsc here
      */
-
-
 
     /* pointers set by specific driver, but initiated to NULL by smscconn.
      * Note that flow_mutex is always locked before these functions are

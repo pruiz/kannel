@@ -150,7 +150,6 @@ static void wrapper_receiver(void *arg)
             debug("bb.sms", 0, "smscconn (%s): new message received",
 		  octstr_get_cstr(conn->name));
             sleep = 0.0001;
-	    counter_increase(conn->received);
 	    bb_smscconn_receive(conn, msg);
         }
         else {
@@ -184,14 +183,12 @@ static int sms_send(SMSCConn *conn, Msg *msg)
         
     ret = smscenter_submit_msg(wrap->smsc, msg);
     if (ret == -1) {
-	counter_increase(conn->failed);
 	bb_smscconn_send_failed(conn, msg, SMSCCONN_FAILED_REJECTED);
 
 	if (reconnect(conn) == -1)
 	    smscconn_shutdown(conn, 0);
         return -1;
     } else {
-	counter_increase(conn->sent);
 	bb_smscconn_sent(conn, msg);
         return 0;
     }
