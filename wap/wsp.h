@@ -10,6 +10,10 @@
  * int WSP_accepted_header_code_pages[] = { -1 };
  */
 
+typedef enum {
+	WSP_1_1, WSP_1_2, WSP_1_3, WSP_1_4
+} wsp_encoding;
+
 /* See Table 35 of the WSP standard */
 enum wsp_abort_values {
 	WSP_ABORT_PROTOERR = 0xe0,
