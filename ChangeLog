@@ -1,5 +1,22 @@
 2000-04-20  Richard Braakman  <dark@wapit.com>
 
+	* doc/arch/.cvsignore, doc/userguide/.cvsignore: New files.
+
+	* gw/smsc_smpp.c, gw/smsc_smpp.h: Got rid of all uses of uint32_t.
+	* gwlib/octstr.c: Got rid of all uses of uint32_t.
+
+	* gwlib/utils.c, gwlib/utils.h: Provided encode_network_long and
+	decode_network_long to help the functions that (erroneously) used
+	uint32_t as an "exactly 4 octets" type.
+
+	* gwlib/gwstdint.h: Removed.  No code refers to uint32_t (or any
+	of its cousins) anymore.
+
+	* config.h.in, configure.in, README.autoconf: Removed tests
+	for uint32_t and stdint.h.  Re-ran autoconf.
+
+2000-04-20  Richard Braakman  <dark@wapit.com>
+
 	* gwlib/octstr.h, gwlib/octstr.c: Removed octstr_cat_char,
 	all callers to it really wanted octstr_append_char and have
 	been changed.

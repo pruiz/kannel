@@ -49,7 +49,7 @@ AC_SEARCH_LIBS(inet_aton, c resolv)
 dnl Checks for header files.
 
 AC_HEADER_STDC
-AC_CHECK_HEADERS(sys/ioctl.h sys/time.h sys/types.h unistd.h stdint.h)
+AC_CHECK_HEADERS(sys/ioctl.h sys/time.h sys/types.h unistd.h)
 AC_CHECK_HEADERS(pthread.h getopt.h)
 
 dnl Checks for typedefs, structures, and compiler characteristics.
@@ -91,22 +91,6 @@ GW_HAVE_TYPE_FROM(sys/socket.h,
 	socklen_t,
 	HAVE_SOCKLEN_T,
 	[Defined if there is a socklen_t in <sys/socket.h>])
-GW_HAVE_TYPE_FROM(sys/types.h,
-	uint32_t,
-	HAVE_TYPE_UINT32_T_IN_TYPES_H,
-	[Defined if there is a uint32_t in <sys/types.h>])
-GW_HAVE_TYPE_FROM(stdint.h,
-	uint32_t,
-	HAVE_TYPE_UINT32_T_IN_STDINT_H,
-	[Defined if there is a uint32_t in <stdint.h>])
-GW_HAVE_TYPE_FROM(inttypes.h,
-	uint32_t,
-	HAVE_TYPE_UINT32_T_IN_INTTYPES_H,
-	[Defined if there is a uint32_t in <inttypes.h>])
-if test "$gw_cv_type_HAVE_TYPE_UINT32_T_IN_TYPES_H" = yes -o "$gw_cv_type_HAVE_TYPE_UINT32_T_IN_STDINT_H" = yes -o "$gw_cv_type_HAVE_TYPE_UINT32_T_IN_INTTYPES_H" = yes; then
-	AC_DEFINE(HAVE_TYPE_UINT32_T, 1,
-		[Defined if we have uint32_t in <sys/types.h> or <stdint.h>])
-fi
 
 GW_HAVE_FUNC_FROM(netdb.h, getnameinfo,
 	HAVE_GETNAMEINFO, [Defined if we have getnameinfo() in <netdb.h>])

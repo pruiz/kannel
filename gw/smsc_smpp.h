@@ -293,12 +293,10 @@ static void fifo_free(fifostack*);
 static int fifo_push(fifostack*, smpp_pdu*);
 static int fifo_pop(fifostack*, smpp_pdu**);
 
-static int smpp_append_oct(char**, int*, uint32_t);
+static int smpp_append_oct(char**, int*, int);
 static int smpp_read_oct(char**, int*, Octet*);
 static int smpp_append_cstr(char**, int*, char*);
 static int smpp_read_cstr(char**, int*, char**);
-static int smpp_append_int32(char**, int*, uint32_t);
-static int smpp_read_int32(char**, int*, uint32_t*);
 
 static Octstr* data_new(void);
 static int data_free(Octstr*);

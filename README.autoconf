@@ -10,10 +10,6 @@ probed, and hopefully handled correctly where not available:
 
 - HAVE_SOCKLEN_T
 	define socklen_t as 'int' in gwlib/socket.h
-- HAVE_TYPE_UINT32_T
-	define uint32_t to 'unsigned long' in gwlib/gwstdint.h
-- HAVE_STDINT_H
-	include <stdint.h> in gwlib/gwstdint.h
 - HAVE_GETNAMEINFO
 	if not defined (e.g. everywhere, provide replacement
 	in gwlib/socket.c

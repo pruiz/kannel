@@ -1592,7 +1592,7 @@ EOF
 
 fi
 
-for ac_hdr in sys/ioctl.h sys/time.h sys/types.h unistd.h stdint.h
+for ac_hdr in sys/ioctl.h sys/time.h sys/types.h unistd.h
 do
 ac_safe=`echo "$ac_hdr" | sed 'y%./+-%__p_%'`
 echo $ac_n "checking for $ac_hdr""... $ac_c" 1>&6
@@ -1826,141 +1826,21 @@ EOF
 	fi
 
 
-	echo $ac_n "checking for uint32_t in <sys/types.h>""... $ac_c" 1>&6
-echo "configure:1831: checking for uint32_t in <sys/types.h>" >&5
-if eval "test \"`echo '$''{'gw_cv_type_HAVE_TYPE_UINT32_T_IN_TYPES_H'+set}'`\" = set"; then
-  echo $ac_n "(cached) $ac_c" 1>&6
-else
-  cat > conftest.$ac_ext <<EOF
-#line 1836 "configure"
-#include "confdefs.h"
-#ifdef HAVE_SYS_TYPES_H
-#include <sys/types.h>
-#endif
-#include <sys/types.h>
-
-int main() {
-uint32_t foo;
-; return 0; }
-EOF
-if { (eval echo configure:1847: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
-  rm -rf conftest*
-  gw_cv_type_HAVE_TYPE_UINT32_T_IN_TYPES_H=yes
-else
-  echo "configure: failed program was:" >&5
-  cat conftest.$ac_ext >&5
-  rm -rf conftest*
-  gw_cv_type_HAVE_TYPE_UINT32_T_IN_TYPES_H=no
-fi
-rm -f conftest*
-fi
-
-echo "$ac_t""$gw_cv_type_HAVE_TYPE_UINT32_T_IN_TYPES_H" 1>&6
-	if test $gw_cv_type_HAVE_TYPE_UINT32_T_IN_TYPES_H = yes; then
-		cat >> confdefs.h <<\EOF
-#define HAVE_TYPE_UINT32_T_IN_TYPES_H 1
-EOF
-
-	fi
-
-
-	echo $ac_n "checking for uint32_t in <stdint.h>""... $ac_c" 1>&6
-echo "configure:1869: checking for uint32_t in <stdint.h>" >&5
-if eval "test \"`echo '$''{'gw_cv_type_HAVE_TYPE_UINT32_T_IN_STDINT_H'+set}'`\" = set"; then
-  echo $ac_n "(cached) $ac_c" 1>&6
-else
-  cat > conftest.$ac_ext <<EOF
-#line 1874 "configure"
-#include "confdefs.h"
-#ifdef HAVE_SYS_TYPES_H
-#include <sys/types.h>
-#endif
-#include <stdint.h>
-
-int main() {
-uint32_t foo;
-; return 0; }
-EOF
-if { (eval echo configure:1885: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
-  rm -rf conftest*
-  gw_cv_type_HAVE_TYPE_UINT32_T_IN_STDINT_H=yes
-else
-  echo "configure: failed program was:" >&5
-  cat conftest.$ac_ext >&5
-  rm -rf conftest*
-  gw_cv_type_HAVE_TYPE_UINT32_T_IN_STDINT_H=no
-fi
-rm -f conftest*
-fi
-
-echo "$ac_t""$gw_cv_type_HAVE_TYPE_UINT32_T_IN_STDINT_H" 1>&6
-	if test $gw_cv_type_HAVE_TYPE_UINT32_T_IN_STDINT_H = yes; then
-		cat >> confdefs.h <<\EOF
-#define HAVE_TYPE_UINT32_T_IN_STDINT_H 1
-EOF
-
-	fi
-
-
-	echo $ac_n "checking for uint32_t in <inttypes.h>""... $ac_c" 1>&6
-echo "configure:1907: checking for uint32_t in <inttypes.h>" >&5
-if eval "test \"`echo '$''{'gw_cv_type_HAVE_TYPE_UINT32_T_IN_INTTYPES_H'+set}'`\" = set"; then
-  echo $ac_n "(cached) $ac_c" 1>&6
-else
-  cat > conftest.$ac_ext <<EOF
-#line 1912 "configure"
-#include "confdefs.h"
-#ifdef HAVE_SYS_TYPES_H
-#include <sys/types.h>
-#endif
-#include <inttypes.h>
-
-int main() {
-uint32_t foo;
-; return 0; }
-EOF
-if { (eval echo configure:1923: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
-  rm -rf conftest*
-  gw_cv_type_HAVE_TYPE_UINT32_T_IN_INTTYPES_H=yes
-else
-  echo "configure: failed program was:" >&5
-  cat conftest.$ac_ext >&5
-  rm -rf conftest*
-  gw_cv_type_HAVE_TYPE_UINT32_T_IN_INTTYPES_H=no
-fi
-rm -f conftest*
-fi
-
-echo "$ac_t""$gw_cv_type_HAVE_TYPE_UINT32_T_IN_INTTYPES_H" 1>&6
-	if test $gw_cv_type_HAVE_TYPE_UINT32_T_IN_INTTYPES_H = yes; then
-		cat >> confdefs.h <<\EOF
-#define HAVE_TYPE_UINT32_T_IN_INTTYPES_H 1
-EOF
-
-	fi
-
-if test "$gw_cv_type_HAVE_TYPE_UINT32_T_IN_TYPES_H" = yes -o "$gw_cv_type_HAVE_TYPE_UINT32_T_IN_STDINT_H" = yes -o "$gw_cv_type_HAVE_TYPE_UINT32_T_IN_INTTYPES_H" = yes; then
-	cat >> confdefs.h <<\EOF
-#define HAVE_TYPE_UINT32_T 1
-EOF
-
-fi
-
 
 	echo $ac_n "checking for getnameinfo in <netdb.h>""... $ac_c" 1>&6
-echo "configure:1952: checking for getnameinfo in <netdb.h>" >&5
+echo "configure:1832: checking for getnameinfo in <netdb.h>" >&5
 if eval "test \"`echo '$''{'gw_cv_func_HAVE_GETNAMEINFO'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
   cat > conftest.$ac_ext <<EOF
-#line 1957 "configure"
+#line 1837 "configure"
 #include "confdefs.h"
 #include <netdb.h>
 int main() {
 void *foo = getnameinfo;
 ; return 0; }
 EOF
-if { (eval echo configure:1964: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
+if { (eval echo configure:1844: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
   rm -rf conftest*
   gw_cv_func_HAVE_GETNAMEINFO=yes
 else
@@ -1982,19 +1862,19 @@ EOF
 
 
 	echo $ac_n "checking for inet_aton in <arpa/inet.h>""... $ac_c" 1>&6
-echo "configure:1986: checking for inet_aton in <arpa/inet.h>" >&5
+echo "configure:1866: checking for inet_aton in <arpa/inet.h>" >&5
 if eval "test \"`echo '$''{'gw_cv_func_HAVE_INET_ATON'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
   cat > conftest.$ac_ext <<EOF
-#line 1991 "configure"
+#line 1871 "configure"
 #include "confdefs.h"
 #include <arpa/inet.h>
 int main() {
 void *foo = inet_aton;
 ; return 0; }
 EOF
-if { (eval echo configure:1998: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
+if { (eval echo configure:1878: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
   rm -rf conftest*
   gw_cv_func_HAVE_INET_ATON=yes
 else
@@ -2020,7 +1900,7 @@ EOF
 # Extract the first word of "jade", so it can be a program name with args.
 set dummy jade; ac_word=$2
 echo $ac_n "checking for $ac_word""... $ac_c" 1>&6
-echo "configure:2024: checking for $ac_word" >&5
+echo "configure:1904: checking for $ac_word" >&5
 if eval "test \"`echo '$''{'ac_cv_prog_JADE'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
@@ -2050,7 +1930,7 @@ fi
 # Extract the first word of "jadetex", so it can be a program name with args.
 set dummy jadetex; ac_word=$2
 echo $ac_n "checking for $ac_word""... $ac_c" 1>&6
-echo "configure:2054: checking for $ac_word" >&5
+echo "configure:1934: checking for $ac_word" >&5
 if eval "test \"`echo '$''{'ac_cv_prog_JADETEX'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
@@ -2080,7 +1960,7 @@ fi
 # Extract the first word of "dvips", so it can be a program name with args.
 set dummy dvips; ac_word=$2
 echo $ac_n "checking for $ac_word""... $ac_c" 1>&6
-echo "configure:2084: checking for $ac_word" >&5
+echo "configure:1964: checking for $ac_word" >&5
 if eval "test \"`echo '$''{'ac_cv_prog_DVIPS'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
@@ -2110,7 +1990,7 @@ fi
 # Extract the first word of "fig2dev", so it can be a program name with args.
 set dummy fig2dev; ac_word=$2
 echo $ac_n "checking for $ac_word""... $ac_c" 1>&6
-echo "configure:2114: checking for $ac_word" >&5
+echo "configure:1994: checking for $ac_word" >&5
 if eval "test \"`echo '$''{'ac_cv_prog_FIG2DEV'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
@@ -2144,7 +2024,7 @@ do
 	
 ac_safe=`echo "$file" | sed 'y%./+-%__p_%'`
 echo $ac_n "checking for $file""... $ac_c" 1>&6
-echo "configure:2148: checking for $file" >&5
+echo "configure:2028: checking for $file" >&5
 if eval "test \"`echo '$''{'ac_cv_file_$ac_safe'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
@@ -2174,7 +2054,7 @@ do
 	
 ac_safe=`echo "$file" | sed 'y%./+-%__p_%'`
 echo $ac_n "checking for $file""... $ac_c" 1>&6
-echo "configure:2178: checking for $file" >&5
+echo "configure:2058: checking for $file" >&5
 if eval "test \"`echo '$''{'ac_cv_file_$ac_safe'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else

@@ -724,10 +724,9 @@ error:
 *
 */
 static int data_pop(Octstr *from, Octstr **to) {
-
-	uint32_t quadoct;
-	uint32_t realint;
-	unsigned int olen = 0;
+	unsigned char header[4];
+	long length;
+	long olen;
 
 	olen = octstr_len(from);
 
@@ -735,18 +734,21 @@ static int data_pop(Octstr *from, Octstr **to) {
 	if(olen < 16) goto no_msg;
 
 	/* Read the length (4 first octets) */
-	octstr_get_many_chars((char*)&quadoct, from, 0, 4);
+	octstr_get_many_chars(&header, from, 0, 4);
 
-	/* Translate the length XXX MAKE THIS INTO 1 FUNCTION */
-	realint = ntohl(quadoct);
+	/* Translate the length */
+	length = decode_network_long(header);
+
+	if (length < 0)
+		goto error;
 
 	/* Check if we have [length] octets of data */
-	if(olen < realint) goto no_msg;
+	if(olen < length) goto no_msg;
 
 	/* Cut the PDU out, move data to fill the hole. */
-	*to = octstr_copy(from, 0, realint);
+	*to = octstr_copy(from, 0, length);
 	if(*to == NULL) goto error;
-	octstr_delete(from, 0, realint);
+	octstr_delete(from, 0, length);
 
 	/* Okay, done */
 	return 1;
@@ -895,20 +897,9 @@ error:
 /* Append a single octet of data. Update where to reflect the
    next byte to write to, decrease left by the number of
    bytes written. */
-static int smpp_append_oct(char** where, int* left, uint32_t data) {
-
-/* Change this to reflect differences in endianness and
-   bytenesses. */
-#if BYTE_ORDER == LITTLE_ENDIAN
-	memcpy(*where, &data, 1);
+static int smpp_append_oct(char** where, int* left, int data) {
+	**where = data;
 	*where += 1;
-#elif BYTE_ORDER == BIG_ENDIAN
-	memcpy(*where, (&data)+3, 1);
-	*where += 1;
-#else
-	/* We have to write another section here for PDPs :) */
-	error(0, "smpp_append_oct: wrong endianness.");
-#endif
 
 	return 1;
 }
@@ -930,17 +921,6 @@ static int smpp_read_cstr(char** where, int* left, char** data) {
 	return -1;
 	smpp_read_cstr(where, left, data);
 }
-
-static int smpp_append_int32(char** where, int* left, uint32_t data) {
-	return -1;
-	smpp_append_int32(where, left, data);
-}
-
-static int smpp_read_int32(char** where, int* left, uint32_t* data) {
-	return -1;
-	smpp_read_int32(where, left, data);
-}
-
 
 /******************************************************************************
 * pdu_act
@@ -1223,19 +1203,18 @@ static int pdu_encode(smpp_pdu *pdu, Octstr **rawdata) {
 
 
 static int pdu_header_decode(smpp_pdu *pdu, Octstr *str) {
-
-	uint32_t header[4];
+	unsigned char header[16];
 
 	if(pdu == NULL) goto error;
 	if(str == NULL) goto error;
 
 	/* Read the header */
-	octstr_get_many_chars((char*)&header, str, 0, sizeof(header));
+	octstr_get_many_chars(header, str, 0, 16);
 
-	pdu->length = ntohl(header[0]);
-	pdu->id     = ntohl(header[1]);
-	pdu->status = ntohl(header[2]);
-	pdu->sequence_no = ntohl(header[3]);
+	pdu->length = decode_network_long(header);
+	pdu->id     = decode_network_long(header + 4);
+	pdu->status = decode_network_long(header + 8);
+	pdu->sequence_no = decode_network_long(header + 12);
 
 	return 1;
 
@@ -1244,36 +1223,14 @@ error:
 }
 
 static int pdu_header_encode(smpp_pdu *pdu, Octstr **rawdata) {
+	unsigned char header[16];
 
-	uint32_t length, id, status, seq;
+	encode_network_long(header, pdu->length);
+	encode_network_long(header + 4, pdu->id);
+	encode_network_long(header + 8, pdu->status);
+	encode_network_long(header + 12, pdu->sequence_no);
 
-	Octstr *newdata = NULL;
-	char temp[16], *tempptr;
-
-	memset(temp, 0, sizeof(temp));
-
-	tempptr = temp;
-
-	length = htonl(pdu->length);
-	id     = htonl(pdu->id);
-	status = htonl(pdu->status);
-	seq    = htonl(pdu->sequence_no);
-
-	memcpy(tempptr, &length, 4);
-	tempptr += 4;
-
-	memcpy(tempptr, &id, 4);
-	tempptr += 4;
-
-	memcpy(tempptr, &status, 4);
-	tempptr += 4;
-
-	memcpy(tempptr, &seq, 4);
-	tempptr += 4;
-
-	newdata = octstr_create_from_data(temp, sizeof(temp));
-
-	*rawdata = newdata;
+	*rawdata = octstr_create_from_data(header, 16);
 
 	return 1;
 }
@@ -1455,10 +1412,8 @@ static int pdu_act_submit_sm_resp(SMSCenter *smsc, smpp_pdu *pdu) {
 }
 
 static int pdu_encode_submit_sm(smpp_pdu* pdu, Octstr** str) {
-
 	struct smpp_pdu_submit_sm *submit_sm = NULL;
-
-	uint32_t length;
+	long length;
 	int left;
 	char *data = NULL, *where = NULL;
 	Octstr *newstr = NULL;

@@ -43,9 +43,6 @@
 /* Define if you have the <pthread.h> header file.  */
 #undef HAVE_PTHREAD_H
 
-/* Define if you have the <stdint.h> header file.  */
-#undef HAVE_STDINT_H
-
 /* Define if you have the <sys/ioctl.h> header file.  */
 #undef HAVE_SYS_IOCTL_H
 
@@ -78,18 +75,6 @@
 
 /* Defined if there is a socklen_t in <sys/socket.h> */
 #undef HAVE_SOCKLEN_T
-
-/* Defined if there is a uint32_t in <sys/types.h> */
-#undef HAVE_TYPE_UINT32_T_IN_TYPES_H
-
-/* Defined if there is a uint32_t in <stdint.h> */
-#undef HAVE_TYPE_UINT32_T_IN_STDINT_H
-
-/* Defined if there is a uint32_t in <inttypes.h> */
-#undef HAVE_TYPE_UINT32_T_IN_INTTYPES_H
-
-/* Defined if we have uint32_t in <sys/types.h> or <stdint.h> */
-#undef HAVE_TYPE_UINT32_T
 
 /* Defined if we have getnameinfo() in <netdb.h> */
 #undef HAVE_GETNAMEINFO

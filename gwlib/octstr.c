@@ -19,7 +19,6 @@
 
 #include "gwassert.h"
 #include "gwlib.h"
-#include "gwstdint.h"
 
 
 /***********************************************************************
@@ -893,18 +892,18 @@ void octstr_dump(Octstr *ostr, int level) {
 }
 
 int octstr_send(int fd, Octstr *ostr) {
-	uint32_t length;
+	long length;
 	int ret = 0, written = 0, datalength = 0;
-	char *data = NULL;
+	unsigned char *data = NULL;
 
 	gw_assert(fd >= 0);
 	seems_valid(ostr);
 
-	length = htonl(octstr_len(ostr));
-	datalength = octstr_len(ostr)+sizeof(uint32_t);
+	length = octstr_len(ostr);
+	datalength = length + 4;
 	data = gw_malloc(datalength);
-	memcpy(data, &length, sizeof(uint32_t));
-	octstr_get_many_chars(data+sizeof(uint32_t), ostr, 0, octstr_len(ostr));
+	encode_network_long(data, length);
+	octstr_get_many_chars(data+4, ostr, 0, length);
 	
 	while(written < datalength) {
 		ret = send(fd, data+written, datalength-written, 0);
@@ -929,7 +928,8 @@ error:
 }
 
 int octstr_recv(int fd, Octstr **ostr) {
-	long length, nlength;
+	unsigned char header[4];
+	long length;
 	char *data = NULL;
 	Octstr *newostr = NULL;
 	int ret = 0, readlength = 0;
@@ -937,13 +937,12 @@ int octstr_recv(int fd, Octstr **ostr) {
 	gw_assert(fd >= 0);
 	gw_assert(ostr != NULL);
 
-	nlength = 0;
 	*ostr = NULL;
 	
-	/* How many octets in incomint Octstr. */
+	/* How many octets in incoming Octstr. */
 	readlength = 0;
-	while(readlength < (int) sizeof(uint32_t)) {
-		ret = recv(fd, (&nlength)+readlength, sizeof(uint32_t)-readlength, 0);
+	while(readlength < 4) {
+		ret = recv(fd, header+readlength, 4-readlength, 0);
 		if(ret == 0)
 			goto eof;
 		else if(ret == -1) {
@@ -954,13 +953,11 @@ int octstr_recv(int fd, Octstr **ostr) {
 			readlength += ret;
 		}
 	}
-	length = ntohl(nlength);
+	length = decode_network_long(header);
 	if (length > 256*256*256) {
-	    unsigned char *u;
-	    u = (unsigned char *) &nlength;
 	    warning(0, "Possible garbage received by octsr_recv, length %ld "
 		    "data %02x %02x %02x %02x ...", length,
-		    u[0], u[1], u[2], u[3]);
+		    header[0], header[1], header[2], header[3]);
 	    return -1;
 	}
 	data = gw_malloc(length);

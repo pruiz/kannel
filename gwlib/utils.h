@@ -76,4 +76,18 @@ void print_std_args_usage(FILE *stream);
  */
 int check_ip(char *accept_string, char *ip, char *match_buffer);
 
+
+/*
+ * Convert a standard "network long" (32 bits in 4 octets, most significant
+ * octet first) to the host representation.
+ */
+long decode_network_long(unsigned char *data);
+
+
+/*
+ * Convert a long to the standard network representation (32 bits in 4
+ * octets, most significant octet first).
+ */
+void encode_network_long(unsigned char *data, unsigned long value);
+
 #endif
