@@ -1,3 +1,13 @@
+2002-04-36  Bruno Rodrigues  <bruno.rodrigues@litux.org>
+    * debian/*: fixed some issues, add mysql and ssl support to debian
+      packages (not that crypto is not an issue and ssl has moved from
+      non-us to main, there's no need to have a kannel and kannel-ssl 
+      package)
+    * utils/kannel-stable-rh7.spec: added ssl and mysql, altough I still
+      haven't built the RPM
+    * doc/userguide/userguide.xml: Added "can use DLR" checkbox to table
+      SMSC Driver Features
+
 2002-04-26 Aarno Syvänen <aarno@wiral.com>
     * gwlib/cfg.def: Added new configuration variables.
     * checks/check_sendsms.sh: Added tsting for empty cgi vars.

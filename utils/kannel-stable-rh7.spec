@@ -23,7 +23,8 @@ rm -rf $RPM_BUILD_ROOT
 
 %setup -n gateway-%{version}
 %build
-./configure --with-malloc-native --enable-docs
+./configure --with-malloc-native --enable-docs --enable-ssl --enable-mysql\
+	--with-ssl=/usr/lib --with-mysql=/usr/lib
 make
 
 %install

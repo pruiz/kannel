@@ -2809,7 +2809,6 @@ pin = 2345
 	sending the messages.
      </entry></row>
 
-   <row><entry><literal>need-sleep</literal></entry></row>
    </tbody></tgroup></informaltable>
 </sect3>
 
@@ -3004,6 +3003,24 @@ marked as "not tested" because the table is still new.</para>
    </row>
   </thead>
   <tbody>
+   <row>
+    <entry spanname="feature">Can use DLR</entry>
+   </row>
+   <row>
+    <entry></entry>
+    <entry>n</entry>
+    <entry>y?</entry>
+    <entry>n</entry>
+    <entry>n</entry>
+    <entry>y</entry>
+    <entry>y?</entry>
+    <entry>n</entry>
+    <entry>n</entry>
+    <entry>n</entry>
+    <entry>n</entry>
+    <entry>n</entry>
+    <entry>n</entry>
+   </row>
    <row>
     <entry spanname="feature">Can set DCS<footnote id="fields-to-dcs"><para>To use 
       <literal>mclass</literal>, <literal>mwi</literal>, <literal>coding</literal>

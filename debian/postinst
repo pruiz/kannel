@@ -4,6 +4,14 @@
 
 set -e
 
+# Automatically added by dh_installdocs
+if [ "$1" = "configure" ]; then
+        if [ -d /usr/doc -a ! -e /usr/doc/aktion -a -d /usr/share/doc/aktion ]; then
+                ln -sf ../share/doc/aktion /usr/doc/aktion
+        fi
+fi
+# End automatically added section
+
 # Create a "kannel" user. This has modeled after the code in the postfix.deb
 # postinst. We first try to set the ownership of /var/log/kannel. If that
 # fails, we create the user and re-try. If that still fails, we abort.

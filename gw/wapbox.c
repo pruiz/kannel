@@ -373,6 +373,8 @@ static void dispatch_datagram(WAPEvent *dgram)
          msg_len;
     static long msg_sequence = 0L;   /* Used only by this function */
 
+    msg = part = NULL;
+
     gw_assert(dgram);
     sms_datagrams = NULL;
 

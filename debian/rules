@@ -8,7 +8,8 @@ Makefile:
 	dh_testdir
 	CFLAGS='-Wall -O2 -g' ./configure \
 	--enable-docs --enable-ssl --enable-localtime --enable-pam \
-	--mandir='$${prefix}/share/man'
+	--enable-mysql --with-ssl=/usr/lib/ssl --with-mysql=/usr/lib/mysql \
+	--mandir='$${prefix}/share/man' --with-malloc=native
 
 clean:
 	dh_testdir

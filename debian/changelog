@@ -1,8 +1,15 @@
-kannel (1.1.5.cvs-20011011) unstable; urgency=low
+kannel (1.1.6cvs-20020426) unstable; urgency=low
 
-  * Daily CVS Version
+  * Daily Build
 
- -- Bruno Rodrigues <bruno.rodrigues@litux.org>  Mon, 11 Oct 2001 23:59:00 +0100
+ -- Bruno Rodrigues <bruno.rodrigues@litux.org>  Thu, 26 Apr 2002 18:30:39 +0100
+
+kannel (1.1.6-1) unstable; urgency=low
+
+  * New upstream version
+  * Non-Official Package
+
+ -- Bruno Rodrigues <bruno.rodrigues@litux.org>  Thu, 28 Mar 2002 10:30:39 +0100
 
 kannel (0.11.3.cvs-1) unstable; urgency=low
 
