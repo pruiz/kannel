@@ -1,3 +1,11 @@
+Thu Nov 18 15:13:44 1999  Lars Wirzenius  <liw@wapit.com>
+
+	* doc/arch/arch-smsbox.xml: Fixed DocBook syntax errors.
+	
+	* gw/msg.c, gw/msg.h, test/test_msg.c: Wrote function msg_duplicate.
+	
+	* Makefile: Fixed typo in libtest.a rule.
+
 1999-11-17 Aarno Syvänen <syvanen@wapit.com>
 
 	* wtp.c: some bug fixing in function wtp_unpack_wdp_datagram 

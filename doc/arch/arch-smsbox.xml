@@ -34,11 +34,11 @@
    split the reply into several messages and do other similar actions.
    </para>
 
-   <para><emphasis>Normal SMS Box</para> uses TCP/IP to connect the
+   <para><emphasis>Normal SMS Box</emphasis> uses TCP/IP to connect the
    Bearerbox and then use that line to receive and to send SMS
    Messages, which are packed into internal form.</para>
 
-   <para><emphasis>Internal SMS Box</para> is a thread in
+   <para><emphasis>Internal SMS Box</emphasis> is a thread in
    Bearerbox. It starts a new thread for each new request and puts
    replies directly into Reply Queue (see Bearerbox design)</para>
 
@@ -46,4 +46,6 @@
    Messages, the SMS Box can accept text via HTTP-queries, which it
    then sends as SMSes to the bearerbox and onward.</para>
 	
+</sect1>
+
 </chapter>

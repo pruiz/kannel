@@ -32,7 +32,7 @@ int main(void) {
 	info(0, "Destroying msg and msg2.");
 	msg_destroy(msg);
 	msg_destroy(msg2);
-
+	
 	info(0, "Creating plain_sms.");
 	msg = msg_create(plain_sms);
 	msg->plain_sms.sender = octstr_create("123");
@@ -43,6 +43,11 @@ int main(void) {
 	os = msg_pack(msg);
 	octstr_dump(os);
 	
+	info(0, "Duplicating msg.");
+	msg2 = msg_duplicate(msg);
+	msg_dump(msg2);
+	msg_destroy(msg2);
+
 	info(0, "Unpacking plain_sms.");
 	msg2 = msg_unpack(os);
 	info(0, "msg2:");

@@ -97,7 +97,7 @@ libgwlib.a: $(libobjs)
 	$(RANLIB) libgwlib.a
 
 libtest.a: $(testobjs)
-	ar rc libtest.a $(testbjs)
+	ar rc libtest.a $(testobjs)
 	$(RANLIB) libtest.a
 
 $(progs): libgw.a libgwlib.a

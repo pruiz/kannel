@@ -37,6 +37,13 @@ Msg *msg_create(enum msg_type type);
 
 
 /*
+ * Create a new Msg object that is a copy of an existing one. Return NULL
+ * for failure, otherwise a pointer to the new object.
+ */
+Msg *msg_duplicate(Msg *msg);
+
+
+/*
  * Return type of the message
  */
 enum msg_type msg_type(Msg *msg);

@@ -55,6 +55,33 @@ error:
 	return NULL;
 }
 
+Msg *msg_duplicate(Msg *msg) {
+	Msg *new;
+
+	new = msg_create(msg->type);
+	if (new == NULL)
+		return NULL;
+
+	#define INTEGER(name) p->name = q->name
+	#define OCTSTR(name) \
+		if (q->name == NULL) p->name = NULL; \
+		else { \
+		    p->name = octstr_copy(q->name, 0, octstr_len(q->name)); \
+		    if (p->name == NULL) goto error; \
+		}
+	#define MSG(type, stmt) { \
+		struct type *p = &new->type; \
+		struct type *q = &msg->type; \
+		stmt }
+	#include "msg-decl.h"
+
+	return new;
+
+error:
+	error(errno, "Out of memory.");
+	return NULL;
+}
+
 void msg_destroy(Msg *msg) {
 	if (msg == NULL)
 		return;
