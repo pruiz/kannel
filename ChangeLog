@@ -1,3 +1,7 @@
+2002-03-26  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/dlr.c: fixed another kannel-nag warning about unused vars
+      in dlr_find_mysql()
+
 2002-03-25  Stipe Tolj  <tolj@wapme-systems.de>
     * gwlib/octstr.c: added support for Linux on PowerPC and S390
       architectures, patch submitted by "Jacob Vennervald Madsen" 
