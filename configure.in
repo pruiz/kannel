@@ -54,8 +54,8 @@ case "$host" in
   *-cygwin*)
     EXE_EXT=".exe"
     ;;
-  *powerpc-apple-darwin5.5.2*) 
-    CFLAGS="$CFLAGS -DDARVIN=1" 
+  *apple-darwin*) 
+    CFLAGS="$CFLAGS -DDARWIN=1" 
     LIBTOOL="libtool -static -o" 
 esac
 AC_SUBST(EXE_EXT)
