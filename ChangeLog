@@ -1,3 +1,8 @@
+2005-01-21  Alexander Malysh <amalysh at kannel.org>
+    * gwlib/gwmem-check.c: added backtrace support. w/o backtrace is this
+      module really hard to use.
+      [Msg-Id: csodge$rfm$1@sea.gmane.org>]
+
 2005-01-20  Alexander Malysh <amalysh at kannel.org>
     * gwlib/octstr.c: fixed segfault and compiler warnings on a x86_64 (Intel Xeon).
     * gw/smsc/smsc_at.c: fixed compiler warnings on a 64bite OS.

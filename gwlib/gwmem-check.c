@@ -85,12 +85,17 @@
  * after it's been freed.
  * 
  * Richard Braakman
+ * Alexander Malysh (added backtrace support)
  */
 
+#include "gw-config.h"
 
 #include <stdlib.h>
 #include <errno.h>
 #include <string.h>
+#if HAVE_BACKTRACE
+#include <execinfo.h>
+#endif
 
 #include "gwlib.h"
 
@@ -146,6 +151,10 @@ struct area
     struct location allocator;     /* Caller that alloced area */
     struct location reallocator;   /* Caller that last realloced area */
     struct location claimer;       /* Owner of area, set by caller */
+#if HAVE_BACKTRACE
+    void *frames[10]; /* 10 callers should be sufficient */
+    size_t frame_size;
+#endif
 };
 
 /* Number of bytes to reserve on either side of each allocated area,
@@ -153,7 +162,8 @@ struct area
  * enough to hold a long. */
 #define MARKER_SIZE 16
 
-#define MAX_TAB_SIZE (1024*1024L)
+/* 100 MB */
+#define MAX_TAB_SIZE (100*1024*1024L)
 #define MAX_ALLOCATIONS ((long) (MAX_TAB_SIZE/sizeof(struct area)))
 
 /* Freed areas are thrown into the free ring.  They are not released
@@ -184,12 +194,12 @@ static long total_size;
 
 /* Static functions */
 
-static void lock(void)
+static inline void lock(void)
 {
     mutex_lock(&gwmem_lock);
 }
 
-static void unlock(void)
+static inline void unlock(void)
 {
     mutex_unlock(&gwmem_lock);
 }
@@ -241,7 +251,7 @@ static int untouched(unsigned char *p, size_t bytes, long pattern)
 }
 
 /* Fill the end marker for this area */
-static void endmark(unsigned char *p, size_t size)
+static inline void endmark(unsigned char *p, size_t size)
 {
     fill(p + size, MARKER_SIZE, END_MARK_PATTERN);
 }
@@ -320,7 +330,7 @@ static void dump_area(struct area *area)
         unsigned char *p;
         char buf[MAX_DUMP * 3 + 1];
 
-    	p = area->area;
+        p = area->area;
         buf[0] = '\0';
         for (i = 0; i < area->area_size && i < MAX_DUMP; ++i)
             sprintf(strchr(buf, '\0'), "%02x ", p[i]);
@@ -328,6 +338,20 @@ static void dump_area(struct area *area)
         debug("gwlib.gwmem", 0, "Contents of area (first %d bytes):", MAX_DUMP);
         debug("gwlib.gwmem", 0, "  %s", buf);
     }
+#if HAVE_BACKTRACE
+    {
+        size_t i;
+        char **strings = backtrace_symbols(area->frames, area->frame_size);
+        debug("gwlib.gwmem", 0, "Backtrace of last malloc/realloc:");
+        for (i = 0; i < area->frame_size; i++) {
+            if (strings != NULL)
+                debug("gwlib.gwmem", 0, "%s", strings[i]);
+            else
+                debug("gwlib.gwmem", 0, "%p", area->frames[i]);
+        }
+        free(strings);
+    }
+#endif
 }
 
 static struct area *find_area(unsigned char *p)
@@ -408,6 +432,9 @@ static struct area *record_allocation(unsigned char *p, size_t size,
     area->allocator.filename = filename;
     area->allocator.lineno = lineno;
     area->allocator.function = function;
+#if HAVE_BACKTRACE
+    area->frame_size = backtrace(area->frames, sizeof(area->frames) / sizeof(void*));
+#endif
 
     startmark(area->area, num_allocations);
     endmark(area->area, area->area_size);
