@@ -1,3 +1,8 @@
+2000-12-06  Richard Braakman  <dark@wapit.com>
+
+	* gw/wapbox.c: Memory cleanup: Call close_connection_to_bearerbox()
+	when exiting, and destroy the bearerbox_host string.
+
 2000-12-06  Lars Wirzenius  <liw@iki.fi>
 
 	* gw/smsbox.c: Removed compilation warning about `catref' being

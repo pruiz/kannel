@@ -294,8 +294,10 @@ int main(int argc, char **argv)
     wsp_unit_shutdown();
     wsp_session_shutdown();
     wap_appl_shutdown();
+    close_connection_to_bearerbox();
     wsp_http_map_destroy();
     config_destroy(cfg);
+    octstr_destroy(bearerbox_host);
     gwlib_shutdown();
     return 0;
 }
