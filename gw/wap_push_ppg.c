@@ -1,18 +1,18 @@
 /*
  * wap_push_ppg.c: General logic of a push proxy gateway.
  *
- * This module implements following Wapforum specifications:
- *      WAP-151-PPGService-19990816-a (called afterwards ppg),
- *      WAP-164-PAP-19991108-a (pap),
- *      WAP-164_100-PAP-20000218-a (pap implementation note).
+ * This module implements following WAP Forum specifications:
+ *      WAP-151-PPGService-19990816-a (called afterwards PPG),
+ *      WAP-164-PAP-19991108-a (PAP),
+ *      WAP-164_100-PAP-20000218-a (PAP implementation note).
  * 
- * We refer following Wapforum specifications:
+ * We refer following WAP Forum specifications:
  *      WAP-145-PushMessage-19990816-a (push message)
- *      WAP-200-WDP-20001212-a (wdp)
- *      WAP-203-WSP-20000504-a (wsp)
- *      WAP-189-PushOTA-20000217-a (ota).
+ *      WAP-200-WDP-20001212-a (WDP)
+ *      WAP-203-WSP-20000504-a (WSP)
+ *      WAP-189-PushOTA-20000217-a (OTA).
  *
- * In addition, rfcs 1521 and 2045 are referred.
+ * In addition, RFCs 1521 and 2045 are referred.
  *
  * By Aarno SyväŠnen for Wapit Ltd, Wiral Ltd and Global Networks Inc. 
  */
@@ -2937,7 +2937,6 @@ static HTTPClient *send_push_response(WAPEvent *e, int status)
     }
 
     octstr_format_append(reply_body, "%s", ">"
-	     "</push-response>"
              "<response-result code =\"");
     octstr_format_append(reply_body, "%d", e->u.Push_Response.code);
     octstr_format_append(reply_body, "%s", "\"");
@@ -2950,7 +2949,8 @@ static HTTPClient *send_push_response(WAPEvent *e, int status)
     
     octstr_format_append(reply_body, "%s", ">"
               "</response-result>"
-         "</pap>");
+              "</push-response>"
+          "</pap>");
 
     octstr_destroy(url);
 
@@ -3003,7 +3003,6 @@ static void tell_fatal_error(HTTPClient **c, WAPEvent *e, Octstr *url,
     octstr_format_append(reply_body, "%s", "\"");
 
     octstr_format_append(reply_body, "%s", ">"
-	     "</push-response>"
              "<response-result code =\"");
     octstr_format_append(reply_body, "%d", code);
     octstr_format_append(reply_body, "%s", "\"");
@@ -3014,6 +3013,7 @@ static void tell_fatal_error(HTTPClient **c, WAPEvent *e, Octstr *url,
 
     octstr_format_append(reply_body, "%s", ">"
               "</response-result>"
+              "</push-response>"
          "</pap>");
 
     debug("wap.push.ppg", 0, "PPG: tell_fatal_error: %s", octstr_get_cstr(dos));
