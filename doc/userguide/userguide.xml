@@ -2356,8 +2356,8 @@ pin = 2345
 
    <row><entry><literal>nokiaphone</literal></entry>
      <entry valign=bottom>
-     	Nokia 6210, 7210, 8210 (tested). Probably other 
-	nokia phones too.
+     	Nokia 6210, 7110, 8210 (tested). Probably other 
+	   Nokia phones too.
      </entry></row>
 
    <row><entry><literal>ericsson</literal></entry>
