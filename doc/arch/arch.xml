@@ -6,7 +6,7 @@
 
 <bookinfo>
 	<title>Kannel Architecture and Design</title>
-	<subtitle>$Revision: 1.18 $</subtitle>
+	<subtitle>$Revision: 1.19 $</subtitle>
 	<author>
 	<firstname>Lars</firstname>
 	<surname>Wirzenius</surname>
@@ -1355,20 +1355,28 @@
             PAP layer and makes OTA requests to sessionless and session mode 
             WSP layers. It is used for pushing.</para></listitem>
 
-            <listitem><para>PAP layer. This layer consists of two threads:
-            <literal>ota_read_thread</literal> and <literal>http_read_thread
-            </literal>.</para>
+            <listitem><para>PAP layer. This layer accepts HTTP or HTTPS 
+            requests from PI and it is used for pushing. If PPG is not 
+            configured for HTTPS, there are three threads: <literal>
+            ota_read_thread</literal>, <literal>http_read_thread </literal> 
+            and <literal>pap_request_thread</literal>.If it is, there are 
+            three or four threads: <literal>https_read_thread</literal> is 
+            now mandatory, and <literal>http_read_thread</literal> is 
+            optional.</para>
+
             <para><literal>ota_read_thread</literal> communicates with 
             application layer. It sends push confirmations (called result
             notifications) to the push initiator.</para>
 
-            <para><literal>http_read_thread</literal> accepts pushes from 
-            the push initiator, parses MIME content sended, compiles pap 
-            control document, implements required PPG services and converts 
-            push content to the tokenized form. It informs push iniatiator, 
-            by sending relevant PAP messages to it, errors happened during 
-            these processess and communicates with OTA layer.
-            </para></listitem>
+            <para><literal>http_read_thread</literal> and <literal>
+            https_read_thread</literal>accept pushes from the push initiator. 
+            </para>
+            <para><literal>pap_request_thread</literal>parses MIME content 
+            sended, compiles pap control document, implements required PPG 
+            services and converts push content to the tokenized form. It 
+            informs push iniatiator, by sending relevant PAP messages to it, 
+            errors happened during these processess and communicates with OTA 
+            layer.</para></listitem>
 
             </itemizedlist>
          </para>
