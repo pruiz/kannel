@@ -44,5 +44,11 @@ int mutex_try_lock(pthread_mutex_t *mutex);
 void mutex_unlock(pthread_mutex_t *mutex);
 
 
+/* delete mutex data structures (in case if Linux, just check whether it is 
+ * locked).
+ */
+void mutex_destroy(pthread_mutex_t *mutex);
 
 #endif
+
+
