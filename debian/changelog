@@ -1,3 +1,18 @@
+kannel (0.11.3.cvs-1) unstable; urgency=low
+
+  * New upstream version 0.11.3. This Debian package has a few additional
+    changes made in upstream CVS since the release:
+  * SMS timestamps are set by Kannel, if the SMS center did not set them.
+  * Bugfixes in assertions.
+  * Fixes to a couple of WMLScript compilation bugs.
+  * WTP protocol fix in cases when load is heavy and Ack packets are delayed.
+  * WTP state machine fix: if an event can't be handled, it is just ignored,
+    instead of the state machine being killed.
+  * Debian packaging: postinst creates user kannel, init.d/kannel runs
+    the boxes as that user.
+
+ -- Lars Wirzenius <liw@iki.fi>  Tue, 10 Oct 2000 15:54:01 +0300
+
 kannel (0.11.2.cvs-1) unstable; urgency=low
 
   * Updated version of Debian packaging, for the CVS version. Also added
