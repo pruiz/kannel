@@ -1,6 +1,6 @@
 /*****************************************************************************
 * http.c - The implementation of the HTTP subsystem.
-* Mikael Gueck for WapIT Ltd.
+* Mikael Gueck (mikael.gueck@wapit.com) for WapIT Ltd.
 */
 
 
@@ -47,7 +47,7 @@ int httpserver_get_request(int socket, char **client_ip, char **path, char **arg
 	socklen_t len;
 	struct sockaddr_in cliaddr;
 	int connfd = 0;
-	char accept_ip[NI_MAXHOST];
+	char accept_ip[32];
 
 	char *eol = NULL, *ptr = NULL;
 	int done_with_looping = 0;
@@ -950,11 +950,7 @@ HTTPRequest* httprequest_execute(HTTPRequest *request) {
 
 error:
 	error(errno, "httprequest_execute: failed");
-	for(;;) {
-		if(close(s) == -1) usleep(10);
-		else break;
-		if(errno == EBADF) break;
-	}
+	close(s);
 	free(datasend);
 	free(datareceive);
 	return NULL;
@@ -1053,6 +1049,9 @@ error:
 	return -1;
 }
 
+/*
+ * This value must not be meddled with.
+ */
 char* httprequest_get_header_value(HTTPRequest *request, char *key) {
 
 	HTTPHeader *thisheader = NULL;
