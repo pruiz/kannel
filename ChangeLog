@@ -1,3 +1,7 @@
+2003-02-18  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/smsc/smsc_smasi.c: fixed typo bug in reading the TON and NPI config
+      directives for the SM/ASI module.
+
 2003-02-17  Stipe Tolj  <tolj@wapme-systems.de>
     * Making development release 1.3.1.
 
