@@ -365,11 +365,7 @@ static void get_receiver(long id, Msg **msg, URLTranslation **trans)
 
 static long outstanding_requests(void)
 {
-#if 0 /* XXX not implemented yet */
-    return dict_key_count();
-#else
-    return 0;
-#endif
+    return dict_key_count(receivers);
 }
 
 

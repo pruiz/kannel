@@ -54,4 +54,10 @@ void *dict_get(Dict *dict, Octstr *key);
 void *dict_remove(Dict *dict, Octstr *key);
 
 
+/*
+ * Return the number of keys which currently exist in the Dict.
+ */
+long dict_key_count(Dict *dict);
+
+
 #endif

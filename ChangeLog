@@ -1,5 +1,13 @@
 2000-12-15  Richard Braakman  <dark@wapit.com>
 
+	* gwlib/dict.[ch]: Implement dict_key_count().  Implement behaviour
+	of dict_put when value is NULL.
+
+	* gw/smsbox.c: dict_key_count() now exists, so use it in
+	outstanding_requests().
+
+2000-12-15  Richard Braakman  <dark@wapit.com>
+
 	* gw/smsbox.c: smsbox_req_sendsms and smsbox_req_sendota made
 	static, they're not called from anywhere else.
 

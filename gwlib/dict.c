@@ -53,9 +53,12 @@ static int item_has_key(void *item, void *key)
  */
 
 struct Dict {
-    /* Empty lists may be represented with NULL. */
+    /* Array of Lists of Items.  Empty lists may be represented by NULL. */
     List **tab;
+    /* Size of tab array */
     long size;
+    /* Number of keys currently in the table */
+    long key_count;
     void (*destroy_value)(void *);
     Mutex *lock;
 };
@@ -101,6 +104,7 @@ Dict *dict_create(long size_hint, void (*destroy_value)(void *))
     	dict->tab[i] = NULL;
     dict->lock = mutex_create();
     dict->destroy_value = destroy_value;
+    dict->key_count = 0;
     
     return dict;
 }
@@ -133,6 +137,13 @@ void dict_put(Dict *dict, Octstr *key, void *value)
     long i;
     Item *p;
 
+    if (value == NULL) {
+        value = dict_remove(dict, key);
+	if (dict->destroy_value != NULL)
+	    dict->destroy_value(value);
+        return;
+    }
+
     lock(dict);
     i = key_to_index(dict, key);
     if (dict->tab[i] == NULL) {
@@ -143,6 +154,7 @@ void dict_put(Dict *dict, Octstr *key, void *value)
     if (p == NULL) {
     	p = item_create(key, value);
 	list_append(dict->tab[i], p);
+        dict->key_count++;
     } else {
 	if (dict->destroy_value != NULL)
 	    dict->destroy_value(p->value);
@@ -194,7 +206,20 @@ void *dict_remove(Dict *dict, Octstr *key)
 	list_destroy(list, NULL);
     	value = p->value;
 	item_destroy(p);
+	dict->key_count--;
     }
     unlock(dict);
     return value;
+}
+
+
+long dict_key_count(Dict *dict)
+{
+    long result;
+
+    lock(dict);
+    result = dict->key_count;
+    unlock(dict);
+
+    return result;
 }
