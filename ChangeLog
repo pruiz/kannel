@@ -4,7 +4,12 @@
 	(via some Windows header) defines it, and it isn't being used,
 	anyway.  This is an intermin solution, a better one would be to
 	add something like a WML_ or WBXML_ prefix to all those tokens.
-	Thanks to Stipe Tolj for pointing this out.
+
+	* gw/wtp_resp_state-decl.h: Renamed WAIT_TIMEOUT to
+	WAIT_TIMEOUT_STATE to get rid of name conflicts with Cygwin
+	headers.
+	
+	* Thanks to Stipe Tolj for pointing these out.
 
 2000-10-25  Lars Wirzenius  <liw@iki.fi>
 
