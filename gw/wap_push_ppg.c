@@ -2133,7 +2133,7 @@ static WAPAddrTuple *set_addr_tuple(Octstr *address, long cliport,
 
 /*
  * We are not interested about parsing URI fully - we check only does it cont-
- * ains application id reserved by WINA or the part containing assigned code. 
+ * ain application id reserved by WINA or the part containing assigned code. 
  * Otherwise (regardless of it being an URI or assigned code) we simply pass 
  * it forward. 
  */

@@ -1,5 +1,10 @@
 2001-10-12 Aarno Syvänen <aarno@wiral.com>
 
+	* gw/wap_push_ota.c, gw/wap-appl.c, gw/wap_push_pap_compiler.c, 
+	gw/wap_push_si_compiler.c, gw/wap_push_ppg.c: Better module comments.
+
+2001-10-12 Aarno Syvänen <aarno@wiral.com>
+
 	* gwlib/dict.c: A bugfix in function dict_put_once.
 	* gw/wap_push_pap_compiler.c: Reject unparsable phone numbers properly.
 	(Global phone number is here an unique identifier, so we must insist

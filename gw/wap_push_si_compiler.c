@@ -1,6 +1,7 @@
 /*
- * wap_push_si_compiler.c: Implementation of wap_push_si_compiler.h interface.
- * SI DTD is defined in si, chapter 8.2.
+ * wap_push_si_compiler.c: Tokenizes a SI document. SI DTD is defined in 
+ * Wapforum specification WAP-167-ServiceInd-20010731-a (hereafter called si),
+ *  chapter 8.2.
  *
  * By Aarno Syvänen for Wiral Ltd
  */
@@ -44,7 +45,7 @@ typedef struct si_3table_t si_3table_t;
 
 /*
  * Si binary. We do not implement string table (we send SI using SMS, so si
- * document musr be very short).
+ * document must be very short).
  */
 
 struct si_binary_t {
@@ -617,7 +618,7 @@ static int parse_node(xmlNodePtr node, si_binary_t **sibxml)
 	 * WML. Therefore they are assumed to be an error.
 	 */
     default:
-	error(0, "WML compiler: Unknown XML node in the WML source.");
+	error(0, "SI compiler: Unknown XML node in the SI source.");
 	return -1;
 	break;
     }
@@ -643,8 +644,7 @@ static int parse_node(xmlNodePtr node, si_binary_t **sibxml)
     case -1: /* Something went wrong in the parsing. */
 	return -1;
     default:
-	error(0,
-	      "WML compiler: undefined return value in a parse function.");
+	warning(0,"SI compiler: undefined return value in a parse function.");
 	return -1;
 	break;
     }

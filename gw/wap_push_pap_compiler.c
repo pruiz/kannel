@@ -1,13 +1,21 @@
 /*
  * wap_push_pap_compiler.c - implementation of wap_push_pap_compiler.h inter-
- * face.
+ * face (compiling pap documents to Kannel WAPEvents)
+ *
+ * This module implements PAP document DTD and status codes, defined in   
+ *       WAP-164-PAP-19991108-a (called hereafter pap), chapter 9 and
+ * PPG client addressing, defined in
+ *       WAP-151-PPGService-19990816-a (ppg), chapter 7.
+ *
+ * In addition, Wapforum specification WAP-200-WDP-20001212-a (wdp) is re-
+ * ferred.
  *
  * Compiler can be used by PI or PPG (it will handle all possible PAP DTD 
  * elements). It checks that attribute values are legal and that an element 
  * has only legal attributes, but does not otherwise validate PAP documents 
  * against PAP DTD. (XML validation is quite another matter, of course.) 
  * Client address is parsed out from the relevant PAP message attribute 
- * containing lots of additional data, see PPG, 7.1. We do not yet support 
+ * containing lots of additional data, see ppg, 7.1. We do not yet support 
  * user defined addresses.
  *
  * By Aarno Syvänen for Wapit Ltd and for Wiral Ltd.
@@ -54,7 +62,7 @@ static char *pap_elements[] = {
 #define NUM_ELEMENTS sizeof(pap_elements)/sizeof(pap_elements[0])
 
 /*
- * Table for PAP attributes. These are defined in PAP, Chapter 9.
+ * Table for PAP attributes. These are defined in pap, Chapter 9.
  */
 struct pap_attributes_t {
     char *name;
@@ -105,7 +113,7 @@ static pap_attributes_t pap_attributes[] = {
 #define NUM_ATTRIBUTES sizeof(pap_attributes)/sizeof(pap_attributes[0])
 
 /*
- * Status codes are defined in PAP, chapter 9.13.
+ * Status codes are defined in pap, chapter 9.13.
  */
 static int pap_codes[] = {
     PAP_ACCEPTED_FOR_PROCESSING,
@@ -122,7 +130,7 @@ static int pap_codes[] = {
 #define NUM_CODES sizeof(pap_codes)/sizeof(pap_codes[0])
 
 /*
- * Possible bearer types. These are defined in WDP, appendix C.
+ * Possible bearer types. These are defined in wdp, appendix C.
  */
 static char *pap_bearer_types[] = {
     "Any",
@@ -143,7 +151,7 @@ static char *pap_bearer_types[] = {
 #define NUM_BEARER_TYPES sizeof(pap_bearer_types)/sizeof(pap_bearer_types[0])
 
 /*
- * Possible network types. These are defined in WDP, appendix C.
+ * Possible network types. These are defined in wdp, appendix C.
  */
 
 static char *pap_network_types[] = {
@@ -319,7 +327,7 @@ static int parse_document(xmlDocPtr doc_p, WAPEvent **e)
 }
 
 /*
- * Parse node of the syntax tree. DTD, as defined in PAP, chapter 9, contains
+ * Parse node of the syntax tree. DTD, as defined in pap, chapter 9, contains
  * only elements (entities are restricted to DTDs). 
  *
  * Returns 0, when success
@@ -453,7 +461,7 @@ static int parse_attribute(Octstr *element_name, xmlAttrPtr attribute,
 
 /*
  * Parse an attribute (it is, check cdata is has for a value) that is *not* an
- * enumeration. Legal values are defined in PAP, chapter 9. 
+ * enumeration. Legal values are defined in pap, chapter 9. 
  */
     if (pap_attributes[i].value == NULL) {
         ret = parse_attr_value(element_name, attr_name, value, e);
@@ -476,7 +484,7 @@ static int parse_attribute(Octstr *element_name, xmlAttrPtr attribute,
 
 /*
  * Check that the value of the attribute is one enumerated for this attribute
- * in PAP, chapter 9.
+ * in pap, chapter 9.
  */
     if (set_attribute_value(element_name, value, attr_name, e) == -1)
         goto error;
@@ -500,7 +508,7 @@ parsed:
 /* 
  * Value parsing functions return the newly created wap event containing 
  * attribute value from pap source, if successfull; NULL otherwise . Value 
- * types of attributes are defined in PAP, chapter 9.  
+ * types of attributes are defined in pap, chapter 9.  
  */
 
 static int parse_push_message_value(Octstr *attr_name, Octstr *attr_value, 
@@ -784,7 +792,7 @@ static int set_attribute_value(Octstr *element_name, Octstr *attr_value,
 
 /*
  * We must recognize status class and treat unrecognized codes as a x000 code,
- * see PAP, 9.13, p 27.
+ * see pap, 9.13, p 27.
  */
 static int parse_code(Octstr *attr_value)
 {
@@ -872,7 +880,7 @@ static int parse_requirement(Octstr *attr_value)
 }
 
 /*
- * Priority is defined in PAP, chapter 9.2.2.
+ * Priority is defined in pap, chapter 9.2.2.
  */
 static int parse_priority(Octstr *attr_value)
 {
@@ -892,7 +900,7 @@ static int parse_priority(Octstr *attr_value)
 }
 
 /*
- * Delivery-method is defined in PAP, chapter 9.2.2.
+ * Delivery-method is defined in pap, chapter 9.2.2.
  */
 static int parse_delivery_method(Octstr *attr_value)
 {
@@ -915,7 +923,7 @@ static int parse_delivery_method(Octstr *attr_value)
 }
 
 /*
- * PAP states are defined in PPG, chapter 6.
+ * PAP states are defined in ppg, chapter 6.
  */
 static int parse_state(Octstr *attr_value)
 {
@@ -945,7 +953,7 @@ static int parse_state(Octstr *attr_value)
 /*
  * Check legality of pap client address attribute and transform it to the 
  * client address usable in Kannel wap address tuple data type. The grammar 
- * for client address is specified in PPG, chapter 7.1.
+ * for client address is specified in ppg, chapter 7.1.
  *
  * Returns:   0, when success
  *           -1, a non-implemented pap feature requested by pi
@@ -1233,7 +1241,7 @@ static long parse_ipv6(Octstr **address, long pos)
 
 /*
  * WINA web page does not include address type identifiers. Following ones are
- * from WDP, Appendix C.
+ * from wdp, Appendix C.
  */
 
 static char *bearer_address[] = {

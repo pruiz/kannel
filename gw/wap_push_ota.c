@@ -1,6 +1,10 @@
 /*
  * Wap_push_ota.c: implementation of push related requests of OTA protocol
  *
+ * This module implements requirement primitives of WAP-189-PushOTA-20000217-a
+ * (hereafter called ota).
+ * In addition, WAP-203-WSP-20000504-a (wsp) is referred.
+ *
  * This module forwards push  requests made by the wap_push_ppg module to 
  * connected or connectionless session services.
  * Indications (for confirmed push, push abort and disconnect, e.g., in the 
@@ -82,7 +86,7 @@ static List *add_push_flag(WAPEvent *e);
 static void check_session_request_headers(List *headers);
 
 /*
- * Contact points and appication ids in the push initiator are packed into a
+ * Contact points and application ids in the push initiator are packed into a
  * specific structure, being like WSP PDUs.
  */
 static Octstr *pack_sia(List *headers);
@@ -331,7 +335,7 @@ static void abort_push(WAPEvent *e)
 }
 
 /*
- * Add push flag into push headers. Push flag is defined in PushOTA, p. 17-18.
+ * Add push flag into push headers. Push flag is defined in otaa, p. 17-18.
  */
 static List *add_push_flag(WAPEvent *e)
 {
@@ -412,7 +416,7 @@ static void flags_assert(WAPEvent *e)
 }
 
 /*
- * Accepted reasons are defined in OTA 6.3.3.
+ * Accepted reasons are defined in ota 6.3.3.
  */
 static void reason_assert(long reason)
 {
@@ -423,7 +427,7 @@ static void reason_assert(long reason)
 
 /*
  * When server is requesting a session with a client, content type and applic-
- * ation headers must be present (this behaviour is defined in PushOTA, p. 14).
+ * ation headers must be present (this behaviour is defined in ota, p. 14).
  * We check headers for them and add them if they are not already present. 
  * X-WAP-Application-Id has been added by ppg module.
  */
@@ -435,7 +439,7 @@ static void check_session_request_headers(List *headers)
 
 /*
  * Pack contact points and application id list into sia content type. It is 
- * defined in PushOTA, p. 18. 
+ * defined in ota, p. 18. 
  */
 static Octstr *pack_sia(List *headers)
 {
@@ -462,7 +466,7 @@ static Octstr *pack_sia(List *headers)
  * Output: Octstr containing them in a numeric format. (Ppg module does coding
  * of the header value part of the X-WAP-Application-Id header).
  *
- * Returns: Octstr containing headers, if succesful, otherwise an empty 
+ * Returns: Octstr containing headers, if succesfull, otherwise an empty 
  * octstr.
  */
 static Octstr *pack_appid_list(List *headers)
@@ -493,7 +497,7 @@ static Octstr *pack_appid_list(List *headers)
 
 /*
  * NB: This data includes bearer information. We use IPv4 values. Address Type
- * is defined in WSP, table 16, p. 65
+ * is defined in wsp, table 16, p. 65
  */
 static Octstr *pack_server_address(void)
 {

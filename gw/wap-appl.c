@@ -1,11 +1,18 @@
 /*
- * gw/wap-appl.c - wapbox application layer implementation
+ * gw/wap-appl.c - wapbox application layer and push ota indication, response
+ * and confirmation primitive implementation.
+ *
+ * This module implements indication and confirmation primitives of WAP-189-
+ * PushOTA-20000217-a (hereafter called ota). 
+ * In addition, WAP-200-WDP-20001212-a (wdp) is referred.
+ * Wapbox application layer is not a Wapforum protocol. 
  *
  * The application layer is reads events from its event queue, fetches the 
- * corresponding URLs and feeds back events to the WSP layer (pull). In addi-
- * tion, the layer forwards WSP events related to push to the module wap_push
- * ppg and wsp, implementing indications, responses  and conformations of OTA 
- * protocol.
+ * corresponding URLs and feeds back events to the WSP layer (pull). 
+ *
+ * In addition, the layer forwards WSP events related to push to the module 
+ * wap_push_ppg and wsp, implementing indications, responses  and confirma-
+ * tions of ota.
  *
  * Note that push header encoding and decoding are divided two parts:
  * first decoding and encoding numeric values and then packing these values
@@ -185,9 +192,9 @@ long wap_appl_get_load(void)
  */
 
 /*
- * When we have a push event, create OTA indication or confirmation and send 
- * it to ppg main module. 
- * Because Accept Application and Bearer Indication are optional, we cannot 
+ * When we have a push event, create ota indication or confirmation and send 
+ * it to ppg module. 
+ * Because Accept-Application and Bearer-Indication are optional, we cannot 
  * rely on them. We must ask ppg main module do we have an open push session 
  * for this initiator. Push is identified by push id.
  */
@@ -1014,13 +1021,13 @@ void wsp_http_map_destroy(void)
 }
 
 /*
- * Push OTA submodule implements indications and confirmations part of Push OTA
- * module.
+ * Ota submodule implements indications, responses and confirmations part of 
+ * ota.
  */
 
 /*
  * If Accept-Application is empty, add header indicating default application 
- * wml ua (see OTA 6.4.1). Otherwise decode application id (see http://www.
+ * wml ua (see ota 6.4.1). Otherwise decode application id (see http://www.
  * wapforum.org/wina/push-app-id.htm). FIXME: capability negotiation (no-
  * thing means default, if so negotiated).
  * Function does not allocate memory neither for headers nor application_
@@ -1039,7 +1046,8 @@ static void check_application_headers(List **headers,
     
     if (*headers == NULL || list_len(inh) == 0) {
         http_header_add(*application_headers, "Accept-Application", "wml ua");
-        debug("wap.appl.push", 0, "OTA: No push application, assuming wml ua");
+        debug("wap.appl.push", 0, "APPL: No push application, assuming wml"
+              " ua");
         if (*headers != NULL)
             http_destroy_headers(inh);
         return;
@@ -1077,7 +1085,7 @@ static void check_application_headers(List **headers,
 }
 
 /*
- * Bearer indication field is defined in OTA 6.4.1. 
+ * Bearer-Indication field is defined in ota 6.4.1. 
  * Skip the header, if it is malformed or if there is more than one bearer 
  * indication.
  * Function does not allocate memory neither for headers nor bearer_headers.
@@ -1091,7 +1099,7 @@ static void decode_bearer_indication(List **headers, List **bearer_headers)
     unsigned char coded_value;
 
     if (*headers == NULL) {
-        debug("wap.appl", 0, "OTA: no client headers, continuing");
+        debug("wap.appl", 0, "APPL: no client headers, continuing");
         return;
     }
 
@@ -1114,7 +1122,7 @@ static void decode_bearer_indication(List **headers, List **bearer_headers)
     http_header_get(inb, 0, &name, &coded_octstr);
     http_destroy_headers(inb);
 
-  /* Greatest assigned number for a bearer type is 0xff, see WDP, appendix C */
+  /* Greatest assigned number for a bearer type is 0xff, see wdp, appendix C */
     coded_value = octstr_get_char(coded_octstr, 0);
     value = wsp_bearer_indication_to_cstr(coded_value);
 
@@ -1124,7 +1132,7 @@ static void decode_bearer_indication(List **headers, List **bearer_headers)
        http_header_dump(*bearer_headers);
        return;
     } else {
-       error(0, "OTA: Illegal bearer indication value, skipping");
+       error(0, "APPL: Illegal bearer indication value, skipping");
        octstr_dump(coded_octstr, 0);
        http_destroy_headers(*bearer_headers);
        return;
@@ -1275,7 +1283,7 @@ static void indicate_push_resume(WAPEvent *e)
 }
 
 /*
- * Server headers are mentioned in table in OTA 6.4.1, but none of the primit-
+ * Server headers are mentioned in table in ota 6.4.1, but none of the primit-
  * ives use them. They are optional in S_Connect_Res, so we do not use them.
  */
 static void response_push_connection(WAPEvent *e)
@@ -1288,7 +1296,12 @@ static void response_push_connection(WAPEvent *e)
     wsp_event->u.S_Connect_Res.session_id = e->u.Pom_Connect_Res.session_id;
     wsp_event->u.S_Connect_Res.negotiated_capabilities =
         wsp_cap_duplicate_list(e->u.Pom_Connect_Res.negotiated_capabilities);
-    debug("wap.appl", 0, "OTA: making pushconnect response");
+    debug("wap.appl", 0, "APPL: making push connect response");
 
     wsp_session_dispatch_event(wsp_event);
 }
+
+
+
+
+
