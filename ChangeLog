@@ -1,3 +1,6 @@
+2004-08-30 Alexander Malysh <amalysh at kannel.org>
+    * doc/userguide/userguide.xml: removed centrium references and changed email addr.
+
 2004-08-28 Alexander Malysh <amalysh at kannel.org>
     * gw/bb_smscconn.c, gw/msg-decl.h, gw/msg.[ch], gw/sms.h, gw/smsbox.c,
       gw/smscconn.c, gw/wapbox.c, gw/smsc/smsc_http.c, gw/smsc/smsc_soap.c,

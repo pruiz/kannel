@@ -68,11 +68,11 @@
 		<firstname>Alexander</firstname>
 		<surname>Malysh</surname>
 		<affiliation>
-			<jobtitle>Chief Kannel Developer</jobtitle>
-			<orgname>Centrium GmbH</orgname>
+			<!-- <jobtitle>Chief Kannel Developer</jobtitle>
+			<orgname>Centrium GmbH</orgname> -->
 			<address> 
-				<email>a.malysh@centrium.de</email>
-				<otheraddr>http://www.centrium.de</otheraddr>
+				<email>amalysh at kannel.org</email>
+				<!-- <otheraddr>http://www.centrium.de</otheraddr> -->
 			</address>
 		</affiliation>
 	</author>
