@@ -1,4 +1,13 @@
 2002-02-07  Stipe Tolj  <tolj@wapme-systems.de>
+    * doc/userguide/userguide.xml: added documentation for "exec" sms-service
+    * gwlib/cfg.def: added "exec" translation type to sms-service multi
+    * gwlib/octstr.[ch]: added function octstr_read_pipe() to read 
+      everything from a file descriptor to an octstr.
+    * gw/smsbox.c: added translation type TRANSTYPE_EXECUTE and the 
+      corresponding popen() logic to execute shell commands for sms-services.
+    * gw/urltrans.[ch]: added translation type TRANSTYPE_EXECUTE
+    
+2002-02-07  Stipe Tolj  <tolj@wapme-systems.de>
     * STATUS: added Oded Arbel's fix for timestamp issue in at2
     * gw/smsc_ois.c: Applied patch for handling 7bit encoded messages
       submitted by: Oded Arbel <oded@m-wise.com>
