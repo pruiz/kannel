@@ -1252,7 +1252,6 @@ Octstr *octstr_read_pipe(FILE *f)
 {
     Octstr *os;
     char buf[4096];
-    long n;
 
     gw_assert(f != NULL);
 
