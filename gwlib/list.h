@@ -45,8 +45,6 @@
  * The module prefix is `list' (in any combination of upper and lower case
  * characters). All externally visible symbols (i.e., those defined by
  * this header file) start with the prefix.
- *
- * Lars Wirzenius <liw@wapit.com>
  */
 
 #ifndef LIST_H
@@ -117,7 +115,7 @@ void list_delete(List *list, long pos, long count);
  * Delete all items from the list that match `pattern'. Like list_delete,
  * the items are removed from the list, but are not destroyed themselves.
  */
-void list_delete_all(List *list, void *pat, list_item_matches_t *cmp);
+void list_delete_matching(List *list, void *pat, list_item_matches_t *cmp);
 
 
 /*
@@ -146,7 +144,7 @@ void *list_extract_first(List *list);
  * Note that unlike list_consume, this won't sleep until there is
  * something in the list.
  */
-List *list_extract_all(List *list, void *pat, list_item_matches_t *cmp);
+List *list_extract_matching(List *list, void *pat, list_item_matches_t *cmp);
 
 
 /*

@@ -995,7 +995,7 @@ static void pool_kill_old_ones(void) {
 	HTTPSocket *p;
 
 	time(&now);
-	list = list_extract_all(pool, &now, pool_socket_old_and_unused);
+	list = list_extract_matching(pool, &now, pool_socket_old_and_unused);
 	if (list != NULL) {
 		while ((p = list_extract_first(list)) != NULL)
 			socket_destroy(p);

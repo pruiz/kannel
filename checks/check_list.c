@@ -158,7 +158,7 @@ static void main_for_list_add_and_delete(void) {
 	for (j = 0; j < num_repeats; ++j)
 		for (i = 0; i < num_items; ++i)
 			list_append(list, items[i]);
-	list_delete_all(list, items[0], compare_cstr);
+	list_delete_matching(list, items[0], compare_cstr);
 	for (i = 0; i < list_len(list); ++i) {
 		p = list_get(list, i);
 		if (strcmp(p, items[0]) == 0)
@@ -194,7 +194,8 @@ static void main_for_extract(void) {
 			list_append(list, items[i]);
 
 	for (j = 0; j < num_items; ++j) {
-		extracted = list_extract_all(list, items[j], compare_cstr);
+		extracted = list_extract_matching(list, items[j], 
+					compare_cstr);
 		if (extracted == NULL)
 			panic(0, "no extracted elements, should have!");
 		for (i = 0; i < list_len(list); ++i) {

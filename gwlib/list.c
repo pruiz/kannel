@@ -136,7 +136,8 @@ void list_delete(List *list, long pos, long count) {
 }
 
 
-void list_delete_all(List *list, void *pat, list_item_matches_t *cmp) {
+void list_delete_matching(List *list, void *pat, list_item_matches_t *matches)
+{
 	long i;
 
 	lock(list);
@@ -146,7 +147,7 @@ void list_delete_all(List *list, void *pat, list_item_matches_t *cmp) {
 	   --liw */
 	i = 0;
 	while (i < list->len) {
-		if (cmp(GET(list, i), pat))
+		if (matches(GET(list, i), pat))
 			delete_items_from_list(list, i, 1);
 		else
 			++i;
@@ -189,21 +190,20 @@ void *list_get(List *list, long pos) {
 void *list_extract_first(List *list) {
 	void *item;
 	
-	/*gw_assert(list);*/
+	gw_assert(list != NULL);
 	lock(list);
 	if (list->len == 0)
 		item = NULL;
 	else {
 		item = GET(list, 0);
-		list->start = (list->start + 1) % list->tab_size;
-		list->len -= 1;
+		delete_items_from_list(list, 0, 1);
 	}
 	unlock(list);
 	return item;
 }
 
 
-List *list_extract_all(List *list, void *pat, list_item_matches_t *cmp) {
+List *list_extract_matching(List *list, void *pat, list_item_matches_t *cmp) {
 	List *new_list;
 	long i;
 
@@ -228,14 +228,18 @@ List *list_extract_all(List *list, void *pat, list_item_matches_t *cmp) {
 
 
 void list_lock(List *list) {
-	gw_assert(list);
+	gw_assert(list != NULL);
+	lock(list);
 	mutex_lock(list->permanent_lock);
+	unlock(list);
 }
 
 
 void list_unlock(List *list) {
-	gw_assert(list);
+	gw_assert(list != NULL);
+	lock(list);
 	mutex_unlock(list->permanent_lock);
+	unlock(list);
 }
 
 
@@ -296,8 +300,7 @@ void *list_consume(List *list) {
 	}
 	if (list->len > 0) {
 		item = GET(list, 0);
-		list->start = (list->start + 1) % list->tab_size;
-		list->len -= 1;
+		delete_items_from_list(list, 0, 1);
 	} else {
 		item = NULL;
 	}
@@ -371,12 +374,12 @@ List *list_cat(List *list1, List *list2)
 /*************************************************************************/
 
 static void lock(List *list) {
-	gw_assert(list);
+	gw_assert(list != NULL);
 	mutex_lock(list->single_operation_lock);
 }
 
 static void unlock(List *list) {
-	gw_assert(list);
+	gw_assert(list != NULL);
 	mutex_unlock(list->single_operation_lock);
 }
 

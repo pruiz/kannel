@@ -1,5 +1,24 @@
 2000-08-31  Lars Wirzenius  <liw@iki.fi>
 
+	* gwlib/list.[ch]: Some further cleanups:
+	
+		- list_delete_all and list_extract_all were named in a
+		misleading way; renamed to *_matching instead, and all
+		calls fixed as well; argument `cmp' renamed to `matches'
+		for clarity's sake
+		
+		- some assertions uncommented and fixed to compare a 
+		pointer explicity to NULL, instead of implicitly
+		
+		- code changed to call delete_items_from_list, instead of
+		doing the same thing manually
+		
+		- list_lock and list_unlock use the single-operation lock
+		
+	* checks/check_list.c, gwlib/http.c: Related changes.
+
+2000-08-31  Lars Wirzenius  <liw@iki.fi>
+
 	* gwlib/list.c: list_len is now protected by locks.
 
 2000-08-31  Lars Wirzenius  <liw@iki.fi>
