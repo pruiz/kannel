@@ -1,4 +1,7 @@
 2003-10-15  Alexander Malysh  <a.malysh@centrium.de>
+    * gw/smsbox.c: trivial changes.
+
+2003-10-15  Alexander Malysh  <a.malysh@centrium.de>
     * gw/smsc/smsc_at.c: fixed bug #92.
     * gw/smsc/smsc_at.h: made all functions static.
 

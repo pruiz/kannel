@@ -2380,8 +2380,8 @@ static Octstr *smsbox_req_sendsms(List *args, Octstr *client_ip, int *status)
 	*status = HTTP_BAD_REQUEST;
 	return octstr_create("Insufficient headers, rejected");
     } 
-    else if (octstr_case_compare(to, octstr_imm("")) == 0) {
-	error(0, "%s got empty <to cgi variable", octstr_get_cstr(sendsms_url));
+    else if (octstr_len(to) == 0) {
+	error(0, "%s got empty <to> cgi variable", octstr_get_cstr(sendsms_url));
 	*status = HTTP_BAD_REQUEST;
 	return octstr_create("Empty receiver number not allowed, rejected");
     }
@@ -2415,8 +2415,8 @@ static Octstr *smsbox_sendsms_post(List *headers, Octstr *body,
     text_wml = octstr_imm("text/vnd.wap.wml");
     text_plain = octstr_imm("text/plain");
     text_xml = octstr_imm("text/xml");
-
     octet_stream = octstr_imm("application/octet-stream");
+
     user = pass = ret = type = NULL;
     tolist = NULL;
     from = to = udh = smsc = account = 
@@ -2474,7 +2474,7 @@ static Octstr *smsbox_sendsms_post(List *headers, Octstr *body,
 	*status = HTTP_BAD_REQUEST;
 	ret = octstr_create("Insufficient headers, rejected");
     } 
-    else if (to != NULL && octstr_case_compare(to, octstr_imm("")) == 0) {
+    else if (to != NULL && octstr_len(to) == 0) {
 	error(0, "%s got empty <to> cgi variable", octstr_get_cstr(sendsms_url));
 	*status = HTTP_BAD_REQUEST;
 	return octstr_create("Empty receiver number not allowed, rejected");
