@@ -91,6 +91,7 @@ struct request_data {
     long client_SDU_size;
     WAPEvent *event;
     long session_id;
+    Octstr *method;
     Octstr *url;
     long x_wap_tod;
     List *request_headers;
@@ -542,8 +543,8 @@ static void return_unit_reply(WAPAddrTuple *tuple, long transaction_id,
  * Return an HTTP reply back to the phone.
  */
 static void return_reply(int status, Octstr *content_body, List *headers,
-    	    	    	 long sdu_size, WAPEvent *orig_event,
-                         long session_id, Octstr *url, int x_wap_tod,
+    	    	    	 long sdu_size, WAPEvent *orig_event, long session_id, 
+                         Octstr *method, Octstr *url, int x_wap_tod,
                          List *request_headers)
 {
     struct content content;
@@ -601,11 +602,30 @@ static void return_reply(int status, Octstr *content_body, List *headers,
         }
 
     } else {
+        WAPAddrTuple *addr_tuple;
+        Octstr *ua, *server;
 
+        /* get client IP and User-Agent identifier */
+        addr_tuple = (orig_event->type == S_MethodInvoke_Ind) ?
+            orig_event->u.S_MethodInvoke_Ind.addr_tuple : 
+            orig_event->u.S_Unit_MethodInvoke_Ind.addr_tuple;
+        ua = http_header_value(request_headers, octstr_imm("User-Agent"));
+
+        /* get response content type and Server identifier */
         http_header_get_content_type(headers, &content.type, &content.charset);
-        alog("<%s> (%s, charset='%s') %d", 
-             octstr_get_cstr(url), octstr_get_cstr(content.type),
-             octstr_get_cstr(content.charset), status);
+        server = http_header_value(headers, octstr_imm("Server"));
+
+        /* log the access */
+        alog("%s %s <%s> (%s, charset='%s') %ld %d <%s> <%s>", 
+             octstr_get_cstr(addr_tuple->remote->address), 
+             octstr_get_cstr(method), octstr_get_cstr(url), 
+             octstr_get_cstr(content.type), octstr_get_cstr(content.charset),
+             octstr_len(content.body), status,
+             ua ? octstr_get_cstr(ua) : "",
+             server ? octstr_get_cstr(server) : "");
+
+        octstr_destroy(ua);
+        octstr_destroy(server);
 
 #ifdef ENABLE_COOKIES
         if (session_id != -1)
@@ -743,7 +763,7 @@ static void return_replies_thread(void *arg)
             break;
 
         return_reply(status, body, headers, p->client_SDU_size,
-                     p->event, p->session_id, p->url, p->x_wap_tod,
+                     p->event, p->session_id, p->method, p->url, p->x_wap_tod,
                      p->request_headers);
         wap_event_destroy(p->event);
         http_destroy_headers(p->request_headers);
@@ -785,6 +805,7 @@ static void start_fetch(WAPEvent *event)
     if (event->type == S_MethodInvoke_Ind) {
         struct S_MethodInvoke_Ind *p;
     
+        /* WSP, connection orientated */
         p = &event->u.S_MethodInvoke_Ind;
         session_headers = p->session_headers;
         request_headers = p->request_headers;
@@ -797,6 +818,7 @@ static void start_fetch(WAPEvent *event)
     } else {
         struct S_Unit_MethodInvoke_Ind *p;
 	
+        /* WDP, non orientated */
         p = &event->u.S_Unit_MethodInvoke_Ind;
         session_headers = NULL;
         request_headers = p->request_headers;
@@ -860,7 +882,7 @@ static void start_fetch(WAPEvent *event)
         content_body = octstr_create(HEALTH_DECK);
         octstr_destroy(request_body);
         return_reply(ret, content_body, resp_headers, client_SDU_size,
-                     event, session_id, url, x_wap_tod, actual_headers);
+                     event, session_id, method, url, x_wap_tod, actual_headers);
         wap_event_destroy(event);
         http_destroy_headers(actual_headers);
     } else if (octstr_str_compare(method, "GET") == 0 ||
@@ -876,6 +898,7 @@ static void start_fetch(WAPEvent *event)
         p->client_SDU_size = client_SDU_size;
         p->event = event;
         p->session_id = session_id;
+        p->method = method;
         p->url = url;
         p->x_wap_tod = x_wap_tod;
         p->request_headers = actual_headers;
@@ -889,7 +912,7 @@ static void start_fetch(WAPEvent *event)
         ret = HTTP_NOT_IMPLEMENTED;
         octstr_destroy(request_body);
         return_reply(ret, content_body, resp_headers, client_SDU_size,
-                     event, session_id, url, x_wap_tod, actual_headers);
+                     event, session_id, method, url, x_wap_tod, actual_headers);
         wap_event_destroy(event);
         http_destroy_headers(actual_headers);
     }
