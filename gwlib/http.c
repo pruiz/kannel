@@ -1016,7 +1016,7 @@ static void handle_transaction(Connection *conn, void *data)
                     debug("gwlib.http",0,"Failed while retrying");
 		    goto error;
 		} else {
-                    /* implicit conn_unregister */
+                    conn_unregister(trans->conn);
 		    conn_destroy(trans->conn);
 		    trans->conn = NULL;
 		    trans->retrying = 1;
@@ -1131,6 +1131,7 @@ static void handle_transaction(Connection *conn, void *data)
     return;
 
 error:
+    conn_unregister(trans->conn);
     conn_destroy(trans->conn);
     trans->conn = NULL;
     error(0, "Couldn't fetch <%s>", octstr_get_cstr(trans->url));
@@ -1787,13 +1788,17 @@ static void client_destroy(void *client)
         return;
 
     p = client;
+    
+    /* drop this client from active_connections list */
+    gwlist_lock(active_connections);
+    if (gwlist_delete_equal(active_connections, p) != 1)
+        panic(0, "HTTP: Race condition in client_destroy(%p) detected!", client);
+    gwlist_unlock(active_connections);
+    
     debug("gwlib.http", 0, "HTTP: Destroying HTTPClient area %p.", p);
     gw_assert_allocated(p, __FILE__, __LINE__, __func__);
     debug("gwlib.http", 0, "HTTP: Destroying HTTPClient for `%s'.",
           octstr_get_cstr(p->ip));
-    
-    /* drop this client from active_connections list */
-    gwlist_delete_equal(active_connections, p);
     
     conn_destroy(p->conn);
     octstr_destroy(p->ip);
@@ -1912,6 +1917,7 @@ static void port_remove(int port)
     Octstr *key;
     struct port *p;
     List *l;
+    HTTPClient *client;
 
     key = port_key(port);
     mutex_lock(port_mutex);
@@ -1930,10 +1936,23 @@ static void port_remove(int port)
     gwlist_destroy(p->clients_with_requests, client_destroy);
     counter_destroy(p->active_consumers);
     gw_free(p);
-    
-    /* drop all active_connections for this port */
-    l = gwlist_extract_matching(active_connections, &port, port_match);
-    gwlist_destroy(l, client_destroy);
+
+    /*
+     * In order to avoid race conditions with FDSet thread, we
+     * destroy Clients for this port in two steps:
+     * 1) unregister from fdset with gwlist_lock held, so client_destroy
+     *    cannot destroy our client that we currently use
+     * 2) without gwlist_lock held destroy every client, we can do this
+     *    because we only one thread that can use this client struct
+     */
+    gwlist_lock(active_connections);
+    l = gwlist_search_all(active_connections, &port, port_match);
+    while(l != NULL && (client = gwlist_extract_first(l)) != NULL)
+        conn_unregister(client->conn);
+    gwlist_unlock(active_connections);
+    gwlist_destroy(l, NULL);
+    while((client = gwlist_search(active_connections, &port, port_match)) != NULL)
+        client_destroy(client);
 }
 
 
@@ -2094,6 +2113,11 @@ static void receive_request(Connection *conn, void *data)
                 return;
 	    /* Reply has been sent completely */
 	    if (!client->persistent_conn) {
+                /*
+                 * in order to avoid race conditions while conn will be destroyed but
+                 * conn is still in use, we call conn_unregister explicit here because
+                 * conn_unregister call uses locks
+                 */
                 conn_unregister(conn);
                 client_destroy(client);
                 return;
@@ -2108,6 +2132,12 @@ static void receive_request(Connection *conn, void *data)
     }
     
 error:
+    /*
+     * in order to avoid race conditions while conn will be destroyed but
+     * conn is still in use, we call conn_unregister explicit here because
+     * conn_unregister call uses locks
+     */
+    conn_unregister(conn);
     client_destroy(client);
 }
 

@@ -1,4 +1,12 @@
 2005-03-07  Alexander Malysh <amalysh at kannel.org>
+    * gwlib/http.c: (Client Part) fixed race condition while destroing
+      Connection. In order to not trigger RC we must first explicit
+      unregister connection from FDSet (because this operation is locked)
+      and then destroy Connection.
+      (Server Part) fixed race condition that caused double free of a
+      HTTPClient struct while closing specified listen port.
+
+2005-03-07  Alexander Malysh <amalysh at kannel.org>
     * gw/dlr_pgsql.c: attached patch adds again 'LIMIT 1' to dlr_pgsql
       because after fix for #190 we will delete and update to much rows
       in postgresql.
