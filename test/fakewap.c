@@ -213,8 +213,16 @@ int test_separation = 0;
  * command line argument. WSP_Concat is a concatenation of WTP_Ack and 
  * WSP_Disconnect PDUs.
  */
-unsigned char WSP_Connect[] = {0x06, 0x00, 0x00, 0x00, 0x01, 0x10, 0x00, 
-				0x00 };
+unsigned char WSP_Connect[] = {0x06, 0x00, 0x00, 0x00, 
+				/* WSP part */
+				0x01, /* PDU type */
+				0x10, /* Version 1.0 */
+				0x00, /* Capability length */
+				0x02, /* Headers length = 2*/
+				/* Capabilities */
+				/* Headers */
+				0x80, 0x80 /* Accept: *\* */
+				};
 unsigned char WSP_ConnectReply[] = {0x16, 0x80, 0x00, 0x02 };
 unsigned char WTP_Ack[] =          {0x18, 0x00, 0x00 };
 unsigned char WTP_TidVe[] =        {0x1C, 0x00, 0x00 };
@@ -470,6 +478,9 @@ wap_msg_recv( int fd, const char * hdr, int hdr_len,
             }
             else if (GET_WTP_PDU_TYPE(msg) == WTP_PDU_ABORT) {
                 print_msg( "Received WTP Abort", msg, msg_len );
+            }
+            else if (GET_WTP_PDU_TYPE(msg) == WTP_PDU_RESULT) {
+               break;
             }
             else {
                 print_msg( "Received unexpected message", msg, msg_len );

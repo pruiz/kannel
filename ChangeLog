@@ -1,3 +1,7 @@
+2004-02-19  Igor Ivoilov <igor@francoudi.com>
+    * test/fakewap.c: added header "Accept: */*" to connect request to make 
+      wapgateway happy and reply with status of 200.
+	
 2004-02-18  Alexander Malysh  <a.malysh@centrium.de>
     * gwlib/conn.c: fixed possible race condition. also set io_error for
       failed write operations.
