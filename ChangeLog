@@ -1,3 +1,8 @@
+2000-02-16 Sanna Seppanen <sanna@wapit.com>
+	
+	* gwlib/http.c: created the new function httpresponse_wrap, copy of 
+	httprequest_wrap using octstr. haven't tested it with chunked entities.  
+	
 2000-02-16    <rpr@rpr.wapit.com>
 
 	* gw/wsp.c (unpack_caps): fix
