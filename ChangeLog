@@ -1,3 +1,9 @@
+1999-12-30    <rpr@rpr.wapit.com>
+
+	* gw/smsbox.smsconf: improved documentation
+
+	* gw/bearerbox.conf: ditto
+
 Thu Dec 30 17:04:40 1999  Lars Wirzenius  <liw@wapit.com>
 
 	* */Makefile, configure: Ran automake and autoconf and configure,
