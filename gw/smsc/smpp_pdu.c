@@ -206,9 +206,6 @@ Octstr *smpp_pdu_pack(SMPP_PDU *pdu)
             Octstr *opt_val = dict_get(p->optional_parameters, opt_tag);                \
             if (opt_val != NULL) {                                                      \
                 long opt_len = octstr_len(opt_val);                                     \
-                debug("smpp_pdu", 0, "Packing optional parameter "                      \
-                                     "(tag = %d, val = %s, len = %ld)",                 \
-                      tag_id, octstr_get_cstr(opt_val), opt_len);                       \
                 gw_assert(min_len == -1 || (min_len <= opt_len && opt_len <= max_len)); \
                 octstr_append(os, opt_tag);                                             \
                 octstr_append_data(os, (char*) &opt_len, 2);                            \
@@ -348,8 +345,13 @@ void smpp_pdu_dump(SMPP_PDU *pdu)
             id = tag_id; \
             key = octstr_create_from_data((char*)&id, 2); \
             tag_val = dict_get(p->optional_parameters, key); \
-            if (tag_val != NULL) \
-		octstr_dump_short(tag_val, 2, #tag_id); \
+            if (tag_val != NULL) { \
+                debug("sms.smpp",0,"  %s: ", #tag_id); \
+                debug("sms.smpp",0,"    tag: 0x%04lx", tag_id); \
+                debug("sms.smpp",0,"    length: 0x%04lx", \
+                      octstr_len(tag_val)); \
+		        octstr_dump_short(tag_val, 2, "  value"); \
+            } \
             octstr_destroy(key);
     #define OPTIONAL_END \
 	}
