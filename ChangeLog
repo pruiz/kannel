@@ -1,3 +1,8 @@
+2002-10-16  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/smsc/smsc_smpp.c: roll-back to previous revision. Veto'ed Andreas
+      commit because it took out the new msg-id-type feature, which is required
+      by certain SMSC vendors.
+
 2002-10-16 Andreas Fink <afink@gni.ch>
     * gwlib/http.c: fixed http basic authentication for DLRs
       a dlrurl containing username and password was crashing kannel before
