@@ -1,3 +1,6 @@
+2002-08-03  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/bb_store.c: fixed a minor compiler warning
+
 2002-08-02 Harrie Hazewinkel <harrie@mod-snmp.com>
     * Added a '--with-cflags=CFLAGS' and '--with-libs=LIBS' configuration
       options. These are usefull when Kannel is linked again additional
