@@ -1,3 +1,14 @@
+2001-06-11  Aarno Syvänen <aarno@wiral.com>
+
+	* gw/wap_push_pap_mime.[ch]: Added MIME parser for PAP module (no 
+	multipart push messages yet)
+
+	* gw/wap_push_pap.c: Added calling of MIME parser and header handl-
+	ing
+
+	* gw/wap_push_pap_compiler.c: Corrected erroneous logic in enumer-
+	ations checking.
+
 2001-06-04  Lars Wirzenius  <liw@iki.fi>
 
 	* gw/smsc_smpp.c: Check for smpp->receiver instead of
