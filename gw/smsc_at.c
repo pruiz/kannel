@@ -139,6 +139,8 @@ static int at_open_connection(SMSCenter *smsc) {
 	 * CRTSCTS: enable flow control */
 	tios.c_iflag |= IGNBRK | IGNPAR | INPCK;
 	tios.c_cflag |= CSIZE | HUPCL | CREAD | CRTSCTS;
+	if (strcmp(smsc->at_modemtype, NOKIAPHONE) == 0)
+		tios.c_cflag ^= PARODD;
 	tios.c_cflag |=CS8;
 	ret = tcsetattr(fd, TCSANOW, &tios); /* apply changes now */
 	if(ret == -1){
@@ -176,8 +178,10 @@ SMSCenter *at_open(char *serialdevice, char *modemtype, char *pin) {
 	if (smsc->at_fd < 0)
 		goto error;
 
-        /* wait a bit to make sure phones as SMSC will initialise */
-        sleep(1);
+	/* Nokia 7110 and 6210 need some time between opening
+	 * the connection and sending the first	AT commands */
+	if (strcmp(smsc->at_modemtype, NOKIAPHONE) == 0) 
+		sleep(1);
 
 	/* Turn Echo off on the modem: we don't need it */
 	if(send_modem_command(smsc->at_fd, "ATE0", 0) == -1)
@@ -286,10 +290,12 @@ int at_submit_msg(SMSCenter *smsc, Msg *msg) {
 	int ret = -1; 
 	char sc[3];
 
-	/* '00' prepended to the PDU to indicate to use the default SC.
-	 * The Premicell doesn't need this. */
+	/* Some modem types need a '00' prepended to the PDU
+	 * to indicate to use the default SC. */
 	sc[0] = '\0';
-	if(strcmp(smsc->at_modemtype, PREMICELL) != 0)
+	if((strcmp(smsc->at_modemtype, WAVECOM) == 0) || 
+       (strcmp(smsc->at_modemtype, SIEMENS) == 0) ||
+	   (strcmp(smsc->at_modemtype, NOKIAPHONE) == 0))
 		strcpy(sc, "00");
 	
 	if(msg_type(msg)==sms) {
@@ -391,7 +397,7 @@ static int send_modem_command(int fd, char *cmd, int multiline) {
 	ostr = octstr_create("");
 
 	/* debug */
-	printf("Command: %s\n", cmd);
+	/* printf("Command: %s\n", cmd); */
 	
 	/* DEBUG !!! - pretend to send but just return success (0)*/
 	/* return 0; */
@@ -490,8 +496,10 @@ static int pdu_extract(SMSCenter *smsc, Octstr **pdu) {
 	while( isspace(octstr_get_char(buffer, pos)))
 		pos++;
 	
-	/* skip the SMSC address but not on the Premicell */
-	if(strcmp(smsc->at_modemtype, PREMICELL) != 0 ) {
+	/* skip the SMSC address on some modem types */
+   	if((strcmp(smsc->at_modemtype, WAVECOM) == 0) ||
+	   (strcmp(smsc->at_modemtype, SIEMENS) == 0) ||
+       (strcmp(smsc->at_modemtype, NOKIAPHONE) == 0)) {
 		tmp = hexchar(octstr_get_char(buffer, pos))*16
 		    + hexchar(octstr_get_char(buffer, pos+1));
 		tmp = 2 + tmp * 2;
