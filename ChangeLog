@@ -1,3 +1,14 @@
+2003-03-27  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/smsc/smsc_at2.c: added an 'error' warning in case we can't decode 
+      the PDU sequence. Thanks to "Bas A. Schulte" <bschulte@zeelandnet.nl>
+      for giving us a hint here.
+
+2003-03-27  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/msg.h, gw/bb_boxc.c, gw/[bearer|sms|wap]box.c: added Alexander's 
+      restarting patch to allow sending restart command within Kannel's 
+      internal communication.
+      [Msg-ID: <200303222057.12928.a.malysh@centrium.de>]
+
 2003-03-25  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/smscconn[.c|_p.h], gw/smsc/smsc[.c|_p.h]:
       this is a rewrite of the CIMD2 module to be addopted to the new
