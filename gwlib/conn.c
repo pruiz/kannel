@@ -1296,11 +1296,10 @@ void openssl_shutdown_locks(void)
     for (c = 0; c < maxlocks; c++) 
         mutex_destroy(ssl_static_locks[c]);
 
-    ssl_static_locks = NULL;
-
     gw_free(ssl_static_locks);
+    ssl_static_locks = NULL;
 }
- 
+
 void conn_init_ssl(void)
 {
     SSL_library_init();
