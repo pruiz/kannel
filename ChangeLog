@@ -1,4 +1,8 @@
 2002-08-19  Stipe Tolj  <tolj@wapme-systems.de>
+    * wap/wtp_pdu.def: changed the TPI documentation string to make them more
+      specification conform.
+
+2002-08-19  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/smsc/smsc_smpp.c: fixed a bit calculus typo, reported by Nisan.
       [Msg-ID: <5.1.0.14.0.20020819154851.02066060@amagoblin.ialien.co.za>]
 
