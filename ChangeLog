@@ -1,3 +1,6 @@
+2004-07-07  Stipe Tolj  <tolj@wapme-systems.de> 
+    * doc/userguide/userguide.xml: trivial fixes see bug #141 and #84.
+
 2004-07-07  Alexander Malysh  <a.malysh@centrium.de> 
     * doc/userguide/userguide.xml: trivial fixes see #140.
 

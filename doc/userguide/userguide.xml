@@ -1983,7 +1983,7 @@ bearerbox-host = localhost
 	 to 'none'.
      </entry></row>
 
-	 <row><entry><literal>smart-errorsr</literal></entry>
+	 <row><entry><literal>smart-errors</literal></entry>
      <entry>bool</entry>
      <entry valign="bottom">
 	 If set wapbox will return a valid WML deck describing the 
@@ -7793,7 +7793,7 @@ ssl-server-key-file = "/etc/kannel/key1.pem"
 	<listitem><para>3. The SMSC can not reach the phone and thus returns a buffered message</para></listitem>
 	<listitem><para>4. Kannel calls http://www.xyz.com/cgi/dlr.php?type=4 to indicate the message being buffered</para></listitem>
 	<listitem><para>5. The phone is switched on and the SMS gets delivered from the SMSC. The SMSC reports this to Kannel</para></listitem>
-	<listitem><para>4. Kannel calls http://www.xyz.com/cgi/dlr.php?type=2 to indicate the final success</para></listitem>
+	<listitem><para>6. Kannel calls http://www.xyz.com/cgi/dlr.php?type=1 to indicate the final success</para></listitem>
 	</itemizedlist>
 	Depending on the SMSC type not all type of messages are supported. For example a CIMD SMSC does
 	not support buffered messages. Also some SMSC drivers have not implemented all DLR types.
