@@ -713,5 +713,6 @@ int main(int argc, char **argv)
     info( 0, "fakewap: time of best, worst and average transaction: "
              "%.1f s, %.1f s, %.1f s",
          besttime, worsttime, totaltime / num_sent );
+	gwlib_shutdown();
     return 0;
 }
