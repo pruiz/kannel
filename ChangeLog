@@ -1,3 +1,7 @@
+2004-01-15  Alexander Malysh  <a.malysh@centrium.de>
+    * gwlib/log.c: close syslog when exit. removed 'inline' from declaration of
+      'gw_panic_output' because va_args functions can't be inlined.
+
 2004-01-14  Alexander Malysh  <a.malysh@centrium.de>
     * doc/userguide/userguide.xml, gw/smsc/smsc_at.[ch], gwlib/cfg.def: applied
       at-merging.patch. This patch adds propperly reconnect for modem device. Fixes

@@ -92,6 +92,9 @@ static void syslog(int translog, const char *buf)
 {
 }
 
+static void closelog(void)
+{
+}
 #endif
 
 
@@ -298,6 +301,12 @@ void log_close_all(void)
      */
     if (writers != NULL)
         list_unlock(writers);
+
+    /* close syslog if used */
+    if (dosyslog) {
+        closelog();
+        dosyslog = 0;
+    }
 }
 
 
@@ -517,7 +526,7 @@ static void kannel_syslog(char *format, va_list args, int level)
 	} while (0)
 
 
-static inline void gw_panic_output(int err, const char *fmt, ...)
+static void gw_panic_output(int err, const char *fmt, ...)
 {
     FUNCTION_GUTS(GW_PANIC, "");
 }
