@@ -749,14 +749,26 @@ void ws_expr_linearize(WsCompiler *compiler, WsExpression *expr)
 
 
     case WS_EXPR_CONST_INTEGER:
-        if (expr->u.ival == 0)
+        if (expr->u.integer.ival == 0)
             ins = ws_asm_ins(compiler, expr->line, WS_ASM_CONST_0);
-        else if (expr->u.ival == 1)
+        else if (expr->u.integer.ival == 1 && expr->u.integer.sign == 1)
             ins = ws_asm_ins(compiler, expr->line, WS_ASM_CONST_1);
         else {
             WsUInt16 cindex;
+	    WsInt32 ival;
 
-            if (!ws_bc_add_const_int(compiler->bc, &cindex, expr->u.ival)) {
+            if (expr->u.integer.sign >= 0) {
+		if (expr->u.integer.ival > (WsUInt32) WS_INT32_MAX)
+		    ws_src_error(compiler, expr->line,
+                                 "integer literal too large");
+                ival = expr->u.integer.ival;
+	    } else {
+                if (expr->u.integer.ival > (WsUInt32) WS_INT32_MAX + 1)
+		    ws_src_error(compiler, expr->line, "integer too small");
+                ival = - (WsInt32) expr->u.integer.ival;
+	    }
+
+            if (!ws_bc_add_const_int(compiler->bc, &cindex, ival)) {
                 ws_error_memory(compiler);
                 return;
             }
@@ -903,8 +915,16 @@ WsExpression *ws_expr_binary(WsCompilerPtr compiler, WsUInt32 line,
 WsExpression *ws_expr_unary(WsCompilerPtr compiler, WsUInt32 line, int type,
                             WsExpression *expression)
 {
-    WsExpression *expr = expr_alloc(compiler, WS_EXPR_UNARY, line);
+    WsExpression *expr;
 
+    /* Handle negative integers here as a special case of constant folding,
+     * in order to get -2147483648 right. */
+    if (type == WS_ASM_UMINUS && expression->type == WS_EXPR_CONST_INTEGER) {
+        expression->u.integer.sign = - expression->u.integer.sign;
+        return expression;
+    }
+
+    expr = expr_alloc(compiler, WS_EXPR_UNARY, line);
     if (expr) {
         expr->u.unary.type = type;
         expr->u.unary.expr = expression;
@@ -1012,8 +1032,10 @@ WsExpression *ws_expr_const_integer(WsCompiler *compiler, WsUInt32 line,
 {
     WsExpression *expr = expr_alloc(compiler, WS_EXPR_CONST_INTEGER, line);
 
-    if (expr)
-        expr->u.ival = ival;
+    if (expr) {
+        expr->u.integer.sign = 1;
+        expr->u.integer.ival = ival;
+    }
 
     return expr;
 }

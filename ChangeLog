@@ -1,3 +1,9 @@
+2000-10-25  Richard Braakman  <dark@wapit.com>
+
+	* wmlscript/wsstree.[ch], wmlscript/wslexer.c: Fix parsing of
+	integer literal -2147483648.  This was done by storing numbers
+	as unsigned longs and introducing an explicit sign field.
+
 2000-10-24  Richard Braakman  <dark@wapit.com>
 
 	* gwlib/octstr.c: Add support for formats u, o, x, and X.

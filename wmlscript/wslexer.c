@@ -66,7 +66,7 @@ static WsBool lookup_keyword(char *id, size_t len, int *token_return);
    a 32 bit integer number.  The function will report possible integer
    overflows to the compiler `compiler'.  The function modifies the
    contents of the buffer `buffer' but it does not free it. */
-static WsInt32 buffer_to_int(WsCompilerPtr compiler, WsBuffer *buffer);
+static WsUInt32 buffer_to_int(WsCompilerPtr compiler, WsBuffer *buffer);
 
 /* Read a floating point number from the decimal point to the buffer
    `buffer'.  The buffer `buffer' might already contain some leading
@@ -850,10 +850,10 @@ static WsBool lookup_keyword(char *id, size_t len, int *token_return)
 }
 
 
-static WsInt32 buffer_to_int(WsCompilerPtr compiler, WsBuffer *buffer)
+static WsUInt32 buffer_to_int(WsCompilerPtr compiler, WsBuffer *buffer)
 {
     unsigned char *p;
-    long value;
+    unsigned long value;
 
     /* Terminate the string. */
     if (!ws_buffer_append_space(buffer, &p, 1)) {
@@ -865,14 +865,15 @@ static WsInt32 buffer_to_int(WsCompilerPtr compiler, WsBuffer *buffer)
     /* Convert the buffer into an integer number.  The base is taken
        from the bufer. */
     errno = 0;
-    value = strtol((char *) ws_buffer_ptr(buffer), NULL, 0);
+    value = strtoul((char *) ws_buffer_ptr(buffer), NULL, 0);
 
-    /* Check for overflow.  The value `value' is always positive. */
-    if (errno == ERANGE || value > WS_INT32_MAX)
+    /* Check for overflow.  We accept WS_INT32_MAX + 1 because we might
+     * be parsing the numeric part of '-2147483648'. */
+    if (errno == ERANGE || value > (WsUInt32) WS_INT32_MAX + 1)
         ws_src_error(compiler, 0, "integer literal too large");
 
     /* All done. */
-    return (WsInt32) value;
+    return (WsUInt32) value;
 }
 
 

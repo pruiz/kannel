@@ -308,11 +308,23 @@ struct WsExpressionRec
         }
         call;
 
+        struct
+	{
+	    /* Separate sign bit, so that we can tell the difference
+	     * between -2147483648 and +2147483648.  We have to deal 
+	     * with both, because the former is parsed as "-" "2147483648".
+	     * Sign is 1 for positive numbers, -1 for negative numbers,
+	     * and can be either 1 or -1 for zero.
+	     */
+	     int sign;
+	     WsUInt32 ival;
+        } integer;
+
         char *symbol;
 
         WsUInt16 cindex;
 
-        WsUInt32 ival;
+
         WsFloat fval;
         WsUtf8String string;
     } u;
