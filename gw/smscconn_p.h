@@ -119,6 +119,8 @@ struct smscconn {
     Octstr *denied_prefix;
     Octstr *preferred_prefix;
     Octstr *unified_prefix;
+    
+    Octstr *our_host;
 
     /* XXX: move rest global data from Smsc here
      */

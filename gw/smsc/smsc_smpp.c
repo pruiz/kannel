@@ -87,7 +87,6 @@ typedef struct {
     Octstr *username; 
     Octstr *password; 
     Octstr *address_range; 
-    Octstr *our_host; 
     Octstr *my_number; 
     Octstr *service_type;
     int source_addr_ton; 
@@ -114,7 +113,7 @@ typedef struct {
 static SMPP *smpp_create(SMSCConn *conn, Octstr *host, int transmit_port,  
     	    	    	 int receive_port, Octstr *system_type,  
                          Octstr *username, Octstr *password, 
-    	    	    	 Octstr *address_range, Octstr *our_host,  
+    	    	    	 Octstr *address_range,
                          int source_addr_ton, int source_addr_npi,  
                          int dest_addr_ton, int dest_addr_npi, 
                          int alt_dcs, int enquire_link_interval, 
@@ -144,7 +143,6 @@ static SMPP *smpp_create(SMSCConn *conn, Octstr *host, int transmit_port,
     smpp->dest_addr_ton = dest_addr_ton; 
     smpp->dest_addr_npi = dest_addr_npi; 
     smpp->alt_dcs = alt_dcs;
-    smpp->our_host = octstr_duplicate(our_host); 
     smpp->my_number = octstr_duplicate(my_number); 
     smpp->service_type = octstr_duplicate(service_type);
     smpp->transmit_port = transmit_port; 
@@ -178,7 +176,6 @@ static void smpp_destroy(SMPP *smpp)
         octstr_destroy(smpp->system_type); 
         octstr_destroy(smpp->service_type); 
         octstr_destroy(smpp->address_range); 
-        octstr_destroy(smpp->our_host); 
         octstr_destroy(smpp->my_number);
         octstr_destroy(smpp->alt_charset);
         gw_free(smpp); 
@@ -584,7 +581,7 @@ static Connection *open_transmitter(SMPP *smpp)
     SMPP_PDU *bind; 
     Connection *conn; 
  
-    conn = conn_open_tcp(smpp->host, smpp->transmit_port, smpp->our_host ); 
+    conn = conn_open_tcp(smpp->host, smpp->transmit_port, smpp->conn->our_host ); 
     if (conn == NULL) { 
         error(0, "SMPP[%s]: Couldn't connect to server.",
               octstr_get_cstr(smpp->conn->id)); 
@@ -620,7 +617,7 @@ static Connection *open_transceiver(SMPP *smpp)
     SMPP_PDU *bind; 
     Connection *conn; 
      
-    conn = conn_open_tcp(smpp->host, smpp->transmit_port, smpp->our_host ); 
+    conn = conn_open_tcp(smpp->host, smpp->transmit_port, smpp->conn->our_host ); 
     if (conn == NULL) {  
        error(0, "SMPP[%s]: Couldn't connect to server.",
              octstr_get_cstr(smpp->conn->id)); 
@@ -654,7 +651,7 @@ static Connection *open_receiver(SMPP *smpp)
     SMPP_PDU *bind; 
     Connection *conn; 
  
-    conn = conn_open_tcp(smpp->host, smpp->receive_port, smpp->our_host ); 
+    conn = conn_open_tcp(smpp->host, smpp->receive_port, smpp->conn->our_host ); 
     if (conn == NULL) { 
         error(0, "SMPP[%s]: Couldn't connect to server.",
               octstr_get_cstr(smpp->conn->id)); 
@@ -1257,7 +1254,6 @@ int smsc_smpp_create(SMSCConn *conn, CfgGroup *grp)
     long source_addr_npi; 
     long dest_addr_ton; 
     long dest_addr_npi; 
-    Octstr *our_host; 
     Octstr *my_number; 
     Octstr *service_type;
     SMPP *smpp; 
@@ -1290,7 +1286,6 @@ int smsc_smpp_create(SMSCConn *conn, CfgGroup *grp)
     password = cfg_get(grp, octstr_imm("smsc-password")); 
     system_type = cfg_get(grp, octstr_imm("system-type")); 
     address_range = cfg_get(grp, octstr_imm("address-range")); 
-    our_host = cfg_get(grp, octstr_imm("our-host")); 
     my_number = cfg_get(grp, octstr_imm("my-number")); 
     service_type = cfg_get(grp, octstr_imm("service-type")); 
      
@@ -1388,7 +1383,7 @@ int smsc_smpp_create(SMSCConn *conn, CfgGroup *grp)
     alt_charset = cfg_get(grp, octstr_imm("alt-charset"));
 
     smpp = smpp_create(conn, host, port, receive_port, system_type,  
-    	    	       username, password, address_range, our_host, 
+    	    	       username, password, address_range,
                        source_addr_ton, source_addr_npi, dest_addr_ton,  
                        dest_addr_npi, alt_dcs, enquire_link_interval, 
                        max_pending_submits, reconnect_delay, 
@@ -1411,7 +1406,6 @@ int smsc_smpp_create(SMSCConn *conn, CfgGroup *grp)
     octstr_destroy(password); 
     octstr_destroy(system_type); 
     octstr_destroy(address_range); 
-    octstr_destroy(our_host); 
     octstr_destroy(my_number); 
     octstr_destroy(smsc_id);
     octstr_destroy(alt_charset); 

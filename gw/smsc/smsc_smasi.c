@@ -790,7 +790,7 @@ static void handle_pdu(SMASI *smasi, Connection *conn,
  */
 static Connection *open_connection(SMASI *smasi) 
 {
-    Connection *conn = conn_open_tcp(smasi->host, smasi->port, NULL);
+    Connection *conn = conn_open_tcp_with_port(smasi->host, smasi->port, 0, smasi->conn->our_host);
 
     if (conn == NULL) {
         error(0, "SMASI[%s]: Couldn't connect to server.",

@@ -55,6 +55,7 @@ SMSCConn *smscconn_create(CfgGroup *grp, int start_as_stopped)
     GET_OPTIONAL_VAL(conn->denied_prefix, "denied-prefix");
     GET_OPTIONAL_VAL(conn->preferred_prefix, "preferred-prefix");
     GET_OPTIONAL_VAL(conn->unified_prefix, "unified-prefix");
+    GET_OPTIONAL_VAL(conn->our_host, "our-host");
 
     if (conn->allowed_smsc_id && conn->denied_smsc_id)
 	warning(0, "Both 'allowed-smsc-id' and 'denied-smsc-id' set, deny-list "

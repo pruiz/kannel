@@ -128,7 +128,7 @@ static Connection *cgw_open_send_connection(SMSCConn *conn);
 static int cgw_send_loop(SMSCConn *conn, Connection *server);
 void cgw_check_acks(PrivData *privdata);
 int cgw_wait_command(PrivData *privdata, SMSCConn *conn, Connection *server, int timeout);
-static int cgw_open_listening_socket(PrivData *privdata);
+static int cgw_open_listening_socket(SMSCConn *conn, PrivData *privdata);
 static void cgw_listener(void *arg);
 static void cgw_receiver(SMSCConn *conn, Connection *server);
 static int cgw_handle_op(SMSCConn *conn, Connection *server, struct cgwop *cgwop);
@@ -436,7 +436,7 @@ int smsc_cgw_create(SMSCConn *conn, CfgGroup *cfg)
         privdata->dlr[i] = 0;
     }
 
-    if (privdata->rport > 0 && cgw_open_listening_socket(privdata) < 0) {
+    if (privdata->rport > 0 && cgw_open_listening_socket(conn,privdata) < 0) {
         gw_free(privdata);
         privdata = NULL;
         goto error;
@@ -648,7 +648,7 @@ static Connection *cgw_open_send_connection(SMSCConn *conn)
             wait = 1;
 
         server = conn_open_tcp_with_port(privdata->host, privdata->port,
-                                         privdata->our_port, NULL /* privdata->our_host */);
+                                         privdata->our_port, conn->our_host);
 
         if (privdata->shutdown) {
             conn_destroy(server);
@@ -883,12 +883,11 @@ struct cgwop *cgw_read_op(PrivData *privdata, SMSCConn *conn, Connection *server
     return cgwop;
 }
 
-static int cgw_open_listening_socket(PrivData *privdata)
+static int cgw_open_listening_socket(SMSCConn *conn, PrivData *privdata)
 {
     int s;
 
-    if ((s = make_server_socket(privdata->rport, NULL)) == -1) {
-        /* XXX add interface_name if required */
+    if ((s = make_server_socket(privdata->rport, (conn->our_host ? octstr_get_cstr(conn->our_host) : NULL))) == -1) {
         error(0, "smsc_cgw: could not create listening socket in port %d", privdata->rport);
         return -1;
     }

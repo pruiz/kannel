@@ -479,7 +479,7 @@ int smsc_http_create(SMSCConn *conn, CfgGroup *cfg)
     conn->queued = httpsmsc_queued;
     conn->send_msg = httpsmsc_send;
 
-    if (http_open_port(portno, ssl)==-1)
+    if (http_open_port_if(portno, ssl, conn->our_host)==-1)
 	goto error;
 
     conndata->port = portno;

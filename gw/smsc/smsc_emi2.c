@@ -43,7 +43,7 @@ typedef struct privdata {
 				   * bind our end of send connection */
     int		rport;		  /* Receive-port to listen */
     Octstr	*allow_ip, *deny_ip;
-    Octstr	*host, *alt_host, *username, *password, *our_host;
+    Octstr	*host, *alt_host, *username, *password;
     Octstr	*my_number;	/* My number if we want to force one */
     int		unacked;	/* Sent messages not acked */
     struct {
@@ -249,7 +249,7 @@ static Connection *open_send_connection(SMSCConn *conn)
 			    octstr_get_cstr(privdata->name));
 	    server = conn_open_tcp_with_port(privdata->host, privdata->port,
 					     privdata->our_port, 
-					     privdata->our_host);
+					     conn->our_host);
 	    if(do_alt_host)
 		alt_host=1;
 	    else
@@ -261,7 +261,7 @@ static Connection *open_send_connection(SMSCConn *conn)
 	    server = conn_open_tcp_with_port(
 		(octstr_len(privdata->alt_host) ? privdata->alt_host : privdata->host),
 		(privdata->alt_port ? privdata->alt_port : privdata->port),
-		privdata->our_port, privdata->our_host);
+		privdata->our_port, conn->our_host);
 	    alt_host=0;
 	}
 	if (privdata->shutdown) {
@@ -1372,12 +1372,11 @@ static void emi2_receiver(SMSCConn *conn, Connection *server)
 }
 
 
-static int emi2_open_listening_socket(PrivData *privdata)
+static int emi2_open_listening_socket(SMSCConn *conn, PrivData *privdata)
 {
     int s;
 
-    if ( (s = make_server_socket(privdata->rport, NULL)) == -1) {
-	    /* XXX add interface_name if required */
+    if ( (s = make_server_socket(privdata->rport, (conn->our_host ? octstr_get_cstr(conn->our_host) : NULL))) == -1) {
 	error(0, "EMI2[%s]: could not create listening socket in port %d",
 	      octstr_get_cstr(privdata->name), privdata->rport);
 	return -1;
@@ -1559,8 +1558,6 @@ int smsc_emi2_create(SMSCConn *conn, CfgGroup *cfg)
 	goto error;
     }
 
-    privdata->our_host = cfg_get(cfg, octstr_imm("our-host"));
-
     if (cfg_get_integer(&our_port, cfg, octstr_imm("our-port")) == -1)
 	privdata->our_port = 0; /* 0 means use any port */
     else
@@ -1571,8 +1568,8 @@ int smsc_emi2_create(SMSCConn *conn, CfgGroup *cfg)
 	privdata->name = octstr_create("");
 
 	/* Add our_host */
-	if(octstr_len(privdata->our_host)) {
-	    octstr_append(privdata->name, privdata->our_host);
+	if(octstr_len(conn->our_host)) {
+	    octstr_append(privdata->name, conn->our_host);
 	}
 
 	/* Add our_port */
@@ -1697,7 +1694,7 @@ int smsc_emi2_create(SMSCConn *conn, CfgGroup *cfg)
     privdata->allow_ip = allow_ip;
     privdata->deny_ip = deny_ip;
 
-    if (privdata->rport > 0 && emi2_open_listening_socket(privdata) < 0) {
+    if (privdata->rport > 0 && emi2_open_listening_socket(conn,privdata) < 0) {
 	gw_free(privdata);
 	privdata = NULL;
 	goto error;

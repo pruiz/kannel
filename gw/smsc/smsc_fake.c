@@ -31,12 +31,11 @@ typedef struct privdata {
 } PrivData;
 
 
-static int fake_open_connection(PrivData *privdata)
+static int fake_open_connection(SMSCConn *conn, PrivData *privdata)
 {
     int s;
 
-    if ((s = make_server_socket(privdata->port, NULL)) == -1) {
-	    /* XXX add interface_name if required */
+    if ((s = make_server_socket(privdata->port, (conn->our_host ? octstr_get_cstr(conn->our_host) : NULL))) == -1) {
         error(0, "smsc_fake: could not create listening socket in port %d",
 	          privdata->port);
         return -1;
@@ -399,7 +398,7 @@ int smsc_fake_create(SMSCConn *conn, CfgGroup *cfg)
     privdata->allow_ip = allow_ip;
     privdata->deny_ip = deny_ip;
 
-    if (fake_open_connection(privdata) < 0) {
+    if (fake_open_connection(conn, privdata) < 0) {
         gw_free(privdata);
         privdata = NULL;
         goto error;
