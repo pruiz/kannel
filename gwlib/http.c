@@ -2079,9 +2079,9 @@ void http_send_reply(HTTPClient *client, int status, List *headers,
     int ret;
 
     if (client->use_version_1_0)
-    	response = octstr_format("HTTP/1.0 %d OK\r\n", status);
+    	response = octstr_format("HTTP/1.0 %d Foo\r\n", status);
     else
-    	response = octstr_format("HTTP/1.1 %d OK\r\n", status);
+    	response = octstr_format("HTTP/1.1 %d Foo\r\n", status);
 
     /* identify ourselfs */
     octstr_format_append(response, "Server: " GW_NAME "/%s\r\n", VERSION);
