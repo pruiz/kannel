@@ -265,9 +265,9 @@ AC_ARG_WITH(mysql,
  fi
  AC_MSG_RESULT($loc)
  AC_CHECK_FILE("$loc/include/mysql/mysql.h", 
-   [CFLAGS="$CFLAGS -I$loc/include/mysql"; LIBS="$LIBS -L$dir/lib/mysql"],
+   [CFLAGS="$CFLAGS -I$loc/include/mysql"; LIBS="$LIBS -L$loc/lib/mysql"],
    [AC_CHECK_FILE("$loc/include/mysql.h", 
-     [CFLAGS="$CFLAGS -I$loc/include"; LIBS="$LIBS -L$dir/lib"],
+     [CFLAGS="$CFLAGS -I$loc/include"; LIBS="$LIBS -L$loc/lib"],
      [AC_MSG_ERROR(Unable to find mysql.h under $loc)]
     )]
  )
