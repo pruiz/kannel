@@ -68,9 +68,307 @@
 #include <time.h>
 #include <unistd.h>
 #include <termios.h>
+#include <signal.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <pwd.h>
 
 #include "gwlib.h"
 
+/* pid of child process when parachute is used */
+static pid_t child_pid = -1;
+/* saved child signal handlers */
+static struct sigaction child_actions[32];
+/* just a flag that child signal handlers are stored */
+static int child_actions_init = 0;
+/* our pid file name */
+static char *pid_file = NULL;
+static volatile sig_atomic_t parachute_shutdown = 0;
+
+
+static void parachute_sig_handler(int signum)
+{
+    info(0, "Signal %d received, forward to child pid (%ld)", signum, (long) child_pid);
+
+    /* we do not handle any signal, just forward these to child process */
+    if (child_pid != -1 && getpid() != child_pid)
+        kill(child_pid, signum);
+
+    /* if signal received and no child there, terminating */
+    switch(signum) {
+        case SIGTERM:
+        case SIGINT:
+        case SIGABRT:
+            if (child_pid == -1)
+                exit(0);
+            else
+                parachute_shutdown = 1;
+    }
+}
+
+static void parachute_init_signals(int child)
+{
+    struct sigaction sa;
+
+    if (child_actions_init && child) {
+        sigaction(SIGTERM, &child_actions[SIGTERM], NULL);
+        sigaction(SIGQUIT, &child_actions[SIGQUIT], NULL);
+        sigaction(SIGINT,  &child_actions[SIGINT], NULL);
+        sigaction(SIGABRT, &child_actions[SIGABRT], NULL);
+        sigaction(SIGHUP,  &child_actions[SIGHUP], NULL);
+        sigaction(SIGALRM, &child_actions[SIGALRM], NULL);
+        sigaction(SIGUSR1, &child_actions[SIGUSR1], NULL);
+        sigaction(SIGUSR2, &child_actions[SIGUSR2], NULL);
+        sigaction(SIGPIPE, &child_actions[SIGPIPE], NULL);
+    }
+    else if (!child && !child_actions_init) {
+        sa.sa_flags = 0;
+        sigemptyset(&sa.sa_mask);
+        sa.sa_handler = parachute_sig_handler;
+        sigaction(SIGTERM, &sa, &child_actions[SIGTERM]);
+        sigaction(SIGQUIT, &sa, &child_actions[SIGQUIT]);
+        sigaction(SIGINT,  &sa, &child_actions[SIGINT]);
+        sigaction(SIGABRT, &sa, &child_actions[SIGABRT]);
+        sigaction(SIGHUP,  &sa, &child_actions[SIGHUP]);
+        sigaction(SIGALRM, &sa, &child_actions[SIGALRM]);
+        sigaction(SIGUSR1, &sa, &child_actions[SIGUSR1]);
+        sigaction(SIGUSR2, &sa, &child_actions[SIGUSR2]);
+        sa.sa_handler = SIG_IGN;
+        sigaction(SIGPIPE, &sa, &child_actions[SIGPIPE]);
+        sigaction(SIGTTOU, &sa, NULL);
+        sigaction(SIGTTIN, &sa, NULL);
+        sigaction(SIGTSTP, &sa, NULL);
+        child_actions_init = 1;
+    }
+    else
+        panic(0, "Child process signal handlers not initialized before.");
+}
+
+static int is_executable(const char *filename)
+{
+    struct stat buf;
+
+    if (stat(filename, &buf)) {
+        error(errno, "Error while stat of file `%s'", filename);
+        return 0;
+    }
+    if (!S_ISREG(buf.st_mode) && !S_ISLNK(buf.st_mode)) {
+        error(0, "File `%s' is not a regular file.", filename);
+        return 0;
+    }
+    /* others has exec permission */
+    if (S_IXOTH & buf.st_mode) return 1;
+    /* group has exec permission */
+    if ((S_IXGRP & buf.st_mode) && buf.st_gid == getgid())
+        return 1;
+    /* owner has exec permission */
+    if ((S_IXUSR & buf.st_mode) && buf.st_uid == getuid())
+        return 1;
+
+    return 0;
+}
+
+/*
+ * become daemon.
+ * returns 0 for father process; 1 for child process
+ */
+static int become_daemon(void)
+{
+    if (getppid() != 1) {
+       signal(SIGTTOU, SIG_IGN);
+       signal(SIGTTIN, SIG_IGN);
+       signal(SIGTSTP, SIG_IGN);
+       if (fork())
+          return 0;
+       setsid();
+    }
+
+    close(STDIN_FILENO);
+    close(STDOUT_FILENO);
+    close(STDERR_FILENO);
+
+    /* XXX chdir breaks restart of boxes when
+       started w/o a full path to binary */
+    /* chdir("/"); */
+    return 1;
+}
+
+#define PANIC_SCRIPT_MAX_LEN 4096
+
+static void execute_panic_script(const char *panic_script, const char *format, ...)
+{
+    char *args[3];
+    char buf[PANIC_SCRIPT_MAX_LEN + 1];
+    va_list ap;
+
+    va_start(ap, format);
+    vsnprintf(buf, PANIC_SCRIPT_MAX_LEN, format, ap);
+    va_end(ap);
+
+    if (fork())
+       return;
+
+    close(STDIN_FILENO);
+    close(STDOUT_FILENO);
+    close(STDERR_FILENO);
+
+    args[0] = (char*) panic_script;
+    args[1] = buf;
+    args[2] = NULL;
+
+    execv(args[0], args);
+}
+
+
+static void parachute_start(const char *myname, const char *panic_script) {
+    time_t last_start = 0, last_panic = 0;
+    long respawn_count = 0;
+    int status;
+
+
+    if (panic_script && !is_executable(panic_script))
+        panic(0, "Panic script `%s' is not executable for us.", panic_script);
+
+    /* setup sighandler */
+    parachute_init_signals(0);
+
+    for (;;) {
+        if (respawn_count > 0 && difftime(time(NULL), last_start) < 10) {
+            error(0, "Child process died too fast, disabling for 30 sec.");
+            gwthread_sleep(30.0);
+        }
+        if (!(child_pid = fork())) { /* child process */
+            child_pid = getpid();
+            parachute_init_signals(1); /* reset sighandlers */
+	    return;
+        }
+	else if (child_pid < 0) {
+	    error(errno, "Couldnot start child process ! Will retry in 5 sec.");
+	    gwthread_sleep(5.0);
+            continue;
+	}
+	else { /* father process */
+	    time(&last_start);
+            info(0, "Child process with PID (%ld) started.", (long) child_pid);
+            do {
+                if (waitpid(child_pid, &status, 0) == child_pid) {
+                    /* check here why child terminated */
+                   if (WIFEXITED(status) && WEXITSTATUS(status) == 0) {
+                       info(0, "Child process exited gracefully, exit...");
+                       gwlib_shutdown();
+                       exit(0);
+                   }
+                   else if (WIFEXITED(status)) {
+                       error(0, "Caught child %d which died with return code %d",
+                           child_pid, WEXITSTATUS(status));
+                       child_pid = -1;
+                   }
+                   else if (WIFSIGNALED(status)) {
+                       error(0, "Caught child %d which died due to signal %d",
+                           child_pid, WTERMSIG(status));
+                       child_pid = -1;
+                   }
+                }
+                else if (errno != EINTR) {
+                    error(errno, "Error while waiting of child process.");
+                }
+            } while(child_pid > 0);
+
+            if (parachute_shutdown) {
+                /* may only happens if child process crashed while shutdown */
+                info(0, "Child process crashed while shutdown. Exiting due to signal...");
+                gwlib_shutdown();
+                exit(WIFEXITED(status) ? WEXITSTATUS(status) : 0);
+            }
+
+            respawn_count++;
+            if (panic_script && myname && difftime(time(NULL), last_panic) > 300) {
+                time(&last_panic);
+                debug("kannel", 0, "Executing panic script: %s %s %ld", panic_script, myname, respawn_count);
+                execute_panic_script(panic_script, "%s %ld", myname, respawn_count);
+            }
+            /* sleep a while to get e.g. sockets released */
+            gwthread_sleep(5.0);
+	}
+    }
+}
+
+
+static void write_pid_file(void)
+{
+    int fd;
+    FILE *file;
+
+    if (!pid_file)
+        return;
+
+    fd = open(pid_file, O_WRONLY|O_NOCTTY|O_TRUNC|O_CREAT|O_EXCL, 0644);
+    if (fd == -1)
+        panic(errno, "Couldnot open pid-file `%s'", pid_file);
+
+    file = fdopen(fd, "w");
+    if (!file)
+        panic(errno, "Couldnot open file-stream `%s'", pid_file);
+
+    fprintf(file, "%ld\n", (long) getpid());
+    fclose(file);
+}
+
+static void remove_pid_file(void)
+{
+    if (!pid_file)
+        return;
+
+    /* ensure we don't called from child process */
+    if (child_pid != -1 && child_pid == getpid())
+        return;
+
+    if (-1 == unlink(pid_file))
+        error(errno, "Couldnot unlink pid-file `%s'", pid_file);
+}
+
+static int change_user(const char *user)
+{
+    struct passwd *pass;
+
+    if (!user)
+        return -1;
+
+    pass = getpwnam(user);
+    if (!pass) {
+        error(0, "Couldnot find a user `%s' in system.", user);
+        return -1;
+    }
+    gw_claim_area(pass);
+    gw_claim_area(pass->pw_name);
+    gw_claim_area(pass->pw_passwd);
+    gw_claim_area(pass->pw_gecos);
+    gw_claim_area(pass->pw_dir);
+    gw_claim_area(pass->pw_shell);
+
+    if (-1 == setgid(pass->pw_gid)) {
+        error(errno, "Couldnot change group id %ld -> %ld.", (long) getgid(), (long) pass->pw_gid);
+        goto out;
+    }
+
+    if (-1 == setuid(pass->pw_uid)) {
+        error(errno, "Couldnot change user id %ld -> %ld.", (long) getuid(), (long) pass->pw_uid);
+        goto out;
+    }
+
+    return 0;
+
+out:
+    gw_free(pass->pw_name);
+    gw_free(pass->pw_passwd);
+    gw_free(pass->pw_gecos);
+    gw_free(pass->pw_dir);
+    gw_free(pass->pw_shell);
+    gw_free(pass);
+    return -1;
+}
 
 /*
  * new datatype functions
@@ -136,6 +434,8 @@ int get_and_set_debugs(int argc, char **argv,
     int file_lvl = GW_DEBUG;
     char *log_file = NULL;
     char *debug_places = NULL;
+    char *panic_script = NULL, *user = NULL;
+    int parachute = 0, daemonize = 0;
     
     for(i=1; i < argc; i++) {
 	if (strcmp(argv[i],"-v")==0 ||
@@ -145,28 +445,60 @@ int get_and_set_debugs(int argc, char **argv,
 		debug_lvl = atoi(argv[i+1]);
 		i++;
 	    } else
-		fprintf(stderr, "Missing argument for option %s\n", argv[i]); 
+		panic(0, "Missing argument for option %s\n", argv[i]); 
 	} else if (strcmp(argv[i],"-F")==0 ||
 		   strcmp(argv[i],"--logfile")==0) {
 	    if (i+1 < argc && *(argv[i+1]) != '-') {
 		log_file = argv[i+1];
 		i++;
 	    } else
-		fprintf(stderr, "Missing argument for option %s\n", argv[i]); 
+		panic(0, "Missing argument for option %s\n", argv[i]); 
 	} else if (strcmp(argv[i],"-V")==0 ||
 		   strcmp(argv[i],"--fileverbosity")==0) {
 	    if (i+1 < argc) {
 		file_lvl = atoi(argv[i+1]);
 		i++;
 	    } else
-		fprintf(stderr, "Missing argument for option %s\n", argv[i]); 
+		panic(0, "Missing argument for option %s\n", argv[i]); 
 	} else if (strcmp(argv[i],"-D")==0 ||
 		   strcmp(argv[i],"--debug")==0) {
 	    if (i+1 < argc) {
 		debug_places = argv[i+1];
 		i++;
 	    } else
-		fprintf(stderr, "Missing argument for option %s\n", argv[i]); 
+		panic(0, "Missing argument for option %s\n", argv[i]); 
+	} else if (strcmp(argv[i], "-X")==0 ||
+                   strcmp(argv[i], "--panic-script")==0) {
+	    if (i+1 < argc) {
+		panic_script = argv[i+1];
+		i++;
+	    }
+	    else
+		panic(0, "Missing argument for option %s\n", argv[i]);
+	} else if (strcmp(argv[i], "-P")==0 ||
+                   strcmp(argv[i], "--parachute")==0) {
+	    parachute = 1;
+	} else if (strcmp(argv[i], "-d")==0 ||
+	           strcmp(argv[i], "--daemonize")==0) {
+	    daemonize = 1;
+        } else if (strcmp(argv[i], "-p")==0 ||
+                   strcmp(argv[i], "--pid-file")==0) {
+            if (i+1 < argc) {
+                pid_file = argv[i+1];
+                i++;
+            } else
+                panic(0, "Missing argument for option %s\n", argv[i]);
+	} else if (strcmp(argv[i], "-u")==0 ||
+                   strcmp(argv[i], "--user")==0) {
+	    if (i+1 < argc) {
+	        user = argv[i+1];
+                i++;
+	    } else
+	        panic(0, "Missing argument for option %s\n", argv[i]);
+	} else if (strcmp(argv[i], "-g")==0 ||
+	           strcmp(argv[i], "--generate")==0) {
+	    cfg_dump_all();
+	    exit(0);
 	} else if (strcmp(argv[i],"--")==0) {
 	    i++;
 	    break;
@@ -178,12 +510,45 @@ int get_and_set_debugs(int argc, char **argv,
 	    }
 	    if (ret < 0) {
 		fprintf(stderr, "Unknown option %s, exiting.\n", argv[i]);
-		panic(0, "Option parsing failed");
+                panic(0, "Option parsing failed");
 	    }
 	    else
 		i += ret;	/* advance additional args */
 	}
     }
+
+    if (user && -1 == change_user(user)) {
+        panic(0, "Couldnot change to user `%s'.", user);
+    }
+
+    /* deamonize */
+    if (daemonize && !become_daemon())
+       exit(0);
+
+    if (pid_file) {
+        write_pid_file();
+        atexit(remove_pid_file);
+    }
+
+    if (parachute) {
+        /*
+         * if we are running as daemon so open syslog
+         * in order not to deal with i.e. log rotate.
+         */
+        if (daemonize) {
+            char *ident = strrchr(argv[0], '/');
+            if (!ident)
+                ident = argv[0];
+            else
+                ident++;
+            log_set_syslog(ident, (debug_lvl > -1 ? debug_lvl : 0));
+        }
+        parachute_start(argv[0], panic_script);
+        /* now we are in child process so close syslog */
+        if (daemonize)
+            log_close_all();
+    }
+
     if (debug_lvl > -1)
 	log_set_output_level(debug_lvl);
     if (debug_places != NULL)

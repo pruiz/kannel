@@ -1600,9 +1600,43 @@ white-list = "http://localhost/whitelist.txt"
    <row><entry><literal>-g</literal></entry>
         <entry morerows="1" valign="bottom">
              Dump all known config groups and config keys to stdout
-             and exit. (bearerbox only)
+             and exit.
         </entry></row>
    <row><entry><literal>--generate</literal></entry></row>
+
+   <row><entry><literal>-u &lt;username&gt;</literal></entry>
+        <entry morerows="1" valign="bottom">
+             Change process user-id to the given.
+        </entry></row>
+   <row><entry><literal>--user &lt;username&gt;</literal></entry></row>
+
+   <row><entry><literal>-p &lt;filename&gt;</literal></entry>
+        <entry morerows="1" valign="bottom">
+             Write process PID to the given file.
+        </entry></row>
+   <row><entry><literal>--pid-file &lt;filename&gt;</literal></entry></row>
+
+   <row><entry><literal>-d</literal></entry>
+        <entry morerows="1" valign="bottom">
+             Start process in as daemon (detached from a current shell session).
+        </entry></row>
+   <row><entry><literal>--daemonize</literal></entry></row>
+
+   <row><entry><literal>-P</literal></entry>
+        <entry morerows="1" valign="bottom">
+             Start watcher process. This process watch a child process and if child process
+             crached will restart them automaticaly.
+        </entry></row>
+   <row><entry><literal>--parachute</literal></entry></row>
+
+   <row><entry><literal>-X &lt;scriptname&gt;</literal></entry>
+        <entry morerows="1" valign="bottom">
+             Execute a given shell script or binary when child process crash detected. This option
+             is usable only with <literal>--parachute/-P</literal>.
+             Script will be executed with 2 arguments:
+                 scriptname 'processname' 'respawn-count'.
+        </entry></row>
+   <row><entry><literal>--panic-script &lt;scriptname&gt;</literal></entry></row>
 
  </tbody>
  </tgroup>

@@ -1,3 +1,15 @@
+2004-01-20  Alexander Malysh  <a.malysh@centrium.de>
+    * gw/bearerbox.c, gw/smsbox.c, gwlib/utils.c, doc/userguide/userguide.xml:
+      applied parachute-daemon.patch that adds some usefull command line parameters 
+      for all boxes:
+	1) -P/--parachute : start watcher father process that catch and restart 
+	   crashed child process
+	2) -X/--panic-script : execute this script if child process crashed
+	3) -u/--user : change process user-id (security)
+	4) -p/--pid-file : write PID into the given file
+	5) -d/--daemonize : daemonize the process
+      Msg-Id: <200401151456.52069.a.malysh@centrium.de>.
+
 2004-01-20  Stipe Tolj  <tolj@wapme-systems.de>
     * gwlib/octstr.[ch]: applied Alex's performance gain patch. Thanks.
       [Msg-ID: <200401191255.42340.a.malysh@centrium.de>]

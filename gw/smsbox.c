@@ -111,7 +111,6 @@ static Octstr *sendsms_url = NULL;
 static Octstr *sendota_url = NULL;
 static Octstr *xmlrpc_url = NULL;
 static Octstr *bb_host;
-static char *pid_file;
 static Octstr *accepted_chars = NULL;
 static int only_try_http = 0;
 static URLTranslationList *translations = NULL;
@@ -3003,17 +3002,6 @@ static void sendsms_thread(void *arg)
  * Main program. Configuration, signal handling, etc.
  */
 
-static void write_pid_file(void) {
-    FILE *f;
-        
-    if (pid_file != NULL) {
-	f = fopen(pid_file, "w");
-	fprintf(f, "%d\n", (int)getpid());
-	fclose(f);
-    }
-}
-
-
 static void signal_handler(int signum) {
     /* On some implementations (i.e. linuxthreads), signals are delivered
      * to all threads.  We only want to handle each signal once for the
@@ -3299,7 +3287,6 @@ int main(int argc, char **argv)
 
     debug("sms", 0, "----------------------------------------------");
     debug("sms", 0, GW_NAME " smsbox version %s starting", GW_VERSION);
-    write_pid_file();
 
     translations = urltrans_create();
     if (translations == NULL)
