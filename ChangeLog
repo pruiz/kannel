@@ -1,5 +1,11 @@
 2000-09-27  Lars Wirzenius  <liw@iki.fi>
 
+	* gw/wtp_state-decl.h: Removed handling of event RcvInvoke in
+	state RESULT_RESP_WAIT, since that was neither in the spec and
+	seems to do nothing useful.
+
+2000-09-27  Lars Wirzenius  <liw@iki.fi>
+
 	* gw/smsbox.c, gw/wapbox.c, doc/userguide/newconf.txt: Added
 	configuration variable http-proxy-exceptions.
 

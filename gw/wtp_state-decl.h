@@ -369,12 +369,6 @@ ROW(RESULT_RESP_WAIT,
     LISTEN)
 
 ROW(RESULT_RESP_WAIT,
-    RcvInvoke,
-    1,
-    {},
-    RESULT_RESP_WAIT)
-
-ROW(RESULT_RESP_WAIT,
     TimerTO_R,
     machine->rcr < MAX_RCR,
     {
