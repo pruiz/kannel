@@ -1,3 +1,10 @@
+2000-10-02  Kalle Marjola  <rpr@wapit.com>
+
+	* README: updated. Removed old references to test_wml, ooutdated
+	libxml version etc.
+
+	* doc/userguide/userguide.xml: some fix
+
 2000-09-30  Kalle Marjola  <rpr@wapit.com>
 
 	* doc/userguide/userguide.xml: some update
