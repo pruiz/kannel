@@ -14,7 +14,7 @@ enum {
     wrong_version,
     illegal_header,
     no_segmentation,
-    memory_error,
+    pdu_too_short_error,
     no_concatenation
 };
 
@@ -141,9 +141,7 @@ WTPEvent *wtp_event_create(enum event_name type) {
 	event->next = NULL;
 	
 	#define INTEGER(name) p->name = 0
-	#define OCTSTR(name) p->name = octstr_create_empty();\
-                             if (p->name == NULL)\
-                                goto error
+	#define OCTSTR(name) p->name = octstr_create_empty()
 	#define EVENT(type, field) { struct type *p = &event->type; field } 
 	#include "wtp_events-decl.h"
         return event;
@@ -408,7 +406,7 @@ WTPEvent *wtp_unpack_wdp_datagram(Msg *msg){
          long tid;
 
          if (octstr_len(msg->wdp_datagram.user_data) < 3){
-            tell_about_error(memory_error, event);
+            tell_about_error(pdu_too_short_error, event);
             return NULL;
          }
 
@@ -434,7 +432,7 @@ WTPEvent *wtp_unpack_wdp_datagram(Msg *msg){
 	        case INVOKE:
                      fourth_octet = octstr_get_char(msg->wdp_datagram.user_data, 3);
                      if (fourth_octet == -1){
-                         tell_about_error(memory_error, event);
+                         tell_about_error(pdu_too_short_error, event);
                          return NULL;
                      }
                      return unpack_invoke(msg, tid, first_octet, fourth_octet);
@@ -448,7 +446,7 @@ WTPEvent *wtp_unpack_wdp_datagram(Msg *msg){
                     fourth_octet = octstr_get_char(msg->wdp_datagram.user_data, 
                                    4);
                     if (fourth_octet == -1){
-                       tell_about_error(memory_error, event);
+                       tell_about_error(pdu_too_short_error, event);
                        return NULL;
                     }
                     return unpack_abort(tid, first_octet, fourth_octet);
@@ -458,7 +456,7 @@ WTPEvent *wtp_unpack_wdp_datagram(Msg *msg){
                     fourth_octet = octstr_get_char(msg->wdp_datagram.user_data, 
                                    4);
                     if (fourth_octet == -1){
-                       tell_about_error(memory_error, event);
+                       tell_about_error(pdu_too_short_error, event);
                        return NULL;
                     }
                     return unpack_segmented_invoke(tid, first_octet, fourth_octet);
@@ -867,11 +865,6 @@ static WTPEvent *unpack_ack(long tid, char octet){
 
       event = wtp_event_create(RcvAck);
 
-      if (event == NULL){
-         tell_about_error(memory_error, event); 
-         return NULL;
-      }
-               
       event->RcvAck.tid = tid;
       this_octet = octet;
       event->RcvAck.tid_ok = this_octet>>2&1;
@@ -888,11 +881,6 @@ WTPEvent *unpack_abort(long tid, char first_octet, char fourth_octet){
 
          event = wtp_event_create(RcvAbort);
 
-         if (event == NULL){
-            tell_about_error(memory_error, event);
-            return NULL;
-         }   
-    
          abort_type = first_octet&7;
 
 	 if (abort_type > 1 || fourth_octet > NUMBER_OF_ABORT_REASONS){
@@ -914,11 +902,6 @@ WTPEvent *unpack_invoke(Msg *msg, long tid, char first_octet, char fourth_octet)
               tcl;
 
          event = wtp_event_create(RcvInvoke);
-
-         if (event == NULL){
-	    tell_about_error(memory_error, event);
-            return NULL;
-         }   
 
          if (message_type(first_octet) == body_segment){
             debug(0, "WTP: Got body segment");
@@ -978,9 +961,9 @@ static void tell_about_error(int type, WTPEvent *event){
 /*
  * TBD: Send Abort(CAPTEMPEXCEEDED), too.
  */
-            case memory_error:
+            case pdu_too_short_error:
                  gw_free(event);
-                 error(0, "WTP: Out of memory");
+                 error(0, "WTP: PDU too short");
             break;
 /*
  * TBD: Reason to panic?

@@ -1,3 +1,9 @@
+Thu Jan 13 19:12:11 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* gw/wtp.c: Renamed memory_error to pdu_too_short error, since it
+	wasn't a memory allocation error. Changed the user visible error
+	message also.
+
 Thu Jan 13 18:39:46 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* Makefile.in: Added stuff to compile documents.
