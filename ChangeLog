@@ -1,3 +1,12 @@
+2000-10-06 Aarno Syvänen <syvanen@wapit.com>
+
+	* gw/wtp*: Reformat (expect wtp_pdu.*).
+
+	* gw/wtp_resp_state-decl.h: More comments.
+
+	* gw/wtp_init.c, gw/wtp_init_state-decl.h: wtp had a tid of its own, 
+	so no mutexes are needed here.
+
 2000-10-06  Richard Braakman  <dark@wapit.com>
 
 	* gw/smsc.c: Reactivate the code that sets the timestamp on a
