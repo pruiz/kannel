@@ -59,10 +59,6 @@ WSPEvent *wsp_event_create(WSPEventType type) {
 	#include "wsp_events-decl.h"
 
 	return event;
-
-error:
-	error(errno, "Out of memory.");
-	return NULL;
 }
 
 
