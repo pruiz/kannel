@@ -18,7 +18,7 @@ static long max_requests = 1;
 static char **urls = NULL;
 static int num_urls = 0;
 
-static void *client_thread(void *arg) {
+static void client_thread(void *arg) {
 	int ret;
 	Octstr *url, *final_url, *replyb, *os;
 	List *replyh;
@@ -50,7 +50,6 @@ static void *client_thread(void *arg) {
 		}
 	}
 	info(0, "This thread: %ld succeeded, %ld failed.", succeeded, failed);
-	return NULL;
 }
 
 static void help(void) {
@@ -65,7 +64,7 @@ int main(int argc, char **argv) {
 	List *exceptions;
 	long proxy_port;
 	char *p;
-	pthread_t threads[MAX_THREADS];
+	long threads[MAX_THREADS];
 	time_t start, end;
 	double run_time;
 	
@@ -136,9 +135,9 @@ int main(int argc, char **argv) {
 		client_thread(NULL);
 	else {
 		for (i = 0; i < num_threads; ++i)
-			threads[i] = start_thread(0, client_thread, NULL, 0);
+			threads[i] = gwthread_create(client_thread, NULL);
 		for (i = 0; i < num_threads; ++i)
-			pthread_join(threads[i], NULL);
+			gwthread_join(threads[i]);
 	}
 	time(&end);
 

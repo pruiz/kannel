@@ -7,6 +7,7 @@
 
 #include "log.h"
 #include "thread.h"
+#include "gwthread.h"
 #include "gwmem.h"
 
 
@@ -138,7 +139,7 @@ static void format(char *buf, int level, const char *place, int e,
 		tm->tm_hour, tm->tm_min, tm->tm_sec);
 
 	p = strchr(p, '\0');
-	sprintf(p, "[%ld] ", (long) pthread_self());
+	sprintf(p, "[%ld] ", gwthread_self());
 
 	p = strchr(p, '\0');
 	if (level < 0 || level >= tab_size)

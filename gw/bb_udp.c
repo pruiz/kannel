@@ -45,7 +45,7 @@ typedef struct _udpc {
     int fd;
     Octstr *addr;
     List *outgoing_list;
-    pthread_t receiver;
+    long receiver;
 } Udpc;
 
 
@@ -57,7 +57,7 @@ static void udpc_destroy(Udpc *udpc);
  *  receiver thingies
  */
 
-static void *udp_receiver(void *arg)
+static void udp_receiver(void *arg)
 {
     Octstr *datagram, *cliaddr;
     int ret;
@@ -102,7 +102,6 @@ static void *udp_receiver(void *arg)
     list_remove_producer(incoming_wdp);
     debug("bb.thread", 0, "EXIT: udp_receiver");
     list_remove_producer(flow_threads);
-    return NULL;
 }
 
 
@@ -125,7 +124,7 @@ static int send_udp(int fd, Msg *msg)
 }
 
 
-static void *udp_sender(void *arg)
+static void udp_sender(void *arg)
 {
     Msg *msg;
     Udpc *conn = arg;
@@ -151,13 +150,11 @@ static void *udp_sender(void *arg)
 	counter_increase(outgoing_wdp_counter);
 	msg_destroy(msg);
     }
-    if (pthread_join(conn->receiver, NULL) != 0)
-	error(0, "Join failed in udp_sender");
+    gwthread_join(conn->receiver);
 
     udpc_destroy(conn);
     debug("bb.thread", 0, "EXIT: udp_sender");
     list_remove_producer(flow_threads);
-    return NULL;
 }
 
 /*---------------------------------------------------------------
@@ -222,10 +219,11 @@ static int add_service(int port, char *interface_name)
     udpc = udpc_create(port, interface_name);
     list_add_producer(udpc->outgoing_list);
 
-    if ((int)(udpc->receiver = start_thread(0, udp_receiver, udpc, 0)) == -1)
+    udpc->receiver = gwthread_create(udp_receiver, udpc);
+    if (udpc->receiver == -1)
 	goto error;
 
-    if ((int)start_thread(0, udp_sender, udpc, 0) == -1)
+    if (gwthread_create(udp_sender, udpc) == -1)
 	goto error;
 
     list_append(udpc_list, udpc);

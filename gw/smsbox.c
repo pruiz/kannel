@@ -143,7 +143,7 @@ static void new_request(Octstr *pack)
     else if (msg_type(msg) != smart_sms)
 	warning(0, "Received other message than smart_sms, ignoring!");
     else
-	(void)start_thread(1, smsbox_req_thread, msg, 0);
+	gwthread_create(smsbox_req_thread, msg);
 }
 
 
@@ -153,7 +153,7 @@ static void new_request(Octstr *pack)
  */
 
 
-static void *http_request_thread(void *arg)
+static void http_request_thread(void *arg)
 {
     HTTPSocket *client;
     char *client_ip;
@@ -207,7 +207,6 @@ done:
 	    octstr_destroy(os);
     list_destroy(reply_hdrs);
     http2_server_close_client(client);
-    return NULL;
 }
 
 
@@ -216,7 +215,7 @@ static void http_start_thread(void)
     HTTPSocket *client;
     
     client = http2_server_accept_client(http_server_socket);
-    (void) start_thread(1, http_request_thread, client, 0);
+    gwthread_create(http_request_thread, client);
     http_accept_pending = 0;
 }
 

@@ -23,7 +23,7 @@
 
 #include "gwlib/gwlib.h"
 
-static void *check(void *arg) {
+static void check(void *arg) {
 	Counter *c;
 	long i, this, prev;
 	
@@ -42,26 +42,22 @@ static void *check(void *arg) {
 			panic(0, "counter returned smaller than previous");
 		prev = this;
 	}
-	
-	return NULL;
 }
 
 
 int main(void) {
 	Counter *c;
-	pthread_t threads[THREADS];
+	long threads[THREADS];
 	long i;
-	void *ret;
 	
 	gwlib_init();
 	info(0, "%ld threads, %ld counts each", (long) THREADS, 
 		(long) PER_THREAD);
 	c = counter_create();
 	for (i = 0; i < THREADS; ++i)
-		threads[i] = start_thread(0, check, c, 0);
+		threads[i] = gwthread_create(check, c);
 	for (i = 0; i < THREADS; ++i)
-		if (pthread_join(threads[i], &ret) != 0)
-			panic(0, "pthread_join failed");
+		gwthread_join(threads[i]);
 	
 	return 0;
 }

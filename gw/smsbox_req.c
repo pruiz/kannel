@@ -361,7 +361,7 @@ int smsbox_req_count(void)
 }
 
 
-void *smsbox_req_thread(void *arg) {
+void smsbox_req_thread(void *arg) {
     Msg *msg;
     Octstr *tmp;
     URLTranslation *trans;
@@ -381,13 +381,13 @@ void *smsbox_req_thread(void *arg) {
 		/* NACK should be returned here if we use such 
 		   things... future implementation! */
 	   
-	return NULL;
+	return;
     }
 
     if (octstr_compare(msg->smart_sms.sender, msg->smart_sms.receiver) == 0) {
 	info(0, "NOTE: sender and receiver same number <%s>, ignoring!",
 	     octstr_get_cstr(msg->smart_sms.sender));
-	return NULL;
+	return;
     }
 
     trans = urltrans_find(translations, msg->smart_sms.msgdata);
@@ -440,13 +440,11 @@ void *smsbox_req_thread(void *arg) {
     
     gw_free(reply);
     req_threads--;
-    return NULL;
 error:
     error(0, "Request_thread: failed");
     msg_destroy(msg);
     gw_free(reply);
     req_threads--;
-    return NULL;
 }
 
 

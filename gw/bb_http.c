@@ -123,7 +123,7 @@ static Octstr *httpd_resume(List *cgivars)
 
 
 
-static void *httpd_serve(void *arg)
+static void httpd_serve(void *arg)
 {
     HTTPSocket *client = arg;
     List *headers, *cgivars;
@@ -169,10 +169,9 @@ static void *httpd_serve(void *arg)
     http2_server_close_client(client);
     debug("bb.thread", 0, "EXIT: httpd_serve");
     list_remove_producer(core_threads);
-    return NULL;
 }
 
-static void *httpadmin_run(void *arg)
+static void httpadmin_run(void *arg)
 {
     HTTPSocket *httpd, *client;
     int port;
@@ -202,7 +201,7 @@ static void *httpadmin_run(void *arg)
 	    http2_server_close_client(client);
 	    continue;
 	}
-	if ((int)(start_thread(0, httpd_serve, client, 0)) == -1) {
+        if (gwthread_create(httpd_serve, client) == -1) {
 	    error(0, "Failed to start a new thread to handle HTTP admin command");
 	    http2_server_close_client(client);
 	}
@@ -213,7 +212,6 @@ static void *httpadmin_run(void *arg)
     
     debug("bb.thread", 0, "EXIT: httpadmin_run");
     list_remove_producer(core_threads);
-    return NULL;
 }
 
 
@@ -242,7 +240,7 @@ int httpadmin_start(Config *config)
     ha_allow_ip = config_get(grp, "admin-allow-ip");
     ha_deny_ip = config_get(grp, "admin-deny-ip");
     
-    if ((int)(start_thread(0, httpadmin_run, (void *)ha_port, 0)) == -1)
+    if (gwthread_create(httpadmin_run, (void *)ha_port) == -1)
 	panic(0, "Failed to start a new thread for HTTP admin");
 
     httpadmin_running = 1;

@@ -25,6 +25,7 @@
 #include "utils.h"
 #include "log.h"
 #include "thread.h"
+#include "gwthread.h"
 #include "socket.h"
 #include "conffile.h"
 #include "http2.h"

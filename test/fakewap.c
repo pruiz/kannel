@@ -421,8 +421,7 @@ static int get_next_transaction(void) {
 **  Function (or thread) sets up a dgram socket.  Then it loops: WTL/WSP
 **  Connect, Get a url and Disconnect until all requests are have been done.
 */
-static void *
-client_session( void * arg)
+static void client_session( void * arg)
 {
     int fd;
     int ret;
@@ -558,7 +557,6 @@ client_session( void * arg)
     time(&end_time);
     threads--;
     mutex_unlock( mutex );
-    return 0;
 }
 
 
@@ -676,7 +674,7 @@ int main(int argc, char **argv)
     **  session of main thread
     */
     for (i = 1; i < threads; i++)
-        start_thread( 0, client_session, NULL, 0);
+        gwthread_create(client_session, NULL);
     client_session(NULL);
 
     /*

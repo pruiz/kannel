@@ -137,7 +137,7 @@ static int send_msg(int fd, Msg *msg)
 }
 
 
-static void *boxc_sender(void *arg)
+static void boxc_sender(void *arg)
 {
     Msg *msg;
     Boxc *conn = arg;
@@ -171,7 +171,6 @@ static void *boxc_sender(void *arg)
     
     debug("bb.thread", 0, "EXIT: boxc_sender");
     list_remove_producer(flow_threads);
-    return NULL;
 }
 
 /*---------------------------------------------------------------
@@ -242,11 +241,11 @@ static Boxc *accept_boxc(int fd)
 
 
 
-static void *run_smsbox(void *arg)
+static void run_smsbox(void *arg)
 {
     int fd;
     Boxc *newconn;
-    pthread_t sender;
+    long sender;
     
     debug("bb.thread", 0, "START: run_smsbox");
     list_add_producer(flow_threads);
@@ -259,7 +258,8 @@ static void *run_smsbox(void *arg)
     
     list_append(smsbox_list, newconn);
 
-    if ((int)(sender = start_thread(0, boxc_sender, newconn, 0)) == -1) {
+    sender = gwthread_create(boxc_sender, newconn);
+    if (sender == -1) {
 	error(errno, "Failed to start a new thread, disconnecting client <%s>",
 	      octstr_get_cstr(newconn->client_ip));
 	goto cleanup;
@@ -268,8 +268,7 @@ static void *run_smsbox(void *arg)
     boxc_receiver(newconn);
     list_remove_producer(newconn->outgoing);
 
-    if (pthread_join(sender, NULL) != 0)
-	error(0, "Join failed in wapbox");
+    gwthread_join(sender);
 
 cleanup:    
     list_delete_equal(smsbox_list, newconn);
@@ -277,17 +276,16 @@ cleanup:
 
     debug("bb.thread", 0, "EXIT: run_smsbox");
     list_remove_producer(flow_threads);
-    return NULL;
 }
 
 
 
-static void *run_wapbox(void *arg)
+static void run_wapbox(void *arg)
 {
     int fd;
     Boxc *newconn;
     List *newlist;
-    pthread_t sender;
+    long sender;
 
     debug("bb.thread", 0, "START: run_wapbox");
     list_add_producer(flow_threads);
@@ -310,8 +308,8 @@ static void *run_wapbox(void *arg)
     newconn->retry = incoming_wdp;
     newconn->outgoing = outgoing_wdp;
 
-    
-    if ((int)(sender = start_thread(0, boxc_sender, newconn, 0)) == -1) {
+    sender = gwthread_create(boxc_sender, newconn);
+    if (sender == -1) {
 	error(errno, "Failed to start a new thread, disconnecting client <%s>",
 	      octstr_get_cstr(newconn->client_ip));
 	goto cleanup;
@@ -330,8 +328,7 @@ static void *run_wapbox(void *arg)
 
     newconn->alive = 0;
     
-    if (pthread_join(sender, NULL) != 0)
-	error(0, "Join failed in wapbox");
+    gwthread_join(sender);
 
 cleanup:
     gw_assert(list_len(newlist) == 0);
@@ -340,7 +337,6 @@ cleanup:
 
     debug("bb.thread", 0, "EXIT: run_wapbox");
     list_remove_producer(flow_threads);
-    return NULL;
 }
 
 
@@ -430,7 +426,7 @@ route:
  * this thread listens to incoming_wdp list
  * and then routs messages to proper wapbox
  */
-static void *wdp_to_wapboxes(void *arg)
+static void wdp_to_wapboxes(void *arg)
 {
     List *route_info;
     AddrPar *ap;
@@ -472,7 +468,6 @@ static void *wdp_to_wapboxes(void *arg)
 
     debug("bb.thread", 0, "EXIT: wdp_to_wapboxes router");
     list_remove_producer(flow_threads);
-    return NULL;
 }
 
 
@@ -480,7 +475,7 @@ static void *wdp_to_wapboxes(void *arg)
 
 
 
-static void wait_for_connections(int fd, void *(*function) (void *arg), List *waited)
+static void wait_for_connections(int fd, void (*function) (void *arg), List *waited)
 {
     fd_set rf;
     struct timeval tv;
@@ -506,7 +501,7 @@ static void wait_for_connections(int fd, void *(*function) (void *arg), List *wa
 
 	ret = select(FD_SETSIZE, &rf, NULL, NULL, &tv);
 	if (ret > 0) {
-	    start_thread(1, function, (void *)fd, 0);
+	    gwthread_create(function, (void *)fd);
 	    sleep(1);
 	} else if (ret < 0) {
 	    if(errno==EINTR) continue;
@@ -518,7 +513,7 @@ static void wait_for_connections(int fd, void *(*function) (void *arg), List *wa
 
 
 
-static void *smsboxc_run(void *arg)
+static void smsboxc_run(void *arg)
 {
     int fd;
     int port;
@@ -553,11 +548,10 @@ static void *smsboxc_run(void *arg)
     
     debug("bb.thread", 0, "EXIT: smsboxc_run");
     list_remove_producer(flow_threads);
-    return NULL;
 }
 
 
-static void *wapboxc_run(void *arg)
+static void wapboxc_run(void *arg)
 {
     int fd, port;
 
@@ -586,7 +580,6 @@ static void *wapboxc_run(void *arg)
 
     debug("bb.thread", 0, "EXIT: wapboxc_run");
     list_remove_producer(flow_threads);
-    return NULL;
 }
 
 
@@ -617,7 +610,7 @@ int smsbox_start(Config *config)
 
     smsbox_running = 1;
     
-    if ((int)(start_thread(0, smsboxc_run, (void *)smsbox_port, 0)) == -1)
+    if (gwthread_create(smsboxc_run, (void *)smsbox_port) == -1)
 	panic(0, "Failed to start a new thread for smsbox connections");
 
     return 0;
@@ -661,10 +654,10 @@ int wapbox_start(Config *config)
     wapbox_list = list_create();	/* have a list of connections */
     list_add_producer(outgoing_wdp);
 
-    if ((int)start_thread(0, wdp_to_wapboxes, NULL, 0) == -1)
+    if (gwthread_create(wdp_to_wapboxes, NULL) == -1)
  	panic(0, "Failed to start a new thread for wapbox routing");
  
-    if ((int)start_thread(0, wapboxc_run, (void *)wapbox_port, 0) == -1)
+    if (gwthread_create(wapboxc_run, (void *)wapbox_port) == -1)
 	panic(0, "Failed to start a new thread for wapbox connections");
 
     wapbox_running = 1;

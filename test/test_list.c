@@ -27,15 +27,15 @@
 #define NUM_CONSUMERS (1)
 #endif
 
-static pthread_t producers[NUM_PRODUCERS];
-static pthread_t consumers[NUM_CONSUMERS];
+static long producers[NUM_PRODUCERS];
+static long consumers[NUM_CONSUMERS];
 
 #define NUM_ITEMS_PER_PRODUCER (100*1000)
 
 
 static char received[NUM_PRODUCERS * NUM_ITEMS_PER_PRODUCER];
 
-static int producer_index_start(pthread_t producer) {
+static int producer_index_start(long producer) {
 	int i;
 	
 	for (i = 0; i < NUM_PRODUCERS; ++i) {
@@ -51,13 +51,13 @@ static int producer_index_start(pthread_t producer) {
 
 
 typedef struct {
-	pthread_t producer;
+	long producer;
 	long num;
 	long index;
 } Item;
 
 
-static Item *new_item(pthread_t producer, long num, long index) {
+static Item *new_item(long producer, long num, long index) {
 	Item *item;
 	
 	item = gw_malloc(sizeof(Item));
@@ -68,14 +68,14 @@ static Item *new_item(pthread_t producer, long num, long index) {
 }
 
 
-static void *producer(void *arg) {
+static void producer(void *arg) {
 	List *list;
 	long i, index;
-	pthread_t id;
+	long id;
 
 	list = arg;
 
-	id = pthread_self();
+	id = gwthread_self();
 	index = producer_index_start(id);
 	info(0, "producer starts at %ld", index);
 	list_add_producer(list);
@@ -89,10 +89,9 @@ static void *producer(void *arg) {
 	}
 	info(0, "producer dies");
 	list_remove_producer(list);
-	return NULL;
 }
 
-static void *consumer(void *arg) {
+static void consumer(void *arg) {
 	List *list;
 	long i;
 	Item *item;
@@ -118,7 +117,6 @@ static void *consumer(void *arg) {
 	}
 
 	info(0, "consumer dies");
-	return NULL;
 }
 
 
@@ -147,24 +145,21 @@ static void check_received(void) {
 static void main_for_producer_and_consumer(void) {
 	List *list;
 	int i;
-	void *ret;
 	Item *item;
 	
 	list = list_create();
 	init_received();
 	
 	for (i = 0; i < NUM_PRODUCERS; ++i)
-		producers[i] = start_thread(0, producer, list, 0);
+		producers[i] = gwthread_create(producer, list);
 	for (i = 0; i < NUM_CONSUMERS; ++i)
-		consumers[i] = start_thread(0, consumer, list, 0);
+		consumers[i] = gwthread_create(consumer, list);
 	
 	info(0, "main waits for children");
 	for (i = 0; i < NUM_PRODUCERS; ++i)
-		if (pthread_join(producers[i], &ret) != 0)
-			panic(0, "pthread_join failed");
+		gwthread_join(producers[i]);
 	for (i = 0; i < NUM_CONSUMERS; ++i)
-		if (pthread_join(consumers[i], &ret) != 0)
-			panic(0, "pthread_join failed");
+		gwthread_join(consumers[i]);
 
 	while (list_len(list) > 0) {
 		item = list_get(list, 0);
@@ -186,11 +181,11 @@ static void main_for_producer_and_consumer(void) {
 	list = list_create();
 	init_received();
 	for (i = 0; i < NUM_PRODUCERS; ++i) {
-		producers[i] = pthread_self();
+		producers[i] = gwthread_self();
 		producer(list);
 	}
 	for (i = 0; i < NUM_PRODUCERS; ++i) {
-		consumers[i] = pthread_self();
+		consumers[i] = gwthread_self();
 		consumer(list);
 	}
 

@@ -166,7 +166,7 @@ static int start_smsc(Config *config)
 }
 
 
-static void *wdp_router(void *arg)
+static void wdp_router(void *arg)
 {
     Msg *msg;
 
@@ -191,7 +191,6 @@ static void *wdp_router(void *arg)
 
     debug("bb", 0, "EXIT: wdp_router");
     list_remove_producer(flow_threads);
-    return NULL;
 }
 
 static int start_wap(Config *config)
@@ -203,7 +202,7 @@ static int start_wap(Config *config)
     wapbox_start(config);
 
     debug("bb", 0, "starting WDP router");
-    if ((int)(start_thread(0, wdp_router, NULL, 0)) == -1)
+    if (gwthread_create(wdp_router, NULL) == -1)
 	panic(0, "Failed to start a new thread for WDP routing");
 
     started = 1;

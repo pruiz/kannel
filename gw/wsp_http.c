@@ -186,7 +186,7 @@ static void wsp_http_map_url(Octstr **osp)
 
 /* here comes the main processing */
 
-void *wsp_http_thread(void *arg) {
+void wsp_http_thread(void *arg) {
 	WSPEvent *e;
 	int status;
 	int ret;
@@ -361,8 +361,6 @@ void *wsp_http_thread(void *arg) {
 
 	wsp_event_destroy(event);
 	octstr_destroy(type);
-
-	return NULL;
 }
 
 

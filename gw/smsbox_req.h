@@ -44,7 +44,7 @@ int smsbox_req_count(void);
  * handle one MO request. Arg is Msg *msg, and is void so that this can be
  * run directly with 'start_thread'
  */
-void *smsbox_req_thread(void *arg);
+void smsbox_req_thread(void *arg);
 
 
 /*

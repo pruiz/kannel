@@ -202,7 +202,7 @@ Msg *remove_msg_from_queue(void) {
 }
 
 
-static void *send_heartbeat_thread(void *arg) {
+static void send_heartbeat_thread(void *arg) {
 	list_add_producer(queue);
 	while (run_status == running) {
 	
@@ -228,21 +228,18 @@ static void *send_heartbeat_thread(void *arg) {
 		sleep(heartbeat_freq);
 	}
 	list_remove_producer(queue);
-	return NULL;
 }
 
 #if 0
-static void *timer_thread(void *arg) {
+static void timer_thread(void *arg) {
 
        while (run_status == running) {
              wtp_timer_check();
              sleep(timer_freq);
        }
-
-       return NULL;
 }
 #endif
-static void *empty_queue_thread(void *arg) {
+static void empty_queue_thread(void *arg) {
 	Msg *msg;
 	int socket;
 	
@@ -252,7 +249,6 @@ static void *empty_queue_thread(void *arg) {
 		if (msg != NULL)
 			msg_send(socket, msg);
 	}
-	return NULL;
 }
 
 
@@ -343,10 +339,10 @@ int main(int argc, char **argv) {
 	run_status = running;
 	list_add_producer(queue);
 
-	(void) start_thread(1, send_heartbeat_thread, 0, 0);
-	(void) start_thread(1, empty_queue_thread, &bbsocket, 0);
+	gwthread_create(send_heartbeat_thread, NULL);
+	gwthread_create(empty_queue_thread, &bbsocket);
 #if 0
-        (void) start_thread(1, timer_thread, 0, 0);
+	gwthread_create(timer_thread, 0);
 #endif
 	for (; run_status == running; msg_destroy(msg)) {
 		msg = msg_receive(bbsocket);

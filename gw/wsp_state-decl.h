@@ -268,7 +268,7 @@ ROW(HOLDING,
 			http2_header_duplicate(e->http_headers);
 		new_event->S_MethodInvoke_Res.server_transaction_id = 
 			new_server_transaction_id();
-		(void) start_thread(1, wsp_http_thread, new_event, 0);
+		gwthread_create(wsp_http_thread, new_event);
 	},
 	REQUESTING)
 

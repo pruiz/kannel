@@ -11,7 +11,7 @@
 #include "gwlib/gwlib.h"
 #include "gwlib/http2.h"
 
-static void *client_thread(void *arg) {
+static void client_thread(void *arg) {
 	HTTPSocket *client_socket;
 	Octstr *os, *body, *url;
 	List *headers, *resph, *cgivars;
@@ -68,7 +68,6 @@ static void *client_thread(void *arg) {
 	info(0, "Done with client.");
 error:
 	http2_server_close_client(client_socket);
-	return NULL;
 }
 
 static void help(void) {
@@ -118,7 +117,7 @@ int main(int argc, char **argv) {
 		if (client_socket == NULL)
 			panic(0, "http2_server_accept_client failed");
 		if (use_threads)
-			start_thread(1, client_thread, client_socket, 0);
+			gwthread_create(client_thread, client_socket);
 		else
 			client_thread(client_socket);
 	}

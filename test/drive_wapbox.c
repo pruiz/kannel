@@ -121,7 +121,7 @@ static void add_varint(Octstr *pdu, unsigned long v) {
 	}
 }
 
-static void *http_thread(void *arg) {
+static void http_thread(void *arg) {
 	HTTPSocket *server = arg;
 	HTTPSocket *client;
 	Octstr *url;
@@ -167,11 +167,10 @@ static void *http_thread(void *arg) {
 		octstr_destroy(list_consume(reply_headers));
 	list_destroy(reply_headers);
 	http2_server_close(server);
-	return NULL;
 }
 	
 
-static pthread_t http_thread_id;
+static long http_thread_id;
 
 static int start_http_thread(void) {
 	HTTPSocket *server = NULL;
@@ -185,8 +184,8 @@ static int start_http_thread(void) {
 	if (!server)
 		panic(0, "No ports available for http server");
 
-	http_thread_id = start_thread(0, http_thread, server, 0);
-	if ((int)http_thread_id == -1) 
+	http_thread_id = gwthread_create(http_thread, server);
+	if (http_thread_id == -1) 
 		panic(0, "Cannot start http thread");
 	return port;
 }
@@ -579,7 +578,6 @@ int main(int argc, char **argv) {
 	Connection *boxc;
 	long completed;
 	double run_time;
-	void *ret;
 
 	gwlib_init();
 
@@ -652,7 +650,7 @@ int main(int argc, char **argv) {
 
 	dying = 1;
 	if (!http_url)
-		pthread_join(http_thread_id, &ret);
+		gwthread_join(http_thread_id);
 
 	destroy_clients();
 	octstr_destroy(http_url);

@@ -14,12 +14,6 @@
 #include <pthread.h>
 
 /*
- * Type of function for threads. See pthread.h.
- */
-typedef void *Threadfunc(void *arg);
-
-
-/*
  * Wrapper around pthread_mutex_t to avoid problems with recursive calls
  * to pthread_mutex_trylock on Linux (at least).
  */
@@ -33,17 +27,6 @@ typedef struct {
 	long collisions;
 #endif
 } Mutex;
-
-
-/*
- * Start a new thread, running function func, and giving it the argument
- * `arg'. If `size' is 0, `arg' is given as is; otherwise, `arg' is copied
- * into a memory area of size `size'.
- * 
- * If `detached' is non-zero, the thread is created detached, otherwise
- * it is created detached.
- */
-pthread_t start_thread(int detached, Threadfunc *func, void *arg, size_t size);
 
 
 /*

@@ -45,7 +45,7 @@ static char *unified_prefix;
 
 typedef struct _smsc {
     List 	*outgoing_list;
-    pthread_t 	receiver;
+    long	receiver;
     SMSCenter 	*smsc;
 } Smsc;
 
@@ -53,7 +53,7 @@ typedef struct _smsc {
 /*---------------------------------------------
  * receiver thingies
  */
-static void *sms_receiver(void *arg)
+static void sms_receiver(void *arg)
 {
     Msg *msg;
     Smsc *conn = arg;
@@ -88,14 +88,13 @@ static void *sms_receiver(void *arg)
     list_remove_producer(incoming_sms);
     debug("bb.thread", 0, "EXIT: sms_receiver");
     list_remove_producer(flow_threads);
-    return NULL;
 }
 
 
 /*---------------------------------------------
  * sender thingies
  */
-static void *sms_sender(void *arg)
+static void sms_sender(void *arg)
 {
     Msg *msg;
     Smsc *conn = arg;
@@ -132,8 +131,7 @@ static void *sms_sender(void *arg)
 
     debug("bb", 0, "sms_sender: done, waiting in join");
     
-    if (pthread_join(conn->receiver, NULL) != 0)
-	error(0, "Join failed in sms_sender");
+    gwthread_join(conn->receiver);
 
     list_destroy(conn->outgoing_list);
     smsc_close(conn->smsc);
@@ -141,7 +139,6 @@ static void *sms_sender(void *arg)
     gw_free(conn);
     debug("bb.thread", 0, "EXIT: sms_sender");
     list_remove_producer(flow_threads);
-    return NULL;
 }
 
 
@@ -149,7 +146,7 @@ static void *sms_sender(void *arg)
 /* function to route outgoing SMS'es,
  * use some nice magics to route them to proper SMSC
  */
-static void *sms_router(void *arg)
+static void sms_router(void *arg)
 {
     Msg *msg;
     Smsc *si, *backup;
@@ -217,7 +214,6 @@ static void *sms_router(void *arg)
 
     debug("bb.thread", 0, "EXIT: sms_router");
     list_remove_producer(flow_threads);
-    return NULL;
 }
 
 
@@ -235,10 +231,11 @@ static Smsc *create_new_smsc(ConfigGroup *grp)
     si->outgoing_list = list_create();
     list_add_producer(si->outgoing_list);
     
-    if ((int)(si->receiver = start_thread(0, sms_receiver, si, 0)) == -1)
+    si->receiver = gwthread_create(sms_receiver, si);
+    if (si->receiver == -1)
 	goto error;
 
-    if ((int)start_thread(0, sms_sender, si, 0) == -1)
+    if (gwthread_create(sms_sender, si) == -1)
 	goto error;
 
     return si;
@@ -282,7 +279,7 @@ int smsc_start(Config *config)
 	list_append(smsc_list, si);
 	grp = config_find_next_group(grp, "group", "smsc");
     }
-    if ((int)(start_thread(0, sms_router, NULL, 0)) == -1)
+    if (gwthread_create(sms_router, NULL) == -1)
 	panic(0, "Failed to start a new thread for SMS routing");
     
     list_add_producer(incoming_sms);

@@ -1,3 +1,35 @@
+2000-05-26  Richard Braakman  <dark@wapit.com>
+
+	* gwlib/gwthread.h: New thread interface.  Encapsulates thread
+	creation, and provides features for interruptible sleeping and
+	blocking.  Can eventually be extended to wrap all of pthreads,
+	if desired.
+
+	* gwlib/gwthread-pthread.c: Implementation of thread interface
+	with pthreads.
+
+	* gwlib/gwlib.h: Include gwthread.h too.
+
+	* gwlib/gwlib.c: Initialize and shut down gwthread module along
+	with the rest.
+
+	* gw/bb_boxc.c, gw/bb_http.c, gw/bb_smsc.c, gw/bb_udp.c,
+	gw/bearerbox.c, gw/smsbox.c, gw/smsbox_req.[ch], gw/wapbox.c,
+	gw/wsp.h, gw/wsp_http.c, gw/wsp_state-decl.h, 
+	test/drive_wapbox.c, test/fakewap.c, test/test_counter.c,
+	test/test_http2.c, test/test_http2_server.c, test/test_list.c:
+	Use gwthread_create instead of start_thread.
+	Thread functions are now void functions instead of (void *)
+	functions, so removed all the "return NULL" and changed the
+	declarations.
+	Use long instead of pthread_t as the thread identifier.
+	Use gwthread_join instead of pthread_join.
+
+	* gwlib/log.c: Use gwthread_self() instead of pthread_self()
+	to get the thread number to log.
+
+	* gwlib/thread.[ch]: Removed start_thread function.
+
 Fri May 26 17:14:18 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* doc/arch/wapbox-arch.fig: New figure showing the planned

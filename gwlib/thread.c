@@ -13,50 +13,6 @@
 
 
 
-/*
- * Start a new thread, running function func, and giving it the argument
- * `arg'. If `size' is 0, `arg' is given as is; otherwise, `arg' is copied
- * into a memory area of size `size'.
- * 
- * If `detached' is non-zero, the thread is created detached, otherwise
- * it is created detached.
- */
-pthread_t start_thread(int detached, Threadfunc *func, void *arg, size_t size)
-{
-	void *copy;
-	pthread_t id;
-	pthread_attr_t attr;
-	int ret;
-	
-	if (size == 0)
-		copy = arg;
-	else {
-		copy = gw_malloc(size);
-		memcpy(copy, arg, size);
-	}
-	
-	pthread_attr_init(&attr);
-	if (detached)
-		pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
-	do {
-		ret = pthread_create(&id, &attr, func, copy);
-		if (ret == EAGAIN) {
-			error(0, "Too many threads, waiting to create one...");
-			sleep(1);
-		}
-	} while (ret == EAGAIN);
-	pthread_attr_destroy(&attr);
-	if (ret != 0) {
-		error(ret, "pthread_create failed");
-		goto error;
-	}
-
-	return id;
-
-error:
-	return (pthread_t) -1;
-}
-
 #ifdef MUTEX_STATS
 Mutex *mutex_create_measured(unsigned char *filename, int lineno) {
 	Mutex *mutex;
