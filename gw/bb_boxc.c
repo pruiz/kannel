@@ -311,8 +311,10 @@ static Boxc *accept_boxc(int fd, int ssl)
      * check if the SSL handshake was successfull, otherwise
      * this is no valid box connection any more
      */
-    if (ssl && !conn_get_ssl(newconn->conn))
+#ifdef HAVE_LIBSSL
+     if (ssl && !conn_get_ssl(newconn->conn))
         return NULL;
+#endif
 
     if (ssl)
         info(0, "Client connected from <%s> using SSL", octstr_get_cstr(ip));
