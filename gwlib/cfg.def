@@ -161,6 +161,7 @@ MULTI_GROUP(smsc,
     OCTSTR(smsc-username)
     OCTSTR(smsc-password)
     OCTSTR(keepalive)
+    OCTSTR(sim-buffering)
     OCTSTR(modemtype)
     OCTSTR(device)
     OCTSTR(speed)
@@ -312,6 +313,7 @@ MULTI_GROUP(modems,
     OCTSTR(sendline-sleep)
     OCTSTR(keepalive-cmd)
     OCTSTR(broken)
+    OCTSTR(message-storage)
 )
 
 #undef OCTSTR

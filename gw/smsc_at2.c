@@ -47,6 +47,7 @@ typedef struct ModemDef {
     long	sendline_sleep;
     Octstr	*keepalive_cmd;
     int		broken;
+    Octstr	*message_storage;
 } ModemDef;
  
 /* maximum data to attempt to read in one go */
@@ -70,6 +71,10 @@ typedef struct ModemDef {
 /* The number of times to attempt to send a message should sending fail */
 #define RETRY_SEND 3
  
+/* defines for use with the so-called "SIM buffering techinique" :*/
+/* once in how many seconds to poll the memory locations, if keepalive is _not_ set (will use keepalive time if set) */
+#define AT2_DEFAULT_SMS_POLL_INTERVAL	60	
+
 typedef struct PrivAT2data
 {
     List	*outgoing_queue;
@@ -93,6 +98,9 @@ typedef struct PrivAT2data
     Octstr	*sms_center;
     Octstr	*name;
     Octstr	*configfile;
+    int		sms_memory_poll_interval;
+    int		sms_memory_capacity;
+    int		sms_memory_usage;
 } PrivAT2data;
 
 
@@ -107,7 +115,7 @@ int	at2_write_ctrlz(PrivAT2data *privdata);
 void	at2_flush_buffer(PrivAT2data *privdata);
 int	at2_init_device(PrivAT2data *privdata);
 int	at2_send_modem_command(PrivAT2data *privdata,char *cmd, time_t timeout, int greaterflag);
-int	at2_wait_modem_command(PrivAT2data *privdata, time_t timeout, int greaterflag);
+int	at2_wait_modem_command(PrivAT2data *privdata, time_t timeout, int greaterflag, int* messages_collected);
 void	at2_set_speed(PrivAT2data *privdata, int bps);
 void	at2_device_thread(void *arg);
 int	at2_shutdown_cb(SMSCConn *conn, int finish_sending);
@@ -131,6 +139,8 @@ int	at2_detect_speed(PrivAT2data *privdata);
 int	at2_detect_modem_type(PrivAT2data *privdata);
 ModemDef *at2_read_modems(PrivAT2data *privdata, Octstr *file, Octstr *id, int idnumber);
 void	at2_destroy_modem(ModemDef *modem);
+void at2_read_sms_memory(PrivAT2data *privdata);
+int at2_check_sms_memory(PrivAT2data* privdata);
 int	swap_nibbles(char byte);
 
 /******************************************************************************
@@ -539,7 +549,7 @@ int	at2_init_device(PrivAT2data *privdata)
     	the next command. 10 sec should be suficient */
     	if(!privdata->pin_ready)
     	{
-   	   at2_wait_modem_command(privdata,10, 0);
+   	   at2_wait_modem_command(privdata,10, 0, NULL);
     	   if(!privdata->pin_ready) {
 	       at2_send_modem_command(privdata, "AT+CPIN?", 10, 0);
 	       if(!privdata->pin_ready) {
@@ -615,6 +625,20 @@ int	at2_init_device(PrivAT2data *privdata)
      ret = at2_send_modem_command(privdata, octstr_get_cstr(privdata->modem->init_string), 0, 0);
     	if(ret != 0)
     	    return -1;
+		
+    if (privdata->sms_memory_poll_interval && privdata->modem->message_storage) {
+    /* set message storage location for "SIM buffering" using the CPMS command */
+	Octstr *temp;
+	temp = octstr_create("AT+CPMS=");
+	octstr_append_char(temp, 34); // "
+	octstr_append(temp, privdata->modem->message_storage);
+	octstr_append_char(temp, 34); // "
+	ret = at2_send_modem_command(privdata, octstr_get_cstr(temp),0, 0);
+	octstr_destroy(temp);
+	if (ret != 0)
+	    return -1;
+    }
+    
     info(0, "AT2[%s]: AT SMSC successfully opened.", octstr_get_cstr(privdata->name));
     return 0;
 }
@@ -636,7 +660,7 @@ int	at2_init_device(PrivAT2data *privdata)
 int at2_send_modem_command(PrivAT2data *privdata,char *cmd, time_t timeout, int gt_flag)
 {
     at2_write_line(privdata,cmd);
-    return at2_wait_modem_command(privdata, timeout, gt_flag);
+    return at2_wait_modem_command(privdata, timeout, gt_flag, NULL);
 }
 
 
@@ -645,7 +669,7 @@ int at2_send_modem_command(PrivAT2data *privdata,char *cmd, time_t timeout, int 
 ** waits for the modem to send us something
 */
 
-int at2_wait_modem_command(PrivAT2data *privdata, time_t timeout, int gt_flag)
+int at2_wait_modem_command(PrivAT2data *privdata, time_t timeout, int gt_flag, int* messages_collected)
 {
     Octstr *line = NULL;
     Octstr *line2 = NULL;
@@ -655,6 +679,7 @@ int at2_wait_modem_command(PrivAT2data *privdata, time_t timeout, int gt_flag)
     time_t cur_time;
     Msg	*msg;
     int len;
+    int cmgr_flag = 0;
  
     time(&end_time);
     if(timeout == 0)
@@ -710,7 +735,8 @@ int at2_wait_modem_command(PrivAT2data *privdata, time_t timeout, int gt_flag)
 	   	ret = 1;
 	   	goto end;
 	   }
-           if (-1 != octstr_search(line, octstr_imm("+CMT:"), 0))
+           if (-1 != octstr_search(line, octstr_imm("+CMT:"), 0) 
+			   || ((-1 != octstr_search(line, octstr_imm("+CMGR:"), 0)) && (cmgr_flag = 1)) )
            {
            	line2 = at2_wait_line(privdata,1,0);
  
@@ -731,14 +757,21 @@ int at2_wait_modem_command(PrivAT2data *privdata, time_t timeout, int gt_flag)
 		    }
 		    else
 		    {
+		    	// count message even if I can't decode it
+			if (messages_collected)
+				++(*messages_collected);
 			msg = at2_pdu_decode(pdu, privdata);
                     	if(msg != NULL)
                     	{
 			    msg->sms.smsc_id = octstr_duplicate(privdata->conn->id);
                     	    bb_smscconn_receive(privdata->conn, msg);
                     	}
-                    	if(privdata->phase2plus)
-		    	    at2_write_line(privdata,"AT+CNMA");
+			
+			if (!cmgr_flag) {
+	                    	if(privdata->phase2plus)
+			    	    at2_write_line(privdata,"AT+CNMA");
+			}
+			
 			O_DESTROY(pdu);
 		    }
                 }
@@ -773,6 +806,136 @@ end:
     return ret;
 }
 
+/*
+ * at2_read_sms_memory
+ * checks whether any messages are buffered in message storage and extract them.
+ */
+void at2_read_sms_memory(PrivAT2data* privdata)
+{
+	char cmd[20];
+
+	// get memory status
+	if (at2_check_sms_memory(privdata) == -1) 
+	{
+		debug("bb.smsc.at2",0,"AT2[%s]: memory check error",octstr_get_cstr(privdata->device));
+		return;
+	}
+
+	if (privdata->sms_memory_usage)
+	{ // that is - greater then 0, meaning there are some messages to fetch
+		// now - I used to just loop over the first input_mem_sms_used locations, but it doesn't
+		// hold, since under load, messages may be received while we're in the loop, and get stored
+		// in locations towards the end of the list, thus creating 'holes' in the memory.
+		// there are two ways we can fix this : (a) just read the last message location, delete it and return.
+		// it's not a complete solution since holes can still be created if messages are recieved between the
+		// memory check and the delete command, and anyway - it will slow us down and won't hold well under pressure
+		// (b) just scan the entire memory each call, bottom to top. this will be slow too, but it'll be reliable. 
+		//
+		// we can massivly improve performance by stopping after input_mem_sms_used messages have been read,
+		// but send_modem_command returns 0 for no message as well as for a message read, and the only other
+		// way to implement it is by doing memory_check after each read and stoping when input_mem_sms_used
+		// get to 0. this is slow (modem commands take time) so we improve speed only if there are less then
+		// 10 messages in memory.
+		// 
+		// I implemented the alternative - changed at2_wait_modem_command to return the number of messages it 
+		// collected
+		int i;
+		int message_count = 0; // cound number of messages collected
+
+		debug("bb.smsc.at2",0,"AT2[%s]: %d messages waiting in memory",octstr_get_cstr(privdata->device),privdata->sms_memory_usage);
+		
+		for (i = 1; i <= privdata->sms_memory_capacity && 
+			message_count < privdata->sms_memory_usage; ++i) 
+		{ // loop till end of memory or collected enouch messages
+			int old_message_count = message_count;
+			sprintf(cmd,"AT+CMGR=%d",i);
+			/* read one message from memory */
+			at2_write_line(privdata,cmd);
+			if (at2_wait_modem_command(privdata,0,0,&message_count) != 0)
+			{
+			   	debug("bb.smsc.at2",0,"AT2[%s]: failed to get message %d.",octstr_get_cstr(privdata->device),i);
+				continue; /* failed to read the message - skip to next message */
+			}
+
+			if (old_message_count == message_count) { /* no need to delete if no message collected */
+				debug("bb.smsc.at2",0,"AT2[%s]: not deleted.",octstr_get_cstr(privdata->device));
+				continue;
+			}
+			
+			sprintf(cmd,"AT+CMGD=%d",i); /* delete the message we just read */
+			if (at2_send_modem_command(privdata,cmd,7,0) != 0)
+			{  /* 3 seconds is not enough with some modems if the message is large - so we'll give it 7 seconds */
+			   	debug("bb.smsc.at2",0,"AT2[%s]: failed to delete message %d.",octstr_get_cstr(privdata->device),i);
+				continue; /* failed to delete the message, we'll just ignore it for now - this is bad, since
+							if the message really didn't get deleted - we'll see it next time around. */
+			}
+		}
+	}
+	//at2_send_modem_command(privdata, ModemTypes[privdata->modemid].init1, 0, 0);
+}
+
+/*
+ * at_check_sms_memory()
+ * Memory capacity and usage check
+ */
+int at2_check_sms_memory(PrivAT2data *privdata) 
+{
+	long values[4]; // array to put response data in
+	int pos; // position of parser in data stream
+	int ret; // return code
+	Octstr* search_cpms = NULL;
+
+	if ((ret = at2_send_modem_command(privdata, "AT+CPMS?",0,0)) != 0) //MEM_SELECT_COMMAND
+	{ // select memory type and get report
+		debug("bb.smsc.at2.memory_check",0,"failed to send mem select command to modem %d",ret);
+		return -1;
+	}
+
+	search_cpms = octstr_create("+CPMS:");
+
+	if ((pos = octstr_search(privdata->lines,search_cpms,0)) != -1)
+	{ // got back a +CPMS response
+		int index = 0; // index in values array
+		pos += 6; // position of parser in the stream - start after header
+		
+		pos = octstr_search(privdata->lines,octstr_imm(","),pos) +1 ; // skip memory indication
+		while (index < 4 && 
+			pos < octstr_len(privdata->lines) && 
+			(pos = octstr_parse_long(&values[index],privdata->lines,pos,10)) != -1)
+		{ // find all the values
+			++pos; // skip number seperator;
+			++index; // increment array index
+			if (index == 2)
+				pos = octstr_search(privdata->lines,octstr_imm(","),pos)+1; // skip second memory indication
+		}
+		
+		if (index < 4)
+		{ // didn't get all memory data - I don't why, so I'll bail
+		   	debug("bb.smsc.at2",0,"AT2[%s]: couldn't parse all memory locations : %d:'%s'.",
+				octstr_get_cstr(privdata->device), index,&(octstr_get_cstr(privdata->lines)[pos]));
+			O_DESTROY(search_cpms);
+			return -1;
+		}
+
+		privdata->sms_memory_usage = values[0];
+		privdata->sms_memory_capacity = values[1];
+		/*
+		privdata->output_mem_sms_used = values[2];
+		privdata->output_mem_sms_capacity = values[3];
+		*/
+		
+		ret = 0; // everything's cool
+		
+		//  clear the buffer
+		O_DESTROY(privdata->lines);
+	} else {
+	   	debug("bb.smsc.at2",0,"AT2[%s]: no correct header for CPMS response.",octstr_get_cstr(privdata->device));
+		ret = -1; // didn't get a +CPMS response - this is clearly an error
+	}
+
+	O_DESTROY(search_cpms);
+	return ret; 
+}
 
 /******************************************************************************
 ** at2_set_speed
@@ -845,7 +1008,7 @@ void at2_device_thread(void *arg)
     PrivAT2data	*privdata = conn->data;
 
     int l, wait=0;
-    long idle_timeout;
+    long idle_timeout, memory_poll_timeout = 0;
    
     conn->status = SMSCCONN_CONNECTING;
     
@@ -919,7 +1082,7 @@ reconnect:
 	    at2_send_messages(privdata);
 	    idle_timeout = time(NULL);
 	} else
-	    at2_wait_modem_command(privdata,1,0);
+	    at2_wait_modem_command(privdata,1,0,NULL);
 
 	if(privdata->keepalive && 
 	   idle_timeout + privdata->keepalive < time(NULL)) {
@@ -930,6 +1093,12 @@ reconnect:
 		goto reconnect;
 	    }
 	    idle_timeout = time(NULL);
+	}
+		 
+	if (privdata->sms_memory_poll_interval &&
+	    memory_poll_timeout + privdata->sms_memory_poll_interval < time(NULL)) {
+	    at2_read_sms_memory(privdata);
+	    memory_poll_timeout = time(NULL);
 	}
    }
     at2_close_device(privdata);
@@ -1035,6 +1204,14 @@ int  smsc_at2_create(SMSCConn *conn, CfgGroup *cfg)
 
     privdata->keepalive = 0;
     cfg_get_integer(&privdata->keepalive, cfg, octstr_imm("keepalive"));
+	
+    cfg_get_bool(&privdata->sms_memory_poll_interval, cfg, octstr_imm("sim-buffering"));
+    if (privdata->sms_memory_poll_interval) {
+    	if (privdata->keepalive)
+    		privdata->sms_memory_poll_interval = privdata->keepalive;
+    	else
+    		privdata->sms_memory_poll_interval = AT2_DEFAULT_SMS_POLL_INTERVAL;
+    }
 
     cfg_get_bool(&privdata->retry, cfg, octstr_imm("retry"));
     privdata->my_number = cfg_get(cfg, octstr_imm("my-number"));
@@ -1135,10 +1312,17 @@ int at2_pdu_extract(PrivAT2data *privdata, Octstr **pdu, Octstr *line)
 
     buffer = octstr_duplicate(line);
     /* find the beginning of a message from the modem*/ 
-    pos = octstr_search(buffer, octstr_imm("+CMT:"), 0);
-    if(pos == -1) 
+    if ( -1 != (pos = octstr_search(buffer, octstr_imm("+CMT:"), 0)) )
+    	pos +=5;
+    else if ( -1 != (pos = octstr_search(buffer, octstr_imm("+CMGR:"), 0)) ) {
+	pos += 6;
+	if ( -1 != (pos = octstr_search(buffer,octstr_imm(","),pos)) ) // skip status field in +CMGR response
+	    pos++;
+	else
+	    goto nomsg;
+    }
+    else
 	goto nomsg;
-    pos += 5;
 
     tmp = octstr_search(buffer, octstr_imm(","), pos);
     if(! privdata->modem->broken && tmp == -1)
@@ -1493,7 +1677,7 @@ void at2_send_one_message(PrivAT2data *privdata, Msg *msg)
 	    at2_write(privdata,command);
 	    at2_write_ctrlz(privdata);
         /* wait 20 secs for modem command */
-	    ret = at2_wait_modem_command(privdata, 20, 0);
+	    ret = at2_wait_modem_command(privdata, 20, 0, NULL);
 	    debug("bb.at", 0, "AT2[%s]: send command status: %d", 
 		  octstr_get_cstr(privdata->name), ret);
 	    if(ret != 0) /* OK only */
@@ -2043,6 +2227,10 @@ ModemDef *at2_read_modems(PrivAT2data *privdata, Octstr *file, Octstr *id, int i
 	if(modem->keepalive_cmd == NULL)
 	    modem->keepalive_cmd = octstr_create("AT");
 
+        modem->message_storage = cfg_get(grp,octstr_imm("message-storage"));
+/*	if (modem->message_storage == NULL)
+	    modem->message_storage = octstr_create("SM");*/
+				    
 	cfg_get_bool(&modem->broken, grp, octstr_imm("broken"));
 
 	cfg_destroy(cfg);
@@ -2063,6 +2251,7 @@ void at2_destroy_modem(ModemDef *modem) {
 	O_DESTROY(modem->init_string);
 	O_DESTROY(modem->enable_hwhs);
 	O_DESTROY(modem->keepalive_cmd);
+	O_DESTROY(modem->message_storage);
 	gw_free(modem);
     }
 }

@@ -2600,6 +2600,22 @@ pin = 2345
       	SMS Center to send messages.
      </entry></row>
 
+    <row><entry><literal>sim-buffering</literal></entry>
+      <entry><literal>boolean</literal></entry>
+      <entry valign=bottom>
+        Whether to enable the so-called "SIM buffering behaviour" of the GSM module.
+                if assigned a true value, the module will query the message storage memory
+                of the modem and will process and delete any messages found there. this does
+                not alter normal behaviour, but only add the capability of reading messages that
+                were stored in the memory for some reason. The type of memory to use can be
+                selected using the 'message-storage' parameter of the modem configuration.
+                Polling the memory is done at the same interval as keepalive (if set) or 60 seconds
+                (if not set).
+                NOTE: This behaviour is known to cause minor or major hicups for a few buggy modems.
+                A modem known not to like this setting is Siemens M20.
+                A modem known to work with this setting is Wavecom.
+     </entry></row>
+
    </tbody></tgroup></informaltable>
 
    <para>Modem definitions are now multiple groups present in kannel.conf,
@@ -2713,6 +2729,18 @@ pin = 2345
 	see in logs the reply "+CBC: 0,64" (0=On batery, 64% 
 	full) and "+CSQ: 14,99" (0-31, 0-7: signal strenght and
 	channel bit error rate; 99 for unknown). See 3GPP 27007.
+     </entry></row>
+
+   <row><entry><literal>message-storage</literal></entry>
+     <entry><literal>string</literal></entry>
+     <entry valign=bottom>
+        Message storage memory type to enable for "SIM buffering".
+                Possible values are: "SM" - SIM card memory or "ME" -
+                Mobile equipment memory (may not be suppoerted by your
+                modem). check your modem's manual for more types.
+                By default, if the option is not set, no message storage command
+                will be sent to the modem and the modem's default message
+                storage will be used (usually "SM").
      </entry></row>
 
    </tbody></tgroup></informaltable>
