@@ -598,7 +598,7 @@
 	</para>
 
 	<para>After you have installed Kannel from the RPM packages you
-	should now be able to run the Kannel init.d script that will
+x	should now be able to run the Kannel init.d script that will
 	start Kannel as a WAP gateway. Run the script as root.</para>
 
 	<screen>
