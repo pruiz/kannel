@@ -92,8 +92,6 @@ static void stop_initiator_timer(Timer *timer);
 
 void wtp_initiator_init(void) 
 {
-    int ret;
-
     init_machines = list_create();
     init_machine_id_counter = counter_create();
      
@@ -120,11 +118,13 @@ void wtp_initiator_shutdown(void)
     counter_destroy(init_machine_id_counter);
 }
 
-void wtp_initiator_dispatch_event(WAPEvent *event) {
+void wtp_initiator_dispatch_event(WAPEvent *event) 
+{
     list_produce(queue, event);
 }
 
-int wtp_initiator_get_address_tuple(long mid, WAPAddrTuple **tuple) {
+int wtp_initiator_get_address_tuple(long mid, WAPAddrTuple **tuple) 
+{
     WTPInitMachine *sm;
 	
     sm = find_init_machine_using_mid(mid);
@@ -231,7 +231,6 @@ static unsigned char *name_init_state(int s)
 static void handle_init_event(WTPInitMachine *init_machine, WAPEvent *event)
 {
      WAPEvent *wsp_event = NULL;
-     int ret;
 
      debug("wap.wtp", 0, "WTP_INIT: initiator machine %ld, state %s,"
            " event %s.", 
@@ -479,7 +478,7 @@ static int tid_wrapped(unsigned short new_tid, unsigned short old_tid)
 
 static unsigned short rcv_tid(unsigned short tid)
 {
-       return tid ^ 0x8000;
+    return tid ^ 0x8000;
 }
 
 /*

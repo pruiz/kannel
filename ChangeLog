@@ -1,3 +1,7 @@
+2000-10-09 Aarno Syvänen <syvanen@wapit.com>
+
+	* gw/wtp_init.c: Remove an unused variable.
+
 2000-10-06  Richard Braakman  <dark@wapit.com>
 
 	* gwlib/utils.c: Changed kannel_cfmakeraw() comments to match
