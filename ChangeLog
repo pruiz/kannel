@@ -1,3 +1,12 @@
+2003-02-15  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/*.conf: harmonized the example config files. Deleted espacially 
+      developer specific config values that are of no use for a normal user.
+    * gw/wap_push_ppg.c, gw/wap_push_ppg_pushuser.c: fixed some minor parts
+      of Aarno's PPG SMSC routing patch.
+    * doc/userguide/userguide.xml: added documentation sections about new
+      'default-smsc' for the ppg group and 'default-smsc' and 'forced-smsc'
+      for the wap-push-user group.
+
 2003-02-14  Bruno Rodrigues  <bruno.rodrigues@litux.org> 
     * debian/*: created kannel-devel-* package files - to build them you
       need to copy control.devel and changelog.devel to control and changelog
