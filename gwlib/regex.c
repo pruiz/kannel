@@ -14,6 +14,13 @@
 #include <ctype.h>
 
 #include "gwlib/gwlib.h"
+#include "regex.h"
+
+/* 
+ * We allow to substitute the POSIX compliant regex routines via PCRE 
+ * provided routines if no system own regex implementation is available.
+ */
+#if defined(HAVE_REGEX) || defined(HAVE_PCRE)
 
 
 /********************************************************************
@@ -279,4 +286,6 @@ Octstr *gw_regex_subst_pre_real(const regex_t *preg, const Octstr *os, const Oct
     
     return result;
 }
+
+#endif  /* HAVE_REGEX || HAVE_PCRE */
 

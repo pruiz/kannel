@@ -97,7 +97,7 @@ dnl Checks for header files.
 
 AC_HEADER_STDC
 AC_CHECK_HEADERS(sys/ioctl.h sys/time.h sys/types.h unistd.h sys/poll.h)
-AC_CHECK_HEADERS(pthread.h getopt.h syslog.h iconv.h regex.h)
+AC_CHECK_HEADERS(pthread.h getopt.h syslog.h iconv.h)
 
 dnl Checks for typedefs, structures, and compiler characteristics.
 
@@ -110,7 +110,6 @@ AC_TRY_COMPILE(, [char *func = __func__;],
 dnl Checks for library functions.
 
 AC_CHECK_FUNCS(gettimeofday select socket strdup getopt_long localtime_r gmtime_r)
-AC_CHECK_FUNCS(regcomp regexec)
 AC_CHECK_FUNC(getopt, , LIBOBJS="$LIBOBJS utils/attgetopt.o")
 AC_SUBST(LIBOBJS)
 
@@ -167,9 +166,19 @@ GW_HAVE_FUNC_FROM(unistd.h, getopt, HAVE_GETOPT_IN_UNISTD_H,
     	    	  [Does <unistd.h> declare getopt()?])
 
 
+dnl POSIX regular expression check  
+
+AC_CHECK_HEADERS(regex.h, [
+  AC_CHECK_FUNC(regcomp, [ 
+    AC_DEFINE(HAVE_REGEX)
+    has_posix_regex=1
+  ])
+])
+
+
 dnl Misfeature checks
 
-AC_CONFIG_SECTION([Checking POSIX threads support])
+AC_CONFIG_SECTION([Checking for POSIX threads support])
 AC_MSG_CHECKING(for working pthreads)
 AC_TRY_RUN([#include <pthread.h>
 #include <unistd.h>
@@ -215,6 +224,48 @@ else
     AC_MSG_ERROR([libxml2 version $xml_version is too old. You need at least $xml_ver_required])
   ])
 fi
+
+
+dnl Implement the --enable-pcre option. This will set HAVE_PCRE in gw-config.h
+dnl accordingly and enable the usage of Perl compatible regular expressions.
+
+AC_CONFIG_SECTION([Configuring for PCRE support])
+AC_MSG_CHECKING([whether to compile with PCRE support])
+AC_ARG_ENABLE(pcre,
+[  --enable-pcre           enable PCRE regex support [disabled]], [
+  if test "$enableval" != yes; then
+    AC_MSG_RESULT(disabled)
+  else
+    AC_MSG_RESULT(searching)
+    AC_PATH_PROGS(PCRE_CONFIG, pcre-config, no)
+    if test "$PCRE_CONFIG" = "no"; then
+      AC_MSG_ERROR(Unable to find pcre-config in path for PCRE support)
+    else
+      AC_MSG_CHECKING([PCRE version])
+      pcre_version=`$PCRE_CONFIG --version`
+      AC_MSG_RESULT([$pcre_version])
+      AC_MSG_CHECKING([for POSIX regex provider])
+      if test "x$has_posix_regex" != "x" ; then
+        LIBS="$LIBS `$PCRE_CONFIG --libs`"
+        CFLAGS="$CFLAGS `$PCRE_CONFIG --cflags`"
+        AC_MSG_RESULT([system regex])
+      else
+        LIBS="$LIBS `$PCRE_CONFIG --libs-posix`"
+        CFLAGS="$CFLAGS `$PCRE_CONFIG --cflags-posix`"
+        AC_MSG_RESULT([PCRE library])
+        AC_CHECK_HEADERS(pcreposix.h)
+        AC_CHECK_LIB(pcreposix, regcomp)
+      fi        
+      AC_CHECK_HEADERS(pcre.h)
+      AC_CHECK_FUNCS(pcre_compile)
+      AC_DEFINE(HAVE_PCRE)
+      AC_DEFINE_UNQUOTED(LIBPCRE_VERSION, "$pcre_version")
+      PCRE="yes"
+    fi
+  fi
+],[
+  AC_MSG_RESULT(disabled)
+])
                                        
 
 dnl DocBook stuff

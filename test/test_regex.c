@@ -9,6 +9,8 @@
 #include <signal.h>
 
 #include "gwlib/gwlib.h"
+#include "gwlib/regex.h"
+
 
 int main(int argc, char **argv)
 {

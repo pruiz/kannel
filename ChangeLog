@@ -1,4 +1,18 @@
 2003-10-30  Stipe Tolj  <tolj@wapme-systems.de>
+    * configure[.in]: added Perl compatible regular expression (PCRE) library
+      support via --enable-pcre configure option. 
+    * gw-config.h.in: added HAVE_REGEX and HAVE_PCRE to indicate availablity 
+      within the gwlib code itself.
+    * gwlib/gwlib.h remvoed #include "regex.h" to avoid preprocessor 
+      conflicts with system regex.h header file. Inclussion has to be 
+      performed within the sources directly.
+    * gwlib/pcre.[ch]: added wrapper functions to PCRE library functions.
+    * gwlib/regex.[ch]: added compilation if PCRE library provides POSIX
+      compliant regex if no system own implementation exists.
+    * test/test_pcre.c: added test program for PCRE function calls.
+    * test/test_regex.c: added #include "gwlib/regex.h" 
+
+2003-10-30  Stipe Tolj  <tolj@wapme-systems.de>
     * gwlib/regex.c: fixed compiler warning and deallocation of memory
       after gw_regex_sub() call.
     * wap/cookies.c: fixed compiler warning

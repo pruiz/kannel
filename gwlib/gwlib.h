@@ -44,7 +44,6 @@
 #include "semaphore.h"
 #include "xmlrpc.h"
 #include "md5.h"
-#include "regex.h"
 
 void gwlib_assert_init(void);
 void gwlib_init(void);

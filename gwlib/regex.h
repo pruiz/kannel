@@ -14,7 +14,13 @@
 #ifndef REGEX_H
 #define REGEX_H
 
-#include <regex.h>
+#ifdef HAVE_REGEX
+# include <regex.h>
+#elif HAVE_PCRE
+# include <pcreposix.h>
+#endif
+
+#if defined(HAVE_REGEX) || defined(HAVE_PCRE)
 
 
 /*
@@ -127,4 +133,6 @@ Octstr *gw_regex_subst_pre_real(const regex_t *preg, const Octstr *os, const Oct
 
 
 #endif
+#endif  /* REGEX_H */
+
 

@@ -161,9 +161,18 @@
 /* Define not to include the SMS gateway parts */
 #undef NO_SMS
 
-/* Define for varios gethostbyname_r functions */
+/* Define for various gethostbyname_r functions */
 #undef HAVE_FUNC_GETHOSTBYNAME_R_6
 #undef HAVE_FUNC_GETHOSTBYNAME_R_5
 #undef HAVE_FUNC_GETHOSTBYNAME_R_3
+
+/* Define if you have and want to use POSIX regular expressions */
+#undef HAVE_REGEX
+
+/* Define if you have and want to use PCRE (Perl compatible regular expressions) */
+#undef HAVE_PCRE
+
+/* Define version of used libpcre */
+#undef LIBPCRE_VERSION
                      
 #endif
