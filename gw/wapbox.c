@@ -20,6 +20,7 @@
 #include "wtp.h"
 #include "wtp_timer.h"
 #include "bb.h"
+#include "wap-appl.h"
 
 static Config *cfg = NULL;
 static char *bearerbox_host = BB_DEFAULT_HOST;
@@ -344,6 +345,7 @@ int main(int argc, char **argv) {
 #if 0
 	gwthread_create(timer_thread, 0);
 #endif
+	wap_appl_init();
 	for (; run_status == running; msg_destroy(msg)) {
 		msg = msg_receive(bbsocket);
 		if (msg == NULL)

@@ -259,16 +259,16 @@ ROW(HOLDING,
 		 * it fails, then we have a problem.
 		 */
 		 
-		new_event = wap_event_create(S_MethodInvoke_Res);
-		new_event->S_MethodInvoke_Res.session = sm;
-		new_event->S_MethodInvoke_Res.machine = e->machine;
-		new_event->S_MethodInvoke_Res.url = octstr_duplicate(e->url);
-		new_event->S_MethodInvoke_Res.method = Get_PDU;
-		new_event->S_MethodInvoke_Res.http_headers = 
+		new_event = wap_event_create(S_MethodInvoke_Ind);
+		new_event->S_MethodInvoke_Ind.machine = e->machine;
+		new_event->S_MethodInvoke_Ind.url = octstr_duplicate(e->url);
+		new_event->S_MethodInvoke_Ind.method = Get_PDU;
+		new_event->S_MethodInvoke_Ind.http_headers = 
 			http2_header_duplicate(e->http_headers);
-		new_event->S_MethodInvoke_Res.server_transaction_id = 
+		new_event->S_MethodInvoke_Ind.server_transaction_id = 
 			new_server_transaction_id();
-		gwthread_create(wsp_http_thread, new_event);
+		new_event->S_MethodInvoke_Ind.session = sm;
+		wap_appl_dispatch(new_event);
 	},
 	REQUESTING)
 

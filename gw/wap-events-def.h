@@ -53,13 +53,17 @@ WAPEVENT(Release,
 	  HTTPHEADER(http_headers)
 	  )
 
-WAPEVENT(S_MethodInvoke_Res,
+WAPEVENT(S_MethodInvoke_Ind,
 	  WTP_MACHINE(machine)
 	  OCTSTR(url)
 	  INTEGER(method)
 	  HTTPHEADER(http_headers)
 	  INTEGER(server_transaction_id)
 	  SESSION_MACHINE(session)
+	  )
+
+WAPEVENT(S_MethodInvoke_Res,
+	  WTP_MACHINE(machine)
 	  )
 
 WAPEVENT(S_MethodResult_Req,

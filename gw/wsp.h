@@ -131,8 +131,6 @@ void wsp_handle_event(WSPMachine *machine, WAPEvent *event);
 int wsp_deduce_pdu_type(Octstr *pdu, int connectionless);
 
 
-void wsp_http_thread(void *arg);
-
 /* configure an URL mapping; parses string on whitespace, uses left
  * part for the source URL, and right part for the destination URL
  */

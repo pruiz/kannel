@@ -1,3 +1,25 @@
+Fri May 26 20:34:01 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* gw/wap-appl.[ch]: Wrote. This is the new application layer.
+	This version is ugly - essentially I just moved code in here
+	from the old wsp_http.c - but I want to clean it up before I
+	break it further.
+
+	* gw/wsp_state-decl.h: Use S_MethodInvoke_Ind instead of
+	S_MethodInvoke_Res and wap_appl_dispatch instead of
+	wsp_http_thread.
+
+	* gw/wap-events-def.h: Added S_MethodInvoke_Ind, removed most
+	fields from S_MethodInvoke_Res, since they're now unnecessary.
+	
+	* gw/wapbox.c: Starts the application layer.
+	
+	* gw/wsp.c: Added #include for wap-appl.h.
+	
+	* gw/wsp.h: Removed prototype for wsp_http_thread.
+	
+	* gw/wsp_http.c: Removed.
+
 Fri May 26 19:05:09 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* gw/wap-events.[ch], gw/wap-events-def.h: Combined WTPEvent and

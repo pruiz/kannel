@@ -1,17 +1,56 @@
 /*
- * wsp_http.c - The HTTP fetching and document processing thread
+ * gw/wap-appl.c - wapbox application layer declarations
  *
- * Lars Wirzenius <liw@wapit.com>
- * Capabilities/headers by Kalle Marjola <rpr@wapit.com>
- * URL mapping by Patrick Schaaf <bof@bof.de>
+ * The application layer's outside interface consists of two functions:
+ *
+ *	wap_appl_start()
+ *		This starts the application layer thread.
+ *
+ *	wap_appl_dispatch(event)
+ *		This adds a new event to the application layer event
+ *		queue.
+ *
+ * The application layer is a thread that reads events from its event
+ * queue, fetches the corresponding URLs and feeds back events to the
+ * WSP layer.
+ *
+ * Lars Wirzenius
  */
 
 #include <string.h>
 
 #include "gwlib/gwlib.h"
+#include "wap-appl.h"
 #include "wmlscript/ws.h"
 #include "wsp.h"
 #include "wml_compiler.h"
+
+
+/*
+ * Give the status the module:
+ *
+ *	limbo
+ *		not running at all
+ *	running
+ *		operating normally
+ *	terminating
+ *		waiting for operations to terminate, returning to limbo
+ */
+static enum { limbo, running, terminating } run_status = limbo;
+
+
+/*
+ * The queue of incoming events.
+ */
+static List *queue = NULL;
+
+
+/*
+ * Private functions.
+ */
+
+static void main_thread(void *);
+static void fetch_thread(void *);
 
 static void  dev_null(const char *data, size_t len, void *context);
 static int encode_content_type(const char *type);
@@ -21,7 +60,9 @@ static Octstr *convert_wml_to_wmlc(Octstr *wml, Octstr *charset, char *url);
 static Octstr *convert_wmlscript_to_wmlscriptc(Octstr *wmlscript, 
 					       Octstr *charset, char *url);
 
-/* The following code implements the map-url mechanism */
+/*
+ * The following code implements the map-url mechanism
+ */
 
 struct wsp_http_map {
 	struct wsp_http_map *next;
@@ -38,7 +79,9 @@ struct wsp_http_map {
 static struct wsp_http_map *wsp_http_map = 0;
 static struct wsp_http_map *wsp_http_map_last = 0;
 
-/* Add mapping for src URL to dst URL. */
+/*
+ * Add mapping for src URL to dst URL.
+ */
 static void wsp_http_map_url_do_config(char *src, char *dst)
 {
 	struct wsp_http_map *new_map;
@@ -184,9 +227,49 @@ static void wsp_http_map_url(Octstr **osp)
 	octstr_destroy(old);
 }
 
-/* here comes the main processing */
+void wap_appl_init(void) {
+	gw_assert(run_status == limbo);
+	queue = list_create();
+	list_add_producer(queue);
+	run_status = running;
+	gwthread_create(main_thread, NULL);
+}
 
-void wsp_http_thread(void *arg) {
+
+void wap_appl_shutdown(void) {
+	gw_assert(run_status == running);
+	list_remove_producer(queue);
+	run_status = terminating;
+}
+
+
+void wap_appl_dispatch(WAPEvent *event) {
+	gw_assert(run_status == running);
+	list_produce(queue, event);
+}
+
+
+/***********************************************************************
+ * Private functions.
+ */
+
+
+static void main_thread(void *arg) {
+	WAPEvent *ind, *res;
+	
+	while ((ind = list_consume(queue)) != NULL) {
+		gw_assert(ind->type == S_MethodInvoke_Ind);
+		gwthread_create(fetch_thread, ind);
+		res = wap_event_create(S_MethodInvoke_Res);
+		res->S_MethodInvoke_Res.machine = 
+			ind->S_MethodInvoke_Ind.machine;
+		wsp_handle_event(ind->S_MethodInvoke_Ind.session, res);
+	}
+}
+
+
+
+static void fetch_thread(void *arg) {
 	WAPEvent *e;
 	int status;
 	int ret;
@@ -230,16 +313,12 @@ void wsp_http_thread(void *arg) {
 	static int num_converters = sizeof(converters) / sizeof(converters[0]);
 
 	event = arg;
-	wtp_sm = event->S_MethodInvoke_Res.machine;
-	sm = event->S_MethodInvoke_Res.session;
-	wsp_dispatch_event(wtp_sm, wap_event_duplicate(event));
-		/* XXX shouldn't this duplicate the event? */
+	gw_assert(event->type == S_MethodInvoke_Ind);
+	wtp_sm = event->S_MethodInvoke_Ind.machine;
+	sm = event->S_MethodInvoke_Ind.session;
 
-	debug("xxx", 0, "foo:");
-	wap_event_dump(event);
-	debug("xxx", 0, "foo end.");
-	wsp_http_map_url(&event->S_MethodInvoke_Res.url);
-	url = event->S_MethodInvoke_Res.url;
+	wsp_http_map_url(&event->S_MethodInvoke_Ind.url);
+	url = event->S_MethodInvoke_Ind.url;
 
 	body = NULL;
 
@@ -251,9 +330,9 @@ void wsp_http_thread(void *arg) {
 	req_headers = list_create();
 	if (sm->http_headers != NULL)
 		http2_append_headers(req_headers, sm->http_headers);
-	if (event->S_MethodInvoke_Res.http_headers)
+	if (event->S_MethodInvoke_Ind.http_headers)
 		http2_append_headers(req_headers, 
-			event->S_MethodInvoke_Res.http_headers);
+			event->S_MethodInvoke_Ind.http_headers);
 
 	wml_ok = http2_type_accepted(req_headers, "text/vnd.wap.wml");
 	wmlscript_ok = http2_type_accepted(req_headers, 
@@ -339,7 +418,7 @@ void wsp_http_thread(void *arg) {
 		body_size = 0;
 	else
 		body_size = octstr_len(body);
-	client_SDU_size = event->S_MethodInvoke_Res.session->client_SDU_size;
+	client_SDU_size = event->S_MethodInvoke_Ind.session->client_SDU_size;
 
 	if (body != NULL && body_size > client_SDU_size) {
 		status = 413; /* XXX requested entity too large */
@@ -353,14 +432,14 @@ void wsp_http_thread(void *arg) {
 
 	e = wap_event_create(S_MethodResult_Req);
 	e->S_MethodResult_Req.server_transaction_id = 
-		event->S_MethodInvoke_Res.server_transaction_id;
+		event->S_MethodInvoke_Ind.server_transaction_id;
 	e->S_MethodResult_Req.status = status;
 	e->S_MethodResult_Req.response_type = 
 		encode_content_type(octstr_get_cstr(type));
 	e->S_MethodResult_Req.response_body = body;
-	e->S_MethodResult_Req.machine = event->S_MethodInvoke_Res.machine;
+	e->S_MethodResult_Req.machine = event->S_MethodInvoke_Ind.machine;
 
-	wsp_dispatch_event(event->S_MethodInvoke_Res.machine, e);
+	wsp_dispatch_event(event->S_MethodInvoke_Ind.machine, e);
 
 	wap_event_destroy(event);
 	octstr_destroy(type);
