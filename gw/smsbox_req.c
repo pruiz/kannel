@@ -398,7 +398,7 @@ void *smsbox_req_thread(void *arg) {
     trans = urltrans_find(translations, msg->smart_sms.msgdata);
     if (trans == NULL) goto error;
 
-    info(0, "Starting to service <%*> from <%s> to <%s>",
+    info(0, "Starting to service <%s> from <%s> to <%s>",
 	 octstr_get_cstr(msg->smart_sms.msgdata),
 	 octstr_get_cstr(msg->smart_sms.sender),
 	 octstr_get_cstr(msg->smart_sms.receiver));
