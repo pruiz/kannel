@@ -513,6 +513,8 @@ int udp_addwdp_from_server(Msg *msg)
     list_produce(udpc->outgoing_list, msg);
 
     octstr_destroy(os);
+
+    return 0;
 }
 
 
