@@ -68,6 +68,9 @@ void wsp_http_map_url_config_device_home(char *);
 /* show all configured URL mappings */
 void wsp_http_map_url_config_info(void);
 
+/* Free URL mapping table. */
+void wsp_http_map_destroy(void);
+
 
 /*
  * The application layer.

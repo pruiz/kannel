@@ -454,6 +454,7 @@ int main(int argc, char **argv) {
 	timers_shutdown();
 	wsp_strings_shutdown();
         wap_appl_shutdown();
+	wsp_http_map_destroy();
 	config_destroy(cfg);
 	gwlib_shutdown();
 	return 0;

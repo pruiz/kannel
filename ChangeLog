@@ -1,3 +1,20 @@
+2000-10-10  Lars Wirzenius  <liw@iki.fi>
+
+	* gwlib/gwthread.h: Removed unnecessary and bad ## operator
+	from gwthread_create wrapper macro. It pasted together two
+	string literals, creating an invalid pre-processing token, thus
+	causing small red daemons to fly out of my nose, flapping their
+	wings furiously, and thus causing a small wind to blow in Rio
+	de Janeiro, turning the page of the book being read by a local
+	critic and causing him to complain in his article about the book
+	that it was repetitive. Be careful with those undefined behaviors,
+	folks, you never know what will happen.
+
+	* gw/wap-appl.c, gw/wsp.h: Added function wsp_http_map_destroy,
+	from Paul Keogh.
+	
+	* gw/wapbox.c: Call wsp_http_map_destroy at shutdown.
+
 2000-10-09  Richard Braakman  <dark@wapit.com>
 
 	* wmlscript/wsopt.c: Add an optimization to remove useless tobool

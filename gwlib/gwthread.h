@@ -27,7 +27,7 @@ void gwthread_shutdown(void);
 long gwthread_create_real(gwthread_func_t *func, const char *funcname,
 			  void *arg);
 #define gwthread_create(func, arg) \
-	(gwthread_create_real(func, __FILE__ ":" ## #func, arg))
+	(gwthread_create_real(func, __FILE__ ":" #func, arg))
 
 /* Wait for the other thread to terminate.  Return immediately if it
  * has already terminated. */

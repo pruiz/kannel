@@ -764,3 +764,17 @@ static void wsp_http_map_url(Octstr **osp)
 		oldstr, octstr_get_cstr(*osp));
 	octstr_destroy(old);
 }
+
+
+void wsp_http_map_destroy(void) {
+	struct wsp_http_map *p, *q;
+	p = wsp_http_map;
+
+	while (p != NULL) {
+		q = p;
+		if (q -> in) gw_free (q -> in);
+		if (q -> out) gw_free (q -> out);
+		p = q -> next;
+		gw_free (q);
+	}
+}
