@@ -131,6 +131,7 @@ int	at2_detect_speed(PrivAT2data *privdata);
 int	at2_detect_modem_type(PrivAT2data *privdata);
 ModemDef *at2_read_modems(PrivAT2data *privdata, Octstr *file, Octstr *id, int idnumber);
 void	at2_destroy_modem(ModemDef *modem);
+int	swap_nibbles(char byte);
 
 /******************************************************************************
 ** For debugging purposes octstr_destroy might be a macro,
@@ -1232,6 +1233,7 @@ Msg *at2_pdu_decode_deliver_sm(Octstr *data, PrivAT2data *privdata)
         Msg *message = NULL;
         struct universaltime mtime;     /* time structure */
         long stime;             /* time in seconds */
+        int timezone; /* timezone in 15 minutes jumps from GMT */
 
         /* Note: some parts of the PDU are not decoded because they are
          * not needed for the Msg type. */
@@ -1278,16 +1280,27 @@ Msg *at2_pdu_decode_deliver_sm(Octstr *data, PrivAT2data *privdata)
         pos++;
         
         /* get the timestamp */
-        mtime.year   = octstr_get_char(pdu, pos) + 1900; pos++;
-        mtime.month  = octstr_get_char(pdu, pos); pos++;
-        mtime.day    = octstr_get_char(pdu, pos); pos++;
-        mtime.hour   = octstr_get_char(pdu, pos); pos++;
-        mtime.minute = octstr_get_char(pdu, pos); pos++;
-        mtime.second = octstr_get_char(pdu, pos); pos++;
+	mtime.year =  swap_nibbles(octstr_get_char(pdu, pos)); pos++;
+	mtime.year += (mtime.year < 70 ? 2000 : 1900);
+	mtime.month  = swap_nibbles(octstr_get_char(pdu, pos)) ; pos++;
+	mtime.day = swap_nibbles(octstr_get_char(pdu, pos)); pos++;
+	mtime.hour = swap_nibbles(octstr_get_char(pdu, pos)); pos++;
+	mtime.minute  = swap_nibbles(octstr_get_char(pdu, pos)); pos++;
+	mtime.second  = swap_nibbles(octstr_get_char(pdu, pos)); pos++;
+
         /* time zone: */
-        /* XXX handle negative time zones */
-        mtime.hour  += octstr_get_char(pdu, pos); pos++;
-        stime = date_convert_universal(&mtime);
+        /* time zone is "swapped nibble", with the MSB as the sign (1 is negative).  */
+        timezone = swap_nibbles(octstr_get_char(pdu, pos)); pos++;
+        timezone = ((timezone >> 7) ? -1 : 1) * (timezone & 127);
+        /* ok - that was the time zone as read from the PDU. now how to interpert it ? all the handsets I tested 
+        send the timestamp of their local time and the timezone as GMT+0. I assume that the timestamp is 
+	the handset's local time, so we need to apply the timezone in reverse to get GM time : */
+        
+        /* time in PDU is handset's local time and timezone is handset's time zone difference from GMT */ 
+	mtime.hour -=  timezone / 4;
+	mtime.minute -= 15 * (timezone % 4);
+
+       stime = date_convert_universal(&mtime);
         
         /* get data length */
         len = octstr_get_char(pdu, pos);
@@ -2052,5 +2065,14 @@ void at2_destroy_modem(ModemDef *modem) {
 	O_DESTROY(modem->keepalive_cmd);
 	gw_free(modem);
     }
+}
+
+/* this silly thing here will just translate a "swapped nibble" pseodo Hex encoding
+   (from PDU) into something that people can actually understand.
+   implementation completly ripped off Dennis Malmstrom timestamp patches against 1.0.3.
+   thanks Dennis ! */
+int swap_nibbles(char byte)
+{
+	return ( ( byte & 15 ) * 10 ) + ( byte >> 4 );
 }
 
