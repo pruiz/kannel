@@ -1,3 +1,7 @@
+2001-12-07  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/smsc_at2.c: fixed a typo for the ericsson R520m,
+      reported by Bob Pepin <bob@gms.lu>
+
 2001-12-06 Jörg Pommnitz <jpo@condat.de>
 	* gwlib/cfg.def: introduce new config option ssl-trusted-ca-file
 	* gwlib/conn.c: implement client side SSL certificate verification
