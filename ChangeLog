@@ -1,4 +1,8 @@
 2002-01-27  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/ota_prov.[ch]: fixed typo in ota_tokenize_bookmarks(). Removed 
+      static function declarations from header file.
+
+2002-01-27  Stipe Tolj  <tolj@wapme-systems.de>
     * doc/userguide/userguide.xml: updated SMPP documentation for port = 0
     * gw/smsc_smpp.c: applied patch to allow disabling of SMPP threads, using
       values for the ports, suggested by Nisan Bloch <nisof@amagoblin.co.za>
