@@ -1,3 +1,8 @@
+2000-05-29  Richard Braakman  <dark@wapit.com>
+
+	* gw/bb_boxc.c: If listening socket cannot be opened, handle it
+	by panicking rather than segfaulting.
+
 2000-05-29  Tuomas Luttinen  <tuo@wapit.com>
 
 	* gw/wml_compiler.c: #ifdefs added to supprt libxml2. Does compile, 

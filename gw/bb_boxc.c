@@ -536,6 +536,10 @@ static void smsboxc_run(void *arg)
     
     fd = make_server_socket(port);
 
+    if (fd < 0) {
+	panic(0, "Could not open smsbox port %d", port);
+    }
+
     /*
      * infinitely wait for new connections;
      * to shut down the system, SIGTERM is send and then
@@ -572,6 +576,10 @@ static void wapboxc_run(void *arg)
     port = (int)arg;
     
     fd = make_server_socket(port);
+
+    if (fd < 0) {
+	panic(0, "Could not open wapbox port %d", port);
+    }
 
     wait_for_connections(fd, run_wapbox, incoming_wdp);
 
