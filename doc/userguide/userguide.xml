@@ -7415,6 +7415,43 @@ test/fakesmsc -m 1 "100 500 udh %0eudh+stuff+here main+message"
   </informaltable>
 
 </sect1>
+<sect1>
+<title>Log rotation</title>
+
+	<para>If Kannel is configured so that the bearerbox, wapbox and/or smsbox 
+        log to file each of these log files will continue to grow unless administered
+        in some way (this is especially true if access logs are created and/or the 
+        log level is set to debug). </para>
+
+        <para>
+        A typical way of administering log files is to 'rotate' the logs on a regular 
+        basis using a tool such as logrotate.  A sample logrotate script (to be added 
+        to /etc/logrotate.d) is shown below. In this example the Kannel log files found 
+        in /var/log/kannel are rotated and compressed daily over 365 days.  See the 
+        documentation for logrotate for more details.  Of particular note however is the 
+        postrotate command, this killall -HUP issues a HUP command to each kannel
+        box running. The HUP signal has the effect of reopening the log file, without this 
+        command Kannel will continue to write to the rotated log file.
+        </para>
+
+        <screen>
+        <userinput>
+        /var/log/kannel/*.log {
+              daily
+              missingok
+              rotate 365
+              compress
+              delaycompress
+              notifempty
+              create 640 root adm
+              sharedscripts
+              postrotate
+                    killall -HUP bearerbox smsbox wapbox > /dev/null 2> /dev/null
+              endscript
+        }
+        </userinput>
+        </screen>
+</sect1>
 
 </appendix>
 
@@ -7472,12 +7509,4 @@ test/fakesmsc -m 1 "100 500 udh %0eudh+stuff+here main+message"
 </bibliography>
 
 </book>
-
-
-
-
-
-
-
-
 
