@@ -251,7 +251,7 @@ int emi_pending_smsmessage(SMSCenter *smsc) {
 	        return 1;
 
 	tmpbuff = gw_malloc(10*1024);
-	bzero(tmpbuff, 10*1024);
+	memset(tmpbuff, 0, 10*1024);
 
 	/* check for data */
 	n = get_data( smsc, tmpbuff, 1024*10 );
@@ -296,7 +296,7 @@ int emi_submit_msg(SMSCenter *smsc, Msg *omsg) {
 	if (omsg == NULL) goto error;
 
 	tmpbuff = gw_malloc(10*1024);
-	bzero(tmpbuff, 10*1024);
+	memset(tmpbuff, 0, 10*1024);
 
 	if(internal_emi_parse_msg_to_rawmessage( smsc, omsg, tmpbuff, 10*1024 ) < 1)
 		goto error;
@@ -341,7 +341,7 @@ int emi_receive_msg(SMSCenter *smsc, Msg **tmsg) {
 	*tmsg = NULL;
 	
 	tmpbuff = gw_malloc(10*1024);
-	bzero(tmpbuff, 10*1024);
+	memset(tmpbuff, 0, 10*1024);
 
 	/* get and delete message from buffer */
 	internal_emi_memorybuffer_cut_rawmessage(smsc, tmpbuff, 10*1024 );
@@ -402,7 +402,7 @@ static char internal_gurantee_link(SMSCenter *smsc) {
 		/* Clear the buffer so that the next call to gurantee
 		   doesn't find the "NO CARRIER" string again. */
 		smsc->buflen = 0;
-		bzero(smsc->buffer, smsc->bufsize);
+		memset(smsc->buffer, 0, smsc->bufsize);
 		
 	}
 
@@ -459,7 +459,7 @@ static int at_dial(char *device, char *phonenum, char *at_prefix, time_t how_lon
 		howmanyread = 0;
 		sprintf(tmpbuff, "%s%s\r\n", at_prefix, phonenum);
 		ret = write(fd, tmpbuff, strlen(tmpbuff)); /* errors... -mg */
-		bzero(&tmpbuff, sizeof(tmpbuff));
+		memset(&tmpbuff, 0, sizeof(tmpbuff));
 
 		/* Read the answer to the AT command and react accordingly. */
 		for(;;) {
@@ -557,7 +557,7 @@ static int internal_emi_wait_for_ack(SMSCenter *smsc) {
     time_t start;
 
     tmpbuff = gw_malloc(10*1024);
-    bzero(tmpbuff, 10*1024);
+    memset(tmpbuff, 0, 10*1024);
     start = time(NULL);
     do {
 	/* check for data */
@@ -607,7 +607,7 @@ static int get_data(SMSCenter *smsc, char *buff, int length) {
 	struct timeval to;
 	int ret;
 
-	bzero(buff, length);
+	memset(buff, 0, length);
 
 	if(smsc->type == SMSC_TYPE_EMI) {
 		tcdrain(smsc->emi_fd);
@@ -881,7 +881,7 @@ static int internal_emi_parse_rawmessage_to_msg(
 
 	msgnbr = -1;
 
-	bzero(isotext, sizeof(isotext));
+	memset(isotext, 0, sizeof(isotext));
 
 	strncpy(isotext, rawmessage, length);
 	leftslash = isotext;
@@ -950,11 +950,11 @@ static int internal_emi_acknowledge_from_rawmessage(
 	int is_backup = 0;
 	
 	msgnbr = -1;
-	bzero(&sender, sizeof(sender));
-	bzero(&receiver, sizeof(receiver));
-	bzero(&emitext, sizeof(emitext));
-	bzero(&isotext, sizeof(isotext));
-	bzero(&timestamp, sizeof(timestamp));
+	memset(&sender, 0, sizeof(sender));
+	memset(&receiver, 0, sizeof(receiver));
+	memset(&emitext, 0, sizeof(emitext));
+	memset(&isotext, 0, sizeof(isotext));
+	memset(&timestamp, 0, sizeof(timestamp));
 
 	strncpy(isotext, rawmessage, length);
 	leftslash = isotext;
@@ -1032,14 +1032,14 @@ static int internal_emi_parse_msg_to_rawmessage(SMSCenter *smsc, Msg *msg, char 
 	char xser[1024];
 	int udh_len;
 
-	bzero(&message_whole, sizeof(message_whole));
-	bzero(&message_body, sizeof(message_body));
-	bzero(&message_header, sizeof(message_header));
-	bzero(&message_footer, sizeof(message_footer));
-	bzero(&my_buffer, sizeof(my_buffer));
-	bzero(&my_buffer2, sizeof(my_buffer2));
+	memset(&message_whole, 0, sizeof(message_whole));
+	memset(&message_body, 0, sizeof(message_body));
+	memset(&message_header, 0, sizeof(message_header));
+	memset(&message_footer, 0, sizeof(message_footer));
+	memset(&my_buffer, 0, sizeof(my_buffer));
+	memset(&my_buffer2, 0, sizeof(my_buffer2));
 	mt = '3';
-	bzero(&snumbits,sizeof(snumbits));
+	memset(&snumbits, 0, sizeof(snumbits));
 
 	/* XXX internal_emi_parse_iso88591_to_emi shouldn't use NUL terminated
 	 * strings, but Octstr directly, or a char* and a length.

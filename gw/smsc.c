@@ -86,7 +86,7 @@ SMSCenter *smscenter_construct(void) {
 	smsc->buflen = 0;
 	smsc->bufsize = 10*1024;
 	smsc->buffer = gw_malloc(smsc->bufsize);
-	bzero(smsc->buffer, smsc->bufsize);
+	memset(smsc->buffer, 0, smsc->bufsize);
 
 	return smsc;
 }

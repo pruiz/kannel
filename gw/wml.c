@@ -103,7 +103,7 @@ char * white_space_del (char *from) {
 	if (string_len == 1) {	
 		/* allocate memory only the needed amount */
 		to =(char *) gw_malloc(++string_len);
-		bzero(to,string_len);
+		memset(to, 0, string_len);
 
 		strncpy(to, &temp[string_len2], string_len);
 
@@ -124,7 +124,7 @@ char * white_space_del (char *from) {
 
 	to = gw_malloc(++string_len);
 
-	bzero(to,string_len);
+	memset(to, 0, string_len);
 
 	strncpy(to, &temp[string_len2], string_len);
 
@@ -178,7 +178,7 @@ char * define_tag (char *tag_start, unsigned char * hex) {
 	int i=0;
 	char tag[500];
 
-	bzero(tag,500);
+	memset(tag, 0, 500);
 
 	while( *tag_start!='>' ) {
 		tag[i]=*tag_start;
@@ -565,8 +565,8 @@ char * inline_string(char *temp, int *count, struct wmlc *binary_string, struct 
 	if ((*event_variable)!=0)
 		variable = variable_memory;
 	
-	bzero (hex_entity,10);
-	bzero (named_entity,10);
+	memset(hex_entity, 0, 10);
+	memset(named_entity, 0, 10);
 
 	if (*temp=='"') {
 		temp++;
@@ -762,9 +762,9 @@ char * attribute_space(char *temp, int *count, struct wmlc *binary_string, struc
 	char tag[1000];
 	char attribute[1000];
 
-	bzero (multibyte_integer,5);
-	bzero (tag,1000);
-	bzero (attribute,1000);
+	memset(multibyte_integer, 0, 5);
+	memset(tag, 0, 1000);
+	memset(attribute, 0, 1000);
 
 	hex_temp = gw_malloc(sizeof(unsigned char));
 	tag_end = gw_malloc(sizeof(unsigned char));
@@ -890,7 +890,7 @@ char * attribute_space(char *temp, int *count, struct wmlc *binary_string, struc
 					i++;variable_counter++;}
 				tag[variable_counter]='\0';
 
-				bzero(multibyte_integer,5);
+				memset(multibyte_integer, 0, 5);
 				count_temp = *count;
 				if ( *offset > 0x81) {		/* if string table is greater than 0x81 then make string reference multibyte */
 					octets_temp = write_variable_value( *offset , multibyte_integer);
@@ -1076,10 +1076,10 @@ struct wmlc * wml2wmlc(char *string_pointer_from) {
 	char string_pointer_to1[LEN];
 	char string_pointer_to2[LEN];
 
-	bzero(multibyte_integer,5);
-	bzero(string_pointer_to,LEN); 
-	bzero(string_pointer_to1,LEN);
-	bzero(string_pointer_to2,LEN);
+	memset(multibyte_integer, 0, 5);
+	memset(string_pointer_to, 0, LEN); 
+	memset(string_pointer_to1, 0, LEN);
+	memset(string_pointer_to2, 0, LEN);
 
 	string_table = make_new_table_string();
 	string_table_temp = string_table;
@@ -1273,7 +1273,7 @@ struct wmlc * wml2wmlc(char *string_pointer_from) {
 					
 				}
 
-				bzero (multibyte_integer,5);
+				 memset(multibyte_integer, 0, 5);
 				if ( string_table_temp->offset > 0x81) {
 					octets_temp = write_variable_value( string_table_temp->offset , multibyte_integer);
 					octets_temp2 = octets_temp;
@@ -1406,7 +1406,7 @@ struct string_reference * make_new_table_string (void)
 
 void init_new_table_string ( struct string_reference * pointer, int * offset, unsigned char * string )
 {	
-	bzero (pointer->string, 512);
+	memset(pointer->string, 0, 512);
 	pointer->offset = *offset;
 	strcpy(pointer->string, string);
 	pointer->next = NULL;
@@ -1429,7 +1429,7 @@ struct variable * make_new_variable (void)
 
 void init_new_variable ( struct variable * pointer )
 {	
-	bzero (pointer->string, 512);
+	memset(pointer->string, 0, 512);
 	pointer->next = NULL;
 }
 

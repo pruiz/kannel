@@ -59,7 +59,7 @@ static int cimd_open_connection(SMSCenter *smsc) {
 
 	/* allocate some spare space */
 	tmpbuff = gw_malloc(10*1024);
-	bzero(tmpbuff, 10*1024);
+	memset(tmpbuff, 0, 10*1024);
 
 	/* connect */
 	
@@ -224,7 +224,7 @@ int cimd_pending_smsmessage(SMSCenter *smsc) {
 
 	/* allocate some spare space */
 	tmpbuff = gw_malloc(10*1024);
-	bzero(tmpbuff, 10*1024);
+	memset(tmpbuff, 0, 10*1024);
 
 	sprintf(tmpbuff, "%c%s%c%s%c%c", 
 	  0x02,        /* stx */
@@ -328,9 +328,9 @@ int cimd_submit_msg(SMSCenter *smsc, Msg *msg) {
 	tmpbuff = gw_malloc(10*1024);
 	tmptext = gw_malloc(10*1024);
 
-	bzero(tmpbuff, 10*1024);
-	bzero(tmptext, 10*1024);
-	bzero(msgtext, sizeof(msgtext));
+	memset(tmpbuff, 0, 10*1024);
+	memset(tmptext, 0, 10*1024);
+	memset(msgtext, 0, sizeof(msgtext));
 
 	if(msg->smart_sms.flag_udh == 1) {
 		octstr_get_many_chars(msgtext, msg->smart_sms.udhdata, 0, octstr_len(msg->smart_sms.udhdata));
@@ -431,11 +431,11 @@ int cimd_receive_msg(SMSCenter *smsc, Msg **msg) {
 	text = gw_malloc(10*1024);
 	scts = gw_malloc(10*1024);
 
-	bzero(tmpbuff, 10*1024);
-	bzero(sender, 10*1024);
-	bzero(receiver, 10*1024);
-	bzero(text, 10*1024);
-	bzero(scts, 10*1024);
+	memset(tmpbuff, 0, 10*1024);
+	memset(sender, 0, 10*1024);
+	memset(receiver, 0, 10*1024);
+	memset(text, 0, 10*1024);
+	memset(scts, 0, 10*1024);
 
 	/* cut the raw message out from the message buffer */
 	tmpchar = memchr(smsc->buffer, 0x0A, smsc->buflen);
@@ -519,7 +519,7 @@ static int internal_cimd_connect_tcpip(SMSCenter *smsc) {
 
 	/* allocate some spare space */
 	tmpbuff = gw_malloc(10*1024);
-	bzero(tmpbuff, 10*1024);
+	memset(tmpbuff, 0, 10*1024);
 
 	/* Close connection */
 	close(smsc->socket);
@@ -537,7 +537,7 @@ static int internal_cimd_connect_tcpip(SMSCenter *smsc) {
 	}
 
 	/* Empty the buffer, there might be an evil ghost inside... */
-	bzero(smsc->buffer, smsc->bufsize);
+	memset(smsc->buffer, 0, smsc->bufsize);
 	smsc->buflen = 0;
 
 	/* Expect the protocol string "CIMD rel 1.37\n" */
@@ -594,7 +594,7 @@ static int internal_cimd_send_acknowledge(SMSCenter *smsc) {
 		goto error;
 	}
 	
-	bzero(tmpbuff, sizeof(tmpbuff));
+	memset(tmpbuff, 0, sizeof(tmpbuff));
 
 	sprintf(tmpbuff, "\2\6\t11\3\n");
 	

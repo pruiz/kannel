@@ -15,7 +15,7 @@ OTAbitmap *OTAbitmap_create_empty(void)
     OTAbitmap *new;
 
     new = gw_malloc(sizeof(OTAbitmap));
-    bzero(new, sizeof(OTAbitmap));
+    memset(new, 0, sizeof(OTAbitmap));
     return new;
 }
 

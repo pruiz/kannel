@@ -15,7 +15,7 @@ WBMP *wbmp_create_empty(void)
     WBMP *new;
 
     new = gw_malloc(sizeof(WBMP));
-    bzero(new, sizeof(WBMP));
+    memset(new, 0, sizeof(WBMP));
     return new;
 }
 
