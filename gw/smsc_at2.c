@@ -948,7 +948,8 @@ reconnect:
     	 else
              at2_wait_modem_command(privdata,1,0);
 
-	if(idle_timeout + privdata->keepalive < time(NULL)) {
+	if(privdata->keepalive && 
+	   idle_timeout + privdata->keepalive < time(NULL)) {
 	    if(at2_send_modem_command(privdata, "AT", 5, 0) < 0) { 
 		at2_close_device(privdata);
 		conn->status = SMSCCONN_RECONNECTING;
