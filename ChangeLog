@@ -1,20 +1,29 @@
+2004-01-20  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/smsc/smsc_smasi.c: fixed decode_binary_data() which now behaves the 
+      way expected according to the specs. Binary MOs are *NOT* encoded the
+      same way like MTs. The SM/ASI SMSC sends raw data bytes in the body
+      and udh fields and only escapes specific bytes that are reserved as
+      protocol delimiters. This fixes binary MO receives.
+
 2004-01-18  Alexander Malysh  <a.malysh@centrium.de>
-    * doc/userguide/userguide.xml: added missing 'field-source' and 'field-boxc-id' in
-      examples within DLR database field configuration section.
+    * doc/userguide/userguide.xml: added missing 'field-source' and 
+      'field-boxc-id' in examples within DLR database field configuration 
+      section.
 
 2004-01-15  Alexander Malysh  <a.malysh@centrium.de>
     * gw/bb_store.c: got rid of unused 'Counter *msg_id'. We use UUID's now.
 
 2004-01-15  Alexander Malysh  <a.malysh@centrium.de>
-    * gwlib/log.c: close syslog when exit. removed 'inline' from declaration of
-      'gw_panic_output' because va_args functions can't be inlined.
+    * gwlib/log.c: close syslog when exit. removed 'inline' from declaration 
+      of 'gw_panic_output' because va_args functions can't be inlined.
 
 2004-01-14  Alexander Malysh  <a.malysh@centrium.de>
     * doc/userguide/userguide.xml, gw/smsc/smsc_at.[ch], gwlib/cfg.def: applied
-      at-merging.patch. This patch adds propperly reconnect for modem device. Fixes
-      a few race conditions and adds 2 new config options 'max-error-count', 'reset-string'.
-      These options adds facility for hard reset of the modem when modem crashed.
-      Additionaly a few fixes here and there.
+      at-merging.patch. This patch adds propperly reconnect for modem device. 
+      Fixes a few race conditions and adds 2 new config options 
+      'max-error-count', 'reset-string'. These options adds facility for hard 
+      reset of the modem when modem crashed. Additionaly a few fixes here and 
+      there.
       Msg-Id: <200401121508.00508.a.malysh@centrium.de>.
 
 2004-01-12  Alexander Malysh  <a.malysh@centrium.de>
@@ -23,30 +32,32 @@
       Msg-Id: <1073928970.2849.4.camel@taz.graycell.biz>
 
 2004-01-10  Alexander Malysh  <a.malysh@centrium.de>
-    * gw-config.h.in, configure[.in], gw/dlr_[mysql|sdb].c, doc/userguide/userguide.xml:
-      Applied patch that removes '--with-dlr' configure option and replace:
+    * gw-config.h.in, configure[.in], gw/dlr_[mysql|sdb].c, 
+      doc/userguide/userguide.xml: Applied patch that removes '--with-dlr' 
+      configure option and replace:
           --with-mysql --> --with-mysql-dir
           --enable-[mysql|oracle|sdb|sqlite] --> --with-[mysql|oracle|sdb|sqlite]
       Added documentation for those.
-      Msg-Id: <200401091444.52832.a.malysh@centrium.de> and <200401091517.54703.a.malysh@centrium.de>
+      Msg-Id: <200401091444.52832.a.malysh@centrium.de> and 
+      <200401091517.54703.a.malysh@centrium.de>
 
 2004-01-08  Alexander Malysh  <a.malysh@centrium.de>
     * gwlib/http.[ch], gwlib/cfg.def, gw/wapbox.c, doc/userguide/userguide.xml:
-      Applied patch from Vjacheslav Chekushin <slava@lmt.lv> that adds new config option
-      'http-interface-name' to wapbox configuration and allow selecting of interface for
-      outgoing HTTP requests. Thanks Slava!
+      Applied patch from Vjacheslav Chekushin <slava@lmt.lv> that adds new 
+      config option 'http-interface-name' to wapbox configuration and allow 
+      selecting of interface for outgoing HTTP requests. Thanks Slava!
       See Msg-Id: <3FE1AE9C.3020008@lmt.lv>
 
 2004-01-06  Alexander Malysh  <a.malysh@centrium.de>
     * configure.in, configure: fixed CFLAGS for pthread_spinlock support.
 
 2004-01-05  Alexander Malysh  <a.malysh@centrium.de>
-    * gwlib/gw_uuid.c: trivial change, don't define _SVID_SOURCE if it's already
-      defined.
+    * gwlib/gw_uuid.c: trivial change, don't define _SVID_SOURCE if it's 
+      already defined.
 
 2004-01-05  Alexander Malysh  <a.malysh@centrium.de>
-    * configure, configure.in, gw-config.h.in, gwlib/counter.c: added pthread_spinlock support.
-      Here some benchmarks (factor 6 faster):
+    * configure, configure.in, gw-config.h.in, gwlib/counter.c: added 
+      pthread_spinlock support. Here some benchmarks (factor 6 faster):
 	Counter benchmark (loop 10000000 with counter_[in|de]crease):
 	w/ spinlock support:
 	real    0m1.665s

@@ -278,7 +278,7 @@ static void unescape_data(Octstr *data)
             char byte = 0;
             int msb = octstr_get_char(data, pos + 1);
             int lsb = octstr_get_char(data, pos + 2);
-
+ 
             if (msb == '0') msb = 0;
             else if (msb >= '1' && msb <= '9') msb -= '1' + 1;
             else msb -= 'a' + 10;
@@ -334,44 +334,40 @@ static void encode_binary_data(Octstr *data)
 
 
 /*
- * Replaces a SMASI conform ASCII representation of binary data with the
- * original binary data octet string. Will abort data decoding if the ASCII
- * representation is invalid.
+ * Re-escape SMASI ASCII representation of binary data with the
+ * original binary data octet string.
+ * XXX this may be done by the internal parser routines too.
  */
 static void decode_binary_data(Octstr *data) 
 {
     long pos = 0;
-    Octstr * result = octstr_create("");
 
-    for (pos = 0; pos < octstr_len(data); pos += 3) {
+    while (pos < octstr_len(data)) {
         int check = octstr_get_char(data, pos);
 
-        if (check != ':') {
-            warning(0, "Malformed binary encoded data.");
-            return;
-        } else {
-            int byte = 0;
+        if (check == ':') {
+            Octstr *byte;
             int msb = octstr_get_char(data, pos + 1);
             int lsb = octstr_get_char(data, pos + 2);
 
-            if (msb == '0') msb = 0;
-            else if (msb >= '1' && msb <= '9') msb = msb - 48;
-            else msb = msb - 'a' + 10;
+            if (msb != -1 && lsb != -1) {
+                byte = octstr_create("");
+                octstr_append_char(byte, msb);
+                octstr_append_char(byte, lsb);
 
-            if (lsb == '0') lsb = 0;
-            else if (lsb >= '1' && lsb <= '9') lsb = lsb - 48;
-            else lsb = lsb - 'a' + 10;
+                if (octstr_hex_to_binary(byte) != -1) {
+                    /* Do inplace unescaping. */
+                    octstr_delete(data, pos, 3);
+                    octstr_insert(data, byte, pos);
+                } else {
+                    error(0, "Malformed binary encoded data.");
+                }
 
-            byte = msb << 4 | lsb;
-
-            octstr_append_char(result, byte);
+                octstr_destroy(byte);
+            }
         } 
+        pos++;
     } 
-
-    /* Replace ASCII representation with binary data octet string. */
-    octstr_delete(data, 0, octstr_len(data));
-    octstr_append(data, result);
-    octstr_destroy(result);
 }
 
 
@@ -568,18 +564,6 @@ static Msg *pdu_to_msg(SMASI_PDU *pdu)
     msg->sms.receiver = octstr_duplicate(pdu->u.DeliverReq.Destination);
     msg->sms.msgdata = octstr_duplicate(pdu->u.DeliverReq.Body);
  
-    /* Unescape (non-binary) or decode (binary) data. */
-    if (pdu->u.DeliverReq.UserDataHeader &&
-        octstr_len(pdu->u.DeliverReq.UserDataHeader) > 0) {
-
-        msg->sms.udhdata = octstr_duplicate(pdu->u.DeliverReq.UserDataHeader);
-
-        decode_binary_data(msg->sms.msgdata);
-        decode_binary_data(msg->sms.udhdata);
-    } else {
-        unescape_data(msg->sms.msgdata);
-    } 
-
     /* Read priority. */
     if (pdu->u.DeliverReq.ProtocolId)
         if (octstr_parse_long(&msg->sms.pid, 
@@ -606,6 +590,20 @@ static Msg *pdu_to_msg(SMASI_PDU *pdu)
         else
             msg->sms.coding = DC_7BIT;
     }
+
+    /* Unescape (non-binary) or decode (binary) data. */
+    if (msg->sms.coding == DC_8BIT) {
+
+        decode_binary_data(msg->sms.msgdata);
+        if (pdu->u.DeliverReq.UserDataHeader &&
+            octstr_len(pdu->u.DeliverReq.UserDataHeader) > 0) {
+            msg->sms.udhdata = octstr_duplicate(pdu->u.DeliverReq.UserDataHeader);
+            decode_binary_data(msg->sms.udhdata);
+        }
+
+    } else {
+        unescape_data(msg->sms.msgdata);
+    } 
 
     /* Read message class. */
     if (pdu->u.DeliverReq.Class &&
@@ -721,6 +719,8 @@ static void handle_pdu(SMASI *smasi, Connection *conn,
 
         case DeliverReq:
             msg = pdu_to_msg(pdu);
+
+            msg_dump(msg, 0);
 
             if (smasi->my_number && octstr_len(smasi->my_number)) {
                 octstr_destroy(msg->sms.receiver);
