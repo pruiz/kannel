@@ -576,6 +576,8 @@ static void *smscenter_thread(void *arg)
 	msg = rq_pull_msg(bbox->reply_queue, us->id);
 	if (msg) {
 	    ret = smsc_send_message(us->smsc, msg, bbox->request_queue);
+	    if (ret == -1)
+		break;
 	    continue;
 	}
 	/* check for any new messages from SMSC

@@ -124,7 +124,6 @@ void smscenter_remove_from_buffer(SMSCenter *smsc, size_t n);
 
 /* Send an SMS message via an SMS center. Return -1 for error,
    0 for OK. */
-int smscenter_submit_smsmessage(SMSCenter *smsc, SMSMessage *msg);
 int smscenter_submit_msg(SMSCenter *smsc, Msg *msg);
 
 
@@ -133,7 +132,6 @@ int smscenter_submit_msg(SMSCenter *smsc, Msg *msg);
    or 1 for a message was received. If a message was received, a 
    pointer to it is returned via `*msg'. Note that this operation
    blocks until there is a message. */
-int smscenter_receive_smsmessage(SMSCenter *smsc, SMSMessage **msg);
 int smscenter_receive_msg(SMSCenter *smsc, Msg **msg);
 
 
@@ -150,9 +148,7 @@ int smscenter_pending_smsmessage(SMSCenter *smsc);
 SMSCenter *fake_open(char *hostname, int port);
 int fake_reopen(SMSCenter *smsc);
 int fake_close(SMSCenter *smsc);
-int fake_submit_smsmessage(int socket, SMSMessage *msg);
 int fake_pending_smsmessage(SMSCenter *smsc);
-int fake_receive_smsmessage(SMSCenter *smsc, SMSMessage **msg);
 int fake_submit_msg(SMSCenter *smsc, Msg *msg);
 int fake_receive_msg(SMSCenter *smsc, Msg **msg);
 
@@ -163,8 +159,6 @@ SMSCenter *cimd_open(char *hostname, int port, char *username, char *password);
 int cimd_reopen(SMSCenter *smsc);
 int cimd_close(SMSCenter *smsc);
 int cimd_pending_smsmessage(SMSCenter *smsc);
-int cimd_submit_smsmessage(SMSCenter *smsc, SMSMessage *msg);
-int cimd_receive_smsmessage(SMSCenter *smsc, SMSMessage **msg);
 int cimd_submit_msg(SMSCenter *smsc, Msg *msg);
 int cimd_receive_msg(SMSCenter *smsc, Msg **msg);
 
@@ -179,8 +173,6 @@ SMSCenter *emi_open_ip(char *hostname, int port, char *username, char *password,
 int emi_reopen_ip(SMSCenter *smsc);
 int emi_close_ip(SMSCenter *smsc);
 int emi_pending_smsmessage(SMSCenter *smsc);
-int emi_submit_smsmessage(SMSCenter *smsc, SMSMessage *msg);
-int emi_receive_smsmessage(SMSCenter *smsc, SMSMessage **msg);
 int emi_submit_msg(SMSCenter *smsc, Msg *msg);
 int emi_receive_msg(SMSCenter *smsc, Msg **msg);
 
@@ -191,8 +183,6 @@ SMSCenter *smpp_open(char *hostname, int port, char*, char*, char*, char*);
 int smpp_reopen(SMSCenter *smsc);
 int smpp_close(SMSCenter *smsc);
 int smpp_pending_smsmessage(SMSCenter *smsc);
-int smpp_submit_smsmessage(SMSCenter *smsc, SMSMessage *msg);
-int smpp_receive_smsmessage(SMSCenter *smsc, SMSMessage **msg);
 int smpp_submit_msg(SMSCenter *smsc, Msg *msg);
 int smpp_receive_msg(SMSCenter *smsc, Msg **msg);
 

@@ -133,45 +133,6 @@ void smscenter_destruct(SMSCenter *smsc) {
 
 
 
-int smscenter_submit_smsmessage(SMSCenter *smsc, SMSMessage *msg) {
-	if (smscenter_lock(smsc) == -1)
-		return -1;
-
-	switch (smsc->type) {
-	case SMSC_TYPE_FAKE:
-		if (fake_submit_smsmessage(smsc->socket, msg) == -1)
-			goto error;
-		break;
-
-	case SMSC_TYPE_CIMD:
-		if(cimd_submit_smsmessage(smsc, msg) == -1)
-			goto error;
-		break;
-
-	case SMSC_TYPE_EMI:
-	case SMSC_TYPE_EMI_IP:
-		if(emi_submit_smsmessage(smsc, msg) == -1)
-			goto error;
-		break;
-
-	case SMSC_TYPE_SMPP_IP:
-		if(smpp_submit_smsmessage(smsc, msg) == -1)
-			goto error;
-		break;
-
-	default:
-		goto error;
-	}
-
-	smscenter_unlock(smsc);
-	return 0;
-
-error:
-	smscenter_unlock(smsc);
-	return -1;
-}
-
-
 int smscenter_submit_msg(SMSCenter *smsc, Msg *msg) {
 	if (smscenter_lock(smsc) == -1)
 		return -1;
@@ -211,56 +172,6 @@ error:
 }
 
 
-int smscenter_receive_smsmessage(SMSCenter *smsc, SMSMessage **msg) {
-	int ret;
-
-	if (smscenter_lock(smsc) == -1)
-		return -1;
-
-	switch (smsc->type) {
-
-	case SMSC_TYPE_FAKE:
-		ret = fake_receive_smsmessage(smsc, msg);
-		if (ret == -1)
-			goto error;
-		break;
-
-	case SMSC_TYPE_CIMD:
-		ret = cimd_receive_smsmessage(smsc, msg);
-		if (ret == -1)
-			goto error;
-		break;
-	
-	case SMSC_TYPE_EMI:
-	case SMSC_TYPE_EMI_IP:
-		ret = emi_receive_smsmessage(smsc, msg);
-		if (ret == -1)
-			goto error;
-		break;
-
-	case SMSC_TYPE_SMPP_IP:
-		ret = smpp_receive_smsmessage(smsc, msg);
-		if (ret == -1)
-			goto error;
-		break;
-
-	default:
-		goto error;
-
-	}
-
-	smscenter_unlock(smsc);
-	
-	/* Fix the time if the SMSC didn't tell us it. */
-	if (ret == 1 && (*msg)->time == 0)
-		time(&(*msg)->time);
-
-	return ret;
-
-error:
-	smscenter_unlock(smsc);
-	return -1;
-}
 
 int smscenter_receive_msg(SMSCenter *smsc, Msg **msg) {
 	int ret;
@@ -622,10 +533,12 @@ char *smsc_name(SMSCenter *smsc)
     return smsc->name;
 }
 
+
 char *smsc_dial_prefix(SMSCenter *smsc)
 {
     return smsc->dial_prefix;
 }
+
 
 int smsc_receiver(SMSCenter *smsc, char *number)
 {
@@ -725,29 +638,36 @@ int smsc_send_message(SMSCenter *smsc, RQueueItem *msg, RQueue *request_queue)
 	ret = 0;
     }  else if (msg->msg_type == R_MSG_TYPE_MT) {
 
+retry:
 	ret = smscenter_submit_msg(smsc, msg->msg);
 
-	if (ret == -1)
-	    /* rebuild connection? */
-	    ;
-
-	if (ret < 0)
-	    msg->msg_type = R_MSG_TYPE_NACK;
-	else
-	    msg->msg_type = R_MSG_TYPE_ACK;
-
-	rq_push_msg_ack(request_queue, msg);
-	return ret;
+	if (ret == -1) {
+	    ret = smsc_reopen(smsc);
+	    if (ret == -2) {
+		error(0, "Submit failed and cannot reopen");
+		return -1;
+	    }
+	    else if (ret == -1) {
+		error(0, "Re-opening failed, retry...");
+		sleep(2);	/* wait for a while */
+		goto retry;
+	    }
+	}
+	/*
+	 * put ACK to queue.. in the future!
+	 *
+	 msg->msg_type = R_MSG_TYPE_ACK;
+	 rq_push_msg_ack(request_queue, msg);
+	 return ret;
+	*/
     }
     else {
 	error(0, "SMSC:Unknown message type '%d' to be sent by SMSC, ignored",
 	      msg->msg_type);
-	ret = -1;
     }
-    smsmessage_destruct(msg->client_data);
     rqi_delete(msg);
 
-    return ret;
+    return 0;
 }
 
 
@@ -755,6 +675,7 @@ int smsc_get_message(SMSCenter *smsc, RQueueItem **new)
 {
 	RQueueItem *msg = NULL;
 	Msg *newmsg = NULL;
+	int ret;
    
 	*new = NULL;
     
@@ -769,9 +690,15 @@ int smsc_get_message(SMSCenter *smsc, RQueueItem **new)
 		} else {
 			error(0, "Failed to receive the message, reconnecting...");
 			/* reopen the connection etc. invisible to other end */
-
-			if (smsc_reopen(smsc) == -1)
-				return -1;
+		retry:
+			ret = smsc_reopen(smsc);
+			if (ret == -2)
+			    return -1;
+			else if (ret == -1) {
+			    error(0, "Reopen failed, retrying...");
+			    sleep(2);	/* wait for a while */
+			    goto retry;
+			}
 			return 0;		/* iterate */
 		}
 
@@ -785,5 +712,99 @@ error:
 	rqi_delete(msg);
 	return 0;
 }
+
+
+
+#if 0
+
+int smscenter_receive_smsmessage(SMSCenter *smsc, SMSMessage **msg) {
+	int ret;
+
+	if (smscenter_lock(smsc) == -1)
+		return -1;
+
+	switch (smsc->type) {
+
+	case SMSC_TYPE_FAKE:
+		ret = fake_receive_smsmessage(smsc, msg);
+		if (ret == -1)
+			goto error;
+		break;
+
+	case SMSC_TYPE_CIMD:
+		ret = cimd_receive_smsmessage(smsc, msg);
+		if (ret == -1)
+			goto error;
+		break;
+	
+	case SMSC_TYPE_EMI:
+	case SMSC_TYPE_EMI_IP:
+		ret = emi_receive_smsmessage(smsc, msg);
+		if (ret == -1)
+			goto error;
+		break;
+
+	case SMSC_TYPE_SMPP_IP:
+		ret = smpp_receive_smsmessage(smsc, msg);
+		if (ret == -1)
+			goto error;
+		break;
+
+	default:
+		goto error;
+
+	}
+
+	smscenter_unlock(smsc);
+	
+	/* Fix the time if the SMSC didn't tell us it. */
+	if (ret == 1 && (*msg)->time == 0)
+		time(&(*msg)->time);
+
+	return ret;
+
+error:
+	smscenter_unlock(smsc);
+	return -1;
+}
+
+int smscenter_submit_smsmessage(SMSCenter *smsc, SMSMessage *msg) {
+	if (smscenter_lock(smsc) == -1)
+		return -1;
+
+	switch (smsc->type) {
+	case SMSC_TYPE_FAKE:
+		if (fake_submit_smsmessage(smsc->socket, msg) == -1)
+			goto error;
+		break;
+
+	case SMSC_TYPE_CIMD:
+		if(cimd_submit_smsmessage(smsc, msg) == -1)
+			goto error;
+		break;
+
+	case SMSC_TYPE_EMI:
+	case SMSC_TYPE_EMI_IP:
+		if(emi_submit_smsmessage(smsc, msg) == -1)
+			goto error;
+		break;
+
+	case SMSC_TYPE_SMPP_IP:
+		if(smpp_submit_smsmessage(smsc, msg) == -1)
+			goto error;
+		break;
+
+	default:
+		goto error;
+	}
+
+	smscenter_unlock(smsc);
+	return 0;
+
+error:
+	smscenter_unlock(smsc);
+	return -1;
+}
+#endif
 
 

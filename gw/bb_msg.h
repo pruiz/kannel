@@ -53,7 +53,6 @@ struct r_queue_item {
     int destination;	/* destination thread, if we know it */
 
     char *routing_info;	/* optional extra information for router module */
-    void *client_data;	/* the original data (NOTE: just a pointer) */
     
     RQueueItem *next;	/* linked list */
 };
@@ -150,7 +149,7 @@ time_t rq_last_mod(RQueue *queue);
  * RQueueItem
  *
  * create a new rqueue item - note that you must afterwards set
- * 'msg', 'routing_info' and 'client_data' if used
+ * 'msg' and 'routing_info'
  */
 RQueueItem *rqi_new(int class, int type);
 

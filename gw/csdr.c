@@ -248,7 +248,7 @@ int csdr_is_to_us(CSDRouter *router, Msg *msg) {
 
     if (router->port != msg->wdp_datagram.source_port ||
 	(strcmp(router->ip,
-		octstr_get_cstr(msg->wdp_datagram.source_address)) != 0)
+		octstr_get_cstr(msg->wdp_datagram.source_address)) != 0))
 
 	return 0;
 

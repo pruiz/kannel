@@ -300,7 +300,6 @@ RQueueItem *rqi_new(int class, int type)
     nqi->source = -1;
     nqi->destination = -1;	/* unknown */
     nqi->routing_info = NULL;
-    nqi->client_data = NULL;
     
     nqi->next = NULL;
 

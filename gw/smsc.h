@@ -73,7 +73,7 @@ int smsc_close(SMSCenter *smsc);
 /* Send an SMS message via an SMS center. If the message is not an ACK/NACK,
  *  add ACK or NACK according to status intp request queue
  *
- *  Return -1 for error, 0 for OK.
+ *  Return -1 for FATAL error, 0 for OK/message ignored
  */
 int smsc_send_message(SMSCenter *smsc, RQueueItem *msg, RQueue *request_queue);
 

@@ -87,18 +87,6 @@ int fake_close(SMSCenter *smsc) {
 }
 
 
-int fake_submit_smsmessage(int socket, SMSMessage *msg) {
-	if (write_to_socket(socket, msg->sender) == -1 ||
-	    write_to_socket(socket, " ") == -1 ||
-	    write_to_socket(socket, msg->receiver) == -1 ||
-	    write_to_socket(socket, " ") == -1 ||
-	    octstr_write_to_socket(socket, msg->text) == -1 ||
-	    write_to_socket(socket, "\n") == -1)
-		return -1;
-	return 0;
-}
-
-
 int fake_pending_smsmessage(SMSCenter *smsc) {
 	int ret;
 
@@ -118,47 +106,6 @@ int fake_pending_smsmessage(SMSCenter *smsc) {
 	return 0;
 }
 
-
-int fake_receive_smsmessage(SMSCenter *smsc, SMSMessage **msg) {
-	char *newline, *p, *sender, *receiver, *text;
-	int ret;
-
-	for (;;) {
-		newline = memchr(smsc->buffer, '\n', smsc->buflen);
-		if (newline != NULL)
-			break;
-		ret = smscenter_read_into_buffer(smsc);
-		if (ret <= 0)
-			return ret;
-	}
-	
-	*newline = '\0';
-	if (newline > smsc->buffer && newline[-1] == '\r')
-		newline[-1] = '\0';
-
-	sender = smsc->buffer;
-	p = strchr(sender, ' ');
-	if (p == NULL)
-		receiver = text = "";
-	else {
-		*p++ = '\0';
-		receiver = p;
-		p = strchr(receiver, ' ');
-		if (p == NULL)
-			text = "";
-		else {
-			*p++ = '\0';
-			text = p;
-		}
-	}
-
-	*msg = smsmessage_construct(sender, receiver, octstr_create(text));
-	if (*msg == NULL)
-		return -1;
-
-	smscenter_remove_from_buffer(smsc, newline - smsc->buffer + 1);
-	return 1;
-}
 
 int fake_submit_msg(SMSCenter *smsc, Msg *msg) {
 	if(msg_type(msg)==smart_sms) {
@@ -216,3 +163,8 @@ int fake_receive_msg(SMSCenter *smsc, Msg **msg) {
 	smscenter_remove_from_buffer(smsc, newline - smsc->buffer + 1);
 	return 1;
 }
+
+
+
+
+

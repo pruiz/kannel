@@ -286,9 +286,16 @@ int emi_pending_smsmessage(SMSCenter *smsc) {
 /******************************************************************************
  * Submit (send) a Mobile Terminated message to the EMI server
  */
-int emi_submit_smsmessage(SMSCenter *smsc, SMSMessage *msg) {
+int emi_submit_msg(SMSCenter *smsc, Msg *omsg) {
 
-	char *tmpbuff;
+	char *tmpbuff = NULL;
+	SMSMessage *msg;
+
+	msg = smsmessage_construct(octstr_get_cstr(omsg->smart_sms.sender),
+				   octstr_get_cstr(omsg->smart_sms.receiver),
+				   omsg->smart_sms.msgdata);
+	if (msg == NULL)
+	    goto error;
 
 	tmpbuff = malloc(10*1024);
 	bzero(tmpbuff, 10*1024);
@@ -316,12 +323,14 @@ int emi_submit_smsmessage(SMSCenter *smsc, SMSMessage *msg) {
 	debug(0, "Submit Ok...");
 	
 	free(tmpbuff);
+	smsmessage_destruct(msg);
 	return 1;
 
 error:
 	debug(0, "Submit Error...");
 
 	free(tmpbuff);
+	smsmessage_destruct(msg);
 	return 0;
 
 }
@@ -329,9 +338,13 @@ error:
 /******************************************************************************
 * Receive a Mobile Terminated message to the EMI server
 */
-int emi_receive_smsmessage(SMSCenter *smsc, SMSMessage **msg) {
+int emi_receive_msg(SMSCenter *smsc, Msg **tmsg) {
 
 	char *tmpbuff;
+	Msg *msg = NULL;
+	SMSMessage **smsmsg = NULL;
+
+	*tmsg = NULL;
 	
 	tmpbuff = malloc(10*1024);
 	if(tmpbuff==NULL) goto error;
@@ -339,27 +352,41 @@ int emi_receive_smsmessage(SMSCenter *smsc, SMSMessage **msg) {
 
 	/* get and delete message from buffer */
 	internal_emi_memorybuffer_cut_rawmessage(smsc, tmpbuff, 10*1024 );
-	internal_emi_parse_rawmessage_to_smsmessage( smsc, msg, tmpbuff, strlen(tmpbuff) );
+	internal_emi_parse_rawmessage_to_smsmessage( smsc,
+						     smsmsg, tmpbuff, strlen(tmpbuff) );
 
 	/* yeah yeah, I got the message... */
 	internal_emi_acknowledge_from_rawmessage(smsc, tmpbuff, strlen(tmpbuff));
 
 	/* return with the joyful news */
 	free(tmpbuff);
+
+	msg = msg_create(smart_sms);
+	if (msg == NULL)
+	    goto error;
+
+	msg->smart_sms.sender = octstr_create((*smsmsg)->sender);
+	msg->smart_sms.receiver = octstr_create((*smsmsg)->receiver);
+	msg->smart_sms.msgdata = octstr_duplicate((*smsmsg)->text);
+
+	if (msg->smart_sms.sender == NULL ||
+	    msg->smart_sms.receiver == NULL ||
+	    msg->smart_sms.msgdata == NULL)
+
+	    goto error;
+	
+	smsmessage_destruct(*smsmsg);
+	*tmsg = msg;
+	
 	return 1;
 
 error:
 	free(tmpbuff);
+	msg_destroy(msg);
+	smsmessage_destruct(*smsmsg);
 	return -1;
 }
 
-int emi_submit_msg(SMSCenter *smsc, Msg *msg) {
-	return -1;
-}
-
-int emi_receive_msg(SMSCenter *smsc, Msg **msg) {
-	return -1;
-}
 
 /******************************************************************************
 * In(f)ternal functions
