@@ -37,8 +37,13 @@ enum {
     NO_CONSTRAINTS = 2
 };
 
-#define DEFAULT_HTTP_PORT 8080
-#define DEFAULT_NUMBER_OF_PUSHES 100
+enum {
+    DEFAULT_HTTP_PORT = 8080,
+    DEFAULT_NUMBER_OF_PUSHES = 100,
+    PI_TRUSTED = 1,
+    SSL_CONNECTION_OFF = 0
+};
+
 #define DEFAULT_PPG_URL "cgi-bin/wap-push.cgi"
 
 /*****************************************************************************
@@ -89,6 +94,11 @@ static Dict *http_clients = NULL;
 static Dict *urls = NULL;
 
 /*
+ * This hash table stores time when a specific ip is allowed to try next time.
+ */
+static Dict *next_try = NULL;
+
+/*
  * Push content packed for compilers (wml, si, sl, co).
  */
 struct content {
@@ -106,8 +116,9 @@ static wap_dispatch_func_t *dispatch_to_appl;
 
 static Octstr *ppg_url = NULL;
 static long ppg_port = DEFAULT_HTTP_PORT;
+static int ppg_port_ssl = SSL_CONNECTION_OFF;
 static long number_of_pushes = DEFAULT_NUMBER_OF_PUSHES;
-static int trusted_pi = 1;
+static int  trusted_pi = PI_TRUSTED;
 static Octstr *ppg_username = NULL;
 static Octstr *ppg_password = NULL;
 
@@ -164,6 +175,7 @@ static int session_has_sid(void *a, void *b);
 /*
  * Main logic of PPG.
  */
+static int client_authenticated(HTTPClient *client, List *cgivars, Octstr *ip);
 static int check_capabilities(List *requested, List *assumed);
 static int transform_message(WAPEvent **e, WAPAddrTuple **tuple, 
                              int connected, Octstr **type);
@@ -236,7 +248,6 @@ static void initialize_time_item_array(long time_data[], struct tm now);
 static int date_item_compare(Octstr *before, long time_data, long pos);
 static void parse_appid_header(Octstr **assigned_code);
 static Octstr *escape_fragment(Octstr *fragment);
-static int sms_requested(PPGPushMachine *pm);
 static void read_config(Cfg *cfg);
 
 /*****************************************************************************
@@ -247,8 +258,6 @@ static void read_config(Cfg *cfg);
 void wap_push_ppg_init(wap_dispatch_func_t *ota_dispatch, 
                        wap_dispatch_func_t *appl_dispatch, Cfg *cfg)
 {
-    int ssl = 0;   /* indicate if SSL-enabled server should be used */
-
     ppg_queue = list_create();
     list_add_producer(ppg_queue);
     push_id_counter = counter_create();
@@ -259,8 +268,9 @@ void wap_push_ppg_init(wap_dispatch_func_t *ota_dispatch,
     dispatch_to_appl = appl_dispatch;
 
     read_config(cfg);
-    http_open_port(HTTP_PORT, ssl);
+    http_open_port(ppg_port, ppg_port_ssl);
     http_clients = dict_create(number_of_pushes, NULL);
+    next_try = dict_create(number_of_pushes, octstr_destroy_item);
     urls = dict_create(number_of_pushes, octstr_destroy_item);
 
     gw_assert(run_status == limbo);
@@ -282,6 +292,7 @@ void wap_push_ppg_shutdown(void)
      http_close_all_ports();
      dict_destroy(http_clients);
      dict_destroy(urls);
+     dict_destroy(next_try);
      
      gwthread_join_every(http_read_thread);
      gwthread_join_every(ota_read_thread);
@@ -357,6 +368,7 @@ static void read_config(Cfg *cfg)
      cfg_get_bool(&trusted_pi, grp, octstr_imm("trusted-pi"));
      ppg_password = cfg_get(grp, octstr_imm("ppg-password"));
      ppg_username = cfg_get(grp, octstr_imm("ppg-username"));
+     cfg_get_bool(&ppg_port_ssl, grp, octstr_imm("ppg-port-ssl"));
      if (!trusted_pi && (ppg_password == NULL || ppg_username == NULL))
          panic(0, "a try to configure a secure ppg without a username and/or"
                "  a password");
@@ -380,7 +392,7 @@ static void ota_read_thread(void *arg)
  * we can send responses to the rigth address.
  * Pap chapter 14.4.1 states that we must return http status 202 after we have 
  * accepted PAP message, even if it is unparsable. So only the non-existing 
- * service and authorisation failures are handled at HTTP level. 
+ * service error and authorisation failures are handled at HTTP level. 
  */
 
 static void http_read_thread(void *arg)
@@ -396,9 +408,7 @@ static void http_read_thread(void *arg)
            *content_header,            /* Content-Type MIME header */
            *url,
            *ip,
-           *not_found,
-           *username,
-           *password;
+           *not_found;
     int compiler_status,
         http_status;
     List *push_headers,                /* MIME headers themselves */
@@ -427,18 +437,16 @@ static void http_read_thread(void *arg)
         }
 
         if (!trusted_pi) {
-	    if (!parse_cgivars(cgivars, &username, &password)) {
+	    if (!client_authenticated(client, cgivars, ip)) {
                 error(0,  "Request <%s> from <%s>: authorisation failure," 
                       "closing the client", octstr_get_cstr(url), 
                       octstr_get_cstr(ip));
-                http_close_client(client);
                 goto ferror;
             }
-	} else {
-	    username = ppg_username;
-	    password = ppg_password;
-        }
+	} 
 
+        dict_remove(next_try, ip);       /* no restrictions after authentica-
+                                            tion */
         info(0, "PPG: Accept request <%s> from <%s>", octstr_get_cstr(url), 
              octstr_get_cstr(ip));
         
@@ -518,12 +526,6 @@ static void http_read_thread(void *arg)
             ppg_event->u.Push_Message.push_headers = 
                 http_header_duplicate(push_headers);
             ppg_event->u.Push_Message.push_data = octstr_duplicate(push_data);
-            if (username)
-                ppg_event->u.Push_Message.username = 
-                    octstr_duplicate(username);
-            if (password)
-                ppg_event->u.Push_Message.password = 
-                    octstr_duplicate(password);
             if (!handle_push_message(ppg_event, http_status)) {
                 goto no_transform;
             }
@@ -590,6 +592,56 @@ berror:
         octstr_destroy(url);
         continue;
     }
+}
+
+/*
+ * For protection against brute force attacks, an exponential backup algorithm
+ * is used. Time when a specific ip is allowed to reconnect, is stored in Dict
+ * next_try. If an ip tries to reconnect before this (because first periods
+ * are small, this means that reconnection attempt cannot be manual) we drop
+ * the connection.
+ */
+static int client_authenticated (HTTPClient *c, List *cgivars, Octstr *ip) {
+        Octstr *username,
+	       *password,
+               *copy;
+        time_t now;
+	time_t *next_time;
+        static time_t addition = 0.0;  /* used only for this thread, and this
+                                          function */
+        static long multiplier = 1L;   /* and again */
+
+        next_time = NULL;
+        copy = octstr_duplicate(ip);
+        if ((next_time = dict_get(next_try, ip)) != NULL) {
+            time(&now);
+            if (difftime(now, *next_time) < 0.0) {
+	        error(0, "another try from %s, not much time used", 
+                      octstr_get_cstr(copy));
+	        goto denied;
+            }
+        }
+
+        if (!parse_cgivars(cgivars, &username, &password)) {
+	    goto denied;
+        }
+
+        if (octstr_compare(ppg_username, username) != 0 ||
+            octstr_compare(ppg_password, password) != 0) {
+	    goto denied;
+        }                                               
+
+        octstr_destroy(copy);
+        return 1;
+
+denied:
+        multiplier <<= 1;
+        addition *= multiplier;
+        next_time += addition;
+        dict_put(next_try, ip, next_time);
+        http_close_client(c);
+        octstr_destroy(copy);
+        return 0;
 }
 
 /*
@@ -931,8 +983,6 @@ static PPGPushMachine *push_machine_create(WAPEvent *e, WAPAddrTuple *tuple)
         m->ppg_notify_requested_to = 
             octstr_duplicate(e->u.Push_Message.ppg_notify_requested_to);
 
-    m->username = octstr_duplicate(e->u.Push_Message.username);
-    m->password = octstr_duplicate(e->u.Push_Message.password);
     debug("wap.push.ppg", 0, "PPG: push machine %ld created", m->push_id);
 
     return m;
@@ -1056,18 +1106,6 @@ static void request_confirmed_push(long last, PPGPushMachine *pm,
     dispatch_to_ota(ota_event);
 }
 
-static int sms_requested(PPGPushMachine *pm)
-{
-    if (!pm->network_required && !pm->bearer_required) {
-        return 0;
-    } else {
-        return pm->network_required && 
-               octstr_compare(pm->network, octstr_imm("GSM")) == 0 &&
-               pm->bearer_required &&
-               octstr_compare(pm->bearer, octstr_imm("SMS")) == 0;
-    }
-}
-
 /*
  * There is to types of unit push requests: requesting ip services and sms 
  * services. Fields are different in both cases
@@ -1090,13 +1128,6 @@ static void request_unit_push(long last, PPGPushMachine *pm)
     ota_event->u.Po_Unit_Push_Req.authenticated = pm->authenticated;
     ota_event->u.Po_Unit_Push_Req.trusted = pm->trusted;
     ota_event->u.Po_Unit_Push_Req.last = last;
-
-    if (sms_requested(pm) && pm->password && pm->username) {
-        ota_event->u.Po_Unit_Push_Req.password = 
-            octstr_duplicate(pm->password);
-        ota_event->u.Po_Unit_Push_Req.username = 
-            octstr_duplicate(pm->username);
-    }
 
     ota_event->u.Po_Unit_Push_Req.bearer_required = pm->bearer_required;
     if (pm->bearer_required)

@@ -79,8 +79,6 @@ WAPEVENT(T_DUnitdata_Req, "T-DUnitdata.req",
         OPTIONAL_OCTSTR(bearer)
         INTEGER(network_required)
         OPTIONAL_OCTSTR(network)
-        OPTIONAL_OCTSTR(password)
-        OPTIONAL_OCTSTR(username)
 	)
 
 WAPEVENT(T_DUnitdata_Ind, "T-DUnitdata.ind",
@@ -522,8 +520,6 @@ WAPEVENT(S_Unit_Push_Req, "S-Unit-Push.req",
 	HTTPHEADER(push_headers)
 	OPTIONAL_OCTSTR(push_body)
 
-        OPTIONAL_OCTSTR(password)
-        OPTIONAL_OCTSTR(username)
         INTEGER(bearer_required)
         OPTIONAL_OCTSTR(bearer)
         INTEGER(network_required)
@@ -625,8 +621,6 @@ WAPEVENT(Po_Unit_Push_Req, "Po-Unit-Push.req",
          INTEGER(last)
          OPTIONAL_OCTSTR(push_body)
 
-         OPTIONAL_OCTSTR(password)
-         OPTIONAL_OCTSTR(username)
          INTEGER(bearer_required)
          OPTIONAL_OCTSTR(bearer)
          INTEGER(network_required)
@@ -677,8 +671,6 @@ WAPEVENT(Push_Message, "push-message",
          HTTPHEADER(push_headers)
          OPTIONAL_OCTSTR(push_data)
          CAPABILITIES(pi_capabilities)
-         OPTIONAL_OCTSTR(password)
-         OPTIONAL_OCTSTR(username)
 )
 
 /*

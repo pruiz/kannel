@@ -81,6 +81,7 @@ SINGLE_GROUP(ppg,
     OCTSTR(concurrent-pushes)
     OCTSTR(ppg-username)
     OCTSTR(ppg-password)
+    OCTSTR(ppg-port-ssl)
 )
 
 SINGLE_GROUP(smsbox,

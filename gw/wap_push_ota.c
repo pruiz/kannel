@@ -288,12 +288,6 @@ static void make_unit_push_request(WAPEvent *e)
         wap_addr_tuple_duplicate(e->u.Po_Unit_Push_Req.addr_tuple);
     wsp_event->u.S_Unit_Push_Req.push_id = e->u.Po_Unit_Push_Req.push_id;
     wsp_event->u.S_Unit_Push_Req.push_headers = push_headers;
-    if (e->u.Po_Unit_Push_Req.password)
-        wsp_event->u.S_Unit_Push_Req.password = 
-            octstr_duplicate(e->u.Po_Unit_Push_Req.password);
-    if (e->u.Po_Unit_Push_Req.username)
-        wsp_event->u.S_Unit_Push_Req.username = 
-           octstr_duplicate(e->u.Po_Unit_Push_Req.username);
 
     wsp_event->u.S_Unit_Push_Req.network_required = 
         e->u.Po_Unit_Push_Req.network_required;

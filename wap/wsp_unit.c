@@ -264,10 +264,6 @@ static WAPEvent *pack_into_push_datagram(WAPEvent *event) {
   	        octstr_duplicate(event->u.S_Unit_Push_Req.bearer);
             datagram->u.T_DUnitdata_Req.network =
 	        octstr_duplicate(event->u.S_Unit_Push_Req.network); 
-            datagram->u.T_DUnitdata_Req.password =
-	        octstr_duplicate(event->u.S_Unit_Push_Req.password);
-            datagram->u.T_DUnitdata_Req.username =
-	        octstr_duplicate(event->u.S_Unit_Push_Req.username);
         }
 
 	datagram->u.T_DUnitdata_Req.user_data = ospdu;
