@@ -837,6 +837,7 @@ static void emi2_send_loop(SMSCConn *conn, Connection *server)
 				"in %d seconds, resending message", i, privdata->waitack);
 			list_produce(privdata->outgoing_queue,
 				     privdata->sendmsg[i]);
+			if (privdata->flowcontrol) write=1;
 			/* Wake up this same thread to send again
 			 * (simpler than avoiding sleep) */
 			gwthread_wakeup(privdata->sender_thread);
