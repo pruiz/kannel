@@ -1138,7 +1138,7 @@ static void emi2_idleprocessing(SMSCConn *conn, Connection **server)
 		    /* Wake up this same thread to send again
 		     * (simpler than avoiding sleep) */
 		    gwthread_wakeup(PRIVDATA(conn)->sender_thread);
-                    } else if (PRIVDATA(conn)->waitack_expire == 0x03) {
+                    } else if (PRIVDATA(conn)->waitack_expire == 0x02) {
                         // 0x02 - carry on waiting
                            warning(0, "EMI2[%s]: received neither ACK nor NACK for message %d "
                                 "in %d seconds, carrying on waiting", octstr_get_cstr(privdata->name),
