@@ -204,7 +204,8 @@ static void httpd_serve(HTTPClient *client, Octstr *url, List *headers,
     gw_assert(reply != NULL);
 
     if (status_type == BBSTATUS_HTML) {
-	header = "<html>\n<title>Kannel</title>\n<body>\n<p>";
+	header = "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 3.2//EN\">\n"
+ 	    "<html>\n<title>Kannel</title>\n<body>\n<p>";
 	footer = "</p>\n</body></html>\n";
 	content_type = "text/html";
     } else if (status_type == BBSTATUS_WML) {

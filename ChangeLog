@@ -1,5 +1,11 @@
 2000-12-29  Kalle Marjola  <rpr@wapit.com>
 
+	* gw/bb_smscconn.c: shortened SMSCConn status output
+
+	* gw/bb_http.c: added full HTML header to HTML replies
+	
+2000-12-29  Kalle Marjola  <rpr@wapit.com>
+
 	* gw/bb_smscconn.c: added load-based routing to outgoing SMS
 	messages, which takes into account reconnecting connections,
 	preferrations etc. (note that currently as all SMSC Connections

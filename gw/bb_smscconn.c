@@ -407,8 +407,7 @@ Octstr *smsc2_status(int status_type)
 	    sprintf(tmp3, "connecting");
 	}
 	
-	sprintf(tmp2, " (%s, received %ld, sent %ld, failed to "
-		"send %ld, queued %ld messages)%s", tmp3,
+	sprintf(tmp2, " (%s, rcvd %ld, sent %ld, failed %ld, queued %ld msgs)%s", tmp3,
 		info.received, info.sent, info.failed, info.queued, lb);
 	strcat(tmp, tmp2);
     }
