@@ -1,3 +1,7 @@
+2002-12-31  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/smsbox.c: added account to fill_message(). Thanks to Paul.
+      [Msg-ID: <005701c2b0c0$4140cb50$0300a8c0@anam.com>]
+
 2002-12-27  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/bb_store.c: fixed assertion panic when admin URI /store-status is 
       called while there is *no* store-file used. Bug has been reported by
