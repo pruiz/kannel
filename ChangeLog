@@ -1,3 +1,7 @@
+2000-18-07 Derry Hamilton <rasilon@tardis.ed.ac.uk>
+	
+	* solaris/mk-solaris-package.sh: Changed default optimisation level.
+	
 2000-16-07 Derry Hamilton <rasilon@tardis.ed.ac.uk>
 	
 	* solaris/*:  Added packaging information for Solaris
