@@ -325,7 +325,16 @@ static void signal_handler(int signum) {
 		warning(0, "SIGHUP received, catching and re-opening logs");
 		reopen_log_files();
 		break;
+
+	/* It would be more proper to use SIGUSR1 for this, but on some
+	 * platforms that's reserved by the pthread support. */
+	case SIGQUIT:
+		warning(0, "SIGQUIT received, reporting memory usage.");
+		if (gwthread_self() == 0)
+			gw_check_leaks();
+		break;
 	}
+
 }
 
 
@@ -336,6 +345,7 @@ static void setup_signal_handlers(void) {
 	sigemptyset(&act.sa_mask);
 	act.sa_flags = 0;
 	sigaction(SIGINT, &act, NULL);
+	sigaction(SIGQUIT, &act, NULL);
 	sigaction(SIGHUP, &act, NULL);
 	sigaction(SIGPIPE, &act, NULL);
 }

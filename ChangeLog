@@ -13,6 +13,14 @@
 	sends each in a single UDP packet.  Useful for feeding OUSPG's
 	test set to Kannel.
 
+	* gw/wapbox.c: Catch SIGQUIT and use it to report memory usage.
+	Useful for detecting memory leaks.
+
+	* gw/gwmem-check.c: Bugfix to allow gw_check_leaks() to be called
+	multiple times in one run.
+
+	* gw/wsp-unit.c: Fix memory leaks.
+
 2000-08-22 Aarno Syvänen <syvanen@wapit.com>
 
 	* gw/wml_compiler.c: Fixed some memory leaks

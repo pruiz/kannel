@@ -476,6 +476,7 @@ void gw_check_check_leaks(void) {
 	for (index = 0; index < free_ring_len; index++) {
 		drop_from_free_ring(index);
 	}
+	free_ring_len = 0;
 
 	calculated_size = 0;
 	for (index = 0; index < num_allocations; index++) {

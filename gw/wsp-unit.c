@@ -130,6 +130,8 @@ WAPEvent *wsp_unit_unpack_wdp_datagram(Msg *msg) {
 		goto error;
 	}
 
+	octstr_destroy(os);
+	wsp_pdu_destroy(pdu);
 	return event;
 
 error:
