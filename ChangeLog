@@ -1,3 +1,16 @@
+2003-06-24  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/wap_push_pap_mime.c, gw/smsc/smsc_fake.c: some code styling
+    * gwlib/dlr.c: fixed a output typo
+    * gw/smsc/smsc_http.c: fixed PANIC'ing while previously destroying 
+      cgivars that are afterwards destroyed anyway in the calling function.
+      This was for system-type 'brunet' and 'xidris'.
+    * gw/smsbox.c: fixing bug when new 'ppg_service_name' variable is NULLed
+      and passed to octstr_compare() causing PANIC.
+
+2003-06-23  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/wap_push_pap_mime.c: fixing compiler warning, commenting routine
+      parse_short_tail() while unused in code.
+
 2003-06-23  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/smsc/smsc_[fake|http|smasi].c: added 'throughput' delaying feature.
 
