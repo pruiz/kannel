@@ -117,8 +117,10 @@ enum {
 /*
  * Create a new, empty Msg object. Panics if fails.
  */
-Msg *msg_create(enum msg_type type);
-
+Msg *msg_create_real(enum msg_type type, const char *file, long line,
+                     const char *func);
+#define msg_create(type) \
+    gw_claim_area(msg_create_real((type), __FILE__, __LINE__, __func__))
 
 /*
  * Create a new Msg object that is a copy of an existing one.
@@ -163,6 +165,9 @@ Octstr *msg_pack(Msg *msg);
  * Unpack an Msg from an Octstr. Return NULL for failure, otherwise a pointer
  * to the Msg.
  */
-Msg *msg_unpack(Octstr *os);
+
+Msg *msg_unpack_real(Octstr *os, const char *file, long line, const char *func);
+#define msg_unpack(os) \
+    gw_claim_area(msg_unpack_real((os), __FILE__, __LINE__, __func__))
 
 #endif
