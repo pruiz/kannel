@@ -62,8 +62,9 @@ struct modem_def
 #define	AT2_NOKIAPHONE		5
 #define	AT2_FALCOM		6
 #define	AT2_ERICSSON		7
+#define AT2_ALCATEL         8
 
-#define	MAX_MODEM_TYPES		8
+#define	MAX_MODEM_TYPES		9
 struct modem_def ModemTypes[MAX_MODEM_TYPES] =
 {
     { "autodetect", 	"AT+IFC=2,2" 	, 0     , "AT+CNMI=1,2,0,0,0",	NULL,		NULL, 	0, 0, 1, 0, 0, 0.1 },
@@ -73,7 +74,8 @@ struct modem_def ModemTypes[MAX_MODEM_TYPES] =
     { "siemens",	"AT\\Q3" 	, 19200 , "AT+CNMI=1,2,0,0,0",	"SIEMENS", 	"M20",	0, 1, 1, 1, 1, 0.1 },
     { "nokiaphone",	"AT+IFC=2,2"	, 9600  , "AT+CNMI=1,2,0,0,0",	"NokiaPhone" ,	NULL,	0, 1, 1, 1, 1, 0.1 },
     { "falcom",		"AT+IFC=2,2"	, 9600  , "AT+CNMI=1,2,0,0,0",	"Falcom",	NULL,	0, 0, 1, 0, 0, 0.1 },
-    { "ericsson",	"AT+IFC=2,2"	, 9600  , "AT+CNMI=3,2,0,0",	"R520m",	NULL,	0, 0, 1, 1, 1, 0.1 }
+    { "ericsson",	"AT+IFC=2,2"	, 9600  , "AT+CNMI=3,2,0,0",	"R520m",	NULL,	0, 0, 1, 1, 1, 0.1 },
+    { "alcatel",    "AT+IFC=2,2"    , 9600  , "AT+CNMI=1,3,0,0,0",  "Alcatel",  NULL,   0, 0, 1, 1, 1, 0.1 } 
 };
 
 /* maximum data to attempt to read in one go */
