@@ -1,3 +1,7 @@
+2002-02-10  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/smsc_ois.c: removed unused ois_convert_from_iso88591() for the
+      sake of kannel-nag
+
 2002-02-08  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/smsc_at2.c: added Alcatel support as AT GSM modem SMSC
       submitted by: Olivier Durécu <olivier.durecu@ms.alcatel.fr>
