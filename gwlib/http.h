@@ -113,6 +113,17 @@ enum {
 	HTTP_STATUS_UNKNOWN = 0
 };
 
+
+/*
+ * Methods supported by this HTTP library.  Currently not public but
+ * probably should be.
+ * XXX Support for HEAD is required by RFC2616.
+ */
+enum {
+	HTTP_METHOD_GET = 1,
+	HTTP_METHOD_POST = 2
+};
+
 /*
  * A structure describing a CGI-BIN argument/variable.
  */

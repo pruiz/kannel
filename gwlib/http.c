@@ -95,7 +95,7 @@ static int parse_http_version(Octstr *version)
     long prefix_len;
     int digit;
     
-    prefix = octstr_imm("HTTP/1."); /* thread safe! */
+    prefix = octstr_imm("HTTP/1.");
     prefix_len = octstr_len(prefix);
 
     if (octstr_ncompare(version, prefix, prefix_len) != 0)
@@ -233,6 +233,301 @@ void http_close_proxy(void)
 
 
 /***********************************************************************
+ * Common functions for reading request or result entities.
+ */
+
+/*
+ * Value to pass to entity_create.
+ */
+enum body_expectation {
+   /*
+    * Message must not have a body, even if the headers indicate one.
+    * (i.e. response to HEAD method).
+    */
+   expect_no_body,
+   /*
+    * Message will have a body if Content-Length or Transfer-Encoding
+    * headers are present (i.e. most request methods).
+    */
+   expect_body_if_indicated,
+   /*
+    * Message will have a body, possibly zero-length.
+    * (i.e. 200 OK responses to a GET method.)
+    */
+   expect_body
+};
+
+enum entity_state {
+    reading_headers,
+    reading_chunked_body_len,
+    reading_chunked_body_data,
+    reading_chunked_body_crlf,
+    reading_chunked_body_trailer,
+    reading_body_until_eof,
+    reading_body_with_length,
+    body_error,
+    entity_done
+};
+
+typedef struct {
+    List *headers;
+    Octstr *body;
+    enum body_expectation expect_state;
+    enum entity_state state;
+    long chunked_body_chunk_len;
+    long expected_body_len;
+} HTTPEntity;
+
+
+/*
+ * The rules for message bodies (length and presence) are defined
+ * in RFC2616 paragraph 4.3 and 4.4.
+ */
+static void deduce_body_state(HTTPEntity *ent)
+{
+    Octstr *h = NULL;
+
+    if (ent->expect_state == expect_no_body) {
+	ent->state = entity_done;
+	return;
+    }
+
+    ent->state = body_error;  /* safety net */
+
+    h = http_header_find_first(ent->headers, "Transfer-Encoding");
+    if (h != NULL) {
+        octstr_strip_blanks(h);
+        if (octstr_str_compare(h, "chunked") != 0) {
+            error(0, "HTTP: Unknown Transfer-Encoding <%s>",
+                  octstr_get_cstr(h));
+	    ent->state = body_error;
+        } else {
+            ent->state = reading_chunked_body_len;
+	}
+        octstr_destroy(h);
+	return;
+    }
+
+    h = http_header_find_first(ent->headers, "Content-Length");
+    if (h != NULL) {
+        if (octstr_parse_long(&ent->expected_body_len, h, 0, 10) == -1) {
+	    error(0, "HTTP: Content-Length header wrong: <%s>",
+		  octstr_get_cstr(h));
+	    ent->state = body_error;
+        } else {
+            ent->state = reading_body_with_length;
+	}
+        octstr_destroy(h);
+	return;
+    }
+
+    if (ent->expect_state == expect_body)
+        ent->state = reading_body_until_eof;
+    else
+	ent->state = entity_done;
+}
+
+
+/*
+ * Create a HTTPEntity structure suitable for reading the expected
+ * result or request message and decoding the transferred entity (if any).
+ * See the definition of enum body_expectation for the possible values
+ * of exp.
+ */
+static HTTPEntity *entity_create(enum body_expectation exp)
+{
+    HTTPEntity *ent;
+
+    ent = gw_malloc(sizeof(*ent));
+    ent->headers = http_create_empty_headers();
+    ent->body = octstr_create("");
+    ent->chunked_body_chunk_len = -1;
+    ent->expected_body_len = -1;
+    ent->state = reading_headers;
+    ent->expect_state = exp;
+
+    return ent;
+}
+
+
+static void entity_destroy(HTTPEntity *ent)
+{
+    if (ent == NULL)
+        return;
+
+    http_destroy_headers(ent->headers);
+    octstr_destroy(ent->body);
+    gw_free(ent);
+}
+
+
+static void read_chunked_body_len(HTTPEntity *ent, Connection *conn)
+{
+    Octstr *os;
+    long len;
+    
+    os = conn_read_line(conn);
+    if (os == NULL) {
+        if (conn_read_error(conn) || conn_eof(conn))
+	    ent->state = body_error;
+        return;
+    }
+    if (octstr_parse_long(&len, os, 0, 16) == -1) {
+        octstr_destroy(os);
+	ent->state = body_error;
+        return;
+    }
+    octstr_destroy(os);
+    if (len == 0)
+        ent->state = reading_chunked_body_trailer;
+    else {
+        ent->state = reading_chunked_body_data;
+        ent->chunked_body_chunk_len = len;
+    }
+}
+
+
+static void read_chunked_body_data(HTTPEntity *ent, Connection *conn)
+{
+    Octstr *os;
+
+    os = conn_read_fixed(conn, ent->chunked_body_chunk_len);
+    if (os == NULL) {
+        if (conn_read_error(conn) || conn_eof(conn))
+	    ent->state = body_error;
+    } else {
+        octstr_append(ent->body, os);
+        octstr_destroy(os);
+        ent->state = reading_chunked_body_crlf;
+    }
+}
+
+
+static void read_chunked_body_crlf(HTTPEntity *ent, Connection *conn)
+{
+    Octstr *os;
+
+    os = conn_read_line(conn);
+    if (os == NULL) {
+        if (conn_read_error(conn) || conn_eof(conn))
+	    ent->state = body_error;
+    } else {
+        octstr_destroy(os);
+        ent->state = reading_chunked_body_len;
+    }
+}
+
+
+static void read_chunked_body_trailer(HTTPEntity *ent, Connection *conn)
+{
+    int ret;
+
+    ret = read_some_headers(conn, ent->headers);
+    if (ret == -1)
+	ent->state = body_error;
+    if (ret == 0)
+        ent->state = entity_done;
+}
+
+
+static void read_body_until_eof(HTTPEntity *ent, Connection *conn)
+{
+    Octstr *os;
+
+    while ((os = conn_read_everything(conn)) != NULL) {
+        octstr_append(ent->body, os);
+        octstr_destroy(os);
+    }
+    if (conn_read_error(conn))
+	ent->state = body_error;
+    if (conn_eof(conn))
+	ent->state = entity_done;
+}
+
+
+static void read_body_with_length(HTTPEntity *ent, Connection *conn)
+{
+    Octstr *os;
+
+    os = conn_read_fixed(conn, ent->expected_body_len);
+    if (os == NULL)
+        return;
+    octstr_destroy(ent->body);
+    ent->body = os;
+    ent->state = entity_done;
+}
+
+
+/*
+ * Read headers and body (if any) from this connection.  Return 0 if it's
+ * complete, 1 if we expect more input, and -1 if there is something wrong.
+ */
+static int entity_read(HTTPEntity *ent, Connection *conn)
+{
+    int ret;
+    enum entity_state old_state;
+
+    /*
+     * In this loop, each state will process as much input as it needs
+     * and then switch to the next state, unless it's a final state in
+     * which case it returns directly, or unless it needs more input.
+     * So keep looping as long as the state changes.
+     */
+    do {
+	old_state = ent->state;
+	switch (ent->state) {
+	case reading_headers:
+	    ret = read_some_headers(conn, ent->headers);
+            if (ret == 0)
+	        deduce_body_state(ent);
+	    if (ret < 0)
+		return -1;
+	    break;
+
+	case reading_chunked_body_len:
+	    read_chunked_body_len(ent, conn);
+	    break;
+		
+	case reading_chunked_body_data:
+	    read_chunked_body_data(ent, conn);
+	    break;
+
+	case reading_chunked_body_crlf:
+	    read_chunked_body_crlf(ent, conn);
+	    break;
+
+	case reading_chunked_body_trailer:
+	    read_chunked_body_trailer(ent, conn);
+	    break;
+
+	case reading_body_until_eof:
+	    read_body_until_eof(ent, conn);
+	    break;
+
+	case reading_body_with_length:
+	    read_body_with_length(ent, conn);
+	    break;
+
+	case body_error:
+	    return -1;
+
+	case entity_done:
+	    return 0;
+
+	default:
+	    panic(0, "Internal error: Invalid HTTPEntity state.");
+	}
+    } while (ent->state != old_state);
+
+    /*
+     * If we got here, then the loop ended because a non-final state
+     * needed more input.
+     */
+    return 1;
+}
+
+
+/***********************************************************************
  * HTTP client interface.
  */
 
@@ -256,27 +551,17 @@ typedef struct {
     enum {
 	request_not_sent,
 	reading_status,
-	reading_headers,
-	reading_chunked_body_len,
-	reading_chunked_body_data,
-	reading_chunked_body_crlf,
-	reading_chunked_body_trailer,
-	reading_body_until_eof,
-	reading_body_with_length,
-	invalid_body_format,
+	reading_entity,
 	transaction_done
     } state;
     long status;
     int persistent;
-    List *response_headers;
-    Octstr *response_body;
+    HTTPEntity *response; /* Can only be NULL if status < 0 */
     Connection *conn;
     Octstr *host;
     long port;
     int retrying;
     int follow_remaining;
-    long chunked_body_chunk_len;
-    long body_len;
 } HTTPServer;
 
 
@@ -295,15 +580,12 @@ static HTTPServer *server_create(HTTPCaller *caller, Octstr *url,
     trans->state = request_not_sent;
     trans->status = -1;
     trans->persistent = 0;
-    trans->response_headers = list_create();
-    trans->response_body = octstr_create("");
+    trans->response = NULL;
     trans->conn = NULL;
     trans->host = NULL;
     trans->port = 0;
     trans->retrying = 0;
     trans->follow_remaining = follow_remaining;
-    trans->chunked_body_chunk_len = 0;
-    trans->body_len = 0;
     return trans;
 }
 
@@ -316,8 +598,7 @@ static void server_destroy(void *p)
     octstr_destroy(trans->url);
     http_destroy_headers(trans->request_headers);
     octstr_destroy(trans->request_body);
-    http_destroy_headers(trans->response_headers);
-    octstr_destroy(trans->response_body);
+    entity_destroy(trans->response);
     octstr_destroy(trans->host);
     gw_free(trans);
 }
@@ -457,168 +738,16 @@ static Octstr *get_redirection_location(HTTPServer *trans)
     if (trans->status != HTTP_MOVED_PERMANENTLY &&
     	trans->status != HTTP_FOUND && trans->status != HTTP_SEE_OTHER)
 	return NULL;
-    return http_header_find_first(trans->response_headers, "Location");
-}
-
-
-static int read_chunked_body_len(HTTPServer *trans)
-{
-    Octstr *os;
-    long len;
-    
-    os = conn_read_line(trans->conn);
-    if (os == NULL) {
-	if (conn_read_error(trans->conn) || conn_eof(trans->conn))
-	    return -1;
-	return 0;
-    }
-    if (octstr_parse_long(&len, os, 0, 16) == -1) {
-	octstr_destroy(os);
-	return -1;
-    }
-    octstr_destroy(os);
-    if (len == 0)
-	trans->state = reading_chunked_body_trailer;
-    else {
-	trans->state = reading_chunked_body_data;
-	trans->chunked_body_chunk_len = len;
-    }
-    return 0;
-}
-
-
-static int read_chunked_body_data(HTTPServer *trans)
-{
-    Octstr *os;
-
-    os = conn_read_fixed(trans->conn, trans->chunked_body_chunk_len);
-    if (os == NULL) {
-	if (conn_read_error(trans->conn) || conn_eof(trans->conn))
-	    return -1;
-	return 1;
-    }
-    octstr_append(trans->response_body, os);
-    octstr_destroy(os);
-    trans->state = reading_chunked_body_crlf;
-    return 0;
-}
-
-
-static int read_chunked_body_crlf(HTTPServer *trans)
-{
-    Octstr *os;
-
-    os = conn_read_line(trans->conn);
-    if (os == NULL) {
-	if (conn_read_error(trans->conn) || conn_eof(trans->conn))
-	    return -1;
-	return 1;
-    }
-    octstr_destroy(os);
-    trans->state = reading_chunked_body_len;
-    return 0;
-}
-
-
-static int read_chunked_body_trailer(HTTPServer *trans)
-{
-    int ret;
-
-    ret = read_some_headers(trans->conn, trans->response_headers);
-    if (ret == -1)
-	return -1;
-    if (ret == 0)
-    	trans->state = transaction_done;
-    return 0;
-}
-
-
-static int read_body_until_eof(HTTPServer *trans)
-{
-    Octstr *os;
-
-    while ((os = conn_read_everything(trans->conn)) != NULL) {
-	octstr_append(trans->response_body, os);
-	octstr_destroy(os);
-    }
-    if (conn_read_error(trans->conn))
-	return -1;
-    if (conn_eof(trans->conn))
-	trans->state = transaction_done;
-    return 0;
-}
-
-
-static int read_body_with_length(HTTPServer *trans)
-{
-    Octstr *os;
-
-    os = conn_read_fixed(trans->conn, trans->body_len);
-    if (os == NULL)
-	return 0;
-    octstr_destroy(trans->response_body);
-    trans->response_body = os;
-    trans->state = transaction_done;
-    return 0;
-}
-
-
-/*
- * Return the proper state for reading the body of an HTTP response.
- */
-static int deduce_body_state(HTTPServer *trans)
-{
-    Octstr *h;
-
-    /* RFC2616 says that responses with these status codes must not
-     * have a message body. */
-    if (trans->status == HTTP_NO_CONTENT ||
-        trans->status == HTTP_NOT_MODIFIED ||
-        (trans->status >= 100 && trans->status <= 199)) {
-        return transaction_done;
-    }
-
-    h = http_header_find_first(trans->response_headers, "Transfer-Encoding");
-    if (h != NULL) {
-        octstr_strip_blanks(h);
-        if (octstr_str_compare(h, "chunked") != 0) {
-            error(0, "HTTP: Unknown Transfer-Encoding <%s>",
-	    	  octstr_get_cstr(h));
-            goto error;
-        }
-        octstr_destroy(h);
-	return reading_chunked_body_len;
-    } else {
-        h = http_header_find_first(trans->response_headers, "Content-Length");
-        if (h == NULL) {
-	    /*
-	     * No length information available, so the server will signal
-             * the end of data by closing the socket.
-             */
-    	    return reading_body_until_eof;
-        } else {
-            if (octstr_parse_long(&trans->body_len, h, 0, 10) == -1) {
-                error(0, "HTTP: Content-Length header wrong: <%s>", 
-		      octstr_get_cstr(h));
-                goto error;
-            }
-            octstr_destroy(h);
-	    return reading_body_with_length;
-        }
-    }
-
-    panic(0, "This location in code must never be reached.");
-
-error:
-    octstr_destroy(h);
-    return -1;
+    if (trans->response == NULL)
+        return NULL;
+    return http_header_find_first(trans->response->headers, "Location");
 }
 
 
 /*
  * Read and parse the status response line from an HTTP server.
  * Fill in trans->persistent and trans->status with the findings.
- * Return -1 for error, 0 for status line not yet available, > 0 for OK.
+ * Return -1 for error, 1 for status line not yet available, 0 for OK.
  */
 static int client_read_status(HTTPServer *trans)
 {
@@ -630,7 +759,7 @@ static int client_read_status(HTTPServer *trans)
     if (line == NULL) {
 	if (conn_eof(trans->conn) || conn_read_error(trans->conn))
 	    return -1;
-    	return 0;
+    	return 1;
     }
 
     debug("gwlib.http", 0, "HTTP: Status line: <%s>", octstr_get_cstr(line));
@@ -656,7 +785,7 @@ static int client_read_status(HTTPServer *trans)
         goto error;
 
     octstr_destroy(line);
-    return 1;
+    return 0;
 
 error:
     error(0, "HTTP: Malformed status line from HTTP server: <%s>",
@@ -665,6 +794,15 @@ error:
     return -1;
 }
 
+static int response_expectation(int status)
+{
+    if (status == HTTP_NO_CONTENT ||
+        status == HTTP_NOT_MODIFIED ||
+        http_status_class(status) == HTTP_STATUS_PROVISIONAL)
+	return expect_no_body;
+    else
+        return expect_body;
+}
 
 static void handle_transaction(Connection *conn, void *data)
 {
@@ -700,54 +838,24 @@ static void handle_transaction(Connection *conn, void *data)
 		    list_produce(pending_requests, trans);
 		    return;
 		}
-	    } else if (ret > 0) {
-		/* Got the status, go read headers next. */
-		trans->state = reading_headers;
+	    } else if (ret == 0) {
+		/* Got the status, go read headers and body next. */
+		trans->state = reading_entity;
+		trans->response =
+		    entity_create(response_expectation(trans->status));
 	    } else
 		return;
 	    break;
 	    
-	case reading_headers:
-	    ret = read_some_headers(trans->conn, 
-				      trans->response_headers);
-	    if (ret == -1)
+	case reading_entity:
+	    ret = entity_read(trans->response, conn);
+	    if (ret < 0)
 		goto error;
-	    else if (ret == 0) {
-		trans->state = deduce_body_state(trans);
-		if (trans->state == invalid_body_format)
-		    goto error;
-	    }
+	    else if (ret == 0)
+		trans->state = transaction_done;
+	    else
+		return;
 	    break;
-	    
-    	case reading_chunked_body_len:
-	    if (read_chunked_body_len(trans) == -1)
-	    	goto error;
-    	    break;
-
-    	case reading_chunked_body_data:
-	    if (read_chunked_body_data(trans) == -1)
-	    	goto error;
-    	    break;
-
-    	case reading_chunked_body_crlf:
-	    if (read_chunked_body_crlf(trans) == -1)
-	    	goto error;
-    	    break;
-
-    	case reading_chunked_body_trailer:
-	    if (read_chunked_body_trailer(trans) == -1)
-	    	goto error;
-    	    break;
-
-    	case reading_body_until_eof:
-	    if (read_body_until_eof(trans) == -1)
-	    	goto error;
-    	    break;
-
-    	case reading_body_with_length:
-	    if (read_body_with_length(trans) == -1)
-	    	goto error;
-    	    break;
 
 	default:
 	    panic(0, "Internal error: Invalid HTTPServer state.");
@@ -756,7 +864,7 @@ static void handle_transaction(Connection *conn, void *data)
 
     conn_unregister(trans->conn);
 
-    h = http_header_find_first(trans->response_headers, "Connection");
+    h = http_header_find_first(trans->response->headers, "Connection");
     if (h != NULL && octstr_compare(h, octstr_imm("close")) == 0)
 	trans->persistent = 0;
     octstr_destroy(h);
@@ -776,10 +884,10 @@ static void handle_transaction(Connection *conn, void *data)
 	octstr_destroy(trans->url);
 	trans->url = h;
 	trans->state = request_not_sent;
-	http_destroy_headers(trans->response_headers);
-	trans->response_headers = list_create();
-	octstr_destroy(trans->response_body);
-	trans->response_body = octstr_create("");
+	http_destroy_headers(trans->response->headers);
+	trans->response->headers = list_create();
+	octstr_destroy(trans->response->body);
+	trans->response->body = octstr_create("");
 	--trans->follow_remaining;
 	conn_destroy(trans->conn);
 	trans->conn = NULL;
@@ -1077,12 +1185,12 @@ void *http_receive_result(HTTPCaller *caller, int *status, Octstr **final_url,
     
     if (trans->status >= 0) {
 	*final_url = trans->url;
-	*headers = trans->response_headers;
-	*body = trans->response_body;
+	*headers = trans->response->headers;
+	*body = trans->response->body;
 
 	trans->url = NULL;
-	trans->response_headers = NULL;
-	trans->response_body = NULL;
+	trans->response->headers = NULL;
+	trans->response->body = NULL;
     } else {
 	*final_url = NULL;
 	*headers = NULL;
@@ -1143,14 +1251,14 @@ struct HTTPClient {
     Connection *conn;
     Octstr *ip;
     enum {
-       reading_request_line,
-       reading_request_headers,
-       request_is_being_handled
+        reading_request_line,
+        reading_request,
+        request_is_being_handled
     } state;
+    int method;  /* HTTP_METHOD_ value */
     Octstr *url;
     int use_version_1_0;
-    List *headers;
-    Octstr *body;
+    HTTPEntity *request;
 };
 
 
@@ -1167,8 +1275,7 @@ static HTTPClient *client_create(int port, Connection *conn, Octstr *ip)
     p->state = reading_request_line;
     p->url = NULL;
     p->use_version_1_0 = 0;
-    p->headers = http_create_empty_headers();
-    p->body = NULL;
+    p->request = NULL;
     return p;
 }
 
@@ -1188,8 +1295,7 @@ static void client_destroy(void *client)
     conn_destroy(p->conn);
     octstr_destroy(p->ip);
     octstr_destroy(p->url);
-    http_destroy_headers(p->headers);
-    octstr_destroy(p->body);
+    entity_destroy(p->request);
     gw_free(p);
 }
 
@@ -1335,30 +1441,45 @@ static List *closed_server_sockets = NULL;
 static int keep_servers_open = 0;
 
 
-static int parse_request(Octstr **url, int *use_version_1_0, Octstr *line)
+static int parse_request_line(int *method, Octstr **url,
+                              int *use_version_1_0, Octstr *line)
 {
-    long space;
+    List *words;
+    Octstr *version;
+    Octstr *method_str;
     int ret;
 
-    if (octstr_search(line, octstr_imm("GET "), 0) != 0)
-    	return -1;
-
-    octstr_delete(line, 0, 4);
-    space = octstr_search_char(line, ' ', 0);
-    if (space <= 0)
-        return -1;
-
-    *url = octstr_copy(line, 0, space);
-    octstr_delete(line, 0, space + 1);
-
-    ret = parse_http_version(line);
-    if (ret == -1) {
-	octstr_destroy(*url);
-	*url = NULL;
-    	return -1;
+    words = octstr_split_words(line);
+    if (list_len(words) != 3) {
+        list_destroy(words, octstr_destroy_item);
+	return -1;
     }
+
+    method_str = list_get(words, 0);
+    *url = list_get(words, 1);
+    version = list_get(words, 2);
+    list_destroy(words, NULL);
+
+    if (octstr_compare(method_str, octstr_imm("GET")) == 0)
+	*method = HTTP_METHOD_GET;
+    else if (octstr_compare(method_str, octstr_imm("POST")) == 0)
+	*method = HTTP_METHOD_POST;
+    else
+        goto error;
+
+    ret = parse_http_version(version);
+    if (ret < 0)
+        goto error;
     *use_version_1_0 = !ret;
+
     return 0;
+
+error:
+    octstr_destroy(method_str);
+    octstr_destroy(*url);
+    octstr_destroy(version);
+    *url = NULL;
+    return -1;
 }
 
 
@@ -1380,22 +1501,27 @@ static void receive_request(Connection *conn, void *data)
 	case reading_request_line:
     	    line = conn_read_line(conn);
 	    if (line == NULL) {
-		if (conn_eof(conn))
+		if (conn_eof(conn) || conn_read_error(conn))
 		    goto error;
 	    	return;
 	    }
-	    ret = parse_request(&client->url, &client->use_version_1_0, 
-	    	    	    	line);
+	    ret = parse_request_line(&client->method, &client->url,
+                                     &client->use_version_1_0, line);
 	    octstr_destroy(line);
 	    if (ret == -1)
 	    	goto error;
-	    client->state = reading_request_headers;
+   	    /*
+	     * RFC2616 (4.3) says we should read a message body if there
+	     * is one, even on GET requests.
+	     */
+	    client->request = entity_create(expect_body_if_indicated);
+	    client->state = reading_request;
 	    break;
 	    
-	case reading_request_headers:
-	    ret = read_some_headers(conn, client->headers);
-	    if (ret == -1)
-	    	goto error;
+	case reading_request:
+	    ret = entity_read(client->request, conn);
+	    if (ret < 0)
+		goto error;
 	    if (ret == 0) {
 	    	client->state = request_is_being_handled;
 		conn_unregister(conn);
@@ -1628,13 +1754,18 @@ HTTPClient *http_accept_request(int port, Octstr **client_ip, Octstr **url,
 
     *client_ip = octstr_duplicate(client->ip);
     *url = client->url;
-    *headers = client->headers;
-    *body = client->body;
+    *headers = client->request->headers;
+    *body = client->request->body;
     *cgivars = parse_cgivars(client->url);
+
+    if (client->method != HTTP_METHOD_POST) {
+	octstr_destroy(*body);
+	*body = NULL;
+    }
     
     client->url = NULL;
-    client->headers = NULL;
-    client->body = NULL;
+    client->request->headers = NULL;
+    client->request->body = NULL;
     
     return client;
 }
@@ -2344,8 +2475,9 @@ int http_status_class(int code)
 {
     int class;
 
-    class = code - (code % 100);
-    if (class < 100 || class >= 600)
+    if (code < 100 || code >= 600)
         class = HTTP_STATUS_UNKNOWN;
+    else
+        class = code - (code % 100);
     return class;
 }

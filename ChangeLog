@@ -1,5 +1,16 @@
 2001-03-20  Richard Braakman  <dark@wapit.com>
 
+	* gwlib/http.c: Server side now accepts POST requests.  This
+	involved separating the header and body reading code into a
+	section shared by server and client side.
+
+	* Fixed a bug along the way which would cause busy-waiting in the
+	client code when waiting for a result to arrive.
+	Also made return codes consistent for the state functions, so
+	that 0 means completion and 1 means waiting for more input.
+
+2001-03-20  Richard Braakman  <dark@wapit.com>
+
 	* Making release 1.1.3.
 
 2001-03-19  Tuomas Luttinen  <tuo@wapit.com>
