@@ -263,6 +263,7 @@ static int send_message(URLTranslation *trans, Msg *msg)
     List *list;
     Msg *part;
 /*    static char *empty = "<Empty reply from service provider>"; */
+    static char *empty = "";
     
     gw_assert(msg != NULL);
     gw_assert(msg_type(msg) == sms);
@@ -282,9 +283,8 @@ static int send_message(URLTranslation *trans, Msg *msg)
     if (msg->sms.flag_udh == 0 && octstr_len(msg->sms.msgdata) == 0) {
 	if (trans != NULL && urltrans_omit_empty(trans))
             return 0;
-	/* Don't you want to be able to send empty messages ? */
-        /* else
-	    msg->sms.msgdata = octstr_create(empty); */
+        else
+	    msg->sms.msgdata = octstr_create(empty);
     }
 
     if (trans == NULL) {
@@ -683,7 +683,7 @@ static int obey_request(Octstr **result, URLTranslation *trans, Msg *msg)
 	alog("SMS request sender:%s request: '%s' fixed answer: '%s'",
 	     octstr_get_cstr(msg->sms.receiver),
 	     octstr_get_cstr(msg->sms.msgdata),
-	     octstr_get_cstr(pattern));
+	     octstr_get_cstr(pattern)); 
 	break;
     
     case TRANSTYPE_FILE:
@@ -1058,6 +1058,13 @@ static Octstr *smsbox_req_handle(URLTranslation *t, Octstr *client_ip,
 	return octstr_create("Sender missing and no global set, rejected");
     }
     
+    info(0, "/cgi-bin/sendsms sender:<%s:%s> (%s) to:<%s> msg:<%s>",
+	 octstr_get_cstr(urltrans_username(t)),
+	 octstr_get_cstr(newfrom),
+	 octstr_get_cstr(client_ip),
+	 octstr_get_cstr(to),
+	 udh == NULL ? ( text == NULL ? "" : octstr_get_cstr(text) ) : "<< UDH >>");
+    
     /*
      * XXX here we should validate and split the 'to' field
      *   to allow multi-cast. Waiting for octstr_split...
@@ -1066,14 +1073,8 @@ static Octstr *smsbox_req_handle(URLTranslation *t, Octstr *client_ip,
     
     msg->sms.receiver = octstr_duplicate(to);
     msg->sms.sender = octstr_duplicate(newfrom);
-    msg->sms.msgdata = text != NULL ? octstr_duplicate(text) : octstr_create("");
-    
-    info(0, "/cgi-bin/sendsms sender:<%s:%s> (%s) to:<%s> msg:<%s>",
-	 octstr_get_cstr(urltrans_username(t)),
-	 octstr_get_cstr(newfrom),
-	 octstr_get_cstr(client_ip),
-	 octstr_get_cstr(to),
-	 udh == NULL ? octstr_get_cstr(msg->sms.msgdata) : "<< UDH >>");
+    msg->sms.msgdata = text ? octstr_duplicate(text) : octstr_create("");
+    msg->sms.udhdata = udh ? octstr_duplicate(udh) : octstr_create("");
     
     if ( flag_flash < 0 || flag_flash > 1 ) {
 	returnerror = octstr_create("Flash field misformed, rejected");
@@ -1086,7 +1087,7 @@ static Octstr *smsbox_req_handle(URLTranslation *t, Octstr *client_ip,
 	goto fielderror;
     }
     msg->sms.flag_mwi = flag_mwi;
-    if ( mwimessages < 0 || mwimessages > 100 ) {
+    if ( mwimessages < 0 || mwimessages > 255 ) {
 	returnerror = octstr_create("MWIMessages field misformed, rejected");
 	goto fielderror;
     }
@@ -1134,18 +1135,16 @@ static Octstr *smsbox_req_handle(URLTranslation *t, Octstr *client_ip,
     msg->sms.time = time(NULL);
     
     ret = send_message(t, msg);
+    msg_destroy(msg);
     
-    if (ret == -1) {
-        msg_destroy(msg);
+    if (ret == -1)
 	goto error;
-    }
     
     alog("send-SMS request added - sender:%s:%s %s target:%s request: '%s'",
 	 octstr_get_cstr(urltrans_username(t)),
          octstr_get_cstr(newfrom), octstr_get_cstr(client_ip),
 	 octstr_get_cstr(to),
-	 udh == NULL ? octstr_get_cstr(msg->sms.msgdata) : "<< UDH >>");
-    msg_destroy(msg);
+	 udh == NULL ? ( text == NULL ? "" : octstr_get_cstr(text) ) : "<< UDH >>");
 
     octstr_destroy(newfrom);
     *status = 202;

@@ -292,7 +292,6 @@ static struct emimsg *msg_to_emimsg(Msg *msg, int trn)
     emimsg->fields[E50_XSER] = octstr_create("");
 
     /* XSer2: DCS */
-
     if(msg->sms.flag_flash || msg->sms.flag_mwi || msg->sms.flag_unicode) {
    	str = octstr_create("");
 	octstr_append_char(str, 2); 
@@ -301,54 +300,49 @@ static struct emimsg *msg_to_emimsg(Msg *msg, int trn)
    	if (! msg->sms.flag_mwi) {
 	    if (msg->sms.flag_flash) {
 		if (msg->sms.flag_unicode) 
-		    octstr_append_char(str, 0x18); /* Flash && Unicode */
+		    octstr_append_char(str, 0x18);
 		else
-		    octstr_append_char(str, 0x10); /* Flash */
+		    octstr_append_char(str, 0x10);
 	    } else if (msg->sms.flag_unicode)
-		octstr_append_char(str, 0x08); /* Unicode */
+		octstr_append_char(str, 0x08);
 	} 
 
 	else { /* MWI */
 	    mwi = msg->sms.flag_mwi - 1;
-
-	    if ( mwi & 0x04 ) {
-	        /* MWI Inactive, no text needed */
+	    if ( mwi & 0x04 ) {			/* MWI Inactive, no text needed */
 		mwi = mwi & 0x03 | 0xC0;
 		octstr_destroy(msg->sms.msgdata);
 		msg->sms.msgdata = octstr_create("");
 	    } 
-
-	    else {
-	        /* MWI Active, we could set the number of messages */
-		mwi = mwi & 0x03 | 0x08; 	/* & 0011 | 1000 */
-
+	    else {				/* MWI Active, we could set the number of messages */
+		mwi = mwi & 0x03 | 0x08;
 	        if (msg->sms.flag_unicode)	/* MWI Store and unicode */
-		    mwi = mwi | 0xE0;		/* 11101111 */
+		    mwi |= 0xE0;
 	        else {
 		    if (octstr_len(msg->sms.msgdata) == 0)	/* MWI Discard */
-		        mwi = mwi | 0xC0;	/* 11000000 */
+		        mwi |= 0xC0;
 		    else					/* MWI Store (have text) */
-		        mwi = mwi | 0xD0;	/* 11010000 */
-		}
-		if (msg->sms.mwimessages) {
-		    str = octstr_create("");
-		    octstr_append_char(str, 1);
-		    octstr_append_char(str, 2);
-		    octstr_append_char(str, mwi & 0x03 | (octstr_len(msg->sms.msgdata) == 0 ? 0x00 : 0x80));
-		    octstr_append_char(str, msg->sms.mwimessages);
-		    octstr_binary_to_hex(str,1);
-		    octstr_append(msg->sms.udhdata, str);
-		    octstr_destroy(str);
-		    msg->sms.flag_udh = 1;
+		        mwi |= 0xD0;
 		}
 	    }
-	    
-
 	    octstr_append_char(str, mwi);
 	}
 	octstr_binary_to_hex(str, 1);
 	octstr_append(emimsg->fields[E50_XSER],str);
-        octstr_destroy(str);
+	octstr_destroy(str);
+
+	if ( !((msg->sms.flag_mwi - 1) & 0x04) && msg->sms.mwimessages && ! msg->sms.flag_udh) {
+	    str = octstr_create("");
+	    octstr_append_char(str, 4);
+	    octstr_append_char(str, 1);
+	    octstr_append_char(str, 2);
+	    octstr_append_char(str, mwi & 0x03 | (octstr_len(msg->sms.msgdata) == 0 ? 0x00 : 0x80));
+	    octstr_append_char(str, msg->sms.mwimessages);
+	    msg->sms.udhdata = octstr_create("");
+	    octstr_append(msg->sms.udhdata, str);
+	    octstr_destroy(str);
+	    msg->sms.flag_udh = 1;
+	}
     }
 
     /* XSer1: UDH */

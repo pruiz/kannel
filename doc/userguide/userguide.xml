@@ -3494,7 +3494,7 @@ the Kannel configuration, or 'Authorization failed' is returned.
    </entry></row>
 
    <row><entry><literal>mwi</literal></entry>
-   <entry valign=bottom>DAVI
+   <entry valign=bottom>
          Optional. If given, the message will be encoded as a Message Waiting
 	 Indicator. The accepted values are 1,2,3 and 4 for activating the
 	 voice, fax, email and other indicator, or 5,6,7,8 for deactivating,
@@ -3503,7 +3503,7 @@ the Kannel configuration, or 'Authorization failed' is returned.
    </entry></row>
 
    <row><entry><literal>mwimessages</literal></entry>
-   <entry valign=bottom>DAVI
+   <entry valign=bottom>
          Optional. If given, the message will be encoded as a Message Waiting
 	 Indicator. The accepted values are 1,2,3 and 4 for activating the
 	 voice, fax, email and other indicator, or 5,6,7,8 for deactivating,
@@ -3512,7 +3512,7 @@ the Kannel configuration, or 'Authorization failed' is returned.
    </entry></row>
 
    <row><entry><literal>unicode</literal></entry>
-   <entry valign=bottom>DAVI
+   <entry valign=bottom>
          Optional. If given, the message will be encoded using the Unicode
 	 text given in <literal>text</literal> field.
 	 ex: text=0041007200610062002006306350636.

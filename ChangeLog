@@ -1,3 +1,8 @@
+2001-07-19 Bruno Rodrigues <bruno.rodrigues@litux.org>
+
+	* userguide.xml: removed some extra characters.
+	* smsbox.c, smsc_emi2.c: corrected some bugs.
+
 2001-07-19 Jörg Pommnitz <jpo@condat.de>
 	* add User-Agent header to HTTP requests from smsbox.
 
