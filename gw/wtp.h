@@ -5,12 +5,17 @@
 #ifndef WTP_H
 #define WTP_H
 
+typedef struct WTPTimer WTPTimer;
+typedef struct WTPMachine WTPMachine;
+typedef struct WTPEvent WTPEvent;
+
 #include <errno.h>
 #include <netinet/in.h>
 #include <stdlib.h>
 
 #include "gwlib.h"
 #include "msg.h" 
+#include "wsp.h" 
 
 #define NUMBER_OF_ABORT_REASONS 8
 /*
@@ -32,19 +37,7 @@ enum states {
     #include "wtp_state-decl.h"
 };
 
-enum wsp_event {
-      #define WSP_EVENT(name, field) name,
-      #include "wsp_events-decl.h"
-};
-
 typedef enum states states;
-typedef enum wsp_event wsp_event;
-
-typedef struct WTPTimer WTPTimer;
-typedef struct WTPMachine WTPMachine;
-typedef struct WTPEvent WTPEvent;
-typedef struct WSPEvent WSPEvent;
-
 
 struct WTPTimer {
 	struct WTPTimer *next;

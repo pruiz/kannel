@@ -11,16 +11,6 @@
 #include "wtp_send.h"
 #include "wtp_timer.h"
 
-struct WSPEvent {
-       enum wsp_event name;
-
-       #define INTEGER(name) long name
-       #define OCTSTR(name) Octstr *name
-       #define MACHINE(name) WTPMachine *name
-       #define WSP_EVENT(name, field) struct name field name;
-       #include "wsp_events-decl.h"
-};
-
 static WTPMachine *list = NULL;
 
 /*****************************************************************************
@@ -31,8 +21,6 @@ static WTPMachine *list = NULL;
  */
 
 static char *name_event(int name);
-
-static char *name_wsp_event(int name);
 
 static char *name_state(int name);
 
@@ -60,7 +48,7 @@ WTPMachine *name_machine(WTPMachine *machine, Octstr *source_address,
            long source_port, Octstr *destination_address, 
            long destination_port, long tid);
 
-WSPEvent *wsp_event_create(enum wsp_event type);
+WSPEvent *wsp_event_create(WSPEventType type);
 
 void wsp_event_destroy(WSPEvent *event);
 
@@ -70,7 +58,7 @@ void wsp_event_dump(WSPEvent *event);
  *Packs a wsp event. Fetches flags and user data from a wtp event. Address 
  *five-tuple and tid are fields of the wtp machine.
  */
-WSPEvent *pack_wsp_event(wsp_event wsp_name, WTPEvent *wtp_event, 
+WSPEvent *pack_wsp_event(WSPEventType wsp_name, WTPEvent *wtp_event, 
          WTPMachine *machine);
 
 int wtp_tid_is_valid(WTPEvent *event);
@@ -519,7 +507,7 @@ WSPEvent *wtp_handle_event(WTPMachine *machine, WTPEvent *event){
      
      states current_state=machine->state;
      long current_event=event->type;
-     enum wsp_event current_primitive;
+     WSPEventType current_primitive;
      WSPEvent *wsp_event=NULL;
      WTPTimer *timer=NULL;
 
@@ -567,16 +555,6 @@ static char *name_event(int s){
        }
  }
 
-
-static char *name_wsp_event(int s){
-
-       switch (s){
-              #define WSP_EVENT(type, field) case type: return #type;
-              #include "wsp_events-decl.h"
-              default:
-                      return "unknown event";
-       }
- }
 
 static char *name_state(int s){
 
@@ -719,79 +697,11 @@ WTPMachine *name_machine(WTPMachine *machine, Octstr *source_address,
 } 
 
 
-WSPEvent *wsp_event_create(enum wsp_event type) {
-	WSPEvent *event;
-	
-	event = malloc(sizeof(WSPEvent));
-	if (event == NULL)
-		goto error;
-
-	event->name = type;
-	
-	#define INTEGER(name) p->name=0
-	#define OCTSTR(name) p->name=octstr_create_empty();\
-                             if (p->name == NULL)\
-                                goto error
-        #define MACHINE(name) p->name=wtp_machine_create();\
-                             if (p->name == NULL)\
-                                goto error
-	#define WSP_EVENT(type, field) {struct type *p = &event->type; field } 
-	#include "wsp_events-decl.h"
-        return event;
-/*
- *TBD: Send Abort(CAPTEMPEXCEEDED)
- */
-error:
-        #define INTEGER(name) p->name=0
-        #define OCTSTR(name) if (p->name != NULL)\
-                                octstr_destroy(p->name)
-        #define MACHINE(name) if (p->name != NULL)\
-                                 wtp_machine_destroy(p->name)
-        #define WSP_EVENT(type, field) { struct type *p = &event->type; field }
-        #include "wsp_events-decl.h"
-        free(event);
-	error(errno, "Out of memory.");
-	return NULL;
-}
-
-
-void wsp_event_destroy(WSPEvent *event){
-
-/*
- *Note: We must use p everywhere, including events having only integer fields,
- *otherwise we get a compiler warning.
- */
-        #define INTEGER(name) p->name=0
-        #define OCTSTR(name) octstr_destroy(p->name)
-        #define MACHINE(name) wtp_machine_destroy(p->name)
-        #define WSP_EVENT(type, field)\
-                { struct type *p = &event->type; field}
-        #include "wsp_events-decl.h" 
-
-       free(event);
-}
-
-
-void wsp_event_dump(WSPEvent *event){
-
-        debug(0, "WSP event %p:", (void *) event);
-        debug(0, "The TYPE of the event = %s", name_wsp_event(event->name));
-        #define INTEGER(name) debug(0, "Int %s.%s,%ld:", t, #name, p->name)
-        #define OCTSTR(name) debug(0, "Octstr field %s.%s:", t, #name);\
-                             octstr_dump(p->name)
-        #define MACHINE(name) debug(0, "Machine %p.%s", (void *) p->name, t);\
-                              wtp_machine_dump(p->name)
-        #define WSP_EVENT(type, field) \
-                { char *t =#type; struct type *p=&event->type; field }
-        #include "wsp_events-decl.h"
-}
-
-
 /*
  *Packs a wsp event. Fetches flags and user data from a wtp event. Address 
  *five-tuple and tid are fields of the wtp machine.
  */
-WSPEvent *pack_wsp_event(wsp_event wsp_name, WTPEvent *wtp_event, 
+WSPEvent *pack_wsp_event(WSPEventType wsp_name, WTPEvent *wtp_event, 
          WTPMachine *machine){
 
          WSPEvent *event=wsp_event_create(wsp_name);

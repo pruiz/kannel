@@ -51,9 +51,3 @@ WSP_EVENT(TRAbortRequire,
 #undef OCTSTR
 #undef INTEGER
 #undef MACHINE
-
-
-
-
-
-

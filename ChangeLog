@@ -1,3 +1,15 @@
+Mon Nov 29 17:17:44 1999  Lars Wirzenius  <liw@wapit.com>
+
+	* gw/bearerbox.conf: Replaced interface-name's IP number with *,
+	so that it works on other machines as well.
+	
+	* gw/wsp.c, gw/wsp.h, gw/wsp_machine-decl.h, gw/wsp_state-decl.h:
+	Wrote.
+	
+	* gw/wtp.c, gw/wtp.h: Moved and renamed things for wsp stuff.
+	
+	* 
+
 1999-11-29 Aarno Syvänen <syvanen@wapit.cm>
 
 	*header files reorganized so that (most) types are defined in wtp.h
