@@ -127,6 +127,9 @@
 /* Define if you have the gmtime_r function.  */
 #undef HAVE_GMTIME_R
 
+/* define if you have the backtrace function. */
+#undef HAVE_BACKTRACE
+
 /* Define if you have the <fcntl.h> header file.  */
 #undef HAVE_FCNTL_H
 
@@ -177,6 +180,9 @@
 
 /* Define if you have <iconv.h>.  */
 #undef HAVE_ICONV_H
+
+/* Define if you have <execinfo.h>. */
+#undef HAVE_EXECINFO_H
 
 /* Define if you have and want to use the ssl library (-lssl) */
 #undef HAVE_LIBSSL

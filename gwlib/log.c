@@ -58,6 +58,7 @@
  * log.c - implement logging functions
  */
 
+#include "gwlib.h"
 #include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -65,6 +66,10 @@
 #include <time.h>
 #include <stdarg.h>
 #include <string.h>
+
+#ifdef HAVE_EXECINFO_H
+#include <execinfo.h>
+#endif
 
 #if HAVE_SYSLOG_H
 #include <syslog.h>
@@ -88,8 +93,6 @@ static void syslog(int translog, const char *buf)
 }
 
 #endif
-
-#include "gwlib.h"
 
 
 /*
@@ -509,6 +512,11 @@ static void kannel_syslog(char *format, va_list args, int level)
 	} while (0)
 
 
+static inline void gw_panic_output(int err, const char *fmt, ...)
+{
+    FUNCTION_GUTS(GW_PANIC, "");
+}
+
 void gw_panic(int err, const char *fmt, ...)
 {
     /* 
@@ -516,9 +524,28 @@ void gw_panic(int err, const char *fmt, ...)
      * this will be always within the main core log.
      */
     FUNCTION_GUTS(GW_PANIC, "");
+
+#ifdef HAVE_BACKTRACE
+    {
+        void *stack_frames[50];
+        size_t size, i;
+        char **strings;
+
+        size = backtrace(stack_frames, 50);
+        strings = backtrace_symbols(stack_frames, size);
+        gw_claim_area(strings);
+
+        for (i = 0; i < size; i++)
+            gw_panic_output(0, "%s", strings[i]);
+
+        gw_free(strings);
+    }
+#endif
+
 #ifdef SEGFAULT_PANIC
     *((char*)0) = 0;
 #endif
+
     exit(EXIT_FAILURE);
 }
 
