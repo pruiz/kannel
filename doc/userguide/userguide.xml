@@ -458,7 +458,7 @@
             <literal>debug</literal>.
 	    </para></listitem>
 
-	<listitem><para><literal>--enable-docs</literal>
+	<listitem><para><literal>--enable-docs (default)</literal>
 
 	    Build documentation, b.e., converting the User Guide and
 	    the Architecture Guide from the DocBook markup language to
@@ -467,6 +467,16 @@
 	<listitem><para><literal>--disable-docs</literal>
 
 	    Don't build documentation.</para></listitem>
+
+	<listitem><para><literal>--enable-drafts</literal>
+
+	    When building documentation, include the sections marked as
+	    <literal>draft</literal>.</para></listitem>
+
+	<listitem><para><literal>--disable-drafts (default)</literal>
+
+	    When building documentation, don't include the sections marked 
+	    as <literal>draft</literal>.</para></listitem>
 
 	<listitem><para><literal>--enable-debug</literal>
 

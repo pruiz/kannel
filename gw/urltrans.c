@@ -93,7 +93,8 @@ static URLTranslation *find_translation(URLTranslationList *trans,
 					List *words, Octstr *smsc,
 					Octstr *sender, int *reject);
 static URLTranslation *find_default_translation(URLTranslationList *trans,
-						Octstr *smsc);
+						Octstr *smsc, Octstr *sender,
+						int *reject);
 static URLTranslation *find_black_list_translation(URLTranslationList *trans,
 						Octstr *smsc);
 static int does_prefix_match(Octstr *prefix, Octstr *number);
@@ -217,8 +218,11 @@ URLTranslation *urltrans_find(URLTranslationList *trans, Octstr *text,
     list_destroy(words, octstr_destroy_item);
     if (reject)
 	t = find_black_list_translation(trans, smsc);
-    if (t == NULL)
-	t = find_default_translation(trans, smsc);
+    if (t == NULL) {
+	t = find_default_translation(trans, smsc, sender, &reject);
+	if (reject)
+	    t = find_black_list_translation(trans, smsc);
+    }
     return t;
 }
 
@@ -1017,17 +1021,13 @@ static URLTranslation *find_translation(URLTranslationList *trans,
 	
 	if (t->white_list &&
 	    numhash_find_number(t->white_list, sender) < 1) {
-	    info(0, "Number <%s> is not in white-list, message rejected",
-	         octstr_get_cstr(sender));
 	    t = NULL; *reject = 1;
-	    break;
+	    continue;
 	}   
 	if (t->black_list &&
 	    numhash_find_number(t->black_list, sender) == 1) {
-	    info(0, "Number <%s> is in black-list, message rejected",
-	         octstr_get_cstr(sender));
 	    t = NULL; *reject = 1;
-	    break;
+	    continue;
 	}   
 
 	/* Have allowed and denied */
@@ -1048,17 +1048,24 @@ static URLTranslation *find_translation(URLTranslationList *trans,
 	t = NULL;
     }
 
+    /* Only return reject if there's only blacklisted smsc's */
+    if(t != NULL)
+	*reject = 0;
+
     octstr_destroy(keyword);    
     return t;
 }
 
 
 static URLTranslation *find_default_translation(URLTranslationList *trans,
-						Octstr *smsc)
+						Octstr *smsc, Octstr *sender,
+						int *reject)
 {
     URLTranslation *t;
     int i;
     List *list;
+
+    *reject = 0;
 
     list = dict_get(trans->dict, octstr_imm("default"));
     t = NULL;
@@ -1070,8 +1077,43 @@ static URLTranslation *find_default_translation(URLTranslationList *trans,
 		continue;
 	    }
 	}
+
+	/* Have allowed */
+	if (t->allowed_prefix && ! t->denied_prefix &&
+		       	(does_prefix_match(t->allowed_prefix, sender) != 1)) {
+	    t = NULL;
+	    continue;
+	}
+
+	/* Have denied */
+	if (t->denied_prefix && ! t->allowed_prefix &&
+		       	(does_prefix_match(t->denied_prefix, sender) == 1)) {
+	    t = NULL;
+	    continue;
+	}
+
+	if (t->white_list && numhash_find_number(t->white_list, sender) < 1) {
+	    t = NULL; *reject = 1;
+	    continue;
+	}
+	if (t->black_list && numhash_find_number(t->black_list, sender) == 1) {
+	    t = NULL; *reject = 1;
+	    continue;
+										        }
+
+	/* Have allowed and denied */
+	if (t->denied_prefix && t->allowed_prefix &&
+		       	(does_prefix_match(t->allowed_prefix, sender) != 1) &&
+		       	(does_prefix_match(t->denied_prefix, sender) == 1) ) {
+	    t = NULL;
+	    continue;
+	}
 	break;
     }
+
+    /* Only return reject if there's only blacklisted smsc's */
+    if(t != NULL)
+	*reject = 0;
     return t;
 }
 

@@ -1,3 +1,8 @@
+2002-04-10  Bruno Rodrigues  <bruno.rodrigues@litux.org>
+    * gw/urltrans.c: Added white/black list and allowed/denied prefix 
+      implementation to default service.
+    * doc/userguide/userguide.xml: added --enable-drafts information
+
 2002-04-09  Bruno Rodrigues  <bruno.rodrigues@litux.org>
     * doc/userguide/userguide.xml: fixed a link reference that fails with
       --disable-drafts
