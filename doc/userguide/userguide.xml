@@ -446,9 +446,10 @@
 	wapbox configurations. Bearerbox part has one 'core' group
 	and any used SMS center groups, while wapbox part has only
 	one wapbox group. In smsbox part there is one smsbox group and
-	then number of sms-service and sendsms-user groups.
-	Details of all those groups are in file 
-	<filename>newconf.txt.</filename></para>
+	then number of sms-service and sendsms-user groups.</para>
+
+	<para>Details of all those groups are in file 
+	<filename>newconf.txt</filename> in userguide directory.</para>
 
 <programlisting>
 </programlisting>
@@ -470,7 +471,7 @@
 	to start (xterm or screen will do fine). To start the bearer
 	box, give the following command:
 
-<screen><userinput>./bearerbox -v 1 gw.conf</userinput></screen>
+<screen><userinput>./bearerbox -v 1 my_conf.conf</userinput></screen>
 
 	The <option>-v 1</option> sets the logging level to
 	<literal>INFO</literal>. This way, you won't see a large amount of
@@ -478,23 +479,25 @@
 	
 	<para>After the bearer box, you can start the WAP box:
 	
-<screen><userinput>./wapbox -v 1 gw.wapconf</userinput></screen>
+<screen><userinput>./wapbox -v 1 my_conf.conf</userinput></screen>
 
 	or the SMS box:
 
-<screen><userinput>./smsbox -v 1 gw.smsconf</userinput></screen>
+<screen><userinput>./smsbox -v 1 my_conf.conf</userinput></screen>
 
 	or both, of course. The order does not matter, except that you
 	need to start the bearer box before the other boxes. Without
 	the bearer box, the other boxes won't even start.</para>
 	
-	<para>If you want to use the old WML compiler, which is run as
-	an external program called test_wml, you need to set the
-	<envar>TEST_WML</envar> environment variable:
-	
-<screen><userinput>export TEST_WML=<replaceable>../test/test_wml</replaceable></userinput></screen>
-
-	(the correct value depends on where the program actually is).</para>
+	<para>The 'gw.conf' above is a name of the configuration
+	file. For fast startup, Kannel is supplied with two trivial
+	simple configuration files, <literal>smskannel.conf</literal>
+	and <literal>wapkannel.conf</literal>. The first one is for
+	testing out the SMS side, and it requires, in addition to
+	running bearerbox and smsbox, to start first the
+	<literal>fakesmsc</literal> program from utils
+	directory. The second one is for WAP use, and it requires a
+	running bearerbox and wapbox.</para>
 	
 </sect1>
 
@@ -516,6 +519,11 @@ text=text+of+message+using+URL+encoding+as+necessary
 	you make a HTTP GET request. This means that all the information
 	is stuffed into the URL. If you want to use this often via a
 	browser, you probably want to make an HTML form for this.</para>
+
+	<para>Username and password fields are spesified in
+	configuration file, as <literal>sendsms-user</literal> groups.
+	See configuration file syntax for more details.</para>
+
 	
 </sect1>
 
@@ -545,6 +553,10 @@ from=123&amp;to=456&amp;udh=%3a%2f%04&amp;text=%20%00%60%7a%43
 	defined in configuration file. Details can be found from file
 	<filename>newbb.txt</filename></para>
 
+	<para>Unlike in old version of the bearerbox, in Kannel
+	version 0.9 and onward only password is used for adminstration
+	authentication, so there is no more an username and password
+	combination.</para>
 
 </sect1>
 
@@ -561,9 +573,18 @@ from=123&amp;to=456&amp;udh=%3a%2f%04&amp;text=%20%00%60%7a%43
 	devel@kannel.org.  To subscribe, send mail to <ulink
 	url="mailto:devel-subscribe@kannel.org">devel-subscribe@kannel.org</ulink>.
 	This is currently the best location for asking help and reporting
-	bugs.</para>
+	bugs. Please include configuration file and version number.</para>
 	
 </chapter>
+
+<appendix>
+<title>Using the fake WAP sender</title>
+
+	<para>This appendix explains how to use the fake WAP sender
+	to test the gateway.</para>
+
+</appendix>
+
 
 <appendix>
 <title>Using the fake SMS center</title>

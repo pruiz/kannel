@@ -1,3 +1,9 @@
+2000-06-27  Kalle Marjola  <rpr@wapit.com>
+
+	* doc/userguide/userguide.xml: did some updating, still needs to
+	integrate newconf.txt and newbb.txt into it, but that some other
+	day
+
 2000-06-27  Paul Keogh <paul.keogh@anam.ie>
 
 	* gw/cookies.c: Added a check for valid WSP session machine to prevent
