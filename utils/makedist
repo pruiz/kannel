@@ -12,20 +12,22 @@ base=gateway-$version
 
 rm -rf $base $base.tar.gz README-$version design-$version design-$version.ps
 cvs -Q export -r $tag -d $base gateway
-if fgrep "$version" $base/VERSION
+if fgrep "$version" $base/VERSION >/dev/null
 then
 	:
 else
 	echo "Oops, VERSION does not match."
 	exit 1
 fi
+
 tar -c -z -f $base.tar.gz $base
 zip -9qr $base.zip $base/*
+
+(cd $docs && ./configure --enable-docs && make docs)
 
 cp -a $base/doc/arch arch-$version
 tar -c -z -f arch-$version.tar.gz arch-$version/*
 zip -9qr arch-$version.zip arch-$version/*
-cp $base/doc/design.ps design-$version.ps
 cp $base/NEWS NEWS-$version
 cp $base/README README-$version
 cp $base/ChangeLog ChangeLog-$version
