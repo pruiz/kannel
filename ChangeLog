@@ -1,3 +1,9 @@
+Mon May 15 15:59:32 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* gw/wsp_http.c: Do not require resp_headers to be non-NULL.
+	Instead, only destroy it if it is non-NULL. Fixes bug #69
+	by Kalle Marjola.
+
 Mon May 15 15:06:16 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* gw/wsp_http.c: Undid broken changes to how HTTP headers are

@@ -351,10 +351,11 @@ void *wsp_http_thread(void *arg) {
 		octstr_destroy(os);
 	list_destroy(req_headers);
 
-	gw_assert(resp_headers);
-	while ((os = list_extract_first(resp_headers)) != NULL)
-		octstr_destroy(os);
-	list_destroy(resp_headers);
+	if (resp_headers != NULL) {
+		while ((os = list_extract_first(resp_headers)) != NULL)
+			octstr_destroy(os);
+		list_destroy(resp_headers);
+	}
 		
 	if (body == NULL)
 		body_size = 0;

@@ -137,6 +137,9 @@ List **reply_headers, Octstr **reply_body)  {
 	int status;
 	HTTPSocket *p;
 
+	*reply_headers = NULL;
+	*reply_body = NULL;
+
 	p = send_request(url, request_headers);
 	if (p == NULL)
 		goto error;
