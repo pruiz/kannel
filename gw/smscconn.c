@@ -63,6 +63,7 @@ SMSCConn *smscconn_create(CfgGroup *grp, int start_as_stopped)
     if (smsc_type == NULL) {
 	error(0, "Required field 'smsc' missing for smsc group.");
 	smscconn_destroy(conn);
+	octstr_destroy(smsc_type);
 	return NULL;
     }
 
@@ -70,6 +71,8 @@ SMSCConn *smscconn_create(CfgGroup *grp, int start_as_stopped)
 	ret = smsc_fake2_create(conn, grp);
     else
 	ret = smsc_wrapper_create(conn, grp);
+
+    octstr_destroy(smsc_type);
     if (ret == -1) {
 	smscconn_destroy(conn);
 	return NULL;

@@ -317,6 +317,7 @@ int smsc2_start(Cfg *cfg)
         
         list_append(smsc_list, conn);
     }
+    list_destroy(groups, NULL);
     if (gwthread_create(sms_router, NULL) == -1)
 	panic(0, "Failed to start a new thread for SMS routing");
     
@@ -390,7 +391,7 @@ void smsc2_cleanup(void)
 	smscconn_destroy(conn);
     }
     list_destroy(smsc_list, NULL);
-    
+    octstr_destroy(unified_prefix);    
     numhash_destroy(white_list);
     numhash_destroy(black_list);
 }
