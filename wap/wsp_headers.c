@@ -122,7 +122,8 @@ int wsp_field_value(ParseContext *context, int *well_known_value)
     } else if (val > 127) {
         *well_known_value = val - 128;
         return WSP_FIELD_VALUE_ENCODED;
-    } else if (val == WSP_QUOTE) {  /* 127 */
+    } else if (val == WSP_QUOTE || 
+	       val == '"') {  /* 127 or the ordinary quote. */
         *well_known_value = -1;
         /* We already consumed the Quote */
         return WSP_FIELD_VALUE_NUL_STRING;
@@ -285,6 +286,7 @@ static Octstr *unpack_q_value(ParseContext *context)
     return convert_q_value(c);
 }
 
+
 /* Version-value is defined in 8.4.2.3. Encoding-Version uses coding
  * defined in this chapter, see 8.4.2.70.  */
 Octstr *wsp_unpack_version_value(long value)
@@ -317,6 +319,7 @@ static Octstr *unpack_encoding_version(ParseContext *context)
 
     return wsp_unpack_version_value(((long) ch) - 128);
 }
+
 
 /* Called with the parse limit set to the end of the parameter data,
  * and decoded containing the unpacked header line so far.
@@ -508,7 +511,7 @@ Octstr *wsp_unpack_date_value(ParseContext *context)
 }
 
 /* Accept-general-form is defined in 8.4.2.7 */
-static Octstr *unpack_accept_general_form(ParseContext *context)
+Octstr *wsp_unpack_accept_general_form(ParseContext *context)
 {
     Octstr *decoded = NULL;
     int ret;
@@ -552,7 +555,7 @@ static Octstr *unpack_accept_general_form(ParseContext *context)
 }
 
 /* Accept-charset-general-form is defined in 8.4.2.8 */
-static Octstr *unpack_accept_charset_general_form(ParseContext *context)
+Octstr *wsp_unpack_accept_charset_general_form(ParseContext *context)
 {
     Octstr *decoded = NULL;
     int ret;
@@ -1171,11 +1174,11 @@ void wsp_unpack_well_known_field(List *unpacked, int field_type,
             /* Content-general-form and Accept-general-form
              * are defined separately in WSP, but their
              * definitions are equivalent. */
-            decoded = unpack_accept_general_form(context);
+            decoded = wsp_unpack_accept_general_form(context);
             break;
 
         case WSP_HEADER_ACCEPT_CHARSET:
-            decoded = unpack_accept_charset_general_form(context);
+            decoded = wsp_unpack_accept_charset_general_form(context);
             break;
 
         case WSP_HEADER_ACCEPT_LANGUAGE:
@@ -1423,7 +1426,8 @@ static int pack_range_unit(Octstr *packet, Octstr *value);
 static int pack_transfer_encoding(Octstr *packet, Octstr *value);
 static int pack_uri(Octstr *packet, Octstr *value);
 static int pack_warning(Octstr *packet, Octstr *value);
-static int pack_content_type(Octstr *packet, Octstr *value);
+
+
 
 /* these are used in MMS encapsulation code too */
 
@@ -1450,7 +1454,7 @@ struct headerinfo headerinfo[] =
         { WSP_HEADER_CONTENT_LOCATION, pack_uri, 0 },
         { WSP_HEADER_CONTENT_MD5, pack_md5, 0 },
         { WSP_HEADER_CONTENT_RANGE, pack_content_range, 0 },
-        { WSP_HEADER_CONTENT_TYPE, pack_content_type, 0 },
+        { WSP_HEADER_CONTENT_TYPE, wsp_pack_content_type, 0 },
         { WSP_HEADER_DATE, wsp_pack_date, 0 },
         { WSP_HEADER_ETAG, wsp_pack_text, 0 },
         { WSP_HEADER_EXPIRES, pack_expires, 0 },
@@ -1586,16 +1590,21 @@ List *wsp_strip_parameters(Octstr *value)
         pos = end;
 
         if (octstr_get_char(value, pos) == '=') {
+	     int istring = 0;
             pos++;
             while (isspace(octstr_get_char(value, pos)))
                 pos++;
-            if (octstr_get_char(value, pos) == '"')
-                end = pos + http_header_quoted_string_len(value, pos);
-            else
+            if (octstr_get_char(value, pos) == '"') {
+                end = pos + http_header_quoted_string_len(value, pos) - 1;
+		pos++; /* Skip over '"' */
+		istring = 1;
+            } else
                 end = octstr_search_char(value, ';', pos);
             if (end < 0)
                 end = octstr_len(value);
-            val = octstr_copy(value, pos, end - pos);
+	    val = octstr_copy(value, pos, end - pos);
+	    if (istring)
+		 end++;
             octstr_strip_blanks(val);
             pos = end;
             pos = octstr_search_char(value, ';', pos);
@@ -1761,7 +1770,7 @@ void wsp_pack_value(Octstr *packed, Octstr *encoded)
     octstr_append(packed, encoded);
 }
 
-static void pack_long_integer(Octstr *packed, unsigned long integer)
+void wsp_pack_long_integer(Octstr *packed, unsigned long integer)
 {
     long oldlen = octstr_len(packed);
     unsigned char octet;
@@ -1797,7 +1806,7 @@ void wsp_pack_integer_value(Octstr *packed, unsigned long integer)
     if (integer <= MAX_SHORT_INTEGER)
         wsp_pack_short_integer(packed, integer);
     else
-        pack_long_integer(packed, integer);
+        wsp_pack_long_integer(packed, integer);
 }
 
 int wsp_pack_integer_string(Octstr *packed, Octstr *value)
@@ -1829,6 +1838,7 @@ overflow:
             octstr_get_cstr(value));
     return -1;
 }
+
 
 int wsp_pack_version_value(Octstr *packed, Octstr *version)
 {
@@ -2175,7 +2185,7 @@ int wsp_pack_date(Octstr *packed, Octstr *value)
         return -1;
     }
 
-    pack_long_integer(packed, timeval);
+    wsp_pack_long_integer(packed, timeval);
     return 0;
 }
 
@@ -2600,7 +2610,7 @@ warning:
     return -1;
 }
 
-static int pack_content_type(Octstr *packed, Octstr *value)
+int wsp_pack_content_type(Octstr *packed, Octstr *value)
 {
     /* The expansion of Content-type-value works out to be
      * equivalent to Accept-value. */ 
@@ -2617,7 +2627,7 @@ static int pack_expires(Octstr *packed, Octstr *value)
 	/* Responses with an invalid Expires header should be treated
 	as already expired.  If we just skip this header, then the client
 	won't know that.  So we encode one with a date far in the past. */
-	pack_long_integer(packed, LONG_AGO_VALUE);
+	wsp_pack_long_integer(packed, LONG_AGO_VALUE);
 	ret = 0;
     }
 
@@ -2839,7 +2849,7 @@ void wsp_pack_separate_content_type(Octstr *packed, List *headers)
         content_type = octstr_create("application/octet-stream");
     }
     octstr_strip_blanks(content_type);
-    pack_content_type(packed, content_type);
+    wsp_pack_content_type(packed, content_type);
     octstr_destroy(content_type);
 }
 
@@ -2910,7 +2920,7 @@ error:
     return -1;
 }
 
-static int pack_application_header(Octstr *packed,
+int wsp_pack_application_header(Octstr *packed,
                                    Octstr *fieldname, Octstr *value)
 {
     if (!is_token(fieldname)) {
@@ -2961,7 +2971,7 @@ Octstr *wsp_headers_pack(List *headers, int separate_content_type, int wsp_versi
         if (separate_content_type && fieldnum == WSP_HEADER_CONTENT_TYPE) {
 	    /* already handled */
         } else if (fieldnum < 0) {
-            if (pack_application_header(packed, fieldname, value) < 0)
+            if (wsp_pack_application_header(packed, fieldname, value) < 0)
                 errors = 1;
         } else {
             if (pack_known_header(packed, fieldnum, value) < 0)
