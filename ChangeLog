@@ -1,4 +1,12 @@
 2002-02-25  Bruno Rodrigues  <bruno.rodrigues@litux.org>
+    * contrib/web/*: Added a form and a php file to send messages.
+      Includes text, mwi, NSM, Wap related and Siemens MMC.
+      There's still some portuguese strings in it and it misses to
+      java applets, but it's usable.
+      I just hope that there's no problem with copyrights...
+      .(and yes, you can send a mp3 via sms to a Siemens SL45i)
+
+2002-02-25  Bruno Rodrigues  <bruno.rodrigues@litux.org>
     * Changelog: fixed spaces in my last entries.
     * STATUS: removed emi2 reconnection entry and added unicode receiving 
       request.
