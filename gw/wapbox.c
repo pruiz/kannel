@@ -84,6 +84,7 @@ int main(int argc, char **argv) {
 		if (msg == NULL)
 			break;
 		wtp_event = wtp_unpack_wdp_datagram(msg);
+                debug(0, "wapbox:datagram unpacked");
                 if (wtp_event == NULL)
                    continue;
 		wtp_machine = wtp_machine_find_or_create(msg, wtp_event);

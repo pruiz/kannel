@@ -1,3 +1,9 @@
+1999-11-30 Aarno Syvänen <syvanen@wapit.com>
+
+	* wsp_events-decl.h: added fields for wsp pdu type and event handle 
+	(unnecessary but mandatory). WSPEvent data structure represents both 
+	WTP primitive and WSP event.
+
 Mon Nov 29 19:33:42 1999  Lars Wirzenius  <liw@wapit.com>
 
 	* gw/wtp.h: wtp_handle_event will call wsp_handle_event (not yet

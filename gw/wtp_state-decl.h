@@ -41,8 +41,21 @@ ROW(INVOKE_RESP_WAIT,
 ROW(INVOKE_RESP_WAIT,
     TRInvoke,
     machine->tcl == 2,
-    { wtp_timer_start(timer, L_A_WITH_USER_ACK, machine, event); },
+    { 
+     wtp_timer_stop(timer);
+     wtp_timer_start(timer, L_A_WITH_USER_ACK, machine, event); 
+    },
     RESULT_WAIT)
+
+ROW(INVOKE_RESP_WAIT,
+    RcvAbort,
+    1,
+    {
+     current_primitive=TRAbortIndication;
+     wsp_event=pack_wsp_event(current_primitive, event, machine);
+     wtp_machine_mark_unused(machine);
+    },
+    LISTEN)
 
 ROW(RESULT_WAIT,
     TRResult,
@@ -54,11 +67,31 @@ ROW(RESULT_WAIT,
     },
     RESULT_RESP_WAIT)
 
+ROW(RESULT_WAIT,
+    RcvAbort,
+    1,
+    {
+     current_primitive=TRAbortIndication;
+     wsp_event=pack_wsp_event(current_primitive, event, machine);
+     wtp_machine_mark_unused(machine);
+    },
+    LISTEN)
+
 ROW(RESULT_RESP_WAIT,
     RcvAck,
     1,
     {
      current_primitive=TRResultConfirmation;
+     wsp_event=pack_wsp_event(current_primitive, event, machine);
+     wtp_machine_mark_unused(machine);
+    },
+    LISTEN)
+
+ROW(RESULT_RESP_WAIT,
+    RcvAbort,
+    1,
+    {
+     current_primitive=TRAbortIndication;
      wsp_event=pack_wsp_event(current_primitive, event, machine);
      wtp_machine_mark_unused(machine);
     },

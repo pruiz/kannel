@@ -16,11 +16,13 @@ static WTPMachine *list = NULL;
 /*****************************************************************************
  *
  *Prototypes of internal functions:
- *
- *Give events and the state a readable name.
  */
 
 static WTPMachine *wtp_machine_create_empty(void);
+
+/*
+ *Give events and the state a readable name.
+ */
 
 static char *name_event(int name);
 
@@ -481,9 +483,9 @@ no_datagram:
 }
 
 /*
- * Feed an event to a WTP state machine. Handle all errors yourself,
- * and report them to the caller. Note: Do not put {}s of the else block inside
- * the macro definition (it ends with a line without a backlash.) 
+ * Feed an event to a WTP state machine. Handle all errors yourself, do not
+ * report them to the caller. Note: Do not put {}s of the else block inside
+ * the macro definition (it ends with a line without a backlash). 
  */
 void wtp_handle_event(WTPMachine *machine, WTPEvent *event){
 
