@@ -51,7 +51,6 @@ static void dump_pdu(const char *msg, Octstr *id, SMPP_PDU *pdu)
  
 #define SMPP_ENQUIRE_LINK_INTERVAL  30.0 
 #define SMPP_MAX_PENDING_SUBMITS    10 
-#define SMPP_RECONNECT_DELAY	    10.0 
 #define SMPP_DEFAULT_VERSION        0x34
 #define SMPP_DEFAULT_PRIORITY       0
 #define SMPP_THROTTLING_SLEEP_TIME  15
@@ -101,7 +100,6 @@ typedef struct {
     int quitting; 
     long enquire_link_interval;
     long max_pending_submits;
-    long reconnect_delay;
     int version;
     int priority;       /* set default priority for messages */    
     time_t throttling_err_time;
@@ -119,10 +117,10 @@ static SMPP *smpp_create(SMSCConn *conn, Octstr *host, int transmit_port,
                          int source_addr_ton, int source_addr_npi,  
                          int dest_addr_ton, int dest_addr_npi, 
                          int alt_dcs, int enquire_link_interval, 
-                         int max_pending_submits, int reconnect_delay,
-                         int version, int priority, Octstr *my_number,
-                         int smpp_msg_id_type, int autodetect_addr,
-                         Octstr *alt_charset, Octstr *service_type) 
+                         int max_pending_submits, int version, int priority,
+                         Octstr *my_number, int smpp_msg_id_type, 
+                         int autodetect_addr, Octstr *alt_charset, 
+                         Octstr *service_type) 
 { 
     SMPP *smpp; 
      
@@ -151,7 +149,6 @@ static SMPP *smpp_create(SMSCConn *conn, Octstr *host, int transmit_port,
     smpp->receive_port = receive_port; 
     smpp->enquire_link_interval = enquire_link_interval;
     smpp->max_pending_submits = max_pending_submits; 
-    smpp->reconnect_delay = reconnect_delay;
     smpp->quitting = 0; 
     smpp->version = version;
     smpp->priority = priority;
@@ -1136,8 +1133,8 @@ static void io_thread(void *arg)
             conn = open_receiver(smpp); 
         if (conn == NULL) { 
             error(0, "SMPP[%s]: Couldn't connect to SMS center (retrying in %ld seconds).",
-                  octstr_get_cstr(smpp->conn->id), smpp->reconnect_delay);
-            gwthread_sleep(smpp->reconnect_delay);
+                  octstr_get_cstr(smpp->conn->id), smpp->conn->reconnect_delay);
+            gwthread_sleep(smpp->conn->reconnect_delay);
             smpp->conn->status = SMSCCONN_RECONNECTING; 
             continue; 
         } 
@@ -1293,7 +1290,6 @@ int smsc_smpp_create(SMSCConn *conn, CfgGroup *grp)
     int alt_dcs;
     long enquire_link_interval;
     long max_pending_submits;
-    long reconnect_delay;
     long version;
     long priority;
     long smpp_msg_id_type;
@@ -1340,9 +1336,6 @@ int smsc_smpp_create(SMSCConn *conn, CfgGroup *grp)
     if (cfg_get_integer(&max_pending_submits, grp, 
                         octstr_imm("max-pending-submits")) == -1)
         max_pending_submits = SMPP_MAX_PENDING_SUBMITS;
-    if (cfg_get_integer(&reconnect_delay, grp, 
-                        octstr_imm("reconnect-delay")) == -1)
-        reconnect_delay = SMPP_RECONNECT_DELAY;
  
     /* Check that config is OK */ 
     ok = 1; 
@@ -1416,9 +1409,9 @@ int smsc_smpp_create(SMSCConn *conn, CfgGroup *grp)
     	    	       username, password, address_range,
                        source_addr_ton, source_addr_npi, dest_addr_ton,  
                        dest_addr_npi, alt_dcs, enquire_link_interval, 
-                       max_pending_submits, reconnect_delay, 
-                       version, priority, my_number, smpp_msg_id_type,
-                       autodetect_addr, alt_charset, service_type); 
+                       max_pending_submits, version, priority, my_number, 
+                       smpp_msg_id_type, autodetect_addr, alt_charset, 
+                       service_type); 
  
     conn->data = smpp; 
     conn->name = octstr_format("SMPP:%S:%d/%d:%S:%S",  
