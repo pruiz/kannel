@@ -1,4 +1,9 @@
 2002-05-21  Stipe Tolj <tolj@wapme-systems.de>
+    * doc/userguide/userguide.xml, gw/smsc_smpp.c, gwlib/cfg.def:
+      applied interface version configuration patch from Oded
+      [Msg-ID: <2CFC21DAF860CC49AF57333C4459DD4B167F6B@exchange.m-wise.com>]
+
+2002-05-21  Stipe Tolj <tolj@wapme-systems.de>
     * gw/smsc_smpp.c, gwlib/cfg.def: applied timing configuration patch
       provided by Alan McNatty <alan@catalyst.net.nz>
       [Msg-ID: <1021942284.3140.207.camel@euclid>]
