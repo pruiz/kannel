@@ -155,7 +155,7 @@ static void delete_threadinfo(void) {
 	close(threadinfo->wakefd_send);
 	THREAD(threadinfo->number) = NULL;
 	active_threads--;
-	gw_assert(threadinfo != &main_thread);
+	gw_assert(threadinfo != &mainthread);
 	gw_free(threadinfo);
 }
 
