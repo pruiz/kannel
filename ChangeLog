@@ -1,3 +1,9 @@
+2001-12-25  Stipe Tolj  <tolj@wapme-systems.de>
+    * configure.in: fixed -L/<path> linked flag option for configure's
+      --with-mysql option [thanks to Abd Rahman Johari 
+      <ajohari@man.iwpowerhouse.com> for pointing this out]
+    * configure: resulting output of fixed configure.in
+
 2001-12-23  Stipe Tolj  <tolj@wapme-systems.de>
     * utils/kannel-nag: changed cvsroot and added output support for
       different platforms
