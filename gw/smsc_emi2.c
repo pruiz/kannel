@@ -1664,7 +1664,8 @@ int smsc_emi2_create(SMSCConn *conn, CfgGroup *cfg)
 
     conn->data = privdata;
 
-    conn->name = octstr_format("EMI2:%d", privdata->port);
+    conn->name = octstr_format("EMI2:%s:%d:%s", privdata->host, privdata->port,
+                               privdata->username);
 
     privdata->shutdown = 0;
 
