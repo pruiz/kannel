@@ -160,7 +160,7 @@ libs = libgw.a libwmlscript.a libwap.a libgwlib.a
 
 srcdirs = gw gw/smsc gwlib test utils wmlscript checks wap radius
 
-man1pages = utils/seewbmp.1 wmlscript/wmlsc.1 wmlscript/wmlsdasm.1
+man1pages = utils/seewbmp.1 utils/mtbatch.1 wmlscript/wmlsc.1 wmlscript/wmlsdasm.1
 man8pages = gw/kannel.8 utils/run_kannel_box.8
 
 docsrcs = $(wildcard grep -l '<!DOCTYPE ' doc/*/*.xml)
