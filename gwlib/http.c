@@ -619,6 +619,7 @@ static void server_destroy(void *p)
     trans = p;
     octstr_destroy(trans->url);
     http_destroy_headers(trans->request_headers);
+    trans->request_headers = NULL;
     octstr_destroy(trans->request_body);
     entity_destroy(trans->response);
     octstr_destroy(trans->host);
@@ -1140,14 +1141,15 @@ static Connection *send_request(HTTPServer *trans)
     octstr_destroy(trans->host);
     trans->host = NULL;
 
+    if(trans->request_headers == NULL)
+    	trans->request_headers = http_create_empty_headers();
+
     if (parse_url(trans->url, &trans->host, &trans->port, &path, &trans->ssl,
                   &trans->username, &trans->password) == -1)
         goto error;
-
     if (trans->username != NULL)
         http_add_basic_auth(trans->request_headers, trans->username,
                             trans->password);
-
     if (proxy_used_for_host(trans->host)) {
         proxy_add_authentication(trans->request_headers);
         request = build_request(http_method2name(trans->method), 

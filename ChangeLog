@@ -1,3 +1,9 @@
+2002-10-16 Andreas Fink <afink@gni.ch>
+    * gwlib/http.c: fixed http basic authentication for DLRs
+      a dlrurl containing username and password was crashing kannel before
+      because http headers where not initialized. also potentially a problem
+      in other places.
+
 2002-10-15  Stipe Tolj  <tolj@wapme-systems.de>
     * gwlib/utils.c: fixed a bug in does_prefix_match(), when a number gets
       not recognized if it has the same length as in prefix list. Now 
