@@ -1802,7 +1802,6 @@ found:
         msg = ota_tokenize_settings(grp, from, phonenumber);
     else
         msg = ota_tokenize_bookmarks(grp, from, phonenumber);
-    octstr_dump(msg->sms.msgdata, 0);
 
 send: 
     /* we still need to check if smsc is forced for this */
@@ -1818,6 +1817,8 @@ send:
         msg->sms.smsc_id = octstr_duplicate(urltrans_default_smsc(t));
     } else
         msg->sms.smsc_id = NULL;
+
+    octstr_dump(msg->sms.msgdata, 0);
 
     info(0, "%s <%s> <%s>", octstr_get_cstr(sendota_url), 
     	 id ? octstr_get_cstr(id) : "<default>", octstr_get_cstr(phonenumber));
@@ -1998,9 +1999,6 @@ static Octstr *smsbox_sendota_post(List *args, List *headers, Octstr *body,
     }    
       
 error:
-    octstr_destroy(id);
-    octstr_destroy(from);
-    octstr_destroy(to);
     octstr_destroy(user);
     octstr_destroy(pass);
     octstr_destroy(smsc);

@@ -94,7 +94,7 @@ int ota_pack_message(Msg **msg, Octstr *ota_doc, Octstr *doc_type,
     (*msg)->sms.time = time(NULL);
 
     octstr_dump((*msg)->sms.msgdata, 0);
-    info(0, "/cgi-bin/sendota: XML request from <%s>", octstr_get_cstr(phone_number));
+    info(0, "/cgi-bin/sendota: XML request for target <%s>", octstr_get_cstr(phone_number));
 
     octstr_destroy(ota_binary);
     octstr_destroy(ota_doc);

@@ -1,4 +1,4 @@
-;/*
+/*
  * test_http.c - a simple program to test the new http library
  *
  * Lars Wirzenius
@@ -62,7 +62,8 @@ static void start_request(HTTPCaller *caller, List *reqh, long i)
     if (split != NULL)
         http_header_combine(reqh, split);
 
-    content = post_content_create();
+    if (use_post)
+        content = post_content_create();
                            
     /*
      * if this is a POST request then pass the required content as body to
