@@ -136,8 +136,6 @@ static int concatenated_message(Octstr *user_data);
 static void handle_wrong_version(Msg *msg, int tid);
 static void handle_no_sar(Msg *msg, int tid);
 
-static size_t cat_chars(long data1, long data2);
-
 /******************************************************************************
  *
  * EXTERNAL FUNCTIONS:
@@ -148,10 +146,8 @@ List *wtp_unpack_wdp_datagram(Msg *msg){
         List *events = NULL;
         WAPEvent *event = NULL;
         Msg *msg_found = NULL;
-        Octstr *data = NULL, 
-               *pdu_found = NULL;
+        Octstr *data = NULL;
         long pdu_len;
-        long pdu_len_array[] = {0, 0};
 
         events = list_create();
         
@@ -166,19 +162,17 @@ List *wtp_unpack_wdp_datagram(Msg *msg){
                     octstr_delete(data, 0, 1);
 
                  } else {
-		    octstr_set_bits(data, 0, 1, 0);
-		    octstr_get_many_chars(pdu_len_array, data, 0, 2);
-                    pdu_len = cat_chars(pdu_len_array[0], pdu_len_array[1]);
+		    pdu_len = octstr_get_bits(data, 1, 15);
                     octstr_delete(data, 0, 2);
                  }
                  
-                 pdu_found = octstr_copy(data, 0, pdu_len); 
                  msg_found = msg_duplicate(msg);
-                 msg_found->wdp_datagram.user_data = octstr_duplicate(pdu_found);
+		 octstr_destroy(msg_found->wdp_datagram.user_data);
+                 msg_found->wdp_datagram.user_data =
+			octstr_copy(data, 0, pdu_len);
                  event = wtp_unpack_wdp_datagram_real(msg_found);
                  wap_event_assert(event);
                  list_append(events, event);
-                 octstr_destroy(pdu_found);
                  octstr_delete(data, 0, pdu_len);
                  msg_destroy(msg_found);
            }/* while*/
@@ -212,7 +206,7 @@ WAPEvent *wtp_unpack_wdp_datagram_real(Msg *msg){
 	WTP_PDU *pdu;
 	WAPEvent *event;
         Octstr *data;
-        int tid;
+	int tid;
 
         if (octstr_len(data = msg->wdp_datagram.user_data) < 3){
            event = create_rcv_error_pdu(msg);
@@ -225,12 +219,6 @@ WAPEvent *wtp_unpack_wdp_datagram_real(Msg *msg){
         debug("wap.wtp", 0, "tid was %d", tid);
 	pdu = wtp_pdu_unpack(data);
 
-        if (pdu->type == Invoke && pdu->u.Invoke.version != 0){
-	   debug("wap.wtp", 0, "A PDU having a wrong version field received");
-           tid = pdu->u.Invoke.tid;
-	   handle_wrong_version(msg, tid);
-	   return NULL;
-        }
 /*
  * Wtp_pdu_unpack returns NULL, when the error was illegal header
  */
@@ -245,6 +233,11 @@ WAPEvent *wtp_unpack_wdp_datagram_real(Msg *msg){
 	switch (pdu->type) {
 
 	case Invoke:
+	     if (pdu->u.Invoke.version != 0) {
+		debug("wap.wtp", 0, "WTP: Received PDU with wrong version field %ld.", pdu->u.Invoke.version);
+		handle_wrong_version(msg, pdu->u.Invoke.tid);
+	        return NULL;
+	     }
 	     if (pdu->u.Invoke.ttr && pdu->u.Invoke.gtr){
 		event = wap_event_create(RcvInvoke);
 		event->u.RcvInvoke.user_data = 
@@ -261,8 +254,7 @@ WAPEvent *wtp_unpack_wdp_datagram_real(Msg *msg){
 					msg->wdp_datagram.destination_address,
 					msg->wdp_datagram.destination_port);
              } else {
-	        tid = pdu->u.Invoke.tid;
-                handle_no_sar(msg, tid);
+                handle_no_sar(msg, pdu->u.Invoke.tid);
 	        return NULL;
              }
 		break;
@@ -693,14 +685,6 @@ static int concatenated_message(Octstr *user_data){
 
        return octstr_get_char(user_data, 0) == 0x00;
 }
-
-static size_t cat_chars(long  data1, long data2){
-       size_t result = 0;
-  
-       result = data1 << 8;
-       result += data2;
-       return result;     
-} 
 
 static WTPMachine *find_machine_using_mid(long mid) {
        return list_search(machines, &mid, machine_has_mid);

@@ -148,6 +148,7 @@ time_t start_time, end_time;
 double totaltime = 0, besttime = 1000000L,  worsttime = 0;
 int verbose = 0;
 int nofailexit = 0;
+int test_separation = 0;
 
 /*
  * PDU type, version number and transaction class are supplied by a 
@@ -444,7 +445,6 @@ static void client_session( void * arg)
     unsigned short tid = 0;
     unsigned short old_tid;
     int tid_new = 0;
-    int test_separation = 0;
     int connection_retries = 0;
     int i_this;
 
@@ -585,7 +585,7 @@ int main(int argc, char **argv)
 {
     int i, opt;
     double delta;
-    int proto_version, pdu_type, tcl, tid_new, test_separation;
+    int proto_version, pdu_type, tcl, tid_new;
 #ifdef SunOS
     struct sigaction alrm;
 

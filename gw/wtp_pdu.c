@@ -292,7 +292,7 @@ WTP_PDU *wtp_pdu_unpack(Octstr *data) {
 #undef PDU
 	default:
 		warning(0, "WTP PDU with unknown type %d", pdu->type);
-		wtp_pdu_destroy(pdu);
+		gw_free(pdu);
 		return NULL;
 	}
 

@@ -1,3 +1,19 @@
+2000-07-20  Richard Braakman  <dark@wapit.com>
+
+	* gw/wtp.c: Fixed memory leak in wtp_unpack_wdp_datagram.
+	Simplified the code a bit.
+
+	* gw/wtp.c: Made wtp_unpack_wdp_datagram_real not crash when
+	receiving an invalid PDU.
+
+	* gw/wtp_pdu.c: In wtp_pdu_unpack, simply free a PDU with 
+	unknown type instead of trying to destroy it.  None of its
+	fields were set anyway.
+
+	* test/fakewap.c: Actually test separation when -s flag is given.
+	The test is wrong, though, it sends bad packets.  Not going to
+	fix that now.
+
 2000-07-19  Tuomas Luttinen  <tuo@wapit.com>
 
 	* configure.in: libxml 1.8.9 and 2.2.0 added. Fixes bug #97.
