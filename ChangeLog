@@ -1,11 +1,19 @@
-2003-07-18  Alexander Malysh  <a.malysh@centrium.de>
+2003-07-18  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/wap_push_pap_compiler.[ch]: Redeclared parse_address() to make it
+      publically abailable for other modules, ie. MMS encoder/decoder.
+    * wap/wsp.h: added enum type for WSP Encoding-Version
+    * wap/wsp_headers.[ch]: moved type definitions and declarations from .c
+      to .h file. Redeclared some (un)pack funcitons to be publically available
+      as wsp_(un)pack_foobar(). These are used in the MMS encode/decode module.
+
+2003-07-17  Alexander Malysh  <a.malysh@centrium.de>
     * gw/dlr_mem.c: memory leak.
 
-2003-07-18  Alexander Malysh  <a.malysh@centrium.de>
+2003-07-17  Alexander Malysh  <a.malysh@centrium.de>
     * gwlib/conn.c: SSL_set_fd(...) can fail, so check return code and
       handle error gracefully.
 
-2003-07-18  Alexander Malysh  <a.malysh@centrium.de>
+2003-07-17  Alexander Malysh  <a.malysh@centrium.de>
     * gw/bb_smscconn.c: memory leak.
 
 2003-07-17  Bruno Rodrigues  <bruno.rodrigues@litux.org>
