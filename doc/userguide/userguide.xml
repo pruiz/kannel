@@ -2070,6 +2070,14 @@ bearerbox-host = localhost
         Options)
      </entry></row>
 
+    <row><entry><literal>reconnect-delay</literal></entry>
+      <entry><literal>number</literal></entry>
+      <entry valign="bottom">
+			Number of seconds to wait between single re-connection attempts.
+			Hence all SMSC modules should use this value for their 
+			re-connect behaviour. (Defaults to '10' seconds).
+     </entry></row>
+
   </tbody>
   </tgroup>
  </table>
@@ -2375,14 +2383,6 @@ smsc-password = bar
       <entry valign="bottom">
         If SMSC requires that kannel limits the number of messages per second, 
         use this variable. (optional)
-     </entry></row>
-
-    <row><entry><literal>retry</literal></entry>
-      <entry><literal>boolean</literal></entry>
-      <entry valign="bottom">
-        Assuming that kannel is well configured and we had one sucessful
-	connection, if retry is true, kannel will always retry the connection
-	even if some related error ocur.
      </entry></row>
 
     <row><entry><literal>my-number</literal></entry>
@@ -2999,14 +2999,6 @@ pin = 2345
 	 will try to send the message to the recipient. Encoded as per
 	 the GSM 03.40 standard, section 9.2.3.12. Default is
 	 167, meaning 24 hours.
-     </entry></row>
-
-    <row><entry><literal>retry</literal></entry>
-      <entry><literal>boolean</literal></entry>
-      <entry valign="bottom">
-        Assuming that kannel is well configured and we had one sucessful
-	connection, if retry is true, kannel will always retry the connection
-	even if some related error ocur.
      </entry></row>
 
     <row><entry><literal>keepalive</literal></entry>
