@@ -85,10 +85,12 @@
  * Lars Wirzenius <liw@wapit.com>
  */
 
+#include "gw-config.h"
+
 #include <string.h>
 #include <unistd.h>
+#include <stdlib.h>
 
-#include "gw-config.h"
 #include "gwassert.h"
 #include "list.h"
 #include "log.h"
@@ -429,7 +431,6 @@ void *list_consume(List *list)
 }
 
 
-
 void *list_search(List *list, void *pattern, int (*cmp)(void *, void *))
 {
     void *item;
@@ -476,6 +477,21 @@ List *list_search_all(List *list, void *pattern, int (*cmp)(void *, void *))
     }
 
     return new_list;
+}
+
+
+void list_sort(List *list, int(*cmp)(const void *, const void *))
+{
+    gw_assert(list != NULL && cmp != NULL);
+
+    list_lock(list);
+    if (list->len == 0) {
+        /* nothing to sort */
+        list_unlock(list);
+        return;
+    }
+    qsort(&GET(list, 0), list->len, sizeof(void*), cmp);
+    list_unlock(list);
 }
 
 

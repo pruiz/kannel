@@ -71,6 +71,6 @@ Semaphore *semaphore_create(long n);
 void semaphore_destroy(Semaphore *semaphore);
 void semaphore_up(Semaphore *semaphore);
 void semaphore_down(Semaphore *semaphore);
-
+long semaphore_getvalue(Semaphore *semaphore);
 
 #endif

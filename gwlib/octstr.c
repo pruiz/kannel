@@ -2204,6 +2204,16 @@ static void convert(Octstr *os, struct format *format, const char **fmt,
             octstr_truncate(new, format->prec);
         break;
 
+    case 'H':
+        new = octstr_duplicate(va_arg(VALST(args), Octstr *));
+        if (!new)
+            new = octstr_imm("(null)");
+        /* upper case */
+        octstr_binary_to_hex(new, 1);
+        if (format->has_prec)
+            octstr_truncate(new, (format->prec % 2 ? format->prec - 1 : format->prec));
+        break;
+
     case '%':
     	new = octstr_imm("%");
     	break;

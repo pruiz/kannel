@@ -643,11 +643,15 @@ void octstr_append_decimal(Octstr *ostr, long value);
  *				inside the string is included in the
  *				output
  *
- *          E   Octstr *
- *              output as character string, except that
- *              contents are URL-encoded when need to. Note
- *              that trunctae is done afterwards and can
- *              cut escape '%EE' in half
+ *			E	Octstr *
+ *				output as character string, except that
+ *				contents are URL-encoded when need to. Note
+ *				that trunctae is done afterwards and can
+ *				cut escape '%EE' in half
+ *
+ *			H	Octstr *
+ *				output as character string, except that
+ *				contents are HEX-encoded in uppercase
  */
 Octstr *octstr_format(const char *fmt, ...);
 

@@ -138,3 +138,20 @@ void semaphore_down(Semaphore *semaphore)
     list_consume(semaphore->list);
 #endif
 }
+
+
+long semaphore_getvalue(Semaphore *semaphore)
+{
+    gw_assert(semaphore != NULL);
+#ifdef HAVE_SEMAPHORE_H
+    {
+        int val;
+        if (sem_getvalue(&semaphore->sem, &val) != 0)
+            panic(errno, "Could not get semaphore value.");
+        return val;
+    }
+#else
+    return list_len(semaphore->list);
+#endif
+}
+

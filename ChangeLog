@@ -1,3 +1,9 @@
+2004-06-28  Alexander Malysh  <a.malysh@centrium.de> 
+    * gwlib/list.[ch]: added 'list_sort' function that sorts the list with qsort.
+    * gwlib/octstr.[ch]: added '%H' modifier to 'octstr_format' that converts Octstr
+      to hex-encoded in uppercase.
+    * gwlib/semaphore.[ch]: added 'semaphore_getvalue' function.
+
 2004-06-25  Alexander Malysh  <a.malysh@centrium.de> 
     * gwlib/log.c: fixed (workarounded) endless panic loop if memcheck were enabled.
 

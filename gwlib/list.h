@@ -291,4 +291,9 @@ void *list_search(List *list, void *pattern, list_item_matches_t *cmp);
 List *list_search_all(List *list, void *pattern, list_item_matches_t *cmp);
 
 
+/*
+ * Sort the list with qsort.
+ */
+void list_sort(List *list, int(*cmp)(const void *, const void *));
+
 #endif
