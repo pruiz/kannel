@@ -238,17 +238,13 @@ List *list_extract_matching(List *list, void *pat, list_item_matches_t *cmp) {
 
 void list_lock(List *list) {
 	gw_assert(list != NULL);
-	lock(list);
 	mutex_lock(list->permanent_lock);
-	unlock(list);
 }
 
 
 void list_unlock(List *list) {
 	gw_assert(list != NULL);
-	lock(list);
 	mutex_unlock(list->permanent_lock);
-	unlock(list);
 }
 
 

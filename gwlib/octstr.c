@@ -1585,7 +1585,7 @@ static void format_prec(struct format *format, const char **fmt,
 		format->has_prec = 1;
 		format->prec = va_arg(*args, int);
 		++(*fmt);
-	} else if (isdigit(**fmt)) {
+	} else if (isdigit(**(const unsigned char **) fmt)) {
 		format->has_prec = 1;
 		format->prec = strtol(*fmt, &end, 10);
 		*fmt = end;

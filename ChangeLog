@@ -1,3 +1,14 @@
+2000-09-14  Lars Wirzenius  <liw@iki.fi>
+
+	* gwlib/list.c: Don't do the atomic operation locks for list_lock
+	and list_unlock: they're unnecessary for atomicity and cause
+	deadlocks. Thanks to Kalle Sandström for noting this.
+	
+	* gwlib/octstr.c: Silence compiler warning regarding using a plain
+	char as an index to an array (in reality, argument to isdigit),
+	by typecasting a pointer. If we used fewer C strings, this would
+	be less of a problem...
+
 2000-09-11  Lars Wirzenius  <liw@iki.fi>
 
 	* README: Fixed download URL, re-formatted and removed the
