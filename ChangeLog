@@ -1,11 +1,16 @@
+2000-03-15  Markku Rossi  <mtr@iki.fi>
+
+	* wmlscript/wsopt.c: Fixed some bugs from the assembler stream
+	handling.
+
 2000-03-13    <rpr@rpr.wapit.com>
 
 	* README: Added notes of smsc_interface.def
 
 2000-03-10  Tuomas Luttinen  <tuo@tuo.wapit.fi>
 
-	* gw/wml_compiler.c (parse_octet_string): bug fix with parsing 
-	$-characters. Tried to allocate a huge block and wapbox went down 
+	* gw/wml_compiler.c (parse_octet_string): bug fix with parsing
+	$-characters. Tried to allocate a huge block and wapbox went down
 	on it.
 
 Fri Mar 10 16:48:35 2000  Lars Wirzenius  <liw@wapit.com>

@@ -143,6 +143,8 @@ opt_dead_code(WsCompilerPtr compiler)
       i->next = j;
       if (j)
 	j->prev = i;
+      else
+	compiler->asm_tail = i;
 
       change = WS_TRUE;
     }
@@ -190,6 +192,11 @@ opt_peephole(WsCompilerPtr compiler)
 		  prev->next = i2->next;
 		else
 		  compiler->asm_head = i2->next;
+
+		if (i2->next)
+		  i2->next->prev = prev;
+		else
+		  compiler->asm_tail = prev;
 
 		i = i2->next;
 		continue;
