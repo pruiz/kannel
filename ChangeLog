@@ -1,3 +1,7 @@
+2003-01-15  Stipe Tolj  <tolj@wapme-systems.de>
+	* doc/userguide/userguide.xml: fixed out-dated 'msg-id-type' directive
+	  explanation. Thanks to Mauricio Ramos <mauricio.ramos@waura.com.br>.
+
 2003-01-13  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/wap-appl.c: fixed memory leak in set_referer_url(). Patch 
       provided by Vjacheslav Chekushin <slava@lmt.lv>. Thanks
