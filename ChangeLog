@@ -1,3 +1,18 @@
+2001-02-06  Kalle Marjola  <rpr@wapit.com>
+
+	* gw/bb_smscconn_cb.h: added new failed sending status,
+	SMSCCONN_FAILED_TEMPORARILY, which should be called if connection
+	to SMS center is lost temporarily
+
+	* gw/bb_smscconn.c: added handling for new status
+
+	* gw/smscconn_p.h: added comments of the new status
+	
+	* gw/smsc_wrapper.c: added that when reconnect is started, message
+	queue is emptied from messages with status
+	SMSCCONN_FAILED_TEMPORARILY
+	
+
 2001-02-06  Peter Grönholm  <peter@wapit.com>
 
 	* utils/kannel-stable-rh6x.spec: Added rpm spec file for Kannel

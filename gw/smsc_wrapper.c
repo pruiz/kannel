@@ -41,6 +41,7 @@ static void smscwrapper_destroy(SmscWrapper *wrap)
 static int reconnect(SMSCConn *conn)
 {
     SmscWrapper *wrap = conn->data;
+    Msg *msg;
     int ret;
     int wait = 1;
 
@@ -61,6 +62,9 @@ static int reconnect(SMSCConn *conn)
     debug("bb.sms", 0, "smsc_wrapper <%s>: reconnect started",
 	  octstr_get_cstr(conn->name));
 
+    while((msg = list_extract_first(wrap->outgoing_queue))!=NULL) {
+	bb_smscconn_send_failed(conn, msg, SMSCCONN_FAILED_TEMPORARILY);
+    }
     conn->status = SMSCCONN_RECONNECTING;
     
 

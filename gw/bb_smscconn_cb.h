@@ -39,7 +39,8 @@ void bb_smscconn_send_failed(SMSCConn *conn, Msg *sms, int reason);
 enum {
     SMSCCONN_FAILED_SHUTDOWN,
     SMSCCONN_FAILED_REJECTED,
-    SMSCCONN_FAILED_MALFORMED
+    SMSCCONN_FAILED_MALFORMED,
+    SMSCCONN_FAILED_TEMPORARILY
 };
 
 

@@ -59,6 +59,9 @@
     set to SMSCCONN_DEAD until the connection is really that.
     Use why_killed to make internally dead, supplied with reason.
 
+    If the connection is disconnected temporarily, the connection SHOULD
+    call bb_smscconn_send_failed for each message in its internal list
+
  4) When SMSC Connection shuts down (shutdown called), it MUST try to send
     all messages so-far relied to it to be sent if 'finish_sending' is set
     to non-zero. If set to 0, it MUST call bb_smscconn_send_failed

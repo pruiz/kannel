@@ -96,6 +96,7 @@ void bb_smscconn_send_failed(SMSCConn *conn, Msg *sms, int reason)
     switch (reason) {
 
     case SMSCCONN_FAILED_SHUTDOWN:
+    case SMSCCONN_FAILED_TEMPORARILY:
 	list_produce(outgoing_sms, sms);
 	break;
     default:
