@@ -33,11 +33,19 @@ CSDRouter *csdr_open(ConfigGroup *grp)
 	int fl;
 	int i = 0;
 
-	struct sockaddr_in servaddr;
 	struct in_addr bindaddr;
+	struct sockaddr_in servaddr;
+	socklen_t servlen;
+	char server_ip[16], server_port[8];
+
+	memset(server_ip, 0, sizeof(server_ip));
+	memset(server_port, 0, sizeof(server_port));
 
 	router = malloc(sizeof(CSDRouter));
 	if(router==NULL) goto error;
+
+	router->interface_name = NULL;	/* FILL */
+	router->ip = NULL;		/* FILL */
 
         interface_name = config_get(grp, "interface-name");
         wap_service    = config_get(grp, "wap-service");
@@ -66,7 +74,7 @@ CSDRouter *csdr_open(ConfigGroup *grp)
 	}
 
 	if(strcmp(wap_service, "wsp") == 0) {
-		servaddr.sin_port = htons(9200);
+	        servaddr.sin_port = htons(9200);
 	} else if( strcmp(wap_service, "wsp/wtp") == 0 ) {
 		servaddr.sin_port = htons(9201);
 	} else if( strcmp(wap_service, "wsp/wtls") == 0 ) {
@@ -95,12 +103,24 @@ CSDRouter *csdr_open(ConfigGroup *grp)
 		}
 		sleep(1);
 	}
+	servlen = sizeof(servaddr);
+	getsockname(router->fd, (struct sockaddr*)&servaddr, &servlen);
 
+	getnameinfo((struct sockaddr*)&servaddr, servlen, 
+		server_ip, sizeof(server_ip), 
+		server_port, sizeof(server_port), 
+		NI_NUMERICHOST | NI_NUMERICSERV);
+
+	router->port = atoi(server_port);
+	router->ip = strdup(server_ip);
+	if (router->ip == NULL)
+	    goto error;
+	
 	fl = fcntl(router->fd, F_GETFL);
 	fcntl(router->fd, F_SETFL, fl | O_NONBLOCK);
 
-	debug(0, "csdr_open: Bound to UDP port <%i> service <%s>.",
-		ntohs(servaddr.sin_port), wap_service);
+	debug(0, "csdr_open: Bound to UDP port <%d> service <%s>.",
+	      router->port, wap_service);
 
 	return router;
 
@@ -117,7 +137,10 @@ int csdr_close(CSDRouter *router)
 
 	close(router->fd);
 
+	free(router->interface_name);
+	free(router->ip);
 	free(router);
+	
 	return 0;
 }
 
@@ -128,17 +151,14 @@ RQueueItem *csdr_get_message(CSDRouter *router)
 	RQueueItem *item = NULL;
 	char data[64*1024];
 	char client_ip[16], client_port[8];
-	char server_ip[16], server_port[8];
 
-	struct sockaddr_in cliaddr, servaddr;
-	socklen_t clilen, servlen;
+	struct sockaddr_in cliaddr;
+	socklen_t clilen;
 
 	/* Initialize datasets. */
 	memset(data, 0, sizeof(data));
 	memset(client_ip, 0, sizeof(client_ip));
 	memset(client_port, 0, sizeof(client_port));
-	memset(server_ip, 0, sizeof(server_ip));
-	memset(server_port, 0, sizeof(server_port));
 
 	/* Maximum size of UDP datagram == 64*1024 bytes. */
 	clilen = sizeof(cliaddr);
@@ -151,18 +171,9 @@ RQueueItem *csdr_get_message(CSDRouter *router)
 		error(errno, "Error receiving datagram.");
 		goto error;
 	}
-
-	servlen = sizeof(servaddr);
-	getsockname(router->fd, (struct sockaddr*)&servaddr, &servlen);
-
 	getnameinfo((struct sockaddr*)&cliaddr, clilen, 
 		client_ip, sizeof(client_ip), 
 		client_port, sizeof(client_port), 
-		NI_NUMERICHOST | NI_NUMERICSERV);
-
-	getnameinfo((struct sockaddr*)&servaddr, servlen, 
-		server_ip, sizeof(server_ip), 
-		server_port, sizeof(server_port), 
 		NI_NUMERICHOST | NI_NUMERICSERV);
 
 	item = rqi_new(R_MSG_CLASS_WAP, R_MSG_TYPE_MO);
@@ -173,18 +184,26 @@ RQueueItem *csdr_get_message(CSDRouter *router)
 
 	item->msg->wdp_datagram.source_address = octstr_create(client_ip);
 	item->msg->wdp_datagram.source_port    = atoi(client_port);
-	item->msg->wdp_datagram.destination_address = octstr_create(server_ip);
-	item->msg->wdp_datagram.destination_port    = atoi(server_port);
+	item->msg->wdp_datagram.destination_address = octstr_create(router->ip);
+	item->msg->wdp_datagram.destination_port    = router->port;
 	item->msg->wdp_datagram.user_data = octstr_create_from_data(data, length);
 	debug(0, "csdr_get_message: message dump follows");
 	msg_dump(item->msg);
 
+	/* set routing info: use client IP and port
+	 */
+	item->routing_info = malloc(strlen(client_ip)+strlen(client_port)+2);
+	if (item->routing_info == NULL)
+	    goto error;
+	sprintf(item->routing_info, "%s:%s", client_ip, client_port);
+	
 	return item;
 
 no_msg:
 	return NULL;
 error:
 	error(errno, "csdr_get_message: could not receive UDP datagram");
+	rqi_delete(item);
 	return NULL;
 }
 
@@ -224,35 +243,18 @@ error:
 
 int csdr_is_to_us(CSDRouter *router, Msg *msg) {
 
-	char server_ip[16], server_port[8];
+    if (router == NULL || msg == NULL) goto error;
+    if (msg_type(msg) != wdp_datagram) goto error;
 
-	struct sockaddr_in servaddr;
-	socklen_t servlen;
+    if (router->port != msg->wdp_datagram.source_port ||
+	(strcmp(router->ip,
+		octstr_get_cstr(msg->wdp_datagram.source_address)) != 0)
 
-	if(router==NULL) goto error;
-	if(msg==NULL) goto error;
-	if(msg_type(msg) != wdp_datagram) goto error;
-
-	servlen = sizeof(servaddr);
-	getsockname(router->fd, (struct sockaddr*)&servaddr, &servlen);
-
-	getnameinfo((struct sockaddr*)&servaddr, servlen, 
-		server_ip, sizeof(server_ip), 
-		server_port, sizeof(server_port), 
-		NI_NUMERICHOST | NI_NUMERICSERV);
-
-	if( (strcmp(server_ip, octstr_get_cstr(msg->wdp_datagram.source_address)) != 0) ||
-		(atoi(server_port) != msg->wdp_datagram.source_port) ) 
-	{
-		goto not_for_us;
-	}
-
-	return 1;
-
-not_for_us:
 	return 0;
 
+    return 1;
+
 error:
-	error(0, "csdr_is_to_us: returning error");
-	return -1;
+    error(0, "csdr_is_to_us: illegal parameters");
+    return -1;
 }

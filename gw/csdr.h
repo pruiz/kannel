@@ -6,10 +6,10 @@
 #include "bb_msg.h"
 
 typedef struct csdrouter {
-
-	char *interface_name;
-	int port;
-	int fd;
+    char *interface_name;
+    char *ip;	/* our own IP */
+    int port;	/* our own port */
+    int fd;
 
 } CSDRouter;
 

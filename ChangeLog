@@ -1,5 +1,11 @@
 1999-11-19    <rpr@rpr.wapit.com>
 
+	* gw/csdr.c, gw/csdr.h: modified to add 'routing_info' for
+	received messages, and to save own IP and port when started. All
+	other gethostyname-calls removed. Not tested, however.
+
+1999-11-19    <rpr@rpr.wapit.com>
+
 	* gw/smsbox_req.c, gw/smsbox_re.h, gw/smsbox.c: Did some bugfixing
 	and updated header file comments (documentation) 
 
