@@ -351,8 +351,8 @@ int log_open(char *filename, int level, enum excl_state excl)
 
 
 #define FORMAT_SIZE (1024)
-static void format(char *buf, int level, const char *place, int e, 
-		   const char *fmt)
+static void format(char *buf, int level, const char *place, int e,
+		   const char *fmt, int with_timestamp)
 {
     static char *tab[] = {
 	"DEBUG: ",
@@ -368,25 +368,29 @@ static void format(char *buf, int level, const char *place, int e,
     char *p, prefix[1024];
     
     p = prefix;
-    time(&t);
+
+    if (with_timestamp) {
+        time(&t);
 #if LOG_TIMESTAMP_LOCALTIME
-    tm = gw_localtime(t);
+        tm = gw_localtime(t);
 #else
-    tm = gw_gmtime(t);
+        tm = gw_gmtime(t);
 #endif
-    sprintf(p, "%04d-%02d-%02d %02d:%02d:%02d ",
-    tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday,
-    tm.tm_hour, tm.tm_min, tm.tm_sec);
+        sprintf(p, "%04d-%02d-%02d %02d:%02d:%02d ",
+        tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday,
+        tm.tm_hour, tm.tm_min, tm.tm_sec);
     
-    p = strchr(p, '\0');
+        p = strchr(p, '\0');
+    }
+
     sprintf(p, "[%ld] ", gwthread_self());
-    
+
     p = strchr(p, '\0');
     if (level < 0 || level >= tab_size)
 	sprintf(p, "UNKNOWN: ");
     else
 	sprintf(p, "%s", tab[level]);
-    
+
     p = strchr(p, '\0');
     if (place != NULL && *place != '\0')
 	sprintf(p, "%s: ", place);
@@ -465,7 +469,7 @@ static void kannel_syslog(char *format, va_list args, int level)
 	    char buf[FORMAT_SIZE]; \
 	    va_list args; \
 	    \
-	    format(buf, level, place, err, fmt); \
+	    format(buf, level, place, err, fmt, 1); \
             if (writers != NULL) { \
                 list_lock(writers); \
                 list_add_producer(writers); \
@@ -483,6 +487,7 @@ static void kannel_syslog(char *format, va_list args, int level)
             if (writers != NULL) \
                 list_remove_producer(writers); \
 	    if (dosyslog) { \
+	        format(buf, level, place, err, fmt, 0); \
 		va_start(args, fmt); \
 		kannel_syslog(buf,args,level); \
 		va_end(args); \
@@ -494,7 +499,7 @@ static void kannel_syslog(char *format, va_list args, int level)
 	    char buf[FORMAT_SIZE]; \
 	    va_list args; \
 	    \
-	    format(buf, level, place, err, fmt); \
+	    format(buf, level, place, err, fmt, 1); \
             if (writers != NULL) { \
                 list_lock(writers); \
                 list_add_producer(writers); \
@@ -519,7 +524,7 @@ static inline void gw_panic_output(int err, const char *fmt, ...)
 
 void gw_panic(int err, const char *fmt, ...)
 {
-    /* 
+    /*
      * we don't want PANICs to spread accross smsc logs, so
      * this will be always within the main core log.
      */
@@ -531,12 +536,18 @@ void gw_panic(int err, const char *fmt, ...)
         size_t size, i;
         char **strings;
 
-        size = backtrace(stack_frames, 50);
+        size = backtrace(stack_frames, sizeof(stack_frames) / sizeof(void*));
         strings = backtrace_symbols(stack_frames, size);
         gw_claim_area(strings);
 
-        for (i = 0; i < size; i++)
-            gw_panic_output(0, "%s", strings[i]);
+        if (strings) {
+            for (i = 0; i < size; i++)
+                gw_panic_output(0, "%s", strings[i]);
+        }
+        else { /* hmm, no memory available */
+            for (i = 0; i < size; i++)
+                gw_panic_output(0, "%p", stack_frames[i]);
+        }
 
         gw_free(strings);
     }

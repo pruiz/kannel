@@ -1,8 +1,12 @@
 2003-11-22  Alexander Malysh  <a.malysh@centrium.de>
+    * gwlib/log.c: don't add timestamp if syslog used. Improved backtrace
+      support.
+
+2003-11-22  Alexander Malysh  <a.malysh@centrium.de>
     * configure, configure.in, gw-config.h.in, gwlib/log.c: added backtrace
       support for supported archs to gw_panic call. Backtrace information allows
       better way to trace a panic cause because now panic give us really meaningless
-      info. Tip: use address within [] with add2line.
+      info. Tip: use address within [] with addr2line or add -rdynamic to CFLAGS.
 
 2003-11-21  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/bb_smscconn.c: adding logging of msg->sms.binfo field to access-log.
