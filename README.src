@@ -1,0 +1,12 @@
+Directory organization of the gateway source tree
+
+
+The source tree is organized as follows:
+
+	gateway		root of source tree: some docs, no sources
+	|-- doc		documentation
+	|-- gw		the gateway itself
+	|-- gwlib	utility functions for gateway and other programs
+	|-- test	programs for testing the gateway
+	`-- utils	utility programs
+

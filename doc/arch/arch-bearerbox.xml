@@ -1,0 +1,213 @@
+<chapter>
+<title>DRAFT: Bearer box</title>
+
+	<para>This chapter describes the internal workings of the bearer
+	box: communication with SMSC's and CSD routers, internal major
+	modules and data structures, threads, routing, error handling in
+	routins, how it deals with the client box registrations and
+	errors with client connections, and queueing of messages inside
+	the bearer box.</para>
+	
+	<para>The bearer box connects to the SMSC's in the configuration,
+	and accepts UDP packets at a suitable port. It identifies SMS
+	messages normal or WDP packets. It routes stuff to appropriate
+	boxes, taking care of load balancing. It keeps unsent messages
+	in queues (incoming and outgoing), in case of traffic jams.
+	It lets keep track of the other boxes (lets them register, notices
+	when connections break, keeps track of heartbeats).</para>
+
+<sect1>
+<title>Bearer box design</title>
+
+
+	<para>The bearer box is implemented with several threads to
+	simplify program design.</para>
+
+	<figure>
+	<title>Bearer box design. Outer components are described with
+	boldened boxes. Bearer box threads are described with circles.
+	Data streams are marked with arrows.</title>
+	<graphic fileref="arch-bbox&figtype;"></graphic>
+	</figure>
+
+	<para><emphasis>SMSC threads</emphasis> handle connections to
+	the SMS Centers. One thread per SMSC. The thread is
+	responsible for connecting and re-connecting the SMSC, using
+	the appropriate protocol, be it EMI, CMD, SMPP or other. The
+	thread receives messages from SMSC and puts them into
+	<emphasis>Request Queue</emphasis> (see below). Likewise, it
+	picks messages from <emphasis>Reply Queue</emphasis> that are
+	sent via the SMSC it is connected to.</para>
+
+	<para><emphasis>CSDR thread</emphasis> (UDP thread) is similar to SMSC
+	thread, but it connects to CSD Router. If several IPs are
+	used, multiple CSDR threads are used.</para> 
+
+	<para><emphasis>Box connection threads</emphasis> do all the
+	data transfering with SMS and WAP Boxes. Thread picks all
+	appropriate messages from Request Queue and send them to
+	Boxes. Likewise they receive messages from Boxes and put them
+	into Reply Queue, wherefrom the appropriate SMSC or UDP Thread 
+	reads it.</para>
+
+	<para><emphasis>Main program</emphasis> keeps eveything in
+	control. It listens to new Box connection requests and creates
+	new threads for them, listens to HTTP-service port for
+	adminstrative commands and keeps a record of all boxes
+	connected. To achieve this, it listens to 'heartbeat' of other
+	threads, and does necessary actions when heartbeat stops.</para>
+
+</sect1>
+
+<sect1>
+<title>MO SMS Messages</title>
+
+        <para>Mobile oriented SMS Messages are handled by the SMSC
+        thread, which is connected to corresponding SMS Center. The
+        received message is written, along with any necessary SMS
+        Center specified extra data, into the Request Queue. No
+        immediate acknowledgement is sent.</para>
+
+	<para>The SMS Message is then read from the Request Queue by
+	one of the Box Connections, and after it has been successfully
+	transferred to SMS Box, an acknowledgement is written into
+	Reply Queue. If the SMS Box is not available, NACK is written
+	into Reply Queue.</para>
+
+	<para>The SMS Center thread investigates the Reply Queue and
+	pulls the ACK/NACK message from the queue and sends it back to
+	SMS Center.</para>
+
+</sect1>
+
+<sect1>
+<title>MT SMS Messages</title>
+
+        <para>Mobile terminated SMS Messages are initiated by the SMS
+        Box. It transfers the message into the bearer box via Box
+        Connection. The appropriate SMS Center is determined by the
+        Box Connection and the message is then added to the Reply
+        Queue.</para>
+
+	<para>As with ACK/NACK messages, the SMS Center finds the
+	message from Reply Qeueu and sends it to SMS Center. However,
+	the message is not removed from the reply queue until an ACK
+	or NACK is received from the SMS Center.</para>
+
+	<para>If a NACK message is received, the SMSC thread either
+	retries later or sends it back to SMS Box via Request Queue
+	and Box connection. This is curently left to SMSC
+	implementation. If the message is sent successfully, an ACK
+	message is put into requet queue to inform the original box
+	that the message has been relied.</para>
+
+</sect1>
+
+<sect1>
+<title>WAP Message Packets</title>
+
+       <para>WAP message packets are handled as SMS Messages. XXX</para>
+
+</sect1>
+
+<sect1>
+<title>Heartbeat</title>
+
+       <para>The main program is responsible for knowing which parts
+       of the program still work. Each other thread upkeeps its
+       personal 'alive' status (heartbeat) and the main program keeps
+       track that each thread has not stopped responding. If the alive
+       status has not been updated for a configured time, the main
+       program assumes that the thread has died or is otherwise
+       stopped, and the main program does necessary actions to destroy
+       or restart it.</para>
+
+       <para>Likewise each Box Connection keeps their personal
+       connection to SMS or WAP Box alive by listening to the
+       heartbeat from the box. If it stops, the connection is usually
+       considered as lost and the appropriate Box Connection
+       dies.</para>
+
+</sect1>
+
+<sect1>
+<title>Box Connections</title>
+
+       <para>As bearer box only routes packets coming from SMS Centers
+       and CSD Router, Box Connections are used to connect service
+       providers. Each SMS and WAP Box connects the bearer box with
+       TCP/IP socket. A new Box Connection thread is then generated to
+       handle that specific connection.</para>
+
+       <para>Alternatively, one SMS Box and one WAP Box can be run as
+       seperate thread in bearer box. This increases the message
+       response time as no TCP/IP traffic is needed, but increases the
+       total load of the bearer box.</para>
+
+       <para>As a new connection is opened, the bearer box sends any
+       common configurations to the SMS or WAP Box. That way only one
+       configuration file is needed to be edited.</para>
+</sect1>
+
+<sect1>
+<title>HTTP Monitoring</title>
+
+       <para>The bearer box can be monitorized and configured via HTTP
+       interface. The main program handles HTTP-requests.</para>
+
+</sect1>
+
+<sect1>
+<title>Load Balancing</title>
+
+       <para>The bearer box has a simple way to balance the load
+       between several SMS or WAP Boxes. Each Box Connection has a
+       load level, which has been provided by the box it is connected 
+       to. If the load level is considerably higher than the lowest
+       load level of the box connections of the same type (SMS or
+       WAP), the box connection does not pick new requests from the
+       queue until its load level has lowered (or the load level of
+       other box connections have reached its level) </para>
+
+</sect1>
+
+<sect1>
+<title>Request Queue</title>
+
+       <para>This queue handles all messages incoming from SMS Centers
+       and CSD Routers. It is not a standard queue, but instead it has
+       many comncurrent queues. All new messages are appended to its 
+       tail (exception: ACK/NACK notifications are put into head), 
+       and similarly messages are pulled from
+       its head. However, threads pull the first message of
+       <emphasis>the right kind</emphasis>, and so this violates the
+       normal concept of the queue.</para>
+
+       <para>Only Box Connections read messages from the queue. The
+       actual reader is determined by the type of the message (SMS
+       message versus WAP SMS or UDP) and load balancing methods (see
+       above). Only SMSC and CSDR threads add messages to this queue.</para>
+</sect1>
+
+<sect1>
+<title>Reply Queue</title>
+
+       <para>The reply queue is similar to request queue in its
+       behaviour. New messages are appended to the end, but old ones
+       can be read from any place. Acknowledgement messages are put
+       into head, so that they read from the queue first.</para>
+
+       <para>Messages to reply queue are added by the box
+       connections. The appropriate box connection doing the append
+       does the necessary routing logics to address the message to
+       corresponding SMSC or CSDR thread.</para>
+
+       <para>Messages from reply queue are read by SMSC and CSDR
+       threads. They are identified by the SMSC or CSDR thread
+       identification number, which is given to them when they are
+       first created.</para>
+
+</sect1>
+
+
+</chapter>

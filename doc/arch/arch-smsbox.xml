@@ -1,0 +1,20 @@
+<chapter>
+<title>DRAFT: SMS box</title>
+
+	<para>This chapter describes the internal workings of the
+	SMS box: internal major modules, threads, communication with
+	HTML content servers, how HTML is converted to SMS messages,
+	timeouts with HTTP requests and other external communications,
+	how to deal with a broken bearer box connection, how the box is
+	started automatically.	</para>
+	
+	<para>The SMS box reads SMS messages from the bearer box, 
+	translates them into URLs, fetches the HTML pages, sends
+	back SMS messages to the bearer box. In addition, it sends
+	heartbeat messages. The SMS box is basically a modified part
+	of the current smsgateway.c.</para>
+	
+	<para>This chapter will be written by the person who will
+	convert the smsgateway.c to the SMS box.</para>
+	
+</chapter>

@@ -1,3 +1,7 @@
+Tue Nov 16 14:57:55 1999  Lars Wirzenius  <liw@wapit.com>
+
+	* Moved a number of files from smsgateway here.
+
 Tue Nov 16 13:11:13 1999  Lars Wirzenius  <liw@wapit.com>
 
 	* Massive reorganization of the directory tree. Almost all files

@@ -1,0 +1,88 @@
+CodingStyle for the WapIT SMS Gateway
+by Lars Wirzenius <liw@wapit.com>
+
+
+Commenting
+
+	Each source code file shall begin with a comment of the following
+	format:
+	
+		/*
+		 * filename - one-line summary
+		 *
+		 * A summary of the purpose of the file and a summary
+		 * of the functions it exports. If the file is the main
+		 * program, a short usage summary or a reference to the
+		 * manual should be included.
+		 *
+		 * Author <email@address>
+		 */
+	
+	Each function should
+	be preceded by a comment like the following:
+	
+		/*
+		 * One-sentence summary of what the function does. More 
+		 * detailed description of what the function does, including
+		 * return value, purpose of each function, and a summary of
+		 * who takes care of allocating and freeing memory of the
+		 * arguments and return values.
+		 */
+
+	Similar comments for global variables, constants, and data types.
+
+Error handling
+
+	Typically, functions should have a return type of int and return
+	-1 for errors, 0 for OK (or 0 for no input, positive for indicating
+	number of input items read, or similar values). When returning a
+	pointer, errors should be indicated with NULL.
+	
+	When a problem is noticed, the lowest level that notices it
+	should log it using one of the log functions in wapitlib.h,
+	and then return an indication of failure (unless it can handle
+	the problem itself) to its caller. If the problem is associated
+	with a system error, i.e., the global variable `errno' details
+	the problem, it is the lowest level that should pass `errno'
+	to the log message function. The callers should just report
+	which operation failed, but not report a system error (i.e.,
+	they should pass `0' to the log message functions). This way,
+	an error causes several lines of output to the logs, and it
+	essentially produces a stack dump. This helps diagnose the
+	problem, since it becomes more clear which parts of the system
+	were involved in the operation that failed.
+	
+Log messages
+
+	The logging functions in wapitlib.h shall be used, not printf.
+
+	Note that panic must never be used after the gateway has been
+	started.
+	
+	Log messages shall consist of complete sentences: start with
+	an upper case letter and end in a period (or other suitable
+	punctuation character).
+
+	Error messages (functions warning, error, panic) should indicate
+	the operation that was being performed, and the (presumed)
+	cause of the problem. For example:
+	
+		Reading configuration file smsgateway.conf: out of memory.
+		System error 42: Not enough space.
+
+		Couldn't read configuration file `smsgateway.conf'.
+		System error 42: Not enough space.
+
+	Informational messages (function info) probably shouldn't report
+	system errors.
+
+	Filenames should be given `quoted' so that it is clear what is
+	and what is not part of the name. Similarly for other data that
+	may need it.
+	
+	Open question: The name of the function or source code module
+	isn't very informational for people just using the gateway,
+	although they can be useful for debugging the gateway. People
+	debugging the gateway would probably like the source file, line
+	number, and possibly function name be reported systematically.
+	What to do?
