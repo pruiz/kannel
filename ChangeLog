@@ -1,3 +1,9 @@
+2001-01-12  Tuomas Luttinen  <tuo@wapit.com>
+
+	* gw/wml_compiler.c: Now compiler can handle a libxml compiled with 
+	-DXML_USE_BUFFER_CONTENT. The content of the node is converted into 
+	an octet string with a macro.
+
 2001-01-12  Richard Braakman  <dark@wapit.com>
 
 	* Updated NEWS file to prepare for 1.1.
