@@ -156,6 +156,7 @@ struct request_data {
     Octstr *url;
     long x_wap_tod;
     List *request_headers;
+    Octstr *msisdn;
 };
 
 
@@ -712,7 +713,7 @@ static void return_unit_reply(WAPAddrTuple *tuple, long transaction_id,
 static void return_reply(int status, Octstr *content_body, List *headers,
     	    	    	 long sdu_size, WAPEvent *orig_event, long session_id, 
                          Octstr *method, Octstr *url, int x_wap_tod,
-                         List *request_headers)
+                         List *request_headers, Octstr *msisdn)
 {
     struct content content;
     int converted;
@@ -756,8 +757,9 @@ static void return_reply(int status, Octstr *content_body, List *headers,
 
     /* log the access */
     /* XXX make this configurable in the future */
-    alog("%s %s <%s> (%s, charset='%s') %ld %d <%s> <%s>", 
+    alog("%s %s %s <%s> (%s, charset='%s') %ld %d <%s> <%s>", 
          octstr_get_cstr(addr_tuple->remote->address), 
+         msisdn ? octstr_get_cstr(msisdn) : "-",         
          octstr_get_cstr(method), octstr_get_cstr(url), 
          content.type ? octstr_get_cstr(content.type) : "", 
          content.charset ? octstr_get_cstr(content.charset) : "",
@@ -1067,10 +1069,11 @@ static void return_replies_thread(void *arg)
 
         return_reply(status, body, headers, p->client_SDU_size,
                      p->event, p->session_id, p->method, p->url, p->x_wap_tod,
-                     p->request_headers);
+                     p->request_headers, p->msisdn);
 
         wap_event_destroy(p->event);
         http_destroy_headers(p->request_headers);
+        octstr_destroy(p->msisdn);
         gw_free(p);
         octstr_destroy(final_url);
     }
@@ -1106,6 +1109,7 @@ static void start_fetch(WAPEvent *event)
     struct request_data *p;
     Octstr *send_msisdn_query, *send_msisdn_header, *send_msisdn_format;
     int accept_cookies;
+    Octstr *msisdn;
     
     counter_increase(fetches);
     
@@ -1136,7 +1140,10 @@ static void start_fetch(WAPEvent *event)
         request_body = octstr_duplicate(p->request_body);
         method = p->method;
     }
-    info(0, "Fetching <%s>", octstr_get_cstr(url));
+
+    msisdn = radius_acct_get_msisdn(addr_tuple->remote->address);
+    info(0, "Fetching URL <%s> for MSISDN <%s>", octstr_get_cstr(url),
+         msisdn ? octstr_get_cstr(msisdn) : "");
 
     /* 
      * XXX this URL mapping needs to be rebuild! st. 
@@ -1209,9 +1216,11 @@ static void start_fetch(WAPEvent *event)
         content_body = octstr_create(HEALTH_DECK);
         octstr_destroy(request_body);
         return_reply(ret, content_body, resp_headers, client_SDU_size,
-                     event, session_id, method, url, x_wap_tod, actual_headers);
+                     event, session_id, method, url, x_wap_tod, actual_headers,
+                     msisdn);
         wap_event_destroy(event);
         http_destroy_headers(actual_headers);
+        octstr_destroy(msisdn);
     } 
     /* otherwise it should be a GET, POST or HEAD request type */
     else if (octstr_str_compare(method, "GET") == 0 ||
@@ -1260,6 +1269,7 @@ static void start_fetch(WAPEvent *event)
         p->url = url;
         p->x_wap_tod = x_wap_tod;
         p->request_headers = actual_headers;
+        p->msisdn = msisdn;
 
         /* issue the request to the HTTP server */
         http_start_request(caller, http_name2method(method), url, actual_headers, 
@@ -1275,9 +1285,11 @@ static void start_fetch(WAPEvent *event)
         ret = HTTP_NOT_IMPLEMENTED;
         octstr_destroy(request_body);
         return_reply(ret, content_body, resp_headers, client_SDU_size,
-                     event, session_id, method, url, x_wap_tod, actual_headers);
+                     event, session_id, method, url, x_wap_tod, actual_headers,
+                     msisdn);
         wap_event_destroy(event);
         http_destroy_headers(actual_headers);
+        octstr_destroy(msisdn);
     }
 }
                 

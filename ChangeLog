@@ -1,3 +1,8 @@
+2005-02-11  Stipe Tolj  <stolj@wapme.de> 
+    * gw/wap-appl.c: added support to log MSISDN of a calling client device
+      provided via our RADIUS acct proxy. Thanks to Paul for this.
+      [Msg-ID: <20050211123830.GW14917@stingr.sgu.ru>]
+
 2005-02-10  Stipe Tolj  <stolj@wapme.de> 
     * gw/dlr_pgsql.c: fixing bug #190, where PostgreSQL does not take LIMIT
       for DELETE and UPDATE operations. WARNING: This causes a possible loose

@@ -1,9 +1,17 @@
-NEWS about Kannel: Open Source WAP and SMS Gateway version 1.4.0
+NEWS about Kannel: Open Source WAP and SMS Gateway version 1.4.1
 
 This is a STABLE version. It should be usable for production systems.
 Please do report problems to the Kannel bug tracking system available at 
 http://bugs.kannel.org/ or send a mail to <devel@kannel.org> (the development 
 mailing list).
+
+
+Changes since version 1.4.0: 
+
+Compatibility breakers:
+
+  * Format for wapbox's access-log format changed to include the MSISDN of
+    a client as second argument after client IP and before method.
 
 
 Changes since version 1.3.2: 
