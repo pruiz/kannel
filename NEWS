@@ -1,12 +1,139 @@
-NEWS about Kannel: Open Source WAP and SMS Gateway version 1.1.4
+NEWS about Kannel: Open Source WAP and SMS Gateway version 1.1.6
 
 This is a DEVELOPMENT version. It should be usable for experimentation
 and testing, and is a release candidate for 1.2. Please do try it out
-and report problems to devel@kannel.org (the development mailing list)
-or bugs@kannel.org (the bug tracking system).
+and report problems to devel@kannel.3glab.oorg (the development mailing 
+list). The bug tracking system is currently offline.
 
 NOTE: This is not an update to 1.0.  Updates to 1.0 will be numbered 1.0.x,
 until we decide to release 1.2.  See the VERSION file for details.
+
+
+Changes since version 1.1.5:
+
+Compatibility breakers:
+
+ * Major restructuring of the AT2 module has been done. 
+   See the ChangeLog for more details.
+ 
+New features:
+
+ * PPG module has been introduced and works for both IPv4 and SMS based 
+   bearers. Supported document types are SL and SI. The PPG is an essential
+   item of the WAP Push architecture.
+
+ * WTLS support has been included, but yet not finished. 
+   Development in this area is still needed.
+
+ * Flash SMS support added.
+   Messages that arive at mobile terminals are displayed directly to the
+   user interface and usually they can not be saved to the inbox.
+
+ * 3G Lab contributed the XML files for their Alligata.
+ 
+ * Added "keepalive" feature for EMI2 module.
+
+ * MWI (message waiting indicator) message support added.
+   These messages do cause the mobile terminal to indicate special events
+   on the user interface, i.e. showing that a new E-Mail has arrived.
+
+ * AT2 now supports Siemens TC35
+
+ * Added DLR (delivery report) support for SMSC modules.
+   Delivery reports are returned by SMSCs and can trigger a defined URL in 
+   order to inform the pushing application of a successfull transmission of
+   the message. URLs can be set on a per-message request basis and hence 
+   semantics of the message ID is kept by the requesting application.
+
+ * AT2 now support autodetection of modem devices.
+
+ * HTTP basic authentication can be used now for sms-service groups.
+   This allows SMS services to access HTTP resources that need explicit
+   user authentication using the HTTP basic authentication scheme (RFC 2617).
+
+ * EMI2 windowing control has been added.
+   
+ * DLRs may be stored to external storage.
+   Using the --with-dlr configure flag external storage spaces may be used 
+   for the DLRs. This is usefull in cases you take your boxes down and 
+   do not want to loose all pending DLR messages. 
+   Currently MySQL is supported as external storage.
+ 
+ * SSL-enabled HTTP servers are now available for any HTTP interface.
+   Users may relly now on secured HTTPS scheme communication between HTTP
+   clients and Kannel's HTTP servers. This is used for the sendsms and the
+   administration HTTP interface.
+
+ * Cygwin platform is now supported out-of-the-box without additional pthreads
+   libraries from 1.3.9.
+
+ * WAP OTA (over-the-air) has been improved.
+   OTA settings and bookmarks may be send via SMS bearer to capable mobile
+   terminals. Pre-defined sets from the configuration may be send or 
+   individual sets using a GET request parameter. 
+   This will change to allow POST of the OTA XML document.
+
+ * Several new phones are supported for the AT2 module.
+   See the doc/modems.conf file for their definitions.
+
+ * New sendsms HTTP interface field 'account' has been introduced.
+   This is mainly for accounting purposes.
+
+ * SSL-enabled inter-box TCP communication can be used.
+   In case boxes are running on different machines in different unreliable
+   networks this may be used to secure the TCP connection between them, i.e.
+   smsbox talking to a remote bearerbox and communication is SSL-enabled.
+
+ * URIs for the HTTP interfaces configurable.
+   The HTTP interface default URIs for the sendsms and sendota functions may 
+   be defined in the configuration to individual URIs.
+   
+ * Added SMSC interface implementation to Sonera ContentGateway. 
+
+ * Solaris packageing added.
+
+ * Added 'exec' translation type to sms-service.
+   This allows to execute arbitrary external code and pass the output as 
+   reply to the message sender.
+
+ * Include within configuration files added.
+   This makes 'include = "foobar.conf"' possible and hence segmenting the groups
+   to their own config files to make the setup more clean.
+
+ * Improved HTTP SMSC behaviour.
+
+ * SIM buffering for AT2 has been included.
+   This is a fail-safe mechanism to handle messages that pass the regular line
+   of processing to the SIM card.
+
+Bugfixes:
+
+ * Various fixes in all major SMSC modules.
+
+ * Fixed bugs in text concatenation.
+
+ * Fixed make process bug for Solaris 2.6
+
+ * Various memory leaks have been fixed.
+
+ * Fixed default DocBook detection for FreeBSD platform.
+
+ * Fixed forced-smsc bug for sendota HTTP interface.
+
+ * Fixed issues to support Linux on PowerPC and S390 again.
+
+Development news:
+
+ * WTLS is the next major challange.
+   At least --with-wtls=openssl configure leads to a clean make process.
+   3ui's kwtls package seems to be good enough as sample for the missing
+   WTLS parts.
+
+ * Added general MySQL connection support.
+   This may be extended to have several groups reside in corresponding MySQL
+   tables and hence operation of highly dynamical environments gets easier, 
+   because there is no need to restart or -HUP the boxes.
+   
 
 Changes since version 1.1.4:
 
