@@ -328,12 +328,12 @@ static void decode_binary_data(Octstr *data)
 
 static Octstr *get_ton_npi_value(int override, int message) 
 {
-    if(override != -1) {
-        debug("bb.sms.smasi", 0, "SMASI: Manually forced source addr ton = %d", 
+    if (override != -1) {
+        debug("bb.sms.smasi", 0, "SMASI: Manually forced ton or npi to `%d'", 
               override);
-        return(octstr_format("%ld", override));
+        return (octstr_format("%ld", override));
     } else {
-        return(octstr_format("%ld", message));
+        return (octstr_format("%ld", message));
     }
 }
 
@@ -432,7 +432,7 @@ static SMASI_PDU *msg_to_pdu(SMASI *smasi, Msg *msg)
 
     /* If its a international number starting with +, lets remove the +. */
     if (octstr_get_char(pdu->u.SubmitReq.Destination, 0) == '+')
-        octstr_delete(pdu->u.SubmitReq.Destination, 0,1);
+        octstr_delete(pdu->u.SubmitReq.Destination, 0, 1);
 
     /* Do ton and npi override - if configured. Use values from message
      * otherwise.
