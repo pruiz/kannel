@@ -1,3 +1,8 @@
+2003-04-01  Alexander Malysh  <a.malysh@centrium.de>
+    * configure.in, config.h.in, gwlib/protected.c: added check and using
+      for reentrant functions (localtime_r,gmtime_r) in gw_localtime,gw_gmtime.
+      In case of existing and using this functions, we avoid locking.
+
 2003-03-31  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/smsc/smsc_cimd2.c: re-patching Angel's fix from 2003-03-27.
 

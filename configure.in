@@ -108,7 +108,7 @@ AC_TRY_COMPILE(, [char *func = __func__;],
 
 dnl Checks for library functions.
 
-AC_CHECK_FUNCS(gettimeofday select socket strdup getopt_long)
+AC_CHECK_FUNCS(gettimeofday select socket strdup getopt_long localtime_r gmtime_r)
 AC_CHECK_FUNC(getopt, , LIBOBJS="$LIBOBJS utils/attgetopt.o")
 AC_SUBST(LIBOBJS)
 

@@ -64,9 +64,14 @@ struct tm gw_localtime(time_t t)
 {
     struct tm tm;
 
+#ifndef HAVE_LOCALTIME_R
     lock(LOCALTIME);
     tm = *localtime(&t);
     unlock(LOCALTIME);
+#else
+    localtime_r(&t, &tm);
+#endif
+
     return tm;
 }
 
@@ -75,9 +80,14 @@ struct tm gw_gmtime(time_t t)
 {
     struct tm tm;
 
+#ifndef HAVE_GMTIME_R
     lock(GMTIME);
     tm = *gmtime(&t);
     unlock(GMTIME);
+#else
+    gmtime_r(&t, &tm);
+#endif
+
     return tm;
 }
 
