@@ -68,6 +68,12 @@
 #include "gwlib/gwlib.h"
 #include "sms.h"
 
+/* XXX Delete me and replace dcs with dcs_to_fields */
+enum dcs_body_type {
+    DCS_GSM_TEXT = 0,
+    DCS_OCTET_DATA = 4    /* flag_8bit */
+};
+
 
 /* 'private:' */
 
@@ -882,8 +888,9 @@ static int ois_append_data_coding_scheme(char *raw, const Msg *msg)
 
     /* 0x0f is a special code for ASCII text, the SMSC will convert
      * this to GSM and set the DCS to 0.
-     * FIXME: Convert to GSM ourselves and use DCS_GSM_TEXT. */
-    raw[0] = (char) (msg->sms.flag_8bit ? DCS_OCTET_DATA : 0x0f);
+     * FIXME: Convert to GSM ourselves and use DCS_GSM_TEXT.
+     * FIXME: use fields_to_dcs and try to support DC_UCS2 too ;) */
+    raw[0] = (char) (msg->sms.coding == DC_8BIT ? DCS_OCTET_DATA : 0x0f);
     return 1;
 }
 
@@ -909,10 +916,10 @@ static int ois_append_submission_options(char *raw, const Msg *msg)
 
     /* bit field, bit 0=reply path, bit 1=udh, bits 3-4=dcs interpretation */
     raw[0] = (char) 0x00;
-    if (msg->sms.flag_udh) {
+    if (octstr_len(msg->sms.udhdata)) {
 	raw[0] |= (char) 0x02;
     }
-    if (msg->sms.flag_8bit) {
+    if (msg->sms.coding == DC_8BIT) { /* XXX UCS2? */
 	raw[0] |= (char) 0x10;
     }
     return 1;
@@ -929,12 +936,7 @@ static int ois_append_sm_text(char *raw, const Msg *msg)
 
     /* calculate lengths */
 
-    if (msg->sms.flag_udh) {
-	udhlen8 = octstr_len(msg->sms.udhdata);
-    } else {
-	udhlen8 = 0;
-    }
-
+    udhlen8 = octstr_len(msg->sms.udhdata);
     msglen8 = octstr_len(msg->sms.msgdata);
 
     udhlen7 = udhlen8;
@@ -950,7 +952,7 @@ static int ois_append_sm_text(char *raw, const Msg *msg)
 
     IOTRACE("encoding", &raw[2], len);
 
-    if (!msg->sms.flag_8bit) {
+    if (msg->sms.coding == DC_7BIT) {
 	ois_convert_from_iso88591(&raw[2], len);
     }
 
@@ -1171,7 +1173,7 @@ static int ois_adjust_data_coding_scheme(Msg *msg, const char *raw)
     /* we set the value only temporarily: */
     /* ois_adjust_sm_text will set the correct value */
 
-    msg->sms.flag_8bit = raw[0] & 0xff;
+    msg->sms.coding = (raw[0] & 0xff) + 1;
 
     return 1;
 }
@@ -1194,7 +1196,8 @@ static int ois_adjust_additional_information(Msg *msg, const char *raw)
     /* we set the value only temporarily: */
     /* ois_adjust_sm_text will set the correct value */
 
-    msg->sms.flag_udh = raw[0] & 0xff;
+    /* XXX I used mc temporarily. use fields_to_dcs! */
+    msg->sms.class = raw[0] & 0xff;
 
     return 1;
 }
@@ -1213,50 +1216,45 @@ static int ois_adjust_sm_text(Msg *msg, const char *raw)
 
     /* copy text, note: flag contains temporarily the raw type description */
 
-    switch (msg->sms.flag_8bit & 0xff) {
+    switch ((msg->sms.coding - 1) & 0xff) {
     case 0x00: /* gsm7 */
 	ois_expand_gsm7(buffer, &raw[2], msglen7);
 	ois_convert_to_iso88591(buffer, msglen7);
-	if (msg->sms.flag_udh & 0x02) {
-	    msg->sms.flag_udh = 1;
+	if (msg->sms.class & 0x02) { /* XXX class temporarily */
 	    msg->sms.msgdata = octstr_create("");
 	    msg->sms.udhdata = octstr_create_from_data(buffer, msglen7);
 	} else {
-	    msg->sms.flag_udh = 0;
 	    msg->sms.msgdata = octstr_create_from_data(buffer, msglen7);
 	    msg->sms.udhdata = octstr_create("");
 	}
-	msg->sms.flag_8bit = 0;
+	msg->sms.coding = DC_7BIT;
 	break;
     case 0x0f: /* ia5 */
 	memcpy(buffer, &raw[2], msglen8);
 	ois_convert_to_iso88591(buffer, msglen8);
-	if (msg->sms.flag_udh & 0x02) {
-	    msg->sms.flag_udh = 1;
+	if (msg->sms.class & 0x02) { /* XXX class temporarily */
 	    msg->sms.msgdata = octstr_create("");
 	    msg->sms.udhdata = octstr_create_from_data(buffer, msglen8);
 	} else {
-	    msg->sms.flag_udh = 0;
 	    msg->sms.msgdata = octstr_create_from_data(buffer, msglen8);
 	    msg->sms.udhdata = octstr_create("");
 	}
-	msg->sms.flag_8bit = 0;
+	msg->sms.coding = DC_7BIT;
 	break;
     default: /* 0xf4, 0xf5, 0xf6, 0xf7; 8bit to disp, mem, sim or term */ 
-	if (msg->sms.flag_udh & 0x02) {
-	    msg->sms.flag_udh = 1;
+	if (msg->sms.class & 0x02) { /* XXX class temporarily */
 	    msg->sms.msgdata = octstr_create("");
 	    msg->sms.udhdata = octstr_create_from_data(&raw[2], msglen8);
 	} else {
-	    msg->sms.flag_udh = 0;
 	    msg->sms.msgdata = octstr_create_from_data(&raw[2], msglen8);
 	    msg->sms.udhdata = octstr_create("");
 	}
-	msg->sms.flag_8bit = 1;
+	msg->sms.coding = DC_8BIT;
 	break;
     }
+    msg->sms.class = MC_UNDEF;
 
-    if (msg->sms.flag_udh) {
+    if (octstr_len(msg->sms.udhdata)) {
 	IOTRACE("decoded udh", octstr_get_cstr(msg->sms.udhdata),
 		octstr_len(msg->sms.udhdata));
     } else {

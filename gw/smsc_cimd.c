@@ -307,8 +307,9 @@ int cimd_submit_msg(SMSCenter *smsc, Msg *msg)
     /* Fix these by implementing a could-not-send-because-
        protocol-does-not-allow in smsc.c or smsgateway.c */
     if (octstr_len(msg->sms.msgdata) + octstr_len(msg->sms.udhdata) < 1) {
-        warning(0, "cimd_submit_smsmessage: ignoring message with 0-length fields");
-        goto okay;  /* THIS IS NOT OKAY!!!! XXX */
+	if (msg->sms.msgdata == NULL)
+	    msg->sms.msgdata = octstr_create("");
+	octstr_append_from_hex(msg->sms.msgdata, "20");
     }
     if (octstr_len(msg->sms.sender) < 1) {
         warning(0, "cimd_submit_smsmessage: ignoring message with 0-length field");
@@ -326,7 +327,7 @@ int cimd_submit_msg(SMSCenter *smsc, Msg *msg)
     memset(tmptext, 0, 10*1024);
     memset(msgtext, 0, sizeof(msgtext));
 
-    if (msg->sms.flag_udh == 1) {
+    if (octstr_len(msg->sms.udhdata)) {
         octstr_get_many_chars(msgtext, msg->sms.udhdata, 0, octstr_len(msg->sms.udhdata));
         octstr_get_many_chars(msgtext + octstr_len(msg->sms.udhdata),
                               msg->sms.msgdata, 0,
@@ -350,7 +351,7 @@ int cimd_submit_msg(SMSCenter *smsc, Msg *msg)
             tmptext, 0x09,
             "", 0x09,
             "", 0x09,
-            (msg->sms.flag_udh == 1) ? "31" : "", 0x09,
+            (octstr_len(msg->sms.udhdata)) ? "31" : "", 0x09,
             "11", 0x03, 0x0A);
 
     ret = write_to_socket(smsc->socket, tmpbuff);

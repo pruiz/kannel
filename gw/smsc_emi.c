@@ -28,6 +28,7 @@
 #include "smsc_p.h"
 #include "gwlib/gwlib.h"
 #include "alt_charsets.h"
+#include "sms.h"
 
 #ifndef CRTSCTS
 #define CRTSCTS 0
@@ -1087,9 +1088,9 @@ static int parse_msg_to_rawmessage(SMSCenter *smsc, Msg *msg, char *rawmessage, 
     /* XXX parse_iso88591_to_emi shouldn't use NUL terminated
      * strings, but Octstr directly, or a char* and a length.
      */
-    if (msg->sms.flag_udh == 1) {
+    if (octstr_len(msg->sms.udhdata)) {
         char xserbuf[258];
-        /* we need a properbly formated UDH here, there first byte contains his length
+        /* we need a properly formated UDH here, there first byte contains his length
          * this will be formatted in the xser field of the EMI Protocol
          */
         udh_len = octstr_get_char(msg->sms.udhdata, 0) + 1;
@@ -1101,7 +1102,7 @@ static int parse_msg_to_rawmessage(SMSCenter *smsc, Msg *msg, char *rawmessage, 
         udh_len = 0;
     }
 
-    if (msg->sms.flag_8bit != 1) {
+    if (msg->sms.coding == DC_8BIT || msg->sms.coding == DC_UCS2) {
         octstr_get_many_chars(msgtext, msg->sms.msgdata, 0, octstr_len(msg->sms.msgdata));
         msgtext[octstr_len(msg->sms.msgdata)] = '\0';
         parse_iso88591_to_emi(msgtext, my_buffer2,
@@ -1120,6 +1121,10 @@ static int parse_msg_to_rawmessage(SMSCenter *smsc, Msg *msg, char *rawmessage, 
         mt = '4';
         strcpy(mcl, "1");
     }
+
+    /* XXX Where is DCS ? Is it in XSER like in emi2 ? 
+     * Please someone encode it with fields_to_dcs 
+     */
 
     sprintf(message_body,
             "%s/%s/%s/%s/%s//%s////////////%c/%s/%s////%s//////%s//",

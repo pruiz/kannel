@@ -19,6 +19,7 @@
 #include "smscconn_p.h"
 #include "bb_smscconn_cb.h"
 #include "msg.h"
+#include "sms.h"
 
 typedef struct privdata {
     List	*outgoing_queue;
@@ -61,7 +62,7 @@ static int sms_to_client(Connection *client, Msg *msg)
     line = octstr_duplicate(msg->sms.sender);
     octstr_append_char(line, ' ');
     octstr_append(line, msg->sms.receiver);
-    if (msg->sms.flag_udh) {
+    if (octstr_len(msg->sms.udhdata)) {
 	octstr_append(line, octstr_imm(" udh "));
 	msgdata = octstr_duplicate(msg->sms.udhdata);
 	octstr_url_encode(msgdata);
@@ -134,8 +135,8 @@ static void msg_to_bb(SMSCConn *conn, Octstr *line)
 	    goto error;
 	msg->sms.udhdata = octstr_copy(line, p + 1, p2 - p - 1);
 	msg->sms.msgdata = octstr_copy(line, p2 + 1, LONG_MAX);
-	msg->sms.flag_udh = 1;
-	msg->sms.flag_8bit = 1;
+	if (msg->sms.coding == DC_UNDEF)
+	    msg->sms.coding = DC_8BIT;;
 	if (octstr_url_decode(msg->sms.msgdata) == -1 ||
 	    octstr_url_decode(msg->sms.udhdata) == -1)
 	    warning(0, "smsc_fake: urlcoded data from client looks malformed");

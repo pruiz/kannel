@@ -19,7 +19,6 @@
 #include "bb_smscconn_cb.h"
 #include "sms.h"
 
-
 /*
  * Select these based on whether you want to dump SMPP PDUs as they are 
  * sent and received or not. Not dumping should be the default in at least
@@ -209,7 +208,7 @@ static SMPP_PDU *msg_to_pdu(SMPP *smpp, Msg *msg)
     	    	    	  counter_increase(smpp->message_id_counter));
     pdu->u.submit_sm.source_addr = octstr_duplicate(msg->sms.sender);
     pdu->u.submit_sm.destination_addr = octstr_duplicate(msg->sms.receiver);
-    if (msg->sms.flag_udh) {
+    if (octstr_len(msg->sms.udhdata)) {
 	pdu->u.submit_sm.short_message =
 	    octstr_format("%S%S", msg->sms.udhdata, msg->sms.msgdata);
 	pdu->u.submit_sm.esm_class = SMPP_ESM_CLASS_UDH_INDICATOR;
@@ -217,12 +216,7 @@ static SMPP_PDU *msg_to_pdu(SMPP *smpp, Msg *msg)
 	pdu->u.submit_sm.short_message = octstr_duplicate(msg->sms.msgdata);
 	charset_latin1_to_gsm(pdu->u.submit_sm.short_message);
     }
-    if (msg->sms.flag_8bit)
-        pdu->u.submit_sm.data_coding = DCS_OCTET_DATA;
-    else
-        pdu->u.submit_sm.data_coding = DCS_GSM_TEXT;
-	if (msg->sms.flag_flash==1)
-	    pdu->u.submit_sm.data_coding = (pdu->u.submit_sm.data_coding & 0xEC) | 0x10;
+    pdu->u.submit_sm.data_coding = fields_to_dcs(msg, 0);
     return pdu;
 }
 

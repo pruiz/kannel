@@ -24,8 +24,6 @@ MSG(sms,
 	{
 		OCTSTR(sender);
 		OCTSTR(receiver);
-		INTEGER(flag_8bit);
-		INTEGER(flag_udh);
 		OCTSTR(udhdata);
 		OCTSTR(msgdata);
 		INTEGER(time);
@@ -33,10 +31,10 @@ MSG(sms,
 		OCTSTR(service);
 		INTEGER(id);
 		INTEGER(sms_type);
-		INTEGER(flag_flash);
-		INTEGER(flag_mwi);
-		INTEGER(mwimessages);
-		INTEGER(flag_unicode);
+		INTEGER(class);
+		INTEGER(mwi);
+		INTEGER(coding);
+		INTEGER(compress);
 		INTEGER(validity);
 		INTEGER(deferred);
 		OCTSTR(dlr_id);

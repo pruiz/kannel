@@ -1,3 +1,36 @@
+2001-09-01 Bruno Rodrigues <bruno.rodrigues@litux.org>
+	* "charset", "class" and "coding" patch. Use class to define Message
+	Class (older flash). Use coding to select manually 7/8bit or UCS2. 
+	Use charset to tell kannel which charset the text is.
+	* Removed mwimessages (udh string will be included on userguide)
+	* Added compress field (compress code not yet included)
+	* Added fields_to_dcs and dcs_to_fields to encode/decode DCS field
+	according to ETSI GSM 03.38 in new sms.c. Added MC_*, MWI_* and DC_*
+	* Added reply-requestfailed and reply-emptymessage configuration 
+	strings.
+	* coding (older flag_8bit) is retro-compatible. If unset, defaults to
+	7 bit, or 8 bit if udh is set. 
+	* charset defines which charset text field is. default to ISO-8859-1 
+	for coding=DC_7BIT, UTF16BE for DC_UCS2 (%00%33%00%34) or raw (ignored)
+	for DC_8BIT
+	* Tested in emi2. Added fields_to_dcs to AT too, so everything should 
+	work with it.
+	* Added validity field to AT code. If unset, uses older validity 
+	configuration value. If modem is a Siemens, use F* kind of DCS.
+	* If message is empty, in cimd, change to a one-space message. (Can't
+	cimd send empty messages ?)
+	* In old emi, is DCS defined in XSER2 like in emi2 ?
+	* Added allowed/denied-prefix to sms-service too. Just like accepted-
+	-smsc, if a number prefix is denied on one service, kannel will search
+	for other service. This way, we can have one service for 91 started 
+	numbers and other for other prefixes.
+	* Added black/white list to urltranslations. If rejected, search for a
+	"black-list" service (just like default works)
+	* Just try 
+	http://...&class=0&text=%00%33&coding=3
+	http://...&class=0&text=усч&coding=3&charset=ISO-8859-1
+	* Gonna check userguide and write this all to it now.
+
 2001-08-31 Bruno Rodrigues <bruno.rodrigues@litux.org>
 	* If message is NACKed, write it to store so message got
 	out of queue.

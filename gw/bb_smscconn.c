@@ -23,6 +23,7 @@
 
 #include "gwlib/gwlib.h"
 #include "msg.h"
+#include "sms.h"
 #include "bearerbox.h"
 #include "numhash.h"
 #include "smscconn.h"
@@ -61,8 +62,7 @@ static void log_sms(SMSCConn *conn, Msg *sms, char *message)
     
     text = sms->sms.msgdata ? octstr_duplicate(sms->sms.msgdata) : octstr_create("");
     udh = sms->sms.udhdata ? octstr_duplicate(sms->sms.udhdata) : octstr_create("");
-//    if (sms->sms.dc > 1)
-    if (sms->sms.flag_8bit)
+    if (sms->sms.coding == DC_8BIT || sms->sms.coding == DC_UCS2)
 	octstr_binary_to_hex(text, 1);
     octstr_binary_to_hex(udh, 1);
 
@@ -73,7 +73,7 @@ static void log_sms(SMSCConn *conn, Msg *sms, char *message)
 	 sms->sms.service ? octstr_get_cstr(sms->sms.service) : "",
 	 octstr_get_cstr(sms->sms.sender),
 	 octstr_get_cstr(sms->sms.receiver),
-	 /* sms->sms.dc*/ sms->sms.flag_8bit + 1, /*sms->sms.mc*/ 2-sms->sms.flag_flash, /*sms->sms.mwi*/ sms->sms.flag_mwi, /*sms->sms.compress*/ 0,
+	 sms->sms.class, sms->sms.coding, sms->sms.mwi, sms->sms.compress,
 	 octstr_len(sms->sms.msgdata), octstr_get_cstr(text),
 	 octstr_len(sms->sms.udhdata), octstr_get_cstr(udh)
     );

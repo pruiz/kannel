@@ -83,6 +83,8 @@ SINGLE_GROUP(smsbox,
     OCTSTR(sms-length)
     OCTSTR(reply-couldnotfetch)
     OCTSTR(reply-couldnotrepresent)
+    OCTSTR(reply-requestfailed)
+    OCTSTR(reply-emptymessage)
     OCTSTR(allowed-prefix)
     OCTSTR(denied-prefix)
     OCTSTR(white-list)

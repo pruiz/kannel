@@ -622,7 +622,7 @@ static Msg *pdu_decode(Octstr *data) {
 static Msg *pdu_decode_deliver_sm(Octstr *data) {
         int len, pos, i;
         char origaddr[21];
-        int udhi, eightbit, udhlen;
+        int udhi, dcs, udhlen;
         Octstr *origin = NULL;
         Octstr *udh = NULL;
         Octstr *text = NULL, *tmpstr;
@@ -652,8 +652,9 @@ static Msg *pdu_decode_deliver_sm(Octstr *data) {
 
         /* skip the PID for now */
         pos++;
-        /* DCS : 8bit? */
-        eightbit = (octstr_get_char(pdu, pos) & 4) >> 2;
+	
+        /* DCS */
+	dcs = octstr_get_char(pdu, pos); 
         pos++;
         
         /* get the timestamp */
@@ -682,14 +683,22 @@ static Msg *pdu_decode_deliver_sm(Octstr *data) {
                 len -= udhlen +1;
         }
 
+        /* build the message */         
+        message = msg_create(sms);
+	if (!dcs_to_fields(&message, dcs)) {
+	    /* XXX Should reject this message ? */
+	    debug("AT", 0, "Invalid DCS");
+	    dcs_to_fields(&message, 0);
+	}
+
         /* deal with the user data -- 7 or 8 bit encoded */     
         tmpstr = octstr_copy(pdu,pos,len);
-        if(eightbit == 1) {
+        if(message->sms.coding == DC_8BIT || message->sms.coding == DC_UCS2) {
                 text = octstr_duplicate(tmpstr);
         } else {
                 int offset=0;
                 text = octstr_create("");
-                if (udhi && !eightbit) {
+                if (udhi && message->sms.coding == DC_7BIT) {
                         int nbits;
                         nbits = (udhlen + 1)*8;
                         offset = (((nbits/7)+1)*7-nbits)%7;     /* Fill bits for UDH to septet boundary */
@@ -697,17 +706,13 @@ static Msg *pdu_decode_deliver_sm(Octstr *data) {
                 decode7bituncompressed(tmpstr, len, text, offset);
         }
 
-        /* build the message */         
-        message = msg_create(sms);
         message->sms.sender = origin;
         /* Put a dummy address in the receiver for now (SMSC requires one) */
         message->sms.receiver = octstr_create_from_data("1234", 4);
         /*message->sms.receiver = destination;*/
         if (udhi) {
-                message->sms.flag_udh = 1;
                 message->sms.udhdata = udh;
         }
-        message->sms.flag_8bit = eightbit;
         message->sms.msgdata = text;
         message->sms.time = stime;
 
@@ -722,7 +727,7 @@ static Msg *pdu_decode_deliver_sm(Octstr *data) {
  * Encode a Msg into a PDU
  */
 static int pdu_encode(Msg *msg, unsigned char *pdu, SMSCenter *smsc) {
-        int pos = 0, i,len, setvalidity;
+        int pos = 0, i,len, setvalidity=0;
         int ntype = PNT_UNKNOWN; /* number type default */
         int nstartpos = 0;       /* offset for the phone number */
         int dcs;  /* data coding scheme (GSM 03.38) */
@@ -735,7 +740,7 @@ static int pdu_encode(Msg *msg, unsigned char *pdu, SMSCenter *smsc) {
          *    01010001 = 0x51 indicating add. UDH, TP-VP(Rel) & MSG_SUBMIT
          * or 00010001 = 0x11 for just TP-VP(Rel) & MSG_SUBMIT */
 
-        pdu[pos] = (msg->sms.flag_udh != 0) ? numtext(5) : numtext(1);
+        pdu[pos] = octstr_len(msg->sms.udhdata) ? numtext(5) : numtext(1);
         pos++;
         pdu[pos] = numtext(AT_SUBMIT_SM);
         pos++;
@@ -798,7 +803,7 @@ static int pdu_encode(Msg *msg, unsigned char *pdu, SMSCenter *smsc) {
         pos++;
         
         /* data coding scheme */
-        dcs = msg->sms.flag_8bit ? DCS_OCTET_DATA : DCS_GSM_TEXT;
+	dcs = fields_to_dcs(msg, strcmp(smsc->at_modemtype, SIEMENS ) == 0 ? 1 : 0);
         pdu[pos] = numtext(dcs >> 4);
         pos++;
         pdu[pos] = numtext(dcs % 16);
@@ -807,7 +812,27 @@ static int pdu_encode(Msg *msg, unsigned char *pdu, SMSCenter *smsc) {
         /* Validity-Period (TP-VP)
          * see GSM 03.40 section 9.2.3.12
          * defaults to 24 hours = 167 if not set */
-        setvalidity = (smsc->at_validityperiod != NULL ? atoi(smsc->at_validityperiod) : 167);
+	if ( msg->sms.validity) {
+	    if (msg->sms.validity > 635040)
+		setvalidity = 255;
+	    if (msg->sms.validity >= 50400 && msg->sms.validity <= 635040)
+		setvalidity = (msg->sms.validity - 1) / 7 / 24 / 60 + 192 + 1;
+	    if (msg->sms.validity > 43200 && msg->sms.validity < 50400)
+		setvalidity = 197;
+	    if (msg->sms.validity >= 2880 && msg->sms.validity <= 43200)
+		setvalidity = (msg->sms.validity - 1) / 24 / 60 + 166 + 1;
+	    if (msg->sms.validity > 1440 && msg->sms.validity < 2880)
+		setvalidity = 168;
+	    if (msg->sms.validity >= 750 && msg->sms.validity <= 1440)
+		setvalidity = (msg->sms.validity - 720 - 1) / 30 + 143 + 1;
+	    if (msg->sms.validity > 720 && msg->sms.validity < 750)
+		setvalidity = 144;
+	    if (msg->sms.validity >= 5 && msg->sms.validity <= 720)
+		setvalidity = (msg->sms.validity - 1) / 5 - 1 + 1;
+	    if (msg->sms.validity < 5)
+		setvalidity = 0;
+	} else 
+	    setvalidity = (smsc->at_validityperiod != NULL ? atoi(smsc->at_validityperiod) : 167);
         
         if (setvalidity >= 0 && setvalidity <= 143)
                 debug("AT", 0, "TP-Validity-Period: %d minutes", 
@@ -829,9 +854,9 @@ static int pdu_encode(Msg *msg, unsigned char *pdu, SMSCenter *smsc) {
         /* user data length - include length of UDH if it exists*/
         len = octstr_len(msg->sms.msgdata);
 
-        if(msg->sms.flag_udh != 0) {
-                if (msg->sms.flag_8bit) {
-                len += octstr_len(msg->sms.udhdata);
+        if(octstr_len(msg->sms.udhdata)) {
+                if (msg->sms.coding == DC_8BIT || msg->sms.coding == DC_UCS2) {
+		    len += octstr_len(msg->sms.udhdata);
                 } else {
                         /* The reason we branch here is because UDH data length is determined
                            in septets if we are in GSM coding, otherwise it's in octets. Adding 6
@@ -847,18 +872,18 @@ static int pdu_encode(Msg *msg, unsigned char *pdu, SMSCenter *smsc) {
         pos++;
         
         /* udh */
-        if(msg->sms.flag_udh != 0) {
+        if(octstr_len(msg->sms.udhdata)) {
                         pos += encode8bituncompressed(msg->sms.udhdata, &pdu[pos]);
         }
 
         /* user data */
         /* if the data is too long, it is cut */
-        if(msg->sms.flag_8bit == 1) {
+        if(msg->sms.coding == DC_8BIT || msg->sms.coding == DC_UCS2) {
                 pos += encode8bituncompressed(msg->sms.msgdata, &pdu[pos]);
         } else {
                 int offset=0;
 
-                if (msg->sms.flag_udh != 0) {                                   /* Have UDH */
+                if (octstr_len(msg->sms.udhdata)) {                                   /* Have UDH */
                         int nbits = octstr_len(msg->sms.udhdata)*8;     /* Includes UDH length byte */
                         offset = (((nbits/7)+1)*7-nbits)%7;                     /* Fill bits */
                 }

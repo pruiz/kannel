@@ -86,9 +86,13 @@ static long count_occurences(Octstr *str, Octstr *pat);
 static URLTranslation *create_onetrans(CfgGroup *grp);
 static void destroy_onetrans(void *ot);
 static URLTranslation *find_translation(URLTranslationList *trans, 
-					List *words, Octstr *smsc);
+					List *words, Octstr *smsc,
+					Octstr *sender, int *reject);
 static URLTranslation *find_default_translation(URLTranslationList *trans,
 						Octstr *smsc);
+static URLTranslation *find_black_list_translation(URLTranslationList *trans,
+						Octstr *smsc);
+static int does_prefix_match(Octstr *prefix, Octstr *number);
 
 
 /***********************************************************************
@@ -187,15 +191,18 @@ int urltrans_add_cfg(URLTranslationList *trans, Cfg *cfg)
 
 
 URLTranslation *urltrans_find(URLTranslationList *trans, Octstr *text,
-			      Octstr *smsc) 
+			      Octstr *smsc, Octstr *sender) 
 {
     List *words;
     URLTranslation *t;
+    int reject = 0;
     
     words = octstr_split_words(text);
     
-    t = find_translation(trans, words, smsc);
+    t = find_translation(trans, words, smsc, sender, &reject);
     list_destroy(words, octstr_destroy_item);
+    if (reject)
+	t = find_black_list_translation(trans, smsc);
     if (t == NULL)
 	t = find_default_translation(trans, smsc);
     return t;
@@ -728,20 +735,21 @@ static URLTranslation *create_onetrans(CfgGroup *grp)
 
 	ot->deny_ip = cfg_get(grp, octstr_imm("user-deny-ip"));
 	ot->allow_ip = cfg_get(grp, octstr_imm("user-allow-ip"));
-	ot->allowed_prefix = cfg_get(grp, octstr_imm("allowed-prefix"));
-	ot->denied_prefix = cfg_get(grp, octstr_imm("denied-prefix"));
-	{
-	    Octstr *os;
-	    os = cfg_get(grp, octstr_imm("white-list"));
-	    if (os != NULL) {
-		ot->white_list = numhash_create(octstr_get_cstr(os));
-		octstr_destroy(os);
-	    }
-	    os = cfg_get(grp, octstr_imm("black-list"));
-	    if (os != NULL) {
-		ot->black_list = numhash_create(octstr_get_cstr(os));
-		octstr_destroy(os);
-	    }
+
+    }
+    ot->allowed_prefix = cfg_get(grp, octstr_imm("allowed-prefix"));
+    ot->denied_prefix = cfg_get(grp, octstr_imm("denied-prefix"));
+    {
+	Octstr *os;
+	os = cfg_get(grp, octstr_imm("white-list"));
+	if (os != NULL) {
+	    ot->white_list = numhash_create(octstr_get_cstr(os));
+	    octstr_destroy(os);
+	}
+	os = cfg_get(grp, octstr_imm("black-list"));
+	if (os != NULL) {
+	    ot->black_list = numhash_create(octstr_get_cstr(os));
+	    octstr_destroy(os);
 	}
     }
 
@@ -819,7 +827,7 @@ static void destroy_onetrans(void *p)
  * Find the appropriate translation 
  */
 static URLTranslation *find_translation(URLTranslationList *trans, 
-	List *words, Octstr *smsc)
+	List *words, Octstr *smsc, Octstr *sender, int *reject)
 {
     Octstr *keyword;
     int i, n;
@@ -847,6 +855,44 @@ static URLTranslation *find_translation(URLTranslationList *trans,
 		continue;
 	    }
 	}
+
+	/* Have allowed */
+	if (t->allowed_prefix && ! t->denied_prefix &&
+	   (does_prefix_match(t->allowed_prefix, sender) != 1)) {
+	    t = NULL;
+	    continue;
+	}
+
+	/* Have denied */
+	if (t->denied_prefix && ! t->allowed_prefix &&
+	   (does_prefix_match(t->denied_prefix, sender) == 1)) {
+	    t = NULL;
+	    continue;
+	}
+	
+	if (t->white_list &&
+	    numhash_find_number(t->white_list, sender) < 1) {
+	    info(0, "Number <%s> is not in white-list, message rejected",
+	         octstr_get_cstr(sender));
+	    t = NULL; *reject = 1;
+	    break;
+	}   
+	if (t->black_list &&
+	    numhash_find_number(t->black_list, sender) == 1) {
+	    info(0, "Number <%s> is in black-list, message rejected",
+	         octstr_get_cstr(sender));
+	    t = NULL; *reject = 1;
+	    break;
+	}   
+
+	/* Have allowed and denied */
+	if (t->denied_prefix && t->allowed_prefix &&
+	   (does_prefix_match(t->allowed_prefix, sender) != 1) &&
+	   (does_prefix_match(t->denied_prefix, sender) == 1) ) {
+	    t = NULL;
+	    continue;
+	}
+
 	if (t->catch_all)
 	    break;
 
@@ -884,6 +930,28 @@ static URLTranslation *find_default_translation(URLTranslationList *trans,
     return t;
 }
 
+static URLTranslation *find_black_list_translation(URLTranslationList *trans,
+						Octstr *smsc)
+{
+    URLTranslation *t;
+    int i;
+    List *list;
+
+    list = dict_get(trans->dict, octstr_imm("black-list"));
+    t = NULL;
+    for (i = 0; i < list_len(list); ++i) {
+	t = list_get(list, i);
+	if (smsc && t->accepted_smsc) {
+	    if (!list_search(t->accepted_smsc, smsc, octstr_item_match)) {
+		t = NULL;
+		continue;
+	    }
+	}
+	break;
+    }
+    return t;
+}
+
 
 /*
  * Count the number of times `pat' occurs in `str'.
@@ -902,4 +970,32 @@ static long count_occurences(Octstr *str, Octstr *pat)
 	pos += len;
     }
     return count;
+}
+
+static int does_prefix_match(Octstr *prefix, Octstr *number)
+{
+    /* XXX modify to use just octstr operations
+     */
+    char *b, *p, *n;
+
+    gw_assert(prefix != NULL);
+    gw_assert(number != NULL);
+
+    p = octstr_get_cstr(prefix);
+    n = octstr_get_cstr(number);
+
+
+    while (*p != '\0') {
+        b = n;
+        for (b = n; *b != '\0'; b++, p++) {
+            if (*p == ';' || *p == '\0') {
+                return 1;
+            }
+            if (*p != *b) break;
+        }
+        while (*p != '\0' && *p != ';')
+            p++;
+        while (*p == ';') p++;
+    }
+    return 0;
 }

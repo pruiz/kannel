@@ -36,6 +36,7 @@
 #define CIMD2_TRACE 0
 #endif
 
+
 /* Microseconds before giving up on a request */
 #define RESPONSE_TIMEOUT (10 * 1000000)
 
@@ -1205,12 +1206,13 @@ static struct packet *packet_encode_message(Msg *msg, Octstr *sender_prefix)
     Octstr *text;
     int spaceleft;
     long truncated;
-    int dcs = DCS_GSM_TEXT;  /* Data coding scheme, as in GSM 03.38 */
+    int dcs = 0;
 
     gw_assert(msg != NULL);
     gw_assert(msg->type == sms);
     gw_assert(msg->sms.receiver != NULL);
 
+    dcs = fields_to_dcs(msg, 0);
     if (msg->sms.sender == NULL)
         msg->sms.sender = octstr_create("");
 
@@ -1271,13 +1273,13 @@ static struct packet *packet_encode_message(Msg *msg, Octstr *sender_prefix)
     truncated = 0;
 
     spaceleft = 140;
-    if (msg->sms.flag_udh) {
+    if (octstr_len(msg->sms.udhdata)) {
         /* udhdata will be truncated and warned about if
          * it does not fit. */
         packet_add_hex_parm(packet, P_USER_DATA_HEADER, msg->sms.udhdata);
         spaceleft -= octstr_len(msg->sms.udhdata);
     }
-    if (!msg->sms.flag_8bit)
+    if (msg->sms.coding == DC_7BIT)
         spaceleft = spaceleft * 8 / 7;
     if (spaceleft < 0)
         spaceleft = 0;
@@ -1286,13 +1288,12 @@ static struct packet *packet_encode_message(Msg *msg, Octstr *sender_prefix)
     if (octstr_len(text) > 0 && spaceleft == 0) {
         warning(0, "CIMD2: message filled up with "
                 "UDH, no room for message text");
-    } else if (msg->sms.flag_8bit) {
+    } else if (msg->sms.coding == DC_8BIT || msg->sms.coding == DC_UCS2) {
         if (octstr_len(text) > spaceleft) {
             truncated = octstr_len(text) - spaceleft;
             octstr_truncate(text, spaceleft);
         }
         packet_add_hex_parm(packet, P_USER_DATA_BINARY, text);
-        dcs = DCS_OCTET_DATA;
     } else {
 #if CIMD2_TRACE
         debug("bb.sms.cimd2", 0, "CIMD2 sending message.  Text:");
@@ -1309,7 +1310,6 @@ static struct packet *packet_encode_message(Msg *msg, Octstr *sender_prefix)
         octstr_dump(text, 0);
 #endif
         packet_add_sms_parm(packet, P_USER_DATA, text);
-        dcs = DCS_GSM_TEXT;
     }
 
     if (dcs != 0)
@@ -1401,8 +1401,7 @@ static Msg *cimd2_accept_message(struct packet *request)
     Octstr *origin = NULL;
     Octstr *UDH = NULL;
     Octstr *text = NULL;
-    long DCS;
-    int flag_8bit = 0;
+    int DCS;
 
     /* See GSM 03.38.  The bit patterns we can handle are:
      *   000xyyxx  Uncompressed text, yy indicates alphabet.
@@ -1415,22 +1414,6 @@ static Msg *cimd2_accept_message(struct packet *request)
      *                   y = 1, 8-bit data
      */
     DCS = packet_get_int_parm(request, P_DATA_CODING_SCHEME);
-    if ((DCS & 0xe0) == 0 && (DCS & 0x0c) != 0x0c) {
-        /* Pass UCS2 as 8-bit data for now. */
-        if ((DCS & 0x0c) == 0x00)
-            flag_8bit = 0;
-        else
-            flag_8bit = 1;
-    } else if ((DCS & 0xf0) == 0xf0) {
-        if ((DCS & 0x04) == 0x00)
-            flag_8bit = 0;
-        else
-            flag_8bit = 1;
-    } else {
-        info(0, "CIMD2: Got SMS with data coding %ld, "
-             "can't handle, ignoring.", DCS);
-        return NULL;
-    }
 
     destination = packet_get_address_parm(request, P_DESTINATION_ADDRESS);
     origin = packet_get_address_parm(request, P_ORIGINATING_ADDRESS);
@@ -1475,13 +1458,16 @@ static Msg *cimd2_accept_message(struct packet *request)
     }
 
     message = msg_create(sms);
+    if (! dcs_to_fields(&message, DCS)) {
+	/* XXX Should reject this message ? */
+	debug("CIMD2", 0, "Invalid DCS");
+	dcs_to_fields(&message, 0);
+    }
     message->sms.sender = origin;
     message->sms.receiver = destination;
     if (UDH) {
-        message->sms.flag_udh = 1;
         message->sms.udhdata = UDH;
     }
-    message->sms.flag_8bit = flag_8bit;
     message->sms.msgdata = text;
     return message;
 

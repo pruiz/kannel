@@ -109,7 +109,7 @@ int urltrans_add_cfg(URLTranslationList *trans, Cfg *cfg);
  * with matching smsc in that list.
  */
 URLTranslation *urltrans_find(URLTranslationList *trans, Octstr *text, 
-    	    	    	      Octstr *smsc);
+    	    	    	      Octstr *smsc, Octstr *sender);
 
 
 /*

@@ -43,6 +43,7 @@
 #include "smsc_p.h"
 #include "alt_charsets.h"
 #include "smsc_sema.h"
+#include "sms.h"
 
 #ifndef CRTSCTS
 #define CRTSCTS 0
@@ -172,12 +173,12 @@ int sema_submit_msg(SMSCenter *smsc, Msg *msg)
 	    goto error;
 	}
 	/*  user data header is not supported in sm2000 X25 access
-	    if(msg->sms.flag_8bit != 1){
+	    if(msg->sms.coding == DC_7BIT){
 	    error(0, "sema_submit_sms: submit invoke support in IA5 encoding(8 bits chars)");
 	    goto error;
 	    }
 
-	    if(msg->sms.flag_udh != 0){
+	    if(octstr_len(msg->sms.udhdata)){
 	    error(0, "sema_submit_sms: submit invoke not support in IA5 encoding ");
 	    goto error;
 	    }
@@ -281,9 +282,8 @@ int sema_receive_msg(SMSCenter *smsc, Msg **msg)
 	 * and we do not support other line encoding scheme like binary or
 	 * hex encoding
 	 */
-	(*msg)->sms.flag_8bit = 1;
+	(*msg)->sms.coding = DC_8BIT;
 	/* OIS in X28 implementation does not include udh field */
-	(*msg)->sms.flag_udh = 0;
 
 	(*msg)->sms.sender = octstr_create_from_data(
 	    octstr_get_cstr(recieve_sm->origadd) +2,

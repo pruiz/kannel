@@ -20,6 +20,7 @@
 #include "smscconn_p.h"
 #include "bb_smscconn_cb.h"
 #include "msg.h"
+#include "sms.h"
 #include "emimsg.h"
 #include "dlr.h"
 
@@ -265,7 +266,7 @@ static struct emimsg *msg_to_emimsg(Msg *msg, int trn)
 {
     Octstr *str;
     struct emimsg *emimsg;
-    int mwi;
+    int dcs;
     struct tm tm;
     char p[20];
 
@@ -313,62 +314,8 @@ static struct emimsg *msg_to_emimsg(Msg *msg, int trn)
    
     emimsg->fields[E50_XSER] = octstr_create("");
 
-    /* XSer2: DCS */
-    if(msg->sms.flag_flash || msg->sms.flag_mwi || msg->sms.flag_unicode) {
-   	str = octstr_create("");
-	octstr_append_char(str, 2); 
-	octstr_append_char(str, 1); /* len 01 */
-
-   	if (! msg->sms.flag_mwi) {
-	    if (msg->sms.flag_flash) {
-		if (msg->sms.flag_unicode) 
-		    octstr_append_char(str, 0x18);
-		else
-		    octstr_append_char(str, 0x10);
-	    } else if (msg->sms.flag_unicode)
-		octstr_append_char(str, 0x08);
-	} 
-
-	else { /* MWI */
-	    mwi = msg->sms.flag_mwi - 1;
-	    if ( mwi & 0x04 ) {			/* MWI Inactive, no text needed */
-		mwi = (mwi & 0x03) | 0xC0;
-		octstr_destroy(msg->sms.msgdata);
-		msg->sms.msgdata = octstr_create("");
-	    } 
-	    else {				/* MWI Active, we could set the number of messages */
-		mwi = (mwi & 0x03) | 0x08;
-	        if (msg->sms.flag_unicode)	/* MWI Store and unicode */
-		    mwi |= 0xE0;
-	        else {
-		    if (octstr_len(msg->sms.msgdata) == 0)	/* MWI Discard */
-		        mwi |= 0xC0;
-		    else					/* MWI Store (have text) */
-		        mwi |= 0xD0;
-		}
-	    }
-	    octstr_append_char(str, mwi);
-	}
-	octstr_binary_to_hex(str, 1);
-	octstr_append(emimsg->fields[E50_XSER],str);
-	octstr_destroy(str);
-
-	if ( !((msg->sms.flag_mwi - 1) & 0x04) && msg->sms.mwimessages && ! msg->sms.flag_udh) {
-	    str = octstr_create("");
-	    octstr_append_char(str, 4);
-	    octstr_append_char(str, 1);
-	    octstr_append_char(str, 2);
-	    octstr_append_char(str, ((msg->sms.flag_mwi - 1) & 0x03) | (octstr_len(msg->sms.msgdata) == 0 ? 0x00 : 0x80));
-	    octstr_append_char(str, msg->sms.mwimessages);
-	    msg->sms.udhdata = octstr_create("");
-	    octstr_append(msg->sms.udhdata, str);
-	    octstr_destroy(str);
-	    msg->sms.flag_udh = 1;
-	}
-    }
-
     /* XSer1: UDH */
-    if (msg->sms.flag_udh) {
+    if (octstr_len(msg->sms.udhdata)) {
 	str = octstr_create("");
 	octstr_append_char(str, 1);
 	octstr_append_char(str, octstr_len(msg->sms.udhdata));
@@ -378,15 +325,18 @@ static struct emimsg *msg_to_emimsg(Msg *msg, int trn)
         octstr_destroy(str);
     }
 	
-    if (msg->sms.flag_unicode) {
-	emimsg->fields[E50_MT] = octstr_create("4");
-	emimsg->fields[E50_MCLS] = octstr_create("1");
-	str = octstr_duplicate(msg->sms.msgdata);
-	emimsg->fields[E50_NB] =
-	    octstr_format("%04d", 4 * octstr_len(str));
-	emimsg->fields[E50_TMSG] = str;
+    /* XSer2: DCS */
+    if ((dcs = fields_to_dcs(msg, 0))) {
+   	str = octstr_create("");
+	octstr_append_char(str, 2); 
+	octstr_append_char(str, 1); /* len 01 */
+	octstr_append_char(str, dcs);
+	octstr_binary_to_hex(str, 1);
+	octstr_append(emimsg->fields[E50_XSER],str);
+	octstr_destroy(str);
     }
-    else if (msg->sms.flag_8bit) {
+
+    if (msg->sms.coding == DC_8BIT || msg->sms.coding == DC_UCS2) {
 	emimsg->fields[E50_MT] = octstr_create("4");
 	emimsg->fields[E50_MCLS] = octstr_create("1");
 	str = octstr_duplicate(msg->sms.msgdata);
@@ -532,7 +482,6 @@ static int handle_operation(SMSCConn *conn, Connection *server,
 		    if (octstr_hex_to_binary(tempstr) == -1)
 			error(0, "Invalid UDH contents");
 		    msg->sms.udhdata = tempstr;
-		    msg->sms.flag_udh = 1;
 		}
 		if (type == 2) {
 		    int dcs;
@@ -540,7 +489,11 @@ static int handle_operation(SMSCConn *conn, Connection *server,
 		    octstr_hex_to_binary(tempstr);
 		    dcs = octstr_get_char(tempstr, 0);
 		    octstr_destroy(tempstr);
-		    /* XXX Separate dcs through other fields */
+		    if (! dcs_to_fields(&msg, dcs)) {
+			error(0, "emi2: invalid dcs received");
+			/* XXX Should we discard message ? */
+			dcs_to_fields(&msg, 0);
+		    }
 		}
 	    }
 	    octstr_delete(xser, 0, 2 * len + 4);
@@ -560,7 +513,6 @@ static int handle_operation(SMSCConn *conn, Connection *server,
 	else if (octstr_get_char(emimsg->fields[E50_MT], 0) == '4') {
 	    msg->sms.msgdata = emimsg->fields[E50_TMSG];
 	    emimsg->fields[E50_TMSG] = NULL;
-	    msg->sms.flag_8bit = 1;
 	}
 	else {
 	    error(0, "emi2: MT == %s isn't supported yet",
@@ -831,7 +783,7 @@ static void emi2_send_loop(SMSCConn *conn, Connection *server)
 		    privdata->sendtime[i] = 0;
 		    privdata->unacked--;
 		    if (privdata->sendtype[i] == 51) {
-			warning(0, "smsc_emi2: received neither ACK nor NACK for message %d" 
+			warning(0, "smsc_emi2: received neither ACK nor NACK for message %d " 
 				"in %d seconds, resending message", i, privdata->waitack);
 			list_produce(privdata->outgoing_queue,
 				     privdata->sendmsg[i]);

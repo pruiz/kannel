@@ -223,17 +223,16 @@ static void kannel_send_sms(SMSCConn *conn, Msg *sms)
 			sms->sms.receiver, sms->sms.sender,
 			sms->sms.msgdata);
 
-    if (sms->sms.flag_udh && sms->sms.udhdata)
+    if (octstr_len(sms->sms.udhdata))
 	octstr_format_append(url, "&udh=%E", sms->sms.udhdata);
     
-    /* if we got a concatenation header only the data is still 7 bit */
-    /* so we want to make the smsc agree on that. */
-    if (sms->sms.flag_udh && sms->sms.udhdata && sms->sms.flag_8bit == 0)
-	octstr_format_append(url, "&charset=");
+    if (sms->sms.class)
+	octstr_format_append(url, "&class=%d", sms->sms.class);
+    if (sms->sms.coding)
+	octstr_format_append(url, "&coding=%d", sms->sms.coding);
+    if (sms->sms.mwi)
+	octstr_format_append(url, "&mwi=%d", sms->sms.mwi);
 
-    if (sms->sms.flag_flash)
-	octstr_format_append(url, "&flash=%d", sms->sms.flag_flash);
- 
     headers = list_create();
     debug("smsc.http.kannel", 0, "start request");
     http_start_request(conndata->http_ref, url, headers, NULL, 0, sms, NULL);
@@ -256,11 +255,13 @@ static void kannel_receive_sms(SMSCConn *conn, HTTPClient *client,
 			       List *headers, Octstr *body, List *cgivars)
 {
     ConnData *conndata = conn->data;
-    Octstr *user, *pass, *from, *to, *text, *udh, *flash_string;
+    Octstr *user, *pass, *from, *to, *text, *udh, *tmp_string;
     Octstr *retmsg;
-    int	flash;
+    int	class, mwi, coding, validity, deferred;
     List *reply_headers;
     int ret;
+
+    class = mwi = coding = validity = deferred = 0;
 
     user = http_cgi_variable(cgivars, "user");
     pass = http_cgi_variable(cgivars, "pass");
@@ -268,12 +269,30 @@ static void kannel_receive_sms(SMSCConn *conn, HTTPClient *client,
     to = http_cgi_variable(cgivars, "to");
     text = http_cgi_variable(cgivars, "text");
     udh = http_cgi_variable(cgivars, "udh");
-    flash_string = http_cgi_variable(cgivars, "flash");
-    if(flash_string) {
-	sscanf(octstr_get_cstr(flash_string),"%d",&flash);
-	octstr_destroy(flash_string);
-    } else {
-    flash = 0;
+
+    tmp_string = http_cgi_variable(cgivars, "flash");
+    if(tmp_string) {
+	sscanf(octstr_get_cstr(tmp_string),"%d", &class);
+    }
+    tmp_string = http_cgi_variable(cgivars, "class");
+    if(tmp_string) {
+	sscanf(octstr_get_cstr(tmp_string),"%d", &class);
+    }
+    tmp_string = http_cgi_variable(cgivars, "mwi");
+    if(tmp_string) {
+	sscanf(octstr_get_cstr(tmp_string),"%d", &mwi);
+    }
+    tmp_string = http_cgi_variable(cgivars, "coding");
+    if(tmp_string) {
+	sscanf(octstr_get_cstr(tmp_string),"%d", &coding);
+    }
+    tmp_string = http_cgi_variable(cgivars, "validity");
+    if(tmp_string) {
+	sscanf(octstr_get_cstr(tmp_string),"%d", &validity);
+    }
+    tmp_string = http_cgi_variable(cgivars, "deferred");
+    if(tmp_string) {
+	sscanf(octstr_get_cstr(tmp_string),"%d", &deferred);
     }
     debug("smsc.http.kannel", 0, "Received an HTTP request");
     
@@ -299,14 +318,14 @@ static void kannel_receive_sms(SMSCConn *conn, HTTPClient *client,
 	msg->sms.receiver = octstr_duplicate(to);
 	msg->sms.msgdata = octstr_duplicate(text);
 	msg->sms.udhdata = octstr_duplicate(udh);
-	if (udh)
-	    msg->sms.flag_8bit = msg->sms.flag_udh = 1;
-	else
-	    msg->sms.flag_8bit = msg->sms.flag_udh = 0;
 
 	msg->sms.smsc_id = octstr_duplicate(conn->id);
 	msg->sms.time = time(NULL);
-	msg->sms.flag_flash = flash;
+	msg->sms.class = class;
+	msg->sms.mwi = mwi;
+	msg->sms.coding = coding;
+	msg->sms.validity = validity;
+	msg->sms.deferred = deferred;
 
 	ret = bb_smscconn_receive(conn, msg);
 	if (ret == -1)
