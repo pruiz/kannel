@@ -1,3 +1,12 @@
+2003-06-24  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/wap-appl.c: removing HTTP referer inclusion by Kannel again. This has
+      caused WAP certification tests to fail in the REFPOOL. There is a magic
+      WML attribute which forbids to send the referer, but as Kannel does it
+      on it's own, the tests are failing and handset manufacturers complain.
+    * gw/wml_definitions.h: updating the tables to the latest official WAP spec.
+    * wap/wsp_strings.def: fixing macro naming. I don't know if this matters 
+      really, but I thought of changing to lower case would be better.
+
 2003-06-24  Alexander Malysh  <a.malysh@centrium.de>
     * gw/bb_boxc.c: fixed boxc mutex handling. We lock in box_sender but never unlock.This
       confuse valgrind as example and is a bug while destroying locked mutex.
