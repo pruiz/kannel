@@ -351,27 +351,23 @@ static void *request_thread(void *arg) {
 
     /*
      * now, we change the sender (receiver now 'cause we swap them later)
-     * if faked-sender or similar set
+     * if faked-sender or similar set. Note that we ignore if the replacement
+     * fails.
      */
     p = urltrans_faked_sender(trans);
-    if (p != NULL) {
-	octstr_destroy(msg->plain_sms.receiver);
-	msg->plain_sms.receiver = octstr_create(p);
-    }
-    else if (global_sender != NULL) {
-	octstr_destroy(msg->plain_sms.receiver);
-	msg->plain_sms.receiver = octstr_create(global_sender);
-    }
-    if (msg->plain_sms.receiver == NULL)
-	goto error;
-    
+    if (p != NULL)
+	octstr_replace(msg->plain_sms.receiver, p, strlen(p));
+    else if (global_sender != NULL)
+	octstr_replace(msg->plain_sms.receiver, global_sender, strlen(global_sender));
+
     /* TODO: check if the sender is approved to use this service */
 
     info(0, "starting to service request <%s> from <%s> to <%s>",
 	      octstr_get_cstr(msg->plain_sms.text),
 	      octstr_get_cstr(msg->plain_sms.sender),
 	      octstr_get_cstr(msg->plain_sms.receiver));
-    
+
+    msg->plain_sms.time = time(NULL);	/* set current time */
     reply = obey_request(trans, msg);
     if (reply == NULL) {
 	error(0, "request failed");
@@ -502,8 +498,9 @@ static void *http_request_thread(void *arg)
 	error(0, "Error responding to client. Too bad.");
 
     /* answer closes the socket */
-	/* rpr, you need to free path and args too... -MG */
-	free(client_ip);
+    free(path);
+    free(args);
+    free(client_ip);
     return NULL;
 }
 

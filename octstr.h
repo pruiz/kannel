@@ -146,6 +146,13 @@ int octstr_pretty_print(FILE *f, Octstr *ostr);
 int octstr_write_to_socket(int socket, Octstr *ostr);
 
 
+/*
+ * Replace current contents of the octstr with given data. Return 0
+ * for OK, -1 if new data needs more room and allocation fails, in
+ * which case the octstr is not modified
+ */
+int octstr_replace(Octstr *ostr, char *data, size_t len);
+
 
 /*
  * Insert one octet string into another. Return 0 for OK, -1 for failure.

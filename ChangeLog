@@ -1,3 +1,8 @@
+1999-11-12    <rpr@rpr.wapit.com>
+
+	* octstr.c, octstr.h: added function octstr_replace, so that
+	unnecessary destroy/create can be avoided
+
 Fri Nov 12 02:00:00 1999  Mikael Gueck  <mikael.gueck@wapit.com>
 
 	* http.(c|h), *box.c: httpserver_get_request now returns

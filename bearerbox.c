@@ -704,8 +704,9 @@ static void *http_request_thread(void *arg)
 
     /* answer closes the socket */
 
-	/* rpr, you need to free path and args too... -MG */
-	free(client_ip);
+    free(path);
+    free(args);
+    free(client_ip);
     return NULL;
 }
 

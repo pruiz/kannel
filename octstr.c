@@ -306,6 +306,27 @@ int octstr_insert(Octstr *ostr1, Octstr *ostr2, size_t pos) {
 }
 
 
+int octstr_replace(Octstr *ostr, char *data, size_t len) {
+	size_t needed;
+	char *p;
+	
+	needed = len + 1;
+	if (ostr->size < needed) {
+	    p = realloc(ostr->data, needed);
+	    if (p == NULL) {
+		error(errno, "octstr_replace: Out of memory");
+		return -1;
+	    }
+	    ostr->size = needed;
+	    ostr->data = p;
+	}
+	memcpy(ostr->data, data, len);
+	ostr->len = len;
+	ostr->data[len] = '\0';
+	
+	return 0;
+}
+
 
 int octstr_insert_data(Octstr *ostr, size_t pos, char *data, size_t len) {
 	size_t needed;
