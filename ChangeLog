@@ -1,3 +1,9 @@
+2003-04-06  Stipe Tolj  <tolj@wapme-systems.de>
+    * configure[.in]: fixing BUG#18, which caused to break the build process
+      if mysql had library dependencies (ie. -lz) because they where not 
+      included in the last stage linking process. Now we try to detect via
+      mysql_config which libraries should be added.
+
 2003-04-05  Bruno Rodrigues  <bruno.rodrigues@litux.org> 
     * debian/*: syncronized with .diff files
     * debian: now defaults to generating a kannel-cvs package for building
