@@ -1,4 +1,7 @@
 2002-05-29  Stipe Tolj <tolj@wapme-systems.de>
+    * gw/smsc_emi2.c: fixed octstr in octstr_format() call.
+
+2002-05-29  Stipe Tolj <tolj@wapme-systems.de>
     * gw/smsc_emi2.c: changed conn->name string to be same as smpp for 
       conformance of debug output on the admin status page
     * gw/smsc_smpp.c: set smsc status to 'online' in case we use only
