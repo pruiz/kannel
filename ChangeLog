@@ -1,3 +1,8 @@
+2002-06-21  Stipe Tolj <tolj@wapme-systems.de>
+    * gw/smsc_smpp.c: fixed a bug in transmitter/receiver routing handling
+      for the SMPP module, patch provided by Nisan Bloch
+      [Msg-ID: <5.1.0.14.0.20020620231315.025997f0@amagoblin.ialien.co.za>]
+
 2002-06-17  Bruno Rodrigues  <bruno.rodrigues@litux.org>
     * gwlib/gwmem.h, gwlib/gwmem-native.h: forgot gw_claim_area_for
 
