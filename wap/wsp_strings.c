@@ -147,7 +147,7 @@ static long string_to_number(Octstr *ostr, struct table *table)
 static long string_to_versioned_number(Octstr *ostr, struct table *table, 
                                        int version)
 {
-    long i, ret;
+    unsigned int i, ret;
 
     gw_assert(initialized);
 

@@ -42,7 +42,8 @@ void wsp_strings_shutdown(void);
 #define LINEAR(name, strings) \
 Octstr *wsp_##name##_to_string(long number); \
 unsigned char *wsp_##name##_to_cstr(long number); \
-long wsp_string_to_##name(Octstr *ostr);
+long wsp_string_to_##name(Octstr *ostr); \
+long wsp_string_to_versioned_##name(Octstr *ostr, int version); 
 #define STRING(string)
 #include "wsp_strings.def"
 

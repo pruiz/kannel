@@ -952,6 +952,7 @@ static List *make_capabilities_reply(WSPMachine *m) {
 	return caps;
 }
 
+/*
 static int is_default_version(WSPMachine *m)
 {
     Octstr *request_version;
@@ -995,12 +996,12 @@ static int is_lower_version(WSPMachine *m)
         return 0;
     }
 }
+*/
 
 static List *make_reply_headers(WSPMachine *m)
 {
     List *headers;
     Octstr *encoding_version;
-    Octstr *request_version;
 
     /* Add all server wsp level hop-by-hop headers. Currently only 
      * Encoding-Version, as defined by wsp, chapter 8.4.2.70. 
