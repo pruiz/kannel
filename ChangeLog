@@ -1,3 +1,6 @@
+2002-03-19  Bruno Rodrigues  <bruno.rodrigues@litux.org>
+    * gw/smsc_at2.c: fix warning 
+
 2002-03-17  Bruno Rodrigues  <bruno.rodrigues@litux.org>
     * doc/modems.cfg: Changed T68 initstring
     * doc/modems.cfg, gw/smsc_at2.c: Added broken boolean value to handle 
