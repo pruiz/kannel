@@ -695,7 +695,8 @@ static void fill_message(Msg *msg, URLTranslation *trans,
     }
     if (udh != NULL) {
 	if (urltrans_accept_x_kannel_headers(trans)) {
-	    msg->sms.udhdata = udh;
+        octstr_destroy(msg->sms.udhdata);	    
+        msg->sms.udhdata = udh;
 	} else {
 	    warning(0, "Tried to set UDH field, denied.");
 	    O_DESTROY(udh);
@@ -2922,6 +2923,7 @@ int main(int argc, char **argv)
     counter_destroy(catenated_sms_counter);
     octstr_destroy(bb_host);
     octstr_destroy(global_sender);
+    octstr_destroy(accepted_chars);
     octstr_destroy(sendsms_url);
     octstr_destroy(sendota_url);
     octstr_destroy(xmlrpc_url);
