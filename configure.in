@@ -365,6 +365,16 @@ AC_ARG_ENABLE(mutex-stats,
 ])
 
 
+dnl --enable-cookies option.
+
+AC_ARG_ENABLE(cookies,
+[  --enable-cookies        enable cookie support for WSP (default: disabled)], [
+  if test "$enableval" = yes; then
+      AC_DEFINE(ENABLE_COOKIES)
+  fi
+])
+
+
 dnl --enable-start-stop-daemon option.
 
 AC_ARG_ENABLE(start-stop-daemon,

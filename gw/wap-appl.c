@@ -27,14 +27,15 @@
 #include "gwlib/gwlib.h"
 #include "wmlscript/ws.h"
 #include "wml_compiler.h"
-#ifdef COOKIE_SUPPORT
-#include "cookies.h"
-#endif
 #include "wap/wap.h"
 #include "wap-appl.h"
 #include "wap_push_ppg.h"
 #include "wap/wsp_strings.h"
 #include "wap/wsp_caps.h"
+#ifdef ENABLE_COOKIES
+#include "wap/wsp.h"
+#include "wap/cookies.h"
+#endif
 
 /*
  * Give the status the module:
@@ -504,7 +505,7 @@ static void return_reply(int status, Octstr *content_body, List *headers,
 	if (status != HTTP_OK)
 		info(0, "WSP: Got status %d", status);
 
-#ifdef COOKIE_SUPPORT
+#ifdef ENABLE_COOKIES
 	if (session_id != -1)
 		if (get_cookies(headers, find_session_machine_by_id(session_id)) == -1)
 			error(0, "WSP: Failed to extract cookies");
@@ -688,11 +689,10 @@ static void start_fetch(WAPEvent *event)
     add_client_sdu_size(actual_headers, client_SDU_size);
     add_via(actual_headers);
     
-#ifdef COOKIE_SUPPORT
-    if (session_id != -1)
-    if (set_cookies(actual_headers, 
-    	    	    find_session_machine_by_id(session_id)) == -1)
-	error(0, "WSP: Failed to add cookies");
+#ifdef ENABLE_COOKIES
+    if ((session_id != -1) && 
+        (set_cookies(actual_headers, find_session_machine_by_id(session_id)) == -1)) 
+        error(0, "WSP: Failed to add cookies");
 #endif
     
     add_kannel_version(actual_headers);

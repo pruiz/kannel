@@ -122,4 +122,7 @@
 /* Define if you want to use the MySQL support for DLR (delivery reports) */
 #undef DLR_MYSQL
 
+/* Define if you want to have cookie support for the WSP */
+#undef ENABLE_COOKIES
+                     
 #endif
