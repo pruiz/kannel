@@ -13,7 +13,7 @@
 static int init = 0;
 
 
-void gwlib_assert_init(void) {
+void (gwlib_assert_init)(void) {
 	gw_assert(init != 0);
 }
 

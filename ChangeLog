@@ -1,3 +1,11 @@
+2000-06-06  Richard Braakman  <dark@wapit.com>
+
+	* gwlib/gwlib.c: Patch gwlib_assert_init so that it works if
+	NDEBUG is on.
+
+	* gwlib/octstr.c: Patch seems_valid macro so that it does nothing
+	if NDEBUG is on.
+
 2000-06-06  Tuomas Luttinen  <tuo@wapit.com>
 
 	* gw/wsp.c: append_uintvar removed, calls to it were changed to
