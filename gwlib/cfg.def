@@ -128,6 +128,7 @@ SINGLE_GROUP(smsbox,
     OCTSTR(sendsms-port-ssl)
     OCTSTR(sendsms-url)
     OCTSTR(sendota-url)
+    OCTSTR(xmlrpc-url)
     OCTSTR(sendsms-chars)
     OCTSTR(global-sender)
     OCTSTR(log-file)
