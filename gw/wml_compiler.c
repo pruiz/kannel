@@ -136,10 +136,10 @@ static void wml_binary_output(Octstr *ostr, wml_binary_t *wbxml);
 /* Output into the wml_binary. */
 
 static void output_char(int byte, wml_binary_t **wbxml);
-static int output_convertable_string(Octstr *ostr, wml_binary_t **wbxml);
-static int output_plain_string(Octstr *ostr, wml_binary_t **wbxml);
-void output_variable(Octstr *variable, Octstr **output, var_esc_t escaped,
-		     wml_binary_t **wbxml);
+static void output_convertable_string(Octstr *ostr, wml_binary_t **wbxml);
+static void output_plain_string(Octstr *ostr, wml_binary_t **wbxml);
+static void output_variable(Octstr *variable, Octstr **output, 
+			    var_esc_t escaped, wml_binary_t **wbxml);
 
 /* 
  * String table functions, used to add and remove strings into and from the
@@ -156,7 +156,7 @@ static List *string_table_collect_words(List *strings);
 static List *string_table_sort_list(List *start);
 static List *string_table_add_many(List *sorted, wml_binary_t **wbxml);
 static unsigned long string_table_add(Octstr *ostr, wml_binary_t **wbxml);
-static int string_table_apply(Octstr *ostr, wml_binary_t **wbxml);
+static void string_table_apply(Octstr *ostr, wml_binary_t **wbxml);
 static void string_table_output(Octstr *ostr, wml_binary_t **wbxml);
 
 /*
@@ -925,12 +925,15 @@ static int parse_octet_string(Octstr *ostr, wml_binary_t **wbxml)
 {
   Octstr *output, *var, *temp = NULL;
   int var_len;
-  int start = 0, pos = 0, len, ret = 0;
+  int start = 0, pos = 0, len;
 
   /* No variables? Ok, let's take the easy way... */
 
   if ((pos = octstr_search_char(ostr, '$')) < 0)
-    return string_table_apply(ostr, wbxml);
+    {
+      string_table_apply(ostr, wbxml);
+      return 0;
+    }
 
   len = octstr_len(ostr);
   output = octstr_create_empty();
@@ -958,8 +961,7 @@ static int parse_octet_string(Octstr *ostr, wml_binary_t **wbxml)
 		   as a string table variable reference. */
 		{
 		  if (octstr_len(output) > 0)
-		    if (string_table_apply(output, wbxml) == -1)
-		      return -1;
+		    string_table_apply(output, wbxml);
 		  octstr_truncate(output, 0);
 		  output_plain_string(var, wbxml);
 		}
@@ -991,13 +993,12 @@ static int parse_octet_string(Octstr *ostr, wml_binary_t **wbxml)
     }
 
   if (octstr_len(output) > 0)
-    if (string_table_apply(output, wbxml) == -1)
-      ret = -1;
+    string_table_apply(output, wbxml);
   
   octstr_destroy(output);
   octstr_destroy(var);
   
-  return ret;
+  return 0;
 }
 
 
@@ -1102,14 +1103,13 @@ static void output_plain_octet_utf8map(Octstr *ostr, wml_binary_t **wbxml)
  * into UTF-8 if needed.
  */
 
-static int output_convertable_string(Octstr *ostr, wml_binary_t **wbxml)
+static void output_convertable_string(Octstr *ostr, wml_binary_t **wbxml)
 {
   if ((*wbxml)->utf8map) 
     output_plain_octet_utf8map(ostr, wbxml) ;
   else
     octstr_insert((*wbxml)->wbxml_string, ostr, 
 		  octstr_len((*wbxml)->wbxml_string));
-  return 0;
 }
 
 
@@ -1119,22 +1119,20 @@ static int output_convertable_string(Octstr *ostr, wml_binary_t **wbxml)
  * Returns 0 for success, -1 for an error. No conversions.
  */
 
-static int output_plain_string(Octstr *ostr, wml_binary_t **wbxml)
+static void output_plain_string(Octstr *ostr, wml_binary_t **wbxml)
 {
   octstr_insert((*wbxml)->wbxml_string, ostr, 
 		octstr_len((*wbxml)->wbxml_string));
-  return 0;
 }
 
 
 
 /*
- * output_variable - output a variable reference into an octet string or
- * the string table.
+ * output_variable - output a variable reference into the string table.
  */
 
-void output_variable(Octstr *variable, Octstr **output, var_esc_t escaped, 
-		     wml_binary_t **wbxml)
+static void output_variable(Octstr *variable, Octstr **output, 
+			    var_esc_t escaped, wml_binary_t **wbxml)
 {
   switch (escaped)
     {
@@ -1450,7 +1448,7 @@ static unsigned long string_table_add(Octstr *ostr, wml_binary_t **wbxml)
  * replaces them with string table references.
  */
 
-static int string_table_apply(Octstr *ostr, wml_binary_t **wbxml)
+static void string_table_apply(Octstr *ostr, wml_binary_t **wbxml)
 {
   Octstr *input = NULL;
   string_table_t *item = NULL;
@@ -1511,7 +1509,7 @@ static int string_table_apply(Octstr *ostr, wml_binary_t **wbxml)
   if (word_e < octstr_len(ostr))
     octstr_append_char(ostr, STR_END);    
 
-  return output_convertable_string(ostr, wbxml);
+  output_convertable_string(ostr, wbxml);
 }
 
 
