@@ -1,3 +1,13 @@
+2000-10-26  Lars Wirzenius  <liw@iki.fi>
+
+	* gw/smsbox.c: Get client IP using http_socket_ip, instead of
+	http_socket_fd. http_socket_fd will be reserved for getting the
+	file descriptor for the HTTP server port only, and may ultimately
+	go away completely.
+	
+	* gw/smsbox_req.c: Bugfix. We gave the allow list as the deny
+	list when checking for sendsms client authorization.
+
 2000-10-26  Kalle Marjola  <rpr@wapit.com>
 
 	* doc/userguide/userguide.xml: added (m) 'mandatory' and (c)

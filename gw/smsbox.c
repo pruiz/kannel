@@ -172,7 +172,7 @@ static void http_request_thread(void *arg)
     list_append(reply_hdrs, octstr_create("Content-type: text/html"));
 
     client = arg;
-    client_ip = socket_get_peer_ip(http_socket_fd(client));
+    client_ip = gw_strdup(octstr_get_cstr(http_socket_ip(client)));
     
     while (http_server_get_request(client, &url, &hdrs, &body, &args) > 0) {
 	info(0, "smsbox: Got HTTP request <%s> from <%s>",

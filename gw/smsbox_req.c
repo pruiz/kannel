@@ -497,7 +497,7 @@ static URLTranslation *authorise_user(List *list, char *client_ip) {
 	    Octstr *ip = octstr_create(client_ip);
 
 	    if (is_allowed_ip(urltrans_allow_ip(t),
-			      urltrans_allow_ip(t), ip) == 0)
+			      urltrans_deny_ip(t), ip) == 0)
 	    {
 		warning(0, "Non-allowed connect tried by <%s> from <%s>, ignored",
 			user ? octstr_get_cstr(user) : "default-user" ,
