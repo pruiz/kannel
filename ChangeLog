@@ -1,3 +1,6 @@
+2002-03-25  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/dlr.c: fixed kannel-nag compile warning in dlr_find_mysql()
+
 2002-03-24  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/dlr.c: fixed SQL statement in dlr_flush() for MySQL storage
 
