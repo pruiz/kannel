@@ -1,8 +1,98 @@
-NEWS about Kannel: Open Source WAP and SMS Gateway version 1.2.0
+NEWS about Kannel: Open Source WAP and SMS Gateway version 1.2.1
 
 This is a STABLE version. It should be usable for production systems.
 Please do report problems to devel@kannel.3glab.org (the development 
 mailing list). The bug tracking system is currently offline.
+
+
+Changes since version 1.2.0:
+
+Compatibility breakers:
+
+  * SMPP module users should note that the 'msg-id-type' default behaviour
+    has changed. The SMPP spec says that msg ids should be C strings and
+    hence we treat them as such per default. If your SMSC gives msg ids
+    in submit_sm and deliver_dm PDUs in different numbering basing, then
+    please use the 'msg-id-type' config directive to set it accordingly.
+
+New features:
+
+  * SMPP priority flag is now supported.
+
+  * SMPP unbind PDU handling added.
+
+  * SMPP throttling error code support added.
+
+  * MacOS X support has been improved.
+
+  * Added 'allowed-receiver-prefix' and 'denied-receiver-prefix' for 
+    sms-service groups. This is used to restrict access to service requests 
+    coming in on certain receiver numbers, i.e. shortcut numbers.
+  
+  * Added directives 'http-request-retry' and 'http-queue-delay' for HTTP
+    request queueing for sms-service 'get-url' and 'post-url' services.
+    This way a non reachable HTTP server will not cause to drop the request.
+    Instead smsbox will hold a queue and retry the HTTP request via the 
+    configurable settings 'http-request-retry' and 'http-queue-delay'.
+
+  * Added 'store-status' HTTP admin command to retrieve the messages 
+    currently in the main queue.
+
+  * Added a '--with-cflags=CFLAGS' and '--with-libs=LIBS' configuration
+    options. These are usefull when Kannel is linked again additional
+    proprietary modules.
+
+  * Improvements in the Siemens M20 GSM modem support.
+ 
+  * Added EMI2 specific configuration directives 'notification-pid' and 
+    'notification-addr'. 
+
+  * Added Return Path Indicator (RPI) support for SMPP and EMI2 via boolean 
+    sendsms interface parameter 'rpi'
+
+  * LibSDB support for external storage has been added. libSDB is an abstraction
+    library for various DB system, including MySQL, PostgreSQL, Oracle, gdbm 
+    and some others.
+
+  * wapbox has an own access.log facility now.
+
+  * Added the new 'smasi' SMSC type for connecting to SM/ASI protocoll SMSC, 
+    like the CriticalPath InVoke SMS Center.
+
+  * Added HEAD method support for HTTP client module.
+
+  * DLR support for the AT2 module has been added.
+
+  * Slight re-organization of the DLR module to make it easier in supporting 
+    other SMSC modules too.
+
+  * Added 'unified-prefix' configuration directive on a smsc basis to set 
+    number normalization rules. This may be used it SMSC connections handle 
+    prefix normalization differently.
+
+  * Added 'source-addr-autodetect' to smsc group for auto-detecting source 
+    addr in smpp module, if desired.
+  
+Bugfixes:
+
+  * Timezone issue fixed in SMPP module.
+ 
+  * Output of fakewap has been made more human-readable.
+
+  * Various fixes and improments in the wmlscript parsing routines.
+
+  * Fixed various other possible segmentation faulting bugs in handling
+    null'ed Octstr vars.
+
+  * Fixed various mutex problems that caused errors while accessing lists.
+
+  * Some fixes in HTTP keep-alive handling logic that causes our client to 
+    keep the connection up, even while the server has asked to drop it.
+
+  * Various fixes and improvements in the PPG (push proxy gateway) module.
+
+  * Fixed a bug in the prefix-match routine that caused to tread an number
+    match not to be a prefix match.
 
 
 Changes since version 1.1.6:
