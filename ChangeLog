@@ -7,6 +7,8 @@
 	
 	* */*.conf: Renamed system-id to smsc-username in sample config
 	files.
+	
+	* doc/userguide/userguide.xml: Updated to correspond to this.
 
 2001-05-14  Lars Wirzenius  <liw@iki.fi>
 

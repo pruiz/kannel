@@ -1759,7 +1759,7 @@ smsc = smpp
 host = 123.123.123.123
 port = 600
 receive-port = 700 
-system-id = "STT"
+smsc-username = "STT"
 smsc-password = foo
 system-type = "VMA"
 address-range = ""
@@ -1793,21 +1793,24 @@ address-range = ""
        May be the same as port.
      </entry></row>
 
-   <row><entry><literal>system-id (m)</literal></entry>
+   <row><entry><literal>smsc-username (m)</literal></entry>
      <entry><literal>string</literal></entry>
      <entry valign=bottom>
        The 'username' of the Messaging Entity connecting to the
        SM-SC. If the SM-SC operator reports that the "TELEPATH
        SYSTEM MANAGER TERMINAL" view "Control.Apps.View" value 
        "Name:" is "SMPP_ZAPVMA_T" for the transmitter and 
-       "SMPP_ZAPVMA_R" for the receiver the system-id value 
-       is accordingly "SMPP_ZAP".
+       "SMPP_ZAPVMA_R" for the receiver the smsc-username value 
+       is accordingly "SMPP_ZAP". Note that this used to be called
+       system-id (the name in SMPP documentation) and has been
+       changed to smsc-username to make all Kannel SMS center
+       drivers use the same name.
      </entry></row>
 
    <row><entry><literal>smsc-password (m)</literal></entry>
      <entry><literal>string</literal></entry>
      <entry valign=bottom>
-       The password matching the "system-id" your teleoperator
+       The password matching the "smsc-username" your teleoperator
        provided you with.
      </entry></row>
 

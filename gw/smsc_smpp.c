@@ -618,10 +618,19 @@ int smsc_smpp_create(SMSCConn *conn, CfgGroup *grp)
     	receive_port = 0;
     username = cfg_get(grp, octstr_imm("smsc-username"));
     password = cfg_get(grp, octstr_imm("smsc-password"));
-/* XXX system-id is unnecessary? */
-    system_id = cfg_get(grp, octstr_imm("system-id"));
     system_type = cfg_get(grp, octstr_imm("system-type"));
     address_range = cfg_get(grp, octstr_imm("address-range"));
+    
+    system_id = cfg_get(grp, octstr_imm("system-id"));
+    if (system_id != NULL) {
+	warning(0, "SMPP: obsolete system-id variable is set, "
+	    	   "use smsc-username instead.");
+    	if (username == NULL) {
+	    warning(0, "SMPP: smsc-username not set, using system-id instead");
+	    username = system_id;
+	} else
+	    octstr_destroy(system_id);
+    }
     
     /* Check that config is OK */
     ok = 1;
@@ -642,12 +651,11 @@ int smsc_smpp_create(SMSCConn *conn, CfgGroup *grp)
     conn->name = octstr_format("SMPP:%S:%d/%d:%S:%S", 
     	    	    	       host, port,
 			       (receive_port ? receive_port : port), 
-			       system_id, system_type);
+			       username, system_type);
 
     octstr_destroy(host);
     octstr_destroy(username);
     octstr_destroy(password);
-    octstr_destroy(system_id);
     octstr_destroy(system_type);
     octstr_destroy(address_range);
 
