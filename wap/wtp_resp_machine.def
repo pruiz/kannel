@@ -51,25 +51,25 @@
 #endif
 
 MACHINE(ENUM(state)
-        INTEGER(tid)              /* transaction identifier */
-	ADDRTUPLE(addr_tuple)
-        INTEGER(tcl)              /* transaction class */
-        INTEGER(aec)              /* counter telling how many timer periods 
-                                      we have waited for acknowledgement */
-        INTEGER(rcr)              /* retransmission counter */
-        INTEGER(u_ack)            /* user acknowledgement flag (are user 
-                                      acknowledgement required) */ 
-        INTEGER(rid)              /* retransmission flag, telling are we 
-                                      resending the result */ 
-        EVENT(result)               /* packed result message - for resending */
-        INTEGER(ack_pdu_sent)     /* are we resending the acknowledgement */
-        TIMER(timer)              /* pointer to the timer of this machine timer
-                                      in the global timers list */
-        EVENT(invoke_indication) /* packed wsp invoke indication - for tid
-                                         verification */
+		INTEGER(tid)              /* transaction identifier */
+		ADDRTUPLE(addr_tuple)
+		INTEGER(tcl)              /* transaction class */
+		INTEGER(aec)              /* counter telling how many timer periods 
+									  we have waited for acknowledgement */
+		INTEGER(rcr)              /* retransmission counter */
+		INTEGER(u_ack)            /* user acknowledgement flag (are user 
+									  acknowledgement required) */ 
+		INTEGER(rid)              /* retransmission flag, telling are we 
+									  resending the result */ 
+		EVENT(result)               /* packed result message - for resending */
+		INTEGER(ack_pdu_sent)     /* are we resending the acknowledgement */
+		TIMER(timer)              /* pointer to the timer of this machine timer
+									  in the global timers list */
+		EVENT(invoke_indication) /* packed wsp invoke indication - for tid
+										 verification */
         EVENT(sar_invoke)     /* initial invoke for SAR, accumulate user_data */
         LIST(sar_info)
-        SARDATA(sar)              /* ! NULL if were we asked for SAR */
+		SARDATA(sar)              /* ! NULL if were we asked for SAR */
 	)
 
 #undef MACHINE

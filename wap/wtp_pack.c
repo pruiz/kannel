@@ -208,10 +208,8 @@ WAPEvent *wtp_pack_sar_ack(long ack_type, long tid, WAPAddrTuple *address, int p
 {
     WAPEvent *dgram = NULL;
     WTP_PDU *pdu;
-    unsigned char cpsn;
+    unsigned char cpsn = psn;
     
-    sprintf(&cpsn, "%c", psn);
-
     pdu = wtp_pdu_create(Ack);
     pdu->u.Ack.con = 1;
     pdu->u.Ack.tidverify = ack_type;

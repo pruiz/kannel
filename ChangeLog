@@ -1,3 +1,9 @@
+2002-12-13  Igor Ivoiov <igor@francoudi.com>
+	* wap/wtp_pack.c: fixed a bug in wtp_pack_sar_ack() with sprintf 
+	  into char that could cause a segfault.
+	  Thanks to Aarno Syvanen <as@gni.ch>
+	  [Message-Id: <A9D4ABF6-0E7F-11D7-9221-0003937AE746@gni.ch>]
+
 2002-12-10  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/smsbox.c: fixed a bug in url_result_thread() which caused no reply
       if HTTP request queueing was used. Thanks to Paul for this.

@@ -118,6 +118,8 @@ static int dict_put_true(Dict *dict, Octstr *key, void *value)
         dict->key_count++;
         item_unique = 1;
     } else {
+    	if (dict->destroy_value != NULL)
+    	    dict->destroy_value(value);
         item_unique = 0;
     }
 
