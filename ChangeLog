@@ -1,3 +1,11 @@
+2000-03-22 Sanna Seppanen <sanna@wapit.com>
+
+	* gwlib/http.c: A minor fix to header_pack(). Check the sprintf
+	return value. header_create() return NULL if fails.
+	* gwlib/http.c: htp_get_u: zero-valued "Content-Length" header 
+	from phone won't be sent to web server.
+	
+
 2000-03-22 Derry Hamilton <rasilon@tardis.ed.ac.uk>
 
 	* gwlib/http.h: Modified the definition of header_dump to
