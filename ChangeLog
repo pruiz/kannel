@@ -1,3 +1,10 @@
+2002-01-17 Andreas Fink <andreas@fink.org>
+    * gw/smsc_emi2.c fixed small and rare memory leak 
+    * gw/smsc_smpp.c  corrected sender of DLR
+    * gw/bb_store.c removed compiler warnings
+    * gwlib/conn.c typecast to get rid of CRYPTO_set_id_callback warnings
+    * gw/smscconn_p.h added smsc_cgw prototype
+
 2002-01-16  Stipe Tolj  <tolj@wapme-systems.de>
     * doc/userguide/userguide.xml: fixed a typo
  

@@ -459,7 +459,7 @@ static void handle_pdu(SMPP *smpp, Connection *conn, SMPP_PDU *pdu,
  	        tmp = octstr_format("%ld",strtol(octstr_get_cstr(msgid),NULL,10));
  	        dlrmsg = dlr_find(octstr_get_cstr(smpp->conn->id), 
  		    octstr_get_cstr(tmp), /* smsc message id */
- 		    octstr_get_cstr(pdu->u.deliver_sm.source_addr), /* destination */
+ 		    octstr_get_cstr(pdu->u.deliver_sm.destination_addr), /* destination */
  		    dlrstat);
                 octstr_destroy(tmp);
  	    }

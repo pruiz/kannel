@@ -72,8 +72,6 @@ static int open_file(Octstr *name)
 
 static int rename_store(void)
 {
-    static FILE *f = NULL;
-    
     if (rename(octstr_get_cstr(filename), octstr_get_cstr(bakfile)) == -1) {
 	if (errno != ENOENT) {
 	    error(errno, "Failed to rename old store '%s' as '%s'",

@@ -643,6 +643,7 @@ static int handle_operation(SMSCConn *conn, Connection *server,
 	    		octstr_set_char(reply,idx,'.');
 	    octstr_append_char(reply, '/');
 	    octstr_insert(msg->sms.msgdata, reply, 0);
+	    octstr_destroy(reply);
 	    bb_smscconn_receive(conn, msg);
 	}
 	reply = emimsg_create_reply(53, emimsg->trn, 1);

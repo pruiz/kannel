@@ -35,6 +35,8 @@ X509 *ssl_public_cert;
 RSA *ssl_private_key;
 #endif /* HAVE_LIBSSL */
 
+typedef unsigned long (*CRYPTO_CALLBACK_PTR)(void);
+
 /*
  * This used to be 4096.  It is now 0 so that callers don't have to
  * deal with the complexities of buffering (i.e. deciding when to
@@ -1173,7 +1175,7 @@ void conn_init_ssl(void)
         ssl_static_locks[c] = mutex_create();
 
     CRYPTO_set_locking_callback(openssl_locking_function);
-    CRYPTO_set_id_callback(gwthread_self);
+    CRYPTO_set_id_callback((CRYPTO_CALLBACK_PTR)gwthread_self);
 
     SSL_library_init();
     SSL_load_error_strings();
@@ -1190,7 +1192,7 @@ void server_ssl_init(void)
          ssl_server_static_locks[c] = mutex_create();
 
     CRYPTO_set_locking_callback(openssl_server_locking_function);
-    CRYPTO_set_id_callback(gwthread_self);
+    CRYPTO_set_id_callback((CRYPTO_CALLBACK_PTR)gwthread_self);
 
     SSLeay_add_ssl_algorithms();
     SSL_load_error_strings();
