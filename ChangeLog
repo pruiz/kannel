@@ -34,7 +34,7 @@
 2001-03-16  Richard Braakman  <dark@wapit.com>
 
 	* When logging errors, do not report errno if it's not relevant.
-        Fixed 25 counts of this, leaving 81 valid uses.
+	Fixed 25 counts of this, leaving 81 valid uses.
 
 	* Updated NEWS file to prepare for 1.1.3.
 
@@ -80,7 +80,6 @@
 	test/test_http_server.c, test/test_smsc.c: Changed calls to http
 	code based on interface code.
 
->>>>>>> 1.1373
 2001-03-15  Uoti Urpala  <uau@wapit.com>
 
 	* gwlib/http.c, gwlib/http.h: Changed http_start_request and
