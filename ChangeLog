@@ -1,7 +1,8 @@
 2000-14-07 Peter Grönholm
 
        * gw/wml-definitions.h: A typo corrected in URL value code table.
-       Now URLs ending with .net/ work, too.
+       Now URLs ending with .net/ work, too. Two other typos: Content-
+       Type and Expires use capital letters. 
 	
 2000-08-10  Tuomas Luttinen  <tuo@wapit.com>
 
