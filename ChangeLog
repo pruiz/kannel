@@ -1,3 +1,19 @@
+2001-03-13  Lars Wirzenius  <liw@iki.fi>
+
+    	* Various improvements to "make bench".
+
+j	* benchmarks/bench_http.sh, benchmarks/bench_sms.sh,
+	benchmarks/run-benchmarks: Implemented --fast option.
+	
+	* benchmarks/functions.inc: Isolated common script stuff into
+	a single file to make maintenance easier and scripts clearer.
+	
+	* test/test_smsc.c: Measure round trip times for requests and
+	replies. Started coding "sustained level" benchmark; not useable
+	yet, though.
+
+	* gwlib/http.c: Commented out unused static functions.
+
 2001-03-12  Uoti Urpala  <uau@wapit.com>
 
 	* gw/smsc_fake.c: Added test for errno == EINTR after

@@ -9,10 +9,15 @@ rm -f $OUT
 sed "s/#DATE#/`date +%Y-%m-%d`/g" < $BEGIN |
 sed "s/#UNAME#/`uname -a`/g" > $OUT
 
+case "$1" in
+--fast) fast="--fast"; shift ;;
+*) fast="" ;;
+esac
+
 for bench in "$@"
 do
     echo -n "Running benchmark $bench..."
-    if $bench >> $OUT
+    if $bench $fast >> $OUT
     then
     	echo " OK."
     else

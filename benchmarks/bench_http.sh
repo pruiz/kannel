@@ -6,8 +6,14 @@
 
 set -e
 
-times=100000
+case "$1" in
+--fast) times=1000; shift ;;
+*) times=100000 ;;
+esac
+
 port=8080
+
+. benchmarks/functions.inc
 
 rm -f bench_http.log
 test/test_http_server -v 4 -l bench_http.log -p $port &
@@ -23,20 +29,7 @@ awk '
     { print $2 - first, $1 }
 ' > bench_http.dat
 
-gnuplot <<EOF > benchmarks/bench_http.png
-set terminal png
-set xlabel "time (s)"
-set ylabel "requests/s (Hz)"
-plot "bench_http.dat" notitle with lines
-EOF
-
-gnuplot <<EOF > benchmarks/bench_http.ps
-set terminal postscript eps color
-set xlabel "time (s)"
-set ylabel "requests/s (Hz)"
-plot "bench_http.dat" notitle with lines
-EOF
-
+plot benchmarks/bench_http "time (s)" "requests/s (Hz)" "bench_http.dat" ""
 sed "s/#TIMES#/$times/g" benchmarks/bench_http.txt
 
 rm -f bench_http.log

@@ -3,6 +3,16 @@
 #include "gw/smpp_pdu.h"
 
 
+/*
+ * Move this to date.c.
+ */
+static long date_universal_now(void)
+{
+    return (long) time(NULL);
+}
+
+
+
 /***********************************************************************
  * Configurable stuff.
  */
@@ -87,7 +97,7 @@ static Event *eq_create_event(enum event_type type)
     
     e = gw_malloc(sizeof(*e));
     e->type = type;
-    e->time = (long) time(NULL);
+    e->time = date_universal_now();
     e->id = counter_increase(event_id_counter);
     e->conn = NULL;
     e->sequence_number = -1;
@@ -97,7 +107,8 @@ static Event *eq_create_event(enum event_type type)
 }
 
 
-static Event *eq_create_submit(Connection *conn, long sequence_number)
+static Event *eq_create_submit(Connection *conn, long sequence_number, 
+    	    	    	       Octstr *body)
 {
     Event *e;
     
@@ -107,6 +118,7 @@ static Event *eq_create_submit(Connection *conn, long sequence_number)
     e = eq_create_event(submit);
     e->conn = conn;
     e->sequence_number = sequence_number;
+    e->body = octstr_duplicate(body);
     return e;
 }
 
@@ -186,6 +198,17 @@ static void eq_shutdown(void)
 }
 
 
+static long eq_round_trip_time(Event *e)
+{
+    long now, then;
+    
+    now = date_universal_now();
+    if (octstr_parse_long(&then, e->body, 0, 10) == -1)
+    	return 0;
+    return now - then;
+}
+
+
 /***********************************************************************
  * SMS center emulator, declarations.
  */
@@ -206,12 +229,14 @@ static EventQueue *undelivered_messages = NULL;
 
 
 enum { MAX_THREADS = 2 };
+enum { SMPP_MAX_QUEUE = 10 };
 
 
 struct smpp_emu_arg {
     EventQueue *eq;
     Connection *conn;
     long id;
+    Semaphore *ok_to_send;
     long writer_id;
     int quit;
 };
@@ -225,18 +250,23 @@ static void smpp_emu_writer(void *arg)
     Event *e;
     SMPP_PDU *pdu;
     Octstr *os;
-    Connection *conn;
+    struct smpp_emu_arg *p;
 
-    conn = arg;
-    while ((e = eq_extract(undelivered_messages)) != NULL) {
+    p = arg;
+    for (;;) {
+	semaphore_down(p->ok_to_send);
+	e = eq_extract(undelivered_messages);
+	if (e == NULL)
+	    break;
+    	e->time = date_universal_now();
     	eq_log(e);
 	pdu = smpp_pdu_create(deliver_sm,
 			      counter_increase(smpp_emu_counter));
     	pdu->u.deliver_sm.source_addr = octstr_create("123");
     	pdu->u.deliver_sm.destination_addr = octstr_create("456");
-	pdu->u.deliver_sm.short_message = octstr_format("%ld", e->id);
+	pdu->u.deliver_sm.short_message = octstr_format("%ld", e->time);
 	os = smpp_pdu_pack(pdu);
-	conn_write(conn, os);
+	conn_write(p->conn, os);
 	octstr_destroy(os);
 	smpp_pdu_destroy(pdu);
 	eq_destroy_event(e);
@@ -261,18 +291,20 @@ static void smpp_emu_handle_pdu(struct smpp_emu_arg *p, SMPP_PDU *pdu)
 				   pdu->u.bind_receiver.sequence_number);
     	    eq_append(p->eq, eq_create_event(got_smsc));
 	    gw_assert(p->writer_id == -1);
-	    p->writer_id = gwthread_create(smpp_emu_writer, p->conn);
+	    p->writer_id = gwthread_create(smpp_emu_writer, p);
 	    if (p->writer_id == -1)
 	    	panic(0, "Couldn't create SMPP helper thread.");
     	    break;
 
     	case submit_sm:
 	    eq_append(p->eq, 
-	    	eq_create_submit(p->conn, pdu->u.submit_sm.sequence_number));
+	    	eq_create_submit(p->conn, pdu->u.submit_sm.sequence_number,
+		    	    	 pdu->u.submit_sm.short_message));
     	    break;
 
     	case deliver_sm_resp:
 	    eq_append(p->eq, eq_create_event(deliver_ack));
+	    semaphore_up(p->ok_to_send);
 	    break;
 
     	case unbind:
@@ -382,6 +414,8 @@ static void smpp_emu(void *arg)
 	    thread[num_threads]->eq = eq;
 	    thread[num_threads]->quit = 0;
 	    thread[num_threads]->writer_id = -1;
+	    thread[num_threads]->ok_to_send = 
+	    	semaphore_create(SMPP_MAX_QUEUE);
 	    thread[num_threads]->id = 
 	    	gwthread_create(smpp_emu_reader, thread[num_threads]);
 	    if (thread[num_threads]->id == -1)
@@ -395,6 +429,7 @@ static void smpp_emu(void *arg)
     	gwthread_wakeup(thread[i]->id);
 	gwthread_join(thread[i]->id);
 	conn_destroy(thread[i]->conn);
+	semaphore_destroy(thread[i]->ok_to_send);
 	gw_free(thread[i]);
     }
 
@@ -512,8 +547,6 @@ static void httpd_emu(void *arg)
 	if (client == NULL)
 	    break;
     	
-
-
 	eq_append(eq, eq_create_http_request(client, 
 	    	    	    	    http_cgi_variable(cgivars, "arg")));
     	octstr_destroy(ip);
@@ -575,11 +608,7 @@ static void httpd_emu_destroy(void)
  */
 static void httpd_emu_reply(Event *e)
 {
-    Octstr *body;
-    
-    body = octstr_format("%ld\n", e->id);
-    http_send_reply(e->client, HTTP_OK, httpd_emu_headers, body);
-    octstr_destroy(body);
+    http_send_reply(e->client, HTTP_OK, httpd_emu_headers, e->body);
 }
 
 
@@ -626,12 +655,26 @@ static void kill_kannel(void)
 }
 
 
-static void main_n_messages_benchmark(void)
+/*
+ * This will try to have as large a sustained level of traffic as possible.
+ */
+
+enum { MAX_IN_AVERAGE = 100 };
+enum { MAX_RTT = 1 };
+enum { MAX_WAITING = 100 };
+
+static void sustained_level_benchmark(void)
 {
     EventQueue *eq;
     Event *e;
     long i;
+    long num_deliver;
     long num_submit;
+    long rtt;
+    long times[MAX_IN_AVERAGE];
+    long next_time;
+    double time_sum;
+    long num_unanswered;
 
     eq = eq_create();
 
@@ -644,13 +687,32 @@ static void main_n_messages_benchmark(void)
     debug("test_smsc", 0, "Got event got_smsc.");
     eq_destroy_event(e);
 
-    /* Send the SMS messages. */
-    for (i = 0; i < num_messages; ++i)
-    	smsc_emu_deliver();
-
-    /* Wait for results to be processed. */
+    /* 
+     * Send message when there are at most MAX_WAITING unanswered messages
+     * and current average round trip time is less than MAX_RTT.
+     */
     num_submit = 0;
-    while (num_submit < num_messages && (e = eq_extract(eq)) != NULL) {
+    for (i = 0; i < MAX_IN_AVERAGE; ++i)
+    	times[i] = 0;
+    next_time = 0;
+    time_sum = 0.0;
+    num_unanswered = 0;
+    num_deliver = 0;
+
+    while (num_submit < num_messages) {
+	for (;;) {
+	    if (num_deliver >= num_messages || num_unanswered >= MAX_WAITING)
+	    	break;
+    	    if (time_sum / MAX_IN_AVERAGE >= MAX_RTT && num_unanswered > 0)
+	    	break;
+	    smsc_emu_deliver();
+	    ++num_unanswered;
+	    ++num_deliver;
+	}
+
+    	e = eq_extract(eq);
+	if (e == NULL)
+	    break;
 	eq_log(e);
 
 	switch (e->type) {
@@ -662,8 +724,93 @@ static void main_n_messages_benchmark(void)
 	    break;
 
 	case submit:
+	    rtt = eq_round_trip_time(e);
+	    time_sum -= times[next_time];
+	    times[next_time] = rtt;
+	    time_sum += times[next_time];
+	    debug("", 0, "RTT = %ld", rtt);
+	    next_time = (next_time + 1) % MAX_IN_AVERAGE;
+	    ++num_submit;
+	    --num_unanswered;
+	    smsc_emu_submit_ack(e);
+	    break;
+	    
+	default:
+	    debug("test_smsc", 0, "Ignoring event of type %s", eq_type(e));
+	    break;
+	}
+	
+	eq_destroy_event(e);
+    }
+
+    kill_kannel();
+
+    debug("test_smsc", 0, "Terminating benchmark.");
+    smsc_emu_destroy();
+    httpd_emu_destroy();
+    eq_destroy(eq);
+}
+
+
+/*
+ * This will send `num_messages' SMS messages as quickly as possible.
+ */
+
+enum { MAX_IN_QUEUE = 1000 };
+
+static void n_messages_benchmark(void)
+{
+    EventQueue *eq;
+    Event *e;
+    long i;
+    long num_submit;
+    long num_in_queue;
+    long num_deliver;
+
+    eq = eq_create();
+
+    httpd_emu_create(eq);
+    smsc_emu_create(eq);
+    
+    /* Wait for an SMS center client to appear. */
+    while ((e = eq_extract(eq)) != NULL && e->type != got_smsc)
+    	debug("test_smsc", 0, "Discarding event of type %s", eq_type(e));
+    debug("test_smsc", 0, "Got event got_smsc.");
+    eq_destroy_event(e);
+
+    /* Send the SMS messages, or at least fill the send queue. */
+    for (i = 0; i < num_messages && i < MAX_IN_QUEUE; ++i)
+    	smsc_emu_deliver();
+    num_in_queue = i;
+    num_deliver = i;
+
+    /* 
+     * Wait for results to be processed. When send queue is not full,
+     * fill it.
+     */
+    num_submit = 0;
+    while (num_submit < num_messages && (e = eq_extract(eq)) != NULL) {
+    	while (num_deliver < num_messages && num_in_queue < MAX_IN_QUEUE) {
+	    smsc_emu_deliver();
+	    ++num_in_queue;
+	    ++num_deliver;
+	}
+
+	eq_log(e);
+
+	switch (e->type) {
+	case deliver_ack:
+	    break;
+	    
+	case http_request:
+	    httpd_emu_reply(e);
+	    break;
+
+	case submit:
+	    debug("", 0, "RTT = %ld", eq_round_trip_time(e));
 	    smsc_emu_submit_ack(e);
 	    ++num_submit;
+	    --num_in_queue;
 	    break;
 	    
 	default:
@@ -691,21 +838,40 @@ static void main_n_messages_benchmark(void)
 int main(int argc, char **argv)
 {
     int opt;
+    char *main_name;
+    int i;
+    static struct {
+	char *name;
+	void (*func)(void);
+    } tab[] = {
+	{ "n_messages", n_messages_benchmark },
+	{ "sustained_level", sustained_level_benchmark },
+    };
 
     gwlib_init();
     eq_init();
     httpd_emu_init();
     smsc_emu_init();
 
-    while ((opt = getopt(argc, argv, "r:")) != EOF) {
+    main_name = "n_messages_benchmark";
+
+    while ((opt = getopt(argc, argv, "m:r:")) != EOF) {
 	switch (opt) {
+	case 'm':
+	    main_name = optarg;
+	    break;
 	case 'r':
 	    num_messages = atoi(optarg);
 	    break;
 	}
     }
 
-    main_n_messages_benchmark();
+    for (i = 0; i < sizeof(tab) / sizeof(tab[0]); ++i) {
+	if (strcmp(main_name, tab[i].name) == 0) {
+	    tab[i].func();
+	    break;
+	}
+    }
 
     smsc_emu_shutdown();
     httpd_emu_shutdown();

@@ -395,6 +395,7 @@ static Connection *conn_pool_get(Octstr *host, int port)
     return conn;
 }
 
+#if 0 /* XXX unused while http connection re-using is disabled */
 static void conn_pool_put(Connection *conn, Octstr *host, int port)
 {
     Octstr *key;
@@ -411,6 +412,7 @@ static void conn_pool_put(Connection *conn, Octstr *host, int port)
     octstr_destroy(key);
     mutex_unlock(conn_pool_lock);
 }
+#endif
 
 
 
@@ -1197,6 +1199,7 @@ static void client_destroy(void *client)
 }
 
 
+#if 0 /* XXX unused while http connection re-use is disabled */
 static void client_reset(HTTPClient *p)
 {
     debug("gwlib.http", 0, "HTTP: Resetting HTTPClient for `%s'.",
@@ -1205,6 +1208,7 @@ static void client_reset(HTTPClient *p)
     gw_assert(p->headers == NULL);
     p->headers = http_create_empty_headers();
 }
+#endif
 
 
 /*

@@ -12,13 +12,6 @@
 <artheader>
 	<title>Benchmark results for Kannel &version;</title>
 	<corpauthor>Kannel Project</corpauthor>
-<!--
-	<abstract>
-		<title>Abstract</title>
-		<para>Automatically generated benchmark results for Kannel.
-		</para>
-	</abstract>
--->
 </artheader>
 
 <sect1>

@@ -4,48 +4,65 @@
 
 set -e
 
-times=100000
+case "$1" in
+--fast) times=1000; shift ;;
+*) times=100000 ;;
+esac
 
-rm -f bench_sms_smsc.log bench_sms_bb.log bench_sms_sb.log
+. benchmarks/functions.inc
 
-test/test_smsc -r $times 2> bench_sms_smsc.log &
-sleep 1
-gw/bearerbox -v 4 benchmarks/bench_sms.conf & # XXX logfile name
-sleep 1
-gw/smsbox -v 4 benchmarks/bench_sms.conf &
+function gather_data {
+    rm -f bench_sms_*.log
+    
+    test/test_smsc -m "$1" -r $times 2> bench_sms_smsc.log &
+    sleep 1
+    gw/bearerbox -v 4 benchmarks/bench_sms.conf &
+    sleep 1
+    gw/smsbox -v 4 benchmarks/bench_sms.conf &
+    
+    wait
+    
+    check_for_errors bench_sms_*.log
+}
 
-wait
+function analyze_logs {
+    for type in deliver deliver_ack http_request submit
+    do
+	awk "/INFO: Event .*, type $type,/ { print \$NF, \$(NF-2) }" \
+	    bench_sms_smsc.log |
+	uniq -c | 
+	awk '
+	    NR == 1 { first = $2 }
+	    { print $2 - first, $1 }
+	' > bench_sms-$type.dat
+    done
 
-if grep 'WARNING:|ERROR:|PANIC:' bench_sms_*.log >/dev/null
-then
-        echo bench_sms.sh failed 1>&2
-        echo See bench_sms*.log for info 1>&2
-        exit 1
-fi
+    awk '/DEBUG: RTT / { print ++n, $NF }' bench_sms_smsc.log \
+    	> bench_sms-rtt.dat
+}
+    
+function make_graphs {
+    plot benchmarks/bench_sms_"$1" \
+	"time (s)" "requests/s (Hz)" \
+	"bench_sms-deliver.dat" "deliver" \
+	"bench_sms-deliver_ack.dat" "deliver_ack" \
+	"bench_sms-http_request.dat" "http_request" \
+	"bench_sms-submit.dat" "submit"
+    
+    plot benchmarks/bench_sms_rtt_"$1" \
+	"received message number" "average round trip time (s)" \
+	"bench_sms-rtt.dat" ""
+}
 
+function run {
+    gather_data "$1"
+    analyze_logs
+    make_graphs "$1"
+}
 
-awk '/INFO: Event .*, type submit/ { print $NF, $(NF-2) }' bench_sms_smsc.log |
-uniq -c | 
-awk '
-    NR == 1 { first = $2 }
-    { print $2 - first, $1 }
-' > bench_sms.dat
-
-gnuplot <<EOF > benchmarks/bench_sms.png
-set terminal png
-set xlabel "time (s)"
-set ylabel "requests/s (Hz)"
-plot "bench_sms.dat" notitle with lines
-EOF
-
-gnuplot <<EOF > benchmarks/bench_sms.ps
-set terminal postscript eps color
-set xlabel "time (s)"
-set ylabel "requests/s (Hz)"
-plot "bench_sms.dat" notitle with lines
-EOF
-
+run n_messages
+# run sustained_level
 sed "s/#TIMES#/$times/g" benchmarks/bench_sms.txt
 
-rm -f bench_sms_smsc.log bench_sms_bb.log bench_sms_sb.log
-rm -f bench_sms.dat
+rm -f bench_sms*.log
+rm -f bench_sms*.dat
