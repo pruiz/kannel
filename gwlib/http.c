@@ -1204,7 +1204,6 @@ error:
 static void write_request_thread(void *arg)
 {
     HTTPServer *trans;
-    char *method;
     char buf[128];    
 
     while (run_status == running) {
