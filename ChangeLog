@@ -1,3 +1,10 @@
+2000-02-16 Aarno Syvänen <syvanen@wapit.com>
+
+	* test/fakewap.c: This version was used for testing of wtp error 
+	handling and tid verification. Its interface will be simplified. 
+	Tid_new flag is a now a command line parameter, and it can be turned 
+	off.
+
 2000-02-16    <rpr@rpr.wapit.com>
 
 	* gw/wsp.c (unpack_caps): fixed one defination error, added extra
