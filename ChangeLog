@@ -1,4 +1,7 @@
 2002-08-11  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/smsc/smpp_pdu.c: fixing a compiler warning
+
+2002-08-11  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/smsc/smpp_pdu.[chdef], gw/smsc/smsc_smpp.c: rollback to previous 
       revision and adding a silent fix to SMPP PDU elements that are to long.
     * Makefile.in: fixing missing dependency generation in file .depend for 
