@@ -417,7 +417,7 @@ static int route_msg(BBThread *bbt, RQueueItem *msg)
 
 		if (thr->type == BB_TTYPE_SMSC)
 		    ret = smsc_receiver(thr->smsc,
-			   octstr_get_cstr(msg->msg->plain_sms.receiver));
+			   octstr_get_cstr(msg->msg->smart_sms.receiver));
 		else
 		    ret = 0;
 		
@@ -436,7 +436,7 @@ static int route_msg(BBThread *bbt, RQueueItem *msg)
 	    msg->destination = backup;
 	else {
 	    error(0, "Cannot route receiver <%s>, message ignored",
-		  octstr_get_cstr(msg->msg->plain_sms.receiver));
+		  octstr_get_cstr(msg->msg->smart_sms.receiver));
 	    return -1;
 	}
     }
@@ -504,20 +504,14 @@ static void normalize_numbers(RQueueItem *msg, SMSCenter *from)
     sr = rr = 0;
     if (from != NULL) {
 	p = smsc_dial_prefix(from);
-	if (p != NULL) {
-		if(msg_type(msg->msg) == plain_sms) {
-			sr = normalize_number(p, &(msg->msg->plain_sms.sender));
-			rr = normalize_number(p, &(msg->msg->plain_sms.receiver));
-		} else if(msg_type(msg->msg) == smart_sms) {
+		if(msg_type(msg->msg) == smart_sms) {
 			sr = normalize_number(p, &(msg->msg->smart_sms.sender));
 			rr = normalize_number(p, &(msg->msg->smart_sms.receiver));
 		}
 	}
     }
-	if(msg_type(msg->msg) == plain_sms) {
-		if (sr == 0) sr = normalize_number(bbox->global_prefix, &(msg->msg->plain_sms.sender));
-		if (rr == 0) rr = normalize_number(bbox->global_prefix, &(msg->msg->plain_sms.receiver));
-	} else if(msg_type(msg->msg) == smart_sms) {
+
+	if(msg_type(msg->msg) == smart_sms) {
 		if (sr == 0) sr = normalize_number(bbox->global_prefix, &(msg->msg->smart_sms.sender));
 		if (rr == 0) rr = normalize_number(bbox->global_prefix, &(msg->msg->smart_sms.receiver));
 	}
