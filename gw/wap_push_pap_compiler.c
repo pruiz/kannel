@@ -219,7 +219,6 @@ static int parse_requirement(Octstr *attr_value);
 static int parse_priority(Octstr *attr_value);
 static int parse_delivery_method(Octstr *attr_value);
 static int parse_state(Octstr *attr_value);
-static int parse_address(Octstr **attr_value, long *type_of_address);
 static long parse_wappush_client_address(Octstr **address, long pos,
                                          long *type_of_address);
 static long parse_ppg_specifier(Octstr **address, long pos);
@@ -1433,7 +1432,7 @@ static int parse_state(Octstr *attr_value)
  *           -2, address parsing error  
  */
 
-static int parse_address(Octstr **address, long *type_of_address)
+int parse_address(Octstr **address, long *type_of_address)
 {
     long pos;
     Octstr *copy;

@@ -40,5 +40,7 @@ enum {
  */
 int pap_compile(Octstr *pap_content, WAPEvent **e);
 
+int parse_address(Octstr **attr_value, long *type_of_address);
+
 #endif
 
