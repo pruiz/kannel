@@ -1,3 +1,6 @@
+2002-03-20  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/smsc_at2.c: fixed compiler warning
+
 2002-03-19  Bruno Rodrigues  <bruno.rodrigues@litux.org>
     * gw/smsc_at2.c: fix warning 
 
