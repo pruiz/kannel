@@ -1,3 +1,9 @@
+2005-01-20  Alexander Malysh <amalysh at kannel.org>
+    * gwlib/octstr.c: fixed segfault and compiler warnings on a x86_64 (Intel Xeon).
+    * gw/smsc/smsc_at.c: fixed compiler warnings on a 64bite OS.
+      Thanks to Ilan Aelion <ilan.aelion at dimoco.at>.
+      [Msg-Id: <200412311337.12104.ilan.aelion@dimoco.at>]
+
 2005-01-19  Alexander Malysh <amalysh at kannel.org>
     * configure.in, configure: fixed bug #178 and similar bugs.
       Additionaly fixed indentation.

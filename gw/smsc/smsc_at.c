@@ -176,8 +176,8 @@ void at2_close_device(PrivAT2data *privdata)
 void at2_read_buffer(PrivAT2data *privdata)
 {
     char buf[MAX_READ + 1];
-    int s, ret;
-    int count;
+    int ret;
+    size_t count, s;
     fd_set read_fd;
     struct timeval tv;
 
