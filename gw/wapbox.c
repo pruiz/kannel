@@ -299,8 +299,11 @@ int main(int argc, char **argv)
     wtp_resp_init(&dispatch_datagram, &wsp_session_dispatch_event,
                   &wsp_push_client_dispatch_event);
     wap_appl_init();
+
+#if (HAVE_WTLS_OPENSSL)
     wtls_secmgr_init();
     wtls_init();
+#endif
     
 	wap_push_ota_init(&wsp_session_dispatch_event, &wsp_unit_dispatch_event);
     wap_push_ppg_init(&wap_push_ota_dispatch_event, 
@@ -351,9 +354,11 @@ int main(int argc, char **argv)
 			break;
         case WTLS_CONNECTIONLESS_PORT:
         case WTLS_CONNECTION_ORIENTED_PORT:
+#if (HAVE_WTLS_OPENSSL)
             dgram = wtls_unpack_wdp_datagram(msg);
             if (dgram != NULL)
                 wtls_dispatch_event(dgram);
+#endif
 			break;
         default:
                 panic(0,"Bad packet received! This shouldn't happen!");

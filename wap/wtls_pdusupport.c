@@ -4,6 +4,8 @@
  *
  * 
  */
+#if (HAVE_WTLS_OPENSSL)
+
 #include "wtls_pdu.h"
 #include "wtls_pdusupport.h"
 #include "gwlib/gwlib.h"
@@ -1246,3 +1248,4 @@ void dump_wtls_certificate(unsigned char *dbg, int level, WTLSCertificate *cert)
 }
 
 
+#endif

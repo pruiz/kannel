@@ -1,6 +1,7 @@
 2001-07-06 Yann Muller <ymuller@3glab.com>
 
-	* gw/wapbox.c: separated wtls specific code with #defines.
+	* gw/wapbox.c, wap/wtls*.c, gwlib/pki.c: separated wtls specific code
+	with #defines.
 	
 2001-07-06 Andreas Fink <andreas@fink.org
     * gw/smsbox.c, gw/smsc_emi2.c, gw/msg-decl.h, gw/smsc_http.c, smsc_smpp.c:

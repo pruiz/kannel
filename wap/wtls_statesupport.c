@@ -2,6 +2,8 @@
  * 2001  Nick Clarey, Yann Muller for 3G LAB
  */
 
+#if (HAVE_WTLS_OPENSSL)
+
 #include <openssl/x509.h>
 #include "wtls_statesupport.h"
 #define BLOCKLENGTH 64
@@ -859,3 +861,4 @@ void calculate_client_key_block(WTLSMachine *wtls_machine) {
     }
 }
 
+#endif

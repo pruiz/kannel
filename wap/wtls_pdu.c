@@ -5,6 +5,8 @@
  * 
  */
 
+#if (HAVE_WTLS_OPENSSL)
+
 #include "gwlib/gwlib.h"
 #include "gwlib/octstr.h"
 #include "wtls_pdu.h"
@@ -990,3 +992,5 @@ void wtls_pdu_dump(wtls_PDU *pdu, int level) {
 	}
 	
 }
+
+#endif

@@ -4,6 +4,8 @@
  * Nick Clarey <nclarey@3glab.com>
  */
 
+#if (HAVE_WTLS_OPENSSL)
+
 #include "gwlib/gwlib.h"
 #include "wtls.h"
 #include "timers.h"
@@ -622,6 +624,4 @@ static int match_pdu_type(void* item, void* pattern)
         }        
 }
 
-
-
-
+#endif

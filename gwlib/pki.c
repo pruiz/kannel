@@ -1,3 +1,5 @@
+#if (HAVE_WTLS_OPENSSL)
+
 #include <stdio.h>
 
 #include <openssl/rsa.h>
@@ -83,5 +85,4 @@ void dump_privkey(RSA* priv_key)
 {
 }
 
-
-
+#endif
