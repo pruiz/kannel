@@ -405,13 +405,13 @@ Msg *dlr_find_mem(char *smsc, char *ts, char *dst, int typ)
 
 Msg *dlr_find_mysql(char *smsc, char *ts, char *dst, int typ)
 {
+    Msg	*msg = NULL;
+#ifdef DLR_MYSQL
     Octstr *sql;
     int	state;
     int dlr_mask;
     Octstr *dlr_service;
     Octstr *dlr_url;
-    Msg	*msg = NULL;
-#ifdef DLR_MYSQL
     MYSQL_RES *result;
     MYSQL_ROW row;
     
