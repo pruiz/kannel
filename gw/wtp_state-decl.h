@@ -46,10 +46,16 @@ ROW(LISTEN,
     event->RcvInvoke.tcl == 0,
     {
      current_primitive = TRInvokeIndication;
-     wsp_event=pack_wsp_event(current_primitive, event, machine);
+     wsp_event = pack_wsp_event(current_primitive, event, machine);
      debug(0, "RcvInvoke: generated TR-Invoke.ind for WSP");
      wsp_dispatch_event(machine, wsp_event);
     },
+    LISTEN)
+
+ROW(LISTEN,
+    RcvErrorPDU,
+    1,
+    { wtp_send_abort(PROVIDER, PROTOERR, machine, event);},
     LISTEN)
 
 ROW(TIDOK_WAIT,
@@ -87,6 +93,15 @@ ROW(TIDOK_WAIT,
      machine->ack_pdu_sent = 1;
     },
     TIDOK_WAIT)
+
+ROW(TIDOK_WAIT,
+    RcvErrorPDU,
+    1,
+    {
+     wtp_send_abort(PROVIDER, PROTOERR, machine, event);
+     wtp_machine_mark_unused(machine);
+    },
+    LISTEN)
 
 /*
  * Ignore receiving invoke, when the state of the machine is INVOKE_RESP_WAIT.
@@ -166,6 +181,19 @@ ROW(INVOKE_RESP_WAIT,
     { wtp_send_ack(ACKNOWLEDGEMENT, machine, event);},
     RESULT_WAIT)
 
+ROW(INVOKE_RESP_WAIT,
+    RcvErrorPDU,
+    1,
+    {
+     wtp_machine_mark_unused(machine);
+     wtp_send_abort(PROVIDER, NORESPONSE, machine, event); 
+     
+     current_primitive = TRAbortIndication;
+     wsp_event = pack_wsp_event(current_primitive, event, machine);
+     /*wsp_dispatch_event(machine, wsp_event);*/
+    },
+    LISTEN)
+
 ROW(RESULT_WAIT,
     TRResult,
     1,
@@ -223,6 +251,19 @@ ROW(RESULT_WAIT,
     },
     LISTEN)
 
+ROW(RESULT_WAIT,
+    RcvErrorPDU,
+    1,
+    {
+     wtp_machine_mark_unused(machine);
+     wtp_send_abort(PROVIDER, NORESPONSE, machine, event); 
+     
+     current_primitive = TRAbortIndication;
+     wsp_event = pack_wsp_event(current_primitive, event, machine);
+     /*wsp_dispatch_event(machine, wsp_event);*/
+    },
+    LISTEN)
+
 ROW(RESULT_RESP_WAIT,
     RcvAck,
     1,
@@ -257,13 +298,13 @@ ROW(RESULT_RESP_WAIT,
 
 /* 
  * We resend the packet, obviously the previous one does not reach the client.
- * (Yes, we will have timers ..)
+ * (Yes, we will have timers *< 8-))
  */
 ROW(RESULT_RESP_WAIT,
     RcvInvoke,
     machine->rcr < MAX_RCR,
     { 
-     wtp_resend_result(machine->result);
+     wtp_resend_result(machine->result, machine->rid);
      ++machine->rcr;
     },
     RESULT_RESP_WAIT)
@@ -294,6 +335,19 @@ ROW(RESULT_RESP_WAIT,
     machine->rcr == MAX_RCR,
     {
      wtp_machine_mark_unused(machine);
+     current_primitive = TRAbortIndication;
+     wsp_event = pack_wsp_event(current_primitive, event, machine);
+     /*wsp_dispatch_event(machine, wsp_event);*/
+    },
+    LISTEN)
+
+ROW(RESULT_RESP_WAIT,
+    RcvErrorPDU,
+    1,
+    {
+     wtp_machine_mark_unused(machine);
+     wtp_send_abort(PROVIDER, NORESPONSE, machine, event); 
+     
      current_primitive = TRAbortIndication;
      wsp_event = pack_wsp_event(current_primitive, event, machine);
      /*wsp_dispatch_event(machine, wsp_event);*/

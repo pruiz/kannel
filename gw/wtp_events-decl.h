@@ -64,19 +64,23 @@ EVENT(TRAbort,
 
 EVENT(TimerTO_A,
      {
-     INTEGER(dummy);
+     INTEGER(tid);
      })
 
 EVENT(TimerTO_R,
      {
-     INTEGER(dummy);
+     INTEGER(tid);
      })
 
 EVENT(TimerTO_W,
      {
-     INTEGER(dummy);
+     INTEGER(tid);
      })
 
+EVENT(RcvErrorPDU,
+     {
+     INTEGER(tid);
+     })
 
 #undef EVENT
 #undef INTEGER

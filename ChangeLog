@@ -1,3 +1,21 @@
+2000-03-02  Aarno Syvänen <syvanen@wapit.com>
+
+	* wtp_send.c: added static functions message_rid, set_rid for changing
+	retransmission status of an entire message.
+
+	* wtp_events-decl.h: New event RcvErrorPDU added
+
+	* wtp.c: Tell_about_error returns an event when an illegal header is
+	received. Wtp_unpack_wdp_datagram returns event RcvErrorPDU when this
+	happens, ditto event unpacking functions. Function machine_find_or_
+	create handles this event, too.
+
+	* wtp_state-decl.h: Added rows for handling same event.
+
+	* wtp_send.c: Added function do_not_start for handling aborts not 
+	feeded to the state machine. Some redundant code added, perhaps, but
+	this is simpler than changing all wtp_send_abort calls.
+
 2000-02-02  Tuomas Luttinen  <tuo@tuo.wapit.fi>
 
 	* gw/wml_compiler.c (parse_attribute): Little bug fix: end tag added

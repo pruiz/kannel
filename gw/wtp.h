@@ -66,8 +66,8 @@ enum {
  * Types of aborts
  */
 enum {
-     USER = 0x01,
      PROVIDER = 0x00,
+     USER = 0x01,
 };
 
 enum event_name {
@@ -172,6 +172,7 @@ WTPMachine *wtp_machine_create(Octstr *srcaddr, long srcport,
  * fields, tid from an field of the event. If the machine does not exist and
  * the event is RcvInvoke, a new machine is created and added in the machines
  * data structure. If the event was RcvAck or RcvAbort, the function panics.
+ * If the event is RcvErrorPDU, new machine is created.
  */
 WTPMachine *wtp_machine_find_or_create(Msg *msg, WTPEvent *event);
 

@@ -23,7 +23,9 @@ enum {
 static Msg *pack_result(Msg *msg, WTPMachine *machine, WTPEvent *event);
 
 static Msg *pack_abort(Msg *msg, long abort_type, long abort_reason, 
-       WTPMachine *machine, WTPEvent *event);
+       WTPEvent *event);
+
+static Msg *pack_stop(Msg *msg, long abort_type, long abort_reason, long tid);
 
 static Msg *pack_ack(Msg *msg, long ack_type, WTPMachine *machine, 
                      WTPEvent *event);
@@ -38,6 +40,8 @@ static Msg *add_datagram_address(Msg *msg, WTPMachine *machine);
 
 static Msg *add_segment_address(Msg *msg, Address *address);
 
+static Msg *add_direct_address(Msg *msg, Address *address);
+
 static char insert_pdu_type(int type, char octet);
 
 static char indicate_simple_message(char octet);
@@ -45,6 +49,10 @@ static char indicate_simple_message(char octet);
 static char insert_rid(long attribute, char octet);
 
 static void insert_tid(char *pdu, long attribute);
+
+static Msg *set_rid(Msg *msg, long rid);
+
+static long message_rid(Msg *msg);
 
 static char insert_abort_type(int abort_type, char octet);
 
@@ -67,6 +75,8 @@ static char insert_tpi_length(int tpi_length, char octet);
  * data. Fetches SDU from WTP event, address four-tuple and machine state 
  * information (are we resending the packet or not) from WTP machine. Handles 
  * all errors by itself.
+ *
+ * Returns message, if succesfull, NULL otherwise. 
  */
 Msg *wtp_send_result(WTPMachine *machine, WTPEvent *event){
 
@@ -74,13 +84,13 @@ Msg *wtp_send_result(WTPMachine *machine, WTPEvent *event){
 
      msg = msg_create(wdp_datagram);
      msg = add_datagram_address(msg, machine);
-#ifdef d
+
      debug(0, "WTP: packing result pdu");
-#endif
+
      msg = pack_result(msg, machine, event);
-#ifdef d
+
      debug(0,"WTP: result pdu packed");
-#endif   
+  
      if (msg == NULL){
         return NULL;
      }
@@ -91,13 +101,23 @@ Msg *wtp_send_result(WTPMachine *machine, WTPEvent *event){
 }
 
 /*
- * Resend an already packed packet
+ * Resend an already packed packet. We must turn on rid bit first (if it is 
+ * not already turned).
  */
-void wtp_resend_result(Msg *result){
+void wtp_resend_result(Msg *result, long rid){
 
+     if (message_rid(result) == 0) {
+        debug(0, "WTP: resend: turning the first bit");
+        result = set_rid(result, rid);
+     }
      put_msg_in_queue(result);
 }
 
+/*
+ * Sends a message object, of wdp datagram type, having abort header as user 
+ * data. Fetches address four-tuple from WTP machine, tid from wtp event, abort 
+ * type and reason from direct input. Handles all errors by itself.
+ */
 void wtp_send_abort(long abort_type, long abort_reason, WTPMachine *machine, 
      WTPEvent *event){
 
@@ -105,13 +125,37 @@ void wtp_send_abort(long abort_type, long abort_reason, WTPMachine *machine,
 
      msg = msg_create(wdp_datagram);
      msg = add_datagram_address(msg, machine);
-     msg = pack_abort(msg, abort_type, abort_reason, machine, event);
+     msg = pack_abort(msg, abort_type, abort_reason, event);
 
      if (msg == NULL){
         return;
      }
 
      put_msg_in_queue(msg);
+
+     return;
+}
+
+/*
+ * Same as previous, expect now abort type and reason, reply address and trans-
+ * action tid are direct inputs. (This function is used when the transaction is 
+ * aborted before calling the state machine).
+ */
+void wtp_do_not_start(long abort_type, long abort_reason, Address *address, long tid){
+
+     Msg *msg = NULL;
+
+     msg = msg_create(wdp_datagram);
+     msg = add_direct_address(msg, address);
+     debug(0, "WTP: do_not_start: address added");
+     msg = pack_stop(msg, abort_type, abort_reason, tid);
+
+     if (msg == NULL){
+        return;
+     }
+
+     put_msg_in_queue(msg);
+     debug(0, "WTP: do_not_start: aborted");
 
      return;
 }
@@ -171,6 +215,17 @@ void wtp_send_negative_ack(Address *address, long tid, int retransmission_status
      return;
 }
 
+void wtp_send_address_dump(Address *address){
+
+       debug(0, "WTP: address dump starting");
+       debug(0, "WTP: source address");
+       octstr_dump(address->source_address);
+       debug(0, "WTP: source port %ld: ", address->source_port);
+       debug(0, "WTP: destination address");
+       octstr_dump(address->destination_address);
+       debug(0, "WTP: destination port %ld: ", address->destination_port);
+}
+
 /****************************************************************************
  *
  * INTERNAL FUNCTIONS:
@@ -222,7 +277,7 @@ static Msg *pack_result(Msg *msg, WTPMachine *machine, WTPEvent *event){
  * errors by itself.
  */
 static Msg *pack_abort(Msg *msg, long abort_type, long abort_reason, 
-       WTPMachine *machine, WTPEvent *event){
+       WTPEvent *event){
 
        int octet;
        size_t pdu_len;
@@ -239,6 +294,34 @@ static Msg *pack_abort(Msg *msg, long abort_type, long abort_reason,
        wtp_pdu[0] = octet;
 
        insert_tid(wtp_pdu, event->TRAbort.tid);
+
+       wtp_pdu[3] = abort_reason;
+
+       octstr_insert_data(msg->wdp_datagram.user_data, 0, wtp_pdu, 4);
+
+       return msg;
+}
+
+/*
+ * As previous, expect now tid is supplied as a direct input
+ */
+static Msg *pack_stop(Msg *msg, long abort_type, long abort_reason, long tid){
+
+       int octet;
+       size_t pdu_len;
+       char *wtp_pdu;
+
+       pdu_len = 4;
+       wtp_pdu = gw_malloc(pdu_len);
+       octet = -42;
+
+       msg->wdp_datagram.user_data = octstr_create_empty();
+
+       octet = insert_pdu_type(ABORT, octet);
+       octet = insert_abort_type(abort_type, octet);
+       wtp_pdu[0] = octet;
+
+       insert_tid(wtp_pdu, tid);
 
        wtp_pdu[3] = abort_reason;
 
@@ -361,6 +444,22 @@ static Msg *add_datagram_address(Msg *msg, WTPMachine *machine){
        return msg;
 }
 
+/* 
+ * Now we have the direct reply address.
+ */
+static Msg *add_direct_address(Msg *msg, Address *address){
+
+       debug(0, "WTP: add_direct_address");
+       wtp_send_address_dump(address);
+       msg->wdp_datagram.source_address = 
+    	    octstr_duplicate(address->source_address);
+       msg->wdp_datagram.source_port = address->source_port;
+       msg->wdp_datagram.destination_address = 
+    	    octstr_duplicate(address->destination_address);
+       msg->wdp_datagram.destination_port = address->destination_port;
+       return msg;
+}
+
 static Msg *add_segment_address(Msg *msg, Address *address){
 
        return msg;
@@ -380,10 +479,38 @@ static char indicate_simple_message(char octet){
        return octet;
 }
 
+/*
+ * Turns on rid bit in the middle of a message.
+ */
+static Msg *set_rid(Msg *msg, long rid){
+
+       char first_octet;
+    
+       first_octet = octstr_get_char(msg->wdp_datagram.user_data, 0);
+       first_octet = insert_rid(rid, first_octet);
+       octstr_set_char(msg->wdp_datagram.user_data, 0, first_octet); 
+       
+       return msg;
+}
+
 static char insert_rid(long attribute, char octet){
 
        octet += attribute;
        return octet;
+}
+
+/*
+ * Returns rid of an entire message.
+ */
+static long message_rid(Msg *msg){
+
+       char first_octet;
+       long rid = 0;
+
+       first_octet = octstr_get_char(msg->wdp_datagram.user_data, 0);
+       rid = first_octet&1;
+
+       return rid;
 }
 
 static void insert_tid(char *pdu, long attribute){
