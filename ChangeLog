@@ -1,3 +1,7 @@
+2000-07-19  Tuomas Luttinen  <tuo@wapit.com>
+
+	* configure.in: libxml 1.8.9 and 2.2.0 added.
+
 2000-07-18  Richard Braakman  <dark@wapit.com>
 
 	* gw/html.c: Fix skipping of quoted strings (bug #89, reported
@@ -60,7 +64,7 @@
 
 	* gw/wml_compiler.c: Little bug fixes with variables:
 	- no more empty	string before variable reference to string table
-	- double $ won't eat a character after them
+	- double $ won't eat a character after them, fixes #94
 	- a little memory leak mentioned below corrected
 
 2000-07-12  Kalle Marjola  <rpr@wapit.com>
