@@ -1,4 +1,9 @@
 2002-02-20  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/smsc_at2.c: fixing a list_search() mistake
+      reported by: "Nektarios K. Papadopoulos" <npapadop@inaccessnetworks.com>
+      [Msg-ID: <3C72B61A.1BC22DD7@inaccessnetworks.com>]
+
+2002-02-20  Stipe Tolj  <tolj@wapme-systems.de>
     * gwlib/conn.c: fixing mutex race condition in conn_register()
       suggested by: Uoti Urpala <uoti.urpala@netikos.com>
       [Msg-ID: <3C724267.1040508@netikos.com>]
