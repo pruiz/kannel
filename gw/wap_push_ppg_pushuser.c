@@ -1,7 +1,7 @@
- /*
+/*
  * wap_push_ppg_pushuser.c: Implementation of wap_push_ppg_pushuser.h header.
  *
- * By Aarno Syvänen for Wiral Ltd.
+ * By Aarno Syvänen for Wiral Ltd and Global Networks Inc.
  */
 
 #include "wap_push_ppg_pushuser.h"
@@ -18,6 +18,7 @@ struct WAPPushUser {
     Octstr *name;                      /* the name of the user */
     Octstr *username;                  /* the username of this ppg user */
     Octstr *password;                  /* and password */
+    Octstr *country_prefix;
     Octstr *allowed_prefix;            /* phone number prefixes allowed by 
                                           this user when pushing*/
     Octstr *denied_prefix;             /* and denied ones */
@@ -72,7 +73,7 @@ static void challenge(HTTPClient *c, List *push_headers);
 static void reply(HTTPClient *c, List *push_headers);
 static int parse_cgivars_for_username(List *cgivars, Octstr **username);
 static int parse_cgivars_for_password(List *cgivars, Octstr **password);
-static int compare_octstr_sequence(Octstr *os1, Octstr *os2, long start, long end);
+static int compare_octstr_sequence(Octstr *os1, Octstr *os2, long start);
 
 /****************************************************************************
  *
@@ -92,7 +93,7 @@ int wap_push_ppg_pushuser_list_add(List *list, long number_of_pushes,
     gw_assert(list);
     while (list && (grp = list_extract_first(list))) {
         if (oneuser_add(grp) == -1) {
-	    list_destroy(list, NULL);
+	        list_destroy(list, NULL);
             return 0;
         }
     }
@@ -169,7 +170,7 @@ int wap_push_ppg_pushuser_authenticate(HTTPClient *c, List *cgivars, Octstr *ip,
         if ((ret = response(push_headers, username, &password)) == NO_USERNAME) { 
             if (!parse_cgivars_for_username(cgivars, username)) {
                 error(0, "no user specified, challenging regardless");
-	        goto listed;
+	            goto listed;
             }
         }
 
@@ -178,28 +179,28 @@ int wap_push_ppg_pushuser_authenticate(HTTPClient *c, List *cgivars, Octstr *ip,
 
         u = user_find_by_username(*username);
         if (!ip_allowed_by_user(u, ip)) {
-	    goto not_listed;
+	        goto not_listed;
         }
 
         next = 0;       
 
         if ((next_time_os = dict_get(next_try, ip)) != NULL) {
-	    octstr_parse_long(&next_time, next_time_os, 0, 10);
+	        octstr_parse_long(&next_time, next_time_os, 0, 10);
             if (difftime(now, (time_t) next_time) < 0) {
-	        error(0, "another try from %s, not much time used", 
+	            error(0, "another try from %s, not much time used", 
                       octstr_get_cstr(copy));
-	        goto listed;
+	            goto listed;
             }
         }
 
         if (u == NULL) {
-	    error(0, "user %s is not allowed by users list, challenging",
+	        error(0, "user %s is not allowed by users list, challenging",
                   octstr_get_cstr(*username));
-	    goto listed;
+	        goto listed;
         }
 
         if (!password_matches(u, password)) {
-	    error(0, "wrong or missing password in request from %s, challenging" , 
+	        error(0, "wrong or missing password in request from %s, challenging" , 
                   octstr_get_cstr(copy));
             goto listed;
         }
@@ -270,7 +271,7 @@ int wap_push_ppg_pushuser_search_ip_from_wildcarded_list(Octstr *haystack,
 {
     List *ips;
     long i;
-    Octstr *ip;
+    Octstr *configured_ip;
 
     gw_assert(haystack);
     gw_assert(list_sep);
@@ -279,27 +280,26 @@ int wap_push_ppg_pushuser_search_ip_from_wildcarded_list(Octstr *haystack,
     /*There are no wildcards in the list*/    
     if (octstr_search_char(haystack, '*', 0) < 0) {
         if (octstr_search(haystack, needle, 0) >= 0) {
-	    return 1;
+	        return 1;
         } else { 
-	    return 0;
+	        return 0;
         }
     }
     
     /*There are wildcards in the list*/
+    configured_ip = NULL;
     ips = octstr_split(haystack, list_sep);
     for (i = 0; i < list_len(ips); ++i) {
-        ip = list_get(ips, i);
-        if (wildcarded_ip_found(ip, needle, ip_sep))
-	    goto found;
-        octstr_destroy(ip);
+        configured_ip = list_get(ips, i);
+        if (wildcarded_ip_found(configured_ip, needle, ip_sep))
+	        goto found;
     }
 
-    list_destroy(ips, NULL);
+    list_destroy(ips, octstr_destroy_item);
     return 0;
 
 found:
-    list_destroy(ips, NULL);
-    octstr_destroy(ip);
+    list_destroy(ips, octstr_destroy_item);
     return 1;
 }
 
@@ -378,18 +378,19 @@ static WAPPushUser *create_oneuser(CfgGroup *grp)
 
     u->user_deny_ip = cfg_get(grp, octstr_imm("deny-ip"));
     u->user_allow_ip = cfg_get(grp, octstr_imm("allow-ip"));
+    u->country_prefix = cfg_get(grp, octstr_imm("country-prefix"));
     u->allowed_prefix = cfg_get(grp, octstr_imm("allowed-prefix"));
     u->denied_prefix = cfg_get(grp, octstr_imm("denied-prefix"));
 
     os = cfg_get(grp, octstr_imm("white-list"));
     if (os != NULL) {
-	u->white_list = numhash_create(octstr_get_cstr(os));
-	octstr_destroy(os);
+	    u->white_list = numhash_create(octstr_get_cstr(os));
+	    octstr_destroy(os);
     }
     os = cfg_get(grp, octstr_imm("black-list"));
     if (os != NULL) {
-	u->black_list = numhash_create(octstr_get_cstr(os));
-	octstr_destroy(os);
+	    u->black_list = numhash_create(octstr_get_cstr(os));
+	    octstr_destroy(os);
     }
 
     octstr_destroy(grpname);
@@ -415,7 +416,8 @@ static void destroy_oneuser(void *p)
 
      octstr_destroy(u->name);
      octstr_destroy(u->username);  
-     octstr_destroy(u->password);                
+     octstr_destroy(u->password);  
+     octstr_destroy(u->country_prefix);              
      octstr_destroy(u->allowed_prefix);           
      octstr_destroy(u->denied_prefix);             
      numhash_destroy(u->white_list);               
@@ -436,7 +438,9 @@ static void oneuser_dump(WAPPushUser *u)
     octstr_dump(u->name, 0);
     debug("wap.push.ppg.pushuser", 0, "username:");
     octstr_dump(u->username, 0);  
-    debug("wap.push.ppg.pushuser", 0, "omitting password");   
+    debug("wap.push.ppg.pushuser", 0, "omitting password");
+    debug("wap-push.ppg.pushuser", 0, "country prefix");
+    octstr_dump(u->country_prefix, 0);   
     debug("wap.push.ppg.pushuser", 0, "allowed prefix list:");            
     octstr_dump(u->allowed_prefix, 0);  
     debug("wap.push.ppg.pushuser", 0, "denied prefix list:");         
@@ -486,7 +490,7 @@ static WAPPushUser *user_find_by_username(Octstr *username)
     for (i = 0; i < list_len(users->list); ++i) {
          u = list_get(users->list, i);
          if (octstr_compare(u->username, username) == 0)
-	     return u;
+	         return u;
     }
 
     return NULL;
@@ -517,18 +521,14 @@ static int wildcarded_ip_found(Octstr *ip, Octstr *needle, Octstr *ip_sep)
         needle_fragment = list_get(needle_fragments, i);
         if (octstr_compare(ip_fragment, needle_fragment) != 0 && 
                 octstr_compare(ip_fragment, octstr_imm("*")) != 0)
-	    goto not_found;
-        octstr_destroy(needle_fragment);
-	octstr_destroy(ip_fragment);
+ 	        goto not_found;
     }
 
-    list_destroy(ip_fragments, NULL);
-    list_destroy(needle_fragments, NULL);
+    list_destroy(ip_fragments, octstr_destroy_item);
+    list_destroy(needle_fragments, octstr_destroy_item);   
     return 1;
 
 not_found:
-    octstr_destroy(needle_fragment);
-    octstr_destroy(ip_fragment);
     list_destroy(ip_fragments, octstr_destroy_item);
     list_destroy(needle_fragments, octstr_destroy_item);
     return 0;
@@ -549,42 +549,47 @@ static int ip_allowed_by_user(WAPPushUser *u, Octstr *ip)
     }
 
     copy = octstr_duplicate(u->username);
-    ip_copy = octstr_duplicate(ip);
 
     if (u->user_deny_ip == NULL && u->user_allow_ip == NULL)
         goto allowed;
 
-    if (octstr_compare(u->user_deny_ip, octstr_imm("*.*.*.*")) == 0) {
-        warning(0, "no ips allowed for %s", octstr_get_cstr(copy));
-        goto denied;
+    if (u->user_deny_ip) {
+        if (octstr_compare(u->user_deny_ip, octstr_imm("*.*.*.*")) == 0) {
+            warning(0, "no ips allowed for %s", octstr_get_cstr(copy));
+            goto denied;
+        }
     }
 
-    if (octstr_compare(u->user_allow_ip, octstr_imm("*.*.*.*")) == 0)
-        goto allowed;
+    if (u->user_allow_ip)
+        if (octstr_compare(u->user_allow_ip, octstr_imm("*.*.*.*")) == 0)
+            goto allowed;
 
-    if (wap_push_ppg_pushuser_search_ip_from_wildcarded_list(u->user_deny_ip, 
-	    ip, octstr_imm(";"), octstr_imm("."))) {
-        goto denied;
+    if (u->user_deny_ip) {
+        if (wap_push_ppg_pushuser_search_ip_from_wildcarded_list(u->user_deny_ip, 
+	            ip, octstr_imm(";"), octstr_imm("."))) {
+            goto denied;
+        }
     }
 
-    if (wap_push_ppg_pushuser_search_ip_from_wildcarded_list(u->user_allow_ip, 
-	    ip, octstr_imm(";"), octstr_imm("."))) {
-        goto allowed;
+    if (u->user_allow_ip) {
+        if (wap_push_ppg_pushuser_search_ip_from_wildcarded_list(u->user_allow_ip, 
+	            ip, octstr_imm(";"), octstr_imm("."))) {
+            goto allowed;
+        }
     }
 
     octstr_destroy(copy);
-    octstr_destroy(ip_copy);
     warning(0, "ip not found from either ip list, deny it");
     return 0;
 
 allowed:
     octstr_destroy(copy);
-    octstr_destroy(ip_copy);
     return 1;
 
 denied:
+    ip_copy = octstr_duplicate(ip);
     warning(0, "%s denied by user %s", octstr_get_cstr(ip_copy), 
-                octstr_get_cstr(copy));
+            octstr_get_cstr(copy));
     octstr_destroy(copy);
     octstr_destroy(ip_copy);
     return 0;
@@ -666,69 +671,59 @@ no_response4:
 
 /*
  * HTTP basic authentication server challenge is defined in rfc 2617, chapter 2. 
- * Only WWW-Authenticate header is required here by specs. Content-Length is a 
- * requirement by Kannel. This function does not release memory used by push 
- * headers, the caller must do this.
+ * Only WWW-Authenticate header is required here by specs. This function does not
+ * release memory used by push headers, the caller must do this.
  */
 static void challenge(HTTPClient *c, List *push_headers)
 {
     Octstr *challenge,
-           *cos,                               /* a temporary */
            *realm;
     int http_status;
     List *reply_headers;
 
     realm = octstr_format("%s", "Basic realm=");
     octstr_append(realm, get_official_name());
-    octstr_format_append(realm, "%s", "\"/wappush\"");
+    octstr_format_append(realm, "%s", "\"wappush\"");
     reply_headers = http_create_empty_headers();
     http_header_add(reply_headers, "WWW-Authenticate", octstr_get_cstr(realm));
     http_status = HTTP_UNAUTHORIZED;
     challenge = octstr_imm("You must show your credentials.\n");
-    http_header_add(reply_headers, "Content-Length", 
-                    octstr_get_cstr(cos = octstr_format("%ld", 
-                    octstr_len(challenge))));
+    
     http_send_reply(c, http_status, reply_headers, challenge);
 
-    octstr_destroy(cos);
     octstr_destroy(realm);
     http_destroy_headers(reply_headers);
 }
 
 /*
- * Content-Length is a requirement by Kannel. This function does not release memory 
- * used by push headers, the caller must do this.
+ * This function does not release memory used by push headers, the caller must do this.
  */
 static void reply(HTTPClient *c, List *push_headers)
 {
     int http_status;
-    Octstr *denied,
-           *dos;                            /* a temporary */
+    Octstr *denied;
     List *reply_headers;
 
     reply_headers = http_create_empty_headers();
     http_status = HTTP_FORBIDDEN;
     denied = octstr_imm("You are not allowed to use this service. Do not retry.\n");
-    http_header_add(reply_headers, "Content-Length", 
-                    octstr_get_cstr(dos = octstr_format("%ld", octstr_len(denied))));
+ 
     http_send_reply(c, http_status, push_headers, denied);
 
-    octstr_destroy(dos);
     http_destroy_headers(reply_headers);
 }
 
 /*
  * Note that the phone number necessarily follows the international format (a requi-
- * rement by our pap compiler).
+ * rement by our pap compiler). So we add country prefix to listed prefixes, if one
+ * is configured.
  */
 static int prefix_allowed(WAPPushUser *u, Octstr *number)
 {
     List *allowed,
          *denied;
     long i;
-    Octstr *listed_prefix,
-           *sure;
-    size_t sure_len;
+    Octstr *listed_prefix;
 
     allowed = NULL;
     denied = NULL;
@@ -739,17 +734,15 @@ static int prefix_allowed(WAPPushUser *u, Octstr *number)
     if (u->allowed_prefix == NULL && u->denied_prefix == NULL)
         goto no_configuration;
 
-    sure = octstr_imm("+358");
-    sure_len = octstr_len(sure);
-    gw_assert(octstr_ncompare(number, sure, sure_len) == 0);
-
     if (u->denied_prefix != NULL) {
         denied = octstr_split(u->denied_prefix, octstr_imm(";"));
         for (i = 0; i < list_len(denied); ++i) {
              listed_prefix = list_get(denied, i);
-             if (compare_octstr_sequence(number, listed_prefix, sure_len,
-                     sure_len + octstr_len(listed_prefix) - 1) == 0) {
-	         goto denied;
+             if (u->country_prefix != NULL)
+                 octstr_insert(listed_prefix, u->country_prefix, 0);
+             if (compare_octstr_sequence(number, listed_prefix, 
+                     0) == 0) {
+      	         goto denied;
              }
         }
     }
@@ -761,9 +754,11 @@ static int prefix_allowed(WAPPushUser *u, Octstr *number)
     allowed = octstr_split(u->allowed_prefix, octstr_imm(";"));
     for (i = 0; i < list_len(allowed); ++i) {
          listed_prefix = list_get(allowed, i);
-         if (compare_octstr_sequence(number, listed_prefix, sure_len, 
-                 sure_len + octstr_len(listed_prefix) - 1) == 0) {
-	     goto allowed;
+         if (u->country_prefix != NULL)
+             octstr_insert(listed_prefix, u->country_prefix, 0);
+         if (compare_octstr_sequence(number, listed_prefix, 
+                 0) == 0) {
+	         goto allowed;
          }
     }
 
@@ -838,19 +833,13 @@ static int parse_cgivars_for_password(List *cgivars, Octstr **password)
 
 /*
  * Compare an octet string os2 with a sequence of an octet string os1. The sequence
- * starts with a position start and ends with end. 
+ * starts with a position start. 
  */
-static int compare_octstr_sequence(Octstr *os1, Octstr *os2, long start, long end)
+static int compare_octstr_sequence(Octstr *os1, Octstr *os2, long start)
 {
     int ret;
-    long len;
     unsigned char *prefix;
-
-    if (start >= end)
-        return -1;
-
-    if ((len = octstr_len(os2)) != end - start + 1)
-        return -1;
+    long end;
 
     if (octstr_len(os2) == 0)
         return 1;
@@ -858,12 +847,20 @@ static int compare_octstr_sequence(Octstr *os1, Octstr *os2, long start, long en
     if (octstr_len(os1) == 0)
         return -1;
 
-    prefix = gw_malloc(start);
-    octstr_get_many_chars(prefix, os1, 0, start);
-    octstr_delete(os1, 0, start);
-    ret = octstr_ncompare(os1, os2, end - start + 1);
-    octstr_insert_data(os1, 0, prefix, start);
-    gw_free(prefix);
+    prefix = NULL;
+    if (start != 0) {
+        prefix = gw_malloc(start);
+        octstr_get_many_chars(prefix, os1, 0, start);
+        octstr_delete(os1, 0, start);
+    }
+    
+    end = start + octstr_len(os2);
+    ret = octstr_ncompare(os1, os2, end - start);
+    
+    if (start != 0) {
+        octstr_insert_data(os1, 0, prefix, start);
+        gw_free(prefix);
+    }
 
     return ret;
 }
