@@ -1483,9 +1483,8 @@ static void obey_request_thread(void *arg)
 	}
 
 	/* create reply message to be sent afterwards */
-
 	reply_msg = msg_create(ack);
-	reply_msg->ack.nack = 0;
+	reply_msg->ack.nack = ack_success;
 	reply_msg->ack.time = msg->sms.time;
 	reply_msg->ack.id = msg->sms.id;
     

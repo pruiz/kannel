@@ -130,7 +130,7 @@ void bb_smscconn_sent(SMSCConn *conn, Msg *sms)
     /* write ACK to store file */
 
     mack = msg_create(ack);
-    mack->ack.nack = 0;
+    mack->ack.nack = ack_success;
     mack->ack.time = sms->sms.time;
     mack->ack.id = sms->sms.id;
     
@@ -159,7 +159,7 @@ void bb_smscconn_send_failed(SMSCConn *conn, Msg *sms, int reason)
 	/* write NACK to store file */
 
 	mnack = msg_create(ack);
-	mnack->ack.nack = 1;
+	mnack->ack.nack = ack_failed;
 	mnack->ack.time = sms->sms.time;
 	mnack->ack.id = sms->sms.id;
 

@@ -122,6 +122,60 @@ static Msg *read_from_box(Boxc *boxconn)
 }
 
 
+/*
+ * Try to deliver message to internal or smscconn queue
+ * and generate ack/nack for smsbox connections.
+ */
+static void deliver_sms_to_queue(Msg *msg, Boxc *conn)
+{
+    Msg *mack, *mack_store;
+    int rc;
+
+    /* 
+     * save modifies ID and time, so if the smsbox uses it, save
+     * it FIRST for the reply message!!! 
+     */
+    mack = msg_create(ack);
+    gw_assert(mack != NULL);
+    mack->ack.id = msg->sms.id;
+    mack->ack.time = msg->sms.time;
+    store_save(msg);
+
+    rc = smsc2_rout(msg);
+    switch(rc) {
+        case 1:
+           mack->ack.nack = ack_success;
+           break;
+        case 0:
+           mack->ack.nack = ack_buffered;
+           break;
+        case -1:
+           warning(0, "Message rejected by bearerbox, no router!");
+           /* 
+            * first create nack for store-file, in order to delete
+            * message from store-file.
+            */
+           mack_store = msg_create(ack);
+           gw_assert(mack_store != NULL);
+           mack_store->ack.id = msg->sms.id;
+           mack_store->ack.time = msg->sms.time;
+           mack_store->ack.nack = ack_failed;
+           store_save(mack_store);
+           msg_destroy(mack_store);
+
+           /* create failed nack */
+           mack->ack.nack = ack_failed;
+
+           /* destroy original message */
+           msg_destroy(msg);
+           break;
+    }
+
+    /* put ack into incoming queue of conn */
+    list_produce(conn->incoming, mack);
+}
+
+
 static void boxc_receiver(void *arg)
 {
     Boxc *conn = arg;
@@ -142,23 +196,8 @@ static void boxc_receiver(void *arg)
         if (msg_type(msg) == sms && conn->is_wap == 0) {
             debug("bb.boxc", 0, "boxc_receiver: sms received");
 
-            /* 
-             * XXX save modifies ID, so if the smsbox uses it, save
-             * it FIRST for the reply message!!! 
-             */
-            store_save(msg);
-            if (smsc2_rout(msg)== -1) {
-                warning(0, "Message rejected by bearerbox, no router!");
-                /* send NACK */
-                bb_smscconn_send_failed(NULL, msg, SMSCCONN_FAILED_DISCARDED);
-            }
-            if (msg->sms.sms_type == mt_push) {
-                /* 
-                 * XXX generate ack-message and send it - in fact, this
-                 * should include information did it succeed, wa sit queued
-                 * or rejected... 
-                 */
-            }
+            /* deliver message to queue */
+            deliver_sms_to_queue(msg, conn);
 
         } else if (msg_type(msg) == wdp_datagram  && conn->is_wap) {
             debug("bb.boxc", 0, "boxc_receiver: got wdp from wapbox");
@@ -168,13 +207,9 @@ static void boxc_receiver(void *arg)
         } else if (msg_type(msg) == sms  && conn->is_wap) {
             debug("bb.boxc", 0, "boxc_receiver: got sms from wapbox");
 
-            store_save(msg);
-            if (smsc2_rout(msg)== -1) {
-                warning(0, "Message rejected by bearerbox, no router!");
-                msg_destroy(msg);
-            }
+            /* should be a WAP push message, so tried it the same way */
+            deliver_sms_to_queue(msg, conn);
 
-        /* Generate ack here. SM from wapbox is certainly mt push.*/
         } else {
             if (msg_type(msg) == heartbeat) {
                 if (msg->heartbeat.load != conn->load)
@@ -196,7 +231,7 @@ static void boxc_receiver(void *arg)
                 if (msg->admin.boxc_id != NULL) {
                     List *newlist;
 
-                    /* and add the boxc_ud into conn for boxc_status() output */
+                    /* and add the boxc_id into conn for boxc_status() output */
                     if (conn->boxc_id == NULL)
                         conn->boxc_id = octstr_duplicate(msg->admin.boxc_id);
                     /* 
