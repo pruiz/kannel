@@ -3,6 +3,9 @@
 	* gw/wsp.c: Encode all known content types, not just the
 	most common ones.
 
+	* gw/wsp-strings.def: s/applicatoin/application in one of
+	the content types.
+
 2000-09-26  Lars Wirzenius  <liw@iki.fi>
 
 	* gw/wap-appl.c: Added Via header to HTTP requests.

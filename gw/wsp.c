@@ -18,16 +18,20 @@
 
 Octstr *wsp_encode_http_headers(Octstr *content_type) {
 	long type;
-	Octstr *os;
+	Octstr *os = NULL;
 	
 	type = wsp_string_to_content_type(content_type);
 
-	/* `type' must be a short integer a la WSP */
-	gw_assert(type >= 0x00);
-	gw_assert(type < 0x80);
-
-	os = octstr_create("");
-	octstr_append_char(os, ((unsigned char) type) | 0x80);
+	if (type < 0 || type >= 0x80) {
+		/* Type wasn't in the list, or its value is larger
+		 * then we can easily represent (i.e. doesn't fit
+		 * in a Short-Integer), so encode it as a text string. */
+		os = octstr_duplicate(content_type);
+		octstr_append_char(os, 0);  /* End-of-string marker */
+	} else {
+		os = octstr_create("");
+		octstr_append_char(os, ((unsigned char) type) | 0x80);
+	}
 	
 	return os;
 }
