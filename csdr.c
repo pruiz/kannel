@@ -16,6 +16,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <netdb.h>
 
 #include "config.h"
 #include "bb_msg.h"
@@ -26,7 +27,7 @@ CSDRouter *csdr_open(ConfigGroup *grp)
 
 	CSDRouter *router = NULL;
 	char *interface_name;
-	char *ip_version;
+	char *wap_service;
 
 	struct sockaddr_in servaddr;
 
@@ -34,45 +35,51 @@ CSDRouter *csdr_open(ConfigGroup *grp)
 	if(router==NULL) goto error;
 
         interface_name = config_get(grp, "interface-name");
-        ip_version     = config_get(grp, "ip-version");
+        wap_service    = config_get(grp, "wap-service");
+
+	/* We need these variables. */
+	if(interface_name==NULL) {
+		error(0, "You need to configure a 'interface-name' for the CSD router.");
+		goto error;
+	}
+
+	if(wap_service==NULL) {
+		error(0, "You need to configure a 'wap-service' for the CSD router.");
+		goto error;
+	}
+
+	router->fd = socket(PF_INET, SOCK_DGRAM, 0);
 
 	/* Initialize the sockets. */
-	router->wsp          = socket(PF_INET, SOCK_DGRAM, 0);
-	router->wsp_wtls     = socket(PF_INET, SOCK_DGRAM, 0);
-	router->wsp_wtp      = socket(PF_INET, SOCK_DGRAM, 0);
-	router->wsp_wtp_wtls = socket(PF_INET, SOCK_DGRAM, 0);
-	router->vcard        = socket(PF_INET, SOCK_DGRAM, 0);
-	router->vcard_wtls   = socket(PF_INET, SOCK_DGRAM, 0);
-	router->vcal         = socket(PF_INET, SOCK_DGRAM, 0);
-	router->vcal_wtls    = socket(PF_INET, SOCK_DGRAM, 0);
-
 	memset(&servaddr, 0, sizeof(struct sockaddr_in));
 	servaddr.sin_family = AF_INET;
 	servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
 
-	servaddr.sin_port = htons(9200);
-	while( bind(router->wsp, &servaddr, sizeof(servaddr)) != 0 );
+	if(strcmp(wap_service, "wsp") == 0) {
+		servaddr.sin_port = htons(9200);
+	} else if( strcmp(wap_service, "wsp/wtp") == 0 ) {
+		servaddr.sin_port = htons(9201);
+	} else if( strcmp(wap_service, "wsp/wtls") == 0 ) {
+		servaddr.sin_port = htons(9202);
+	} else if( strcmp(wap_service, "wsp/wtp/wtls") == 0 ) {
+		servaddr.sin_port = htons(9203);
+	} else if( strcmp(wap_service, "vcard") == 0 ) {
+		servaddr.sin_port = htons(9204);
+	} else if( strcmp(wap_service, "vcal") == 0 ) {
+		servaddr.sin_port = htons(9205);
+	} else if( strcmp(wap_service, "vcard/wtls") == 0 ) {
+		servaddr.sin_port = htons(9206);
+	} else if( strcmp(wap_service, "vcal/wtls") == 0 ) {
+		servaddr.sin_port = htons(9207);
+	} else {
+		error(0, "Illegal configuration '%s' in 'wap-service'.", wap_service);
+	}
 
-	servaddr.sin_port = htons(9201);
-	while( bind(router->wsp_wtp, &servaddr, sizeof(servaddr)) != 0 );
-
-	servaddr.sin_port = htons(9202);
-	while( bind(router->wsp_wtls, &servaddr, sizeof(servaddr)) != 0 );
-
-	servaddr.sin_port = htons(9203);
-	while( bind(router->wsp_wtp_wtls, &servaddr, sizeof(servaddr)) != 0 );
-
-	servaddr.sin_port = htons(9204);
-	while( bind(router->vcard, &servaddr, sizeof(servaddr)) != 0 );
-
-	servaddr.sin_port = htons(9205);
-	while( bind(router->vcal, &servaddr, sizeof(servaddr)) != 0 );
-
-	servaddr.sin_port = htons(9206);
-	while( bind(router->vcard_wtls, &servaddr, sizeof(servaddr)) != 0 );
-
-	servaddr.sin_port = htons(9207);
-	while( bind(router->vcal_wtls, &servaddr, sizeof(servaddr)) != 0 );
+	while( bind(router->fd, &servaddr, sizeof(servaddr)) != 0 ) {
+		error(0, "Could not bind to UDP port <%i> service <%s>.", 
+			ntohs(servaddr.sin_port), wap_service);
+		sleep(1);
+	}
 
 	return router;
 
@@ -81,11 +88,14 @@ error:
 	return NULL;
 }
 
-int csdr_close(CSDRouter *csdr)
+int csdr_close(CSDRouter *router)
 {
-	if (csdr == NULL)
+	if (router == NULL)
 		return 0;
-	free(csdr);
+
+	close(router->fd);
+
+	free(router);
 	return 0;
 }
 
@@ -93,25 +103,19 @@ RQueueItem *csdr_get_message(CSDRouter *router)
 {
 
 	fd_set rset;
-	int nready, length, fd;
+	int nready, length;
 	RQueueItem *item = NULL;
 	char data[64*1024];
+	char client_ip[16], client_port[8];
 
 	struct sockaddr_in cliaddr;
 	socklen_t len;
 
 	FD_ZERO(&rset);
-	FD_SET(router->wsp, &rset);
-	FD_SET(router->wsp_wtp, &rset);
-	FD_SET(router->wsp_wtls, &rset);
-	FD_SET(router->wsp_wtp_wtls, &rset);
-	FD_SET(router->vcard, &rset);
-	FD_SET(router->vcal, &rset);
-	FD_SET(router->vcard_wtls, &rset);
-	FD_SET(router->vcal_wtls, &rset);
+	FD_SET(router->fd, &rset);
 
 	for(;;) {
-		nready = select(FD_SETSIZE, &rset, NULL, NULL, NULL);
+		nready = select(router->fd+1, &rset, NULL, NULL, NULL);
 		if(nready == -1) {
 			if(errno==EINTR) continue;
 			if(errno==EAGAIN) continue;
@@ -121,41 +125,23 @@ RQueueItem *csdr_get_message(CSDRouter *router)
 		}
 	}
 
-	/* XXX This has to be fixed later for
-	   various saturation problems. -MG */
-
-	item = malloc(sizeof(RQueueItem));
+	item = rqi_new(R_MSG_CLASS_WAP, R_MSG_TYPE_MO);
 	if(item==NULL) goto error;
-	item->msg_class = R_MSG_CLASS_WAP;
-	item->msg_type = R_MSG_TYPE_MO;
-	
-	if(FD_ISSET(router->wsp, &rset)) fd = router->wsp;
-	if(FD_ISSET(router->wsp, &rset)) fd = router->wsp_wtp;
-	if(FD_ISSET(router->wsp, &rset)) fd = router->wsp_wtls;
-	if(FD_ISSET(router->wsp, &rset)) fd = router->wsp_wtp_wtls;
-	if(FD_ISSET(router->wsp, &rset)) fd = router->vcard;
-	if(FD_ISSET(router->wsp, &rset)) fd = router->vcal;
-	if(FD_ISSET(router->wsp, &rset)) fd = router->vcard_wtls;
-	if(FD_ISSET(router->wsp, &rset)) fd = router->vcal_wtls;
 
-	length = recvfrom(fd, data, sizeof(data), 0, &cliaddr, &len);
+	/* Maximum size of UDP datagram == 64*1024 bytes. */	
+	length = recvfrom(router->fd, data, sizeof(data), 0, &cliaddr, &len);
 
-#if 0
-	for(;;) {
+	item->msg->wdp_datagram.user_data = octstr_create_from_data(data, length);
 
-		FD_SET(udpfd, &rset);
-		if( (nready = select(udpfd+1, &rset, NULL, NULL, NULL)) < 0) {
-			if(errno==EINTR) continue;
-			else return -1;
-		}
+	getnameinfo((struct sockaddr*)&cliaddr, len, 
+		client_ip, sizeof(client_ip), 
+		client_port, sizeof(client_port), 
+		NI_NUMERICHOST | NI_NUMERICSERV);
 
-
-			/* Receive the datagram from the UDP socket */
-			len = sizeof(cliaddr);
-			request_data_length = recvfrom(udpfd, request_data, 
-				sizeof(request_data), 0, &cliaddr, &len);
-
-#endif
+	item->msg->wdp_datagram.source_address = octstr_create(client_ip);
+	item->msg->wdp_datagram.source_port    = atoi(client_port);
+	item->msg->wdp_datagram.destination_address = octstr_create("");
+	item->msg->wdp_datagram.destination_port    = 0;
 
 	return item;
 
