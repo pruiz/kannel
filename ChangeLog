@@ -1,5 +1,13 @@
 2000-10-16  Lars Wirzenius  <liw@iki.fi>
 
+	* checks/check_counter.c, checks/check_date.c,
+	checks/check_list.c, checks/check_octstr.c, gwlib/log.c,
+	gwlib/log.h, gwlib/utils.c: Renamed the log level enums to have
+	a GW_ prefix, to avoid problems with broken compilers that define
+	ERROR themselves or in some header.
+
+2000-10-16  Lars Wirzenius  <liw@iki.fi>
+
 	* config.h.in, configure{,.in}: Check for the magic compiler
 	(not preprocessor) symbols __func__ (standard in the 1999 version
 	of the standard) and __FUNCTION__ (popular extension to the 1989

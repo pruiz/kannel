@@ -77,7 +77,7 @@ int get_and_set_debugs(int argc, char **argv,
 {
     int i, ret = -1;
     int debug_lvl = -1;
-    int file_lvl = DEBUG;
+    int file_lvl = GW_DEBUG;
     char *log_file = NULL;
     char *debug_places = NULL;
     

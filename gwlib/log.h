@@ -19,7 +19,7 @@
 
 /* Symbolic levels for output levels. */
 enum output_level {
-	DEBUG, INFO, WARNING, ERROR, PANIC
+	GW_DEBUG, GW_INFO, GW_WARNING, GW_ERROR, GW_PANIC
 };
 
 /* Print a panicky error message and terminate the program with a failure.

@@ -46,7 +46,7 @@ static void add_stderr(void) {
 		if (logfiles[i].file == stderr)
 			return;
 	logfiles[num_logfiles].file = stderr;
-	logfiles[num_logfiles].minimum_output_level = DEBUG;
+	logfiles[num_logfiles].minimum_output_level = GW_DEBUG;
 	++num_logfiles;
 }
 
@@ -196,15 +196,15 @@ static void kannel_syslog(char *format, va_list args,int level){
 	vsnprintf( buf,sizeof(buf),format, args);
 	/* XXX vsnprint not 100% portable */
 	switch(level){
-	    case DEBUG:
+	    case GW_DEBUG:
 	    	translog = LOG_DEBUG;
-	    case INFO:
+	    case GW_INFO:
 	    	translog = LOG_INFO;
-	    case WARNING:
+	    case GW_WARNING:
 	    	translog = LOG_WARNING;
-	    case ERROR:
+	    case GW_ERROR:
 	    	translog = LOG_ERR;
-	    case PANIC:
+	    case GW_PANIC:
 	    	translog = LOG_ALERT;
 	    default:
 		translog = LOG_INFO;
@@ -244,23 +244,23 @@ static void kannel_syslog(char *format, va_list args,int level){
 
 
 void panic(int e, const char *fmt, ...) {
-	FUNCTION_GUTS(PANIC, "");
+	FUNCTION_GUTS(GW_PANIC, "");
 	exit(EXIT_FAILURE);
 }
 
 
 void error(int e, const char *fmt, ...) {
-	FUNCTION_GUTS(ERROR, "");
+	FUNCTION_GUTS(GW_ERROR, "");
 }
 
 
 void warning(int e, const char *fmt, ...) {
-	FUNCTION_GUTS(WARNING, "");
+	FUNCTION_GUTS(GW_WARNING, "");
 }
 
 
 void info(int e, const char *fmt, ...) {
-	FUNCTION_GUTS(INFO, "");
+	FUNCTION_GUTS(GW_INFO, "");
 }
 
 
@@ -304,7 +304,7 @@ static int place_is_not_logged(const char *place) {
 void debug(const char *place, int e, const char *fmt, ...) {
 	if (place_should_be_logged(place) &&
 	    place_is_not_logged(place)==0) {
-		FUNCTION_GUTS(DEBUG, "");
+		FUNCTION_GUTS(GW_DEBUG, "");
 		/* Note: giving `place' to FUNCTION_GUTS makes log lines
 		   too long and hard to follow. We'll rely on an external
 		   list of what places are used instead of reading them

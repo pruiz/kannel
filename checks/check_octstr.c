@@ -57,7 +57,7 @@ static void check_comparisons(void)
 
 int main(void)
 {
-    set_output_level(INFO);
+    set_output_level(GW_INFO);
     gwlib_init();
     check_comparisons();
     gwlib_shutdown();
