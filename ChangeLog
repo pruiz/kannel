@@ -1,7 +1,7 @@
 2002-08-11  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/smsc/smpp_pdu.c: fixing a compiler warning
-    * gwlib/octstr.[ch].debug: added missing octstr_recode() function in the 
-      debug version of the octstr module
+    * gwlib/octstr.[ch].debug: added missing octstr_recode() and _read_pip() 
+      functions in the debug version of the octstr module
 
 2002-08-11  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/smsc/smpp_pdu.[chdef], gw/smsc/smsc_smpp.c: rollback to previous 
