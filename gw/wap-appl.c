@@ -288,11 +288,7 @@ static void add_session_id(List *headers, long session_id) {
 
 static void fetch_thread(void *arg) {
 	int status;
-#ifdef POST_SUPPORT
 	int ret=500;
-#else
-	int ret;
-#endif
 	WAPEvent *event;
 	long client_SDU_size;
 	Octstr *url, *os;
@@ -303,13 +299,8 @@ static void fetch_thread(void *arg) {
 	WAPAddrTuple *addr_tuple;
 	long session_id;
 	struct content content;
-
-#ifdef POST_SUPPORT
-	
 	int method;				/* This is the type of request, normally a get or a post */
 	Octstr *request_body;	/* This is the request body. */
-
-#endif	/* POST_SUPPORT */
 	
 	event = arg;
 	if (event->type == S_MethodInvoke_Ind) {
@@ -322,14 +313,8 @@ static void fetch_thread(void *arg) {
 		addr_tuple = p->addr_tuple;
 		session_id = p->session_id;
 		client_SDU_size = p->client_SDU_size;
-
-#ifdef POST_SUPPORT
-
 		request_body = octstr_duplicate(p->body);
 		method = p->method;
-
-#endif	/* POST_SUPPORT */
-
 	} else {
 		struct S_Unit_MethodInvoke_Ind *p;
 		
@@ -340,14 +325,8 @@ static void fetch_thread(void *arg) {
 		addr_tuple = p->addr_tuple;
 		session_id = -1;
 		client_SDU_size = 1024*1024; /* XXX */
-
-#ifdef POST_SUPPORT
-
 		request_body = octstr_duplicate(p->request_body);
 		method = p->method;
-
-#endif	/* POST_SUPPORT */
-
 	}
 
 	wsp_http_map_url(&url);
@@ -374,8 +353,6 @@ static void fetch_thread(void *arg) {
 
 	http_header_pack(actual_headers);
 
-#ifdef POST_SUPPORT
-
 	switch (method) {
 
 	case 0x40 :			/* Get request */
@@ -401,13 +378,6 @@ static void fetch_thread(void *arg) {
 		ret = 501;
 
 	}
-
-#else	/* POST_SUPPORT */
-
-	ret = http_get_real(url, actual_headers, 
-			     &content.url, &resp_headers, &content.body);
-
-#endif	/* POST_SUPPORT */
 
 	if (ret != HTTP_OK) {
 		error(0, "WSP: http_get_real failed (%d), oops.", ret);
@@ -490,17 +460,7 @@ static void fetch_thread(void *arg) {
 	octstr_destroy(content.url); /* body and type were re-used above */
 	octstr_destroy(content.charset);
 	octstr_destroy(url);
-
-#ifdef POST_SUPPORT
-
-	/* 
-	 * Destroy the memory that was deep copied earlier. 
-	 */
 	octstr_destroy(request_body);
-
-#endif	/* POST_SUPPORT */
-
-
 }
 
 

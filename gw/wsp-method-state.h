@@ -18,6 +18,8 @@ STATE_NAME(REPLYING)
 
 /* MISSING: TR_Invoke.ind, N_Methods == MOM */
 
+/* XXX The code for Get and Post is similar, and should probably be merged. */
+
 ROW(NULL_METHOD,
 	TR_Invoke_Ind,
 	e->tcl == 2 && pdu->type == Get,
@@ -36,7 +38,7 @@ ROW(NULL_METHOD,
 		invoke = wap_event_create(S_MethodInvoke_Ind);
 		invoke->u.S_MethodInvoke_Ind.server_transaction_id =
 			msm->transaction_id;
-		/* XXX This 0x40 is the GET type, must fix it for POST/PUT */
+		/* This 0x40 is the GET type */
 		invoke->u.S_MethodInvoke_Ind.method = 0x40 + pdu->u.Get.subtype;
 		invoke->u.S_MethodInvoke_Ind.url =
 			octstr_duplicate(pdu->u.Get.uri);
@@ -54,8 +56,6 @@ ROW(NULL_METHOD,
 		msm->invoke = invoke;
 	},
 	HOLDING)
-
-#ifdef POST_SUPPORT
 
 ROW(NULL_METHOD,
 	TR_Invoke_Ind,
@@ -82,11 +82,8 @@ ROW(NULL_METHOD,
 		invoke->u.S_MethodInvoke_Ind.url =
 			octstr_duplicate(pdu->u.Post.uri);
 		invoke->u.S_MethodInvoke_Ind.http_headers = headers;
-		
-/*******			POST_SUPPORT			********/
-/*******			Siemens Fix				********/
 /*
- * The Siemens S35 adds an extra Null character to the end of the 
+ * The Siemens S35 adds an extra NUL character to the end of the 
  * request body which may not work with certain cgi scripts. It is 
  * removed here by truncating the length.
  *
@@ -94,8 +91,6 @@ ROW(NULL_METHOD,
 		req_body_size = octstr_len(pdu->u.Post.data);
 		if(octstr_get_char(pdu->u.Post.data,(req_body_size - 1)) == 0)
 			octstr_truncate(pdu->u.Post.data,(req_body_size - 1));
-
-/*******			Siemens Fix				********/
 
 		invoke->u.S_MethodInvoke_Ind.body = 
 			octstr_duplicate(pdu->u.Post.data);
@@ -113,8 +108,6 @@ ROW(NULL_METHOD,
 		msm->invoke = invoke;
 	},
 	HOLDING)
-
-#endif	/* POST_SUPPORT */
 		
 ROW(HOLDING,
 	Release_Event,

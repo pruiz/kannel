@@ -124,8 +124,6 @@ enum { HTTP_MAX_FOLLOW = 5 };
  * specially.
  */
 
-#ifdef POST_SUPPORT
-
 /*
  * Need to support some extra return values for POST support.
  *
@@ -143,20 +141,6 @@ enum {
 	HTTP_TEMPORARY_REDIRECT = 307,
 	HTTP_NOT_FOUND			= 404
 };
-
-#else
-
-enum {
-	HTTP_OK = 200,
-	HTTP_NOT_FOUND = 404,
-	HTTP_MOVED_PERMANENTLY = 301,
-	HTTP_FOUND = 302,
-	HTTP_SEE_OTHER = 303
-
-};
-
-#endif
-
 
 /*
  * A structure describing a CGI-BIN argument/variable.
@@ -205,14 +189,11 @@ int http_get(Octstr *url, List *request_headers,
 int http_get_real(Octstr *url, List *request_headers, Octstr **final_url,
 		  List **reply_headers, Octstr **reply_body);
 
-#ifdef POST_SUPPORT
 
 int http_post(Octstr *url, List *request_headers, Octstr *request_body,
 		List **reply_headers, Octstr **reply_body);
 int http_post_real(Octstr *url, List *request_headers, Octstr *request_body,
 		  Octstr **final_url, List **reply_headers, Octstr **reply_body);
-
-#endif /* POST_SUPPORT */
 
 
 #if LIW_TODO

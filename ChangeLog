@@ -1,3 +1,7 @@
+2000-08-02  Richard Braakman  <dark@wapit.com>
+
+	* Folded in POST_SUPPORT.  Duplication of code is Bad.
+
 2000-08-01  Richard Braakman  <dark@wapit.com>
 
 	* gw/smsc_cimd2.c: Be forgiving of cimd2 calls while the
