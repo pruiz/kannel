@@ -1692,6 +1692,9 @@ static void init_bb(Config *cfg)
     bbox->wap_fd = make_server_socket(bbox->wapbox_port);
     bbox->sms_fd = make_server_socket(bbox->smsbox_port);
 
+    info(0, "Set HTTP-adminstation at port <%d>", bbox->http_port);
+    
+
     if(bbox->http_fd < 0 || bbox->wap_fd < 0 || bbox->sms_fd < 0) {
 	error(0, "Failed to open sockets");
 	goto error;
