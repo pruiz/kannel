@@ -1,4 +1,4 @@
-/* ==================================================================== 
+/* ====================================================================
  * The Kannel Software License, Version 1.0 
  * 
  * Copyright (c) 2001-2004 Kannel Group  
@@ -1633,7 +1633,8 @@ void octstr_dump_short(Octstr *ostr, int level, const char *name)
 
 void octstr_url_encode(Octstr *ostr)
 {
-    long i, n, len;
+    long i, n, len = 0;
+    int all_safe;
     unsigned char c, *str, *str2, *res, *hexits;
 
     seems_valid(ostr);
@@ -1642,34 +1643,58 @@ void octstr_url_encode(Octstr *ostr)
         return;
 
     /* calculate new length */
-    for (i = 0, str = ostr->data, n = 0; i < ostr->len; i++)
-	if (!is_safe[*str++])
-	    n++;
+    for (i = n = 0, str = ostr->data, all_safe = 1; i < ostr->len; i++) {
+        c = *str++;
+	
+        if (c == ' ') {
+            all_safe = 0;
+            continue;
+        }
 
-    if (n == 0) /* we are done, all chars are safe */
+        if (!is_safe[c]) {
+	    n++;
+            all_safe = 0;
+        }
+     }
+
+    if (all_safe) /* we are done, all chars are safe */
        return;
 
     hexits = "0123456789ABCDEF";
 
-    res = str2 = gw_malloc((len = ostr->len + 2 * n + 1));
+    /*
+     * no need to reallocate if n == 0, so we make replace in place.
+     * NOTE: we don't do if (xxx) ... else ... because conditional jump
+     * is not so fast as just compare (alex).
+     */
+    res = str2 = (n ? gw_malloc((len = ostr->len + 2 * n + 1)) : ostr->data);
 
     for (i = 0, str = ostr->data; i < ostr->len; i++) {
         c = *str++;
+
+        if (c == ' ') {
+            *str2++ = '+';
+            continue;
+        }
+
         if (!is_safe[c]) {
             *str2++ = '%';
             *str2++ = hexits[c >> 4 & 0xf];
             *str2++ = hexits[c & 0xf];
+            continue;
         }
-        else if (c == ' ')
-            *str2++ = '+';
-        else
-            *str2++ = c;
+
+        *str2++ = c;
     }
     *str2 = 0;
-    gw_free(ostr->data);
-    ostr->data = res;
-    ostr->size = len;
-    ostr->len = len - 1;
+    
+    /* we made replace in place */
+    if (n) {
+        gw_free(ostr->data);
+        ostr->data = res;
+        ostr->size = len;
+        ostr->len = len - 1;
+    }
 
     seems_valid(ostr);
 }

@@ -1,3 +1,7 @@
+2004-01-23  Alexander Malysh  <a.malysh@centrium.de>
+    * gwlib/octstr.c: fixed bug that space was not replaced when all chars
+      were safe except a space.
+
 2004-01-22  Stipe Tolj  <tolj@wapme-systems.de>
     * LICENSE, *.[c|h|h.in|def]: moved copyright to 2004. Even while I realize
       this makes me one year older too ;) - no logic change.
