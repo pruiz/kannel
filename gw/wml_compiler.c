@@ -1,4 +1,4 @@
-/*
+/* 
  * wml_compiler.c - compiling WML to WML binary
  *
  * This is an implemention for WML compiler for compiling the WML text 
@@ -241,15 +241,14 @@ static void string_table_output(Octstr *ostr, wml_binary_t **wbxml);
  * For more information, look wml_compiler.h. 
  */
 
-int wml_compile(Octstr *wml_text,
-		Octstr *charset,
-		Octstr **wml_binary)
+int wml_compile(Octstr *wml_text, Octstr *charset, Octstr **wml_binary)
 {
     int ret = 0;
     size_t size;
     xmlDocPtr pDoc = NULL;
     char *wml_c_text;
     wml_binary_t *wbxml = NULL;
+    Octstr *encoding = NULL;
 
     *wml_binary = octstr_create("");
     wbxml = wml_binary_create();
@@ -262,40 +261,72 @@ int wml_compile(Octstr *wml_text,
        -- tuo */
 
     parse_entities(wml_text);
+
+    /* transcode from charset to UTF-8 */
     set_charset(wml_text, charset);
-	    
+
+    /* 
+     * If we did not set the character set encoding yet, then obviously
+     * threre was no charset argument in the Content-Type HTTP reply header.
+     * We have to scan the xml preamble line for an explicite encoding
+     * definition to allow transcoding from UTF-8 to that charset after 
+     * libxml2 did all it's parsing magic. (Keep in mind libxml2 uses UTF-8
+     * as internal encoding.) -- Stipe
+     */
+
+    /* 
+     * We will trust the xml preamble encoding more then the HTTP header 
+     * charset definition.
+     */
+    if ((encoding = find_charset_encoding(wml_text)) != NULL) {
+        /* ok, we relly on the xml preamble encoding */
+    } else if (charset && octstr_len(charset) > 0) {
+        /* we had a HTTP response charset, use this */
+        encoding = octstr_duplicate(charset);
+    } else {
+        /* we had none, so use UTF-8 as default */
+        encoding = octstr_create("UTF-8");
+    }
+
     size = octstr_len(wml_text);
     wml_c_text = octstr_get_cstr(wml_text);
 
     if (octstr_search_char(wml_text, '\0', 0) != -1) {    
-	error(0, 
-	      "WML compiler: Compiling error: "
-	      "\\0 character found in the middle of the WML source.");
-	ret = -1;
+        error(0, "WML compiler: Compiling error: "
+                 "\\0 character found in the middle of the WML source.");
+        ret = -1;
     } else {
-	/* 
-	 * An empty octet string for the binary output is created, the wml 
-	 * source is parsed into a parsing tree and the tree is then compiled 
-	 * into binary.
-	 */
 
-	pDoc = xmlParseMemory(wml_c_text, size);
+        /* 
+         * An empty octet string for the binary output is created, the wml 
+         * source is parsed into a parsing tree and the tree is then compiled 
+         * into binary.
+         */
 
-	if(pDoc != NULL) {
-	    ret = parse_document(pDoc, charset, &wbxml);
-	    wml_binary_output(*wml_binary, wbxml);
-	} else {    
-	    error(0, 
-		  "WML compiler: Compiling error: "
-		  "libxml returned a NULL pointer");
-	    ret = -1;
-	}
+        pDoc = xmlParseMemory(wml_c_text, size);
+       
+        if (pDoc != NULL) {
+            /* 
+             * If we have a set internal encoding, then apply this information 
+             * to the XML parsing tree document for later transcoding ability.
+             */
+            if (encoding)
+                pDoc->charset = xmlParseCharEncoding(octstr_get_cstr(encoding));
+
+            ret = parse_document(pDoc, encoding, &wbxml);
+            wml_binary_output(*wml_binary, wbxml);
+        } else {    
+            error(0, "WML compiler: Compiling error: "
+                     "libxml returned a NULL pointer");
+            ret = -1;
+        }
     }
 
     wml_binary_destroy(wbxml);
+    octstr_destroy(encoding);
 
     if (pDoc) 
-        xmlFreeDoc (pDoc);
+        xmlFreeDoc(pDoc);
 
     return ret;
 }
@@ -460,9 +491,12 @@ static int parse_document(xmlDocPtr document, Octstr *charset,
     (*wbxml)->wml_public_id = 0x04; /* WML 1.1 Public ID */
     (*wbxml)->string_table_length = 0x00; /* String table length=0 */
 
-    chars = octstr_create("UTF-8");
-    (*wbxml)->character_set = parse_charset(chars);
-    octstr_destroy(chars);
+    /*
+     * Make sure we set the charset encoding right. If none is given
+     * then set UTF-8 as default.
+     */
+    (*wbxml)->character_set = charset ? 
+        parse_charset(charset) : parse_charset(octstr_imm("UTF-8"));
 
     node = xmlDocGetRootElement(document);
     string_table_build(node, wbxml);
@@ -732,7 +766,21 @@ static int parse_text(xmlNodePtr node, wml_binary_t **wbxml)
     int ret;
     Octstr *temp;
 
-    temp = create_octstr_from_node(node);
+    temp = create_octstr_from_node(node); /* returns string in UTF-8 */
+
+    /*
+     * Beware that libxml2 does internal encoding in UTF-8 while parsing.
+     * So if our orginal WML source had a different encoding set, we have
+     * to transcode at least here. Only transcode if target encoding differs
+     * from libxml2's internal encoding (UTF-8).
+     */
+    if (node->doc->charset != XML_CHAR_ENCODING_UTF8 && 
+        charset_convert(temp, "UTF-8", 
+                        (char*) xmlGetCharEncodingName(node->doc->charset)) != 0) {
+        error(0, "Failed to convert XML text entity from charset "
+                 "<%s> to <%s>, will leave as is.", "UTF-8", 
+                 xmlGetCharEncodingName(node->doc->charset));
+    }
 
     octstr_shrink_blanks(temp);
     if (!check_if_emphasis(node->prev) && !check_if_emphasis(node->next))
