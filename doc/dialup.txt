@@ -20,7 +20,7 @@ S0:2345:respawn:/sbin/mgetty ttyS0 -x 6 -D /dev/ttyS0
 
 In kannel.conf add (the IP address is the address of the Linux box)
 
-csdr = wap
+wdp-udp = wap
 interface-name = 192.9.200.100
 wap-service = "wsp/wtp"
 
