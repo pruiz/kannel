@@ -36,6 +36,7 @@ enum { MAX_SMS_OCTETS = 140 };
 
 static Cfg *cfg;
 static long bb_port;
+static int bb_ssl = 0;
 static long sendsms_port = 0;
 static Octstr *bb_host;
 static char *pid_file;
@@ -1894,6 +1895,7 @@ static void init_smsbox(Cfg *cfg)
     int ssl = 0;
 
     bb_port = BB_DEFAULT_SMSBOX_PORT;
+    bb_ssl = 0;
     bb_host = octstr_create(BB_DEFAULT_HOST);
     heartbeat_freq = BB_DEFAULT_HEARTBEAT;
     logfile = NULL;
@@ -1908,6 +1910,9 @@ static void init_smsbox(Cfg *cfg)
     
     if (cfg_get_integer(&bb_port, grp, octstr_imm("smsbox-port")) == -1)
 	panic(0, "Missing or bad 'smsbox-port' in core group");
+#ifdef HAVE_LIBSSL
+    cfg_get_bool(&bb_ssl, grp, octstr_imm("smsbox-port-ssl"));
+#endif /* HAVE_LIBSSL */
 
     cfg_get_integer(&http_proxy_port, grp, octstr_imm("http-proxy-port"));
 
@@ -2077,7 +2082,7 @@ int main(int argc, char **argv)
     gwthread_create(obey_request_thread, NULL);
     gwthread_create(url_result_thread, NULL);
 
-    connect_to_bearerbox(bb_host, bb_port, NULL /* bb_our_host */);
+    connect_to_bearerbox(bb_host, bb_port, bb_ssl, NULL /* bb_our_host */);
 	/* XXX add our_host if required */
 
     heartbeat_thread = heartbeat_start(write_to_bearerbox, heartbeat_freq,
