@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #
 # This script runs all the checks given in the command line. See the
 # README for more info.

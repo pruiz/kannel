@@ -44,7 +44,7 @@ error=no
 
 for control_file in $ip_control_files;
     do 
-        if [ -e $control_file ]
+        if [ -f $control_file ]
         then
             gw/bearerbox -v $loglevel $conf_file > check_bb.tmp 2>&1 & bbpid=$!
             sleep 2 
@@ -115,7 +115,7 @@ for control_file in $ip_control_files;
 
 for control_file in $wrong_ip_files;
     do 
-        if [ -e $control_file ]
+        if [ -f $control_file ]
         then
             have_iperrors=yes
             gw/bearerbox -v $loglevel $conf_file > check_bb.tmp 2>&1 & bbpid=$!
@@ -189,7 +189,7 @@ for control_file in $wrong_ip_files;
 
 for control_file in $sms_control_files;
     do 
-        if [ -e $control_file ]
+        if [ -f $control_file ]
         then
             test/test_http_server -p $server_port > check_http_sim.tmp 2>&1 & simid=$
             sleep 1
@@ -267,7 +267,7 @@ for control_file in $sms_control_files;
 
 for control_file in $wrong_sms_files;
     do 
-        if [ -e $control_file ]
+        if [ -f $control_file ]
         then
             test/test_http_server -p $server_port > check_http_sim.tmp 2>&1 & simid=$
             sleep 1

@@ -1,3 +1,11 @@
+2005-01-28  Stipe Tolj  <stolj@wapme.de> 
+    * checks/check_http.sh, utils/run-checks: moving shell from /bin/sh to
+      /bin/bash.
+    * checks/check_ppg.sh: moving file condition check from -e (exists) to
+      -f (file exists and is regular). 
+      Fixing bug #168. Thanks to Stefan Radman <Stefan.Radman@CTBTO.ORG>.
+      [Msg-ID: <20050120.152742.094138.593FCF86BC282B0082761599C0E8DE79@CTBTO.ORG>]
+
 2005-01-24  Alexander Malysh <amalysh at kannel.org>
     * gw/urltrans.c: fixed bug #174.
       Thanks to chandave for provided patch.
