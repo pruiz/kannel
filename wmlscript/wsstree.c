@@ -181,7 +181,7 @@ void ws_pragma_use(WsCompilerPtr compiler, WsUInt32 line, char *identifier,
 
     u->line = line;
 
-    /* Insert them URL to the byte-code module. */
+    /* Insert the URL to the byte-code module. */
     if (!ws_bc_add_const_utf8_string(compiler->bc, &u->urlindex, url->data,
                                      url->len))
         goto error;

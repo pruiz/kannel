@@ -15,6 +15,10 @@
 #include "wsasm.h"
 
 /* TODO: liveness analyzation */
+/* TODO: jumps to return or return_es */
+/* TODO: remove empty labels (helps peephole opt) */
+/* TODO: i++; becomes "load, incr, pop", optimize to just incr. */
+/* TODO: { const; tjump } -> { jump or nothing } */
 
 /********************* Optimization functions ***************************/
 
