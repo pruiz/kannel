@@ -9,7 +9,6 @@
 #include <time.h>
 #include <unistd.h>
 #include <signal.h>
-#include <openssl/x509.h>
 
 #include "gwlib/gwlib.h"
 #include "shared.h"
@@ -22,7 +21,11 @@
 #include "wap_push_pap.h"
 #include "gw/msg.h"
 #include "bb.h"
+
+#if (HAVE_WTLS_OPENSSL)
+#include <openssl/x509.h>
 #include "wap/wtls.h"
+#endif
 
 #define CONNECTIONLESS_PORT 9200
 #define CONNECTION_ORIENTED_PORT 9201
@@ -35,9 +38,10 @@ static long bearerbox_port = BB_DEFAULT_WAPBOX_PORT;
 static long heartbeat_freq = BB_DEFAULT_HEARTBEAT;
 static long heartbeat_thread;
 
+#if (HAVE_WTLS_OPENSSL)
 RSA* private_key = NULL;
 X509* x509_cert = NULL;
-
+#endif
 
 static void read_config(Octstr *filename) 
 {
@@ -126,6 +130,7 @@ static void read_config(Octstr *filename)
     }
     
 
+#if (HAVE_WTLS_OPENSSL)
     /* Load up the necessary keys */
     if ((s = cfg_get(grp, octstr_imm("certificate-file"))) != NULL){
             if(octstr_compare(s, octstr_imm("none")) == 0){
@@ -149,6 +154,7 @@ static void read_config(Octstr *filename)
                     debug("bbox",0,"certificate parameter is %s", s);
             }        
     }
+#endif
 
     /* configure URL mappings */
     map_url_max = -1;

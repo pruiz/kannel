@@ -1,10 +1,14 @@
-2001-07-06 Andreas Fink <andreas@fink.org
-        * gw/smsbox.c, gw/smsc_emi2.c, gw/msg-decl.h, gw/smsc_http.c, smsc_smpp.c:
-          added support for flash.
+2001-07-06 Yann Muller <ymuller@3glab.com>
 
-        * gw/smsc_emi2.c: forced maximum length for OAdC and AdC and set number type 
-          correctly for international numbers starting with a + instead of using
-          alphanumeric mode.
+	* gw/wapbox.c: separated wtls specific code with #defines.
+	
+2001-07-06 Andreas Fink <andreas@fink.org
+    * gw/smsbox.c, gw/smsc_emi2.c, gw/msg-decl.h, gw/smsc_http.c, smsc_smpp.c:
+      added support for flash.
+
+    * gw/smsc_emi2.c: forced maximum length for OAdC and AdC and set number type 
+      correctly for international numbers starting with a + instead of using
+      alphanumeric mode.
 
 2001-07-05 Yann Muller <ymuller@3glab.com>
 
