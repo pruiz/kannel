@@ -1,3 +1,7 @@
+2004-01-29 Aarno Syv\132nen <aarno@gni.ch>
+    * gw/wap_push_ppg_pushuser.c: Fixed a fatal bug appearing when
+      no blacklist is defined
+
 2004-01-27 Stipe Tolj  <tolj@wapme-systems.de>
     * gwlib/gwthread[-pthread].[ch], gwlib/log.c: added pid output
       to default log-file format. 
