@@ -64,6 +64,7 @@ void gw_check_shutdown(void);
 #define gw_strdup(str) (gw_native_strdup(str))
 #define gw_assert_allocated(ptr, file, line, function)
 #define gw_claim_area(ptr) (ptr)
+#define gw_claim_area_for(ptr, file, line, func) (ptr)
 #define gwmem_shutdown()
 
 #elif USE_GWMEM_CHECK
@@ -91,6 +92,8 @@ void gw_check_shutdown(void);
 	(gw_assert_place(gw_check_is_allocated(ptr), file, line, function))
 #define gw_claim_area(ptr) \
 	(gw_check_claim_area(ptr, __FILE__, __LINE__, __func__))
+#define gw_claim_area_for(ptr, file, line, func) \
+	(gw_check_claim_area(ptr, file, line, func))
 #define gwmem_shutdown() (gw_check_shutdown())
 
 #else

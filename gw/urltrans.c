@@ -5,6 +5,7 @@
  */
 
 
+#include <ctype.h>
 #include <errno.h>
 #include <limits.h>
 #include <stdlib.h>
@@ -61,7 +62,7 @@ struct URLTranslation {
  */
 struct URLTranslationList {
     List *list;
-    Dict *dict;
+    Dict *dict;	/* Dict of lowercase Octstr */
 };
 
 
@@ -527,13 +528,22 @@ static URLTranslation *create_onetrans(CfgGroup *grp)
 	    error(0, "Group 'sms-service' must include 'keyword'.");
 	    goto error;
 	}
+	octstr_convert_range(ot->keyword, 0, octstr_len(ot->keyword), 
+	    	    	     tolower);
 
 	aliases = cfg_get(grp, octstr_imm("aliases"));
 	if (aliases == NULL)
 	    ot->aliases = list_create();
 	else {
+	    long i;
+	    Octstr *os;
+
 	    ot->aliases = octstr_split(aliases, octstr_imm(";"));
 	    octstr_destroy(aliases);
+	    for (i = 0; i < list_len(ot->aliases); ++i) {
+		os = list_get(ot->aliases, i);
+	    	octstr_convert_range(os, 0, octstr_len(os), tolower);
+	    }
 	}
 
 	accepted_smsc = cfg_get(grp, octstr_imm("accepted-smsc"));
@@ -647,6 +657,8 @@ static URLTranslation *find_translation(URLTranslationList *trans,
     if (n == 0)
 	return NULL;
     keyword = list_get(words, 0);
+    keyword = octstr_duplicate(keyword);
+    octstr_convert_range(keyword, 0, octstr_len(keyword), tolower);
     
     list = dict_get(trans->dict, keyword);
     t = NULL;
@@ -668,7 +680,8 @@ static URLTranslation *find_translation(URLTranslationList *trans,
 	    break;
 	t = NULL;
     }
-    
+
+    octstr_destroy(keyword);    
     return t;
 }
 

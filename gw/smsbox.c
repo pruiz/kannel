@@ -1354,6 +1354,7 @@ static void init_smsbox(Cfg *cfg)
 	info(0, "Starting to log to file %s level %ld", 
 	     octstr_get_cstr(logfile), lvl);
 	log_open(octstr_get_cstr(logfile), lvl);
+	octstr_destroy(logfile);
     }
     if (global_sender != NULL) {
 	info(0, "Service global sender set as '%s'", 

@@ -220,7 +220,7 @@ install-docs:
 	$(INSTALL) doc/userguide/*.png $(DESTDIR)$(docdir)/userguide
 
 clean:
-	rm -f core $(progs) $(testprogs) $(checkprogs) */*.o $(docs) *.a
+	rm -f */*.o *.a core $(progs) $(testprogs) $(checkprogs) $(docs)
 	rm -f $(figs) $(docs)
 
 distclean: clean

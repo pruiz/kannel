@@ -311,7 +311,8 @@ Octstr *cfg_get_group_name(CfgGroup *grp)
 }
 
 
-Octstr *cfg_get(CfgGroup *grp, Octstr *varname)
+Octstr *cfg_get_real(CfgGroup *grp, Octstr *varname, const char *file, 
+    	    	     long line, const char *func)
 {
     Octstr *os;
 
@@ -322,7 +323,7 @@ Octstr *cfg_get(CfgGroup *grp, Octstr *varname)
     os = dict_get(grp->vars, varname);
     if (os == NULL)
     	return NULL;
-    return octstr_duplicate(os);
+    return gw_claim_area_for(octstr_duplicate(os), file, line, func);
 }
 
 

@@ -1,3 +1,23 @@
+2001-01-30  Lars Wirzenius  <liw@iki.fi>
+
+	* Makefile.in: Moved the wildcard patterns to the beginning, where
+	they are more visible. Should've done this when I first wrote them.
+	
+	* gw/smsbox.c: Fix memory leak.
+	
+	* gw/smsc_fake.c: don't call octstr_get_cstr with NULL argument.
+	(Should fix is_allowed_ip instead.)
+	
+	* gw/urltrans.c: Look up the keyword in a case insensitive manner.
+	Thanks to Peter for pointing this out.
+	
+	* gwlib/gwmem.h: Introduced the gw_claim_area_for macro. It is the
+	same as gw_claim_area, except it gets the position as arguments,
+	instead of figuring it out itself.
+
+	* gwlib/cfg.[ch]: Used gw_claim_area_for to claim the return
+	value of cfg_get.
+
 2001-01-29  Richard Braakman  <dark@wapit.com>
 
 	* gwlib/dict.c: Make dict_keys() lock its dictionary.
