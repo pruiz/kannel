@@ -176,8 +176,6 @@ install: all
 	for prog in $(progs); do \
 		$(INSTALL) $$prog $(bindir)/`basename $$prog`$(suffix); \
 	done
-# The following is a temporary kludge until we get a new WML compiler.
-	$(INSTALL) test/test_wml $(bindir)/test_wml$(suffix)
 
 install-docs:
 	rm -rf $(docdir)

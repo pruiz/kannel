@@ -356,13 +356,13 @@ int wml_compile(Octstr *wml_text,
    * is parsed into a parsing tree and the tree is then compiled into binary.
    */
 
-#if 0
-  /* XXX this should be the correct version. --liw */
-  ret = parse_document(xmlParseMemory(wml_c_text, size), wml_binary);
-#else
+#if HAVE_LIBXML_1_8_6
   /* XXX this seems to work around a bug in libxml, which is even in
      1.8.6. --liw */
   ret = parse_document(xmlParseMemory(wml_c_text, size + 1), wml_binary);
+#else
+  /* XXX this should be the correct version. --liw */
+  ret = parse_document(xmlParseMemory(wml_c_text, size), wml_binary);
 #endif
 
   return ret;

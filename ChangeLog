@@ -1,3 +1,11 @@
+Wed Mar 29 21:59:53 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* Makefile.in: Removed installation of test_wml, since it's obsolete.
+	
+	* configure.in, config.h.in: Check specifically for 1.8.6 of libxml.
+	
+	* gw/wml_compiler.c: Use kludge around 1.8.6 bugfix conditionally.
+
 2000-03-29  Richard Braakman  <dark@wapit.com>
 
 	* gwlib/gwassert.h: New file, defines gw_assert() macro which
