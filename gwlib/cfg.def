@@ -181,6 +181,7 @@ MULTI_GROUP(smsc,
     OCTSTR(throughput)
     OCTSTR(window)
     OCTSTR(idle-timeout)
+    OCTSTR(appname)
 )
 
 
