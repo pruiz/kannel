@@ -75,7 +75,7 @@
 /* open access log with filename fname. if use_localtime != 0 then
  * all events are logged with localtime, not GMT
  */
-void alog_open(char *fname, int use_localtime);
+void alog_open(char *fname, int use_localtime, int use_markers);
 
 /* close access log. Do nothing if no open file */
 void alog_close(void);

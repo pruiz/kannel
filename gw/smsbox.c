@@ -3076,12 +3076,14 @@ static Cfg *init_smsbox(Cfg *cfg)
     Octstr *http_proxy_username = NULL;
     Octstr *http_proxy_password = NULL;
     int ssl = 0;
+    int lf, m;
 
     bb_port = BB_DEFAULT_SMSBOX_PORT;
     bb_ssl = 0;
     bb_host = octstr_create(BB_DEFAULT_HOST);
     logfile = NULL;
     lvl = 0;
+    lf = m = 1;
 
     /*
      * first we take the port number in bearerbox and other values from the
@@ -3199,12 +3201,20 @@ static Cfg *init_smsbox(Cfg *cfg)
 	     octstr_get_cstr(global_sender));
     }
     
-    p = cfg_get(grp, octstr_imm("access-log"));
-    if (p != NULL) {
-	info(0, "Logging accesses to '%s'.", octstr_get_cstr(p));
-	alog_open(octstr_get_cstr(p), 1);
-	    /* XXX should be able to use gmtime, too */
-	octstr_destroy(p);
+    /* determine which timezone we use for access logging */
+    if ((p = cfg_get(grp, octstr_imm("access-log-time"))) != NULL) {
+        lf = (octstr_case_compare(p, octstr_imm("gmt")) == 0) ? 0 : 1;
+        octstr_destroy(p);
+    }
+
+    /* should predefined markers be used, ie. prefixing timestamp */
+    cfg_get_bool(&m, grp, octstr_imm("access-log-clean"));
+
+    /* open access-log file */
+    if ((p = cfg_get(grp, octstr_imm("access-log"))) != NULL) {
+        info(0, "Logging accesses to '%s'.", octstr_get_cstr(p));
+        alog_open(octstr_get_cstr(p), lf, m ? 0 : 1);
+        octstr_destroy(p);
     }
 
     /* HTTP queueing values */

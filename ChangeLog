@@ -1,3 +1,20 @@
+2003-11-24  Stipe Tolj  <tolj@wapme-systems.de>
+    * doc/userguide/userguide.xml: added new config directives 'access-log-clean'
+      and 'access-log-format'.
+    * gw/bb_alog.c: handles the custom bearerbox access-log formating
+    * gw/bb_smscconn.c: moved log_sms() to gw/bb_alog.c:bb_alog_sms()
+    * gw/bearerbox.h: added bb_alog_ prototypes
+    * gw/[sms|wap]box.c: harmonized access-log config directive reading
+    * gwlib/accesslog.[ch]: alog_open() changed to indicate if markers
+      should be written to access-log file. If no markers are set, then the
+      default timestamp prefix is not written, allowing users to
+      individually set the timestamp in their custom access-log format.
+    * gwlib/cfg.def: added config directives 'access-log-time' to
+      indicate if localtime or gmt should be used within access-log,
+      'access-log-format' holding the escape code formated line to log,
+      'access-log-clean' (boolean) indicating if standard markers shoould be
+      avoided and hence the access-log should be "clean".
+
 2003-11-22  Alexander Malysh  <a.malysh@centrium.de>
     * gwlib/log.c: don't add timestamp if syslog used. Improved backtrace
       support.

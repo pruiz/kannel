@@ -124,6 +124,9 @@ static Cfg *init_wapbox(Cfg *cfg)
     CfgGroup *grp;
     Octstr *s;
     Octstr *logfile;
+    int lf, m;
+
+    lf = m = 1;
 
     cfg_dump(cfg);
     
@@ -179,14 +182,21 @@ static Cfg *init_wapbox(Cfg *cfg)
         log_set_syslog(NULL, 0);
         debug("wap", 0, "no syslog parameter");
     }
-    s = cfg_get(grp, octstr_imm("access-log"));
-    if (s != NULL) {
-        info(0, "Logging accesses to '%s'.", octstr_get_cstr(s));
-        alog_open(octstr_get_cstr(s), 1);
-            /* XXX should be able to use gmtime, too */
+
+    /* determine which timezone we use for access logging */
+    if ((s = cfg_get(grp, octstr_imm("access-log-time"))) != NULL) {
+        lf = (octstr_case_compare(s, octstr_imm("gmt")) == 0) ? 0 : 1;
         octstr_destroy(s);
-    } else {
-        debug("wap", 0, "Could not open access-log");
+    }
+
+    /* should predefined markers be used, ie. prefixing timestamp */
+    cfg_get_bool(&m, grp, octstr_imm("access-log-clean"));
+
+    /* open access-log file */
+    if ((s = cfg_get(grp, octstr_imm("access-log"))) != NULL) {
+        info(0, "Logging accesses to '%s'.", octstr_get_cstr(s));
+        alog_open(octstr_get_cstr(s), lf, m ? 0 : 1);
+        octstr_destroy(s);
     }
 
     /* configure the 'wtls' group */

@@ -118,34 +118,6 @@ static long router_thread = -1;
 int route_incoming_to_boxc(Msg *sms);
 static int route_incoming_to_smsc(SMSCConn *conn, Msg *msg);
 
-static void log_sms(SMSCConn *conn, Msg *sms, char *message)
-{
-    Octstr *text, *udh;
-
-    text = sms->sms.msgdata ? octstr_duplicate(sms->sms.msgdata) : octstr_create("");
-    udh = sms->sms.udhdata ? octstr_duplicate(sms->sms.udhdata) : octstr_create("");
-    if ((sms->sms.coding == DC_8BIT || sms->sms.coding == DC_UCS2))
-	octstr_binary_to_hex(text, 1);
-    octstr_binary_to_hex(udh, 1);
-
-    alog("%s [SMSC:%s] [SVC:%s] [ACT:%s] [BINF:%s] [from:%s] [to:%s] [flags:%d:%d:%d:%d:%d] [msg:%d:%s]"
-	" [udh:%d:%s]",
-	 message,
-	 conn ? (smscconn_id(conn) ? octstr_get_cstr(smscconn_id(conn)) : "")
-	 : "",
-	 sms->sms.service ? octstr_get_cstr(sms->sms.service) : "",
-	 sms->sms.account ? octstr_get_cstr(sms->sms.account) : "",
-	 sms->sms.binfo ? octstr_get_cstr(sms->sms.binfo) : "",
-	 sms->sms.sender ? octstr_get_cstr(sms->sms.sender) : "",
-	 sms->sms.receiver ? octstr_get_cstr(sms->sms.receiver) : "",
-	 sms->sms.mclass, sms->sms.coding, sms->sms.mwi, sms->sms.compress,
-	 sms->sms.dlr_mask,
-	 octstr_len(sms->sms.msgdata), octstr_get_cstr(text),
-	 octstr_len(sms->sms.udhdata), octstr_get_cstr(udh)
-    );
-    octstr_destroy(udh);
-    octstr_destroy(text);
-}
 
 /*---------------------------------------------------------------------------
  * CALLBACK FUNCTIONS
@@ -194,7 +166,7 @@ void bb_smscconn_sent(SMSCConn *conn, Msg *sms, Octstr *reply)
     (void) store_save(mack);
     msg_destroy(mack);
 
-    log_sms(conn, sms, "Sent SMS");
+    bb_alog_sms(conn, sms, "Sent SMS");
 
     /* generate relay confirmancy message */
     if (DLR_IS_SMSC_SUCCESS(sms->sms.dlr_mask)) {
@@ -240,9 +212,9 @@ void bb_smscconn_send_failed(SMSCConn *conn, Msg *sms, int reason, Octstr *reply
 
 	if (conn) counter_increase(conn->failed);
 	if (reason == SMSCCONN_FAILED_DISCARDED)
-	    log_sms(conn, sms, "DISCARDED SMS");
+	    bb_alog_sms(conn, sms, "DISCARDED SMS");
 	else
-	    log_sms(conn, sms, "FAILED Send SMS");
+	    bb_alog_sms(conn, sms, "FAILED Send SMS");
 
         /* generate relay confirmancy message */
         if (DLR_IS_SMSC_FAIL(sms->sms.dlr_mask) ||
@@ -285,7 +257,7 @@ long bb_smscconn_receive(SMSCConn *conn, Msg *sms)
 	numhash_find_number(white_list, sms->sms.sender) < 1) {
 	info(0, "Number <%s> is not in white-list, message discarded",
 	     octstr_get_cstr(sms->sms.sender));
-	log_sms(conn, sms, "REJECTED - not white-listed SMS");
+	bb_alog_sms(conn, sms, "REJECTED - not white-listed SMS");
 	msg_destroy(sms);
         return SMSCCONN_FAILED_REJECTED;
     }
@@ -293,7 +265,7 @@ long bb_smscconn_receive(SMSCConn *conn, Msg *sms)
 	numhash_find_number(black_list, sms->sms.sender) == 1) {
 	info(0, "Number <%s> is in black-list, message discarded",
 	     octstr_get_cstr(sms->sms.sender));
-	log_sms(conn, sms, "REJECTED - black-listed SMS");
+	bb_alog_sms(conn, sms, "REJECTED - black-listed SMS");
 	msg_destroy(sms);
 	return SMSCCONN_FAILED_REJECTED;
     }
@@ -323,9 +295,9 @@ long bb_smscconn_receive(SMSCConn *conn, Msg *sms)
         if (route_incoming_to_boxc(copy) == -1) {
             warning(0, "incoming messages queue too long, dropping a message.");
             if (sms->sms.sms_type == report)
-                log_sms(conn, sms, "DROPPED Received DLR");
+                bb_alog_sms(conn, sms, "DROPPED Received DLR");
             else
-                log_sms(conn, sms, "DROPPED Received SMS");
+                bb_alog_sms(conn, sms, "DROPPED Received SMS");
             msg_destroy(copy);
             /* put nack into store-file */
             copy = msg_create(ack);
@@ -342,9 +314,9 @@ long bb_smscconn_receive(SMSCConn *conn, Msg *sms)
     }
 
     if (sms->sms.sms_type != report)
-	log_sms(conn, sms, "Receive SMS");
+	bb_alog_sms(conn, sms, "Receive SMS");
     else
-	log_sms(conn, sms, "DLR SMS");
+	bb_alog_sms(conn, sms, "DLR SMS");
 
     counter_increase(incoming_sms_counter);
     if (conn != NULL) counter_increase(conn->received);

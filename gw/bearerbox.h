@@ -62,6 +62,8 @@
 
 #include "gwlib/gwlib.h"
 #include "msg.h"
+#include "smscconn.h"
+
 
 /* general bearerbox state */
 
@@ -195,6 +197,19 @@ void store_shutdown(void);
 
 /* return all containing messages in the current store */
 Octstr *store_status(int status_type);
+
+
+/*-----------------
+ * bb_alog.c (Custom access-log format handling)
+ */
+
+/* passes the access-log-format string from config to the module */
+void bb_alog_init(Octstr *format);
+
+/* called from bb_smscconn.c to log the various access-log events */
+void bb_alog_sms(SMSCConn *conn, Msg *sms, char *message);
+
+
 
 /*----------------------------------------------------------------
  * Core bearerbox public functions;

@@ -351,12 +351,15 @@ static Cfg *init_bearerbox(Cfg *cfg)
     CfgGroup *grp;
     Octstr *log, *val;
     long loglevel;
+    int lf, m;
 #ifdef HAVE_LIBSSL
     Octstr *ssl_server_cert_file;
     Octstr *ssl_server_key_file;
     int ssl_enabled = 0;
 #endif /* HAVE_LIBSSL */
 
+    /* defaults: use localtime and markers for access-log */
+    lf = m = 1;
 	
     grp = cfg_get_single_group(cfg, octstr_imm("core"));
 
@@ -369,14 +372,27 @@ static Cfg *init_bearerbox(Cfg *cfg)
     }
 
     if (check_config(cfg) == -1)
-	panic(0, "Cannot start with corrupted configuration");
+        panic(0, "Cannot start with corrupted configuration");
 
-    log = cfg_get(grp, octstr_imm("access-log"));
-    if (log != NULL) {
-	alog_open(octstr_get_cstr(log), 1);
-	/* use localtime; XXX let user choose that */
+    /* determine which timezone we use for access logging */
+    if ((log = cfg_get(grp, octstr_imm("access-log-time"))) != NULL) {
+        lf = (octstr_case_compare(log, octstr_imm("gmt")) == 0) ? 0 : 1;
+        octstr_destroy(log);
+    }
 
-	octstr_destroy(log);
+    /* should predefined markers be used, ie. prefixing timestamp */
+    cfg_get_bool(&m, grp, octstr_imm("access-log-clean"));
+
+    /* custom access-log format  */
+    if ((log = cfg_get(grp, octstr_imm("access-log-format"))) != NULL) {
+        bb_alog_init(log);
+        octstr_destroy(log);
+    }
+
+    /* open access-log file */
+    if ((log = cfg_get(grp, octstr_imm("access-log"))) != NULL) {
+        alog_open(octstr_get_cstr(log), lf, m ? 0 : 1);
+        octstr_destroy(log);
     }
 
     log = cfg_get(grp, octstr_imm("store-file"));
