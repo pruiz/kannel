@@ -1197,8 +1197,10 @@ static void handle_pdu(SMPP *smpp, Connection *conn, SMPP_PDU *pdu,
                     smpp->quitting = 1;
             } else {
                 *pending_submits = 0;
+                mutex_lock(smpp->conn->flow_mutex);
                 smpp->conn->status = SMSCCONN_ACTIVE;
                 smpp->conn->connect_time = time(NULL);
+                mutex_unlock(smpp->conn->flow_mutex);
                 bb_smscconn_connected(smpp->conn);
             }
             break;
@@ -1215,8 +1217,10 @@ static void handle_pdu(SMPP *smpp, Connection *conn, SMPP_PDU *pdu,
                     smpp->quitting = 1;
             } else {
                 *pending_submits = 0;
+                mutex_lock(smpp->conn->flow_mutex);
                 smpp->conn->status = SMSCCONN_ACTIVE;
                 smpp->conn->connect_time = time(NULL);
+                mutex_unlock(smpp->conn->flow_mutex);
                 bb_smscconn_connected(smpp->conn);
             }
             break;
@@ -1233,10 +1237,12 @@ static void handle_pdu(SMPP *smpp, Connection *conn, SMPP_PDU *pdu,
                     smpp->quitting = 1;
             } else {
                 /* set only resceive status if no transmitt is bind */
+                mutex_lock(smpp->conn->flow_mutex);
                 if (smpp->conn->status != SMSCCONN_ACTIVE) {
                     smpp->conn->status = SMSCCONN_ACTIVE_RECV;
                     smpp->conn->connect_time = time(NULL);
                 }
+                mutex_unlock(smpp->conn->flow_mutex);
             }
             break;
 
