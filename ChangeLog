@@ -1,4 +1,7 @@
 2003-08-05 Aarno Syvänen <aarno@gni.ch>
+     * gw/wap_push_ppg.c: Fixed a compiler warning (a serious one).
+
+2003-08-05 Aarno Syvänen <aarno@gni.ch>
     * doc/userguide/userguide.xml: Documented last commit
 
 2003-08-04 Aarno Syvänen <aarno@gni.ch>
