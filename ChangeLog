@@ -1,5 +1,11 @@
 2001-01-26  Lars Wirzenius  <liw@iki.fi>
 
+	* gwlib/octstr.[ch], gw/smsbox.c: Killed the almost-unused
+	function octstr_replace and converted the only place it was
+	being used anymore to create a new Octstr instead.
+
+2001-01-26  Lars Wirzenius  <liw@iki.fi>
+
 	* AUTHORS, ChangeLog, NEWS, checks/check_fakesmsc.sh,
 	checks/check_fakewap.sh, checks/check_sendsms.sh,
 	checks/check_smpp.sh, doc/arch/arch.xml, gw/bb_smscconn.c,

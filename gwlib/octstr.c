@@ -449,7 +449,7 @@ void octstr_binary_to_base64(Octstr *ostr)
 
     if (ostr->len == 0) {
         /* Always terminate with CR LF */
-        octstr_replace(ostr, "\015\012", 2);
+        octstr_insert(ostr, octstr_imm("\015\012"), 0);
         return;
     }
 
@@ -1038,22 +1038,6 @@ void octstr_insert(Octstr *ostr1, Octstr *ostr2, long pos)
     ostr1->data[ostr1->len] = '\0';
 
     seems_valid(ostr1);
-}
-
-
-void octstr_replace(Octstr *ostr, const char *data, long len)
-{
-    seems_valid(ostr);
-    gw_assert(!ostr->immutable);
-    gw_assert(data != NULL);
-
-    octstr_grow(ostr, len);
-    if (len > 0)
-        memcpy(ostr->data, data, len);
-    ostr->len = len;
-    ostr->data[len] = '\0';
-
-    seems_valid(ostr);
 }
 
 

@@ -262,7 +262,7 @@ static int send_message(URLTranslation *trans, Msg *msg)
 	if (trans != NULL && urltrans_omit_empty(trans) != 0)
 	    max_msgs = 0;
 	else
-	    octstr_replace(msg->sms.msgdata, empty, strlen(empty));
+	    msg->sms.msgdata = octstr_create(empty);
     }
 
     if (max_msgs == 0)

@@ -325,12 +325,6 @@ long octstr_write_data(Octstr *ostr, int fd, long from);
 int octstr_append_from_socket(Octstr *ostr, int socket);
 
 /*
- * Replace current contents of the octstr with given data.
- */
-void octstr_replace(Octstr *ostr, const char *data, long len);
-
-
-/*
  * Insert one octet string into another. `pos' gives the position
  * in `ostr1' where `ostr2' should be inserted.
  */
