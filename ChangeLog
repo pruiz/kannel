@@ -1,3 +1,8 @@
+2001-05-03  Nick Clarey  <nclarey@3glab.com>
+
+	* gw/smsc_at.c: Applied patch from Alex Judd (ajudd@snaz.com),
+	adding an automatic retry to message sending should it fail.
+
 2001-05-02  Richard Braakman  <dark@wapit.com>
 
 	* gw/smsc_cimd2.c: Fix encoding of text messages that have UDH.

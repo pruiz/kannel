@@ -42,6 +42,9 @@
 #define CRTSCTS 0
 #endif
 
+/* The number of times to attempt to send a message should sending fail */
+#define RETRY_SEND 3
+
 /******************************************************************************
  * Prototypes for private functions
  */
@@ -313,9 +316,12 @@ int at_submit_msg(SMSCenter *smsc, Msg *msg) {
         unsigned char command[500], pdu[500];
         int ret = -1; 
         char sc[3];
+        int retries = RETRY_SEND;
 
         /* Some modem types need a '00' prepended to the PDU
-         * to indicate to use the default SC. */
+         * to indicate to use the default SC.
+         * NB: This extra padding is not counted in the CMGS byte count */
+
         sc[0] = '\0';
         if((strcmp(smsc->at_modemtype, WAVECOM ) == 0) || 
            (strcmp(smsc->at_modemtype, SIEMENS ) == 0) ||
@@ -324,14 +330,19 @@ int at_submit_msg(SMSCenter *smsc, Msg *msg) {
                 strcpy(sc, "00");
         
         if(msg_type(msg)==sms) {
-                pdu_encode(msg, &pdu[0], smsc);
-                
+                pdu_encode(msg, &pdu[0], smsc);            
                 sprintf(command, "AT+CMGS=%d", strlen(pdu)/2);
                 if(send_modem_command(smsc->at_fd, command, 1) == 0)
                 {
                         sprintf(command, "%s%s%c", sc, pdu, 26);
                         ret = send_modem_command(smsc->at_fd, command, 0);
                         debug("AT", 0, "send command status: %d", ret);
+                        while (ret != 0 && retries > 0) {
+                               sprintf(command, "%s%s%c", sc, pdu, 26);
+                               ret = send_modem_command(smsc->at_fd, command, 0);
+                               debug("AT", 0, "send command status: %d", ret);
+                               retries--;
+                        }
                 }
         }
         return ret;
@@ -774,12 +785,10 @@ static int pdu_encode(Msg *msg, unsigned char *pdu, SMSCenter *smsc) {
         pos++;
 
         /* user data length - include length of UDH if it exists*/
+        /* This is wrong; it needs to be calculated dependent on 8-bit/non-8-bit */
         len = octstr_len(msg->sms.msgdata);
         if(msg->sms.flag_udh != 0) {
-                if(msg->sms.flag_8bit != 0)
-                        len += octstr_len(msg->sms.udhdata);
-                else
-                        len += octstr_len(msg->sms.udhdata) / 2 * 8 / 7;
+                len += octstr_len(msg->sms.udhdata);
         }
         pdu[pos] = numtext((len & 240) >> 4);
         pos++;
@@ -788,9 +797,6 @@ static int pdu_encode(Msg *msg, unsigned char *pdu, SMSCenter *smsc) {
         
         /* udh */
         if(msg->sms.flag_udh != 0) {
-                if(msg->sms.flag_8bit == 0)
-                        pos += encode7bituncompressed(msg->sms.udhdata, &pdu[pos]);
-                else
                         pos += encode8bituncompressed(msg->sms.udhdata, &pdu[pos]);
         }
 
@@ -860,6 +866,7 @@ static int encode7bituncompressed(Octstr *input, unsigned char *encoded) {
                         prevoctet = octstr_get_char(input, i);
                 }
         }
+
         /* if the length of the message is a multiple of 8 then we
          * are finished. Otherwise prevoctet still contains part of a 
          * character so we add it. */
