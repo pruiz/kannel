@@ -74,7 +74,7 @@ int main(int argc, char **argv)
     ret = pap_compile(pap_doc, &e);
     
     if (ret < 0) {
-        debug("test.pap", 0, "Unable to compile the pap document"); 
+        debug("test.pap", 0, "Unable to compile the pap document, rc %d", ret); 
         return 1;           
     } 
 
