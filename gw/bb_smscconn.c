@@ -365,7 +365,7 @@ int smsc2_start(Cfg *cfg)
     return 0;
 }
 
-int smsc2_find(Octstr *id)
+static int smsc2_find(Octstr *id)
 {
     SMSCConn *conn = NULL;
     int i;
@@ -420,6 +420,7 @@ int smsc2_start_smsc(Octstr *id)
     list_unlock(smsc_list);
 
     /* find the group with smsc id */
+    grp = NULL;
     for (i = 0; i < list_len(smsc_groups) && 
         (grp = list_get(smsc_groups, i)) != NULL; i++) {
         smscid = cfg_get(grp, octstr_imm("smsc-id"));
