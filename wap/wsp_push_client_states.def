@@ -32,16 +32,21 @@ ROW(PUSH_CLIENT_NULL_STATE,
  * For debugging: just tell about the push OTA event, and destroy it here - 
  * handle_event does not do it.
  */
-     indicate_confirmedpush(cpm, push_body);
+/* XXX not defined anywhere
+ *   indicate_confirmedpush(cpm, push_body);
+ */
      octstr_destroy(push_body);
 /*
  * For debugging: create S_ConfirmedPush_Res by ourselves and send it to 
  * ourselves.
  */
-     response_confirmedpush(cpm);
+/* XXX not defined anywhere
+ *   response_confirmedpush(cpm);
+ */
     },
     PUSH_CLIENT_RECEIVING)
 
+#if 0
 ROW(PUSH_CLIENT_RECEIVING,
     S_ConfirmedPush_Res,
     1,
@@ -49,7 +54,9 @@ ROW(PUSH_CLIENT_RECEIVING,
      response_responder_invoke(cpm);
     },
     PUSH_CLIENT_NULL_STATE)
+#endif
 
+#if 0
 ROW(PUSH_CLIENT_RECEIVING,
     S_PushAbort_Req,
     1,
@@ -58,7 +65,9 @@ ROW(PUSH_CLIENT_RECEIVING,
      indicate_pushabort(cpm, e->u.S_PushAbort_Req.reason);
     },
     PUSH_CLIENT_NULL_STATE)
+#endif
 
+#if 0
 ROW(PUSH_CLIENT_RECEIVING,
     Abort_Event,
     1,
@@ -67,6 +76,7 @@ ROW(PUSH_CLIENT_RECEIVING,
      indicate_pushabort(cpm, WSP_ABORT_USERREQ);
     },
     PUSH_CLIENT_NULL_STATE)
+#endif
 
 ROW(PUSH_CLIENT_RECEIVING,
     TR_Abort_Ind,
@@ -92,6 +102,7 @@ ROW(PUSH_CLIENT_RECEIVING,
     },
     PUSH_CLIENT_NULL_STATE)
 
+#if 0
 ROW(PUSH_CLIENT_RECEIVING,
     TR_Abort_Ind,
     e->u.TR_Abort_Ind.abort_code != WSP_ABORT_DISCONNECT &&
@@ -100,6 +111,7 @@ ROW(PUSH_CLIENT_RECEIVING,
      indicate_pushabort(cpm, e->u.S_PushAbort_Req.reason);
     },
     PUSH_CLIENT_NULL_STATE)
+#endif
 
 #undef PUSH_CLIENT_STATE_NAME
 #undef ROW

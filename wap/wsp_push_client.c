@@ -71,13 +71,17 @@ static void push_client_event_handle(WSPPushClientMachine *cpm, WAPEvent *e);
  */
 static unsigned char *name_push_client_state(int name);
 static void main_thread(void *);
+#if 0
 static WAPEvent *create_s_confirmedpush_ind(WSPPushClientMachine *cpm, 
                                             Octstr *push_body);
 static WAPEvent *create_s_pushabort_ind(WSPPushClientMachine *cpm, 
                                         long abort_reason);
 static WAPEvent *create_s_confirmedpush_res(WSPPushClientMachine *cpm);
+#endif
 static WAPEvent *create_tr_abort_req(WSPPushClientMachine *cpm, long reason);
+#if 0
 static WAPEvent *create_tr_invoke_res(WSPPushClientMachine *cpm);
+#endif
 
 /**************************************************************************
  *
@@ -355,6 +359,7 @@ static void push_client_machine_destroy(void *a)
     gw_free(m);
 }
 
+#if 0
 static WAPEvent *create_s_confirmedpush_ind(WSPPushClientMachine *cpm, 
                                             Octstr *push_body)
 {
@@ -368,7 +373,9 @@ static WAPEvent *create_s_confirmedpush_ind(WSPPushClientMachine *cpm,
 
     return e;
 }
+#endif
 
+#if 0
 static WAPEvent *create_s_pushabort_ind(WSPPushClientMachine *cpm, 
                                         long abort_reason)
 {
@@ -380,7 +387,9 @@ static WAPEvent *create_s_pushabort_ind(WSPPushClientMachine *cpm,
 
     return e;
 }
+#endif
 
+#if 0
 /*
  * For debugging: create S-ConfirmedPush.res by ourselves. 
  */
@@ -393,6 +402,7 @@ static WAPEvent *create_s_confirmedpush_res(WSPPushClientMachine *cpm)
 
     return e;
 }
+#endif
 
 static WAPEvent *create_tr_abort_req(WSPPushClientMachine *cpm, long reason)
 {
@@ -406,6 +416,7 @@ static WAPEvent *create_tr_abort_req(WSPPushClientMachine *cpm, long reason)
     return e;
 }
 
+#if 0
 static WAPEvent *create_tr_invoke_res(WSPPushClientMachine *cpm)
 {
     WAPEvent *e;
@@ -415,5 +426,4 @@ static WAPEvent *create_tr_invoke_res(WSPPushClientMachine *cpm)
 
     return e;
 }
-
-
+#endif

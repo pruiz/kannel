@@ -1,3 +1,12 @@
+2000-12-09  Lars Wirzenius  <liw@iki.fi>
+
+	* wap/wsp_push_client.c, wap/wsp_push_client_states.def,
+	wap/wsp_server_push_states.def, wap/wsp_session.c: Commented
+	things out so that things will at least compile and pass "make
+	check". I assume Aarno forgot to add one or two files or other
+	changes when he committed and that things do compile in *his*
+	work directory.
+
 2000-12-08  Aarno Syvänen <syvanen@wapit.com>
 
 	* wap/server_push_machine.def, wsp_server_push_states.def: Two new
