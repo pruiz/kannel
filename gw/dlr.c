@@ -405,15 +405,15 @@ Msg *dlr_find_mem(char *smsc, char *ts, char *dst, int typ)
 
 Msg *dlr_find_mysql(char *smsc, char *ts, char *dst, int typ)
 {
-#ifdef DLR_MYSQL
     Octstr *sql;
     int	state;
-    MYSQL_RES *result;
-    MYSQL_ROW row;
     int dlr_mask;
     Octstr *dlr_service;
     Octstr *dlr_url;
     Msg	*msg = NULL;
+#ifdef DLR_MYSQL
+    MYSQL_RES *result;
+    MYSQL_ROW row;
     
     sql = octstr_format("SELECT %s, %s, %s FROM %s WHERE %s='%s' AND %s='%s';",
                         octstr_get_cstr(field_mask), octstr_get_cstr(field_serv), 
@@ -508,8 +508,8 @@ Msg *dlr_find_mysql(char *smsc, char *ts, char *dst, int typ)
     octstr_destroy(dlr_service);
     octstr_destroy(dlr_url);
 
-    return msg;
 #endif
+    return msg;
 }
 
 Msg *dlr_find(char *smsc, char *ts, char *dst, int typ)
