@@ -648,6 +648,8 @@ int main(int argc, char **argv)
     int i, org_threads;
     double delta;
 
+    gw_init_mem();
+
     if (argc > 2 && argv[1][0] == '-' && argv[1][1] == 'v') {
         verbose = 1;
         argv++;

@@ -144,7 +144,7 @@ Octstr *octstr_create_tolower(const char *cstr) {
 }
 
 
-Octstr *octstr_create_from_data(const char *data, long len) {
+Octstr *octstr_create_from_data(const void *data, long len) {
 	Octstr *ostr;
 	
 	ostr = octstr_create_empty();
@@ -253,7 +253,7 @@ void octstr_set_char(Octstr *ostr, long pos, int ch) {
 }
 
 
-void octstr_get_many_chars(char *buf, Octstr *ostr, long pos, long len) {
+void octstr_get_many_chars(void *buf, Octstr *ostr, long pos, long len) {
 	gw_assert(buf != NULL);
 	seems_valid(ostr);
 

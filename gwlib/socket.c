@@ -23,6 +23,12 @@
 #include <arpa/inet.h>
 #endif
 
+
+#ifndef UDP_PACKET_MAX_SIZE
+#define UDP_PACKET_MAX_SIZE (64*1024)
+#endif
+
+
 /* configure should get this, but doesn't. XXX fix this --liw */
 #if __sun && __sparc
 #define HAVE_INET_ATON 1 
@@ -296,4 +302,113 @@ int read_available(int fd, long wait_usec)
 	return -1;	/* some error */
     }
     return 0;
+}
+
+
+
+int udp_client_socket(void) {
+	int s;
+	
+	s = socket(PF_INET, SOCK_DGRAM, 0);
+	if (s == -1) {
+		error(errno, "Couldn't create a UDP socket");
+		return -1;
+	}
+	
+	return s;
+}
+
+
+int udp_bind(int port) {
+	int s;
+	struct sockaddr_in sa;
+	
+	s = socket(PF_INET, SOCK_DGRAM, 0);
+	if (s == -1) {
+		error(errno, "Couldn't create a UDP socket");
+		return -1;
+	}
+	
+	sa.sin_family = AF_INET;
+	sa.sin_port = htons(port);
+	sa.sin_addr.s_addr = htonl(INADDR_ANY);
+
+	if (bind(s, (struct sockaddr *) &sa, (int) sizeof(sa)) == -1) {
+		error(errno, "Couldn't bind a UDP socket to port %d", port);
+		(void) close(s);
+		return -1;
+	}
+	
+	return s;
+}
+
+
+Octstr *udp_create_address(Octstr *host_or_ip, int port) {
+	struct sockaddr_in sa;
+	struct hostent *h;
+	
+	h = gethostbyname(octstr_get_cstr(host_or_ip));
+	if (h == NULL) {
+		error(0, "Couldn't find the IP number of `%s'", 
+			octstr_get_cstr(host_or_ip));
+		return NULL;
+	}
+
+	sa.sin_family = AF_INET;
+	sa.sin_port = htons(port);
+	sa.sin_addr = *(struct in_addr *) h->h_addr_list[0];
+	
+	return octstr_create_from_data(&sa, sizeof(sa));
+}
+
+
+int udp_get_port(Octstr *addr) {
+	struct sockaddr_in sa;
+	
+	gw_assert(octstr_len(addr) == sizeof(sa));
+	memcpy(&sa, octstr_get_cstr(addr), sizeof(sa));
+	return ntohs(sa.sin_port);
+}
+
+
+Octstr *udp_get_ip(Octstr *addr) {
+	struct sockaddr_in sa;
+	
+	gw_assert(octstr_len(addr) == sizeof(sa));
+	memcpy(&sa, octstr_get_cstr(addr), sizeof(sa));
+	return octstr_create(inet_ntoa(sa.sin_addr));
+}
+
+
+int udp_sendto(int s, Octstr *datagram, Octstr *addr) {
+	struct sockaddr_in sa;
+	
+	gw_assert(octstr_len(addr) == sizeof(sa));
+	memcpy(&sa, octstr_get_cstr(addr), sizeof(sa));
+	if (sendto(s, octstr_get_cstr(datagram), octstr_len(datagram), 0,
+		   &sa, (int) sizeof(sa)) == -1) {
+		error(errno, "Couldn't send UDP packet");
+		return -1;
+	}
+	return 0;
+}
+
+
+int udp_recvfrom(int s, Octstr **datagram, Octstr **addr) {
+	struct sockaddr_in sa;
+	int salen;
+	char buf[UDP_PACKET_MAX_SIZE];
+	int bytes;
+
+	salen = sizeof(sa);
+	bytes = recvfrom(s, &buf, (int) sizeof(buf), 0, &sa, &salen);
+	if (bytes == -1) {
+		error(errno, "Couldn't receive UDP packet");
+		return -1;
+	}
+	
+	*datagram = octstr_create_from_data(buf, bytes);
+	*addr = octstr_create_from_data(&sa, salen);
+	
+	return 0;
 }

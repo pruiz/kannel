@@ -19,6 +19,7 @@ typedef int socklen_t;
 #include "getnameinfo.h"
 
 #include "gwstr.h"
+#include "octstr.h"
 
 /* Open a server socket. Return -1 for error, >= 0 socket number for OK.*/
 int make_server_socket(int port);
@@ -43,6 +44,52 @@ int read_to_eof(int fd, char **data, size_t *len);
  * is data, 0 otherwise, -1 on error */
 int read_available(int fd, long wait_usec);
 
+
+/*
+ * Create a UDP socket for receiving from clients. Return -1 for failure,
+ * a socket file descriptor >= 0 for OK.
+ */
+int udp_bind(int port);
+
+
+/*
+ * Create the client end of a UDP socket (i.e., a UDP socket that can
+ * be on any port). Return -1 for failure, a socket file descriptor >= 0 
+ * for OK.
+ */
+int udp_client_socket(void);
+
+
+/*
+ * Encode a hostname or IP number and port number into a binary address,
+ * and return that as an Octstr. Return NULL if the host doesn't exist
+ * or the IP number is syntactically invalid, or the port is bad.
+ */
+Octstr *udp_create_address(Octstr *host_or_ip, int port);
+
+
+/*
+ * Return the IP number of an encoded binary address, as a cleartext string.
+ */
+Octstr *udp_get_ip(Octstr *addr);
+
+
+/*
+ * Return the port number of an encoded binary address, as a cleartext string.
+ */
+int udp_get_port(Octstr *addr);
+
+
+/*
+ * Send a UDP message to a given server.
+ */
+int udp_sendto(int s, Octstr *datagram, Octstr *addr);
+
+
+/*
+ * Receive a UDP message from a client.
+ */
+int udp_recvfrom(int s, Octstr **datagram, Octstr **addr);
 
 
 #endif

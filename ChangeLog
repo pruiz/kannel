@@ -1,3 +1,10 @@
+Thu Mar 30 06:51:03 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* gwlib/octstr.[ch]: Changed octstr_create_from_data and
+	octstr_get_many_chars to get void* instead of char*.
+	
+	* gwlib/socket.[ch]: Wrote some generic UDP socket handling things.
+
 Thu Mar 30 05:28:02 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* acconfig.h, config.h.bot, config.h.top, stamp-h.in: Removed as

@@ -51,7 +51,7 @@ Octstr *octstr_create_tolower(const char *cstr);
  * Create an octet string from arbitrary binary data. The length of the
  * data is given, so it can contain NUL characters.
  */
-Octstr *octstr_create_from_data(const char *data, long len);
+Octstr *octstr_create_from_data(const void *data, long len);
 
 
 /*
@@ -113,9 +113,9 @@ Octstr *octstr_cat_char(Octstr *ostr1, int ch);
 
 
 /*
- * Copy characters from octet string into char buffer.
+ * Copy bytes from octet string into array.
  */
-void octstr_get_many_chars(char *buf, Octstr *ostr, long pos, long len);
+void octstr_get_many_chars(void *buf, Octstr *ostr, long pos, long len);
 
 
 /*
