@@ -83,6 +83,7 @@ int dcs_to_fields(Msg **msg, int dcs) {
         dcs &= 0x07;
         (*msg)->sms.coding = (dcs & 0x04) ? DC_8BIT : DC_7BIT; /* grab bit 2 */
         (*msg)->sms.mclass = 1 + (dcs & 0x03); /* grab bits 1,0 */
+        (*msg)->sms.alt_dcs = 1; /* set 0xFX data coding */
     }
     
     /* Non-MWI Mode 0 */
