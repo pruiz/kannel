@@ -1,3 +1,11 @@
+
+1999-11-19 Aarno Syvänen <syvanen@wapit.com>
+
+	* header files: add header files for wsp events and wtp state machine
+
+	* wtp.c: add wsp event manipulating  functions and a wtp state machine
+	handling function
+
 1999-11-19    <rpr@rpr.wapit.com>
 
 	* gw/bearerbox.c: separated 'sendsms' to port of the internal SMS
