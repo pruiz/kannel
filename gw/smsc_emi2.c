@@ -632,8 +632,9 @@ static void emi2_send_loop(SMSCConn *conn, Connection *server)
     check_time = time(NULL);
     while (1) {
 	/* Send keepalive if there's room in the sending window */
-	if (write && privdata->keepalive > 0 && time(NULL) > keepalive_time + privdata->keepalive &&
-	       privdata->unacked < 100 && !privdata->shutdown ) {
+	if ((write || !privdata->flowcontrol) && privdata->keepalive > 0 
+	    && time(NULL) > keepalive_time + privdata->keepalive &&
+	    privdata->unacked < 100 && !privdata->shutdown ) {
 	    while (privdata->sendtime[nexttrn % 100] != 0)
 		nexttrn++; /* pick unused TRN */
 	    nexttrn %= 100;
@@ -652,7 +653,8 @@ static void emi2_send_loop(SMSCConn *conn, Connection *server)
 					    
 
 	/* Send messages if there's room in the sending window */
-	while ((write || !privdata->flowcontrol) && privdata->unacked < 100 && !privdata->shutdown &&
+	while ((write || !privdata->flowcontrol) && privdata->unacked < 100
+	       && !privdata->shutdown &&
 	       (msg = list_extract_first(privdata->outgoing_queue)) != NULL) {
 	    while (privdata->sendtime[nexttrn % 100] != 0)
 		nexttrn++; /* pick unused TRN */
@@ -764,8 +766,7 @@ static void emi2_send_loop(SMSCConn *conn, Connection *server)
 
 	/* If the server doesn't ack our messages, wake up to resend them */
 	if (!privdata->flowcontrol && list_len(privdata->outgoing_queue))
-	    ;
-	    
+	    conn_wait(server, 0);
 	else if (privdata->unacked == 0) {
 	    if (privdata->keepalive > 0)
 		conn_wait(server, privdata->keepalive + 1);
