@@ -44,7 +44,7 @@ static Octstr *copy_until_nul(Octstr *os, long *pos, long max_octets)
 
     nul = octstr_search_char(os, '\0', *pos);
     if (nul == -1) {
-	error(0, "SMPP: PDU NUL terminated string has no NUL.");
+	warning(0, "SMPP: PDU NUL terminated string has no NUL.");
     	return NULL;
     }
     if (*pos + max_octets < nul) {
@@ -178,8 +178,7 @@ SMPP_PDU *smpp_pdu_unpack(Octstr *data_without_len)
     	p->name = decode_integer(data_without_len, pos, octets); \
 	pos += octets;
     #define NULTERMINATED(name, max_octets) \
-    	p->name = copy_until_nul(data_without_len, &pos, max_octets); \
-	if (p->name == NULL) { smpp_pdu_destroy(pdu); return NULL; }
+    	p->name = copy_until_nul(data_without_len, &pos, max_octets);
     #define OCTETS(name, field_giving_octets) \
     	p->name = octstr_copy(data_without_len, pos, \
 	    	    	      p->field_giving_octets); \

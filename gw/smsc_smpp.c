@@ -18,6 +18,7 @@
 #include "smscconn_p.h"
 #include "bb_smscconn_cb.h"
 #include "sms.h"
+#include "dlr.h"
 
 /*
  * Select these based on whether you want to dump SMPP PDUs as they are 
@@ -214,8 +215,11 @@ static SMPP_PDU *msg_to_pdu(SMPP *smpp, Msg *msg)
 	pdu->u.submit_sm.esm_class = SMPP_ESM_CLASS_UDH_INDICATOR;
     } else {
 	pdu->u.submit_sm.short_message = octstr_duplicate(msg->sms.msgdata);
-	charset_latin1_to_gsm(pdu->u.submit_sm.short_message);
+	charset_latin1_to_gsm(pdu->u.submit_sm.short_message);		
     }
+    /* ask for the delivery reports if needed */
+    if (msg->sms.dlr_mask & (DLR_SUCCESS|DLR_FAIL))
+ 	pdu->u.submit_sm.registered_delivery = 1; 
     pdu->u.submit_sm.data_coding = fields_to_dcs(msg, 0);
     return pdu;
 }
@@ -240,14 +244,16 @@ static void send_enquire_link(SMPP *smpp, Connection *conn, long *last_sent)
 }
 
 
-static void send_pdu(Connection *conn, SMPP_PDU *pdu)
+static int send_pdu(Connection *conn, SMPP_PDU *pdu)
 {
     Octstr *os;
+    int ret;
     
     dump_pdu("Sending PDU:", pdu);
     os = smpp_pdu_pack(pdu);
-    conn_write(conn, os);   /* Caller checks for write errors later */
+    ret = conn_write(conn, os);   /* Caller checks for write errors later */
     octstr_destroy(os);
+    return ret;
 }
 
 
@@ -357,9 +363,10 @@ static void handle_pdu(SMPP *smpp, Connection *conn, SMPP_PDU *pdu,
 {
     SMPP_PDU *resp;
     Octstr *os;
-    Msg *msg;
+    Msg *msg, *dlrmsg=NULL;
     long reason;
-
+    int idx; 
+    int len;
     resp = NULL;
 
     switch (pdu->type) {
@@ -368,9 +375,91 @@ static void handle_pdu(SMPP *smpp, Connection *conn, SMPP_PDU *pdu,
 	/* bb_smscconn_receive can fail, but we ignore that since we
 	   have no way to usefull tell the SMS center about this
 	   (no suitable error code for the deliver_sm_resp is defined) */
-	(void) bb_smscconn_receive(smpp->conn, pdu_to_msg(pdu));
-	resp = smpp_pdu_create(deliver_sm_resp, 
-			       pdu->u.deliver_sm.sequence_number);
+         /* got a deliver ack? */
+         if ((pdu->u.deliver_sm.esm_class == 0x02 || pdu->u.deliver_sm.esm_class == 0x04))
+         {
+ 	    Octstr *reply, *respstr;    	
+ 	    Octstr *msgid, *stat;
+ 	    int dlrstat;
+ 	    long curr=0, vpos=0;
+     		
+     	    debug("smsc_smpp.handle_pdu",0,"**********>>>>>>>>>>>>>>  SMPP handle_pdu Got DELIVER REPORT\n");
+     					
+ 	    respstr = pdu->u.deliver_sm.short_message;
+ 		
+ 	    /* get server message id */
+   	    if ((curr = octstr_search(respstr, octstr_imm("id:"), 0)) != -1)
+     	    {   
+	        vpos = octstr_search_char(respstr, ' ',curr );
+    	        if ((vpos-curr >0) && (vpos != -1))
+ 	           msgid = octstr_copy(respstr, curr+3, vpos-curr-3);
+ 	    }
+ 	    else
+ 	    {
+ 	        msgid = NULL;
+ 	    }  		
+ 	    /* get err & status code */
+ 	    if ((curr = octstr_search(respstr, octstr_imm("stat:"), 0)) != -1)
+ 	    {  
+ 	        vpos = octstr_search_char(respstr, ' ',curr );
+ 	        if ((vpos-curr >0) && (vpos != -1))
+ 		    stat = octstr_copy(respstr, curr+5, vpos-curr-5);
+ 	    }
+ 	    else
+ 	    {
+ 	        stat = NULL;
+ 	    }	
+ 	     /* we get the following status: DELIVRD, ACCEPTD, 
+ 	     EXPIRED, DELETED, UNDELIV, UNKNOWN, REJECTD */
+ 		
+ 	    if ((octstr_compare(stat,octstr_imm("DELIVRD"))==0)
+ 	        || (octstr_compare(stat,octstr_imm("ACCEPTD"))==0))
+	        dlrstat = DLR_SUCCESS;
+ 	    else
+ 	        dlrstat = DLR_FAIL;
+ 			
+ 	    if (msgid !=NULL)
+ 	    {
+ 	        Octstr *tmp;
+ 	        tmp = octstr_format("%ld",strtol(octstr_get_cstr(msgid),NULL,10));
+ 	        dlrmsg = dlr_find(octstr_get_cstr(smpp->conn->id), 
+ 		    octstr_get_cstr(tmp), /* smsc message id */
+ 		    octstr_get_cstr(pdu->u.deliver_sm.source_addr), /* destination */
+ 		    dlrstat);
+                octstr_destroy(tmp);
+ 	    }
+ 	    if (dlrmsg != NULL)
+ 	    {
+ 	        reply = octstr_duplicate(respstr);
+ 	        /* having a / in the text breaks it so lets replace it with a space */
+	        len = octstr_len(reply);
+		for(idx=0;idx<len;idx++)
+	    	if(octstr_get_char(reply,idx)=='/')
+	    	    octstr_set_char(reply,idx,'.');
+ 	        octstr_append_char(reply, '/');
+ 	        octstr_insert(dlrmsg->sms.msgdata, reply, 0);
+ 	        octstr_destroy(reply);
+ 	        bb_smscconn_receive(smpp->conn, dlrmsg);
+	    }
+ 	    else
+	    {
+	    	error(0,"Got DELIV REPORT but couldnt find message or was not interested in it");    	
+ 	    }		
+     	    resp = smpp_pdu_create(deliver_sm_resp, 
+            pdu->u.deliver_sm.sequence_number);
+ 					       
+ 	    if (msgid != NULL)
+ 	    	octstr_destroy(msgid);	    
+ 	    if (stat != NULL)
+ 	    	octstr_destroy(stat);
+ 	    
+ 	}
+ 	else /* MO-SMS */
+ 	{
+	    (void) bb_smscconn_receive(smpp->conn, pdu_to_msg(pdu));
+	    resp = smpp_pdu_create(deliver_sm_resp, 
+		pdu->u.deliver_sm.sequence_number);
+	}
 	break;
 	
     case enquire_link:
@@ -389,18 +478,87 @@ static void handle_pdu(SMPP *smpp, Connection *conn, SMPP_PDU *pdu,
 	    warning(0, "SMPP: SMSC sent submit_sm_resp "
 		       "with wrong sequence number 0x%08lx", 
 		       pdu->u.submit_sm.sequence_number);
-	} else if (pdu->u.submit_sm_resp.command_status != 0) {
+	} else if (pdu->u.submit_sm_resp.command_status != 0)
+	{
 	    error(0, "SMPP: SMSC returned error code 0x%08lu "
 		     "in response to submit_sm.",
 		     pdu->u.submit_sm_resp.command_status);
 	    reason = smpp_status_to_smscconn_failure_reason(
 			pdu->u.submit_sm.command_status);
-	    bb_smscconn_send_failed(smpp->conn, msg, reason);
-	    --(*pending_submits);
-	} else {
-	    bb_smscconn_sent(smpp->conn, msg);
+
+ 	    /* gen DLR_SMSC_FAIL */		
+ 	    if (msg->sms.dlr_mask & (DLR_SMSC_FAIL|DLR_FAIL))
+ 	    {
+ 		Octstr *reply;
+ 		
+ 		reply = octstr_format("0x%08lu",pdu->u.submit_sm_resp.command_status);
+ 		/* generate DLR */
+ 		info(0,"creating DLR message");
+ 		dlrmsg = msg_create(sms);
+ 		dlrmsg->sms.service = octstr_duplicate(msg->sms.service);
+ 		dlrmsg->sms.dlr_mask = DLR_SMSC_FAIL;
+ 		dlrmsg->sms.sms_type = report;
+ 		dlrmsg->sms.smsc_id = octstr_duplicate(smpp->conn->id);
+ 		dlrmsg->sms.sender = octstr_duplicate(msg->sms.receiver);
+ 		dlrmsg->sms.receiver = octstr_create("000");
+ 		dlrmsg->sms.msgdata = octstr_duplicate(msg->sms.dlr_url);
+ 		time(&msg->sms.time);
+ 			
+ 		octstr_append_char(reply, '/');
+ 		octstr_insert(dlrmsg->sms.msgdata, reply, 0);
+ 		octstr_destroy(reply);
+ 			
+ 		info(0,"DLR = %s",octstr_get_cstr(dlrmsg->sms.msgdata));
+ 			bb_smscconn_receive(smpp->conn, dlrmsg);
+ 	    }
+ 	    else
+ 	    {
+	        bb_smscconn_send_failed(smpp->conn, msg, reason);
+	    }
 	    --(*pending_submits);
 	}
+ 	else 
+ 	{ 
+	    Octstr *tmp;
+	
+	    /* deliver gives mesg id in decimal, submit_sm in hex.. */
+	    tmp = octstr_format("%ld",strtol(octstr_get_cstr(pdu->u.submit_sm_resp.message_id),NULL,16));
+	    /* SMSC ACK.. now we have the message id. */
+ 				
+	    if (msg->sms.dlr_mask & (DLR_SMSC_SUCCESS|DLR_SUCCESS|DLR_FAIL|DLR_BUFFERED))
+ 		dlr_add(octstr_get_cstr(smpp->conn->id),
+	    	octstr_get_cstr(tmp),
+	    octstr_get_cstr(msg->sms.receiver),
+            octstr_get_cstr(msg->sms.service),
+            octstr_get_cstr(msg->sms.dlr_url),
+            msg->sms.dlr_mask);
+ 
+ 	    /* gen DLR_SMSC_SUCCESS */
+ 	    if (msg->sms.dlr_mask & DLR_SMSC_SUCCESS)
+ 	    {
+ 		Octstr *reply;
+ 		
+ 		reply = octstr_format("0x%08lu",pdu->u.submit_sm_resp.command_status);
+ 
+ 		dlrmsg = dlr_find(octstr_get_cstr(smpp->conn->id), 
+ 		    octstr_get_cstr(tmp), /* smsc message id */
+ 		    octstr_get_cstr(msg->sms.receiver), /* destination */
+ 		    (DLR_SMSC_SUCCESS|((msg->sms.dlr_mask & (DLR_SUCCESS|DLR_FAIL))?DLR_BUFFERED:0)));
+ 			
+ 		if (dlrmsg != NULL)
+ 		{
+ 		    octstr_append_char(reply, '/');
+ 		    octstr_insert(dlrmsg->sms.msgdata, reply, 0);
+ 		    octstr_destroy(reply);
+ 		    bb_smscconn_receive(smpp->conn, dlrmsg);
+ 		}
+ 		else
+ 		    error(0,"Got SMSC_ACK but couldnt find message");
+ 	    }
+ 	    octstr_destroy(tmp);
+	    bb_smscconn_sent(smpp->conn, msg);
+	    --(*pending_submits);
+	} /* end if for SMSC ACK */
 	break;
 
     case bind_transmitter_resp:

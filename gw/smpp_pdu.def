@@ -120,7 +120,7 @@ PDU(submit_sm,
 PDU(submit_sm_resp,
     0x80000004,
     HEADER
-    /* XXX not included for now: NULTERMINATED(message_id, 65) */
+    NULTERMINATED(message_id, 65)
 )
 
 PDU(deliver_sm,

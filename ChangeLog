@@ -1,3 +1,8 @@
+2001-11-08 Andreas Fink <andreas@fink.org>
+    * gw/smpp_pdu.c, gw/smpp_pdu.def, gw/smsc_smpp.c
+      Added patch from Nisan <nisof@clickatell.com>
+      to support delivery reports on SMPP
+
 2001-10-31 Aaarno Syvänen <aarno@wiral.com>
     * gwlib/cfg.def: Added new configuration variables.
     
