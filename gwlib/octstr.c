@@ -90,6 +90,15 @@ Octstr *octstr_create_empty(void) {
 }
 
 
+/* Reserve space for at least 'size' octets */
+static void octstr_grow(Octstr *ostr, long size) {
+	if (size > ostr->size) {
+		ostr->data = gw_realloc(ostr->data, size);
+		ostr->size = size;
+	}
+}
+
+
 Octstr *octstr_create(const char *cstr) {
     return octstr_create_from_data(cstr, strlen(cstr));
 }
@@ -377,19 +386,10 @@ int octstr_write_to_socket(int socket, Octstr *ostr) {
 
 
 void octstr_insert(Octstr *ostr1, Octstr *ostr2, size_t pos) {
-	size_t needed;
-	char *p;
-
 	if (ostr2->len == 0)
 		return;
 	
-	needed = ostr1->len + ostr2->len + 1;
-	if (ostr1->size < needed) {
-		p = gw_realloc(ostr1->data, needed);
-		ostr1->size = needed;
-		ostr1->data = p;
-	}
-	
+	octstr_grow(ostr1, ostr1->len + ostr2->len + 1);
 	memmove(ostr1->data + pos + ostr2->len, ostr1->data + pos,
 		ostr1->len - pos);
 	memcpy(ostr1->data + pos, ostr2->data, ostr2->len);
@@ -399,15 +399,7 @@ void octstr_insert(Octstr *ostr1, Octstr *ostr2, size_t pos) {
 
 
 void octstr_replace(Octstr *ostr, char *data, size_t len) {
-	size_t needed;
-	char *p;
-	
-	needed = len + 1;
-	if (ostr->size < needed) {
-	    p = gw_realloc(ostr->data, needed);
-	    ostr->size = needed;
-	    ostr->data = p;
-	}
+	octstr_grow(ostr, len + 1);
 	if (len > 0)
 		memcpy(ostr->data, data, len);
 	ostr->len = len;
@@ -470,22 +462,14 @@ void octstr_shrink_blank(Octstr *text) {
 
 
 void octstr_insert_data(Octstr *ostr, size_t pos, char *data, size_t len) {
-	size_t needed;
-	char *p;
-
 	if (len == 0)
 		return;
 	
 	if (ostr->len < pos) {	/* make things a bit more robust */
 		pos = ostr->len;
 	}
-	needed = ostr->len + len + 1;
-	if (ostr->size < needed) {
-		p = gw_realloc(ostr->data, needed);
-		ostr->size = needed;
-		ostr->data = p;
-	}
-	
+	octstr_grow(ostr, ostr->len + len + 1);
+
 	if (ostr->len > pos) {	/* only if neccessary */
 		memmove(ostr->data+pos+len, ostr->data+pos, ostr->len - pos);
 	}
