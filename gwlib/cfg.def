@@ -501,6 +501,7 @@ MULTI_GROUP(oracle-connection,
 MULTI_GROUP(sdb-connection,
     OCTSTR(id)
     OCTSTR(url)
+    OCTSTR(max-connections)
 )
 
  

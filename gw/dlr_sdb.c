@@ -63,24 +63,25 @@
  * Andreas Fink <andreas@fink.org>, 18.08.2001
  * Stipe Tolj <tolj@wapme-systems.de>, 22.03.2002
  * Alexander Malysh <a.malysh@centrium.de> 2003
+ * Guillaume Cottenceau 2004 (dbpool support)
 */
 
 #include "gwlib/gwlib.h"
+#include "gwlib/dbpool.h"
 #include "dlr_p.h"
 
 #ifdef HAVE_SDB
 #include <sdb.h>
-static char *connection;
+
+/*
+ * Our connection pool to sdb.
+ */
+static DBPool *pool = NULL;
 
 /*
  * Database fields, which we use.
  */
 static struct dlr_db_fields *fields = NULL;
-
-/*
- * Mutex to protec access to database.
- */
-static Mutex *dlr_mutex = NULL;
 
 enum {
     SDB_ORACLE,
@@ -108,9 +109,27 @@ static const char* sdb_get_limit_str()
 
 static void dlr_sdb_shutdown()
 {
-    sdb_close(connection);
+    dbpool_destroy(pool);
     dlr_db_fields_destroy(fields);
-    mutex_destroy(dlr_mutex);
+}
+
+static int gw_sdb_query(char *query,
+                        int (*callback)(int, char **, void *), void *closure)
+{
+    DBPoolConn *pc;
+    int rows;
+
+    pc = dbpool_conn_consume(pool);
+    if (pc == NULL) {
+        error(0, "SDB: Database pool got no connection!");
+        return -1;
+    }
+
+    rows = sdb_query(pc->conn, query, callback, closure);
+
+    dbpool_conn_produce(pc);
+
+    return rows;
 }
 
 static void dlr_sdb_add(struct dlr_entry *dlr)
@@ -135,9 +154,7 @@ static void dlr_sdb_add(struct dlr_entry *dlr)
      debug("dlr.sdb", 0, "SDB: sql: %s", octstr_get_cstr(sql));
 #endif
 
-    mutex_lock(dlr_mutex);
-    state = sdb_query(connection, octstr_get_cstr(sql), NULL, NULL);
-    mutex_unlock(dlr_mutex);
+    state = gw_sdb_query(octstr_get_cstr(sql), NULL, NULL);
     if (state == -1)
         error(0, "SDB: error in inserting DLR for DST <%s>", octstr_get_cstr(dlr->destination));
 
@@ -211,9 +228,7 @@ static struct dlr_entry*  dlr_sdb_get(const Octstr *smsc, const Octstr *ts, cons
      debug("dlr.sdb", 0, "SDB: sql: %s", octstr_get_cstr(sql));
 #endif
 
-    mutex_lock(dlr_mutex);
-    state = sdb_query(connection, octstr_get_cstr(sql), sdb_callback_add, res);
-    mutex_unlock(dlr_mutex);
+    state = gw_sdb_query(octstr_get_cstr(sql), sdb_callback_add, res);
     octstr_destroy(sql);
     if (state == -1) {
         error(0, "SDB: error in finding DLR");
@@ -249,9 +264,7 @@ static void  dlr_sdb_update(const Octstr *smsc, const Octstr *ts, const Octstr *
      debug("dlr.sdb", 0, "SDB: sql: %s", octstr_get_cstr(sql));
 #endif
 
-    mutex_lock(dlr_mutex);
-    state = sdb_query(connection, octstr_get_cstr(sql), NULL, NULL);
-    mutex_unlock(dlr_mutex);
+    state = gw_sdb_query(octstr_get_cstr(sql), NULL, NULL);
     octstr_destroy(sql);
     if (state == -1) {
         error(0, "SDB: error in updating DLR");
@@ -289,9 +302,7 @@ static void  dlr_sdb_remove(const Octstr *smsc, const Octstr *ts, const Octstr *
      debug("dlr.sdb", 0, "SDB: sql: %s", octstr_get_cstr(sql));
 #endif
 
-    mutex_lock(dlr_mutex);
-    state = sdb_query(connection, octstr_get_cstr(sql), NULL, NULL);
-    mutex_unlock(dlr_mutex);
+    state = gw_sdb_query(octstr_get_cstr(sql), NULL, NULL);
     octstr_destroy(sql);
     if (state == -1)
         error(0, "SDB: error in deleting DLR");
@@ -309,13 +320,10 @@ static long dlr_sdb_messages(void)
     debug("dlr.sdb", 0, "sql: %s", octstr_get_cstr(sql));
 #endif
 
-    mutex_lock(dlr_mutex);
-    state = sdb_query(connection, octstr_get_cstr(sql), sdb_callback_msgs, &res);
-    mutex_unlock(dlr_mutex);
+    state = gw_sdb_query(octstr_get_cstr(sql), sdb_callback_msgs, &res);
     octstr_destroy(sql);
     if (state == -1) {
         error(0, "SDB: error in selecting ammount of waiting DLRs");
-        mutex_unlock(dlr_mutex);
         return -1;
     }
 
@@ -333,9 +341,7 @@ static void dlr_sdb_flush(void)
      debug("dlr.sdb", 0, "sql: %s", octstr_get_cstr(sql));
 #endif
 
-    mutex_lock(dlr_mutex);
-    state = sdb_query(connection, octstr_get_cstr(sql), NULL, NULL);
-    mutex_unlock(dlr_mutex);
+    state = gw_sdb_query(octstr_get_cstr(sql), NULL, NULL);
     octstr_destroy(sql);
     if (state == -1) {
         error(0, "SDB: error in flusing DLR table");
@@ -360,6 +366,8 @@ struct dlr_storage *dlr_init_sdb(Cfg* cfg)
     List *grplist;
     Octstr *sdb_url, *sdb_id;
     Octstr *p = NULL;
+    long pool_size;
+    DBConf *db_conf = NULL;
 
     /*
      * check for all mandatory directives that specify the field names
@@ -373,7 +381,6 @@ struct dlr_storage *dlr_init_sdb(Cfg* cfg)
 
     fields = dlr_db_fields_create(grp);
     gw_assert(fields != NULL);
-    dlr_mutex = mutex_create();
 
     /*
      * now grap the required information from the 'mysql-connection' group
@@ -398,6 +405,9 @@ found:
     octstr_destroy(p);
     list_destroy(grplist, NULL);
 
+    if (cfg_get_integer(&pool_size, grp, octstr_imm("max-connections")) == -1 || pool_size == 0)
+        pool_size = 1;
+
     if (!(sdb_url = cfg_get(grp, octstr_imm("url"))))
    	    panic(0, "DLR: SDB: directive 'url' is not specified!");
 
@@ -417,11 +427,23 @@ found:
      * ok, ready to connect
      */
     info(0,"Connecting to sdb resource <%s>.", octstr_get_cstr(sdb_url));
-    connection = sdb_open(octstr_get_cstr(sdb_url));
-    if (connection == NULL)
-        panic(0, "Could not connect to database");
 
-    octstr_destroy(sdb_url);
+    db_conf = gw_malloc(sizeof(DBConf));
+    gw_assert(db_conf != NULL);
+
+    db_conf->sdb = gw_malloc(sizeof(SDBConf));
+    gw_assert(db_conf->sdb != NULL);
+
+    db_conf->sdb->url = sdb_url;
+
+    pool = dbpool_create(DBPOOL_SDB, db_conf, pool_size);
+    gw_assert(pool != NULL);
+
+    /*
+     * XXX should a failing connect throw panic?!
+     */
+    if (dbpool_conn_count(pool) == 0)
+        panic(0,"DLR: SDB: database pool has no connections!");
 
     return &handles;
 }

@@ -76,6 +76,7 @@
 #include "dbpool_mysql.c"
 #include "dbpool_oracle.c"
 #include "dbpool_sqlite.c"
+#include "dbpool_sdb.c"
 
 
 static inline void dbpool_conn_destroy(DBPoolConn *conn)
@@ -124,8 +125,11 @@ DBPool *dbpool_create(enum db_type db_type, DBConf *conf, unsigned int connectio
             p->db_ops = &sqlite_ops;
             break;
 #endif
+#ifdef HAVE_SDB
         case DBPOOL_SDB:
-            panic(0, "DBPOOL for libsdb not yet implemented");
+            p->db_ops = &sdb_ops;
+            break;
+#endif
         default:
             panic(0, "Unknown dbpool type defined.");
     }
