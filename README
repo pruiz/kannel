@@ -58,6 +58,9 @@ Compiling and installing the gateway
 		./configure
 		make
 
+	You need to copy the gw/bearerbox, gw/wapbox, gw/smsbox and
+	test/test_wml programs somewhere suitable.
+
 Configuring the gateway
 
 	The gw/bearerbox.conf, gw/smsbox.smsconf, and gw/wapbox.wapconf
@@ -69,6 +72,15 @@ Running the gateway
 	You need to run the gw/bearerbox program (from the gw directory).
 	If you want SMS services, you also need to run gw/smsbox, and
 	if you want WAP services, you need to run gw/wapbox.
+	
+	Note that to run the wapbox, you need to set the environment
+	variable TEST_WML to the path to the test_wml program. For
+	example:
+	
+		TEST_WML=../test/test_wml ./wapbox foo.wapconf
+	
+	Otherwise you'll get mysterious error messages. (This is a
+	temporary feature.)
 
 Using the gateway with a Nokia 7110
 
