@@ -1,3 +1,6 @@
+2003-10-13  Alexander Malysh  <a.malysh@centrium.de>
+    * .cvsignore: added gw-config.h, gw-config.
+
 2003-10-12  Alexander Malysh  <a.malysh@centrium.de>
     * gw/smsbox.c: various fixes/cleanups here and there.
 
