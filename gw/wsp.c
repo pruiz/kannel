@@ -643,6 +643,12 @@ static int transaction_belongs_to_session(WTPMachine *wtp, WSPMachine *session)
 }
 
 
+/* Shut up WMLScript compiler status/trace messages. */
+static void  dev_null(const char *data, size_t len, void *context) {
+  /* nothing */
+}
+
+
 static int encode_content_type(const char *type) {
 	static struct {
 		char *type;
@@ -779,6 +785,8 @@ error:
 			params.meta_name_cb_context = NULL;
 			params.meta_http_equiv_cb = NULL;
 			params.meta_http_equiv_cb_context = NULL;
+			params.stdout_cb = dev_null;
+			params.stderr_cb = dev_null;
 
 			compiler = ws_create(&params);
 			if (compiler == NULL) {
@@ -827,10 +835,11 @@ error:
 		panic(0, "WSP: Couldn't open compiled temp file.");
 	n = fread(buf, 1, sizeof(buf), f);
 	fclose(f);
-	debug(0, "WSP: Read %lu bytes of compiled WMLC", (unsigned long) n);
+	debug(0, "WSP: Read %lu bytes of compiled WMLSC", (unsigned long) n);
 	body = octstr_create_from_data(buf, n);
 }
 #endif
+			debug(0, "WSP: WMLScript compilation done.");
 		} else {
 			status = 415; /* Unsupported media type */
 			warning(0, "Unsupported content type `%s'", type);
@@ -846,7 +855,6 @@ error:
 	e->SMethodResultRequest.machine = 
 		event->SMethodInvokeResult.machine;
 	debug(0, "WSP: sending S-MethodResult.req to WSP");
-	wsp_event_dump(e);
 	wsp_dispatch_event(event->SMethodInvokeResult.machine, e);
 
 	debug(0, "WSP: wsp_http_thread ends");

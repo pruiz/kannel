@@ -183,8 +183,10 @@ static Msg *pack_result(Msg *msg, WTPMachine *machine, WTPEvent *event){
 #endif
     insert_tid(wtp_pdu, event->TRResult.tid);
     octstr_insert_data(msg->wdp_datagram.user_data, 0, wtp_pdu, 3);
+#ifdef debug
     debug(0,"WTP: sending a result message");
     msg_dump(msg);
+#endif
 
     return msg;
 

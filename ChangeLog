@@ -1,3 +1,10 @@
+Wed Jan 19 10:21:39 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* gw/wsp.c: Silence WMLScript compiler tracing info.
+	
+	* gwlib/getnameinfo.h: Bugfix: use #ifdef, not #if, to test whether
+	a macro is defined.
+
 2000-01-18    mikael.gueck@wapit.com
 
 	* gw/smsc_cimd.c: submit_sms UDH-enabling fix
