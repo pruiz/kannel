@@ -1,5 +1,11 @@
 2000-10-11  Richard Braakman  <dark@wapit.com>
 
+	* gwlib/gwassert.h: Added parentheses around the panic(...), 0
+        expressions in the assert macros, to get the originally intended
+	meaning.
+
+2000-10-11  Richard Braakman  <dark@wapit.com>
+
 	* wmlscript/wserror.c: Corrected a stray va_arg(ap, char).
 	(va_arg should always get the type as it is after promotion, and
 	char is promoted to int.)
