@@ -181,6 +181,7 @@ RQueueItem *rq_pull_msg_class(RQueue *queue, int class)
     while(ptr) {
 
 	if (ptr->msg_class == class &&
+	    ptr->destination == -1 &&
 	    (ptr->msg_type == R_MSG_TYPE_MT ||
 	     ptr->msg_type == R_MSG_TYPE_MO)) { 
 

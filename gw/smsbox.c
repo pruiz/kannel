@@ -281,6 +281,10 @@ static void init_smsbox(Config *cfg)
 	    lvl = atoi(p);
 	grp = config_next_group(grp);
     }
+    if (hearbeat_freq == -600)
+	panic(0, "Apparently someone is using SAMPLE configuration without "
+		"editing it first - well, hopefully he or she now reads it");
+
     if (http_allow_ip != NULL && http_deny_ip == NULL)
 	warning(0, "Allow IP-string set without any IPs denied!");
 

@@ -194,9 +194,10 @@ RQueueItem *csdr_get_message(CSDRouter *router)
 	item->msg->wdp_datagram.destination_address = octstr_create(router->ip);
 	item->msg->wdp_datagram.destination_port    = router->port;
 	item->msg->wdp_datagram.user_data = octstr_create_from_data(data, length);
+/*
 	debug(0, "csdr_get_message: message dump follows");
 	msg_dump(item->msg);
-
+*/
 	/* set routing info: use client IP and port
 	 */
 	item->routing_info = gw_malloc(strlen(client_ip)+strlen(client_port)+2);

@@ -60,6 +60,10 @@ static void read_config(char *filename) {
 		        logfilelevel = atoi(s);
 		grp = config_next_group(grp);
 	}
+	if (hearbeat_freq == -600)
+	    panic(0, "Apparently someone is using SAMPLE configuration without "
+		  "editing it first - well, hopefully he or she now reads it");
+
 	if (logfile != NULL) {
 		open_logfile(logfile, logfilelevel);
 	        info(0, "Starting to log to file %s level %d", logfile, logfilelevel);

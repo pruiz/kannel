@@ -1,5 +1,17 @@
 2000-01-25    <rpr@rpr.wapit.com>
 
+	* gw/bb_msg.c: Fixed error in rq_pull_smg_class, which caused
+	failure with 2 wapboxes. Hopefully did not break SMS portion.
+
+	* gw/csdr.c: commented out octstr_dump of each incoming message
+
+	* gw/*.*conf: edited them so that no-one can use them without
+	editing, should handle loads of basic questions in devel-list
+
+	* gw/*box.c: put an appropriate error message
+
+2000-01-25    <rpr@rpr.wapit.com>
+
 	* gw/bearerbox.c: One fix more, now the internal smsbox does not
 	consume all the CPU it can
 

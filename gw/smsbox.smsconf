@@ -63,7 +63,9 @@ bearerbox-host = localhost
 bearerbox-port = 13001
 # sendsms-port = 22022
 sms-length = 160
-heartbeat-freq = 30
+# heartbeat-freq = 30
+# this is here to prevent people from using this without editing
+hearbeat-freq = -600   
 # pid-file = "/tmp/smsbox.pid"
 # log-file = "/tmp/smsbox.log"
 log-level = 0
