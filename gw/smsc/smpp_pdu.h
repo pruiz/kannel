@@ -11,8 +11,6 @@
 
 #include "gwlib/gwlib.h"
 
-#define SMPP_MAX_ADDR_LEN 20
-
 
 enum {
     #define INTEGER(name, octets)

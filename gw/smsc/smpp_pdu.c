@@ -101,7 +101,7 @@ void smpp_pdu_destroy(SMPP_PDU *pdu)
     	case id: { struct name *p = &pdu->u.name; fields } break;
     #include "smpp_pdu.def"
     default:
-    	panic(0, "Unknown SMPP_PDU type, internal error while destroying.");
+    	error(0, "Unknown SMPP_PDU type, internal error while destroying.");
     }
     gw_free(pdu);
 }
@@ -126,23 +126,32 @@ Octstr *smpp_pdu_pack(SMPP_PDU *pdu)
     	case id: { struct name *p = &pdu->u.name; fields } break;
     #include "smpp_pdu.def"
     default:
-    	panic(0, "Unknown SMPP_PDU type, internal error while packing.");
+    	error(0, "Unknown SMPP_PDU type, internal error while packing.");
     }
 
     switch (pdu->type) {
     #define INTEGER(name, octets) \
     	append_encoded_integer(os, p->name, octets);
     #define NULTERMINATED(name, max_octets) \
-    	gw_assert(octstr_len(p->name) < max_octets); \
-	if (p->name != NULL) octstr_append(os, p->name); \
-	octstr_append_char(os, '\0');
+        if (p->name != NULL) { \
+            if (octstr_len(p->name) >= max_octets) { \
+                warning(0, "SMPP: PDU element <%s> to long " \
+                        "(length is %d, should be %d)", \
+                        #name, octstr_len(p->name), max_octets); \
+                temp = octstr_copy(p->name, 0, max_octets-1); \
+            } else \
+                temp = octstr_duplicate(p->name); \
+            octstr_append(os, temp); \
+            octstr_destroy(temp); \
+        } \
+        octstr_append_char(os, '\0');
     #define OCTETS(name, field_giving_octets) \
     	octstr_append(os, p->name);
     #define PDU(name, id, fields) \
     	case id: { struct name *p = &pdu->u.name; fields } break;
     #include "smpp_pdu.def"
     default:
-    	panic(0, "Unknown SMPP_PDU type, internal error while packing.");
+    	error(0, "Unknown SMPP_PDU type, internal error while packing.");
     }
 
     temp = octstr_create("");
@@ -189,7 +198,7 @@ SMPP_PDU *smpp_pdu_unpack(Octstr *data_without_len)
     	case id: { struct name *p = &pdu->u.name; fields } break;
     #include "smpp_pdu.def"
     default:
-    	panic(0, "Unknown SMPP_PDU type, internal error while unpacking.");
+    	error(0, "Unknown SMPP_PDU type, internal error while unpacking.");
     }
 
     return pdu;

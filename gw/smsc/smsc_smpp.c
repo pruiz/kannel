@@ -264,8 +264,8 @@ static SMPP_PDU *msg_to_pdu(SMPP *smpp, Msg *msg)
     pdu = smpp_pdu_create(submit_sm,  
     	    	    	  counter_increase(smpp->message_id_counter)); 
     	    	    
-    pdu->u.submit_sm.source_addr = octstr_copy(msg->sms.sender,0,SMPP_MAX_ADDR_LEN); 
-    pdu->u.submit_sm.destination_addr = octstr_copy(msg->sms.receiver,0,SMPP_MAX_ADDR_LEN); 
+    pdu->u.submit_sm.source_addr = octstr_duplicate(msg->sms.sender); 
+    pdu->u.submit_sm.destination_addr = octstr_duplicate(msg->sms.receiver); 
   
     /* Check for manual override of source ton and npi values */ 
     if(smpp->source_addr_ton > -1 && smpp->source_addr_npi > -1) { 
