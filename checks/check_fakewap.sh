@@ -3,8 +3,9 @@
 # Use `test/fakewap' to test the bearerbox and the wapbox.
 
 set -e
+#set -x
 
-times=1
+times=10
 port=8040
 url="http://localhost:$port/hello.wml"
 loglevel=0
@@ -40,3 +41,5 @@ then
 fi
 
 rm check_bb.log check_wap.log check_fake.log check_http.log
+
+exit 0
