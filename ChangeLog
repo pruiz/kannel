@@ -1,3 +1,18 @@
+2003-02-06  Stipe Tolj  <tolj@wapme-systems.de>
+    * gwlib/http.c: bouncing back to "HTTP/1.x %d Foo" style. Bruno has
+      requested this and it's seems nothing speaks against serving Foo.
+    * gw/urltrans.c: fixed a bug in case sms.msgdata is empty we don't
+      want to pass this to octstr_split_words(). 
+      Patch provided by "Dariusz Markowicz" <dariuszm@tenbit.pl>.
+      [Msg-ID: <01f801c2c87c$cfde56b0$1900000a@toster>]
+      Couldn't this be avoided by dealing with a NULL'ed octstr inside
+      octstr_split_words() itself?!
+    * gw/bboxc.c: fixed the unnecessary mutex locking in case we deal
+      with a wapbox connection. Thanks Robert for pointing this out.
+    * gwlib/cfg.def, gw/wap_push_ppg_pushuser.c: added smsc-id value handling
+      for the 'wap-push-user' group. The transportation of the value up to the
+      bearerbox sending routine has to be implemented yet.
+
 2003-02-04  Bruno Rodrigues  <bruno.rodrigues@litux.org> 
     * userguide.xml: fixed table 5.2 and 5.3 for emi2 smsc
 
