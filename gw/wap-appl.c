@@ -473,12 +473,14 @@ static void add_msisdn(List *headers, WAPAddrTuple *addr_tuple)
 }
 
 
+/*
 static void add_referer_url(List *headers, Octstr *url) 
 {
     if (octstr_len(url) > 0) {
 	   http_header_add(headers, "Referer", octstr_get_cstr(url));
     }
 }
+*/
 
 
 static void set_referer_url(Octstr *url, WSPMachine *sm)
@@ -765,7 +767,6 @@ static void start_fetch(WAPEvent *event)
     int ret;
     long client_SDU_size; /* 0 means no limit */
     Octstr *url;
-    Octstr *referer_url;
     List *session_headers;
     List *request_headers;
     List *actual_headers;
@@ -831,11 +832,18 @@ static void start_fetch(WAPEvent *event)
 #endif
 
     /* set referer URL to HTTP header from WSPMachine */
+    /* 
+     * XXX this makes Open Group's test suite wml/events/tasks/go/5 failing, 
+     * which requires that device is *not* sending referer, but Kannel drops
+     * it in. We have to remove this for now.
+     */
+    /*
     if (session_id != -1) {
         if ((referer_url = get_referer_url(find_session_machine_by_id(session_id))) != NULL) {
             add_referer_url(actual_headers, referer_url);
         }
     }
+    */
     
     add_kannel_version(actual_headers);
     add_session_id(actual_headers, session_id);
