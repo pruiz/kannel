@@ -109,6 +109,9 @@ WAPEvent *wsp_unit_unpack_wdp_datagram(Msg *msg) {
 	event->u.S_Unit_MethodInvoke_Ind.request_headers = 
 		unpack_headers(pdu->u.Get.headers);
 	event->u.S_Unit_MethodInvoke_Ind.request_body = NULL;
+
+        wsp_pdu_destroy(pdu);
+        octstr_destroy(os);
 	
 	return event;
 
@@ -138,12 +141,14 @@ static void main_thread(void *arg) {
 			
 		case S_Unit_MethodResult_Req:
 			msg = pack_into_datagram(e);
+                        wap_event_destroy(e);
 			if (msg != NULL)
 				put_msg_in_queue(msg);
 			break;
 	
 		default:
 			warning(0, "WSP UNIT: Unknown event type %d", e->type);
+                        wap_event_destroy(e);
 			break;
 		}
 	}
