@@ -1,3 +1,14 @@
+2003-06-20  Stipe Tolj  <tolj@wapme-systems.de>
+    * Makefile.in: added compilation of RADIUS related files inside radius/.
+    * doc/userguide/userguide.xml: new MSISDN provisioning section describing
+      the use of the RADIUS accounting proxy thread.
+    * gwlib/cfg.def: removed properietary groups that are *not* used inside
+      Kannel's tree and added 'radius-acct' group configuration directives.
+    * gw/wap-appl.c, gw/wapbox.c: added RADIUS accounting proxy related calls.
+    * radius/*: added RADIUS accounting proxy implemenation.
+    * test/test_radius_*.c: added some testing applications for the RADIUS
+      routines.
+
 2003-06-19  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/dlr*.[ch], gw/smsc_[soap|smpp|oisd|emi2|cimd2|cgw|at2].c,
       gw/bearerbox.c: Alexander's major DLR rewrite to support callbacks 
