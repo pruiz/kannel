@@ -524,8 +524,7 @@ Octstr *http2_header_find_first(List *headers, char *name) {
 
 	for (i = 0; i < list_len(headers); ++i) {
 		h = list_get(headers, i);
-		if (header_is_called(h, name) == 0 &&
-		    octstr_get_char(h, name_len) == ':')
+		if (header_is_called(h, name))
 			return octstr_copy(h, name_len + 1, octstr_len(h));
 	}
 	return NULL;
@@ -1393,16 +1392,12 @@ static List *parse_cgivars(Octstr *url) {
 
 
 static int header_is_called(Octstr *header, char *name) {
-	Octstr *header_name;
 	long colon;
-	int is;
 	
 	colon = octstr_search_char(header, ':');
 	if (colon == -1)
 		return 0;
-	header_name = octstr_copy(header, 0, colon);
-	is = strcasecmp(octstr_get_cstr(header_name), name);
-	octstr_destroy(header_name);
-	return is;
-	/* XXX this is ineffiecient. I'm stupid. --liw */
+	if ((long) strlen(name) != colon)
+		return 0;
+	return strncasecmp(octstr_get_cstr(header), name, colon) == 0;
 }
