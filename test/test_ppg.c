@@ -78,8 +78,7 @@ static void add_content_transfer_encoding_type(Octstr *content_flag,
 	return;
 
     if (octstr_compare(content_flag, octstr_imm("base64")) == 0)
-	octstr_append_cstr(wap_content, "Content-transfer-encoding: 
-                           base64\r\n");
+	octstr_append_cstr(wap_content, "Content-transfer-encoding: base64\r\n");
 }
 
 static void transfer_encode (Octstr *cte, Octstr *content)

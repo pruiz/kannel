@@ -715,7 +715,7 @@ static int get_data(SMSCenter *smsc, char *buff, int length)
                 smsc->emi_secondary_fd = accept(smsc->emi_backup_fd,
 			  (struct sockaddr *)&client_addr, &client_addr_len);
 
-		ip = host_ip((struct sockaddr_in)client_addr);
+		ip = host_ip(client_addr);
 		if (smsc->emi_backup_allow_ip == NULL)
 		    allow = NULL;
 		else
