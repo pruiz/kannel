@@ -344,6 +344,8 @@ static int starter(Cfg *cfg)
 	       panic(0, "You MUST specify cert and key files within core group for SSL-enabled inter-box connections!");
         }
     }
+    octstr_destroy(ssl_server_cert_file);
+    octstr_destroy(ssl_server_key_file);
 #endif /* HAVE_LIBSSL */
 	
     /* if all seems to be OK by the first glimpse, real start-up */
@@ -506,7 +508,6 @@ int main(int argc, char **argv)
     boxc_cleanup();
     smsc2_cleanup();
     empty_msg_lists();
-    
     list_destroy(flow_threads, NULL);
     list_destroy(suspended, NULL);
     list_destroy(isolated, NULL);
@@ -514,7 +515,7 @@ int main(int argc, char **argv)
 
     alog_close();		/* if we have any */
     cfg_destroy(cfg);
-	dlr_shutdown();
+    dlr_shutdown();
     gwlib_shutdown();
 
     return 0;
@@ -647,6 +648,8 @@ Octstr *bb_print_status(int status_type)
 	s = "isolated";
     else if (bb_status == BB_SUSPENDED)
 	s = "suspended";
+    else if (bb_status == BB_FULL)
+        s = "filled";
     else
 	s = "going down";
 
