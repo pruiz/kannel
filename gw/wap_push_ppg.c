@@ -172,7 +172,7 @@ static void https_read_thread(void *arg);
 
 static void handle_internal_event(WAPEvent *e);
 static void pap_request_thread(void *arg);
-static int handle_push_message(WAPEvent *ppg_event, int status);
+static int handle_push_message(HTTPClient **c, WAPEvent *ppg_event, int status);
 static PAPEvent *pap_event_create(Octstr *ip, Octstr *url, List *push_headers, 
                                   Octstr *mime_content, List *cgivars,
                                   HTTPClient *client);
@@ -202,7 +202,8 @@ static void request_confirmed_push(long last, PPGPushMachine *pm,
 static void request_unit_push(long last, PPGPushMachine *pm);
 static void request_push(long last, PPGPushMachine *sm);
 static int response_push_connection(WAPEvent *e, PPGSessionMachine *sm);
-static void response_push_message(PPGPushMachine *pm, long code, int status);
+static HTTPClient *response_push_message(PPGPushMachine *pm, long code, 
+                                         int status);
 
 /*
  * Functions to find machines using various identifiers, and related help 
@@ -268,11 +269,11 @@ static void remove_mime_headers(List **push_headers);
 /*
  * Communicating with pi.
  */
-static void send_bad_message_response(HTTPClient *c, Octstr *body_fragment,
+static void send_bad_message_response(HTTPClient **c, Octstr *body_fragment,
                                       int code, int status);
-static void send_push_response(WAPEvent *e, int status);
-static void send_to_pi(HTTPClient *c, Octstr *reply_body, int status);
-static void tell_fatal_error(HTTPClient *c, WAPEvent *e, Octstr *url, 
+static HTTPClient *send_push_response(WAPEvent *e, int status);
+static void send_to_pi(HTTPClient **c, Octstr *reply_body, int status);
+static void tell_fatal_error(HTTPClient **c, WAPEvent *e, Octstr *url, 
                              int status, int code);
 
 /*
@@ -323,19 +324,19 @@ enum {
 void wap_push_ppg_init(wap_dispatch_func_t *ota_dispatch, 
                        wap_dispatch_func_t *appl_dispatch, Cfg *cfg)
 {
-    ppg_queue = list_create();
-    list_add_producer(ppg_queue);
-    pap_queue = list_create();
-    list_add_producer(pap_queue);
-    push_id_counter = counter_create();
-    ppg_machines = list_create();
-    ppg_unit_pushes = list_create();
-
-    dispatch_to_ota = ota_dispatch;
-    dispatch_to_appl = appl_dispatch;
-
     user_configuration = read_ppg_config(cfg);
     if (user_configuration != USER_CONFIGURATION_NOT_ADDED) {
+        ppg_queue = list_create();
+        list_add_producer(ppg_queue);
+        pap_queue = list_create();
+        list_add_producer(pap_queue);
+        push_id_counter = counter_create();
+        ppg_machines = list_create();
+        ppg_unit_pushes = list_create();
+
+        dispatch_to_ota = ota_dispatch;
+        dispatch_to_appl = appl_dispatch;
+
         http_open_port(ppg_port, TYPE_HTTP);
 #ifdef HAVE_LIBSSL
         http_open_port(ppg_ssl_port, TYPE_HTTPS);
@@ -356,37 +357,39 @@ void wap_push_ppg_init(wap_dispatch_func_t *ota_dispatch,
 
 void wap_push_ppg_shutdown(void)
 {
-     gw_assert(run_status == running);
-     run_status = terminating;
-     list_remove_producer(ppg_queue);
-     list_remove_producer(pap_queue);
-     octstr_destroy(ppg_url);
-     http_close_all_ports();
-     dict_destroy(http_clients);
-     dict_destroy(urls);
-     wap_push_ppg_pushuser_list_destroy();
-     octstr_destroy(ppg_deny_ip);
-     octstr_destroy(ppg_allow_ip);
-     octstr_destroy(global_sender);
+     if (user_configuration != USER_CONFIGURATION_NOT_ADDED) {
+         gw_assert(run_status == running);
+         run_status = terminating;
+         list_remove_producer(ppg_queue);
+         list_remove_producer(pap_queue);
+         octstr_destroy(ppg_url);
+         http_close_all_ports();
+         dict_destroy(http_clients);
+         dict_destroy(urls);
+         wap_push_ppg_pushuser_list_destroy();
+         octstr_destroy(ppg_deny_ip);
+         octstr_destroy(ppg_allow_ip);
+         octstr_destroy(global_sender);
 
-     gwthread_join_every(http_read_thread);
+         gwthread_join_every(http_read_thread);
 #ifdef HAVE_LIBSSL
-     gwthread_join_every(https_read_thread);
+         gwthread_join_every(https_read_thread);
 #endif
-     gwthread_join_every(ota_read_thread);
-     gwthread_join_every(pap_request_thread);
+         gwthread_join_every(ota_read_thread);
+         gwthread_join_every(pap_request_thread);
 
-     list_destroy(ppg_queue, wap_event_destroy_item);
-     list_destroy(pap_queue, pap_event_destroy_item);
-     counter_destroy(push_id_counter);
+         list_destroy(ppg_queue, wap_event_destroy_item);
+         list_destroy(pap_queue, pap_event_destroy_item);
+         counter_destroy(push_id_counter);
      
-     debug("wap.push.ppg", 0, "PPG: %ld push session machines left.",
-           list_len(ppg_machines));
-     list_destroy(ppg_machines, session_machine_destroy);
+         debug("wap.push.ppg", 0, "PPG: %ld push session machines left.",
+               list_len(ppg_machines));
+         list_destroy(ppg_machines, session_machine_destroy);
 
-     debug("wap_push_ppg", 0, "PPG: %ld unit pushes left", 
-           list_len(ppg_unit_pushes));
-     list_destroy(ppg_unit_pushes, push_machine_destroy);
+         debug("wap_push_ppg", 0, "PPG: %ld unit pushes left", 
+               list_len(ppg_unit_pushes));
+         list_destroy(ppg_unit_pushes, push_machine_destroy);
+     }
 }
 
 void wap_push_ppg_dispatch_event(WAPEvent *e)
@@ -667,6 +670,9 @@ static void pap_request_thread(void *arg)
     http_status = 0;                
   
     while (run_status == running && (p = list_consume(pap_queue)) != NULL) {
+        if (client != NULL)
+	    break;
+
         http_status = HTTP_NOT_FOUND;
         pap_event_unpack(p, &ip, &url, &push_headers, &mime_content, 
                          &cgivars, &client);      
@@ -707,41 +713,53 @@ static void pap_request_thread(void *arg)
         if (octstr_len(mime_content) == 0) {
 	    warning(0, "PPG: No MIME content received, the request"
                     " unacceptable");
-            send_bad_message_response(client, octstr_imm("No MIME content"), 
+            send_bad_message_response(&client, octstr_imm("No MIME content"), 
                                       PAP_BAD_REQUEST, http_status);
+            if (client == NULL)
+	        break;
             goto ferror;
         }
+
         if (!push_headers) {
             warning(0, "PPG: No push headers received , the request"
                     " unacceptable");
-            send_bad_message_response(client, octstr_imm("No push headers"), 
+            send_bad_message_response(&client, octstr_imm("No push headers"), 
                                       PAP_BAD_REQUEST, http_status);
+            if (client == NULL)
+	        break;
             goto ferror;
         }
         octstr_destroy(ip);
         
         http_remove_hop_headers(push_headers);
         remove_mime_headers(&push_headers);
+
         if (!headers_acceptable(push_headers, &content_header)) {
 	    warning(0,  "PPG: Unparsable push headers, the request"
                     " unacceptable");
-            send_bad_message_response(client, content_header, PAP_BAD_REQUEST,
+            send_bad_message_response(&client, content_header, PAP_BAD_REQUEST,
                                       http_status);
+            if (client == NULL)
+	        break;
 	    goto herror;
         }
         
         if (get_mime_boundary(push_headers, content_header, &boundary) == -1) {
 	    warning(0, "PPG: No MIME boundary, the request unacceptable");
-            send_bad_message_response(client, content_header, PAP_BAD_REQUEST,
+            send_bad_message_response(&client, content_header, PAP_BAD_REQUEST,
                                       http_status);
+            if (client == NULL)
+	        break;
 	    goto berror;
         }
 
         gw_assert(mime_content);
         if (!mime_parse(boundary, mime_content, &pap_content, &push_data, 
                         &content_headers, &rdf_content)) {
-            send_bad_message_response(client, mime_content, PAP_BAD_REQUEST,
+            send_bad_message_response(&client, mime_content, PAP_BAD_REQUEST,
                                       http_status);
+            if (client == NULL)
+	        break;
             warning(0, "PPG: unable to parse mime content, the request"
                     " unacceptable");
             goto clean;
@@ -761,14 +779,18 @@ static void pap_request_thread(void *arg)
 
         ppg_event = NULL;
         if ((compiler_status = pap_compile(pap_content, &ppg_event)) == -2) {
-	    send_bad_message_response(client, pap_content, PAP_BAD_REQUEST,
+	    send_bad_message_response(&client, pap_content, PAP_BAD_REQUEST,
                                       http_status);
+            if (client == NULL)
+	        break;
             warning(0, "PPG: pap control entity erroneous, the request" 
                     " unacceptable");
             goto no_compile;
         } else if (compiler_status == -1) {
-            send_bad_message_response(client, pap_content, PAP_BAD_REQUEST,
+            send_bad_message_response(&client, pap_content, PAP_BAD_REQUEST,
                                       http_status);
+            if (client == NULL)
+	        break;
             warning(0, "PPG: non implemented pap feature requested, the"
                     " request unacceptable");
             goto no_compile;
@@ -776,8 +798,10 @@ static void pap_request_thread(void *arg)
 	    if (!dict_put_once(http_clients, 
 		    ppg_event->u.Push_Message.pi_push_id, client)) {
                 warning(0, "PPG: duplicate push id, the request unacceptable");
-	        tell_fatal_error(client, ppg_event, url, http_status, 
+	        tell_fatal_error(&client, ppg_event, url, http_status, 
                                  PAP_DUPLICATE_PUSH_ID);
+                if (client == NULL)
+	            break;
                 goto not_acceptable;
 	    } 
 
@@ -787,8 +811,10 @@ static void pap_request_thread(void *arg)
                 if (!trusted_pi && user_configuration && 
                         !wap_push_ppg_pushuser_client_phone_number_acceptable(
                         username, ppg_event->u.Push_Message.address_value)) {
-                tell_fatal_error(client, ppg_event, url, http_status, 
+                tell_fatal_error(&client, ppg_event, url, http_status, 
                                  PAP_FORBIDDEN);
+                if (client == NULL)
+	            break;
 	        goto not_acceptable;
 	        }   
             }        
@@ -798,7 +824,9 @@ static void pap_request_thread(void *arg)
             ppg_event->u.Push_Message.push_headers = 
                 http_header_duplicate(push_headers);
             ppg_event->u.Push_Message.push_data = octstr_duplicate(push_data);
-            if (!handle_push_message(ppg_event, http_status)) {
+            if (!handle_push_message(&client, ppg_event, http_status)) {
+	        if (client == NULL)
+		    break;
                 goto no_transform;
             }
         }
@@ -889,10 +917,11 @@ berror:
  * Operations needed when push proxy gateway receives a new push message are 
  * defined in ppg Chapter 6. We create machines when error, too, because we 
  * must then have a reportable message error state.
- * Return 1 if the push content was OK, 0 if it was not tranformable.
+ * Output: current HTTP Client state.
+ * Return 1 if the push content was OK, 0 if it was not transformable.
  */
 
-static int handle_push_message(WAPEvent *e, int status)
+static int handle_push_message(HTTPClient **c, WAPEvent *e, int status)
 {
     int cless,
         session_exists,
@@ -930,7 +959,7 @@ static int handle_push_message(WAPEvent *e, int status)
 
     if (!store_push_data(&pm, sm, e, tuple, cless)) {
         warning(0, "PPG: handle_push_message: duplicate push id");
-        response_push_message(pm, PAP_DUPLICATE_PUSH_ID, status);
+        *c = response_push_message(pm, PAP_DUPLICATE_PUSH_ID, status);
         goto no_start;
     }
 
@@ -938,9 +967,9 @@ static int handle_push_message(WAPEvent *e, int status)
 	pm = update_push_data_with_attribute(&sm, pm, 
             PAP_TRANSFORMATION_FAILURE, PAP_UNDELIVERABLE1);  
         if (tuple != NULL)   
-	    response_push_message(pm, PAP_TRANSFORMATION_FAILURE, status);
+	    *c = response_push_message(pm, PAP_TRANSFORMATION_FAILURE, status);
         else
-	    response_push_message(pm, PAP_ADDRESS_ERROR, status);
+	    *c = response_push_message(pm, PAP_ADDRESS_ERROR, status);
         goto no_transformation;
     }
     
@@ -951,14 +980,14 @@ static int handle_push_message(WAPEvent *e, int status)
     if (!bearer_supported) {
         pm = update_push_data_with_attribute(&sm, pm, dummy, 
             PAP_UNDELIVERABLE2);
-        response_push_message(pm, PAP_REQUIRED_BEARER_NOT_AVAILABLE, status);
+        *c = response_push_message(pm, PAP_REQUIRED_BEARER_NOT_AVAILABLE, status);
 	goto no_start;
     }
 
     if ((constraints = delivery_time_constraints(e, pm)) == TIME_EXPIRED) {
         pm = update_push_data_with_attribute(&sm, pm, PAP_FORBIDDEN, 
                                              PAP_EXPIRED);
-        response_push_message(pm, PAP_FORBIDDEN, status);
+        *c = response_push_message(pm, PAP_FORBIDDEN, status);
 	goto no_start;
     }
 
@@ -968,7 +997,7 @@ static int handle_push_message(WAPEvent *e, int status)
  * error messages to come".
  */ 
 
-    response_push_message(pm, PAP_ACCEPTED_FOR_PROCESSING, status);
+    *c = response_push_message(pm, PAP_ACCEPTED_FOR_PROCESSING, status);
     info(0, "PPG: handle_push_message: push message accepted for processing");
 
     if (constraints == TIME_TOO_EARLY)
@@ -995,7 +1024,7 @@ static int handle_push_message(WAPEvent *e, int status)
             } else {
                 warning(0, "PPG: handle_push_message: wrong app id for confirmed"
                         " push session creation");
-                response_push_message(pm, PAP_BAD_REQUEST, status);
+                *c = response_push_message(pm, PAP_BAD_REQUEST, status);
             }
         }
     }
@@ -1457,11 +1486,14 @@ static int response_push_connection(WAPEvent *e, PPGSessionMachine *sm)
 }
 
 /*
- * Push response, from pap, Chapter 9.3. Inputs error code, in PAP format.
+ * Push response, from pap, Chapter 9.3. 
+ * Inputs error code, in PAP format.
+ * Return the current value of HTTPClient.
  */
-static void response_push_message(PPGPushMachine *pm, long code, int status)
+static HTTPClient *response_push_message(PPGPushMachine *pm, long code, int status)
 {
     WAPEvent *e;
+    HTTPClient *c;
 
     push_machine_assert(pm);
 
@@ -1472,7 +1504,9 @@ static void response_push_message(PPGPushMachine *pm, long code, int status)
     e->u.Push_Response.code = code;
     e->u.Push_Response.desc = describe_code(code);
 
-    send_push_response(e, status);
+    c = send_push_response(e, status);
+
+    return c;
 }
 
 
@@ -2758,8 +2792,9 @@ static void remove_mime_headers(List **push_headers)
 /*
  * Badmessage-response element is redefined in pap, implementation note, 
  * chapter 5. Do not add to the document a fragment being NULL or empty.
+ * Return current status of HTTPClient.
  */
-static void send_bad_message_response(HTTPClient *c, Octstr *fragment, 
+static void send_bad_message_response(HTTPClient **c, Octstr *fragment, 
                                       int code, int status)
 {
     Octstr *reply_body;
@@ -2797,8 +2832,9 @@ static void send_bad_message_response(HTTPClient *c, Octstr *fragment,
  * Push response is defined in pap, chapter 9.3. Mapping between push ids and
  * http clients is done by using http_clients. We remove (push id, http client)
  * pair from the dictionary after the mapping has been done.
+ * Return current status of HTTPClient.
  */
-static void send_push_response(WAPEvent *e, int status)
+static HTTPClient *send_push_response(WAPEvent *e, int status)
 {
     Octstr *reply_body,
            *url;
@@ -2862,16 +2898,18 @@ static void send_push_response(WAPEvent *e, int status)
     dict_remove(http_clients, e->u.Push_Response.pi_push_id);
 
     debug("wap.push.ppg", 0, "PPG: send_push_response: telling pi");
-    send_to_pi(c, reply_body, status);
+    send_to_pi(&c, reply_body, status);
 
     wap_event_destroy(e);
+    return c;
 }
 
 /*
  * Ppg notifies pi about duplicate push id by sending a push response document
  * to it. Note that we never put the push id to the dict in this case.
+ * Return current c value.
  */
-static void tell_fatal_error(HTTPClient *c, WAPEvent *e, Octstr *url, 
+static void tell_fatal_error(HTTPClient **c, WAPEvent *e, Octstr *url, 
                              int status, int code)
 {
     Octstr *reply_body,
@@ -2928,9 +2966,10 @@ static void tell_fatal_error(HTTPClient *c, WAPEvent *e, Octstr *url,
 }
 
 /*
- * Does the HTTP reply to pi.
+ * Does the HTTP reply to pi. Test has HTTPClient disappeared.
+ * Return current c value.
  */
-static void send_to_pi(HTTPClient *c, Octstr *reply_body, int status) {
+static void send_to_pi(HTTPClient **c, Octstr *reply_body, int status) {
     size_t body_len; 
     List *reply_headers;
     Octstr *bos;          /* a temporary */
@@ -2941,7 +2980,9 @@ static void send_to_pi(HTTPClient *c, Octstr *reply_body, int status) {
     http_header_add(reply_headers, "Content-Length", 
                     octstr_get_cstr(bos = octstr_format("%d", body_len)));
     octstr_destroy(bos);
-    http_send_reply(c, status, reply_headers, reply_body);  
+
+    if (*c != NULL)
+        http_send_reply(*c, status, reply_headers, reply_body);
 
     octstr_destroy(reply_body);
     http_destroy_headers(reply_headers);
