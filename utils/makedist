@@ -19,7 +19,11 @@ then
 fi
 
 tar -c -z -f $base.tar.gz $base
+md5sum $base.tar.gz > $base.tar.gz.md5
+tar -c -j -f $base.tar.bz2 $base
+md5sum $base.tar.bz2 > $base.tar.bz2.md5
 zip -9qr $base.zip $base/*
+md5sum $base.zip > $base.zip.md5
 
 (
  set -e
