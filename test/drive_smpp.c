@@ -7,6 +7,8 @@
 
 #include <errno.h>
 #include <signal.h>
+#include <sys/types.h>
+#include <sys/socket.h>
 
 #include "gwlib/gwlib.h"
 #include "gw/smpp_pdu.h"

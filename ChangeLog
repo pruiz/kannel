@@ -1,5 +1,9 @@
 2000-12-21  Lars Wirzenius  <liw@iki.fi>
 
+	* test/drive_smpp.c: Added includes for accept(2).
+
+2000-12-21  Lars Wirzenius  <liw@iki.fi>
+
 	* Rewrote the SMPP protocol implementation. The old one was
 	excessively verbose (lots of repetitive code), did not use Octstr,
 	or Connection, and needed much attention in order to fit into the
