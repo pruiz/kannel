@@ -1,0 +1,56 @@
+This is the new Gateway which shall eventually handle both the SMS 
+and WAP traffic, but the WAP portion  is currently under development.
+
+The new gateway is similar to old one in many ways, but there are
+many new features. To keep things short and simple, I only give here
+instructions on how to run the new gateway. Consult to old
+'SMSGateway' when you need more extensive documentation about SMS
+Services. Also read files 'bearerbox.conf' and 'smsboc.smsconf'
+
+So, the main difference to old 'SMSGateway' is that the gateway is
+divided into multiple parts:
+
+ - Bearerbox is the routing/load balancing thing, that connects SMS
+   Centers (quite complex monster, after all). It uses configuration
+   files like 'test/fake.conf'.
+
+ - SMS Box is a program that handles SMS messages and calls
+   appropriate services. It also handles 'sendsms' HTTP requests.
+   It uses configuration files like 'test/simple.smsconf'
+
+So, to get the basic functionality of the old SMSGateway, you have to
+run the bearerbox and at least one SMS Box. They can be run as two
+separate programs, or the Bearerbox can be run with internal SMS Box.
+
+To run a gateway with one internal SMS Box (practically same thing as
+old SMSGateway), type something like:
+
+   s1> gw/bearerbox -v 0 test/fake.conf test/simple.smsconf
+
+..where v is the verbosity level. The v-option is optional. See 
+wapitlib.h for standard options
+
+If you want to run separate bearerbox and SMS Box(es), just run each
+in separate shell: 
+
+   s2> gw/bearerbox -v 0 test/fake.conf
+   s3> gw/smsbox -v 0 test/simple.smsconf
+
+You are not limited to one machine! You can run the bearerbox in one
+and one or more SMS Boxes in any machines you like, as TCP/IP socket
+is used for communication. Just be sure that connection is not denied
+via 'denied-hosts' configuration parameter in bearerbox configuration.
+
+That's all this time. This version 0.1 is in alpha developer design
+version, so many things are missing and many things do not work
+well. Feel free to comment them and to send patches. A new version
+is released as soon as we get the WAP thing to work.
+
+	       &Kalle Marjola (rpr@wapit.com)
+
+
+
+
+
+
+
