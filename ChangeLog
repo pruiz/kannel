@@ -1,4 +1,8 @@
 2004-06-14  Alexander Malysh  <a.malysh@centrium.de> 
+    * configure, configure.in, gw-config.h.in: added check for <semaphore.h>
+    * gwlib/semaphore.c: added support for native semaphore.
+
+2004-06-14  Alexander Malysh  <a.malysh@centrium.de> 
     * gw/bb_boxc.c: added tracking of pending messages between smsbox <-> bearerbox.
     * gwlib/cfg.def doc/userguide/userguide.xml: added new config option
       'smsbox-max-pending'. See userguide for description.

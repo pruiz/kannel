@@ -58,27 +58,45 @@
  * semaphore.c - implementation of semaphores
  *
  * Lars Wirzenius
+ * Alexander Malysh <a.malysh@centrium.de>, 2004
  */
 
 
 #include "gwlib/gwlib.h"
 
+#ifdef HAVE_SEMAPHORE_H
+#include <semaphore.h>
+#include <errno.h>
+#endif
 
 struct Semaphore {
+#ifdef HAVE_SEMAPHORE_H
+    sem_t sem;
+#else
     List *list;
+#endif
 };
 
 
 Semaphore *semaphore_create(long n)
 {
     Semaphore *semaphore;
+#ifndef HAVE_SEMAPHORE_H
     static char item;
+#endif
     
     semaphore = gw_malloc(sizeof(*semaphore));
+
+#ifdef HAVE_SEMAPHORE_H
+    if (sem_init(&semaphore->sem, 0, (unsigned int) n) != 0)
+        panic(errno, "Couldnot initialize semaphore.");
+#else
     semaphore->list = list_create();
     list_add_producer(semaphore->list);
     while (n-- > 0)
 	list_produce(semaphore->list, &item);
+#endif
+
     return semaphore;
 }
 
@@ -86,7 +104,12 @@ Semaphore *semaphore_create(long n)
 void semaphore_destroy(Semaphore *semaphore)
 {
     if (semaphore != NULL) {
+#ifdef HAVE_SEMAPHORE_H
+        if (sem_destroy(&semaphore->sem) != 0)
+            panic(errno, "Destroing semaphore while some threads are waiting.");
+#else
 	list_destroy(semaphore->list, NULL);
+#endif
 	gw_free(semaphore);
     }
 }
@@ -94,13 +117,24 @@ void semaphore_destroy(Semaphore *semaphore)
 
 void semaphore_up(Semaphore *semaphore)
 {
+#ifndef HAVE_SEMAPHORE_H
     static char item;
-
+    gw_assert(semaphore != NULL);
     list_produce(semaphore->list, &item);
+#else
+    gw_assert(semaphore != NULL);
+    if (sem_post(&semaphore->sem) != 0)
+        error(errno, "Value for semaphore is out of range.");
+#endif
 }
 
 
 void semaphore_down(Semaphore *semaphore)
 {
+    gw_assert(semaphore != NULL);
+#ifdef HAVE_SEMAPHORE_H
+    sem_wait(&semaphore->sem);
+#else
     list_consume(semaphore->list);
+#endif
 }

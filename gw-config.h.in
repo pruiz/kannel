@@ -166,6 +166,9 @@
 /* Define if you have the <netinet/in.h> header file. */
 #undef HAVE_NETINET_IN_H
 
+/* Define if you have the <semaphore.h> header file. */
+#undef HAVE_SEMAPHORE_H
+
 /* Define if you have the m library (-lm).  */
 #undef HAVE_LIBM
 
