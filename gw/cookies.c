@@ -238,25 +238,25 @@ static Cookie *parse_cookie (Octstr *cookiestr)
 	while (p != NULL) {
 		while (isspace ((int)*p)) p++;		/* Skip leading whitespace */
 
-		if (strcasecmp ("version", p) == 0)
+		if (strncasecmp ("version", p, 7) == 0)
 			f = &c -> version;
-		else if (strcasecmp ("path", p) == 0)
+		else if (strncasecmp ("path", p, 4) == 0)
 			f = &c -> path;
-		else if (strcasecmp ("domain", p) == 0)
+		else if (strncasecmp ("domain", p, 6) == 0)
 			f = &c -> domain;
-		else if (strcasecmp ("max-age", p) == 0) {
+		else if (strncasecmp ("max-age", p, 7) == 0) {
 			c -> max_age = atol (strrchr (p, '=') + 1);
 			p = strtok (NULL, ";");
 			continue;
 		}
-		else if (strcasecmp ("expires", p) == 0) {
+		else if (strncasecmp ("expires", p, 7) == 0) {
 			delta = parse_http_date (p);
 			if (delta != -1) c -> max_age = delta;
 			p = strtok (NULL, ";");
 			continue;
 		}
-		else if (strcasecmp ("comment", p) == 0 ||
-				 strcasecmp ("secure", p) == 0) {
+		else if (strncasecmp ("comment", p, 7) == 0 ||
+				 strncasecmp ("secure", p, 6) == 0) {
 			p = strtok (NULL, ";");
 			continue;
 		}
@@ -340,22 +340,39 @@ static int have_cookie (List *cookies, Cookie *cookie)
 
 		/* octstr_compare() now only returns 0 on an exact match or if both args are 0 */
 
-		if (((value -> name) && octstr_compare (value -> name, cookie -> name) == 0) &&
-			((value -> path) && octstr_compare (value -> path, cookie -> path) == 0) &&
-			((value -> domain) && octstr_compare (value -> domain, cookie -> domain) == 0)) {
+		debug ("wap.wsp.http", 0, "have_cookie: Comparing name (%s:%s), path (%s:%s), domain (%s:%s)",
+			cookie -> name == NULL ? "NULL" : octstr_get_cstr (cookie -> name), 
+			value -> name == NULL ? "NULL" : octstr_get_cstr (value -> name),
+			cookie -> path == NULL ? "NULL" : octstr_get_cstr (cookie -> path), 
+			value -> path == NULL ? "NULL" : octstr_get_cstr (value -> path),
+			cookie -> domain == NULL ? "NULL" : octstr_get_cstr (cookie -> domain), 
+			value -> domain == NULL ? "NULL" : octstr_get_cstr (value -> domain));
+
+		/* Match on no value or value and value equality for name, path and domain */
+
+		if ((value -> name == NULL || 
+			((value -> name != NULL) && octstr_compare (value -> name, cookie -> name) == 0)) &&
+			(value -> path == NULL ||
+			((value -> path != NULL) && octstr_compare (value -> path, cookie -> path) == 0)) &&
+			((value -> domain == NULL) ||
+			((value -> domain != NULL) && octstr_compare (value -> domain, cookie -> domain) == 0))) {
 			
 			/* We have a match according to 4.3.3 - discard the old one */
 
 			cookie_destroy (value);
 			list_delete (cookies, pos, 1);
 
-			/* Discard the new cookie also if max-age is 0 */
+			/* Discard the new cookie also if max-age is 0 - set if expiry date is up */
 
-			if (cookie -> max_age == 0) 
+			if (cookie -> max_age == 0) {
+				debug ("wap.wsp.http", 0, "have_cookie: Discarding expired cookie (%s)",
+				octstr_get_cstr (cookie->name));
 				return 1;
+			}
 
 			debug ("wap.wsp.http", 0, "have_cookie: Updating cached cookie (%s)", 
 				octstr_get_cstr (cookie->name));
+			break;
 		}
 		else
 			pos++;
