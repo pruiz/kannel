@@ -87,20 +87,23 @@ Octstr *version_report_string(const char *boxname)
  * Communication with the bearerbox.
  */
 
-
+/* this is a static connection if only *one* boxc connection is 
+ * established from a foobarbox to bearerbox. */
 static Connection *bb_conn;
 
 
-void connect_to_bearerbox(Octstr *host, int port, int ssl, Octstr *our_host)
+Connection *connect_to_bearerbox_real(Octstr *host, int port, int ssl, Octstr *our_host)
 {
+    Connection *conn;
+
 #ifdef HAVE_LIBSSL
 	if (ssl) 
-	    bb_conn = conn_open_ssl(host, port, NULL, our_host);
+	    conn = conn_open_ssl(host, port, NULL, our_host);
         /* XXX add certkeyfile to be given to conn_open_ssl */
 	else
 #endif /* HAVE_LIBSSL */
-    bb_conn = conn_open_tcp(host, port, our_host);
-    if (bb_conn == NULL)
+    conn = conn_open_tcp(host, port, our_host);
+    if (conn == NULL)
     	panic(0, "Couldn't connect to the bearerbox.");
     if (ssl)
         info(0, "Connected to bearerbox at %s port %d using SSL.",
@@ -108,36 +111,36 @@ void connect_to_bearerbox(Octstr *host, int port, int ssl, Octstr *our_host)
     else
         info(0, "Connected to bearerbox at %s port %d.",
 	         octstr_get_cstr(host), port);
+
+    return conn;
 }
 
 
-Connection *get_connect_to_bearerbox(Octstr *host, int port, int ssl, Octstr *our_host)
+void connect_to_bearerbox(Octstr *host, int port, int ssl, Octstr *our_host)
 {
-#ifdef HAVE_LIBSSL
-       if (ssl)
-           bb_conn = conn_open_ssl(host, port, NULL, our_host);
-        /* XXX add certkeyfile to be given to conn_open_ssl */
-       else
-#endif /* HAVE_LIBSSL */
-    bb_conn = conn_open_tcp(host, port, our_host);
+    bb_conn = connect_to_bearerbox_real(host, port, ssl, our_host);
+}
 
-    return bb_conn;
+
+void close_connection_to_bearerbox_real(Connection *conn)
+{
+    conn_destroy(conn);
+    conn = NULL;
 }
 
 
 void close_connection_to_bearerbox(void)
 {
-    conn_destroy(bb_conn);
-    bb_conn = NULL;
+    close_connection_to_bearerbox_real(bb_conn);
 }
 
 
-void write_to_bearerbox(Msg *pmsg)
+void write_to_bearerbox_real(Connection *conn, Msg *pmsg)
 {
     Octstr *pack;
 
     pack = msg_pack(pmsg);
-    if (conn_write_withlen(bb_conn, pack) == -1)
+    if (conn_write_withlen(conn, pack) == -1)
     	error(0, "Couldn't write Msg to bearerbox.");
 
     msg_destroy(pmsg);
@@ -145,13 +148,19 @@ void write_to_bearerbox(Msg *pmsg)
 }
 
 
-int deliver_to_bearerbox(Msg *msg) 
+void write_to_bearerbox(Msg *pmsg)
+{
+    write_to_bearerbox_real(bb_conn, pmsg);
+}
+
+
+int deliver_to_bearerbox_real(Connection *conn, Msg *msg) 
 {
      
     Octstr *pack;
     
     pack = msg_pack(msg);
-    if (conn_write_withlen(bb_conn, pack) == -1) {
+    if (conn_write_withlen(conn, pack) == -1) {
     	error(0, "Couldn't deliver Msg to bearerbox.");
         octstr_destroy(pack);
         return -1;
@@ -161,9 +170,15 @@ int deliver_to_bearerbox(Msg *msg)
     msg_destroy(msg);
     return 0;
 }
-                                               
 
-Msg *read_from_bearerbox(double seconds)
+
+int deliver_to_bearerbox(Msg *msg)
+{
+    return deliver_to_bearerbox_real(bb_conn, msg);
+}
+                                           
+
+Msg *read_from_bearerbox_real(Connection *conn, double seconds)
 {
     int ret;
     Octstr *pack;
@@ -171,21 +186,21 @@ Msg *read_from_bearerbox(double seconds)
 
     pack = NULL;
     while (program_status != shutting_down) {
-        pack = conn_read_withlen(bb_conn);
+        pack = conn_read_withlen(conn);
         gw_claim_area(pack);
         if (pack != NULL)
             break;
 
-        if (conn_read_error(bb_conn)) {
+        if (conn_read_error(conn)) {
             info(0, "Error reading from bearerbox, disconnecting.");
             return NULL;
         }
-        if (conn_eof(bb_conn)) {
+        if (conn_eof(conn)) {
             info(0, "Connection closed by the bearerbox.");
             return NULL;
         }
 
-        ret = conn_wait(bb_conn, seconds);
+        ret = conn_wait(conn, seconds);
         if (ret < 0) {
             error(0, "Connection to bearerbox broke.");
             return NULL;
@@ -207,6 +222,13 @@ Msg *read_from_bearerbox(double seconds)
 
     return msg;
 }
+
+
+Msg *read_from_bearerbox(double seconds)
+{
+    return read_from_bearerbox_real(bb_conn, seconds);
+}
+
 
 /*****************************************************************************
  *

@@ -46,18 +46,14 @@ void report_versions(const char *boxname);
 /*
  * Open a connection to the bearerbox.
  */
+Connection *connect_to_bearerbox_real(Octstr *host, int port, int ssl, Octstr *our_host);
 void connect_to_bearerbox(Octstr *host, int port, int ssl, Octstr *our_host);
-
-
-/*
- * Try to open a connection to the bearerbox and return the connection pointer.
- */
-Connection *get_connect_to_bearerbox(Octstr *host, int port, int ssl, Octstr *our_host);
 
 
 /*
  * Close connection to the bearerbox.
  */
+void close_connection_to_bearerbox_real(Connection *conn);
 void close_connection_to_bearerbox(void);
 
 
@@ -67,12 +63,14 @@ void close_connection_to_bearerbox(void);
  * ie. -1 for an infinite blocking, hence no timeout applies. 
  * Return NULL if connection broke or timed out.
  */
+Msg *read_from_bearerbox_real(Connection *conn, double seconds);
 Msg *read_from_bearerbox(double seconds);
 
 
 /*
  * Send an Msg to the bearerbox, and destroy the Msg.
  */
+void write_to_bearerbox_real(Connection *conn, Msg *pmsg);
 void write_to_bearerbox(Msg *msg);
 
 
@@ -82,6 +80,7 @@ void write_to_bearerbox(Msg *msg);
  *
  * Note: Message is only destroyed if sucessfully delivered!
  */
+int deliver_to_bearerbox_real(Connection *conn, Msg *msg);
 int deliver_to_bearerbox(Msg *msg);
 
      
