@@ -9,6 +9,18 @@
 
 #include "wtp.h"
 
+enum {
+    no_datagram,
+    wrong_version,
+    illegal_header,
+    no_segmentation,
+    memory_error
+};
+
+enum {
+   CURRENT = 0x00,
+};    
+
 /*
  * Global data structures:
  */
@@ -26,7 +38,7 @@ static WTPMachine *list = NULL;       /* list of wtp state machines */
 static WTPMachine *wtp_machine_create_empty(void);
 
 /*
- * Give wtp event and the state a readable name.
+ * Print a wtp event or a wtp machine state name as a string.
  */
 
 static char *name_event(int name);
@@ -52,7 +64,27 @@ static WSPEvent *pack_wsp_event(WSPEventType wsp_name, WTPEvent *wtp_event,
 static int wtp_tid_is_valid(WTPEvent *event);
 
 static void append_to_event_queue(WTPMachine *machine, WTPEvent *event);
+ 
 static WTPEvent *remove_from_event_queue(WTPMachine *machine);
+
+static long deduce_tid(Msg *msg);
+
+static int message_header_fixed(char octet);
+
+static char deduce_pdu_type(char octet);
+
+static int single_message(char octet);
+
+static int protocol_version(char octet);
+
+static WTPEvent *unpack_ack(long tid, char octet);
+
+static WTPEvent *unpack_abort(long tid, char first_octet, char fourth_octet);
+
+static WTPEvent *unpack_invoke(Msg *msg, long tid, char first_octet, 
+       char fourth_octet);
+
+static void tell_about_error(int type, WTPEvent *event);
 
 /******************************************************************************
  *
@@ -265,38 +297,55 @@ WTPMachine *wtp_machine_find_or_create(Msg *msg, WTPEvent *event){
 
 	          case RcvInvoke:
                        tid = event->RcvInvoke.tid;
-                       machine = wtp_machine_find(msg->wdp_datagram.source_address,
-                                 msg->wdp_datagram.source_port, 
-                                 msg->wdp_datagram.destination_address,
-                                 msg->wdp_datagram.destination_port, 
-                                 tid);
-                       if (machine == NULL){
-	                  machine = wtp_machine_create(
-                                    msg->wdp_datagram.source_address,
-				    msg->wdp_datagram.source_port, 
-				    msg->wdp_datagram.destination_address,
-				    msg->wdp_datagram.destination_port,
-				    tid, event->RcvInvoke.tcl);
-                          machine->in_use = 1;
-                       }
                   break;
 
-	          case RcvAck: 
+	          case RcvAck:
                        tid = event->RcvAck.tid;
-                       machine = wtp_machine_find(msg->wdp_datagram.source_address,
-                                    msg->wdp_datagram.source_port, 
-                                    msg->wdp_datagram.destination_address,
-                                    msg->wdp_datagram.destination_port, 
-                                    tid);
-
-                       if (machine == NULL)
-			  error(0, "WTP: machine_find_or_create: ack received, 
-                                yet having no machine");
                   break;
-                 
-	          default:
+
+	          case RcvAbort:
+                       tid = event->RcvAck.tid;
+                  break;
+
+                  default:
                        debug(0, "WTP: machine_find_or_create: unhandled event");
                   break;
+	   }
+
+           machine = wtp_machine_find(msg->wdp_datagram.source_address,
+                     msg->wdp_datagram.source_port, 
+                     msg->wdp_datagram.destination_address,
+                     msg->wdp_datagram.destination_port, tid);
+
+           if (machine == NULL){
+
+              switch (event->type){
+
+	              case RcvInvoke:
+	                   machine = wtp_machine_create(
+                                     msg->wdp_datagram.source_address,
+				     msg->wdp_datagram.source_port, 
+				     msg->wdp_datagram.destination_address,
+				     msg->wdp_datagram.destination_port,
+				     tid, event->RcvInvoke.tcl);
+                           machine->in_use = 1;
+                      break;
+
+	              case RcvAck: 
+			   error(0, "WTP: machine_find_or_create: ack received, 
+                                 yet having no machine");
+                      break;
+
+                      case RcvAbort: 
+			   error(0, "WTP: machine_find_or_create: abort received, 
+                                yet having no machine");
+                      break;
+                 
+	              default:
+                           debug(0, "WTP: machine_find_or_create: unhandled event");
+                           wtp_event_dump(event);
+                      break;
+              }
 	   }
 
            return machine;
@@ -309,200 +358,96 @@ WTPMachine *wtp_machine_find_or_create(Msg *msg, WTPEvent *event){
 
 WTPEvent *wtp_unpack_wdp_datagram(Msg *msg){
 
-         WTPEvent *event;
-         int octet,
-             this_octet,
-
-             con,
-             pdu_type,
-             gtr,
-             ttr,
-	     first_tid,  /*first octet of the tid, in the host order*/ 
-	     last_tid,   /*second octet of the tid, in the host order*/
-             tid,
-             version,
-             tcl,
-             abort_type,
+         WTPEvent *event = NULL;
+         char first_octet,
+              fourth_octet,
+              this_octet,
+              pdu_type;
+ 
+         int tid,
              tpi_length_type,
              tpi_length;
 
+         if (octstr_len(msg->wdp_datagram.user_data) < 3){
+            tell_about_error(memory_error, event);
+            return NULL;
+         }
 
-	 event = NULL;
-
-/*
- * Every message type uses the second and the third octets for tid. Bytes are 
- * already in host order. Not that the iniator turns the first bit off, so we do
- * have a genuine tid.
- */
-         first_tid = octstr_get_char(msg->wdp_datagram.user_data,1);
-         last_tid = octstr_get_char(msg->wdp_datagram.user_data,2);
-         tid = first_tid;
-         tid = (tid << 8) + last_tid;
-
-         this_octet = octet = octstr_get_char(msg->wdp_datagram.user_data, 0);
-         if (octet == -1)
-            goto no_datagram;
-
-         con = this_octet>>7; 
-         if (con == 0){
-            this_octet = octet;
-            pdu_type = this_octet>>3&15;
-            this_octet = octet;
-
-            if (pdu_type == 0){
-               goto no_segmentation;
-            }
+         tid = deduce_tid(msg);
+         first_octet = octstr_get_char(msg->wdp_datagram.user_data, 0);
+         pdu_type = deduce_pdu_type(first_octet);
+         
+         if (message_header_fixed(first_octet)){
 /*
  * Message type was invoke
  */
-            if (pdu_type == 1){
+            if (pdu_type == INVOKE){
 
-               event = wtp_event_create(RcvInvoke);
-               if (event == NULL)
-                  goto cap_error;
-               event->RcvInvoke.tid = tid;
-
-               gtr = this_octet>>2&1;
-               this_octet = octet;
-               ttr = this_octet>>1&1;
-               if (gtr == 0 || ttr == 0){
-		  goto no_segmentation;
+               fourth_octet = octstr_get_char(msg->wdp_datagram.user_data, 3);
+               if (fourth_octet == -1){
+                  tell_about_error(memory_error, event);
+                  return NULL;
                }
-               this_octet = octet;
-               event->RcvInvoke.rid = this_octet&1; 
-
-               this_octet = octet = octstr_get_char(
-                          msg->wdp_datagram.user_data, 3);
-               version = this_octet>>6&3;
-               if (version != 0){
-                  goto wrong_version;
-               } 
-               this_octet = octet;
-               event->RcvInvoke.tid_new = this_octet>>5&1;
-               this_octet = octet;
-               event->RcvInvoke.up_flag = this_octet>>4&1;
-               this_octet = octet;
-               tcl = this_octet&3; 
-               if (tcl > 2)
-                  goto illegal_header;
-               event->RcvInvoke.tcl = tcl; 
- 
-/*
- * At last, the message itself. We remove the header.
- */
-               octstr_delete(msg->wdp_datagram.user_data, 0, 4);
-               event->RcvInvoke.user_data = msg->wdp_datagram.user_data;     
+               return unpack_invoke(msg, tid, first_octet, fourth_octet);
             }
 /*
  * Message type is supposed to be result. This is impossible, so we have an
  * illegal header.
  */
-            if (pdu_type == 2){
-               goto illegal_header;
-            }
-/*
- * Message type was ack.
- */
-            if (pdu_type == 3){
-               event = wtp_event_create(RcvAck);
-               if (event == NULL)
-                  goto cap_error;
-               event->RcvAck.tid = tid;
-
-               this_octet = octet = octstr_get_char(
-                          msg->wdp_datagram.user_data, 0);
-               event->RcvAck.tid_ok = this_octet>>2&1;
-               this_octet = octet;
-               event->RcvAck.rid = this_octet&1;
+            if (pdu_type == RESULT){
+               tell_about_error(illegal_header, event);
+               return NULL;
             }
 
-/*
- *Message type was abort.
- */
-	    if (pdu_type == 4){
-                event = wtp_event_create(RcvAbort);
-                if (event == NULL)
-                    goto cap_error;
-                event->RcvAbort.tid = tid;
-                
-               octet = octstr_get_char(msg->wdp_datagram.user_data, 0);
-               abort_type = octet&7;
-               if (abort_type > 1)
-                  goto illegal_header;
-               event->RcvAbort.abort_type = abort_type;   
+            if (pdu_type == ACK){
+               return unpack_ack(tid, first_octet);
+            }
 
-               octet = octstr_get_char(msg->wdp_datagram.user_data, 3);
-               if (octet > NUMBER_OF_ABORT_REASONS)
-                  goto illegal_header;
-               event->RcvAbort.abort_reason = octet;
-               debug(0, "WTP: unpack_datagram: abort event packed");
+	    if (pdu_type == ABORT){
+               fourth_octet = octstr_get_char(msg->wdp_datagram.user_data, 4);
+               if (fourth_octet == -1){
+                  tell_about_error(memory_error, event);
+                  return NULL;
+               }
+               return unpack_abort(tid, first_octet, fourth_octet);
             }
 
 /*
  * WDP does segmentation.
  */
-            if (pdu_type > 4 && pdu_type < 8){
-               goto no_segmentation;
+            if (pdu_type == SEGMENTED_INVOKE || pdu_type == SEGMENTED_RESULT ||
+                pdu_type == NEGATIVE_ACK){
+	       tell_about_error(no_segmentation, event);
+               return NULL; 
             }
-            if (pdu_type >= 8){
-               goto illegal_header;
-            } 
 
+            if (pdu_type == -1){
+               tell_about_error(illegal_header, event);
+               return NULL;
+            } 
 /*
  * Message is of variable length. This is possible only when we are receiving
- * an invoke message.(For now, only info tpis are supported.)
+ * an invoke message. The feature remains to be implemented.
  */
-         } else {
-           this_octet = octet = octstr_get_char(msg->wdp_datagram.user_data, 4);
+         } /* if message_header fixed true */
+         else {
+           this_octet = fourth_octet = octstr_get_char(
+                        msg->wdp_datagram.user_data, 4);
            tpi_length_type = this_octet>>2&1;
 /*
  * TPI can be long
  */
-           if (tpi_length_type == 1){
-               
-               tpi_length=1;
+           if (tpi_length_type == 1){           
+               tpi_length = 1;
            } else {
-/*or short*/
-               tpi_length=0;
-           }
-         }      
-         return event;
-/*
- *Send Abort(WTPVERSIONZERO)
- */
-wrong_version:
-         wtp_event_destroy(event);
-         error(0, "WTP: unpack_datagram: Version not supported");
-         return NULL;
-/*
- *Send Abort(NOTIMPLEMENTEDSAR)
- */
-no_segmentation:
-         wtp_event_destroy(event);
-         error(0, "WTP: unpack_datagram: No segmentation implemented");
-         return NULL;
-/*
- *TBD: Send Abort(CAPTEMPEXCEEDED), too.
- */
-cap_error:
-         free(event);
-         error(errno, "WTP: unpack_datagram: Out of memory");
-         return NULL;
-/*
- *TBD: Send Abort(PROTOERR). Add necessary indications! 
- */
-illegal_header:
-         wtp_event_destroy(event);
-         error(0, "WTP: unpack_datagram: Illegal header structure");
-         return NULL;
-/*
- *TBD: Reason to panic?
- */
-no_datagram:   
-         free(event);
-         error(0, "WTP: unpack_datagram: No datagram received");
-         return NULL;
-}
+/* or short*/
+               tpi_length = 0;
+           } /* if tpi_length_type */
+
+           debug(0, "WTP: unpack_wdp_datagram: variable headers not implemented");
+           return NULL;
+	 } /* if message_header_fixed false */   
+} /* function*/
 
 /*
  * Feed an event to a WTP state machine. Handle all errors yourself, do not
@@ -614,7 +559,7 @@ static WTPMachine *wtp_machine_find(Octstr *source_address, long source_port,
            }
 
            mutex_lock(list->mutex); 
-           temp=list;
+           temp = list;
           
            while (temp != NULL){
    
@@ -631,7 +576,7 @@ static WTPMachine *wtp_machine_find(Octstr *source_address, long source_port,
 		} else {
 
 		   mutex_unlock(temp->mutex);
-                   temp=temp->next;
+                   temp = temp->next;
 
                    if (temp != NULL)
 		      mutex_lock(temp->mutex);
@@ -831,6 +776,200 @@ static WTPEvent *remove_from_event_queue(WTPMachine *machine) {
 	mutex_unlock(machine->queue_lock);
 
 	return event;
+}
+
+/*
+ * Every message type uses the second and the third octets for tid. Bytes are 
+ * already in host order. Note that the iniator turns the first bit off, so we do
+ * have a genuine tid.
+ */
+static long deduce_tid(Msg *msg){
+   
+       long first_part,
+            second_part,
+            tid;
+
+       first_part = octstr_get_char(msg->wdp_datagram.user_data, 1);
+       second_part = octstr_get_char(msg->wdp_datagram.user_data, 2);
+       tid = first_part;
+       tid = (tid<<8) + second_part; 
+
+       return tid;
+}
+
+
+static int message_header_fixed(char octet){
+
+       return !(octet>>7); 
+}
+
+static char deduce_pdu_type(char octet){
+
+       int type;
+
+       if ((type = octet>>3&15) > 7){
+          return -1;
+       } else {
+          return type; 
+       }
+}
+
+static int single_message(char octet){
+
+       char this_octet,
+            gtr,
+            ttr;
+
+       this_octet = octet;
+       gtr = this_octet>>2&1;
+       this_octet = octet;
+       ttr = this_octet>>1&1;
+
+       if (gtr == 0 || ttr == 0)
+	  return 0;  
+       else
+          return 1;
+}
+
+static int protocol_version(char octet){
+
+       return octet>>6&3;
+}
+
+static WTPEvent *unpack_ack(long tid, char octet){
+
+      WTPEvent *event;
+      char this_octet;
+
+      event = wtp_event_create(RcvAck);
+
+      if (event == NULL){
+         tell_about_error(memory_error, event); 
+         return NULL;
+      }
+               
+      event->RcvAck.tid = tid;
+      this_octet = octet;
+      event->RcvAck.tid_ok = this_octet>>2&1;
+      this_octet = octet;
+      event->RcvAck.rid = this_octet&1;
+
+      return event;
+}
+
+WTPEvent *unpack_abort(long tid, char first_octet, char fourth_octet){
+
+         WTPEvent *event;
+         char abort_type;      
+
+         event = wtp_event_create(RcvAbort);
+
+         if (event == NULL){
+            tell_about_error(memory_error, event);
+            return NULL;
+         }   
+    
+         abort_type = first_octet&7;
+
+	 if (abort_type > 1 || fourth_octet > NUMBER_OF_ABORT_REASONS){
+            tell_about_error(illegal_header, event);
+            return NULL;
+         }
+                
+         event->RcvAbort.tid = tid;  
+         event->RcvAbort.abort_type = abort_type;   
+         event->RcvAbort.abort_reason = fourth_octet;
+         debug(0, "WTP: unpack_abort: abort event packed");
+         return event;
+}
+
+WTPEvent *unpack_invoke(Msg *msg, long tid, char first_octet, char fourth_octet){
+
+         WTPEvent *event;
+         char this_octet,
+              tcl;
+
+         event = wtp_event_create(RcvInvoke);
+
+         if (event == NULL){
+	    tell_about_error(memory_error, event);
+            return NULL;
+         }   
+
+         if (!single_message(first_octet)){
+            tell_about_error(no_segmentation, event);
+            return NULL;
+	 }
+
+         if (protocol_version(fourth_octet) != CURRENT){
+            tell_about_error(wrong_version, event);
+            return NULL;
+         }
+
+         this_octet = fourth_octet;
+         tcl = this_octet&3; 
+         if (tcl > 2){
+            tell_about_error(illegal_header, event);
+            return NULL;
+         }
+
+         event->RcvInvoke.tid = tid;
+         event->RcvInvoke.rid = first_octet&1;
+         this_octet = fourth_octet;               
+         event->RcvInvoke.tid_new = this_octet>>5&1;
+         this_octet = fourth_octet;
+         event->RcvInvoke.up_flag = this_octet>>4&1;
+         this_octet = fourth_octet;
+         event->RcvInvoke.tcl = tcl; 
+ 
+/*
+ * At last, the message itself. We remove the header.
+ */
+         octstr_delete(msg->wdp_datagram.user_data, 0, 4);
+         event->RcvInvoke.user_data = msg->wdp_datagram.user_data; 
+
+         return event;
+}
+
+static void tell_about_error(int type, WTPEvent *event){
+
+       switch (type){
+/*
+ * TDB: Send Abort(WTPVERSIONZERO)
+ */
+              case wrong_version:
+                   free(event);
+                   error(0, "WTP: Version not supported");
+              break;
+/*
+ * Send Abort(NOTIMPLEMENTEDSAR)
+ */
+              case no_segmentation:
+                   free(event);
+                   error(0, "WTP: No segmentation implemented");
+              break;
+/*
+ *TBD: Send Abort(PROTOERR). Add necessary indications! 
+ */
+             case illegal_header:
+                  free(event);
+                  error(0, "WTP: Illegal header structure");
+             break;
+/*
+ * TBD: Send Abort(CAPTEMPEXCEEDED), too.
+ */
+            case memory_error:
+                 free(event);
+                 error(0, "WTP: Out of memory");
+            break;
+/*
+ * TBD: Reason to panic?
+ */
+           case no_datagram:   
+                free(event);
+                error(0, "WTP: No datagram received");
+           break;
+     }
 }
 
 /*****************************************************************************/

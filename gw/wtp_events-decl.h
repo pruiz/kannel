@@ -49,6 +49,7 @@ EVENT(TRAbort,
      INTEGER(tid);
      INTEGER(abort_type);
      INTEGER(abort_reason);
+     OCTSTR(user_data);
      }) 
 
 EVENT(TimerTO_A,
