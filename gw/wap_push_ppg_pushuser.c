@@ -87,7 +87,7 @@ int wap_push_ppg_pushuser_list_add(List *list, long number_of_pushes,
 {
     CfgGroup *grp;
 
-    next_try = dict_create(number_of_pushes, NULL);
+    next_try = dict_create(number_of_pushes, octstr_destroy_item);
     users = pushusers_create(number_of_users);
     gw_assert(list);
     while (list && (grp = list_extract_first(list))) {
@@ -220,7 +220,6 @@ not_listed:
 
 listed:
         challenge(c, push_headers);
-        octstr_destroy(next_time_os);
 
         multiplier <<= 1;
         next = next + multiplier * ADDITION;
