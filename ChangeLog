@@ -1,4 +1,9 @@
 2005-02-10  Stipe Tolj  <stolj@wapme.de> 
+    * doc/examples/modems.conf: added modemds group for SonyEricsson GR47 GSM 
+      modem module. Thanks to Matti Ärmänen <matti.armanen@sci.fi> for this.
+      [Msg-ID: <421C8F56.2050502@sci.fi>]
+
+2005-02-10  Stipe Tolj  <stolj@wapme.de> 
     * doc/userguide/userguide.xml: minor typo fix.
 
 2005-02-01  Alexander Malysh <amalysh at kannel.org>
