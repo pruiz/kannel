@@ -1,3 +1,7 @@
+Fri Jan 28 17:13:47 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* Making release 0.5.
+
 Fri Jan 28 17:10:12 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* gw/wsp.c, gw/wsp.h, gw/wsp_events-decl.h, gw/wsp_state-decl.h,

@@ -21,8 +21,6 @@ else
 fi
 
 tar -c -z -f $base.tar.gz $base
-echo "Only building $base.tar.gz."
-exit 1
 zip -9qr $base.zip $base/*
 
 (cd $base && ./configure --enable-docs >/dev/null && make -s docs)
