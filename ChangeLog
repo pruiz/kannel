@@ -1,7 +1,6 @@
-2003-03-11  Stipe Tolj  <tolj@wapme-systems.de>
-    * gwlib/dbpool.c: check each consuming connection if it's still up. This
-      may be a bottle-neck, depending what mysql_ping() (i.e.) exactly does.
-      This has to be abstracted for various database types also.
+2003-03-13  Stipe Tolj  <tolj@wapme-systems.de>
+    * doc/userguide/userguide.xml: removed no-longer necessary 'force-sar'
+      diretive, fixing BUG#7.
 
 2003-03-11  Stipe Tolj  <tolj@wapme-systems.de>
     * gwlib/dbpool.[ch], test/test_dbpool.c: implements database connection
