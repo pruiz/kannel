@@ -85,6 +85,13 @@ struct WSPMethodMachine
 
 
 /*
+ * Initialize the WSP subsystem. This MUST be called before any other
+ * functions in this header.
+ */
+void wsp_init(void);
+
+
+/*
  * Create a WSPEvent structure and initialize it to be empty. Return a
  * pointer to the structure or NULL if there was a failure.
  */
@@ -149,55 +156,4 @@ void wsp_handle_event(WSPMachine *machine, WSPEvent *event);
 int wsp_deduce_pdu_type(Octstr *pdu, int connectionless);
 
 
-#if 0
-
-/*
- * Parse the user_data portion of a TR-Invoke.ind event into a WSPEvent
- * object. If there is a problem (memory allocation or invalid packet), 
- * then return NULL, and send an appropriate error packet to the phone. 
- * Otherwise return a pointer to the event structure that has been created.
- */
-WSPEvent *wsp_unpack_tr_invoke_ind(...);
-
-
-WTPMachine *create_or_find_wtp_machine(Msg *msg, WTPEvent *event);
-
-
-/*
- *Mark a WTP state machine unused. Normally, removing a stete machine from the
- *state machines list means marking it unused.
- */
-void wtp_machine_mark_unused(WTPMachine *machine);
-
-
-/*
- * Destroy a WTPMachine structure, including all its members. Remove the
- * structure from the global list of WTPMachine structures. This function is
- * used only by the garbage collection.
- */
-void wtp_machine_destroy(WTPMachine *machine);
-
-
-/*
- * Output (with `debug' in wapitlib.h) the state of the machine  and all
- * its fields.
- */
-void wtp_machine_dump(WTPMachine  *machine);
-
-
-/*
- * Feed an event to a WTP state machine. Handle all errors yourself,
- * and report them to the caller. Generate a pointer to WSP event, if an 
- * indication or a confirmation is required.
- *
- *Returns: WSPEvent, if succeeded and an indication or a confirmation is 
- *          generated
- *          NULL, if succeeded and no indication or confirmation is generated
- *          NULL, if failed (this information is superflous, but required by
- *          the function call syntax.)
- */
-WSPEvent *wtp_handle_event(WTPMachine *machine, WTPEvent *event);
-
-
-#endif
 #endif

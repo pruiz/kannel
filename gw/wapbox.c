@@ -271,6 +271,9 @@ int main(int argc, char **argv) {
 	info(0, "------------------------------------------------------------");
 	info(0, "WAP box version %s starting up.", VERSION);
 
+	wtp_init();
+	wsp_init();
+
 	bbsocket = connect_to_bearer_box();
 	init_queue();
 	

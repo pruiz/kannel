@@ -104,7 +104,7 @@ ROW(CONNECTING,
 			    sm2->client_port == sm->client_port &&
 			    octstr_compare(sm2->server_address, sm->server_address) == 0 &&
 			    sm2->server_port == sm->server_port) {
-				info(0, "WSP: Disconnecting session %d (%p)",
+				info(0, "WSP: Disconnecting session %ld (%p)",
 					sm2->session_id, (void *) sm2);
 				sm2->client_port = -1; /* Disable it. */
 				/* XXX this needs to be done properly later. --liw */

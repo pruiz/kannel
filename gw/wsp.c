@@ -14,7 +14,7 @@
 #include "wml.h"
 #include "ws.h"
 
-/* and WAP standard defined values for capabilities */
+/* WAP standard defined values for capabilities */
 
 #define WSP_CAPS_CLIENT_SDU_SIZE	0x00
 #define WSP_CAPS_SERVER_SDU_SIZE	0x01
@@ -55,6 +55,7 @@ typedef enum {
 
 
 static WSPMachine *session_machines = NULL;
+static Mutex *session_mutex = NULL;
 
 
 static void append_to_event_queue(WSPMachine *machine, WSPEvent *event);
@@ -85,6 +86,12 @@ static long new_server_transaction_id(void);
 static int transaction_belongs_to_session(WTPMachine *wtp, WSPMachine *session);
 
 static void *wsp_http_thread(void *arg);
+
+
+void wsp_init(void) {
+	session_mutex = mutex_create();
+}
+
 
 
 WSPEvent *wsp_event_create(WSPEventType type) {
@@ -159,9 +166,11 @@ void wsp_dispatch_event(WTPMachine *wtp_sm, WSPEvent *event) {
 		   machines. */
 		sm = NULL;
 	} else {
+		mutex_lock(session_mutex);
 		for (sm = session_machines; sm != NULL; sm = sm->next)
 			if (transaction_belongs_to_session(wtp_sm, sm))
 				break;
+		mutex_unlock(session_mutex);
 	}
 
 	if (sm == NULL) {
@@ -202,16 +211,17 @@ WSPMachine *wsp_machine_create(void) {
 	p->MOR_method = 1;
 	p->MOR_push = 1;
 	
-	/* XXX this should be locked */
+	mutex_lock(session_mutex);
 	p->next = session_machines;
 	session_machines = p;
+	mutex_unlock(session_mutex);
 	
 	return p;
 }
 
 
 void wsp_machine_destroy(WSPMachine *machine) {
-	debug(0, "Destroying WSPMachine not yet implemented.");
+	machine->client_port = -1;
 }
 
 
@@ -307,7 +317,7 @@ int wsp_deduce_pdu_type(Octstr *pdu, int connectionless) {
 
 
 
-static int unpack_caps(Octstr *caps, WSPMachine *m)
+static void unpack_caps(Octstr *caps, WSPMachine *m)
 {
     int off, flags;
     unsigned long length, uiv, mor;
@@ -410,7 +420,6 @@ static int unpack_caps(Octstr *caps, WSPMachine *m)
 	    break;
 	}
     }
-    return 0;
 }
 
 static void append_to_event_queue(WSPMachine *machine, WSPEvent *event) {
@@ -905,7 +914,7 @@ error:
 		} else if (strcmp(type, "text/vnd.wap.wmlscript") == 0) {
 			debug(0, "WSP: Compiling WMLScript");
 			type = "application/vnd.wap.wmlscriptc";
-#if 1
+
 {
 			WsCompilerParams params;
 			WsCompilerPtr compiler;
@@ -941,40 +950,7 @@ error:
 								result_size);
 			}
 }
-#else
-{
-	FILE *f;
-	char *wmlsc;
-	char cmd[100*1024];
-	char buf[100*1024];
-	size_t n;
-	char name[10*1024];
-	
-	tmpnam(name);
-	f = fopen(name, "w");
-	if (f == NULL)
-		panic(0, "WSP: Couldn't open temp file.");
-	fwrite(data, size, 1, f);
-	fclose(f);
 
-	wmlsc = getenv("WMLSC");
-	if (wmlsc == NULL)
-		wmlsc = "./wmlsc";
-	sprintf(cmd, "%s %s", wmlsc, name);
-	debug(0, "WSP: WMLSC cmd: <%s>", cmd);
-	if (system(cmd) != 0)
-		panic(0, "WSP: Couldn't run WMLSC compiler.");
-
-	strcat(name, "c");
-	f = fopen(name, "r");
-	if (f == NULL)
-		panic(0, "WSP: Couldn't open compiled temp file.");
-	n = fread(buf, 1, sizeof(buf), f);
-	fclose(f);
-	debug(0, "WSP: Read %lu bytes of compiled WMLSC", (unsigned long) n);
-	body = octstr_create_from_data(buf, n);
-}
-#endif
 			debug(0, "WSP: WMLScript compilation done.");
 		} else {
 			status = 415; /* Unsupported media type */

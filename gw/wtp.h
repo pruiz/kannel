@@ -122,6 +122,14 @@ struct WTPSegment {
    struct WTPSegment *next;
 };
 
+
+/*
+ * Initialize the WTP subsystem. MUST be called before any other calls
+ * to this module.
+ */
+void wtp_init(void);
+
+
 /*
  * Create a WTPEvent structure and initialize it to be empty. Return a
  * pointer to the structure or NULL if there was a failure.

@@ -1,3 +1,13 @@
+Thu Jan 27 20:09:23 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* gw/wtp.c, gw/wtp.h: Fixed locking of WTPMachine list (the previous
+	code had race conditions in it). Introduced wtp_init function.
+	
+	* gw/wsp.c, gw/wsp.h: Similarly for WSPMachine list (it was unlocked
+	completely) and wsp_init. Also minor cleanup.
+	
+	* gw/wapbox.c: Call wtp_init and wsp_init at startup.
+
 2000-01-27  Tuomas Luttinen  <tuo@tuo.wapit.fi>
 
 	* gw/wml_compiler.c : some little bug fixes

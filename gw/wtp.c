@@ -550,6 +550,11 @@ unsigned long wtp_tid_next(void){
 }
 
 
+void wtp_init(void) {
+	machines.lock = mutex_create();
+}
+
+
 /*****************************************************************************
  *
  * INTERNAL FUNCTIONS:
@@ -627,79 +632,30 @@ static WTPMachine *wtp_machine_find(Octstr *source_address, long source_port,
  * list is busy, just wait.
  */
 static WTPMachine *wtp_machine_create_empty(void){
-
         WTPMachine *machine = NULL;
-        int machines_list_is_busy = 0;
 
         machine = gw_malloc(sizeof(WTPMachine));
         
         #define INTEGER(name) machine->name = 0
         #define ENUM(name) machine->name = LISTEN
         #define MSG(name) machine->name = msg_create(wdp_datagram)
-        #define OCTSTR(name) machine->name = octstr_create_empty();\
-                             if (machine->name == NULL)\
-                                goto error
+        #define OCTSTR(name) machine->name = octstr_create_empty()
         #define QUEUE(name) machine->name = NULL
         #define MUTEX(name) machine->name = mutex_create()
-        #define TIMER(name) machine->name = wtp_timer_create();\
-                            if (machine->name == NULL)\
-                               goto error
+        #define TIMER(name) machine->name = wtp_timer_create()
         #define NEXT(name) machine->name = NULL
         #define MACHINE(field) field
         #include "wtp_machine-decl.h"
-/*
- * If machines list is empty, we iniatilise the global mutex.
- */
-        if (machines.list != NULL){
-           debug(0, "WTP: machine_create: there was machines in the machines 
-                 list");
-           machines_list_is_busy = mutex_try_lock(machines.lock);
 
-        } else {
-           debug(0, "WTP: machine_create: creating first machine");
-           machines.lock = mutex_create();
-           machines_list_is_busy = mutex_try_lock(machines.lock);
-        }
-/*
- * If the machines list is busy, we just wait (most time consuming task is fetching the
- * page, not handling this list).
- */
-        if (machines.list == NULL)
-           machines.first = machine;
-
-	else {  
-           machines.list->next = machine;
-        }
-    
+	mutex_lock(machines.lock);
+	if (machines.list == NULL)
+		machines.first = machine;
+	else
+		machines.list->next = machine;
         machines.list = machine;
-
-        mutex_unlock(machines.lock);
+	mutex_unlock(machines.lock);
 
         return machine;
-/*
- * Message Abort(CAPTEMPEXCEEDED), to be added later. 
- * Thou shalt not leak memory... Note, that a macro could be called many times.
- * So it is possible one call to succeed and another to fail. 
- */
- error:  if (machine != NULL) {
-            #define INTEGER(name)
-            #define ENUM(name)
-            #define MSG(name) if (machine->name != NULL)\
-                                 msg_destroy(machine->name)
-            #define OCTSTR(name) if (machine->name != NULL)\
-                                    octstr_destroy(machine->name)
-            #define QUEUE(name)  
-            #define MUTEX(name)  mutex_lock(machine->name);\
-                                 mutex_destroy(machine->name)
-            #define TIMER(name) if (machine->name != NULL)\
-                                   wtp_timer_destroy(machine->name)
-            #define NEXT(name)
-            #define MACHINE(field) field
-            #include "wtp_machine-decl.h"
-        }
-        gw_free(machine);
-        error(0, "WTP: machine_create_empty: unable to create a timer");
-        return NULL;
 }
 
 /*
@@ -714,8 +670,6 @@ WTPMachine *wtp_machine_create(Octstr *source_address,
 	   WTPMachine *machine;
 	   
 	   machine = wtp_machine_create_empty();
-	   if (machine == NULL)
-	   	panic(0, "wtp_machine_create_empty failed, out of memory");
 
            machine->source_address = source_address;
            machine->source_port = source_port;
@@ -767,15 +721,6 @@ static WSPEvent *pack_wsp_event(WSPEventType wsp_name, WTPEvent *wtp_event,
 
          WSPEvent *event = wsp_event_create(wsp_name);
 
-/*
- * Abort(CAPTEMPEXCEEDED)
- */
-         if (event == NULL){
-            debug(0, "WTP: pack_wsp_event: Out of memory");
-            gw_free(event);
-            return NULL;
-         }
-         
          switch (wsp_name){
                 
 	        case TRInvokeIndication:
