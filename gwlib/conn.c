@@ -780,6 +780,8 @@ int conn_flush(Connection *conn)
         }
     }
 
+    unlock_out(conn);
+
     return 0;
 }
 
