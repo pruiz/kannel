@@ -3,6 +3,9 @@
 	* wtp.c: fixed a bug in wtp_machine_find (now it actually does find 
 	a machine)
 
+	* wtp.c: implemented wtp_tid_next and added global variable gen_tid
+	(it is used as a transaction handle).
+
 	* purely estetical changes everywhere (prettier comments, etc.)
 
 1999-30-11 Aarno Syvänen <syvanen@wapit.com>
