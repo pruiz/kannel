@@ -1,5 +1,5 @@
 /*
- * wapbox.c - main program for WAP box
+ * wapbox.c - main program for wapbox
  *
  * This module contains the main program for the WAP box of the WAP gateway.
  * See the architecture documentation for details.

@@ -76,6 +76,7 @@ void wsp_http_map_url_config_info(void);
 void wap_appl_init(void);
 void wap_appl_shutdown(void);
 void wap_appl_dispatch(WAPEvent *event);
+long wap_appl_get_load(void);
 
 /*
  * WSP session oriented mode.
