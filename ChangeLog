@@ -1,6 +1,6 @@
 2002-03-26  Stipe Tolj  <tolj@wapme-systems.de>
     * checks/check_ppg.sh: checking test_http_server output seems not necessary
-      in this case
+      in this case and more verbose error output
 
 2002-03-26  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/smsc_emi2.c: fixing timestamp issue for the 0-based months,
