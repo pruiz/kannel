@@ -209,7 +209,7 @@ ROW(HOLDING,
 		 */
 		 
 		new_event = wap_event_create(S_MethodInvoke_Ind);
-		new_event->S_MethodInvoke_Ind.mid = e->tid;
+		new_event->S_MethodInvoke_Ind.mid = e->mid;
 		new_event->S_MethodInvoke_Ind.tid = e->tid;
 		new_event->S_MethodInvoke_Ind.url = octstr_duplicate(e->url);
 		new_event->S_MethodInvoke_Ind.method = Get_PDU;
