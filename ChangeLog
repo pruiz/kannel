@@ -1,5 +1,9 @@
 2000-10-06  Richard Braakman  <dark@wapit.com>
 
+	* Making release 0.11.3
+
+2000-10-06  Richard Braakman  <dark@wapit.com>
+
 	* doc/userguide/userguide.xml: Terminate OTA CGI table so that
 	it compiles.
 

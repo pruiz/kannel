@@ -1,9 +1,54 @@
-NEWS about Kannel: Open Source WAP and SMS Gateway version 0.11.2
+NEWS about Kannel: Open Source WAP and SMS Gateway version 0.11.3
 
 This is a DEVELOPMENT version. It should be usable for experimentation
 and testing, and is a release candidate for 0.12. Please do try it out
 and report problems to devel@kannel.org (the development mailing list)
 or bugs@kannel.org (the bug tracking system).
+
+Changes since version 0.11.2:
+
+Compatibility breakers:
+
+ * No longer supports libxml older than 2.2.0.
+
+New features:
+
+ * HTTP headers received from a server are packed and sent to the phone.
+   This allows cache-control and redirection to work.
+
+ * Overhaul of the user guide.
+
+ * Support for use of HTTP proxies.
+
+ * sendsms support for sending one message to multiple recipients.
+
+ * New sendota interface for sending over-the-air configuration messages.
+
+ * New smsbox configuration variable 'sendsms-chars' (see user guide).
+
+ * New configuration variable 'connect-allow-ip' for EMI IP SMSC, to
+   limit who can connect to the SMS reception port.
+
+ * Kannel adds Via: header when making HTTP requests.
+
+Bugfixes:
+
+ * In EMI SMSC driver, corrected calculation of message length for UDH.
+
+ * When configuring wdp-interface-name, using "*" works as expected again.
+
+ * Lots of minor bugfixes.
+
+Development news:
+
+ * Support for WTP Initiator (we used to have only Responder).  Not used yet.
+   This involved renaming some files.
+
+ * The memory leak checker now also reports the caller of certain often-used
+   functions such as octstr_create(), to make it easier to find out what code
+   is responsible for a memory leak.  It's relatively easy to wrap more
+   functions this way.
+
 
 Changes since version 0.11:
 
