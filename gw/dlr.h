@@ -37,7 +37,7 @@ MYSQL mysql;
 char *connection;
 #endif
 Octstr *table;
-Octstr *field_smsc, *field_ts, *field_dst, *field_serv;
+Octstr *field_smsc, *field_ts, *field_src, *field_dst, *field_serv;
 Octstr *field_url, *field_mask, *field_status;
 #endif
 
@@ -53,7 +53,8 @@ void dlr_shutdown(void);
 /* 
  * Add a new entry to the list 
  */
-void dlr_add(char *smsc, char *ts, char *dst, char *keyword, char *id, int mask);
+void dlr_add(char *smsc, char *ts, char *src, char *dst, 
+             char *keyword, char *id, int mask);
 
 /* 
  * Find an entry in the list. If there is one a message is returned and 

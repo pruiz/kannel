@@ -39,6 +39,7 @@
 typedef struct dlr_wle {
    Octstr *smsc;
    Octstr *timestamp;	
+   Octstr *source;
    Octstr *destination;
    Octstr *service;
    Octstr *url;	
@@ -90,6 +91,8 @@ static void dlr_db_init(CfgGroup *grp)
    	    panic(0, "DLR: DB: directive 'field-smsc' is not specified!");
     if (!(field_ts = cfg_get(grp, octstr_imm("field-timestamp"))))
         panic(0, "DLR: DB: directive 'field-timestamp' is not specified!");
+    if (!(field_src = cfg_get(grp, octstr_imm("field-source"))))
+   	    panic(0, "DLR: DB: directive 'field-source' is not specified!");
     if (!(field_dst = cfg_get(grp, octstr_imm("field-destination"))))
    	    panic(0, "DLR: DB: directive 'field-destination' is not specified!");
     if (!(field_serv = cfg_get(grp, octstr_imm("field-service"))))
@@ -369,6 +372,7 @@ static void dlr_destroy(dlr_wle *dlr)
 {
 	O_DELETE (dlr->smsc);
 	O_DELETE (dlr->timestamp);
+	O_DELETE (dlr->source);
 	O_DELETE (dlr->destination);
 	O_DELETE (dlr->service);
 	O_DELETE (dlr->url);
@@ -381,34 +385,40 @@ static void dlr_destroy(dlr_wle *dlr)
  * external functions
  */
 
-static void dlr_add_mem(char *smsc, char *ts, char *dst, char *service, char *url, int mask)
+static void dlr_add_mem(char *smsc, char *ts, char *src, char *dst, 
+                        char *service, char *url, int mask)
 {
-   dlr_wle	*dlr;
+   dlr_wle *dlr;
 	
-   if (mask & 0x1F) 
-   {
-	dlr = dlr_new(); 
+   if (mask & 0x1F) {
+        dlr = dlr_new(); 
+
+        debug("dlr.dlr", 0, "Adding DLR smsc=%s, ts=%s, src=%s, dst=%s, mask=%d", 
+              smsc, ts, src, dst, mask);
 	
-	dlr->smsc = octstr_create(smsc);
-	dlr->timestamp = octstr_create(ts);
-	dlr->destination = octstr_create(dst);
-	dlr->service = octstr_create(service); 
-	dlr->url = octstr_create(url);
-	dlr->mask = mask;
-	list_append(dlr_waiting_list,dlr);
-   }
+        dlr->smsc = octstr_create(smsc);
+        dlr->timestamp = octstr_create(ts);
+        dlr->source = octstr_create(src);
+        dlr->destination = octstr_create(dst);
+        dlr->service = octstr_create(service); 
+        dlr->url = octstr_create(url);
+        dlr->mask = mask;
+        list_append(dlr_waiting_list,dlr);
+    }
 }
 
-static void dlr_add_mysql(char *smsc, char *ts, char *dst, char *service, char *url, int mask)
+static void dlr_add_mysql(char *smsc, char *ts, char *src, char *dst, 
+                          char *service, char *url, int mask)
 {
 #ifdef DLR_MYSQL
     Octstr *sql;
     int	state;
 
-    sql = octstr_format("INSERT INTO %s (%s, %s, %s, %s, %s, %s, %s) VALUES "
-                        "('%s', '%s', '%s', '%s', '%s', '%d', '%d');",
+    sql = octstr_format("INSERT INTO %s (%s, %s, %s, %s, %s, %s, %s, %s) VALUES "
+                        "('%s', '%s', '%s', '%s', '%s', '%s', '%d', '%d');",
 		                octstr_get_cstr(table), octstr_get_cstr(field_smsc), 
-                        octstr_get_cstr(field_ts), octstr_get_cstr(field_dst), 
+                        octstr_get_cstr(field_ts), 
+                        octstr_get_cstr(field_src), octstr_get_cstr(field_dst),
                         octstr_get_cstr(field_serv), octstr_get_cstr(field_url), 
                         octstr_get_cstr(field_mask), octstr_get_cstr(field_status),
                         smsc, ts, dst, service,	url, mask, 0);
@@ -424,16 +434,18 @@ static void dlr_add_mysql(char *smsc, char *ts, char *dst, char *service, char *
 #endif
 }
 
-static void dlr_add_sdb(char *smsc, char *ts, char *dst, char *service, char *url, int mask)
+static void dlr_add_sdb(char *smsc, char *ts, char *src, char *dst, 
+                        char *service, char *url, int mask)
 {
 #ifdef DLR_SDB
     Octstr *sql;
     int	state;
 
-    sql = octstr_format("INSERT INTO %s (%s, %s, %s, %s, %s, %s, %s) VALUES "
-                        "('%s', '%s', '%s', '%s', '%s', '%d', '%d')",
+    sql = octstr_format("INSERT INTO %s (%s, %s, %s, %s, %s, %s, %s, %s) VALUES "
+                        "('%s', '%s', '%s', '%s', '%s', '%s', '%d', '%d')",
 		                octstr_get_cstr(table), octstr_get_cstr(field_smsc), 
-                        octstr_get_cstr(field_ts), octstr_get_cstr(field_dst), 
+                        octstr_get_cstr(field_ts), 
+                        octstr_get_cstr(field_src), octstr_get_cstr(field_dst), 
                         octstr_get_cstr(field_serv), octstr_get_cstr(field_url), 
                         octstr_get_cstr(field_mask), octstr_get_cstr(field_status),
                         smsc, ts, dst, service,	url, mask, 0);
@@ -449,16 +461,17 @@ static void dlr_add_sdb(char *smsc, char *ts, char *dst, char *service, char *ur
 #endif
 }
 
-void dlr_add(char *smsc, char *ts, char *dst, char *keyword, char *id, int mask)
+void dlr_add(char *smsc, char *ts, char *src, char *dst, 
+             char *keyword, char *id, int mask)
 {
     if (octstr_compare(dlr_type, octstr_imm("internal")) == 0) {
-        dlr_add_mem(smsc, ts, dst, keyword, id, mask);
+        dlr_add_mem(smsc, ts, src, dst, keyword, id, mask);
     } else 
     if (octstr_compare(dlr_type, octstr_imm("mysql")) == 0) {
-        dlr_add_mysql(smsc, ts, dst, keyword, id, mask);
+        dlr_add_mysql(smsc, ts, src, dst, keyword, id, mask);
     } else 
     if (octstr_compare(dlr_type, octstr_imm("sdb")) == 0) {
-        dlr_add_sdb(smsc, ts, dst, keyword, id, mask);
+        dlr_add_sdb(smsc, ts, src, dst, keyword, id, mask);
 
     /*
      * add aditional types here
@@ -475,7 +488,6 @@ static Msg *dlr_find_mem(char *smsc, char *ts, char *dst, int typ)
     long i;
     long len;
     dlr_wle *dlr;
-    Octstr *text;
     Msg *msg;
     int dlr_mask;
     
@@ -487,28 +499,36 @@ static Msg *dlr_find_mem(char *smsc, char *ts, char *dst, int typ)
         if((strcmp(octstr_get_cstr(dlr->smsc),smsc) == 0) &&
 	       (strcmp(octstr_get_cstr(dlr->timestamp),ts) == 0)) {
 
-            /* lets save the service and dump the rest of the entry */
-            text = octstr_len(dlr->url) ? octstr_duplicate(dlr->url) : octstr_create("");	   
-
             dlr_mask = dlr->mask;
 
-            if( (typ & dlr_mask) > 0) {
+            if ((typ & dlr_mask) > 0) {
                 /* its an entry we are interested in */
                 msg = msg_create(sms);
+                msg->sms.sms_type == report;
                 msg->sms.service = octstr_duplicate(dlr->service);
                 msg->sms.dlr_mask = typ;
                 msg->sms.sms_type = report;
                 msg->sms.smsc_id = octstr_create(smsc);
-                msg->sms.sender = octstr_create(dst);
-                msg->sms.receiver = octstr_create("000");
-                msg->sms.msgdata = text;
+                msg->sms.sender = octstr_duplicate(dlr->destination);
+                msg->sms.receiver = octstr_duplicate(dlr->source);
+
+                /* if dlr_url was present, recode it here again */
+                msg->sms.dlr_url = octstr_len(dlr->url) ? 
+                    octstr_duplicate(dlr->url) : NULL;	
+
+                /* 
+                 * insert orginal message to the data segment 
+                 * later in the smsc module 
+                 */
+                msg->sms.msgdata = NULL;
+
                 time(&msg->sms.time);
-                debug("dlr.dlr", 0, "created DLR message: %s", octstr_get_cstr(msg->sms.msgdata));
+                debug("dlr.dlr", 0, "created DLR message for URL <%s>", 
+                      octstr_get_cstr(msg->sms.dlr_url));
             } else {
                 debug("dlr.dlr", 0, "ignoring DLR message because of mask");
                 /* ok that was a status report but we where not interested in having it */
-                octstr_destroy(text);
-                msg=NULL;
+                msg = NULL;
             }
             if ((typ & DLR_BUFFERED) && ((dlr_mask & DLR_SUCCESS) || (dlr_mask & DLR_FAIL))) {
                 info(0, "dlr not destroyed, still waiting for other delivery report"); 

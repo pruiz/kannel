@@ -303,58 +303,51 @@ Octstr *urltrans_get_pattern(URLTranslation *t, Msg *request)
 
     url = reply = NULL;
     
-    if (request->sms.sms_type != report &&
-	t->type == TRANSTYPE_SENDSMS)
-	return octstr_create("");
+    if (request->sms.sms_type != report && t->type == TRANSTYPE_SENDSMS)
+        return octstr_create("");
 
     word_list = octstr_split_words(request->sms.msgdata);
     num_words = list_len(word_list);
 
     result = octstr_create("");
+
+    /* check if this is a delivery report message or not */
     if (request->sms.sms_type != report) {
-	pattern = t->pattern;
+        pattern = t->pattern;
     } else {
-	int colon;
 
-	colon = octstr_search_char(request->sms.msgdata, '/', 0);
-	if (colon == 0 )
-	    reply = octstr_create("");
-	else 
-	    reply = octstr_copy(request->sms.msgdata, 0, colon);
-	if (colon == octstr_len(request->sms.msgdata)) 
-	    url = octstr_create("");
-	else
-	    url = octstr_copy(request->sms.msgdata, colon + 1, 
-	              octstr_len(request->sms.msgdata) - colon - 1);
+        /* this is a DLR message */
+        reply = octstr_duplicate(request->sms.msgdata);
+        url = octstr_duplicate(request->sms.dlr_url);
 
-	pattern = url;
-	if (octstr_len(pattern) == 0) {
-	    if(octstr_len(t->dlr_url)) {
-		pattern = t->dlr_url;
-	    } else {
-		list_destroy(word_list, octstr_destroy_item);
-		return octstr_create("");
-	    }
-	}
+        pattern = url;
+        if (octstr_len(pattern) == 0) {
+            if (octstr_len(t->dlr_url)) {
+                pattern = t->dlr_url;
+            } else {
+                list_destroy(word_list, octstr_destroy_item);
+                return octstr_create("");
+            }
+        }
     }
 
     pattern_len = octstr_len(pattern);
     nextarg = 1;
     pos = 0;
     for (;;) {
-    	while (pos < pattern_len) {
-	    c = octstr_get_char(pattern, pos);
-	    if (c == '%' && pos + 1 < pattern_len)
-	    	break;
-	    octstr_append_char(result, c);
-	    ++pos;
-	}
+        while (pos < pattern_len) {
+            c = octstr_get_char(pattern, pos);
+            if (c == '%' && pos + 1 < pattern_len)
+                break;
+            octstr_append_char(result, c);
+            ++pos;
+        }
 
-    	if (pos == pattern_len)
-	    break;
+        if (pos == pattern_len)
+            break;
 
-	switch (octstr_get_char(pattern, pos + 1)) {
-	case 'k':
+    switch (octstr_get_char(pattern, pos + 1)) {
+    case 'k':
 	    if (num_words <= 0)
 		break;
 	    enc = octstr_duplicate(list_get(word_list, 0));
