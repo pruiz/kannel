@@ -1,3 +1,10 @@
+/*
+ * smsbox_req.c - fulfill sms requests from users
+ *
+ * this module handles the request handling - that is, finding
+ * the correct urltranslation, fetching the result and then
+ * splitting it into several messages if needed to
+ */
 
 #include <errno.h>
 #include <stdlib.h>
@@ -22,12 +29,6 @@
 #include <security/pam_appl.h>
 #endif
 
-/*
- * this module handles the request handling - that is, finding
- * the correct urltranslation, fetching the result and then
- * splitting it into several messages if needed to
- *
- */
 
 /* Defines */
 #define MAX8BITLENGTH	140
@@ -128,8 +129,7 @@ static void get_receiver(long id, Msg **msg, URLTranslation **trans)
 
 static void url_result_thread(void *arg)
 {
-    Octstr *final_url, *reply_body, *type, *charset,
-	    *temp, *replytext;
+    Octstr *final_url, *reply_body, *type, *charset, *temp, *replytext;
     List *reply_headers;
     int status;
     long id;
@@ -146,21 +146,21 @@ static void url_result_thread(void *arg)
 
 	http_header_get_content_type(reply_headers, &type, &charset);
 	if (octstr_str_compare(type, "text/html") == 0) {
-		if (urltrans_prefix(trans) != NULL &&
-		    urltrans_suffix(trans) != NULL) {
-		    temp = html_strip_prefix_and_suffix(reply_body,
-			       urltrans_prefix(trans), 
-			       urltrans_suffix(trans));
-		    octstr_destroy(reply_body);
-		    reply_body = temp;
-		}
-		replytext = html_to_sms(reply_body);
+	    if (urltrans_prefix(trans) != NULL &&
+		urltrans_suffix(trans) != NULL) {
+		temp = html_strip_prefix_and_suffix(reply_body,
+		urltrans_prefix(trans), 
+		urltrans_suffix(trans));
+		octstr_destroy(reply_body);
+		reply_body = temp;
+	    }
+	    replytext = html_to_sms(reply_body);
 	} else if (octstr_str_compare(type, "text/plain") == 0) {
-		replytext = reply_body;
-		reply_body = NULL;
+	    replytext = reply_body;
+	    reply_body = NULL;
 	} else {
-		replytext = octstr_create("Result could not be represented "
-					  "as an SMS message.");
+	    replytext = octstr_create("Result could not be represented "
+				      "as an SMS message.");
 	}
     
 	octstr_destroy(type);
@@ -181,8 +181,8 @@ static void url_result_thread(void *arg)
 	     : (reply_body != NULL) ? octstr_get_cstr(reply_body) : "");
 		
 	/* send_message frees the 'msg' */
-	if(send_message(trans, msg) < 0)
-		    error(0, "request_thread: failed");
+	if (send_message(trans, msg) < 0)
+	    error(0, "request_thread: failed");
     }
 }
 
@@ -196,70 +196,69 @@ static char HTTP_RESULT[] = "http_result";
 
 static char *obey_request(URLTranslation *trans, Msg *msg)
 {
-	char *pattern, *ret;
-	Octstr *url, *replytext;
-	List *request_headers;
-	long id;
-
-	gw_assert(msg != NULL);
-	gw_assert(msg_type(msg) == sms);
-
-	pattern = urltrans_get_pattern(trans, msg);
-	gw_assert(pattern != NULL);
-
-	switch (urltrans_type(trans)) {
-	case TRANSTYPE_TEXT:
-		debug("sms", 0, "formatted text answer: <%s>", pattern);
-		ret = pattern;
-		alog("SMS request sender:%s request: '%s' fixed answer: '%s'",
-		     octstr_get_cstr(msg->sms.receiver),
-		     octstr_get_cstr(msg->sms.msgdata),
-		     pattern);
-		break;
-
-	case TRANSTYPE_FILE:
-		replytext = octstr_read_file(pattern);
-		gw_free(pattern);
-		ret = gw_strdup(octstr_get_cstr(replytext));
-		octstr_destroy(replytext);
-		alog("SMS request sender:%s request: '%s' file answer: '%s'",
-		     octstr_get_cstr(msg->sms.receiver),
-		     octstr_get_cstr(msg->sms.msgdata),
-		     ret);
-		break;
-
-	case TRANSTYPE_URL:
-		url = octstr_create(pattern);
-		request_headers = list_create();
-    	    	id = http_start_request(caller, url, request_headers, 
-		    	    	    	NULL, 1);
-    	    	if (id == -1)
-		    goto error;
-
-		gw_free(pattern);		/* no longer needed */
-		octstr_destroy(url);
-		http_destroy_headers(request_headers);
-
-		if (id == -1)
-		    goto error;
-		
-    	    	remember_receiver(id, msg, trans);
-		ret = HTTP_RESULT;
-		break;
-
-	default:
-		error(0, "Unknown URL translation type %d", 
-			urltrans_type(trans));
-		alog("SMS request sender:%s request: '%s' FAILED unknown translation",
-		     octstr_get_cstr(msg->sms.receiver),
-		     octstr_get_cstr(msg->sms.msgdata));
-		return NULL;
-	}
+    char *pattern, *ret;
+    Octstr *url, *replytext;
+    List *request_headers;
+    long id;
+    
+    gw_assert(msg != NULL);
+    gw_assert(msg_type(msg) == sms);
+    
+    pattern = urltrans_get_pattern(trans, msg);
+    gw_assert(pattern != NULL);
+    
+    switch (urltrans_type(trans)) {
+    case TRANSTYPE_TEXT:
+	debug("sms", 0, "formatted text answer: <%s>", pattern);
+	ret = pattern;
+	alog("SMS request sender:%s request: '%s' fixed answer: '%s'",
+	octstr_get_cstr(msg->sms.receiver),
+	octstr_get_cstr(msg->sms.msgdata),
+	pattern);
+	break;
+    
+    case TRANSTYPE_FILE:
+	replytext = octstr_read_file(pattern);
+	gw_free(pattern);
+	ret = gw_strdup(octstr_get_cstr(replytext));
+	octstr_destroy(replytext);
+	alog("SMS request sender:%s request: '%s' file answer: '%s'",
+	octstr_get_cstr(msg->sms.receiver),
+	octstr_get_cstr(msg->sms.msgdata),
+	ret);
+	break;
+    
+    case TRANSTYPE_URL:
+	url = octstr_create(pattern);
+	request_headers = list_create();
+	id = http_start_request(caller, url, request_headers, NULL, 1);
+	if (id == -1)
+	    goto error;
 	
-	return ret;
-
-error:
+	gw_free(pattern);
+	octstr_destroy(url);
+	http_destroy_headers(request_headers);
+	
+	if (id == -1)
+	    goto error;
+	
+	remember_receiver(id, msg, trans);
+	ret = HTTP_RESULT;
+	break;
+    
+    default:
+	error(0, "Unknown URL translation type %d", 
+	urltrans_type(trans));
+	alog("SMS request sender:%s request: '%s' FAILED unknown translation",
+	octstr_get_cstr(msg->sms.receiver),
+	octstr_get_cstr(msg->sms.msgdata));
 	return NULL;
+    }
+    
+    return ret;
+    
+error:
+    return NULL;
 }
 
 
@@ -283,129 +282,130 @@ static void do_sending(Msg *msg)
  *     message can be split into, h: header, hl: header length, f: footer,
  *     fl: footer length.
  */
-static void do_split_send(Msg *msg, int maxmsgs, int maxdatalength, URLTranslation *trans,
-			 char *h, int hl, char *f, int fl)
+static void do_split_send(Msg *msg, int maxmsgs, int maxdatalength, 
+    	    	    	  URLTranslation *trans, char *h, int hl, char *f, 
+			  int fl)
 {
-	Msg *split;
-
-	char *p, *suf, *sc;
-	int suflen = 0;
-	int size, total_len, pos;
-
-	int concat;
-	int msgcount, msgseq = 1;
-	static unsigned char msgref = 0;
-
-	gw_assert(msg != NULL);
-	gw_assert(maxmsgs > 1);
-	gw_assert(hl >= 0);
-	gw_assert(fl >= 0);
-
-	if (trans != NULL)
-	    concat = urltrans_concatenation(trans);
-	else
-	    concat = 0;
-	/* The concatenation adds some information in the UDH so the maximum length
-	 * of the data goes down */
-	if(concat) {
-		if(msg->sms.flag_8bit) {
-			maxdatalength -= CONCAT_IEL;
-		} else {
-			/* in 7bit mode it is easier to remove the length of the UDH and
-			 * calculate it again */
-            maxdatalength += roundup_div(octstr_len(msg->sms.udhdata)*8, 7);
-            maxdatalength -= roundup_div(
-                (CONCAT_IEL + octstr_len(msg->sms.udhdata)) * 8, 7);
-
-		}
-	}
-	
-	if (trans != NULL) {
-	        suf = urltrans_split_suffix(trans);
-		if (suf != NULL) {
-		        suflen = strlen(suf);
-		}
-		sc = urltrans_split_chars(trans);
+    Msg *split;
+    
+    char *p, *suf, *sc;
+    int suflen = 0;
+    int size, total_len, pos;
+    
+    int concat;
+    int msgcount, msgseq = 1;
+    static unsigned char msgref = 0;
+    
+    gw_assert(msg != NULL);
+    gw_assert(maxmsgs > 1);
+    gw_assert(hl >= 0);
+    gw_assert(fl >= 0);
+    
+    if (trans != NULL)
+	concat = urltrans_concatenation(trans);
+    else
+	concat = 0;
+    /* The concatenation adds some information in the UDH so the maximum 
+     * length of the data goes down */
+    if (concat) {
+	if (msg->sms.flag_8bit) {
+	    maxdatalength -= CONCAT_IEL;
 	} else {
+	    /* in 7bit mode it is easier to remove the length of the UDH and
+	     * calculate it again */
+	    maxdatalength += roundup_div(octstr_len(msg->sms.udhdata)*8, 7);
+	    maxdatalength -= roundup_div(
+				  (CONCAT_IEL + 
+				   octstr_len(msg->sms.udhdata)) * 8, 7);
+	}
+    }
+    
+    if (trans != NULL) {
+	suf = urltrans_split_suffix(trans);
+	if (suf != NULL) {
+	    suflen = strlen(suf);
+	}
+	sc = urltrans_split_chars(trans);
+    } else {
+	suf = NULL;
+	sc = NULL;
+    }
+    
+    total_len = octstr_len(msg->sms.msgdata);
+    
+    /* number of messages that will be needed 
+     * The value is rounded up */
+    msgcount = roundup_div(total_len, maxdatalength);
+    
+    /* Go through the full message and send it in parts. The maximum number
+     * of messages is respected even if the message has not been completely 
+     sent. */
+    p = octstr_get_cstr(msg->sms.msgdata);
+    for(pos = 0; maxmsgs > 0 && pos < total_len; maxmsgs--) {
+	if (total_len-pos < maxdatalength-fl-hl) { 	/* message ends */
+	    suflen = 0;
 	    suf = NULL;
-	    sc = NULL;
+	    sc = NULL;	/* no split char on end of message! */
+	    size = total_len - pos;
+	} else if (maxmsgs == 1) {			/* last part */
+	    suflen = 0;
+	    suf = NULL;
+	    sc = NULL;	/* no split char on end of message! */
+	    size = maxdatalength -hl -fl;
+	} else {					/* other parts */
+	    size = maxdatalength - suflen -hl -fl;
 	}
-
-	total_len = octstr_len(msg->sms.msgdata);
-
-	/* number of messages that will be needed 
-	 * The value is rounded up */
-	msgcount = roundup_div(total_len, maxdatalength);
-
-	/* Go through the full message and send it in parts. The maximum number
-	 * of messages is respected even if the message has not been completely sent. */
-	p = octstr_get_cstr(msg->sms.msgdata);
-	for(pos = 0; maxmsgs > 0 && pos < total_len; maxmsgs--)
-	{
-		if (total_len-pos < maxdatalength-fl-hl) { 	/* message ends */
-			suflen = 0;
-			suf = NULL;
-			sc = NULL;	/* no split char on end of message! */
-			size = total_len - pos;
-		} else if (maxmsgs == 1) {			/* last part */
-			suflen = 0;
-			suf = NULL;
-			sc = NULL;	/* no split char on end of message! */
-			size = maxdatalength -hl -fl;
-		} else {					/* other parts */
-			size = maxdatalength - suflen -hl -fl;
-		}
-
-		/* Split chars are used to avoid cutting a word in the middle.
-		 * The split will occur at the last occurence of the split char
-		 * in the message part. */
-		if (sc) {
-			size = str_reverse_seek(p+pos, size-1, sc) + 1;
-
-			/* Do not split if the resulting message is too small
-			 * (if the last word is very long). */
-			if (size < sms_max_length/2)
-				size = maxdatalength - suflen -hl -fl;
-		}
-
-		/* Make a copy of the message then replace the data  with the 
-		 * part that we are going to send in this SMS. This is easier
-		 * than creating a new message with almost the same content. */
-		split = msg_duplicate(msg);
+    
+	/* Split chars are used to avoid cutting a word in the middle.
+	 * The split will occur at the last occurence of the split char
+	 * in the message part. */
+	if (sc) {
+	    size = str_reverse_seek(p+pos, size-1, sc) + 1;
 	
-		if (h != NULL) {	/* add header and message */
-			octstr_replace(split->sms.msgdata, h, hl);
-			octstr_insert_data(split->sms.msgdata, hl, p+pos, size);    
-		} else			/* just the message */
-			octstr_replace(split->sms.msgdata, p+pos, size);
-	
-		if (suf != NULL)
-			octstr_insert_data(split->sms.msgdata, size+hl, suf, suflen);
-		
-		if (f != NULL)	/* add footer */
-			octstr_insert_data(split->sms.msgdata, size+hl+suflen, f, fl);
-
-		/* for concatenated messages add the UDH Element */
-		if(concat == 1)
-		{
-			/* Add the UDH with the concatenation information */
-			octstr_append_char(split->sms.udhdata, CONCAT_IEI); /* IEI */
-			octstr_append_char(split->sms.udhdata, 3); /* IEI Length = 3 octets */
-			octstr_append_char(split->sms.udhdata, msgref); /* ref */
-			octstr_append_char(split->sms.udhdata, msgcount); /* total nbr of msg */
-			octstr_append_char(split->sms.udhdata, msgseq); /* msg sequence */
-			split->sms.flag_udh = 1;
-		}
-		
-		do_sending(split);
-		pos += size;
-
-		msgseq++; /* sequence number for the next message */
+	    /* Do not split if the resulting message is too small
+	     * (if the last word is very long). */
+	    if (size < sms_max_length/2)
+		size = maxdatalength - suflen -hl -fl;
 	}
-	msg_destroy(msg); /* we must delete it as it is supposed to be deleted */
-
-	/* Increment the message reference. It is an unsigned value so it will wrap. */
-	msgref++;
+    
+	/* Make a copy of the message then replace the data  with the 
+	 * part that we are going to send in this SMS. This is easier
+	 * than creating a new message with almost the same content. */
+	split = msg_duplicate(msg);
+    
+	if (h != NULL) {	/* add header and message */
+	    octstr_replace(split->sms.msgdata, h, hl);
+	    octstr_insert_data(split->sms.msgdata, hl, p+pos, size);    
+	} else			/* just the message */
+	    octstr_replace(split->sms.msgdata, p+pos, size);
+    
+	if (suf != NULL)
+	    octstr_insert_data(split->sms.msgdata, size+hl, suf, suflen);
+	
+	if (f != NULL)	/* add footer */
+	    octstr_insert_data(split->sms.msgdata, size+hl+suflen, f, fl);
+	
+	/* for concatenated messages add the UDH Element */
+	if (concat == 1) {
+	    /* Add the UDH with the concatenation information */
+	    octstr_append_char(split->sms.udhdata, CONCAT_IEI); /* IEI */
+	    octstr_append_char(split->sms.udhdata, 3); /* IEI Length = 3 octets */
+	    octstr_append_char(split->sms.udhdata, msgref); /* ref */
+	    octstr_append_char(split->sms.udhdata, msgcount); /* total nbr of msg */
+	    octstr_append_char(split->sms.udhdata, msgseq); /* msg sequence */
+	    split->sms.flag_udh = 1;
+	}
+	
+	do_sending(split);
+	pos += size;
+	
+	msgseq++; /* sequence number for the next message */
+    }
+    msg_destroy(msg); /* we must delete it as it is supposed to be deleted */
+    
+    /* Increment the message reference. It is an unsigned value so it 
+     * will wrap. */
+    msgref++;
 }
 
 
@@ -415,75 +415,80 @@ static void do_split_send(Msg *msg, int maxmsgs, int maxdatalength, URLTranslati
  */
 static int send_sms(URLTranslation *trans, Msg *msg, int max_msgs)
 {
-	int hl=0, fl=0;
-	char *h, *f;
-	int maxdatalength;
-
-	if (trans != NULL) {
-	    h = urltrans_header(trans);
-	    f = urltrans_footer(trans);
-	} else {
-	    h = f = NULL;
+    int hl = 0, fl = 0;
+    char *h, *f;
+    int maxdatalength;
+    
+    if (trans != NULL) {
+	h = urltrans_header(trans);
+	f = urltrans_footer(trans);
+    } else {
+	h = f = NULL;
+    }
+    if (h != NULL)
+    	hl = strlen(h);
+    else hl = 0;
+    if (f != NULL)
+    	fl = strlen(f); 
+    else
+    	fl = 0;
+    
+    /* maximum length of the data in the SMS */
+    maxdatalength = sms_max_length;
+    if (maxdatalength < 0) {
+	/* If the maximum length of the SMS data hasn't been set in the 
+	 * config file, set it to the maximum length depending on the 
+	 * 7bit or 8bit settings. */ 
+	maxdatalength = (msg->sms.flag_8bit != 0) 
+	    	    	? MAX8BITLENGTH 
+			: MAX7BITLENGTH;
+    }
+    if (maxdatalength == 0) {	/* Don't send a message is maxdatalength is 0 ! */
+	return -1;
+    }
+    
+    if (msg->sms.flag_8bit) {		/* 8 bit */
+	if (maxdatalength > MAX8BITLENGTH) {
+	    maxdatalength = MAX8BITLENGTH;
 	}
-	if (h != NULL) hl = strlen(h); else hl = 0;
-	if (f != NULL) fl = strlen(f); else fl = 0;
-
-	/* maximum length of the data in the SMS */
-	maxdatalength = sms_max_length;
-	if(maxdatalength < 0) {
-		/* If the maximum length of the SMS data hasn't been set in the 
-		 * config file, set it to the maximum length depending on the 
-		 * 7bit or 8bit settings. */ 
-		maxdatalength = (msg->sms.flag_8bit != 0) ? MAX8BITLENGTH : MAX7BITLENGTH;
+	if (msg->sms.flag_udh) {
+	    maxdatalength -= octstr_len(msg->sms.udhdata);
 	}
-	if(maxdatalength == 0) {	/* Don't send a message is maxdatalength is 0 ! */
-		return -1;
+    } else {				/* 7 bit */
+	if (maxdatalength > MAX7BITLENGTH) {
+	    maxdatalength = MAX7BITLENGTH;
 	}
-
-	if(msg->sms.flag_8bit) {		/* 8 bit */
-		if(maxdatalength > MAX8BITLENGTH) {
-			maxdatalength = MAX8BITLENGTH;
-		}
-		if(msg->sms.flag_udh) {
-    			maxdatalength -= octstr_len(msg->sms.udhdata);
-    		}
-    	} else {				/* 7 bit */
-		if(maxdatalength > MAX7BITLENGTH) {
-			maxdatalength = MAX7BITLENGTH;
-		}
-		if(msg->sms.flag_udh) {
-			/* the length is in 7bit characters! +1 for the length of the UDH. */
-    			maxdatalength -= roundup_div(octstr_len(msg->sms.udhdata)*8, 7) + 1;
-    		}
-    	}
-    	
-	if (octstr_len(msg->sms.msgdata) <= (maxdatalength - fl - hl)
-	    || max_msgs == 1) { 
-
-		if (h != NULL)	/* if header set */
-			octstr_insert_data(msg->sms.msgdata, 0, h, hl);
-		
-		/* truncate if the message is too long (this only happens if
-	 	 *  max_msgs == 1) */
-
-		if (octstr_len(msg->sms.msgdata)+fl > sms_max_length)
-			octstr_truncate(msg->sms.msgdata, sms_max_length - fl);
-	    
-		if (f != NULL)	/* if footer set */
-			octstr_insert_data(msg->sms.msgdata,
-		                   octstr_len(msg->sms.msgdata), f, fl);
-
-		do_sending(msg);
-		return 0;
-
-	} else {
-		/*
-	 	* we have a message that is longer than what fits in one
-	 	* SMS message and we are allowed to split it
-	 	*/
-		do_split_send(msg, max_msgs, maxdatalength, trans, h, hl, f, fl);
-		return 0;
+	if (msg->sms.flag_udh) {
+	/* the length is in 7bit characters! +1 for the length of the UDH. */
+	maxdatalength -= roundup_div(octstr_len(msg->sms.udhdata)*8, 7) + 1;
 	}
+    }
+    
+    if (octstr_len(msg->sms.msgdata) <= (maxdatalength - fl - hl)
+	|| max_msgs == 1) { 
+	if (h != NULL)	/* if header set */
+	    octstr_insert_data(msg->sms.msgdata, 0, h, hl);
+    
+	/* truncate if the message is too long (this only happens if
+	 *  max_msgs == 1) */
+    
+	if (octstr_len(msg->sms.msgdata)+fl > sms_max_length)
+	    octstr_truncate(msg->sms.msgdata, sms_max_length - fl);
+    
+	if (f != NULL)	/* if footer set */
+	    octstr_insert_data(msg->sms.msgdata, 
+	    	    	       octstr_len(msg->sms.msgdata), f, fl);
+    
+	do_sending(msg);
+	return 0;
+    } else {
+	/*
+	 * we have a message that is longer than what fits in one
+	 * SMS message and we are allowed to split it
+	 */
+	do_split_send(msg, max_msgs, maxdatalength, trans, h, hl, f, fl);
+	return 0;
+    }
 }
 
 
@@ -493,40 +498,39 @@ static int send_sms(URLTranslation *trans, Msg *msg, int max_msgs)
  */
 static int send_message(URLTranslation *trans, Msg *msg)
 {
-	int max_msgs;
-	static char *empty = "<Empty reply from service provider>";
-
-	gw_assert(msg != NULL);
-	
-	if (trans != NULL)
-	    max_msgs = urltrans_max_messages(trans);
-	else
-	    max_msgs = 1;
-	
-	if(msg_type(msg) != sms) {
-		error(0, "Weird message type for send_message!");
-		msg_destroy(msg);
-		return -1;
-    	}
-
-	if (max_msgs == 0) {
-		info(0, "No reply sent, denied.");
-		msg_destroy(msg);
-		return 0;
-	}
-
-	if((msg->sms.flag_udh == 0) 
-	   && (octstr_len(msg->sms.msgdata)==0)) {
-	        if (trans != NULL && urltrans_omit_empty(trans) != 0) {
-			max_msgs = 0;
-		} else { 
-			octstr_replace(msg->sms.msgdata, empty, 
-				       strlen(empty));
-		}
-	}
-	if (max_msgs > 0)
-	    return send_sms(trans, msg, max_msgs);
+    int max_msgs;
+    static char *empty = "<Empty reply from service provider>";
+    
+    gw_assert(msg != NULL);
+    
+    if (trans != NULL)
+	max_msgs = urltrans_max_messages(trans);
+    else
+	max_msgs = 1;
+    
+    if (msg_type(msg) != sms) {
+	error(0, "Weird message type for send_message!");
+	msg_destroy(msg);
+	return -1;
+    }
+    
+    if (max_msgs == 0) {
+	info(0, "No reply sent, denied.");
+	msg_destroy(msg);
 	return 0;
+    }
+    
+    if (msg->sms.flag_udh == 0 && octstr_len(msg->sms.msgdata) == 0) {
+	if (trans != NULL && urltrans_omit_empty(trans) != 0) {
+	    max_msgs = 0;
+	} else { 
+	    octstr_replace(msg->sms.msgdata, empty, 
+	    strlen(empty));
+	}
+    }
+    if (max_msgs > 0)
+	return send_sms(trans, msg, max_msgs);
+    return 0;
 }
 
 /* Function that test the authentification via Plugable authentification module*/
@@ -637,7 +641,8 @@ int pam_authorise_user(List *list) {
  * Check for matching username and password for requests.
  * Return an URLTranslation if successful NULL otherwise.
  */
-static URLTranslation *default_authorise_user(List *list, char *client_ip) {
+static URLTranslation *default_authorise_user(List *list, char *client_ip) 
+{
     URLTranslation *t = NULL;
     Octstr *val, *user = NULL;
 
@@ -671,19 +676,21 @@ static URLTranslation *default_authorise_user(List *list, char *client_ip) {
     return t;
 }
 
-static URLTranslation *authorise_user(List *list, char *client_ip) {
-
+static URLTranslation *authorise_user(List *list, char *client_ip) 
+{
 #ifdef HAVE_SECURITY_PAM_APPL_H
-  URLTranslation*t=urltrans_find_username(translations,"pam");
-  
-  if (t!=NULL) {
-    if(pam_authorise_user(list)) return t;
-    else return NULL;
-  }
-  
-  else
-#endif
+    URLTranslation *t = urltrans_find_username(translations, "pam");
+    
+    if (t != NULL) {
+	if (pam_authorise_user(list))
+	    return t;
+	else 
+	    return NULL;
+    } else
+	return default_authorise_user(list,client_ip);
+#else
     return default_authorise_user(list,client_ip);
+#endif
 }
 
 /*----------------------------------------------------------------*
@@ -697,24 +704,24 @@ void smsbox_req_init(URLTranslationList *transls,
 		    char *accept_str,
 		    void (*send) (Msg *msg))
 {
-	translations = transls;
-	cfg = config;
-	sms_max_length = sms_max;
-	sender = send;
-	if (accept_str)
-	    sendsms_number_chars = accept_str;
-	else
-	    sendsms_number_chars = SENDSMS_DEFAULT_CHARS;
-
-	if (global != NULL)
-		global_sender = gw_strdup(global);
-
-    	caller = http_caller_create();
-    	smsbox_requests = list_create();
-	list_add_producer(smsbox_requests);
-	receivers = dict_create(1024, destroy_receiver);
-	gwthread_create(smsbox_req_thread, NULL);
-	gwthread_create(url_result_thread, NULL);
+    translations = transls;
+    cfg = config;
+    sms_max_length = sms_max;
+    sender = send;
+    if (accept_str)
+	sendsms_number_chars = accept_str;
+    else
+	sendsms_number_chars = SENDSMS_DEFAULT_CHARS;
+    
+    if (global != NULL)
+	global_sender = gw_strdup(global);
+    
+    caller = http_caller_create();
+    smsbox_requests = list_create();
+    list_add_producer(smsbox_requests);
+    receivers = dict_create(1024, destroy_receiver);
+    gwthread_create(smsbox_req_thread, NULL);
+    gwthread_create(url_result_thread, NULL);
 }
 
 void smsbox_req_shutdown(void)
@@ -732,19 +739,20 @@ void smsbox_req_shutdown(void)
 
 long smsbox_req_count(void)
 {
-	return 0; /* XXX should check number of pending http requests */
+    return 0; /* XXX should check number of pending http requests */
 }
 
-void smsbox_req_thread(void *arg) {
+void smsbox_req_thread(void *arg) 
+{
     Msg *msg;
     Octstr *tmp;
     URLTranslation *trans;
     char *reply = NULL, *p;
     
     while ((msg = list_consume(smsbox_requests)) != NULL) {
-	if (octstr_len(msg->sms.sender) == 0 || octstr_len(msg->sms.receiver) == 0) 
+	if (octstr_len(msg->sms.sender) == 0 ||
+	    octstr_len(msg->sms.receiver) == 0) 
 	{
-    
 	    error(0, "smsbox_req_thread: no sender/receiver, dump follows:");
 	    msg_dump(msg, 0);
 		    /* NACK should be returned here if we use such 
@@ -788,9 +796,11 @@ void smsbox_req_thread(void *arg) {
 	if (p != NULL)
 	    octstr_replace(msg->sms.sender, p, strlen(p));
 	else if (global_sender != NULL)
-	    octstr_replace(msg->sms.sender, global_sender, strlen(global_sender));
+	    octstr_replace(msg->sms.sender, global_sender, 
+	    	    	   strlen(global_sender));
 	else {
-	    octstr_replace(msg->sms.sender, octstr_get_cstr(msg->sms.receiver),
+	    octstr_replace(msg->sms.sender, 
+	    	    	   octstr_get_cstr(msg->sms.receiver),
 			   octstr_len(msg->sms.receiver));
 	}
 	octstr_destroy(msg->sms.receiver);
@@ -802,7 +812,8 @@ void smsbox_req_thread(void *arg) {
 	if (reply == NULL) {
     error:
 	    error(0, "request failed");
-	    /* XXX this can be something different, according to urltranslation */
+	    /* XXX this can be something different, according to 
+	       urltranslation */
 	    reply = gw_strdup("Request failed");
 	    trans = NULL;	/* do not use any special translation */
 	}
@@ -814,9 +825,8 @@ void smsbox_req_thread(void *arg) {
 	    msg->sms.flag_udh  = 0;
 	    msg->sms.time = time(NULL);	/* set current time */
 	
-		/* send_message frees the 'msg' */
-	    if(send_message(trans, msg) < 0)
-			error(0, "request_thread: failed");
+	    if (send_message(trans, msg) < 0)
+		error(0, "request_thread: failed");
 	    
 	    gw_free(reply);
 	} else
@@ -830,122 +840,115 @@ void smsbox_req_thread(void *arg) {
  */
 char *smsbox_req_sendsms(List *list, char *client_ip)
 {
-	Msg *msg = NULL;
-	URLTranslation *t = NULL;
-	Octstr *user = NULL, *from = NULL, *to;
-	Octstr *text = NULL, *udh = NULL, *smsc = NULL;
-	int ret;
-
-	/* check the username and password */
-	t = authorise_user(list, client_ip);
-	if (t == NULL) {
-		return "Authorization failed";
-	}
-
-	udh = http_cgi_variable(list, "udh");
-	text = http_cgi_variable(list, "text");
-	smsc = http_cgi_variable(list, "smsc");
-
-	if ((to = http_cgi_variable(list, "to")) == NULL ||
-	    (text == NULL && udh == NULL))
-	{
-		error(0, "/cgi-bin/sendsms got wrong args");
-		return "Wrong sendsms args, rejected";
-	}
-
-	/*
-	 * check if UDH length is legal, or otherwise discard the
-	 * message, to prevent intentional buffer overflow schemes
-	 */
-	if (udh != NULL) {
-	    if (octstr_len(udh) != (octstr_get_char(udh, 0) + 1))
-		return "UDH field misformed, rejected";
-	}
-
-	if (strspn(octstr_get_cstr(to), sendsms_number_chars)
-	    < octstr_len(to)) {
-
-	    info(0,"Illegal characters in 'to' string ('%s') vs '%s'",
-		 octstr_get_cstr(to), sendsms_number_chars);
-	    return "Garbage 'to' field, rejected.";
-	}
-
-	if (urltrans_faked_sender(t) != NULL) {
-		from = octstr_create(urltrans_faked_sender(t));
-	} else if ((from = http_cgi_variable(list, "from")) != NULL &&
-		   octstr_len(from) > 0) 
-	{
-		from = octstr_duplicate(from);
-	} else if (global_sender != NULL) {
-		from = octstr_create(global_sender);
-	} else {
-		return "Sender missing and no global set, rejected";
-	}
-
-
-	
-	info(0, "/cgi-bin/sendsms <%s:%s> <%s> <%s>",
-	     user ? octstr_get_cstr(user) : "default",
-	     octstr_get_cstr(from), octstr_get_cstr(to),
-	     text ? octstr_get_cstr(text) : "<< UDH >>");
-
-	/*
-	 * XXX here we should validate and split the 'to' field
-	 *   to allow multi-cast. Waiting for octstr_split...
-	 */
-	msg = msg_create(sms);
-
-	msg->sms.receiver = octstr_duplicate(to);
-	msg->sms.sender = octstr_duplicate(from);
-	msg->sms.msgdata = text ? octstr_duplicate(text) : octstr_create("");
-	msg->sms.udhdata = udh ? octstr_duplicate(udh) : octstr_create("");
-
-	/* new smsc-id argument - we should check this one, if able,
-	   but that's advanced logics -- Kalle */
-
-	if (urltrans_forced_smsc(t)) {
-	    msg->sms.smsc_id = octstr_create(urltrans_forced_smsc(t));
-	    if (smsc)
-		info(0, "send-sms request smsc id ignored, as smsc id forced to %s",
-		     urltrans_forced_smsc(t));
-	} else if (smsc) {
-	    msg->sms.smsc_id = octstr_duplicate(smsc);
-	} else if (urltrans_default_smsc(t)) {
-	    msg->sms.smsc_id = octstr_create(urltrans_default_smsc(t));
-	} else
-	    msg->sms.smsc_id = NULL;
-	    
-
-	if(udh==NULL) {
-		msg->sms.flag_8bit = 0;
-		msg->sms.flag_udh  = 0;
-	} else {
-		msg->sms.flag_8bit = 1;
-		msg->sms.flag_udh  = 1;
-		octstr_dump(msg->sms.udhdata, 0);
-	}
-
-	msg->sms.time = time(NULL);
-   
-	/* send_message frees the 'msg' */
-	ret = send_message(t, msg);
-
-	if (ret == -1)
-		goto error;
-
-	alog("send-SMS request added - sender:%s:%s %s target:%s request: '%s'",
-	     user ? octstr_get_cstr(user) : "default",
-	     octstr_get_cstr(from), client_ip,
-	     octstr_get_cstr(to),
-	     text ? octstr_get_cstr(text) : "<< UDH >>");
-	octstr_destroy(from);
-
-	return "Sent.";
+    Msg *msg = NULL;
+    URLTranslation *t = NULL;
+    Octstr *user = NULL, *from = NULL, *to;
+    Octstr *text = NULL, *udh = NULL, *smsc = NULL;
+    int ret;
+    
+    /* check the username and password */
+    t = authorise_user(list, client_ip);
+    if (t == NULL) {
+	return "Authorization failed";
+    }
+    
+    udh = http_cgi_variable(list, "udh");
+    text = http_cgi_variable(list, "text");
+    smsc = http_cgi_variable(list, "smsc");
+    
+    if ((to = http_cgi_variable(list, "to")) == NULL ||
+	(text == NULL && udh == NULL)) {
+	error(0, "/cgi-bin/sendsms got wrong args");
+	return "Wrong sendsms args, rejected";
+    }
+    
+    /*
+     * check if UDH length is legal, or otherwise discard the
+     * message, to prevent intentional buffer overflow schemes
+     */
+    if (udh != NULL) {
+	if (octstr_len(udh) != (octstr_get_char(udh, 0) + 1))
+	    return "UDH field misformed, rejected";
+    }
+    
+    if (strspn(octstr_get_cstr(to), sendsms_number_chars) < octstr_len(to)) {
+	info(0,"Illegal characters in 'to' string ('%s') vs '%s'",
+	     octstr_get_cstr(to), sendsms_number_chars);
+	return "Garbage 'to' field, rejected.";
+    }
+    
+    if (urltrans_faked_sender(t) != NULL) {
+	from = octstr_create(urltrans_faked_sender(t));
+    } else if ((from = http_cgi_variable(list, "from")) != NULL &&
+	       octstr_len(from) > 0) {
+	from = octstr_duplicate(from);
+    } else if (global_sender != NULL) {
+	from = octstr_create(global_sender);
+    } else {
+	return "Sender missing and no global set, rejected";
+    }
+    
+    info(0, "/cgi-bin/sendsms <%s:%s> <%s> <%s>",
+	 user ? octstr_get_cstr(user) : "default",
+	 octstr_get_cstr(from), octstr_get_cstr(to),
+	 text ? octstr_get_cstr(text) : "<< UDH >>");
+    
+    /*
+     * XXX here we should validate and split the 'to' field
+     *   to allow multi-cast. Waiting for octstr_split...
+     */
+    msg = msg_create(sms);
+    
+    msg->sms.receiver = octstr_duplicate(to);
+    msg->sms.sender = octstr_duplicate(from);
+    msg->sms.msgdata = text ? octstr_duplicate(text) : octstr_create("");
+    msg->sms.udhdata = udh ? octstr_duplicate(udh) : octstr_create("");
+    
+    /* new smsc-id argument - we should check this one, if able,
+       but that's advanced logics -- Kalle */
+    
+    if (urltrans_forced_smsc(t)) {
+	msg->sms.smsc_id = octstr_create(urltrans_forced_smsc(t));
+	if (smsc)
+	    info(0, "send-sms request smsc id ignored, "
+	    	    "as smsc id forced to %s",
+		    urltrans_forced_smsc(t));
+    } else if (smsc) {
+	msg->sms.smsc_id = octstr_duplicate(smsc);
+    } else if (urltrans_default_smsc(t)) {
+	msg->sms.smsc_id = octstr_create(urltrans_default_smsc(t));
+    } else
+	msg->sms.smsc_id = NULL;
+    
+    if (udh==NULL) {
+	msg->sms.flag_8bit = 0;
+	msg->sms.flag_udh  = 0;
+    } else {
+	msg->sms.flag_8bit = 1;
+	msg->sms.flag_udh  = 1;
+	octstr_dump(msg->sms.udhdata, 0);
+    }
+    
+    msg->sms.time = time(NULL);
+    
+    ret = send_message(t, msg);
+    
+    if (ret == -1)
+	goto error;
+    
+    alog("send-SMS request added - sender:%s:%s %s target:%s request: '%s'",
+	 user ? octstr_get_cstr(user) : "default",
+	 octstr_get_cstr(from), client_ip,
+	 octstr_get_cstr(to),
+	 text ? octstr_get_cstr(text) : "<< UDH >>");
+	 octstr_destroy(from);
+    
+    return "Sent.";
     
 error:
-	error(0, "sendsms_request: failed");
-	octstr_destroy(from);
-	return "Sending failed.";
+    error(0, "sendsms_request: failed");
+    octstr_destroy(from);
+    return "Sending failed.";
 }
 
 
@@ -957,187 +960,187 @@ error:
  */
 char *smsbox_req_sendota(List *list, char *client_ip)
 {
-	char *url = NULL, *desc = NULL, *ipaddr = NULL, *phonenum = NULL;
-	char *username = NULL, *passwd = NULL, *id = NULL;
-	char *speed;
-	int bearer = -1, calltype = -1;
-	int connection = CONN_CONT, security = 0, authent = AUTH_NORMAL;
-	ConfigGroup *grp;
-	char *p;
-
-	Msg *msg = NULL;
-	URLTranslation *t = NULL;
-	int ret;
-	Octstr *phonenumber = NULL, *otaid = NULL;
-
-	/* check the username and password */
-	t = authorise_user(list, client_ip);
-	if (t == NULL) {
-	    return "Authorization failed";
-	}
-
-	phonenumber = http_cgi_variable(list, "phonenumber");
-	if(phonenumber == NULL)
-	{
-		error(0, "/cgi-bin/sendota needs a valid phone number.");
-		return "Wrong sendota args.";
-	}
-
+    char *url = NULL, *desc = NULL, *ipaddr = NULL, *phonenum = NULL;
+    char *username = NULL, *passwd = NULL, *id = NULL;
+    char *speed;
+    int bearer = -1, calltype = -1;
+    int connection = CONN_CONT, security = 0, authent = AUTH_NORMAL;
+    ConfigGroup *grp;
+    char *p;
+    Msg *msg = NULL;
+    URLTranslation *t = NULL;
+    int ret;
+    Octstr *phonenumber = NULL, *otaid = NULL;
+    
+    /* check the username and password */
+    t = authorise_user(list, client_ip);
+    if (t == NULL) {
+	return "Authorization failed";
+    }
+    
+    phonenumber = http_cgi_variable(list, "phonenumber");
+    if(phonenumber == NULL) {
+	error(0, "/cgi-bin/sendota needs a valid phone number.");
+	return "Wrong sendota args.";
+    }
+    
     /* check if a otaconfig id has been given and decide which OTA
      * properties to be send to the client otherwise send the default */
-	otaid = http_cgi_variable(list, "otaid");
+    otaid = http_cgi_variable(list, "otaid");
     if (otaid != NULL)
-        id = octstr_get_cstr(otaid);
- 
+	id = octstr_get_cstr(otaid);
+    
     grp = config_find_first_group(cfg, "group", "otaconfig");
-    while ((otaid != NULL) && (grp != NULL)) {
-	    if (((p = config_get(grp, "ota-id")) != NULL) && 
-            (strcasecmp(p, id) == 0))
-            goto found;
-	    grp = config_find_next_group(grp, "group", "otaconfig");
-	}
-
-    if (otaid != NULL) {
-        error(0, "/cgi-bin/sendota can't find otaconfig with ota-id '%s'.", id);
-		return "Missing otaconfig group.";
+    while (otaid != NULL && grp != NULL) {
+	p = config_get(grp, "ota-id");
+	if (p!= NULL && strcasecmp(p, id) == 0)
+	    goto found;
+	grp = config_find_next_group(grp, "group", "otaconfig");
     }
-
+    
+    if (otaid != NULL) {
+	error(0, "/cgi-bin/sendota can't find otaconfig with ota-id '%s'.", 
+	      id);
+	return "Missing otaconfig group.";
+    }
+    
 found:
-	if ((p = config_get(grp, "location")) != NULL)
-		url = p;
-	if ((p = config_get(grp, "service")) != NULL)
-		desc = p;
-	if ((p = config_get(grp, "ipaddress")) != NULL)
-		ipaddr = p;
-	if ((p = config_get(grp, "phonenumber")) != NULL)
-		phonenum = p;
-	if ((p = config_get(grp, "bearer")) != NULL)
-		bearer = (strcasecmp(p, "data") == 0)? BEARER_DATA : -1;
-	if ((p = config_get(grp, "calltype")) != NULL)
-		calltype = (strcasecmp(p, "isdn") == 0)? CALL_ISDN : -1;
-	speed = SPEED_9660;
-	if ((p = config_get(grp, "speed")) != NULL) {
-		if(strcasecmp(p, "14400") == 0)
-			speed = SPEED_14400;
-	}
-	/* connection mode and security */
-	if ((p = config_get(grp, "connection")) != NULL)
-		connection = (strcasecmp(p, "temp") == 0)? CONN_TEMP : CONN_CONT;
-	if ((p = config_get(grp, "pppsecurity")) != NULL)
-		security = (strcasecmp(p, "on") == 0)? 1 : 0;
-	if (security == 1)
-		connection = (connection == CONN_CONT)? CONN_SECCONT : CONN_SECTEMP;
-		
-	if ((p = config_get(grp, "authentication")) != NULL)
-		authent = (strcasecmp(p, "secure") == 0)? AUTH_SECURE : AUTH_NORMAL;
-		
-	if ((p = config_get(grp, "login")) != NULL)
-		username = p;
-	if ((p = config_get(grp, "secret")) != NULL)
-		passwd = p;
-	
-	msg = msg_create(sms);
-	if (msg == NULL) goto error;
-
-	msg->sms.udhdata = octstr_create("");
-
-	octstr_append_from_hex(msg->sms.udhdata, "0504C34FC002");
-
-	msg->sms.msgdata = octstr_create("");
-	/* header for the data part of the message */
-	octstr_append_from_hex(msg->sms.msgdata, "010604039481EA0001");
-	/* unknow field */
-	octstr_append_from_hex(msg->sms.msgdata, "45C60601");
-	/* bearer type */
-	if(bearer != -1) {
-		octstr_append_from_hex(msg->sms.msgdata, "8712");
-		octstr_append_char(msg->sms.msgdata, bearer);
-		octstr_append_from_hex(msg->sms.msgdata, ENDTAG);
-	}
-	/* IP address */
-	if(ipaddr != NULL) {
-		octstr_append_from_hex(msg->sms.msgdata , "87131103");
-		octstr_append_cstr(msg->sms.msgdata, ipaddr);
-		octstr_append_from_hex(msg->sms.msgdata, "0001");
-	}
-	/* connection type */
-	if(connection != -1) {
-		octstr_append_from_hex(msg->sms.msgdata, "8714");
-		octstr_append_char(msg->sms.msgdata, connection);
-		octstr_append_from_hex(msg->sms.msgdata, ENDTAG);
-	}
-	/* phone number */
-	if(phonenum != NULL) {
-		octstr_append_from_hex(msg->sms.msgdata, "87211103");
-		octstr_append_cstr(msg->sms.msgdata, phonenum);
-		octstr_append_from_hex(msg->sms.msgdata, "0001");
-	}
-	/* authentication */
-	octstr_append_from_hex(msg->sms.msgdata, "8722");
-	octstr_append_char(msg->sms.msgdata, authent);
+    if ((p = config_get(grp, "location")) != NULL)
+	url = p;
+    if ((p = config_get(grp, "service")) != NULL)
+	desc = p;
+    if ((p = config_get(grp, "ipaddress")) != NULL)
+	ipaddr = p;
+    if ((p = config_get(grp, "phonenumber")) != NULL)
+	phonenum = p;
+    if ((p = config_get(grp, "bearer")) != NULL)
+	bearer = (strcasecmp(p, "data") == 0)? BEARER_DATA : -1;
+    if ((p = config_get(grp, "calltype")) != NULL)
+	calltype = (strcasecmp(p, "isdn") == 0)? CALL_ISDN : -1;
+    speed = SPEED_9660;
+    if ((p = config_get(grp, "speed")) != NULL) {
+	if (strcasecmp(p, "14400") == 0)
+	    speed = SPEED_14400;
+    }
+    /* connection mode and security */
+    if ((p = config_get(grp, "connection")) != NULL)
+	connection = (strcasecmp(p, "temp") == 0)? CONN_TEMP : CONN_CONT;
+    if ((p = config_get(grp, "pppsecurity")) != NULL)
+	security = (strcasecmp(p, "on") == 0)? 1 : 0;
+    if (security == 1)
+	connection = (connection == CONN_CONT)? CONN_SECCONT : CONN_SECTEMP;
+    
+    if ((p = config_get(grp, "authentication")) != NULL)
+	authent = (strcasecmp(p, "secure") == 0)? AUTH_SECURE : AUTH_NORMAL;
+    
+    if ((p = config_get(grp, "login")) != NULL)
+	username = p;
+    if ((p = config_get(grp, "secret")) != NULL)
+	passwd = p;
+    
+    msg = msg_create(sms);
+    if (msg == NULL)
+    	goto error;
+    
+    msg->sms.udhdata = octstr_create("");
+    
+    octstr_append_from_hex(msg->sms.udhdata, "0504C34FC002");
+    
+    msg->sms.msgdata = octstr_create("");
+    /* header for the data part of the message */
+    octstr_append_from_hex(msg->sms.msgdata, "010604039481EA0001");
+    /* unknow field */
+    octstr_append_from_hex(msg->sms.msgdata, "45C60601");
+    /* bearer type */
+    if (bearer != -1) {
+	octstr_append_from_hex(msg->sms.msgdata, "8712");
+	octstr_append_char(msg->sms.msgdata, bearer);
 	octstr_append_from_hex(msg->sms.msgdata, ENDTAG);
-	/* user name */
-	if(username != NULL) {
-		octstr_append_from_hex(msg->sms.msgdata, "87231103");
-		octstr_append_cstr(msg->sms.msgdata, username);
-		octstr_append_from_hex(msg->sms.msgdata, "0001");
-	}
-	/* password */
-	if(passwd != NULL) {
-		octstr_append_from_hex(msg->sms.msgdata, "87241103");
-		octstr_append_cstr(msg->sms.msgdata, passwd);
-		octstr_append_from_hex(msg->sms.msgdata, "0001");
-	}
-	/* data call type */
-	if(calltype != -1) {
-		octstr_append_from_hex(msg->sms.msgdata, "8728");
-		octstr_append_char(msg->sms.msgdata, calltype);
-		octstr_append_from_hex(msg->sms.msgdata, ENDTAG);
-	}
-	/* speed */
-	octstr_append_from_hex(msg->sms.msgdata, "8729");
-	octstr_append_from_hex(msg->sms.msgdata, speed);
+    }
+    /* IP address */
+    if (ipaddr != NULL) {
+	octstr_append_from_hex(msg->sms.msgdata , "87131103");
+	octstr_append_cstr(msg->sms.msgdata, ipaddr);
+	octstr_append_from_hex(msg->sms.msgdata, "0001");
+    }
+    /* connection type */
+    if (connection != -1) {
+	octstr_append_from_hex(msg->sms.msgdata, "8714");
+	octstr_append_char(msg->sms.msgdata, connection);
 	octstr_append_from_hex(msg->sms.msgdata, ENDTAG);
+    }
+    /* phone number */
+    if (phonenum != NULL) {
+	octstr_append_from_hex(msg->sms.msgdata, "87211103");
+	octstr_append_cstr(msg->sms.msgdata, phonenum);
+	octstr_append_from_hex(msg->sms.msgdata, "0001");
+    }
+    /* authentication */
+    octstr_append_from_hex(msg->sms.msgdata, "8722");
+    octstr_append_char(msg->sms.msgdata, authent);
+    octstr_append_from_hex(msg->sms.msgdata, ENDTAG);
+    /* user name */
+    if (username != NULL) {
+	octstr_append_from_hex(msg->sms.msgdata, "87231103");
+	octstr_append_cstr(msg->sms.msgdata, username);
+	octstr_append_from_hex(msg->sms.msgdata, "0001");
+    }
+    /* password */
+    if (passwd != NULL) {
+	octstr_append_from_hex(msg->sms.msgdata, "87241103");
+	octstr_append_cstr(msg->sms.msgdata, passwd);
+	octstr_append_from_hex(msg->sms.msgdata, "0001");
+    }
+    /* data call type */
+    if (calltype != -1) {
+	octstr_append_from_hex(msg->sms.msgdata, "8728");
+	octstr_append_char(msg->sms.msgdata, calltype);
 	octstr_append_from_hex(msg->sms.msgdata, ENDTAG);
-	/* homepage */
-	if(url != NULL) {
-		octstr_append_from_hex(msg->sms.msgdata, "86071103");
-		octstr_append_cstr(msg->sms.msgdata, url);
-		octstr_append_from_hex(msg->sms.msgdata, "0001");
-	}
-	/* unknow field */
-	octstr_append_from_hex(msg->sms.msgdata, "C60801");
-	/* service description */
-	if(desc != NULL) {
-		octstr_append_from_hex(msg->sms.msgdata, "87151103");
-		octstr_append_cstr(msg->sms.msgdata, desc);
-		octstr_append_from_hex(msg->sms.msgdata, "0001");
-	}
-	/* message footer */
-	octstr_append_from_hex(msg->sms.msgdata, "0101");
-
-	msg->sms.receiver = octstr_duplicate(phonenumber);
-	/* msg->sms.sender = from; */	
-	msg->sms.flag_8bit = 1;
-	msg->sms.flag_udh  = 1;
-
-	msg->sms.time = time(NULL);
-
-	octstr_dump(msg->sms.msgdata, 0);
-
-	info(0, "/cgi-bin/sendota <%s> <%s>", id, octstr_get_cstr(phonenumber) );
-  
-	/* send_message frees the 'msg' */
-	ret = send_message(t, msg); 
-
-	if (ret == -1)
-		goto error;
-
-	return "Sent.";
+    }
+    /* speed */
+    octstr_append_from_hex(msg->sms.msgdata, "8729");
+    octstr_append_from_hex(msg->sms.msgdata, speed);
+    octstr_append_from_hex(msg->sms.msgdata, ENDTAG);
+    octstr_append_from_hex(msg->sms.msgdata, ENDTAG);
+    /* homepage */
+    if (url != NULL) {
+	octstr_append_from_hex(msg->sms.msgdata, "86071103");
+	octstr_append_cstr(msg->sms.msgdata, url);
+	octstr_append_from_hex(msg->sms.msgdata, "0001");
+    }
+    /* unknow field */
+    octstr_append_from_hex(msg->sms.msgdata, "C60801");
+    /* service description */
+    if (desc != NULL) {
+	octstr_append_from_hex(msg->sms.msgdata, "87151103");
+	octstr_append_cstr(msg->sms.msgdata, desc);
+	octstr_append_from_hex(msg->sms.msgdata, "0001");
+    }
+    /* message footer */
+    octstr_append_from_hex(msg->sms.msgdata, "0101");
+    
+    msg->sms.receiver = octstr_duplicate(phonenumber);
+    /* msg->sms.sender = from; */	
+    msg->sms.flag_8bit = 1;
+    msg->sms.flag_udh  = 1;
+    
+    msg->sms.time = time(NULL);
+    
+    octstr_dump(msg->sms.msgdata, 0);
+    
+    info(0, "/cgi-bin/sendota <%s> <%s>", id, octstr_get_cstr(phonenumber));
+    
+    /* send_message frees the 'msg' */
+    ret = send_message(t, msg); 
+    
+    if (ret == -1)
+	goto error;
+    
+    return "Sent.";
     
 error:
-	error(0, "sendota_request: failed");
-	/*octstr_destroy(from);*/
-	return "Sending failed.";
+    error(0, "sendota_request: failed");
+    /*octstr_destroy(from);*/
+    return "Sending failed.";
 }
 

@@ -1,3 +1,7 @@
+/*
+ * smsbox_req.h - fulfill sms requests from users
+ */
+
 #ifndef _SMSBOX_REQ_H
 #define _SMSBOX_REQ_H
 

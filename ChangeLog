@@ -1,5 +1,9 @@
 2000-11-27  Lars Wirzenius  <liw@iki.fi>
 
+	* gw/smsbox_req.c: Formatted to follow coding style.
+
+2000-11-27  Lars Wirzenius  <liw@iki.fi>
+
 	* gw/smsbox.c, gw/smsbox_req.c: Changed the thread structure for
 	smsbox so that threads are not created dynamically for each new
 	message, but instead threads are created at startup and messages
