@@ -322,47 +322,6 @@ void kannel_cfmakeraw (struct termios *tio){
 }
 
 
-int str_find_substr(char *list, char *sub, const char *separator)
-{
-    char *s = sub;
-
-    if (list == NULL || sub == NULL || separator == NULL)
-	return -1;
-    
-    for (;;) {
-
-	if (*s == '\0') {
-	    if (*list == '\0' || strspn(list, separator) > 0)
-		return 1;
-
-	    goto wind;
-	}
-	if (*list == '\0')
-	    return 0;
-	if (strspn(list, separator) > 0)
-	    goto wind;
-	
-	if (toupper(*s) != toupper(*list))
-	    goto wind;
-
-	s++;
-	list++;
-	continue;
-	
-    wind:
-	s = sub;
-	while(*list != '\0' && strspn(list, separator)==0)
-	    list++;
-	if (*list == '\0')
-	    return 0;
-	list++;
-	continue;
-    }
-}
-
-
-
-    
 int gw_isdigit(int c)
 {
     return isdigit(c);

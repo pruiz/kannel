@@ -774,24 +774,43 @@ static int does_prefix_match(char *p, char *number)
 
 int smsc_preferred(SMSCenter *smsc, char *number, Octstr *smsc_id)
 {
+    List *list;
+    int ret;
+
     if (does_prefix_match(smsc->preferred_prefix, number) == 1)
         return 1;
-    if (smsc->preferred_id
-        && str_find_substr(octstr_get_cstr(smsc->preferred_id),
-                           octstr_get_cstr(smsc_id), ";") == 1)
-        return 1;
-    return 0;
+
+    ret = 0;
+    if (smsc->preferred_id) {
+	list = octstr_split(smsc->preferred_id, 
+	    	    	    octstr_create_immutable(";"));
+	if (list_search(list, smsc_id, octstr_item_match) == NULL)
+	    ret = 0;
+	else
+	    ret = 1;
+	list_destroy(list, octstr_destroy_item);
+    }
+    return ret;
 }
 
 int smsc_denied(SMSCenter *smsc, char *number, Octstr *smsc_id)
 {
+    List *list;
+    int ret;
+
     if (does_prefix_match(smsc->denied_prefix, number) == 1)
         return 1;
-    if (smsc->denied_id
-        && str_find_substr(octstr_get_cstr(smsc->denied_id),
-                           octstr_get_cstr(smsc_id), ";") == 1)
-        return 1;
-    return 0;
+
+    ret = 0;
+    if (smsc->denied_id) {
+	list = octstr_split(smsc->denied_id, octstr_create_immutable(";"));
+	if (list_search(list, smsc_id, octstr_item_match) == NULL)
+	    ret = 0;
+	else
+	    ret = 1;
+	list_destroy(list, octstr_destroy_item);
+    }
+    return ret;
 }
 
 

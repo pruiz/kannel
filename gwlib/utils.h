@@ -115,16 +115,6 @@ void encode_network_long(unsigned char *data, unsigned long value);
 void kannel_cfmakeraw (struct termios *tio);
 
 
-/* check if in string 'list' there exist complete substring 'sub' which is
- * separated with any character in 'separator' from other substring.
- * Return -1 for misinput, 0 if not found and 1 if found.
- *
- * Example: list "foo;bar" returns 1 for 'foo' or 'bar' but 0 for 'fo',
- * for example.
- */
-int str_find_substr(char *list, char *sub, const char *separator);
-
-
 /*
  * Wrappers around the isdigit and isxdigit functions that are guaranteed
  * to be functions, not macros. (The standard library functions are also
