@@ -1,4 +1,7 @@
 2002-03-27  Stipe Tolj  <tolj@wapme-systems.de>
+    * test/test_http_server.c: included SSL support for HTTP test server
+
+2002-03-27  Stipe Tolj  <tolj@wapme-systems.de>
     * config*, wap/cookies.[ch], gw/wap-appl.c: revised the cookie support for
       WSP and added --enable-cookies configure option.
 
