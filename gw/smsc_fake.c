@@ -63,11 +63,13 @@ static int sms_to_client(Connection *client, Msg *msg)
     octstr_append(line, msg->sms.receiver);
     if (msg->sms.flag_udh) {
 	octstr_append(line, octstr_imm(" udh "));
-	msgdata = octstr_create_urlcoded(msg->sms.udhdata);
+	msgdata = octstr_duplicate(msg->sms.udhdata);
+	octstr_url_encode(msgdata);
 	octstr_append(line, msgdata);
 	octstr_destroy(msgdata);
 	octstr_append_char(line, ' ');
-	msgdata = octstr_create_urlcoded(msg->sms.msgdata);
+	msgdata = octstr_duplicate(msg->sms.msgdata);
+	octstr_url_encode(msgdata);
 	octstr_append(line, msgdata);
     }
     else {
@@ -77,7 +79,8 @@ static int sms_to_client(Connection *client, Msg *msg)
 	    len--;
 	    if (contents[len] < 32 || contents[len] > 126) {
 		octstr_append(line, octstr_imm(" data "));
-		msgdata = octstr_create_urlcoded(msg->sms.msgdata);
+		msgdata = octstr_duplicate(msg->sms.msgdata);
+		octstr_url_encode(msgdata);
 		octstr_append(line, msgdata);
 		goto notelse; /* C lacks "else" clause for while loops */
 	    }

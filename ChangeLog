@@ -1,5 +1,13 @@
 2001-02-14  Lars Wirzenius  <liw@iki.fi>
 
+	* gwlib/octstr.[ch]: Changed the octstr_create_urlcoded to be
+	similar in name and usage to octstr_url_decode.
+	
+	* gw/bb_store.c, gw/smsc_fake.c, gw/urltrans.c: Changed the
+	places where the function is called.
+
+2001-02-14  Lars Wirzenius  <liw@iki.fi>
+
 	* gw/urltrans.c, doc/userguide/userguide.xml: Restored the
 	meaning of %a in sms-service, implemented and documented %b to
 	support binary data.

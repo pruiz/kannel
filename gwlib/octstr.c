@@ -1472,7 +1472,7 @@ error:
 }
 
 
-Octstr *octstr_create_urlcoded(Octstr *ostr)
+void octstr_url_encode(Octstr *ostr)
 {
     int i, n, newlen;
     unsigned char *str, *str2, *hexits;
@@ -1484,7 +1484,7 @@ Octstr *octstr_create_urlcoded(Octstr *ostr)
     res = octstr_create("");
 
     if (ostr->len == 0)
-	return res;
+	return;
 
     str = ostr->data;
     n = 0;
@@ -1514,7 +1514,10 @@ Octstr *octstr_create_urlcoded(Octstr *ostr)
     }
     *str2 = 0;
     seems_valid(res);
-    return res;
+    
+    octstr_truncate(ostr, 0);
+    octstr_insert(ostr, res, 0);
+    octstr_destroy(res);
 }
 
 

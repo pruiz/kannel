@@ -45,7 +45,8 @@ static void write_msg(Msg *msg)
     Octstr *pack, *line;
 
     pack = msg_pack(msg);
-    line = octstr_create_urlcoded(pack);
+    line = octstr_duplicate(pack);
+    octstr_url_encode(line);
 
     octstr_print(file, line);
     fprintf(file, "\n");

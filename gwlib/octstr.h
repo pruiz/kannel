@@ -448,10 +448,9 @@ int octstr_recv(int fd, Octstr **ostr);
 int octstr_url_decode(Octstr *ostr);
 
 /*
- * Create a new url-encoded version of the argument string. Note that
- * unlike octstr_url_decode(), the argument string remains unchanged.
+ * URL encode the argument string in place.
  */
-Octstr *octstr_create_urlcoded(Octstr *ostr);
+void octstr_url_encode(Octstr *ostr);
 
 /*
  * Treat the octstr as an unsigned array of bits, most significant bit

@@ -248,13 +248,15 @@ Octstr *urltrans_get_pattern(URLTranslation *t, Msg *request)
 
 	switch (octstr_get_char(t->pattern, pos + 1)) {
 	case 'k':
-		enc = octstr_create_urlcoded(list_get(word_list, 0));
-		octstr_append(result, enc);
-		octstr_destroy(enc);
-		break;
+	    enc = octstr_duplicate(list_get(word_list, 0));
+	    octstr_url_encode(enc);
+	    octstr_append(result, enc);
+	    octstr_destroy(enc);
+	    break;
 
 	case 's':
-	    enc = octstr_create_urlcoded(list_get(word_list, nextarg));
+	    enc = octstr_duplicate(list_get(word_list, nextarg));
+	    octstr_url_encode(enc);
 	    octstr_append(result, enc);
 	    octstr_destroy(enc);
 	    ++nextarg;
@@ -273,7 +275,8 @@ Octstr *urltrans_get_pattern(URLTranslation *t, Msg *request)
 
 	case 'r':
 	    for (j = nextarg; j < num_words; ++j) {
-		enc = octstr_create_urlcoded(list_get(word_list, j));
+		enc = octstr_duplicate(list_get(word_list, j));
+		octstr_url_encode(enc);
 		if (j != nextarg)
 		    octstr_append_char(result, '+');
 		octstr_append(result, enc);
@@ -286,27 +289,29 @@ Octstr *urltrans_get_pattern(URLTranslation *t, Msg *request)
 	 *    we want original receiver and vice versa
 	 */
 	case 'P':
-	    enc = octstr_create_urlcoded(request->sms.sender);
+	    enc = octstr_duplicate(request->sms.sender);
+    	    octstr_url_encode(enc);
 	    octstr_append(result, enc);
 	    octstr_destroy(enc);
 	    break;
 
 	case 'p':
-	    enc = octstr_create_urlcoded(request->sms.receiver);
+	    enc = octstr_duplicate(request->sms.receiver);
+	    octstr_url_encode(enc);
 	    octstr_append(result, enc);
 	    octstr_destroy(enc);
 	    break;
 
 	case 'Q':
 	    if (strncmp(octstr_get_cstr(request->sms.sender), "00", 2) == 0) {
-		temp = octstr_copy(request->sms.sender, 2, 
+		enc = octstr_copy(request->sms.sender, 2, 
 		    	    	  octstr_len(request->sms.sender));
-		enc = octstr_create_urlcoded(temp);
+		octstr_url_encode(enc);
 		octstr_format_append(result, "%%2B%S", enc);
 		octstr_destroy(enc);
-		octstr_destroy(temp);
 	    } else {
-		enc = octstr_create_urlcoded(request->sms.sender);
+		enc = octstr_duplicate(request->sms.sender);
+    	    	octstr_url_encode(enc);
 		octstr_append(result, enc);
 		octstr_destroy(enc);
 	    }
@@ -314,14 +319,14 @@ Octstr *urltrans_get_pattern(URLTranslation *t, Msg *request)
 
 	case 'q':
 	    if (strncmp(octstr_get_cstr(request->sms.receiver),"00",2)==0) {
-		temp = octstr_copy(request->sms.receiver, 2, 
+		enc = octstr_copy(request->sms.receiver, 2, 
 		    	    	  octstr_len(request->sms.receiver));
-		enc = octstr_create_urlcoded(temp);
+		octstr_url_encode(enc);
 		octstr_format_append(result, "%%2B%S", enc);
 		octstr_destroy(enc);
-		octstr_destroy(temp);
 	    } else {
-		enc = octstr_create_urlcoded(request->sms.receiver);
+		enc = octstr_duplicate(request->sms.receiver);
+		octstr_url_encode(enc);
 		octstr_append(result, enc);
 		octstr_destroy(enc);
 	    }
@@ -329,7 +334,8 @@ Octstr *urltrans_get_pattern(URLTranslation *t, Msg *request)
 
 	case 'a':
 	    for (j = 0; j < num_words; ++j) {
-		enc = octstr_create_urlcoded(list_get(word_list, j));
+		enc = octstr_duplicate(list_get(word_list, j));
+		octstr_url_encode(enc);
 		if (j > 0)
 		    octstr_append_char(result, '+');
 		octstr_append(result, enc);
@@ -338,7 +344,8 @@ Octstr *urltrans_get_pattern(URLTranslation *t, Msg *request)
 	    break;
 
 	case 'b':
-	    enc = octstr_create_urlcoded(request->sms.msgdata);
+	    enc = octstr_duplicate(request->sms.msgdata);
+	    octstr_url_encode(enc);
 	    octstr_append(result, enc);
 	    octstr_destroy(enc);
 	    break;
