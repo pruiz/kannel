@@ -1,0 +1,288 @@
+/*
+ * wtp.c - WTP common functions implementation
+ *
+ * Aarno Syvänen
+ * Lars Wirzenius
+ */
+
+#include "wtp.h" 
+#include "wap_events.h"
+#include "wtp_pdu.h"
+
+/*****************************************************************************
+ *
+ * Prototypes of internal functions:
+ *
+ * Parse a datagram event (T-DUnitdata.ind) to create a corresponding
+ * WTPEvents list object. Also check that the datagram is syntactically
+ * valid. Return a pointer to the event structure that has been created.
+ * This will be a RcvError packet if there was a problem unpacking the
+ * datagram.
+ */
+
+static WAPEvent *unpack_wdp_datagram_real(WAPEvent *datagram);
+
+static int deduce_tid(Octstr *user_data);
+static int concatenated_message(Octstr *user_data);
+static int truncated_datagram(WAPEvent *event);
+static WAPEvent *unpack_invoke(WTP_PDU *pdu, WAPAddrTuple *addr_tuple);
+static WAPEvent *unpack_ack(WTP_PDU *pdu, WAPAddrTuple *addr_tuple);
+static WAPEvent *unpack_abort(WTP_PDU *pdu, WAPAddrTuple *addr_tuple);
+static WAPEvent *pack_error(WAPEvent *datagram);
+
+/******************************************************************************
+ *
+ * EXTERNAL FUNCTIONS:
+ *
+ * Handles a possible concatenated message. Creates a list of wap events.
+ */
+List *wtp_unpack_wdp_datagram(WAPEvent *datagram)
+{
+     List *events = NULL;
+     WAPEvent *event = NULL;
+     WAPEvent *subdgram = NULL;
+     Octstr *data = NULL;
+     long pdu_len;
+
+     gw_assert(datagram->type == T_DUnitdata_Ind);
+
+     events = list_create();
+        
+     if (concatenated_message(datagram->u.T_DUnitdata_Ind.user_data)) {
+         data = octstr_duplicate(datagram->u.T_DUnitdata_Ind.user_data);
+	 octstr_delete(data, 0, 1);
+
+         while (octstr_len(data) != 0) {
+
+	     if (octstr_get_bits(data, 0, 1) == 0) {
+	         pdu_len = octstr_get_char(data, 0);
+                 octstr_delete(data, 0, 1);
+
+             } else {
+		    pdu_len = octstr_get_bits(data, 1, 15);
+                    octstr_delete(data, 0, 2);
+             }
+      
+	     subdgram = wap_event_duplicate(datagram);
+	     octstr_destroy(subdgram->u.T_DUnitdata_Ind.user_data);
+             subdgram->u.T_DUnitdata_Ind.user_data =
+	          octstr_copy(data, 0, pdu_len);
+             wap_event_assert(subdgram);
+             event = unpack_wdp_datagram_real(subdgram);
+             wap_event_assert(event);
+             list_append(events, event);
+             octstr_delete(data, 0, pdu_len);
+             wap_event_destroy(subdgram);
+         }
+
+     octstr_destroy(data);
+
+     } else {
+          event = unpack_wdp_datagram_real(datagram); 
+          wap_event_assert(event);
+          list_append(events, event);
+     } 
+
+     return events;
+}
+
+/*
+ * Responder set the first bit of the tid field. If we get a packet from the 
+ * responder, we are the initiator and vice versa.
+ *
+ * Return 1, when the event is for responder, 0 when it is for initiator and 
+ * -1 when error.
+ */
+int wtp_event_is_for_responder(WAPEvent *event)
+{
+
+     switch(event->type){
+          
+     case RcvInvoke:
+         return event->u.RcvInvoke.tid < INITIATOR_TID_LIMIT;
+
+     case RcvAck:
+	 return event->u.RcvAck.tid < INITIATOR_TID_LIMIT;
+
+     case RcvAbort:
+	 return event->u.RcvAbort.tid < INITIATOR_TID_LIMIT;
+
+     case RcvErrorPDU:
+         return event->u.RcvErrorPDU.tid < INITIATOR_TID_LIMIT;
+
+     default:
+	 error(1, "Received an erroneous PDU corresponding an event");
+         wap_event_dump(event);
+	 return -1;
+     }
+}
+
+/*****************************************************************************
+ *
+ * INTERNAL FUNCTIONS:
+ *
+ * If pdu was truncated, tid cannot be trusted. We ignore this message.
+ */
+static int truncated_datagram(WAPEvent *dgram)
+{
+    gw_assert(dgram->type == T_DUnitdata_Ind);
+
+    if (octstr_len(dgram->u.T_DUnitdata_Ind.user_data) < 3) {
+        debug("wap.wtp", 0, "A too short PDU received");
+        wap_event_dump(dgram);
+        return 1;
+    } else
+        return 0;
+}
+
+static WAPEvent *unpack_invoke(WTP_PDU *pdu, WAPAddrTuple *addr_tuple)
+{
+    WAPEvent *event;
+
+    event = wap_event_create(RcvInvoke);
+    event->u.RcvInvoke.user_data = 
+        octstr_duplicate(pdu->u.Invoke.user_data);
+    event->u.RcvInvoke.tcl = pdu->u.Invoke.class;
+    event->u.RcvInvoke.tid = pdu->u.Invoke.tid;
+    event->u.RcvInvoke.tid_new = pdu->u.Invoke.tidnew;
+    event->u.RcvInvoke.rid = pdu->u.Invoke.rid;
+    event->u.RcvInvoke.up_flag = pdu->u.Invoke.uack;
+    event->u.RcvInvoke.no_cache_supported = 0;
+    event->u.RcvInvoke.version = pdu->u.Invoke.version;
+    event->u.RcvInvoke.gtr = pdu->u.Invoke.gtr;
+    event->u.RcvInvoke.ttr = pdu->u.Invoke.ttr;
+    event->u.RcvInvoke.addr_tuple = wap_addr_tuple_duplicate(addr_tuple);
+
+    return event;
+}
+
+static WAPEvent *unpack_ack(WTP_PDU *pdu, WAPAddrTuple *addr_tuple)
+{
+    WAPEvent *event;
+
+    event = wap_event_create(RcvAck);
+    event->u.RcvAck.tid = pdu->u.Ack.tid;
+    event->u.RcvAck.tid_ok = pdu->u.Ack.tidverify;
+    event->u.RcvAck.rid = pdu->u.Ack.rid;
+    event->u.RcvAck.addr_tuple = wap_addr_tuple_duplicate(addr_tuple);
+
+    return event;
+}
+
+static WAPEvent *unpack_abort(WTP_PDU *pdu, WAPAddrTuple *addr_tuple)
+{
+     WAPEvent *event;
+
+     event = wap_event_create(RcvAbort);
+     event->u.RcvAbort.tid = pdu->u.Abort.tid;
+     event->u.RcvAbort.abort_type = pdu->u.Abort.abort_type;
+     event->u.RcvAbort.abort_reason = pdu->u.Abort.abort_reason;
+     event->u.RcvAbort.addr_tuple = wap_addr_tuple_duplicate(addr_tuple);
+
+     return event;
+}
+
+static WAPEvent *pack_error(WAPEvent *datagram)
+{
+    WAPEvent *event;
+
+    gw_assert(datagram->type == T_DUnitdata_Ind);
+
+    event = wap_event_create(RcvErrorPDU);
+    event->u.RcvErrorPDU.tid = deduce_tid(datagram->u.T_DUnitdata_Ind.user_data);
+    event->u.RcvErrorPDU.addr_tuple = 
+	wap_addr_tuple_duplicate(datagram->u.T_DUnitdata_Ind.addr_tuple);
+
+    return event;
+}
+
+/*
+ * Transfers data from fields of a message to fields of WTP event. User data 
+ * has the host byte order. Updates the log. 
+ *
+ * This function does incoming events check nro 4 (checking illegal headers
+ * WTP 10.2).
+ *
+ * Return event, when we have a partially correct message or the message 
+ * received has illegal header (WTP 10.2 nro 4); NULL, when the message was 
+ * truncated or unpacking function returned NULL.
+ */
+
+WAPEvent *unpack_wdp_datagram_real(WAPEvent *datagram)
+{
+    WTP_PDU *pdu;
+    WAPEvent *event;
+    Octstr *data;
+
+    gw_assert(datagram->type == T_DUnitdata_Ind);
+
+    data = datagram->u.T_DUnitdata_Ind.user_data;
+
+    if (truncated_datagram(datagram))
+	return NULL;
+
+    pdu = wtp_pdu_unpack(data);
+/*
+ * Wtp_pdu_unpack returned NULL, we build a rcv error event. 
+ */
+    if (pdu == NULL) {
+        error(0, "pdu unpacking returned NULL");
+        event = pack_error(datagram);
+        return event;
+    }   		
+
+    event = NULL;
+
+    switch (pdu->type) {
+
+    case Invoke:
+	event = unpack_invoke(pdu, datagram->u.T_DUnitdata_Ind.addr_tuple);
+/*
+ * If an initiator gets invoke, it would be an illegal pdu.
+ */
+        if (!wtp_event_is_for_responder(event)){
+            debug("wap.wtp", 0, "Invoke when initiator. Message was");
+            wap_event_destroy(event);
+            event = pack_error(datagram);
+        }
+	break;
+
+        case Ack:
+	    event = unpack_ack(pdu, datagram->u.T_DUnitdata_Ind.addr_tuple);    
+        break;
+
+	case Abort:
+	    event = unpack_abort(pdu, datagram->u.T_DUnitdata_Ind.addr_tuple);
+        break;         
+
+	default:
+	    event = pack_error(datagram);
+	    debug("wap.wtp", 0, "Unhandled PDU type. Message was");
+            wap_event_dump(datagram);
+	    return event;
+	}
+
+    wtp_pdu_destroy(pdu);
+	
+    wap_event_assert(event);
+    return event;
+}
+
+/*
+ * Used for debugging and when wtp unpack does not return a tid. We include
+ * first bit; it tells does message received belong to the initiator or to the
+ * responder.
+ */
+
+static int deduce_tid(Octstr *user_data)
+{ 
+    return octstr_get_bits(user_data, 8, 16);
+}
+
+static int concatenated_message(Octstr *user_data)
+{
+       return octstr_get_char(user_data, 0) == 0x00;
+}
+
+
+

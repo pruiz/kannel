@@ -1,3 +1,38 @@
+2000-11-20  Richard Braakman  <dark@wapi.com>
+
+	* Turned WTP and WSP protocol stacks into a library.  Source 
+        files moved to a directory called "wap", which generates libwap.a.
+	The interface to this library is specified in wap/wap.h.
+	The application layer remains in gw/.
+
+	* In WAPAddrTuple, rename "client" and "server" to "remote"
+	and "local", to prevent confusion in client-side code.
+
+	* While moving files to wap/, renamed declaration files to
+	".def", and made filenames use _ instead of - as separator.
+	Also put "server" in the name of some WSP files, to make
+	room for future "client" files.
+
+	* Sanitized header files that include other header files.
+	Now each header only includes what it needs.
+
+	* Layers can be started independently, and use configurable
+	dispatch functions.
+
+	* wap/timers.c, wap/wsp_strings.c: Allow nested initializations
+	and shutdowns, because layers that use them can be started
+	independently.
+
+	* WTP layer now uses datagram events instead of Msg structures
+	for its lower level.
+
+	* wtp_send.c converted to wtp_pack.c, because it no longer
+	does its own sending.
+
+	* wtp_tid.c uses WAPAddrTuple instead of its own structure.
+
+	* gw/wap-appl.c, gw/wapbox.c: Use the new interface.
+
 2000-11-20  Lars Wirzenius  <liw@iki.fi>
 
 	* gwlib/dict.c: Avoid an extra list_search if we know the 

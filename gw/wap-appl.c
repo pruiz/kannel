@@ -12,11 +12,12 @@
 
 #include "gwlib/gwlib.h"
 #include "wmlscript/ws.h"
-#include "wsp.h"
 #include "wml_compiler.h"
 #ifdef COOKIE_SUPPORT
 #include "cookies.h"
 #endif
+#include "wap/wap.h"
+#include "wap-appl.h"
 
 /*
  * Give the status the module:
@@ -301,9 +302,9 @@ static void add_accept_headers(List *headers)
 
 static void add_network_info(List *headers, WAPAddrTuple *addr_tuple) 
 {
-    if (octstr_len(addr_tuple->client->address) > 0) {
+    if (octstr_len(addr_tuple->remote->address) > 0) {
 	http_header_add(headers, "X_Network_Info", 
-			octstr_get_cstr(addr_tuple->client->address));
+			octstr_get_cstr(addr_tuple->remote->address));
     }
 }
 

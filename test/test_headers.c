@@ -9,8 +9,8 @@
 #include <signal.h>
 
 #include "gwlib/gwlib.h"
-#include "gw/wsp_headers.h"
-#include "gw/wsp-strings.h"
+#include "wap/wsp_headers.h"
+#include "wap/wsp_strings.h"
 
 
 /* Test the http_header_combine function. */

@@ -12,14 +12,10 @@
 
 #include "gwlib/gwlib.h"
 #include "shared.h"
-#include "wapbox.h"
+#include "wap/wap.h"
+#include "wap-appl.h"
 #include "msg.h"
-#include "wsp.h"
 #include "bb.h"
-#include "wsp-strings.h"
-#include "timers.h"
-
-#define CONNECTIONLESS_PORT 9200
 
 
 static Config *cfg = NULL;
@@ -213,8 +209,6 @@ static void msg_send(int s, Msg *msg)
     if (octstr_send(s, os) == -1)
 	error(0, "wapbox: octstr_send failed");
     octstr_destroy(os);
-    /* Yeah, we now allways free the memory allocated to msg.*/
-    msg_destroy(msg);
 }
 
 
@@ -223,32 +217,6 @@ static void msg_send(int s, Msg *msg)
  * This is the queue of messages that are being sent to the bearerbox.
  */
 static List *queue = NULL;
-
-
-void init_queue(void) 
-{
-    gw_assert(queue == NULL);
-    queue = list_create();
-}
-
-
-static void destroy_queue(void) 
-{
-    list_destroy(queue, msg_destroy_item);
-}
-
-
-void put_msg_in_queue(Msg *msg) 
-{
-    list_produce(queue, msg);
-}
-
-
-Msg *remove_msg_from_queue(void) 
-{
-    return list_consume(queue);
-}
-
 
 static void send_heartbeat_thread(void *arg) 
 {
@@ -269,7 +237,7 @@ static void send_heartbeat_thread(void *arg)
 	if (difftime(last_hb, time(NULL)) >= hb_freq / 2) {
 	    Msg *msg = msg_create(heartbeat);
 	    msg->heartbeat.load = wap_appl_get_load();
-	    put_msg_in_queue(msg);
+            list_produce(queue, msg);
 	    last_hb = time(NULL);
         }
 	gwthread_sleep(hb_freq);
@@ -285,9 +253,10 @@ static void empty_queue_thread(void *arg)
     
     socket = *(int *) arg;
     while (run_status == running) {
-	msg = remove_msg_from_queue();
+	msg = list_consume(queue);
 	if (msg != NULL)
 	    msg_send(socket, msg);
+        msg_destroy(msg);
     }
 }
 
@@ -350,14 +319,38 @@ static void setup_signal_handlers(void)
 }
 
 
+static void dispatch_datagram(WAPEvent *dgram)
+{
+    Msg *msg;
+
+    gw_assert(dgram != NULL);
+    if (dgram->type != T_DUnitdata_Req) {
+        warning(0, "dispatch_datagram received event of unexpected type.");
+        wap_event_dump(dgram);
+    } else {
+        msg = msg_create(wdp_datagram);
+        msg->wdp_datagram.source_address =
+            octstr_duplicate(dgram->u.T_DUnitdata_Req.addr_tuple->local->address);
+        msg->wdp_datagram.source_port =
+            dgram->u.T_DUnitdata_Req.addr_tuple->local->port;
+        msg->wdp_datagram.destination_address =
+            octstr_duplicate(dgram->u.T_DUnitdata_Req.addr_tuple->remote->address);
+        msg->wdp_datagram.destination_port =
+            dgram->u.T_DUnitdata_Req.addr_tuple->remote->port;
+        msg->wdp_datagram.user_data = dgram->u.T_DUnitdata_Req.user_data;
+	dgram->u.T_DUnitdata_Req.user_data = NULL;
+
+        list_produce(queue, msg);
+    }
+
+    wap_event_destroy(dgram);
+}
+
 int main(int argc, char **argv) 
 {
     int bbsocket;
     int cf_index;
-    int ret;
     Msg *msg;
-    WAPEvent *event = NULL;
-    List *events = NULL;
     
     gwlib_init();
     cf_index = get_and_set_debugs(argc, argv, NULL);
@@ -374,18 +367,17 @@ int main(int argc, char **argv)
     info(0, "------------------------------------------------------------");
     info(0, "WAP box version %s starting up.", VERSION);
     
-    timers_init();
-    wsp_strings_init();
-    wsp_session_init();
-    wsp_unit_init();
+    wsp_session_init(&wtp_resp_dispatch_event,
+                     &wtp_initiator_dispatch_event,
+                     &wap_appl_dispatch);
+    wsp_unit_init(&dispatch_datagram, &wap_appl_dispatch);
     
-    wtp_tid_cache_init();
-    wtp_initiator_init();
-    wtp_resp_init();
+    wtp_initiator_init(&dispatch_datagram, &wsp_session_dispatch_event);
+    wtp_resp_init(&dispatch_datagram, &wsp_session_dispatch_event);
     wap_appl_init();
     
     bbsocket = connect_to_bearer_box();
-    init_queue();
+    queue = list_create();
     
     run_status = running;
     list_add_producer(queue);
@@ -393,25 +385,21 @@ int main(int argc, char **argv)
     gwthread_create(empty_queue_thread, &bbsocket);
 
     while (run_status == running && (msg = msg_receive(bbsocket)) != NULL) {
-	if (msg->wdp_datagram.destination_port == CONNECTIONLESS_PORT) {
-	    event = wsp_unit_unpack_wdp_datagram(msg);
-	    if (event != NULL)
-		wsp_unit_dispatch_event(event);
-	} else {
-	    events = wtp_unpack_wdp_datagram(msg);
-	    while (list_len(events) > 0) {
-		event = list_extract_first(events);
-		if (event != NULL) {
-		    if ((ret = wtp_event_is_for_responder(event)) == 1)
-			wtp_resp_dispatch_event(event);
-		    else if (ret == 0)
-			wtp_initiator_dispatch_event(event); 
-		}
-	    }
-	    list_destroy(events, NULL);
-	}
+	WAPEvent *dgram;
+
+	dgram = wap_event_create(T_DUnitdata_Ind);
+	dgram->u.T_DUnitdata_Ind.addr_tuple = wap_addr_tuple_create(
+		msg->wdp_datagram.source_address,
+		msg->wdp_datagram.source_port,
+		msg->wdp_datagram.destination_address,
+		msg->wdp_datagram.destination_port);
+	dgram->u.T_DUnitdata_Ind.user_data = msg->wdp_datagram.user_data;
+	msg->wdp_datagram.user_data = NULL;
 	msg_destroy(msg);
+
+	wap_dispatch_datagram(dgram);
     }
+
     info(0, "WAP box terminating.");
     gwthread_wakeup(heartbeat_thread);
     
@@ -421,12 +409,9 @@ int main(int argc, char **argv)
     gwthread_join_every(empty_queue_thread);
     wtp_initiator_shutdown();
     wtp_resp_shutdown();
-    wtp_tid_cache_shutdown();
     wsp_unit_shutdown();
     wsp_session_shutdown();
-    destroy_queue();
-    timers_shutdown();
-    wsp_strings_shutdown();
+    list_destroy(queue, msg_destroy_item);
     wap_appl_shutdown();
     wsp_http_map_destroy();
     config_destroy(cfg);

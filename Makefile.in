@@ -119,6 +119,9 @@ gwobjs = $(gwsrcs:.c=.o)
 libsrcs = $(shell echo gwlib/*.c) $(LIBSRCS)
 libobjs = $(libsrcs:.c=.o) $(LIBOBJS)
 
+wapsrcs = $(shell echo wap/*.c)
+wapobjs = $(wapsrcs:.c=.o)
+
 wmlscriptsrcs = $(shell echo wmlscript/*.[cy])
 wmlscriptobjs = $(wmlscriptsrcs:.c=.o) $(wmlscriptsrcs:.y=.o)
 
@@ -134,9 +137,9 @@ checks = $(checkprogs) $(shell echo checks/*.sh)
 srcs = $(shell echo */*.c)
 objs = $(srcs:.c=.o)
 
-libs = libgw.a libwmlscript.a libgwlib.a
+libs = libgw.a libwmlscript.a libwap.a libgwlib.a
 
-srcdirs = gw gwlib test utils wmlscript checks
+srcdirs = gw gwlib test utils wmlscript checks wap
 
 man1pages = utils/seewbmp.1 wmlscript/wmlsc.1 wmlscript/wmlsdasm.1
 man8pages = gw/kannel.8 utils/run_kannel_box.8
@@ -238,6 +241,10 @@ libgwlib.a: $(libobjs)
 libwmlscript.a: $(wmlscriptobjs)
 	ar rc libwmlscript.a $(wmlscriptobjs)
 	$(RANLIB) libwmlscript.a
+
+libwap.a: $(wapobjs)
+	ar rc libwap.a $(wapobjs)
+	$(RANLIB) libwap.a
 
 wmlscript/wsgram.h: wmlscript/wsgram.c
 

@@ -9,8 +9,8 @@
 #include <signal.h>
 
 #include "gwlib/gwlib.h"
-#include "gw/wtp_pdu.h"
-#include "gw/wsp_pdu.h"
+#include "wap/wtp_pdu.h"
+#include "wap/wsp_pdu.h"
 
 int main(int argc, char **argv) {
 	int i;
