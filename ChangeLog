@@ -1,3 +1,9 @@
+2000-07-06  Kalle Marjola  <rpr@wapit.com>
+
+	* gw/smsbox.c: modified so that if the HTTP-sendsms interface is
+	defined, the smsbox won't start if it fails to init it. Use new
+	command line option -H or --tryhttp to override this feature 
+
 2000-07-05  Kalle Marjola  <rpr@wapit.com>
 
 	* doc/userguide/newconf.txt: oops, forgot admin-username. And

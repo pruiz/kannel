@@ -82,6 +82,8 @@ static HTTPSocket *http_server_socket;
 static char 	*http_allow_ip = NULL;
 static char 	*http_deny_ip = NULL;
 
+static int	only_try_http = 0;
+
 /* thread handling */
 
 static Mutex	 	*socket_mutex;
@@ -321,8 +323,12 @@ static void init_smsbox(Config *cfg)
     
     if (sendsms_port > 0) {
 	http_server_socket = http_server_open(sendsms_port);
-	if (http_server_socket == NULL)
-	    error(0, "Failed to open HTTP socket, ignoring it");
+	if (http_server_socket == NULL) {
+	    if (only_try_http)
+		error(0, "Failed to open HTTP socket, ignoring it");
+	    else
+		panic(0, "Failed to open HTTP socket");
+	}
 	else
 	    info(0, "Set up send sms service at port %d", sendsms_port);
     } else
@@ -446,6 +452,18 @@ error:
 }
 
 
+static int check_args(int i, int argc, char **argv) {
+    if (strcmp(argv[i], "-H")==0
+	|| strcmp(argv[i], "--tryhttp"))
+    {
+	only_try_http = 1;
+    }
+    else
+	return -1;
+
+    return 0;
+} 
+
 
 int main(int argc, char **argv)
 {
@@ -453,7 +471,7 @@ int main(int argc, char **argv)
     URLTranslationList *translations;
 
     gwlib_init();
-    cf_index = get_and_set_debugs(argc, argv, NULL);
+    cf_index = get_and_set_debugs(argc, argv, check_args);
 
 
     socket_mutex = mutex_create();
