@@ -9,5 +9,6 @@
 
 Octstr* error_requesting_back(Octstr *url, Octstr *referer);
 Octstr* error_requesting(Octstr *url);
+Octstr* error_converting(Octstr *url, Octstr *type);
 
 #endif
