@@ -109,7 +109,7 @@ static Octstr *httpd_isolate(List *cgivars)
     if (bb_isolate() == -1)
 	return octstr_create("Already isolated");
     else
-	return octstr_create("Kannel isolated from message providers");
+	return octstr_create(GW_NAME " isolated from message providers");
 }
 
 static Octstr *httpd_suspend(List *cgivars)
@@ -121,7 +121,7 @@ static Octstr *httpd_suspend(List *cgivars)
     if (bb_suspend() == -1)
 	return octstr_create("Already suspended");
     else
-	return octstr_create("Kannel suspended");
+	return octstr_create(GW_NAME " suspended");
 }
 
 static Octstr *httpd_resume(List *cgivars)
@@ -143,7 +143,7 @@ static Octstr *httpd_flush_dlr(List *cgivars)
     if ((reply = httpd_check_status())!= NULL) return reply;
 
     if (bb_flush_dlr() == -1)
-	return octstr_create("Suspend Kannel before trying to flush DLR queue");
+	return octstr_create("Suspend " GW_NAME " before trying to flush DLR queue");
     else
 	return octstr_create("DLR queue flushed");
 }
@@ -223,7 +223,7 @@ static void httpd_serve(HTTPClient *client, Octstr *url, List *headers,
 
     if (status_type == BBSTATUS_HTML) {
 	header = "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 3.2//EN\">\n"
- 	    "<html>\n<title>Kannel</title>\n<body>\n<p>";
+ 	    "<html>\n<title>" GW_NAME "</title>\n<body>\n<p>";
 	footer = "</p>\n</body></html>\n";
 	content_type = "text/html";
     } else if (status_type == BBSTATUS_WML) {

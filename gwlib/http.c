@@ -960,7 +960,7 @@ static Octstr *build_request(Octstr *path_or_url, Octstr *host, long port,
     if (port != HTTP_PORT)
         octstr_format_append(request, ":%ld", port);
     octstr_append(request, octstr_imm("\r\n"));
-    octstr_format_append(request, "User-Agent: Kannel/%s\r\n", VERSION);
+    octstr_format_append(request, "User-Agent: " GW_NAME "/%s\r\n", VERSION);
 
     for (i = 0; headers != NULL && i < list_len(headers); ++i) {
         octstr_append(request, list_get(headers, i));
@@ -1971,7 +1971,7 @@ void http_send_reply(HTTPClient *client, int status, List *headers,
         client->persistent_conn = p;
 
     /* identify ourselfs */
-    octstr_format_append(response, "Server: Kannel/%s\r\n", VERSION);
+    octstr_format_append(response, "Server: " GW_NAME "/%s\r\n", VERSION);
 
     octstr_format_append(response, "Content-Length: %ld\r\n",
 			 octstr_len(body));

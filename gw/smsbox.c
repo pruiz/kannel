@@ -967,7 +967,7 @@ static int obey_request(Octstr **result, URLTranslation *trans, Msg *msg)
 
     case TRANSTYPE_GET_URL:
 	request_headers = http_create_empty_headers();
-        http_header_add(request_headers, "User-Agent", "Kannel " VERSION);
+        http_header_add(request_headers, "User-Agent", GW_NAME " " VERSION);
 	if (urltrans_send_sender(trans)) {
 	    http_header_add(request_headers, "X-Kannel-From",
 			    octstr_get_cstr(msg->sms.receiver));
@@ -983,7 +983,7 @@ static int obey_request(Octstr **result, URLTranslation *trans, Msg *msg)
 
     case TRANSTYPE_POST_URL:
 	request_headers = http_create_empty_headers();
-	http_header_add(request_headers, "User-Agent", "Kannel " VERSION);
+	http_header_add(request_headers, "User-Agent", GW_NAME " " VERSION);
 	id = remember_receiver(msg, trans);
 	/* XXX Which header should we use for UCS2 ? octstr also ? */
 	/* XXX UCS2 should be text/ *, charset=UTF16-BE ? */
@@ -1110,7 +1110,7 @@ static int obey_request(Octstr **result, URLTranslation *trans, Msg *msg)
 	octstr_append(xml, octstr_imm(">\n"));
 
 	request_headers = http_create_empty_headers();
-	http_header_add(request_headers, "User-Agent", "Kannel " VERSION);
+	http_header_add(request_headers, "User-Agent", GW_NAME " " VERSION);
 	id = remember_receiver(msg, trans);
 
 	http_header_add(request_headers, "Content-Type", "text/xml");
@@ -2858,7 +2858,7 @@ int main(int argc, char **argv)
     init_smsbox(cfg);
 
     debug("sms", 0, "----------------------------------------------");
-    debug("sms", 0, "Kannel smsbox version %s starting", VERSION);
+    debug("sms", 0, GW_NAME " smsbox version %s starting", VERSION);
     write_pid_file();
 
     translations = urltrans_create();
@@ -2884,7 +2884,7 @@ int main(int argc, char **argv)
 
     read_messages_from_bearerbox();
 
-    info(0, "Kannel smsbox terminating.");
+    info(0, GW_NAME " smsbox terminating.");
 
     heartbeat_stop(heartbeat_thread);
     http_close_all_ports();

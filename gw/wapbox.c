@@ -426,7 +426,7 @@ int main(int argc, char **argv)
     setup_signal_handlers();
     
     info(0, "------------------------------------------------------------");
-    info(0, "Kannel wapbox version %s starting up.", VERSION);
+    info(0, GW_NAME " wapbox version %s starting up.", VERSION);
     
     sequence_counter = counter_create();
     wsp_session_init(&wtp_resp_dispatch_event,
@@ -510,7 +510,7 @@ int main(int argc, char **argv)
 	msg_destroy(msg);
     }
 
-    info(0, "Kannel wapbox terminating.");
+    info(0, GW_NAME " wapbox terminating.");
     
     program_status = shutting_down;
     heartbeat_stop(heartbeat_thread);

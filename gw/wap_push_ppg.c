@@ -1933,7 +1933,7 @@ PPGSessionMachine *session_find_using_pi_client_address(Octstr *caddr)
  */
 static Octstr *tell_ppg_name(void)
 {
-     return octstr_format("%S; WAP/1.3 (Kannel/%s)", get_official_name(), 
+     return octstr_format("%S; WAP/1.3 (" GW_NAME "/%s)", get_official_name(), 
                           VERSION);
 }
 

@@ -431,7 +431,7 @@ static void setup_official_name(void)
 
     gw_assert(official_name == NULL);
     if (uname(&u) == -1)
-        panic(0, "uname failed - can't happen, unless Kannel is buggy.");
+        panic(0, "uname failed - can't happen, unless " GW_NAME " is buggy.");
     if (gw_gethostbyname(&h, u.nodename) == -1) {
         error(0, "Can't find out official hostname for this host, "
               "using `%s' instead.", u.nodename);

@@ -37,7 +37,7 @@ Octstr *version_report_string(const char *boxname)
     struct utsname u;
 
     uname(&u);
-    return octstr_format("Kannel %s version `%s'.\n"
+    return octstr_format(GW_NAME " %s version `%s'.\n"
     	    	    	 "System %s, release %s, version %s, machine %s.\n"
 			 "Hostname %s, IP %s.\n"
 			 "Libxml version %s.\n"

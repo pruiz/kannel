@@ -22,7 +22,7 @@ Octstr* error_requesting_back(Octstr *url, Octstr *referer)
             "<timer value=\"20\"/><p>Error: could not request URL %s.</p>" \
             "<p>Either the HTTP server is down or the request timed out." \
             "Returning to previous page</p> "\
-            "<p>--<br/>Kannel/%s</p></card></wml>",
+            "<p>--<br/>" GW_NAME "/%s</p></card></wml>",
             octstr_get_cstr(referer), octstr_get_cstr(url), VERSION
           );
 
@@ -42,7 +42,7 @@ Octstr* error_requesting(Octstr *url)
             "<wml><card title=\"Error\">" \
             "<p>Error: could not request URL %s.</p>" \
             "<p>Either the HTTP server is down or the request timed out.</p>" \
-            "<p>--<br/>Kannel/%s</p></card></wml>",
+            "<p>--<br/>" GW_NAME "/%s</p></card></wml>",
             octstr_get_cstr(url), VERSION
           );
 

@@ -304,7 +304,7 @@ static int starter(Cfg *cfg)
     }
 
     info(0, "----------------------------------------");
-    info(0, "Kannel bearerbox II version %s starting", VERSION);
+    info(0, GW_NAME " bearerbox II version %s starting", VERSION);
 
     if (check_config(cfg) == -1)
 	panic(0, "Cannot start with corrupted configuration");
@@ -537,7 +537,7 @@ int bb_shutdown(void)
 	mutex_unlock(status_mutex);
 	return -1;
     }
-    debug("bb", 0, "Shutting down Kannel...");
+    debug("bb", 0, "Shutting down " GW_NAME "...");
 
     called = 1;
     set_shutdown_status();
