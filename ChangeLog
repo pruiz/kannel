@@ -1,3 +1,13 @@
+Fri Jan 21 13:42:57 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* VERSION: Bumbped to 0.3. Forgot to do that for the release.
+	Stupid me.
+
+	* Makefile.in, doc/arch/arch.xml: Put version number (from
+	VERSION) into DocBook documents.
+	
+	* doc/arch/*.xml: Minor corrections.
+
 2000-01-21    <rpr@rpr.wapit.com>
 
 	* gw/smsc.c: added comments of where to add new SMSCes
