@@ -1,3 +1,9 @@
+Fri Jun  9 04:58:02 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* gw/wap-events-def.h, gw/wtp.c: Removed unused fields wsp_pdu
+	and wsp_tid from various events. Then removed code that set
+	and copied them between events.
+
 Fri Jun  9 07:44:25 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* gw/wtp.c, gw/wtp_state-decl.h: Beginning the breaking up of

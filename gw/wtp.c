@@ -33,16 +33,6 @@ enum {
 
 static List *machines = NULL;
 
-/*
- * Global WTP transaction identifier and its lock (this is used by WSP when it 
- * wants to start a new transaction)
- */
-
-static unsigned long wtp_tid = 0;
-
-Mutex *wtp_tid_lock = NULL;
-
-
 static Counter *machine_id_counter = NULL;
 
 /*****************************************************************************
@@ -80,11 +70,6 @@ static void wtp_handle_event(WTPMachine *machine, WAPEvent *event);
  * iniatilised. If machines list is busy, just waits.
  */ 
 static WTPMachine *wtp_machine_create(WAPAddrTuple *tuple, long tid, long tcl);
-
-/*
- * Generates a new transaction handle by incrementing the previous one by one.
- */
-static unsigned long wtp_tid_next(void);
 
 /*
  * Print a wtp event or a wtp machine state name as a string.
@@ -213,7 +198,6 @@ WAPEvent *wtp_unpack_wdp_datagram(Msg *msg){
 void wtp_init(void) {
      machines = list_create();
      machine_id_counter = counter_create();
-     wtp_tid_lock = mutex_create();
 
      queue = list_create();
      list_add_producer(queue);
@@ -228,16 +212,18 @@ void wtp_shutdown(void) {
      run_status = terminating;
      list_remove_producer(queue);
      gwthread_join_every(main_thread);
+
      debug("wap.wtp", 0, "wtp_shutdown: %ld machines left",
      	   list_len(machines));
      while (list_len(machines) > 0)
 	wtp_machine_destroy(list_extract_first(machines));
      list_destroy(machines);
+
      while (list_len(queue) > 0)
 	wap_event_destroy(list_extract_first(queue));
      list_destroy(queue);
+
      counter_destroy(machine_id_counter);
-     mutex_destroy(wtp_tid_lock);
 }
 
 void wtp_dispatch_event(WAPEvent *event) {
@@ -332,15 +318,6 @@ static void wtp_handle_event(WTPMachine *machine, WAPEvent *event){
      if (machine->state == LISTEN)
      	wtp_machine_destroy(machine);
 }
-
-static unsigned long wtp_tid_next(void){
-     
-     mutex_lock(wtp_tid_lock);
-     ++wtp_tid;
-     mutex_unlock(wtp_tid_lock);
-
-     return wtp_tid;
-} 
 
 
 static WTPMachine *wtp_machine_find_or_create(WAPEvent *event){
@@ -545,7 +522,6 @@ static WAPEvent *create_tr_invoke_ind(WTPMachine *sm, Octstr *user_data) {
 	event->u.TR_Invoke_Ind.ack_type = sm->u_ack;
 	event->u.TR_Invoke_Ind.user_data = octstr_duplicate(user_data);
 	event->u.TR_Invoke_Ind.tcl = sm->tcl;
-	event->u.TR_Invoke_Ind.wsp_tid = wtp_tid_next();
 	event->u.TR_Invoke_Ind.tid = sm->tid;
 	event->u.TR_Invoke_Ind.mid = sm->mid;
 	event->u.TR_Invoke_Ind.addr_tuple = 
@@ -567,8 +543,6 @@ static WAPEvent *pack_wsp_event(WAPEventName wsp_name, WAPEvent *wtp_event,
                 
 	        case TR_Invoke_Cnf:
 		     gw_assert(wtp_event->type == TR_Invoke_Ind);
-                     event->u.TR_Invoke_Cnf.wsp_tid =
-                            event->u.TR_Invoke_Ind.wsp_tid;
                      event->u.TR_Invoke_Cnf.addr_tuple = 
 		     	wap_addr_tuple_duplicate(machine->addr_tuple);
                 break;
@@ -577,7 +551,6 @@ static WAPEvent *pack_wsp_event(WAPEventName wsp_name, WAPEvent *wtp_event,
 		     gw_assert(wtp_event->type == RcvAck);
                      event->u.TR_Result_Cnf.exit_info = NULL;
                      event->u.TR_Result_Cnf.exit_info_present = 0;
-                     event->u.TR_Result_Cnf.wsp_tid = machine->tid;
                      event->u.TR_Result_Cnf.addr_tuple = 
 		     	wap_addr_tuple_duplicate(machine->addr_tuple);
                 break;
@@ -586,8 +559,6 @@ static WAPEvent *pack_wsp_event(WAPEventName wsp_name, WAPEvent *wtp_event,
 		     gw_assert(wtp_event->type == RcvAbort);
                      event->u.TR_Abort_Ind.abort_code =
                             wtp_event->u.RcvAbort.abort_reason;
-                     event->u.TR_Abort_Ind.wsp_tid =
-                            event->u.TR_Invoke_Ind.wsp_tid;
                      event->u.TR_Abort_Ind.tid = machine->tid;
                      event->u.TR_Abort_Ind.mid = machine->mid;
 		     event->u.TR_Abort_Ind.addr_tuple = 

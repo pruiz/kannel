@@ -13,8 +13,6 @@ WAPEVENT(TR_Invoke_Ind,
           INTEGER(ack_type)
           OCTSTR(user_data)
           INTEGER(tcl)
-          INTEGER(wsp_pdu)
-          INTEGER(wsp_tid)
 	  INTEGER(tid)
 	  INTEGER(mid)
 	  ADDRTUPLE(addr_tuple)
@@ -23,23 +21,17 @@ WAPEVENT(TR_Invoke_Ind,
 WAPEVENT(TR_Invoke_Cnf,
           OCTSTR(exit_info)
           INTEGER(exit_info_present)
-          INTEGER(wsp_pdu)
-          INTEGER(wsp_tid)
 	  ADDRTUPLE(addr_tuple);
           )
 
 WAPEVENT(TR_Result_Cnf,
           OCTSTR(exit_info)
           INTEGER(exit_info_present)
-          INTEGER(wsp_pdu)
-          INTEGER(wsp_tid)
 	  ADDRTUPLE(addr_tuple)
           )
 
 WAPEVENT(TR_Abort_Ind,
           INTEGER(abort_code)
-          INTEGER(wsp_pdu)
-          INTEGER(wsp_tid)
 	  INTEGER(tid)
 	  INTEGER(mid)
 	  ADDRTUPLE(addr_tuple)
