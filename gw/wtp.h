@@ -40,27 +40,11 @@ typedef struct Tid_cache Tid_cache;
 #define L_R_WITH_USER_ACK 7
 
 /*
- * Maximum values for counters (for retransmissions and acknowledgement waiting 
+ * Maximum values for counters (for retransmissions and acknowledgement waiting
  * periods)
  */
 #define AEC_MAX 6
 #define MAX_RCR  8
-
-/*
- * Types of WTP PDUs and numbers assigned for them
- */
-
-enum {
-     ERRONEOUS = -0x01,
-     NOT_ALLOWED = 0x00,
-     INVOKE = 0x01,
-     RESULT = 0x02,
-     ACK = 0x03,
-     ABORT = 0x04,
-     SEGMENTED_INVOKE = 0x05,
-     SEGMENTED_RESULT = 0x06,
-     NEGATIVE_ACK = 0x07
-};
 
 /*
  * Types of acknowledgement PDU (normal acknowledgement or tid verification)
@@ -111,16 +95,6 @@ struct WTPMachine {
 };
 
 /*
- * A separate data structure for storing an address four-tuple of a message.
- */
-struct Address {
-   Octstr *source_address;
-   long source_port;
-   Octstr *destination_address;
-   long destination_port;
-};
-
-/*
  * Initialize the WTP subsystem. MUST be called before any other calls
  * to this module.
  */
@@ -133,14 +107,10 @@ void wtp_init(void);
 void wtp_shutdown(void);
 
 /*
- * Parse a `wdp_datagram' message object (of type Msg, see msg.h) and
- * create a corresponding WTPEvent object. Also check that the datagram
- * is syntactically valid. If there is a problem (memory allocation or
- * invalid packet), then return NULL, and send an appropriate error
- * packet to the phone. Otherwise return a pointer to the event structure
- * that has been created.
+ * Handles possible concatenated messages. Returns a list of wap events. 
+ * Real unpacking is done by an internal function.
  */
-WAPEvent *wtp_unpack_wdp_datagram(Msg *msg);
+List *wtp_unpack_wdp_datagram(Msg *msg);
 
 
 void wtp_dispatch_event(WAPEvent *event);

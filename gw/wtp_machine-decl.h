@@ -10,7 +10,7 @@
  * incoming events of a certain transaction. Its fields can be grouped following 
  * way:
  *
- * General: wtp machine state and in-use flag
+ * General: wtp machine state 
  *
  * Fields telling the service required: 
  *               a) transaction class (is transaction confirmed or not) 
@@ -47,8 +47,7 @@
 #error "wsp_machine-decl.h: Some required macro is missing."
 #endif
 
-MACHINE(INTEGER(in_use)
-        ENUM(state)
+MACHINE(ENUM(state)
         INTEGER(tid)              /* transaction identifier */
 	ADDRTUPLE(addr_tuple)
         INTEGER(tcl)              /* transaction class */

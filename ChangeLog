@@ -2,7 +2,9 @@
 
 	* wtp.c: Fixed bug pointed out by Joerg Pommnintz
 
-	* removing debug functions
+	* removed debug functions
+
+	* wtp.c | wapbox.c: Code for separation added. Must test it ...
 
 2000-06-16  Kalle Marjola  <rpr@wapit.com>
 

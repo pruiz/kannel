@@ -157,6 +157,8 @@ void wtp_do_not_start(long abort_type, long abort_reason, WAPAddrTuple *address,
      Msg *msg = NULL;
      WTP_PDU *pdu;
 
+     gw_assert(abort_type < 2);
+     gw_assert(abort_reason < 10);
      pdu = wtp_pdu_create(Abort);
      pdu->u.Abort.con = 0;
      pdu->u.Abort.tid = tid ^ 0x8000;
@@ -166,8 +168,6 @@ void wtp_do_not_start(long abort_type, long abort_reason, WAPAddrTuple *address,
      msg = msg_create(wdp_datagram);
      add_direct_address(msg, address);
      msg->wdp_datagram.user_data = wtp_pdu_pack(pdu);
-     debug("wap.wtp_send", 0, "putting a message in the queue");
-     msg_dump(msg, 0);
 
      put_msg_in_queue(msg);
      debug("wap.wtp.send", 0, "WTP_SEND: do_not_start: aborted");
@@ -292,8 +292,7 @@ static void add_datagram_address(Msg *msg, WTPMachine *machine){
  */
 static void add_direct_address(Msg *msg, WAPAddrTuple *address){
 
-       debug("wap.wtp.send", 0, "WTP: adding direct address");
-       wtp_send_address_dump(address);
+       debug("wap.wtp.send", 0, "WTP_SEND: adding direct address");
        msg->wdp_datagram.source_address = 
     	    octstr_duplicate(address->client->address);
        msg->wdp_datagram.source_port = address->client->port;

@@ -395,6 +395,7 @@ int main(int argc, char **argv) {
 	int cf_index;
 	Msg *msg;
 	WAPEvent *event = NULL;
+        List *events = NULL;
 
 	gwlib_init();
 	cf_index = get_and_set_debugs(argc, argv, NULL);
@@ -438,9 +439,13 @@ int main(int argc, char **argv) {
 			if (event != NULL)
 				wsp_unit_dispatch_event(event);
                 } else {
-			event = wtp_unpack_wdp_datagram(msg);
+                  events = wtp_unpack_wdp_datagram(msg);
+		  while (list_len(events) > 0){
+			event = list_extract_first(events);;
 	                if (event != NULL)
 				wtp_dispatch_event(event);
+                  }
+                  list_destroy(events);
 		}
 	}
 	info(0, "WAP box terminating.");
