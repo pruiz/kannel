@@ -102,6 +102,7 @@ The urls are fetched in random order.\n\
 ";
 
 #include <errno.h>
+#include <ctype.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -228,7 +229,7 @@ static void print_msg( const char * trace, unsigned char * msg,
 static void print_data( const char * trace, unsigned char * msg,
                 int msg_len ) {
     int i;
-    int printable = 0;
+
     if (verbose || writedata) {
         mutex_lock( mutex );
         printf( "%s (len %d): ", trace, msg_len );
