@@ -37,6 +37,7 @@ static enum {
 	aborting_with_prejudice
 } run_status = initializing;
 
+
 /* NOTE: the following variable belongs to a hack, and will go away
  * when the configuration parsing is reworked. Right now config_get()
  * returns the last appearance of a given configuration variable, only.
@@ -79,9 +80,9 @@ static void read_config(char *filename) {
 
 	if ((s = config_get(grp, "bearerbox-host")) != NULL)
 	    bearerbox_host = s;
-	/* if ((s = config_get(grp, "heartbeat-freq")) != NULL)
-	 *  heartbeat_freq = atoi(s);
-	 */
+	if ((s = config_get(grp, "heartbeat-freq")) != NULL)
+		heartbeat_freq = atoi(s);
+	
 	if ((s = config_get(grp, "timer-freq")) != NULL)
 	    timer_freq = atoi(s);
 	if ((s = config_get(grp, "log-file")) != NULL)
@@ -232,13 +233,13 @@ static void send_heartbeat_thread(void *arg) {
 
 #if 0
 static void timer_thread(void *arg) {
-
-       while (run_status == running) {
-             wtp_timer_check();
-             sleep(timer_freq);
-       }
+	while (run_status == running) {
+		wtp_timer_check();
+		sleep(timer_freq);
+	}
 }
 #endif
+
 static void empty_queue_thread(void *arg) {
 	Msg *msg;
 	int socket;
@@ -363,12 +364,14 @@ int main(int argc, char **argv) {
 		}
 	        wtp_handle_event(wtp_machine, wtp_event);
 	}
-	list_remove_producer(queue);
-
 	info(0, "WAP box terminating.");
+
+	run_status = aborting;
+	list_remove_producer(queue);
+	wap_appl_shutdown();
+	wsp_shutdown();
 	destroy_queue();
 	wtp_shutdown();
-	wsp_shutdown();
 	wtp_timer_shutdown();
 	wtp_tid_cache_shutdown();
 	config_destroy(cfg);

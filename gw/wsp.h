@@ -44,7 +44,6 @@ typedef struct WSPMethodMachine WSPMethodMachine;
 #include "wap-events.h"
 
 struct WSPMachine {
-	#define MUTEX(name) Mutex *name;
 	#define INTEGER(name) long name;
 	#define OCTSTR(name) Octstr *name;
 	#define EVENT_POINTER(name) WSPEvent *name;
@@ -59,7 +58,6 @@ struct WSPMachine {
 
 
 struct WSPMethodMachine {
-	#define MUTEX(name) Mutex *name;
 	#define INTEGER(name) long name;
 	#define OCTSTR(name) Octstr *name;
 	#define EVENT_POINTER(name) WSPEvent *name;
@@ -91,44 +89,7 @@ void wsp_shutdown(void);
  * Find the correct WSPMachine to send the event to, or create a new
  * one, and then make that machine handle the event.
  */
-void wsp_dispatch_event(WTPMachine *wtp_sm, WAPEvent *event);
-
-
-/*
- * Create a WSPMachine structure and initialize it to be empty. Return a
- * pointer to the structure or NULL if there was a failure.
- */
-WSPMachine *wsp_machine_create(void);
-
-
-/*
- * Mark a WSPMachine as unused, for later destruction.
- */
-void wsp_machine_mark_unused(WSPMachine *machine);
-
-
-/*
- * Destroy a WSPMachine structure, including all its members.
- */
-void wsp_machine_destroy(WSPMachine *machine);
-
-
-/*
- * Output (with `debug' in wapitlib.h) a WSPMachine and its fields.
- */
-void wsp_machine_dump(WSPMachine *machine);
-
-
-
-
-/*
- * Feed a WSPEvent to a WSPMachine. Handle errors, do not report them to
- * the caller.
- */
-void wsp_handle_event(WSPMachine *machine, WAPEvent *event);
-
-
-int wsp_deduce_pdu_type(Octstr *pdu, int connectionless);
+void wsp_dispatch_event(WAPEvent *event);
 
 
 /* configure an URL mapping; parses string on whitespace, uses left

@@ -91,10 +91,12 @@ const char *wap_event_name(WAPEventName type) {
 void wap_event_dump(WAPEvent *event) {
 	debug("wap.event", 0, "Dumping WAPEvent %p", (void *) event);
 	if (event != NULL) {
-		debug("wap.event", 0, "  Type = %s", 
+		debug("wap.event", 0, "  type = %s", 
 			wap_event_name(event->type));
+		switch (event->type) {
 		#define WAPEVENT(name, fields) \
-			{ struct name *p = &event->name; fields }
+			case name: \
+			{ struct name *p = &event->name; fields; break; }
 		#define OCTSTR(name) \
 			octstr_dump(p->name, 1);
 		#define INTEGER(name) \
@@ -108,6 +110,9 @@ void wap_event_dump(WAPEvent *event) {
 		#define HTTPHEADER(name) \
 			http2_header_dump(p->name);
 		#include "wap-events-def.h"
+		default:
+			debug("wap.event", 0, "Unknown type");
+		}
 	}
 	debug("wap.event", 0, "WAPEvent dump ends.");
 }

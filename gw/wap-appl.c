@@ -75,9 +75,14 @@ void wap_appl_init(void) {
 
 
 void wap_appl_shutdown(void) {
+	WAPEvent *e;
+
 	gw_assert(run_status == running);
 	list_remove_producer(queue);
 	run_status = terminating;
+	while ((e = list_extract_first(queue)) != NULL)
+		wap_event_destroy(e);
+	list_destroy(queue);
 }
 
 
@@ -95,13 +100,13 @@ void wap_appl_dispatch(WAPEvent *event) {
 static void main_thread(void *arg) {
 	WAPEvent *ind, *res;
 	
-	while ((ind = list_consume(queue)) != NULL) {
+	while (run_status == running && (ind = list_consume(queue)) != NULL) {
 		gw_assert(ind->type == S_MethodInvoke_Ind);
 		gwthread_create(fetch_thread, ind);
 		res = wap_event_create(S_MethodInvoke_Res);
 		res->S_MethodInvoke_Res.machine = 
 			ind->S_MethodInvoke_Ind.machine;
-		wsp_handle_event(ind->S_MethodInvoke_Ind.session, res);
+		wsp_dispatch_event(res);
 	}
 }
 
@@ -277,7 +282,7 @@ static void fetch_thread(void *arg) {
 	e->S_MethodResult_Req.response_body = body;
 	e->S_MethodResult_Req.machine = event->S_MethodInvoke_Ind.machine;
 
-	wsp_dispatch_event(event->S_MethodInvoke_Ind.machine, e);
+	wsp_dispatch_event(e);
 
 	wap_event_destroy(event);
 	octstr_destroy(type);
@@ -287,7 +292,7 @@ static void fetch_thread(void *arg) {
 
 /* Shut up WMLScript compiler status/trace messages. */
 static void dev_null(const char *data, size_t len, void *context) {
-  /* nothing */
+	/* nothing */
 }
 
 

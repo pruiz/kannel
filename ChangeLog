@@ -1,3 +1,27 @@
+Sat May 27 02:05:41 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* gw/wap-events.c: Only the fields for the correct event type
+	are dumped by wap_event_dump.
+	
+	* gw/wapbox.c: Uncommented code to get heartbeat-freq setting
+	from config. Added some shutdown code.
+	
+	NOTE: The wapbox does not currently shutdown correctly. Thread
+	termination synchronization is not done and this causes a
+	segfault at the end. Will hack that next.
+	
+	* gw/wap-appl.c: Event queue is emptied and destroyed at shutdown.
+	
+	* gw/wsp.c, gw/wsp_state-decl.h, gw/wtp_state-decl.h:
+	Work started on making a global event queue for all
+	WSPMachines. wsp_dispatch_event now the only external method
+	for sending events to WSP. Its interface has been changed so
+	that it only gets the event and will look inside the event to
+	find addressing info - the WTPMachine is no longer needed to be
+	given as the argument for this. A number of previously available
+	functions are now static and must only be used from within the
+	WSP layer.
+	
 Sat May 27 02:02:33 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* gwlib/gwthread.h, gwlib/gwthread-pthread.c: Name of function

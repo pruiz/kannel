@@ -7,7 +7,7 @@
  * Lars Wirzenius <liw@wapit.com>
  */
 
-#if !defined(HTTPHEADER) || !defined(INTEGER) || !defined(MUTEX) || \
+#if !defined(HTTPHEADER) || !defined(INTEGER) || \
 	!defined(OCTSTR) || !defined(EVENT_POINTER) || \
 	!defined(METHOD_POINTER) || !defined(SESSION_POINTER) || \
 	!defined(SESSION_MACHINE) || !defined(METHOD_MACHINE) || \
@@ -19,11 +19,9 @@
 SESSION_MACHINE(
 	INTEGER(unused)
 	INTEGER(state)
-	MUTEX(mutex)
 	INTEGER(n_methods)
 	INTEGER(session_id)
 	METHOD_POINTER(method_machine)
-	LIST(event_queue)
 	OCTSTR(client_address)
 	INTEGER(client_port)
 	OCTSTR(server_address)
@@ -43,12 +41,10 @@ SESSION_MACHINE(
 )
 
 METHOD_MACHINE(
-	MUTEX(mutex)
 	SESSION_POINTER(session_machine)
 )
 
 
-#undef MUTEX
 #undef INTEGER
 #undef OCTSTR
 #undef EVENT_POINTER

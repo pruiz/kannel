@@ -21,7 +21,7 @@ STATE_NAME(REPLYING)
 
 ROW(NULL_STATE,
 	TR_Invoke_Ind,
-	e->tcl == 2 && wsp_deduce_pdu_type(e->user_data, 0) == Connect_PDU,
+	e->tcl == 2 && deduce_pdu_type(e->user_data, 0) == Connect_PDU,
 	{
 		WAPEvent *new_event;
 		WAPEvent *wtp_event;
@@ -48,46 +48,10 @@ ROW(NULL_STATE,
 		 */
 		new_event = wap_event_create(S_Connect_Res);
 		new_event->S_Connect_Res.machine = e->machine;
-		wsp_handle_event(sm, new_event);
+		wsp_dispatch_event(new_event);
 	},
 	CONNECTING)
 
-
-#if 0
-/*
- * When WAP box is restarting, the first PDU can be other than Connect. (That 
- * can happen when the bearerbox is sending us old packets or the peer has not
- * closed the connection.) Get (hopefully) means that the connection is still 
- * open. We simply ignore Disconnect PDU.
- */
-
-ROW(NULL_STATE,
-        TR_Invoke_Ind,
-	e->tcl == 2 && wsp_deduce_pdu_type(e->user_data, 0) == Get_PDU &&
-	sm->n_methods == 0 /* XXX check max from config */,
-	{
-		WAPEvent *new_event;
-		Octstr *url;
-		Octstr *headers;
-
-		++sm->n_methods;
-
-                if (unpack_get_pdu(&url, &headers, e->user_data) == -1)
-			error(0, "Unpacking Get PDU failed, oops.");
-		new_event = wsp_event_create(Release);
-		new_event->Release.machine = e->machine;
-		new_event->Release.url = url;
-		wsp_handle_event(sm, new_event);
-
-	},
-	HOLDING)
-
-ROW(NULL_STATE,
-    TR_Invoke_Ind,
-    e->tcl == 0 && wsp_deduce_pdu_type(e->user_data, 0) == Disconnect_PDU,
-    { },
-    NULL_STATE)
-#endif
 
 ROW(CONNECTING,
 	S_Connect_Res,
@@ -107,7 +71,7 @@ ROW(CONNECTING,
 			for (i = 0; i < list_len(old_sessions); ++i) {
 				sm2 = list_get(old_sessions, i);
 				if (sm2 != sm)
-					wsp_machine_mark_unused(sm2);
+					machine_mark_unused(sm2);
 			}
 			list_destroy(old_sessions);
 		}
@@ -140,7 +104,7 @@ ROW(CONNECTING_2,
 
 ROW(CONNECTED,
 	TR_Invoke_Ind,
-	e->tcl == 2 && wsp_deduce_pdu_type(e->user_data, 0) == Get_PDU &&
+	e->tcl == 2 && deduce_pdu_type(e->user_data, 0) == Get_PDU &&
 	sm->n_methods == 0 /* XXX check max from config */,
 	{
 		WAPEvent *new_event;
@@ -156,7 +120,7 @@ ROW(CONNECTED,
 			new_event->Release.machine = e->machine;
 			new_event->Release.url = url;
 			new_event->Release.http_headers = headers;
-			wsp_handle_event(sm, new_event);
+			wsp_dispatch_event(new_event);
 		}
 
 	},
@@ -164,7 +128,7 @@ ROW(CONNECTED,
 
 ROW(CONNECTED,
 	TR_Invoke_Ind,
-	e->tcl == 2 && wsp_deduce_pdu_type(e->user_data, 0) == Post_PDU &&
+	e->tcl == 2 && deduce_pdu_type(e->user_data, 0) == Post_PDU &&
 	sm->n_methods == 0 /* XXX check max from config */,
 	{
 		WAPEvent *new_event;
@@ -179,7 +143,7 @@ ROW(CONNECTED,
 			new_event = wap_event_create(Release);
 			new_event->Release.machine = e->machine;
 			new_event->Release.url = url;
-			wsp_handle_event(sm, new_event);
+			wsp_dispatch_event(new_event);
 		}
 
 	},
@@ -187,9 +151,9 @@ ROW(CONNECTED,
 
 ROW(CONNECTED,
 	TR_Invoke_Ind,
-	e->tcl == 0 && wsp_deduce_pdu_type(e->user_data, 0) == Disconnect_PDU,
+	e->tcl == 0 && deduce_pdu_type(e->user_data, 0) == Disconnect_PDU,
 	{
-		wsp_machine_mark_unused(sm);
+		machine_mark_unused(sm);
 	},
 	NULL_STATE)
 
@@ -198,7 +162,7 @@ ROW(CONNECTED,
 	--liw */
 ROW(CONNECTED,
 	TR_Invoke_Ind,
-	wsp_deduce_pdu_type(e->user_data, 0) == Connect_PDU,
+	deduce_pdu_type(e->user_data, 0) == Connect_PDU,
 	{
 		WAPEvent *wtp_event;
 		Octstr *pdu;
@@ -218,7 +182,7 @@ ROW(CONNECTED,
 
 ROW(CONNECTED,
 	TR_Invoke_Ind,
-	wsp_deduce_pdu_type(e->user_data, 0) == Resume_PDU,
+	deduce_pdu_type(e->user_data, 0) == Resume_PDU,
 	{
 		WAPEvent *wtp_event;
 		Octstr *pdu;

@@ -53,12 +53,33 @@ typedef enum {
 } WSPState;
 
 
+/*
+ * Give the status the module:
+ *
+ *	limbo
+ *		not running at all
+ *	running
+ *		operating normally
+ *	terminating
+ *		waiting for operations to terminate, returning to limbo
+ */
+static enum { limbo, running, terminating } run_status = limbo;
+
+
+
+static List *queue = NULL;
 static List *session_machines = NULL;
 static Counter *session_id_counter = NULL;
 
 
-static void append_to_event_queue(WSPMachine *machine, WAPEvent *event);
-static WAPEvent *remove_from_event_queue(WSPMachine *machine);
+static void handle_event(WSPMachine *machine, WAPEvent *event);
+static WSPMachine *machine_create(void);
+static void machine_mark_unused(WSPMachine *p);
+static void machine_destroy(WSPMachine *p);
+#if 0
+static void machine_dump(WSPMachine *machine);
+#endif
+static int deduce_pdu_type(Octstr *pdu, int connectionless);
 
 static int unpack_connect_pdu(WSPMachine *m, Octstr *user_data);
 static int unpack_get_pdu(Octstr **url, List **headers, Octstr *pdu);
@@ -85,31 +106,117 @@ static long new_server_transaction_id(void);
 static int transaction_belongs_to_session(void *session, void *wtp);
 static int same_client(void *sm1, void *sm2);
 
+static void main_thread(void *);
+static WSPMachine *find_machine(WAPEvent *event);
+
 
 
 void wsp_init(void) {
+	queue = list_create();
+	list_add_producer(queue);
 	session_machines = list_create();
 	session_id_counter = counter_create();
+	run_status = running;
+	gwthread_create(main_thread, NULL);
 }
 
 
 
 void wsp_shutdown(void) {
+	WAPEvent *e;
+	
+	gw_assert(run_status == running);
+	run_status = terminating;
+	list_remove_producer(queue);
+
+	while ((e = list_extract_first(queue)) != e)
+		wap_event_destroy(e);
+	list_destroy(queue);
 	while (list_len(session_machines) > 0)
-		wsp_machine_destroy(list_get(session_machines, 0));
+		machine_destroy(list_get(session_machines, 0));
 	list_destroy(session_machines);
 	counter_destroy(session_id_counter);
 }
 
 
 
-void wsp_dispatch_event(WTPMachine *wtp_sm, WAPEvent *event) {
+void wsp_dispatch_event(WAPEvent *event) {
+	list_produce(queue, event);
+}
+
+
+/***********************************************************************
+ * Local functions
+ */
+
+
+static void main_thread(void *arg) {
+	WAPEvent *e;
 	WSPMachine *sm;
 	
+	while (run_status == running && (e = list_consume(queue)) != NULL) {
+		sm = find_machine(e);
+		debug("wap.wsp", 0, "WSP: Got event %p, for %p",
+			(void *) e, (void *) sm);
+		if (sm != NULL)
+			handle_event(sm, e);
+	}
+}
+
+
+
+static WSPMachine *find_machine(WAPEvent *event) {
+	WSPMachine *sm;
+	WTPMachine *wtp_sm;
+	
+	switch (event->type) {
+	case TR_Invoke_Ind:
+		wtp_sm = event->TR_Invoke_Ind.machine;
+		break;
+
+	case TR_Invoke_Cnf:
+		wtp_sm = event->TR_Invoke_Cnf.machine;
+		break;
+
+	case TR_Result_Cnf:
+		wtp_sm = event->TR_Result_Cnf.machine;
+		break;
+
+	case TR_Abort_Ind:
+		wtp_sm = event->TR_Abort_Ind.machine;
+		break;
+
+	case S_Connect_Res:
+		wtp_sm = event->S_Connect_Res.machine;
+		break;
+
+	case Release:
+		wtp_sm = event->Release.machine;
+		break;
+
+	case S_MethodInvoke_Ind:
+		wtp_sm = event->S_MethodInvoke_Ind.machine;
+		break;
+
+	case S_MethodInvoke_Res:
+		wtp_sm = event->S_MethodInvoke_Res.machine;
+		break;
+
+	case S_MethodResult_Req:
+		wtp_sm = event->S_MethodResult_Req.machine;
+		break;
+
+	default:
+		error(0, "Don't know state machine for WAPEvent in WSP.");
+		debug("wap.wsp", 0, "WAPEvent which we couldn't find SM for:");
+		wap_event_dump(event);
+		return NULL;
+	}
+
 	/* XXX this should probably be moved to a condition function --liw */
 	if (event->type == TR_Invoke_Ind &&
 	    event->TR_Invoke_Ind.tcl == 2 &&
-	    wsp_deduce_pdu_type(event->TR_Invoke_Ind.user_data, 0) == Connect_PDU) {
+	    deduce_pdu_type(event->TR_Invoke_Ind.user_data, 0) == Connect_PDU) {
 		/* Client wants to start new session. Igore existing
 		   machines. */
 		sm = NULL;
@@ -119,7 +226,9 @@ void wsp_dispatch_event(WTPMachine *wtp_sm, WAPEvent *event) {
 	}
 
 	if (sm == NULL) {
-		sm = wsp_machine_create();
+		sm = machine_create();
+		debug("wap.wsp", 0, "WSP: wtp_sm:");
+		wtp_machine_dump(wtp_sm);
 		sm->client_address = octstr_duplicate(wtp_sm->source_address);
 		sm->client_port = wtp_sm->source_port;
 		sm->server_address = 
@@ -127,16 +236,16 @@ void wsp_dispatch_event(WTPMachine *wtp_sm, WAPEvent *event) {
 		sm->server_port = wtp_sm->destination_port;
 	}
 
-	wsp_handle_event(sm, event);
+	return sm;
 }
 
 
-WSPMachine *wsp_machine_create(void) {
+static WSPMachine *machine_create(void) {
 	WSPMachine *p;
 	
 	p = gw_malloc(sizeof(WSPMachine));
+	debug("wap.wsp", 0, "WSP: Created WSPMachine %p", (void *) p);
 	
-	#define MUTEX(name) p->name = mutex_create();
 	#define INTEGER(name) p->name = 0;
 	#define OCTSTR(name) p->name = NULL;
 	#define METHOD_POINTER(name) p->name = NULL;
@@ -164,15 +273,14 @@ WSPMachine *wsp_machine_create(void) {
 }
 
 
-void wsp_machine_mark_unused(WSPMachine *p) {
+static void machine_mark_unused(WSPMachine *p) {
 	p->unused = 1;
 }
 
 
-void wsp_machine_destroy(WSPMachine *p) {
+static void machine_destroy(WSPMachine *p) {
+	debug("wap.wsp", 0, "Destroying WSPMachine %p", (void *) p);
 	list_delete_equal(session_machines, p);
-	while (list_len(p->event_queue) > 0)
-		wap_event_destroy(list_extract_first(p->event_queue));
 	#define MUTEX(name) mutex_destroy(p->name);
 	#define INTEGER(name) p->name = 0;
 	#define OCTSTR(name) octstr_destroy(p->name);
@@ -188,7 +296,8 @@ void wsp_machine_destroy(WSPMachine *p) {
 }
 
 
-void wsp_machine_dump(WSPMachine *machine) {
+#if 0
+static void machine_dump(WSPMachine *machine) {
 	WSPMachine *p;
 
 	p = machine;
@@ -213,73 +322,10 @@ void wsp_machine_dump(WSPMachine *machine) {
 	#include "wsp_machine-decl.h"
 	debug("wap.wsp", 0, "WSPMachine dump ends.");
 }
+#endif
 
 
-void wsp_handle_event(WSPMachine *sm, WAPEvent *current_event) {
-	/* 
-	 * If we're already handling events for this machine, add the
-	 * event to the queue.
-	 */
-	if (mutex_try_lock(sm->mutex) == -1) {
-		append_to_event_queue(sm, current_event);
-		return;
-	}
-
-	do {
-		debug("wap.wsp", 0, "WSP: machine %p, state %s, event %s",
-			(void *) sm,
-			wsp_state_to_string(sm->state), 
-			wap_event_name(current_event->type));
-
-		#define STATE_NAME(name)
-		#define ROW(state_name, event, condition, action, next_state) \
-			{ \
-				struct event *e; \
-				e = &current_event->event; \
-				if (sm->state == state_name && \
-				   current_event->type == event && \
-				   (condition)) { \
-					action \
-					sm->state = next_state; \
-					goto end; \
-				} \
-			}
-		#include "wsp_state-decl.h"
-		
-		if (current_event->type == TR_Invoke_Ind) {
-			WAPEvent *abort;
-			
-			error(0, "WSP: Can't handle TR-Invoke.ind, aborting transaction.");
-			abort = wap_event_create(TR_Abort_Req);
-			abort->TR_Abort_Req.tid = 
-				current_event->TR_Invoke_Ind.machine->tid;
-			abort->TR_Abort_Req.abort_type = 0x01; /* USER */
-			abort->TR_Abort_Req.abort_reason = 0xE0; /* PROTOERR */
-
-			wtp_handle_event(current_event->TR_Invoke_Ind.machine,
-					 abort);
-			wsp_machine_mark_unused(sm);
-		} else {
-			error(0, "WSP: Can't handle event.");
-			debug("wap.wsp", 0, "WSP: The unhandled event:");
-			wap_event_dump(current_event);
-		}
-
-	end:
-		wap_event_destroy(current_event);
-		current_event = remove_from_event_queue(sm);
-	} while (sm != NULL && current_event != NULL);
-
-	if (sm->unused)
-		wsp_machine_destroy(sm);
-	else
-		mutex_unlock(sm->mutex);
-}
-
-
-
-
-int wsp_deduce_pdu_type(Octstr *pdu, int connectionless) {
+static int deduce_pdu_type(Octstr *pdu, int connectionless) {
 	int off;
 	unsigned long o;
 
@@ -293,9 +339,55 @@ int wsp_deduce_pdu_type(Octstr *pdu, int connectionless) {
 }
 
 
-/***********************************************************************
- * Local functions
- */
+static void handle_event(WSPMachine *sm, WAPEvent *current_event) {
+	debug("wap.wsp", 0, "WSP: machine %p, state %s, event %s",
+		(void *) sm,
+		wsp_state_to_string(sm->state), 
+		wap_event_name(current_event->type));
+
+	#define STATE_NAME(name)
+	#define ROW(state_name, event, condition, action, next_state) \
+		{ \
+			struct event *e; \
+			e = &current_event->event; \
+			if (sm->state == state_name && \
+			   current_event->type == event && \
+			   (condition)) { \
+				action \
+				sm->state = next_state; \
+				debug("wap.wsp", 0, "WSP: New state: " \
+					#next_state); \
+				goto end; \
+			} \
+		}
+	#include "wsp_state-decl.h"
+	
+	if (current_event->type == TR_Invoke_Ind) {
+		WAPEvent *abort;
+		
+		error(0, "WSP: Can't handle TR-Invoke.ind, aborting transaction.");
+		abort = wap_event_create(TR_Abort_Req);
+		abort->TR_Abort_Req.tid = 
+			current_event->TR_Invoke_Ind.machine->tid;
+		abort->TR_Abort_Req.abort_type = 0x01; /* USER */
+		abort->TR_Abort_Req.abort_reason = 0xE0; /* PROTOERR */
+
+		wtp_handle_event(current_event->TR_Invoke_Ind.machine,
+				 abort);
+		machine_mark_unused(sm);
+	} else {
+		error(0, "WSP: Can't handle event.");
+		debug("wap.wsp", 0, "WSP: The unhandled event:");
+		wap_event_dump(current_event);
+	}
+
+end:
+	wap_event_destroy(current_event);
+
+	if (sm->unused)
+		machine_destroy(sm);
+}
+
 
 
 
@@ -410,14 +502,6 @@ static void unpack_caps(Octstr *caps, WSPMachine *m)
 	    break;
 	}
     }
-}
-
-static void append_to_event_queue(WSPMachine *machine, WAPEvent *event) {
-	list_append(machine->event_queue, event);
-}
-
-static WAPEvent *remove_from_event_queue(WSPMachine *machine) {
-	return list_extract_first(machine->event_queue);
 }
 
 
