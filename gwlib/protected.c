@@ -159,10 +159,10 @@ int gw_gethostbyname(struct hostent *ent, const char *name, char **buff)
 /* #elif HAVE_FUNC_GETHOSTBYNAME_R_3 */
 #else
 /*
- * Hmm, we doesn't have a gethostbyname_r , it's bad...
+ * Hmm, we don't have a gethostbyname_r(), this is bad...
  * Here we must perform a "deep-copy" of a hostent struct returned
  * from gethostbyname.
- * Note: bellow code based on curl.
+ * Note: Bellow code is based on parts from cURL.
  */
 int gw_gethostbyname(struct hostent *ent, const char *name, char **buff)
 {
@@ -252,3 +252,4 @@ int gw_gethostbyname(struct hostent *ent, const char *name, char **buff)
     return 0;
 }
 #endif
+
