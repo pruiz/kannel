@@ -1,3 +1,7 @@
+Wed Jan 19 13:18:22 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* gwlib/gwlib.h: Added #include "config.h".
+
 Wed Jan 19 11:38:05 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* gwlib/http.c: Applied parts of patch from Erik Bos. We're going
