@@ -1,3 +1,8 @@
+2001-05-04  Richard Braakman  <dark@wapit.com>
+
+	* configure.in, configure: Made libxml version check require
+	2.2.5 again, and added some output about the check.
+
 2001-05-04  Aarno Syvänen <syvanen@wapit.com>
 
 	* gw/wap_push_pap_compiler.c: Fixed an uninitialised variable

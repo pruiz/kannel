@@ -47,10 +47,15 @@ AC_PATH_PROGS(XML_CONFIG, xml2-config xml-config, no)
 if test "$XML_CONFIG" = "no"; then
 	echo "You MUST have the gnome-xml library installed"; exit 1
 else
+        AC_MSG_CHECKING([libxml version])
+	xml_version=`$XML_CONFIG --version`
+	AC_MSG_RESULT([$xml_version])
 	changequote(<<, >>)dnl
-	case `$XML_CONFIG --version` in 
-	*2.[2-9].[0-9]*) ;;
-	*) echo "Libxml is too old. You need at least 2.2.5." ; exit 1 ;;
+	case $xml_version in 
+	*2.2.[5-9]*) ;;
+	*2.2.[1-9][0-9]*) ;;
+	*2.[3-9].[0-9]*) ;;
+	*) AC_MSG_ERROR(<<Libxml is too old. You need at least 2.2.5>>) ;;
 	esac
 	changequote([, ])dnl
 	LIBS="$LIBS `$XML_CONFIG --libs`"
