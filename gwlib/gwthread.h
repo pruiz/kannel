@@ -38,7 +38,9 @@ void gwthread_join_every(Threadfunc *func);
  * threads are still being created, and it may not notice such threads. */
 void gwthread_join_all(void);
 
-/* Return the thread id of this thread. */
+/* Return the thread id of this thread.  Note that it may be called for
+ * the main thread even before the gwthread library has been initialized
+ * and after it had been shut down. */
 long gwthread_self(void);
 
 /* If the other thread is currently in gwthread_pollfd or gwthread_sleep,

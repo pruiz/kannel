@@ -1,13 +1,27 @@
-2000-18-07 Derry Hamilton <rasilon@tardis.ed.ac.uk>
+2000-08-18  Richard Braakman  <dark@wapit.com>
+
+	* gwlib/gwthread-pthread.c: In gwthread_shutdown, don't delete
+	the tsd_key.  It's still needed by gwthread_self(), which can 
+	still be called.  This might fix the problem of wapboxes that
+	refuse to die.
+
+	* gw/wsp-strings.c: Make wsp_##name##_to_string not crash if
+	the string was not found.
+
+	* gw/wsp_headers.c: Have unpack_all_parameters() stop at
+	the end of its string, rather than reporting a bogus error.
+	Also fixed a memory leak in header unpacking.
+
+2000-08-18 Derry Hamilton <rasilon@tardis.ed.ac.uk>
 	
 	* solaris/mk-solaris-package.sh: Changed default optimisation level.
 	* solaris/etc/kannel.conf: Kannel needs an admin port to start
 	
-2000-16-07 Derry Hamilton <rasilon@tardis.ed.ac.uk>
+2000-08-16 Derry Hamilton <rasilon@tardis.ed.ac.uk>
 	
 	* solaris/*:  Added packaging information for Solaris
 
-2000-14-07 Peter Grönholm
+2000-08-14 Peter Grönholm
 
        * gw/wml-definitions.h: A typo corrected in URL value code table.
        Now URLs ending with .net/ work, too. Two other typos: Content-

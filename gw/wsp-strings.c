@@ -38,7 +38,8 @@ struct element {
 /* Define the functions for translating number to Octstr */
 #define LINEAR(name, strings) \
 Octstr *wsp_##name##_to_string(long number) { \
-	return octstr_create(wsp_##name##_to_cstr(number)); \
+	unsigned char *cstr = wsp_##name##_to_cstr(number); \
+	return cstr ? octstr_create(cstr) : NULL; \
 }
 #define STRING(string)
 #include "wsp-strings.def"

@@ -337,11 +337,12 @@ error:
 }
 
 static void unpack_all_parameters(Context *context, Octstr *decoded) {
-	int ret;
+	int ret = 0;
 
-	do {
+	while (ret >= 0 && !parse_error(context) &&
+	       parse_octets_left(context) > 0) {
 		ret = unpack_parameter(context, decoded);
-	} while (ret >= 0 && !parse_error(context));
+	}
 }
 
 static void unpack_optional_q_value(Context *context, Octstr *decoded) {
@@ -397,7 +398,7 @@ static Octstr *unpack_accept_general_form(Context *context) {
 	if (ret == WSP_FIELD_VALUE_ENCODED) {
 		decoded = wsp_content_type_to_string(val);
 		if (!decoded) {
-			warning(0, "Unknown content type %02lx.", val);
+			warning(0, "Unknown content type 0x%02lx.", val);
 			return NULL;
 		}
 	} else if (ret == WSP_FIELD_VALUE_NUL_STRING) {
@@ -1148,5 +1149,6 @@ List *unpack_headers(Octstr *headers, int content_type_present) {
 		debug("wsp", 0, "WSP: End of decoded headers.");
 	}
 		
+	parse_context_destroy(context);
 	return unpacked;
 }	

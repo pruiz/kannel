@@ -188,6 +188,9 @@ void gwthread_init(void) {
 	create_threadinfo_main();
 }
 
+/* Note that the gwthread library can't shut down completely, because
+ * the main thread will still be running, and it may make calls to
+ * gwthread_self(). */
 void gwthread_shutdown(void) {
 	int ret;
 	int running;
@@ -219,10 +222,8 @@ void gwthread_shutdown(void) {
 		warning(ret, "cannot destroy threadtable lock");
 	}
 
-	ret = pthread_key_delete(tsd_key);
-	if (ret != 0) {
-		warning(ret, "cannot delete TSD key");
-	}
+	/* We can't delete the tsd_key here, because gwthread_self()
+	 * still needs it to access the main thread's info. */
 }
 
 static void *new_thread(void *arg) {
