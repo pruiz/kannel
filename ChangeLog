@@ -6,6 +6,15 @@ Wed Jan 26 15:13:25 2000  Lars Wirzenius  <liw@wapit.com>
 	* README: Documented need for the gnome-xml library. (Sorry about
 	that, I promise not to document anything again.)
 
+2000-01-26  Tuomas Luttinen  <tuo@tuo.wapit.com>
+
+	* octstr.h: functions added: octstr_create_tolower, octstr_ncompare
+	* octstr.c: implementation of the new functions octstr_create_tolower, 
+	octstr_ncompare added.
+	
+	* gw/wml_compiler.h: header for the new WML compiler added
+	* gw/wml_compiler.c: the new WML compiler added
+
 2000-01-26 Aarno Syvänen <syvanen@wapit.com>
 
 	* Oops, segmentation work stopped
