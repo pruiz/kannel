@@ -1,3 +1,13 @@
+2003-08-04 Aarno Syvänen <aarno@gni.ch>
+     * wap/wsp_strings.def: Added new application ids from OMNA web page.
+     * test/test_ppg.c: New command line option for adding a multipart part header (for
+       testing Content-*-headers in the content part).
+     * gw/wapbox.c: Added default validity for wap push sms binary messages (yes we 
+       fetch this data from push control document).
+     * gw/wap_push_ppg.c: Fixed bug reported my Juan Enriquez. Use Kannel headers to
+       control ppg sms level. Added new application ids from OMNA page.
+     * gw/wap_push_pap_mime.c: Removed an unused function.
+
 2003-08-04  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/smsbox.c: fixed assertion bug, while having double octstr_destroy() for 
       charet. Thanks to Aarno for pointing out to delete this.
