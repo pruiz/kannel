@@ -49,6 +49,10 @@ wap_dispatch_func_t *dispatch_to_push;
  */
 static List *resp_queue = NULL;
 
+/*
+ * Indicator for forced WTP-SAR client kludge
+ */
+extern int wtp_forced_sar;
 
 /*****************************************************************************
  *
@@ -289,8 +293,15 @@ static void handle_no_sar(WAPEvent *event)
  */
 static int erroneous_field_in(WAPEvent *event)
 {
+    /*
+     * If clients request WTP-SAR should we force to continue
+     * or act as be should do by telling the client to call back.
+     */
+    if (wtp_forced_sar) 
+        return 0;
+
     return event->type == RcvInvoke && (event->u.RcvInvoke.version != 0 || 
-           !event->u.RcvInvoke.ttr || !event->u.RcvInvoke.gtr);
+               !event->u.RcvInvoke.ttr || !event->u.RcvInvoke.gtr);
 }
 
 /*
@@ -337,114 +348,119 @@ static WTPRespMachine *resp_machine_find_or_create(WAPEvent *event)
     mid = -1;
 
     switch (event->type) {
-    case RcvInvoke:
-	if (erroneous_field_in(event)) {
-	    handle_erroneous_field_in(event);
+        case RcvInvoke:
+            /* check if erroneous fields are given */
+            if (erroneous_field_in(event)) {
+                handle_erroneous_field_in(event);
+                return NULL;
+            } else {
+                tid = event->u.RcvInvoke.tid;
+                tuple = event->u.RcvInvoke.addr_tuple;
+            }
+            break;
+
+       case RcvAck:
+            tid = event->u.RcvAck.tid;
+            tuple = event->u.RcvAck.addr_tuple;
+            break;
+
+        case RcvAbort:
+            tid = event->u.RcvAbort.tid;
+            tuple = event->u.RcvAbort.addr_tuple;
+            break;
+
+        case RcvErrorPDU:
+            tid = event->u.RcvErrorPDU.tid;
+            tuple = event->u.RcvErrorPDU.addr_tuple;
+            break;
+
+        case TR_Invoke_Res:
+            mid = event->u.TR_Invoke_Res.handle;
+            break;
+
+        case TR_Result_Req:
+            mid = event->u.TR_Result_Req.handle;
+            break;
+
+        case TR_Abort_Req:
+            mid = event->u.TR_Abort_Req.handle;
+            break;
+
+        case TimerTO_A:
+            mid = event->u.TimerTO_A.handle;
+            break;
+
+        case TimerTO_R:
+            mid = event->u.TimerTO_R.handle;
+            break;
+
+        case TimerTO_W:
+            mid = event->u.TimerTO_W.handle;
+            break;
+
+        default:
+            debug("wap.wtp", 0, "WTP: resp_machine_find_or_create:"
+                  "unhandled event"); 
+            wap_event_dump(event);
             return NULL;
-        } else {
-            tid = event->u.RcvInvoke.tid;
-	    tuple = event->u.RcvInvoke.addr_tuple;
-        }
-    break;
-
-    case RcvAck:
-        tid = event->u.RcvAck.tid;
-	tuple = event->u.RcvAck.addr_tuple;
-    break;
-
-    case RcvAbort:
-        tid = event->u.RcvAbort.tid;
-	tuple = event->u.RcvAbort.addr_tuple;
-    break;
-
-    case RcvErrorPDU:
-        tid = event->u.RcvErrorPDU.tid;
-	tuple = event->u.RcvErrorPDU.addr_tuple;
-    break;
-
-    case TR_Invoke_Res:
-	mid = event->u.TR_Invoke_Res.handle;
-    break;
-
-    case TR_Result_Req:
-	mid = event->u.TR_Result_Req.handle;
-    break;
-
-    case TR_Abort_Req:
-	mid = event->u.TR_Abort_Req.handle;
-    break;
-
-    case TimerTO_A:
-	mid = event->u.TimerTO_A.handle;
-    break;
-
-    case TimerTO_R:
-	mid = event->u.TimerTO_R.handle;
-    break;
-
-    case TimerTO_W:
-	mid = event->u.TimerTO_W.handle;
-    break;
-
-    default:
-        debug("wap.wtp", 0, "WTP: resp_machine_find_or_create:"
-             "unhandled event"); 
-        wap_event_dump(event);
-        return NULL;
     }
 
     gw_assert(tuple != NULL || mid != -1);
     resp_machine = resp_machine_find(tuple, tid, mid);
            
     if (resp_machine == NULL){
-        switch (event->type){
-/*
- * When PDU with an illegal header is received, its tcl-field is irrelevant 
- * (and possibly meaningless). In this case we must create a new machine, if 
- * there is any. There is a machine for all events handled stateful manner.
- */
-	case RcvErrorPDU:
-	    debug("wap.wtp_resp", 0, "an erronous pdu received");
+
+        switch (event->type) {
+
+        /*
+         * When PDU with an illegal header is received, its tcl-field is 
+         * irrelevant and possibly meaningless). In this case we must create 
+         * a new machine, if there is any. There is a machine for all events 
+         * handled stateful manner.
+         */
+        case RcvErrorPDU:
+            debug("wap.wtp_resp", 0, "an erronous pdu received");
             wap_event_dump(event);
             resp_machine = resp_machine_create(tuple, tid, 
                                                event->u.RcvInvoke.tcl); 
-	break;
+            break;
            
         case RcvInvoke:
-	    resp_machine = resp_machine_create(tuple, tid, 
-                                               event->u.RcvInvoke.tcl);
-        break;
-/*
- * This and the following branch implement test nro 3 in WTP 10.2.
- */
-	case RcvAck: 
-	    info(0, "WTP_RESP: resp_machine_find_or_create:"
+	       resp_machine = resp_machine_create(tuple, tid, 
+                                              event->u.RcvInvoke.tcl);
+            break;
+
+        /*
+         * This and the following branch implement test nro 3 in WTP 10.2.
+         */
+        case RcvAck: 
+            info(0, "WTP_RESP: resp_machine_find_or_create:"
                  " ack received, yet having no machine");
-        break;
+            break;
 
         case RcvAbort: 
-	     info(0, "WTP_RESP: resp_machine_find_or_create:"
+            info(0, "WTP_RESP: resp_machine_find_or_create:"
                  " abort received, yet having no machine");
-        break;
+            break;
 
-	case TR_Invoke_Res: 
+        case TR_Invoke_Res: 
         case TR_Result_Req: 
         case TR_Abort_Req:
-	    error(0, "WTP_RESP: resp_machine_find_or_create: WSP primitive to"
+            error(0, "WTP_RESP: resp_machine_find_or_create: WSP primitive to"
                   " a wrong WTP machine");
-	break;
+            break;
 
-	case TimerTO_A: 
+        case TimerTO_A: 
         case TimerTO_R: 
         case TimerTO_W:
             error(0, "WTP_RESP: resp_machine_find_or_create: timer event"
                   " without a corresponding machine");
-        break;
+            break;
                  
-	default:
+        default:
             error(0, "WTP_RESP: resp_machine_find_or_create: unhandled event");
             wap_event_dump(event);
-	break;
+            break;
         }
    } /* if machine == NULL */   
    return resp_machine;

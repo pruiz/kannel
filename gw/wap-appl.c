@@ -599,17 +599,17 @@ static void return_replies_thread(void *arg)
 
     while (run_status == running) {
 
-	p = http_receive_result(caller, &status, &final_url, &headers, &body);
-    	if (p == NULL)
-	    break;
+        p = http_receive_result(caller, &status, &final_url, &headers, &body);
+        if (p == NULL)
+            break;
 
-	return_reply(status, body, headers, p->client_SDU_size,
-		     p->event, p->session_id, p->url, p->x_wap_tod,
-		     p->request_headers);
-	wap_event_destroy(p->event);
-	http_destroy_headers(p->request_headers);
-    	gw_free(p);
-    	octstr_destroy(final_url);
+        return_reply(status, body, headers, p->client_SDU_size,
+                     p->event, p->session_id, p->url, p->x_wap_tod,
+                     p->request_headers);
+        wap_event_destroy(p->event);
+        http_destroy_headers(p->request_headers);
+        gw_free(p);
+        octstr_destroy(final_url);
     }
 }
 
@@ -644,29 +644,29 @@ static void start_fetch(WAPEvent *event)
     counter_increase(fetches);
     
     if (event->type == S_MethodInvoke_Ind) {
-	struct S_MethodInvoke_Ind *p;
+        struct S_MethodInvoke_Ind *p;
     
-	p = &event->u.S_MethodInvoke_Ind;
-	session_headers = p->session_headers;
-	request_headers = p->request_headers;
-	url = octstr_duplicate(p->request_uri);
-	addr_tuple = p->addr_tuple;
-	session_id = p->session_id;
-	client_SDU_size = p->client_SDU_size;
-	request_body = octstr_duplicate(p->request_body);
-	method = p->method;
+        p = &event->u.S_MethodInvoke_Ind;
+        session_headers = p->session_headers;
+        request_headers = p->request_headers;
+        url = octstr_duplicate(p->request_uri);
+        addr_tuple = p->addr_tuple;
+        session_id = p->session_id;
+        client_SDU_size = p->client_SDU_size;
+        request_body = octstr_duplicate(p->request_body);
+        method = p->method;
     } else {
-	struct S_Unit_MethodInvoke_Ind *p;
+        struct S_Unit_MethodInvoke_Ind *p;
 	
-	p = &event->u.S_Unit_MethodInvoke_Ind;
-	session_headers = NULL;
-	request_headers = p->request_headers;
-	url = octstr_duplicate(p->request_uri);
-	addr_tuple = p->addr_tuple;
-	session_id = -1;
-	client_SDU_size = 0; /* No limit */
-	request_body = octstr_duplicate(p->request_body);
-	method = p->method;
+        p = &event->u.S_Unit_MethodInvoke_Ind;
+        session_headers = NULL;
+        request_headers = p->request_headers;
+        url = octstr_duplicate(p->request_uri);
+        addr_tuple = p->addr_tuple;
+        session_id = -1;
+        client_SDU_size = 0; /* No limit */
+        request_body = octstr_duplicate(p->request_body);
+        method = p->method;
     }
     
     wsp_http_map_url(&url);
@@ -674,9 +674,9 @@ static void start_fetch(WAPEvent *event)
     actual_headers = list_create();
     
     if (session_headers != NULL)
-	http_header_combine(actual_headers, session_headers);
+        http_header_combine(actual_headers, session_headers);
     if (request_headers != NULL)
-	http_header_combine(actual_headers, request_headers);
+        http_header_combine(actual_headers, request_headers);
     
     http_remove_hop_headers(actual_headers);
     x_wap_tod = http_header_remove_all(actual_headers, "X-WAP.TOD");
@@ -700,42 +700,41 @@ static void start_fetch(WAPEvent *event)
     magic_url = octstr_imm("kannel:alive");
     if (octstr_str_compare(method, "GET")  == 0 &&
         octstr_compare(url, magic_url) == 0) {
-	ret = HTTP_OK;
-	resp_headers = list_create();
-	http_header_add(resp_headers, "Content-Type", "text/vnd.wap.wml");
-	content_body = octstr_create(HEALTH_DECK);
-	octstr_destroy(request_body);
-	return_reply(ret, content_body, resp_headers, client_SDU_size,
-		     event, session_id, url, x_wap_tod, actual_headers);
-	wap_event_destroy(event);
-	http_destroy_headers(actual_headers);
+        ret = HTTP_OK;
+        resp_headers = list_create();
+        http_header_add(resp_headers, "Content-Type", "text/vnd.wap.wml");
+        content_body = octstr_create(HEALTH_DECK);
+        octstr_destroy(request_body);
+        return_reply(ret, content_body, resp_headers, client_SDU_size,
+                     event, session_id, url, x_wap_tod, actual_headers);
+        wap_event_destroy(event);
+        http_destroy_headers(actual_headers);
     } else if (octstr_str_compare(method, "GET") == 0 ||
                octstr_str_compare(method, "POST") == 0) {
-	if (request_body != NULL && octstr_str_compare(method, "GET") == 0) {
-	    octstr_destroy(request_body);
-	    request_body = NULL;
-	}
+        if (request_body != NULL && octstr_str_compare(method, "GET") == 0) {
+            octstr_destroy(request_body);
+            request_body = NULL;
+        }
 
-	p = gw_malloc(sizeof(*p));
-	p->client_SDU_size = client_SDU_size;
-	p->event = event;
-	p->session_id = session_id;
-	p->url = url;
-	p->x_wap_tod = x_wap_tod;
-	p->request_headers = actual_headers;
-	http_start_request(caller, url, actual_headers, request_body, 0, p,
-			   NULL);
-	octstr_destroy(request_body);
+        p = gw_malloc(sizeof(*p));
+        p->client_SDU_size = client_SDU_size;
+        p->event = event;
+        p->session_id = session_id;
+        p->url = url;
+        p->x_wap_tod = x_wap_tod;
+        p->request_headers = actual_headers;
+        http_start_request(caller, url, actual_headers, request_body, 0, p, NULL);
+        octstr_destroy(request_body);
     } else {
-	error(0, "WSP: Method %s not supported.", octstr_get_cstr(method));
-	content_body = octstr_create("");
-	resp_headers = NULL;
-	ret = HTTP_NOT_IMPLEMENTED;
-	octstr_destroy(request_body);
-	return_reply(ret, content_body, resp_headers, client_SDU_size,
-		     event, session_id, url, x_wap_tod, actual_headers);
-	wap_event_destroy(event);
-	http_destroy_headers(actual_headers);
+        error(0, "WSP: Method %s not supported.", octstr_get_cstr(method));
+        content_body = octstr_create("");
+        resp_headers = NULL;
+        ret = HTTP_NOT_IMPLEMENTED;
+        octstr_destroy(request_body);
+        return_reply(ret, content_body, resp_headers, client_SDU_size,
+                     event, session_id, url, x_wap_tod, actual_headers);
+        wap_event_destroy(event);
+        http_destroy_headers(actual_headers);
     }
 }
 
@@ -976,9 +975,10 @@ static struct wsp_http_map *wsp_http_map_find(char *s)
     return run;
 }
 
-/* Maybe rewrite URL, if there is a mapping. This is where the runtime
+/* 
+ * Maybe rewrite URL, if there is a mapping. This is where the runtime
  * lookup comes in (called from further down this file, wsp_http.c)
-  */
+ */
 static void wsp_http_map_url(Octstr **osp)
 {
     struct wsp_http_map *map;
@@ -987,16 +987,18 @@ static void wsp_http_map_url(Octstr **osp)
     
     map = wsp_http_map_find(oldstr);
     if (!map)
-	return;
+        return;
+
     *osp = octstr_create_from_data(map->out, map->out_len);
+
     /* 
      * If both prefix flags are set, append tail of incoming URL
      * to outgoing URL.
      */
     if (WSP_HTTP_MAP_INOUTPREFIX == (map->flags & WSP_HTTP_MAP_INOUTPREFIX))
-	octstr_append_cstr(*osp, oldstr + map->in_len);
+        octstr_append_cstr(*osp, oldstr + map->in_len);
     debug("wap.wsp.http", 0, "WSP: url <%s> mapped to <%s>",
-	  oldstr, octstr_get_cstr(*osp));
+          oldstr, octstr_get_cstr(*osp));
     octstr_destroy(old);
 }
 

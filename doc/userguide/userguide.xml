@@ -1676,6 +1676,15 @@ bearerbox-host = localhost
 	 to 'none'.
      </entry></row>
 
+    <row><entry><literal>force-sar</literal></entry>
+     <entry>bool</entry>
+     <entry valign=bottom>
+	 If set wapbox will force to process WTP-SAR connections
+	 even while Kannel does not support this feature now. Some
+	 real phones seem to break connection if fallback to non
+	 SAR communication is being tried by the gateway.
+     </entry></row>
+
 
   </tbody>
   </tgroup>

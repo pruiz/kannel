@@ -22,7 +22,7 @@
 #include "bb.h"
 #include "sms.h"
 
-#if (HAVE_WTLS_OPENSSL)
+#ifdef HAVE_WTLS_OPENSSL
 #include <openssl/x509.h>
 #include "wap/wtls.h"
 #include "gwlib/pki.h"
@@ -43,8 +43,9 @@ static int bearerbox_ssl = 0;
 static long heartbeat_freq = BB_DEFAULT_HEARTBEAT;
 static long heartbeat_thread;
 static Counter *sequence_counter = NULL;
+int wtp_forced_sar = 0;
 
-#if (HAVE_WTLS_OPENSSL)
+#ifdef HAVE_WTLS_OPENSSL
 RSA* private_key = NULL;
 X509* x509_cert = NULL;
 #endif
@@ -66,36 +67,33 @@ static Cfg *read_config(Octstr *filename)
 
     cfg = cfg_create(filename);
     if (cfg_read(cfg) == -1)
-	panic(0, "Couldn't read configuration from `%s'.", 
-	      octstr_get_cstr(filename));
+        panic(0, "Couldn't read configuration from `%s'.", 
+              octstr_get_cstr(filename));
     cfg_dump(cfg);
     
     /*
      * Extract info from the core group.
      */
-
     grp = cfg_get_single_group(cfg, octstr_imm("core"));
     if (grp == NULL)
     	panic(0, "No 'core' group in configuration.");
     
     if (cfg_get_integer(&bearerbox_port,grp,octstr_imm("wapbox-port")) == -1)
-	panic(0, "No 'wapbox-port' in core group");
+        panic(0, "No 'wapbox-port' in core group");
 #ifdef HAVE_LIBSSL
     cfg_get_bool(&bearerbox_ssl, grp, octstr_imm("wapbox-port-ssl"));
 #endif /* HAVE_LIBSSL */
-
     
     http_proxy_host = cfg_get(grp, octstr_imm("http-proxy-host"));
     http_proxy_port =  -1;
     cfg_get_integer(&http_proxy_port, grp, octstr_imm("http-proxy-port"));
     http_proxy_username = cfg_get(grp, octstr_imm("http-proxy-username"));
     http_proxy_password = cfg_get(grp, octstr_imm("http-proxy-password"));
-    http_proxy_exceptions = 
-    	cfg_get_list(grp, octstr_imm("http-proxy-exceptions"));
+    http_proxy_exceptions = cfg_get_list(grp, octstr_imm("http-proxy-exceptions"));
     if (http_proxy_host != NULL && http_proxy_port > 0) {
-	http_use_proxy(http_proxy_host, http_proxy_port, 
-	    	       http_proxy_exceptions, http_proxy_username, 
-		       http_proxy_password);
+        http_use_proxy(http_proxy_host, http_proxy_port, 
+                       http_proxy_exceptions, http_proxy_username, 
+                       http_proxy_password);
     }
 
     conn_config_ssl (grp);
@@ -104,15 +102,13 @@ static Cfg *read_config(Octstr *filename)
     octstr_destroy(http_proxy_username);
     octstr_destroy(http_proxy_password);
     list_destroy(http_proxy_exceptions, octstr_destroy_item);
-
-    
+      
     /*
      * And the rest of the pull info comes from the wapbox group.
      */
-
     grp = cfg_get_single_group(cfg, octstr_imm("wapbox"));
     if (grp == NULL)
-	panic(0, "No 'wapbox' group in configuration.");
+        panic(0, "No 'wapbox' group in configuration.");
     
     bearerbox_host = cfg_get(grp, octstr_imm("bearerbox-host"));
     
@@ -120,26 +116,26 @@ static Cfg *read_config(Octstr *filename)
     if (cfg_get_integer(&logfilelevel, grp, octstr_imm("log-level")) == -1)
     	logfilelevel = 0;
     if (logfile != NULL) {
-	log_open(octstr_get_cstr(logfile), logfilelevel);
-	info(0, "Starting to log to file %s level %ld", 
-	     octstr_get_cstr(logfile), logfilelevel);
+        log_open(octstr_get_cstr(logfile), logfilelevel);
+        info(0, "Starting to log to file %s level %ld", 
+             octstr_get_cstr(logfile), logfilelevel);
     }
     octstr_destroy(logfile);
 
     if ((s = cfg_get(grp, octstr_imm("syslog-level"))) != NULL) {
-    	long level;
+        long level;
 	
-	if (octstr_compare(s, octstr_imm("none")) == 0) {
-	    log_set_syslog(NULL, 0);
-	    debug("wap", 0, "syslog parameter is none");
-	} else if (octstr_parse_long(&level, s, 0, 0) == -1) {
-	    log_set_syslog("wapbox", level);
-	    debug("wap", 0, "syslog parameter is %ld", level);
-	}
-	octstr_destroy(s);
+        if (octstr_compare(s, octstr_imm("none")) == 0) {
+            log_set_syslog(NULL, 0);
+            debug("wap", 0, "syslog parameter is none");
+        } else if (octstr_parse_long(&level, s, 0, 0) == -1) {
+            log_set_syslog("wapbox", level);
+            debug("wap", 0, "syslog parameter is %ld", level);
+        }
+        octstr_destroy(s);
     } else {
-	log_set_syslog(NULL, 0);
-	debug("wap", 0, "no syslog parameter");
+        log_set_syslog(NULL, 0);
+        debug("wap", 0, "no syslog parameter");
     }
 
     /* configure URL mappings */
@@ -147,24 +143,27 @@ static Cfg *read_config(Octstr *filename)
     cfg_get_integer(&map_url_max, grp, octstr_imm("map-url-max"));
 	
     if ((s = cfg_get(grp, octstr_imm("device-home"))) != NULL) {
-	wsp_http_map_url_config_device_home(octstr_get_cstr(s));
-	octstr_destroy(s);
+        wsp_http_map_url_config_device_home(octstr_get_cstr(s));
+        octstr_destroy(s);
     }
     if ((s = cfg_get(grp, octstr_imm("map-url"))) != NULL) {
-	wsp_http_map_url_config(octstr_get_cstr(s));
-	octstr_destroy(s);
+        wsp_http_map_url_config(octstr_get_cstr(s));
+        octstr_destroy(s);
     }
     debug("wap", 0, "map_url_max = %ld", map_url_max);
 
     for (i = 0; i <= map_url_max; i++) {
-	Octstr *name;
+        Octstr *name;
 	
-	name = octstr_format("map-url-%d", i);
-	if ((s = cfg_get(grp, name)) != NULL)
-	    wsp_http_map_url_config(octstr_get_cstr(s));
-	octstr_destroy(name);
+        name = octstr_format("map-url-%d", i);
+        if ((s = cfg_get(grp, name)) != NULL)
+            wsp_http_map_url_config(octstr_get_cstr(s));
+        octstr_destroy(name);
     }
     wsp_http_map_url_config_info();	/* debugging aid */
+
+    /* check if we are using a kludge to allow WTP-SAR only clients */
+    cfg_get_bool(&wtp_forced_sar, grp, octstr_imm("force-sar"));
 
     /* configure the 'wtls' group */
 #if (HAVE_WTLS_OPENSSL)
@@ -219,7 +218,8 @@ static Cfg *read_config(Octstr *filename)
 
 static void signal_handler(int signum) 
 {
-    /* On some implementations (i.e. linuxthreads), signals are delivered
+    /* 
+     * On some implementations (i.e. linuxthreads), signals are delivered
      * to all threads.  We only want to handle each signal once for the
      * entire box, and we let the gwthread wrapper take care of choosing
      * one. */
@@ -227,28 +227,28 @@ static void signal_handler(int signum)
         return;
     
     switch (signum) {
-    case SIGINT:
-	if (program_status != shutting_down) {
-	    error(0, "SIGINT received, let's die.");
-	    program_status = shutting_down;
-	    break;
-	}
-	break;
+        case SIGINT:
+            if (program_status != shutting_down) {
+                error(0, "SIGINT received, let's die.");
+                program_status = shutting_down;
+                break;
+            }
+            break;
     
-    case SIGHUP:
-	warning(0, "SIGHUP received, catching and re-opening logs");
-	log_reopen();
-	break;
+        case SIGHUP:
+            warning(0, "SIGHUP received, catching and re-opening logs");
+            log_reopen();
+            break;
     
-    /* 
-     * It would be more proper to use SIGUSR1 for this, but on some
-     * platforms that's reserved by the pthread support. 
-     */
-    case SIGQUIT:
-	warning(0, "SIGQUIT received, reporting memory usage.");
-	gw_check_leaks();
-	break;
-    }
+        /* 
+         * It would be more proper to use SIGUSR1 for this, but on some
+         * platforms that's reserved by the pthread support. 
+         */
+        case SIGQUIT:
+            warning(0, "SIGQUIT received, reporting memory usage.");
+            gw_check_leaks();
+            break;
+        }
 }
 
 
