@@ -1,3 +1,7 @@
+2003-11-26  Alexander Malysh  <a.malysh@centrium.de>
+    * gwlib/http.c: fixed memory leak if conn_wrap_fd(...) failed due to unsuccessfull
+      SSL handshake.
+
 2003-11-26  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/smsc/smpp_pdu.def: added missing esm_class values for deliver_sm PDU.
  

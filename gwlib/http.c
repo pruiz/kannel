@@ -2108,17 +2108,19 @@ static void server_thread(void *dummy)
                     ports[i] = -1;
                     ssl[i] = 0;
                 } else {
+                    Octstr *client_ip = host_ip(addr);
                     /*
                      * Be aware that conn_wrap_fd() will return NULL if SSL 
                      * handshake has failed, so we only client_create() if
                      * there is an conn.
                      */             
                     if ((conn = conn_wrap_fd(fd, ssl[i]))) {
-                        client = client_create(ports[i], conn, host_ip(addr));
+                        client = client_create(ports[i], conn, client_ip);
                         conn_register(conn, server_fdset, receive_request, client);
                     } else {
                         error(0, "HTTP: unsuccessfull SSL handshake for client `%s'",
-                        octstr_get_cstr(host_ip(addr)));
+                        octstr_get_cstr(client_ip));
+                        octstr_destroy(client_ip);
                     }
                 }
             }
