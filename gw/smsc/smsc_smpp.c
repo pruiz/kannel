@@ -1081,10 +1081,14 @@ static int shutdown_cb(SMSCConn *conn, int finish_sending)
  
     smpp = conn->data; 
     smpp->quitting = 1; 
-    gwthread_wakeup(smpp->transmitter); 
-    gwthread_wakeup(smpp->receiver); 
-    gwthread_join(smpp->transmitter); 
-    gwthread_join(smpp->receiver); 
+    if (smpp->transmitter != -1) { 
+        gwthread_wakeup(smpp->transmitter); 
+        gwthread_join(smpp->transmitter); 
+    } 
+    if (smpp->receiver != -1) { 
+        gwthread_wakeup(smpp->receiver); 
+        gwthread_join(smpp->receiver); 
+    } 
     smpp_destroy(smpp); 
      
     debug("bb.smpp", 0, "SMSCConn %s shut down.",  
