@@ -1,4 +1,9 @@
 2002-11-13  Stipe Tolj  <tolj@wapme-systems.de>
+    * gwlib/conn.[ch], gwlib/http.c, gwlib/socket.[ch]: applied non-blocking
+      patch for http connections, submited by Vjacheslav Chekushin <slava@lmt.lv>
+      [Msg-ID: <3DD1103B.7000405@lmt.lv>]
+
+2002-11-13  Stipe Tolj  <tolj@wapme-systems.de>
     * wap/wtp_resp_states.def: fixed compiler warning
 
 2002-11-12  Stipe Tolj  <tolj@wapme-systems.de>
