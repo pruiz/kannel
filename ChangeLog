@@ -1,3 +1,9 @@
+1999-20-12	Mikael Gueck <mikael.gueck@wapit.com>
+
+	* gw/smsbox_req.c: Dropped in a replacement for split_send()
+	still without the vital UDH part. Hopefully didn't miss any
+	features.
+
 Fri Dec 17 20:08:56 1999  Lars Wirzenius  <liw@wapit.com>
 
 	* gw/wtp_state-decl.h: State RESULT_RESP_WAIT actually sends the
