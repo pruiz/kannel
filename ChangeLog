@@ -1,4 +1,29 @@
 2002-11-14  Stipe Tolj  <tolj@wapme-systems.de>
+    * doc/userguide/userguide.xml: added 'smsbox-id' directive and 'smsbox-route'
+      group documentation
+    * gw/bb_boxc.c, gw/bb_smscconn.c: added smsbox specific identified handling
+    * gw/dlr.[ch]: added smsbox instance identifier handling in DLR code. This is
+      necessary if you want to route the DLR message the same logical channel
+      back to the sending smsbox instance entity, like in EMI/UCP and SMPP 
+      proxying cases.
+    * gw/msg-dec.h, gw/msg.h: added admin message field that is used to transport
+      the identified while an smsbox instance is identifying itself at startup.
+    * gw/smsbox.c: added handling of 'smsbox-id' directive that allows an 
+      smsbox instance to identify itself to bearerbox for routing purposes.
+    * gw/smsc/smsc_*.c: changed function calling to dlr routines to fit new way.
+    * gwlib/cfg.def: added directive 'smsbox-id' to smsbox group and 
+      'smsbox-route' for setting routing rules for smsbox instances.
+    * test/fakesmsc.c: added 'route' message type to simulate an inbound message
+      that should be routed to an specific smsbox instance.
+    The whole block is mainly what we called the "smsbox routing patch". It 
+    allows routing based upon smsc-id or receiver number rules to specific
+    smsbox instances. This may be several real smsboxes or even own boxes that
+    act to bearerbox as if they are smsboxes by using the same message 
+    communication interface. This is usefull for implementing own boxes that
+    act as EMI/UCP or SMPP proxies.
+    [Msg-ID: <3D790901.B126AAC9@wapme-systems.de>]
+
+2002-11-14  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/smsc/smpp_pdu[ch,def], gw/smsc/smpp_pdu_opt.def, gw/smsc/smsc_smpp.c:
       Added SMPP v3.4 optional field support. This is a first prelimiary 
       version, but has been proven at Wapme to work in production.
