@@ -1,5 +1,10 @@
 2000-09-04  Richard Braakman  <dark@wapit.com>
 
+	* gw/wapbox.c, gw/smsbox.c, gw/bearerbox.c: Handle only signals
+	for the main thread, so that each signal is received exactly once.
+
+2000-09-04  Richard Braakman  <dark@wapit.com>
+
 	* Changes prompted by code review:
 
 	* gwlib/gwthread.h, gwlib/gwthread-pthread.h: Rename Threadfunc

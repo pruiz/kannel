@@ -241,6 +241,12 @@ static void write_pid_file(void) {
 
 
 static void signal_handler(int signum) {
+    /* Signals are normally delivered to all threads.  We only want
+     * to handle each signal once for the entire box, so we ignore
+     * all except the one sent to the main thread. */
+    if (gwthread_self() != MAIN_THREAD_ID)
+	return;
+
     if (signum == SIGINT) {
 	if (abort_program == 0) {
 	    error(0, "SIGINT received, aborting program...");
@@ -254,14 +260,14 @@ static void signal_handler(int signum) {
 
 
 static void setup_signal_handlers(void) {
-        struct sigaction act;
+    struct sigaction act;
 
-        act.sa_handler = signal_handler;
-        sigemptyset(&act.sa_mask);
-        act.sa_flags = 0;
-        sigaction(SIGINT, &act, NULL);
-        sigaction(SIGHUP, &act, NULL);
-	sigaction(SIGPIPE, &act, NULL);
+    act.sa_handler = signal_handler;
+    sigemptyset(&act.sa_mask);
+    act.sa_flags = 0;
+    sigaction(SIGINT, &act, NULL);
+    sigaction(SIGHUP, &act, NULL);
+    sigaction(SIGPIPE, &act, NULL);
 }
 
 

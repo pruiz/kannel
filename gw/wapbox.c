@@ -292,12 +292,11 @@ static void empty_queue_thread(void *arg) {
 
 
 static void signal_handler(int signum) {
-	/* Implement a simple timer for ignoring all but the first of each
-	   set of signals. Sigint is sent to all threads, when given from
-	   keyboard. This timer makes sure only the first thread to receive
-	   it actually does anything. Otherwise the other ones will
-	   be in aborting state when they receive the signal. */
-	static time_t previous_sigint = 0;
+	/* Signals are normally delivered to all threads.  We only want
+	 * to handle each signal once for the entire box, so we ignore
+	 * all except the one sent to the main thread. */
+	if (gwthread_self() != MAIN_THREAD_ID)
+		return;
 
 	switch (signum) {
 	case SIGINT:
@@ -305,21 +304,11 @@ static void signal_handler(int signum) {
 		case aborting_with_prejudice:
 			break;
 		case aborting:
-			if (time(NULL) - previous_sigint > 2) {
-				error(0, "New SIGINT received, let's die harder");
-				run_status = aborting_with_prejudice;
-			} else {
-				;
-				/* Oh man, I can't f*cking believe this. 
-				 * Another thread, another handler. How can
-				 * the same signal happen to the same guy 
-				 * twice? 
-				 */
-			}
+			error(0, "New SIGINT received, let's die harder");
+			run_status = aborting_with_prejudice;
 			break;
 		default:
 			error(0, "SIGINT received, let's die.");
-			time(&previous_sigint);
 			run_status = aborting;
 			break;
 		}
@@ -334,8 +323,7 @@ static void signal_handler(int signum) {
 	 * platforms that's reserved by the pthread support. */
 	case SIGQUIT:
 		warning(0, "SIGQUIT received, reporting memory usage.");
-		if (gwthread_self() == 0)
-			gw_check_leaks();
+		gw_check_leaks();
 		break;
 	}
 

@@ -83,12 +83,11 @@ static void set_shutdown_status(void)
 
 static void signal_handler(int signum)
 {
-    /* We get a SIGINT for each thread running; this timeout makes sure we
-       handle it only once (unless there's a huge load and handling them
-       takes longer than two seconds). */
+    /* Signals are normally delivered to all threads.  We only want
+       to handle each signal once for the entire box, so we ignore
+       all except the one sent to the main thread. */
+    if (gwthread_self() != MAIN_THREAD_ID) return;
 
-    static time_t first_kill = -1;
-    
     if (signum == SIGINT || signum == SIGTERM) {
 
 	mutex_lock(status_mutex);
@@ -96,30 +95,17 @@ static void signal_handler(int signum)
 	    set_shutdown_status();
 
 	    /* shutdown smsc/udp is called by the http admin thread */
-	    
-            first_kill = time(NULL);
-	    
+
             warning(0, "Killing signal received, shutting down...");
-	    mutex_unlock(status_mutex);
         }
         else if (bb_status == BB_SHUTDOWN) {
-	    /*
-             * we have to wait for a while as one SIGINT from keyboard
-             * causes several signals - one for each thread?
-             */
-            if (time(NULL) - first_kill > 2) {
-                warning(0, "New killing signal received, killing neverthless...");
-                bb_status = BB_DEAD;
-		first_kill = time(NULL);
-            }
-	    mutex_unlock(status_mutex);
+            warning(0, "New killing signal received, killing neverthless...");
+            bb_status = BB_DEAD;
         }
         else if (bb_status == BB_DEAD) {
-            if (time(NULL) - first_kill > 1)
-		panic(0, "cannot die by its own will");
+	    panic(0, "cannot die by its own will");
 	}
-	else
-	    mutex_unlock(status_mutex);
+	mutex_unlock(status_mutex);
     } else if (signum == SIGHUP) {
         warning(0, "SIGHUP received, catching and re-opening logs");
         reopen_log_files();

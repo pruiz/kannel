@@ -12,6 +12,9 @@
 #ifndef GWTHREAD_H
 #define GWTHREAD_H
 
+/* gwthread_self() must return this value for the main thread. */
+#define MAIN_THREAD_ID 0
+
 typedef void gwthread_func_t(void *arg);
 
 /* Called by the gwlib init code */
