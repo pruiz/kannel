@@ -1450,15 +1450,15 @@ static int client_is_persistent(List *headers, int use_version_1_0)
     if (h == NULL) {
         return !use_version_1_0;
     } else {
-        if (use_version_1_0) {
-            if (octstr_compare(h, octstr_imm("keep-alive")) == 0) {
+        if (!use_version_1_0) {
+            if (octstr_case_compare(h, octstr_imm("keep-alive")) == 0) {
                 octstr_destroy(h);
                 return 1;
             } else {
                 octstr_destroy(h);
                 return 0;
             }
-	    } else if (octstr_compare(h, octstr_imm("close")) == 0) {
+	    } else if (octstr_case_compare(h, octstr_imm("close")) == 0) {
             octstr_destroy(h);
             return 0;
         }
@@ -1980,16 +1980,19 @@ void http_send_reply(HTTPClient *client, int status, List *headers,
     else
     	response = octstr_format("HTTP/1.1 %d Foo\r\n", status);
 
-    if (!client->use_version_1_0 && 
-	(p = client_is_persistent(headers, client->use_version_1_0)) != 
-	client->persistent_conn)
-        client->persistent_conn = p;
-
     /* identify ourselfs */
     octstr_format_append(response, "Server: " GW_NAME "/%s\r\n", VERSION);
 
     octstr_format_append(response, "Content-Length: %ld\r\n",
 			 octstr_len(body));
+
+    /* 
+     * RFC2616, sec. 8.1.2.1 says that if the server chooses to close the 
+     * connection, it *should* send a coresponding header
+     */
+    if (!client->use_version_1_0 && !client->persistent_conn)
+        octstr_format_append(response, "Connection: close\r\n");
+
     for (i = 0; i < list_len(headers); ++i)
     	octstr_format_append(response, "%S\r\n", list_get(headers, i));
     octstr_format_append(response, "\r\n");
