@@ -1,4 +1,4 @@
-2000-08-18  Richard Braakman  <dark@wapit.com>
+2000-08-23  Richard Braakman  <dark@wapit.com>
 
 	* gw/wap-appl.c: Make sure content.url and content.body have valid
 	values even if request method is not supported.
