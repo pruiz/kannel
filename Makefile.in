@@ -122,7 +122,7 @@ figs = $(figsrcs:.fig=.png)  $(figsrcs:.fig=.ps)
 
 .xml.ps:
 	sed "s/#FIGTYPE#/.ps/" $< > $*.tmp
-	jade -o $*.tex -t tex -d $TEX_DSL $*.tmp
+	jade -o $*.tex -t tex -d $(TEX_DSL) $*.tmp
 	jadetex $*.tex >/dev/null
 	jadetex $*.tex >/dev/null
 	jadetex $*.tex >/dev/null
