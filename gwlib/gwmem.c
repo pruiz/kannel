@@ -213,7 +213,6 @@ static void forget(void *p, const char *filename, long lineno) {
 	}
 	gw_assert(p == tab[i].p);
 	gw_assert(tab[i].size > 0);
-	fill(p, tab[i].size, 0xdeadbeef);
 	memmove(tab + i, 
 	        tab + i + 1,
 	        (num_allocations - i - 1) * sizeof(struct mem));
@@ -244,11 +243,12 @@ static void check_leaks(void) {
 static void dump(void) {
 	long i;
 
-	for (i = 0; i < num_allocations; ++i)
+	for (i = 0; i < num_allocations; ++i) {
 		debug("gwlib.gwmem", 0, "area %ld at %p, %lu bytes, "
 			"allocated at %s:%ld",
 			i, tab[i].p, (unsigned long) tab[i].size,
 			tab[i].allocated_filename, tab[i].allocated_lineno);
+	}
 }
 #endif
 

@@ -85,6 +85,12 @@ RQueue *rq_new(void);
 
 
 /*
+ * Destroy an RQueue.
+ */
+void rq_destroy(RQueue *rq);
+
+
+/*
  * push a new message to the queue. Cannot fail (as long as
  *  user does not give crap)
  */

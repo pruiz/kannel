@@ -1,3 +1,28 @@
+Sun Apr  9 02:18:38 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* More memory leak fixes, now in bearerbox. Now it should be possible
+	to run heavy and long time stress tests on all three boxes.
+
+	* gw/bb_msg.[ch]: Wrote function rq_destroy.
+
+	* gw/bearerbox.c: Wrote function destroy_bb. Added functions for
+	freeing memory at end of main.
+
+	* gw/wdp_udp.c: Octstr with client address now freed.
+
+	* Some other changes as well.
+
+	* gw/wtp.c: Bugfix. timer field of WTPMachine set to NULL after
+	having been destroyed, so that wtp_machine_destroy doesn't try to
+	destroy it a second time.
+
+	* gw/wtp_timer.c: wtp_timer_destroy is now safe to call with NULL.
+	(All our other _destroy functions are, so this one should also be.)
+
+	* gwlib/gwmem.c: forget() does not fill the area any more, because
+	this causes problems with realloc. This is a workaround, and needs
+	to be handled better when I'm awake.
+
 Sun Apr  9 00:33:59 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* Memory leak fixes.

@@ -187,6 +187,7 @@ int boxc_get_message(BOXC *boxc, RQueueItem **rmsg)
 	     * accept our data neither if it has blocked while writing,
 	     * or would it?
 	     */
+	    /* XXX os is not freed in error sitatations. memory leak. --liw */
 	    ret = octstr_recv(boxc->fd, &os);
 	    if (ret < 1) {
 		if (ret == -1)

@@ -133,6 +133,8 @@ RQueueItem *wdp_udp_get_message(WDP_UDPBearer *udp) {
 	sprintf(item->routing_info, "%s:%d", 
 		octstr_get_cstr(item->msg->wdp_datagram.source_address),
 		(int) item->msg->wdp_datagram.source_port);
+
+	octstr_destroy(cliaddr);
 	
 	return item;
 

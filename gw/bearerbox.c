@@ -274,7 +274,6 @@ static int del_receiver_id(int id)
  */
 static int add_receiver(RQueue *queue, RQueueItem *msg, int old_id, int new_id)
 {
-    RouteInfo *new;
     int ret, index;
     char *p;
 
@@ -293,8 +292,7 @@ static int add_receiver(RQueue *queue, RQueueItem *msg, int old_id, int new_id)
     
     if (route_count >= route_limit) {
 	route_limit += 1024;
-	new = gw_realloc(route_info, route_limit * sizeof(RouteInfo));
-	route_info = new;
+	route_info = gw_realloc(route_info, route_limit * sizeof(RouteInfo));
     }
     /*
      * insert the new one
@@ -1934,6 +1932,19 @@ error:
 
 
 /*
+ * destroy a BearerBox
+ */
+static void destroy_bb(BearerBox *bbox)
+{
+    mutex_destroy(bbox->mutex);
+    rq_destroy(bbox->request_queue);
+    rq_destroy(bbox->reply_queue);
+    gw_free(bbox->threads);
+    gw_free(bbox);
+}
+
+
+/*
  * write the pid to the file, if set
  */
 static void write_pid_file(void)
@@ -2146,6 +2157,12 @@ int main(int argc, char **argv)
 	info(0, "No internal SMS BOX");
 	
     main_program();
+
+    gw_free(route_info);
+    mutex_destroy(route_mutex);
+    destroy_bb(bbox);
+    config_destroy(cfg);
+    gw_check_leaks();
 
     return 0;
 }

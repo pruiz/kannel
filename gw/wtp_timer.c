@@ -10,6 +10,10 @@
  * Lars Wirzenius for WapIT Ltd.
  */
 
+#ifndef TRACE
+#define TRACE 0
+#endif
+
 #include <errno.h>
 #include <stdlib.h>
 #include <time.h>
@@ -44,7 +48,7 @@ WTPTimer *wtp_timer_create(void) {
 	list_lock(timers);
 
 	list_append(timers, timer); 
-#if 0
+#if TRACE
         debug("wap.wtp.timer", 0, "Created timer %p.", (void *) timer);
 #endif
 
@@ -57,16 +61,20 @@ WTPTimer *wtp_timer_create(void) {
 void wtp_timer_destroy(WTPTimer *timer) {
 	long len, count;
 
+	if (timer == NULL)
+		return;
+
 	list_lock(timers);
 
 	/* Count the number of deleted items by comparing the list
 	 * length before and after. */
 	len = list_len(timers);
+
 	list_delete_equal(timers, timer);
 	count = len - list_len(timers);
 
 	if (count == 1) {
-#if 0
+#if TRACE
         	debug("wap.wtp.timer", 0,
 			"Destroyed timer %p.", (void *) timer);
 #endif

@@ -273,6 +273,7 @@ void wtp_machine_mark_unused(WTPMachine *machine){
 
      machine->in_use = 0;
      wtp_timer_destroy(machine->timer);
+     machine->timer = NULL;
 }
 
 /* 

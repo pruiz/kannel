@@ -34,6 +34,13 @@ RQueue *rq_new(void)
 }
 
 
+void rq_destroy(RQueue *rq)
+{
+    mutex_destroy(rq->mutex);
+    gw_free(rq);
+}
+
+
 void rq_push_msg(RQueue *queue, RQueueItem *msg)
 {
     gw_assert(queue != NULL);
