@@ -190,7 +190,7 @@ static void format(char *buf, const char *fmt)
                 tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday,
                 tm.tm_hour, tm.tm_min, tm.tm_sec);
     } else {
-        sprintf(p, "");
+        *p = '\0';
     }
 
     if (strlen(prefix) + strlen(fmt) > FORMAT_SIZE / 2) {
@@ -205,13 +205,12 @@ static void format(char *buf, const char *fmt)
 
 void alog(const char *fmt, ...)
 {
-    char *buf;
+    char buf[FORMAT_SIZE + 1];
     va_list args;
 
     if (file == NULL)
         return;
 
-    buf = gw_malloc(FORMAT_SIZE + 1);
     format(buf, fmt);
     va_start(args, fmt);
 
@@ -225,6 +224,5 @@ void alog(const char *fmt, ...)
     list_remove_producer(writers);
 
     va_end(args);
-    gw_free(buf);
 }
 
