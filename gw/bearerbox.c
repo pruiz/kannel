@@ -590,7 +590,6 @@ static void *smscenter_thread(void *arg)
 		    smsc_name(us->smsc));
 	    us->status = BB_STATUS_OK;
 	}
-	    break;
 	HEARTBEAT_UPDATE(our_time, last_time, us);
 
 	/* check for any messages to us in reply-queue
