@@ -35,79 +35,82 @@ static WAPEvent *pack_error(Msg *msg);
  *
  * Handles a possible concatenated message. Creates a list of wap events.
  */
-List *wtp_unpack_wdp_datagram(Msg *msg){
-        List *events = NULL;
-        WAPEvent *event = NULL;
-        Msg *msg_found = NULL;
-        Octstr *data = NULL;
-        long pdu_len;
+List *wtp_unpack_wdp_datagram(Msg *msg)
+{
+     List *events = NULL;
+     WAPEvent *event = NULL;
+     Msg *msg_found = NULL;
+     Octstr *data = NULL;
+     long pdu_len;
 
-        events = list_create();
+     events = list_create();
         
-        if (concatenated_message(msg->wdp_datagram.user_data)){
-           data = octstr_duplicate(msg->wdp_datagram.user_data);
-	   octstr_delete(data, 0, 1);
+     if (concatenated_message(msg->wdp_datagram.user_data)){
+         data = octstr_duplicate(msg->wdp_datagram.user_data);
+	 octstr_delete(data, 0, 1);
 
-           while (octstr_len(data) != 0){
+         while (octstr_len(data) != 0) {
 
-	         if (octstr_get_bits(data, 0, 1) == 0){
-	            pdu_len = octstr_get_char(data, 0);
-                    octstr_delete(data, 0, 1);
+	     if (octstr_get_bits(data, 0, 1) == 0) {
+	         pdu_len = octstr_get_char(data, 0);
+                 octstr_delete(data, 0, 1);
 
-                 } else {
+             } else {
 		    pdu_len = octstr_get_bits(data, 1, 15);
                     octstr_delete(data, 0, 2);
-                 }
+             }
                  
-                 msg_found = msg_duplicate(msg);
-		 octstr_destroy(msg_found->wdp_datagram.user_data);
-                 msg_found->wdp_datagram.user_data =
-			octstr_copy(data, 0, pdu_len);
-                 event = unpack_wdp_datagram_real(msg_found);
-                 wap_event_assert(event);
-                 list_append(events, event);
-                 octstr_delete(data, 0, pdu_len);
-                 msg_destroy(msg_found);
-           }/* while*/
-           octstr_destroy(data);
+             msg_found = msg_duplicate(msg);
+	     octstr_destroy(msg_found->wdp_datagram.user_data);
+             msg_found->wdp_datagram.user_data =
+	          octstr_copy(data, 0, pdu_len);
+             event = unpack_wdp_datagram_real(msg_found);
+             wap_event_assert(event);
+             list_append(events, event);
+             octstr_delete(data, 0, pdu_len);
+             msg_destroy(msg_found);
+         }/* while */
 
-        } else {
-	   event = unpack_wdp_datagram_real(msg); 
-           wap_event_assert(event);
-           list_append(events, event);
-        } 
+     octstr_destroy(data);
 
-        return events;
+     } else {
+          event = unpack_wdp_datagram_real(msg); 
+          wap_event_assert(event);
+          list_append(events, event);
+     } 
+
+     return events;
 }/* function */
 
 /*
  * Responder set the first bit of the tid field. If we get a packet from the 
- * responder, we are the initiator. 
+ * responder, we are the initiator and vice versa.
  *
  * Return 1, when the event is for responder, 0 when it is for initiator and 
  * -1 when error.
  */
-int wtp_event_is_for_responder(WAPEvent *event){
+int wtp_event_is_for_responder(WAPEvent *event)
+{
 
-    switch(event->type){
+     switch(event->type){
           
-          case RcvInvoke:
-	       return event->u.RcvInvoke.tid < INITIATOR_TID_LIMIT;
+     case RcvInvoke:
+         return event->u.RcvInvoke.tid < INITIATOR_TID_LIMIT;
 
-          case RcvAck:
-	       return event->u.RcvAck.tid < INITIATOR_TID_LIMIT;
+     case RcvAck:
+	 return event->u.RcvAck.tid < INITIATOR_TID_LIMIT;
 
-          case RcvAbort:
-	       return event->u.RcvAbort.tid < INITIATOR_TID_LIMIT;
+     case RcvAbort:
+	 return event->u.RcvAbort.tid < INITIATOR_TID_LIMIT;
 
-          case RcvErrorPDU:
-               return event->u.RcvErrorPDU.tid < INITIATOR_TID_LIMIT;
+     case RcvErrorPDU:
+         return event->u.RcvErrorPDU.tid < INITIATOR_TID_LIMIT;
 
-          default:
-	       error(1, "Received an erroneous PDU corresponding an event");
-               wap_event_dump(event);
-	       return -1;
-    }
+     default:
+	 error(1, "Received an erroneous PDU corresponding an event");
+         wap_event_dump(event);
+	 return -1;
+     }
 }
 
 /*****************************************************************************
@@ -116,153 +119,159 @@ int wtp_event_is_for_responder(WAPEvent *event){
  *
  * If pdu was truncated, tid cannot be trusted. We ignore this message.
  */
-static int truncated_message(Msg *msg){
+static int truncated_message(Msg *msg)
+{
 
-        if (octstr_len(msg->wdp_datagram.user_data) < 3){
-           debug("wap.wtp", 0, "A too short PDU received");
-           msg_dump(msg, 0);
-           return 1;
-        } else
-	  return 0;
+    if (octstr_len(msg->wdp_datagram.user_data) < 3) {
+        debug("wap.wtp", 0, "A too short PDU received");
+        msg_dump(msg, 0);
+        return 1;
+    } else
+        return 0;
 }
 
-static WAPEvent *unpack_invoke(WTP_PDU *pdu, Msg *msg){
-       WAPEvent *event;
+static WAPEvent *unpack_invoke(WTP_PDU *pdu, Msg *msg)
+{
+    WAPEvent *event;
 
-       event = wap_event_create(RcvInvoke);
-       event->u.RcvInvoke.user_data = 
-	      octstr_duplicate(pdu->u.Invoke.user_data);
-       event->u.RcvInvoke.tcl = pdu->u.Invoke.class;
-       event->u.RcvInvoke.tid = pdu->u.Invoke.tid;
-       event->u.RcvInvoke.tid_new = pdu->u.Invoke.tidnew;
-       event->u.RcvInvoke.rid = pdu->u.Invoke.rid;
-       event->u.RcvInvoke.up_flag = pdu->u.Invoke.uack;
-       event->u.RcvInvoke.no_cache_supported = 0;
-       event->u.RcvInvoke.version = pdu->u.Invoke.version;
-       event->u.RcvInvoke.gtr = pdu->u.Invoke.gtr;
-       event->u.RcvInvoke.ttr = pdu->u.Invoke.ttr;
-       event->u.RcvInvoke.addr_tuple = 
-              wap_addr_tuple_create(msg->wdp_datagram.source_address,
-			            msg->wdp_datagram.source_port,
-			            msg->wdp_datagram.destination_address,
-			            msg->wdp_datagram.destination_port);
+    event = wap_event_create(RcvInvoke);
+    event->u.RcvInvoke.user_data = 
+        octstr_duplicate(pdu->u.Invoke.user_data);
+    event->u.RcvInvoke.tcl = pdu->u.Invoke.class;
+    event->u.RcvInvoke.tid = pdu->u.Invoke.tid;
+    event->u.RcvInvoke.tid_new = pdu->u.Invoke.tidnew;
+    event->u.RcvInvoke.rid = pdu->u.Invoke.rid;
+    event->u.RcvInvoke.up_flag = pdu->u.Invoke.uack;
+    event->u.RcvInvoke.no_cache_supported = 0;
+    event->u.RcvInvoke.version = pdu->u.Invoke.version;
+    event->u.RcvInvoke.gtr = pdu->u.Invoke.gtr;
+    event->u.RcvInvoke.ttr = pdu->u.Invoke.ttr;
+    event->u.RcvInvoke.addr_tuple = 
+         wap_addr_tuple_create(msg->wdp_datagram.source_address,
+			       msg->wdp_datagram.source_port,
+			       msg->wdp_datagram.destination_address,
+			       msg->wdp_datagram.destination_port);
 
-       return event;
+    return event;
 }
 
-static WAPEvent *unpack_ack(WTP_PDU *pdu, Msg *msg){
-       WAPEvent *event;
+static WAPEvent *unpack_ack(WTP_PDU *pdu, Msg *msg)
+{
+    WAPEvent *event;
 
-       event = wap_event_create(RcvAck);
-       event->u.RcvAck.tid = pdu->u.Ack.tid;
-       event->u.RcvAck.tid_ok = pdu->u.Ack.tidverify;
-       event->u.RcvAck.rid = pdu->u.Ack.rid;
-       event->u.RcvAck.addr_tuple =
-              wap_addr_tuple_create(msg->wdp_datagram.source_address,
-		    	            msg->wdp_datagram.source_port,
-			            msg->wdp_datagram.destination_address,
-				    msg->wdp_datagram.destination_port);
+    event = wap_event_create(RcvAck);
+    event->u.RcvAck.tid = pdu->u.Ack.tid;
+    event->u.RcvAck.tid_ok = pdu->u.Ack.tidverify;
+    event->u.RcvAck.rid = pdu->u.Ack.rid;
+    event->u.RcvAck.addr_tuple =
+         wap_addr_tuple_create(msg->wdp_datagram.source_address,
+		    	       msg->wdp_datagram.source_port,
+			       msg->wdp_datagram.destination_address,
+			       msg->wdp_datagram.destination_port);
 
-       return event;
+    return event;
 }
 
-static WAPEvent *unpack_abort(WTP_PDU *pdu, Msg *msg){
-       WAPEvent *event;
+static WAPEvent *unpack_abort(WTP_PDU *pdu, Msg *msg)
+{
+     WAPEvent *event;
 
-       event = wap_event_create(RcvAbort);
-       event->u.RcvAbort.tid = pdu->u.Abort.tid;
-       event->u.RcvAbort.abort_type = pdu->u.Abort.abort_type;
-       event->u.RcvAbort.abort_reason = pdu->u.Abort.abort_reason;
-       event->u.RcvAbort.addr_tuple = 
-	      wap_addr_tuple_create(msg->wdp_datagram.source_address,
-				    msg->wdp_datagram.source_port,
-				    msg->wdp_datagram.destination_address,
-				    msg->wdp_datagram.destination_port);
+     event = wap_event_create(RcvAbort);
+     event->u.RcvAbort.tid = pdu->u.Abort.tid;
+     event->u.RcvAbort.abort_type = pdu->u.Abort.abort_type;
+     event->u.RcvAbort.abort_reason = pdu->u.Abort.abort_reason;
+     event->u.RcvAbort.addr_tuple = 
+         wap_addr_tuple_create(msg->wdp_datagram.source_address,
+			       msg->wdp_datagram.source_port,
+			       msg->wdp_datagram.destination_address,
+			       msg->wdp_datagram.destination_port);
 
-       return event;
+     return event;
 }
 
 static WAPEvent *pack_error(Msg *msg){
-       WAPEvent *event;
+    WAPEvent *event;
 
-       event = wap_event_create(RcvErrorPDU);
-       event->u.RcvErrorPDU.tid = deduce_tid(msg->wdp_datagram.user_data);
-       event->u.RcvErrorPDU.addr_tuple = 
-	      wap_addr_tuple_create(msg->wdp_datagram.source_address,
-				    msg->wdp_datagram.source_port,
-				    msg->wdp_datagram.destination_address,
-				    msg->wdp_datagram.destination_port);       
+    event = wap_event_create(RcvErrorPDU);
+    event->u.RcvErrorPDU.tid = deduce_tid(msg->wdp_datagram.user_data);
+    event->u.RcvErrorPDU.addr_tuple = 
+        wap_addr_tuple_create(msg->wdp_datagram.source_address,
+			      msg->wdp_datagram.source_port,
+			      msg->wdp_datagram.destination_address,
+			      msg->wdp_datagram.destination_port);       
 
-       return event;
+    return event;
 }
 
 /*
  * Transfers data from fields of a message to fields of WTP event. User data 
  * has the host byte order. Updates the log. 
  *
- * This function does incoming events check nro 4 (WTP 10.2).
+ * This function does incoming events check nro 4 (checking illegal headers
+ * WTP 10.2).
  *
  * Return event, when we have a partially correct message or the message 
  * received has illegal header (WTP 10.2 nro 4); NULL, when the message was 
  * truncated or unpacking function returned NULL.
  */
 
-WAPEvent *unpack_wdp_datagram_real(Msg *msg){
-	WTP_PDU *pdu;
+WAPEvent *unpack_wdp_datagram_real(Msg *msg)
+{
+    WTP_PDU *pdu;
 
-	WAPEvent *event;
-        Octstr *data;
+    WAPEvent *event;
+    Octstr *data;
 
-        data = msg->wdp_datagram.user_data;
+    data = msg->wdp_datagram.user_data;
 
-        if (truncated_message(msg))
-	    return NULL;
+    if (truncated_message(msg))
+	return NULL;
 
-	pdu = wtp_pdu_unpack(data);
+    pdu = wtp_pdu_unpack(data);
 /*
  * Wtp_pdu_unpack returned NULL, we build a rcv error event. 
  */
-	if (pdu == NULL){
-           error(0, "pdu unpacking returned NULL");
-           event = pack_error(msg);
-           return event;
-        }   		
+    if (pdu == NULL) {
+        error(0, "pdu unpacking returned NULL");
+        event = pack_error(msg);
+        return event;
+    }   		
 
-	event = NULL;
+    event = NULL;
 
-	switch (pdu->type) {
+    switch (pdu->type) {
 
-	case Invoke:
-	     event = unpack_invoke(pdu, msg);
+    case Invoke:
+	event = unpack_invoke(pdu, msg);
 /*
  * If an initiator gets invoke, it would be an illegal pdu.
  */
-             if (!wtp_event_is_for_responder(event)){
-                debug("wap.wtp", 0, "Invoke when initiator. Message was");
-                wap_event_destroy(event);
-                wap_event_create(RcvErrorPDU);
-             }
+        if (!wtp_event_is_for_responder(event)){
+            debug("wap.wtp", 0, "Invoke when initiator. Message was");
+            wap_event_destroy(event);
+            wap_event_create(RcvErrorPDU);
+        }
 	break;
 
         case Ack:
-	     event = unpack_ack(pdu, msg);    
+	    event = unpack_ack(pdu, msg);    
         break;
 
 	case Abort:
-	     event = unpack_abort(pdu, msg);
+	    event = unpack_abort(pdu, msg);
         break;         
 
 	default:
-	        event = pack_error(msg);
-	        debug("wap.wtp", 0, "Unhandled PDU type. Message was");
-                msg_dump(msg, 0);
-		return event;
+	    event = pack_error(msg);
+	    debug("wap.wtp", 0, "Unhandled PDU type. Message was");
+            msg_dump(msg, 0);
+	    return event;
 	}
 
-	wtp_pdu_destroy(pdu);
+    wtp_pdu_destroy(pdu);
 	
-	wap_event_assert(event);
-	return event;
+    wap_event_assert(event);
+    return event;
 }
 
 /*
@@ -271,13 +280,13 @@ WAPEvent *unpack_wdp_datagram_real(Msg *msg){
  * responder.
  */
 
-static int deduce_tid(Octstr *user_data){
- 
-       return octstr_get_bits(user_data, 8, 16);
+static int deduce_tid(Octstr *user_data)
+{ 
+    return octstr_get_bits(user_data, 8, 16);
 }
 
-static int concatenated_message(Octstr *user_data){
-
+static int concatenated_message(Octstr *user_data)
+{
        return octstr_get_char(user_data, 0) == 0x00;
 }
 

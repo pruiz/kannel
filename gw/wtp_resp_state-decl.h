@@ -91,13 +91,13 @@ STATE_NAME(WAIT_TIMEOUT)
 ROW(LISTEN,
     RcvInvoke,
     (event->u.RcvInvoke.tcl == 2 || event->u.RcvInvoke.tcl == 1) &&
-    wtp_tid_is_valid(event, resp_machine) == ok,
+     wtp_tid_is_valid(event, resp_machine) == ok,
     {
      resp_machine->u_ack = event->u.RcvInvoke.up_flag;
      resp_machine->tcl = event->u.RcvInvoke.tcl;
 
      wsp_event = create_tr_invoke_ind(resp_machine, 
-                 event->u.RcvInvoke.user_data);
+         event->u.RcvInvoke.user_data);
      wsp_session_dispatch_event(wsp_event);
 
      start_timer_A(resp_machine); 
@@ -108,7 +108,7 @@ ROW(LISTEN,
 ROW(LISTEN,
     RcvInvoke,
     (event->u.RcvInvoke.tcl == 2 || event->u.RcvInvoke.tcl == 1) &&
-    (wtp_tid_is_valid(event, resp_machine) == fail || 
+     (wtp_tid_is_valid(event, resp_machine) == fail || 
      wtp_tid_is_valid(event, resp_machine) == no_cached_tid),
     { 
      wtp_send_ack(TID_VERIFICATION, resp_machine->rid, resp_machine->tid, 
@@ -131,7 +131,7 @@ ROW(LISTEN,
     event->u.RcvInvoke.tcl == 0,
     {
      wsp_event = create_tr_invoke_ind(resp_machine, 
-                 event->u.RcvInvoke.user_data);
+         event->u.RcvInvoke.user_data);
      wsp_session_dispatch_event(wsp_event);
     },
     LISTEN)
@@ -164,6 +164,10 @@ ROW(TIDOK_WAIT,
     },
     INVOKE_RESP_WAIT)
 
+/*
+ * Here we just abort tranaction. Because wtp machines are destroyed when their
+ * state return to LISTEN, there is no need to do anything here.
+ */
 ROW(TIDOK_WAIT,
     RcvAbort,
     1,
@@ -176,6 +180,10 @@ ROW(TIDOK_WAIT,
     { },
     TIDOK_WAIT)
 
+/*
+ * Because the phone sends invoke again, previous ack was dropped by the 
+ * bearer.
+ */
 ROW(TIDOK_WAIT,
     RcvInvoke,
     event->u.RcvInvoke.rid == 1,
@@ -217,7 +225,7 @@ ROW(INVOKE_RESP_WAIT,
     1,
     {
      wsp_event = create_tr_abort_ind(resp_machine, 
-                 event->u.RcvAbort.abort_reason);
+         event->u.RcvAbort.abort_reason);
      wsp_session_dispatch_event(wsp_event);
     },
     LISTEN)
@@ -245,6 +253,19 @@ ROW(INVOKE_RESP_WAIT,
     },
     RESULT_RESP_WAIT)
 
+/*
+ * Conditions below do not correspond wholly ones found from the spec. (If 
+ * they does, user acknowledgement flag would never be used by the protocol, 
+ * which cannot be the original intention.) 
+ * User acknowledgement flag is used following way: if it is on, WTP does not
+ * send an acknowledgement (user acknowledgement in form of TR-Invoke.res or 
+ * TR-Result.req instead of provider acknowledgement is awaited); if it is 
+ * off, WTP does this. IMHO, specs support this exegesis: there is condition 
+ * Uack == False && class == 2 with action send ack pdu. In addition, WSP 
+ * 8.3.1 says " When [user acknowledgement] is enabled WTP provider does not
+ * respond to a received message until after WTP user has confirmed the 
+ * indication service primitive by issuing the response primitive".
+ */
 ROW(INVOKE_RESP_WAIT,
     TimerTO_A,
     resp_machine->aec < AEC_MAX && resp_machine->tcl == 2 && 
@@ -308,7 +329,7 @@ ROW(RESULT_WAIT,
     1,
     {
      wsp_event = create_tr_abort_ind(resp_machine, 
-                 event->u.RcvAbort.abort_reason);
+         event->u.RcvAbort.abort_reason);
      wsp_session_dispatch_event(wsp_event);
     },
     LISTEN)
@@ -384,7 +405,7 @@ ROW(RESULT_RESP_WAIT,
     1,
     {
      wsp_event = create_tr_abort_ind(resp_machine, 
-                 event->u.RcvAbort.abort_reason);
+         event->u.RcvAbort.abort_reason);
      wsp_session_dispatch_event(wsp_event);
     },
     LISTEN)

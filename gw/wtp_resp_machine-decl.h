@@ -1,21 +1,21 @@
 
 /*
- * wtp_machine-decl.h - macro call for generating WTP responder state machine. See 
- * the architecture document for guidance how to use and update it.
+ * wtp_machine-decl.h - macro call for generating WTP responder state machine.
+ * See the architecture document for guidance how to use and update it.
  *
  * By Aarno Syvänen for Wapit Ltd.
  *
  * WTPRespMachine data structure includes current state of WTP responder state 
- * machine for a specific transaction. This means all data needed to handle at least
- * two incoming events of a certain transaction. Its fields can be grouped following 
- * way:
+ * machine for a specific transaction. This means all data needed to handle at
+ * least two incoming events of a certain transaction. Its fields can be 
+ * grouped following way:
  *
  * General: wtp responder machine state 
  *
  * Fields telling the service required: 
  *               a) transaction class (is transaction confirmed or not) 
- *               b) user acknowledgement flag (do we wait for response primitive  
- *                  of WTP user (for instance, WSP) or not)
+ *               b) user acknowledgement flag (do we wait for response primit-
+ *                  ive of WTP user (for instance, WSP) or not)
  *
  * Machine identification: address four-tuple and transaction identifier
  * 
@@ -33,19 +33,19 @@
  */
 
 #if !defined(MACHINE) 
-      #error "wsp_resp_machine-decl.h: Macro MACHINE is missing."
+    #error "wsp_resp_machine-decl.h: Macro MACHINE is missing."
 #elif !defined(INTEGER) 
-      #error "wsp_resp_machine-decl.h: Macro INTEGER is missing."
+    #error "wsp_resp_machine-decl.h: Macro INTEGER is missing."
 #elif !defined(ENUM) 
-      #error "wsp_resp_machine-decl.h: Macro ENUM is missing."
+    #error "wsp_resp_machine-decl.h: Macro ENUM is missing."
 #elif !defined(TIMER) 
-      #error "wsp_resp_machine-decl.h: Macro TIMER is missing."
+    #error "wsp_resp_machine-decl.h: Macro TIMER is missing."
 #elif !defined(MSG) 
-      #error "wsp_resp_machine-decl.h: Macro MSG is missing."
+    #error "wsp_resp_machine-decl.h: Macro MSG is missing."
 #elif !defined(WSP_EVENT) 
-      #error "wsp_resp_machine-decl.h: Macro WSP_EVENT is missing."
+    #error "wsp_resp_machine-decl.h: Macro WSP_EVENT is missing."
 #elif !defined(ADDRTUPLE)
-      #error "wsp_resp_machine-decl.h: Macro ADDRTUPLE is missing."
+    #error "wsp_resp_machine-decl.h: Macro ADDRTUPLE is missing."
 #endif
 
 MACHINE(ENUM(state)

@@ -30,17 +30,17 @@
 
 
 #if !defined(MACHINE) 
-      #error "wsp_init_machine-decl.h: Macro MACHINE is missing."
+    #error "wsp_init_machine-decl.h: Macro MACHINE is missing."
 #elif !defined(INTEGER) 
-      #error "wsp_init_machine-decl.h: Macro INTEGER is missing."
+    #error "wsp_init_machine-decl.h: Macro INTEGER is missing."
 #elif !defined(ENUM)  
-      #error "wsp_init_machine-decl.h: Macro ENUM is missing."
+    #error "wsp_init_machine-decl.h: Macro ENUM is missing."
 #elif !defined(TIMER) 
-      #error "wsp_init_machine-decl.h: Macro TIMER is missing."
+    #error "wsp_init_machine-decl.h: Macro TIMER is missing."
 #elif !defined(MSG) 
-      #error "wsp_init_machine-decl.h: Macro MSG is missing."
+    #error "wsp_init_machine-decl.h: Macro MSG is missing."
 #elif !defined(ADDRTUPLE)
-      #error "wsp_init_machine-decl.h: Macro ADDRTUPLE is missing."
+    #error "wsp_init_machine-decl.h: Macro ADDRTUPLE is missing."
 #endif
 
 MACHINE(ENUM(state)

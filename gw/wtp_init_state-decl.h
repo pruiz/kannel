@@ -15,9 +15,9 @@
  *                 see below).
  *
  * Retransmission until acknowledgement is implemented using timers and 
- * retransmission counters. When the initiator sends an invoke it starts a timer.
- * When it expires, it resends the packet (either ack or invoke), until counter
- * reaches the maximum value. Then the transaction is aborted.
+ * retransmission counters. When the initiator sends an invoke it starts a 
+ * timer. When it expires, it resends the packet (either ack or invoke), until
+ * counter reaches the maximum value. Then the transaction is aborted.
  *
  * If user acknowledgement is on, timers have different values.
  *
@@ -50,7 +50,7 @@ ROW(INITIATOR_NULL_STATE,
  * A special counter is used for storing value used (1) for tidnew flag when
  * restarting (See WTP 8.8.3.2)
  */
-     init_machine->tidnew = counter_value(tid_new_counter);
+     init_machine->tidnew = tidnew;
      
      msg_destroy(init_machine->invoke);
      init_machine->rid = 0;
@@ -62,8 +62,8 @@ ROW(INITIATOR_NULL_STATE,
  * wrapped or when we are restarting, see WTP 8.8.3.2) 
  */     
      if (init_machine->tidnew) {
-        init_machine->tidnew = 0;
-        ret = counter_set(tid_new_counter, 0);
+         init_machine->tidnew = 0;
+         tidnew = 0;
      }
      init_machine->u_ack = event->u.TR_Invoke_Req.up_flag;
      init_machine->rcr = 0;
@@ -79,9 +79,7 @@ ROW(INITIATOR_NULL_STATE,
     TR_Invoke_Req,
     event->u.TR_Invoke_Req.tcl == 0,
     {
-     
      msg_destroy(init_machine->invoke);
-     
      init_machine->invoke = wtp_send_invoke(init_machine, event);
     },
     INITIATOR_NULL_STATE)

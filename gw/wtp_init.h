@@ -17,7 +17,7 @@ typedef struct WTPInitMachine WTPInitMachine;
 #include "wtp_send.h"
 
 /*
- * Initiator machine states and initiator WTP machine
+ * Initiator machine states and initiator WTP machine.
  * See file wtp_init_state-decl.h for comments. Note that we must define macro
  * ROW to produce an empty string.
  */
@@ -35,14 +35,14 @@ typedef enum init_states init_states;
  * every separate type.
  */
 struct WTPInitMachine {
-       long mid; 
-       #define INTEGER(name) int name; 
-       #define MSG(name) Msg *name; 
-       #define TIMER(name) Timer *name; 
-       #define ADDRTUPLE(name) WAPAddrTuple *name;
-       #define ENUM(name) init_states name;
-       #define MACHINE(field) field
-       #include "wtp_init_machine-decl.h"
+    long mid; 
+    #define INTEGER(name) int name; 
+    #define MSG(name) Msg *name; 
+    #define TIMER(name) Timer *name; 
+    #define ADDRTUPLE(name) WAPAddrTuple *name;
+    #define ENUM(name) init_states name;
+    #define MACHINE(field) field
+    #include "wtp_init_machine-decl.h"
 };
 
 
