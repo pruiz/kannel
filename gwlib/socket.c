@@ -19,10 +19,6 @@
 
 #include "gwlib.h"
 
-#if !HAVE_INET_ATON || !HAVE_GETNAMEINFO
-#include <arpa/inet.h>
-#endif
-
 
 #ifndef UDP_PACKET_MAX_SIZE
 #define UDP_PACKET_MAX_SIZE (64*1024)
@@ -50,28 +46,28 @@ int inet_aton(char *name, struct in_addr *ap)
 
 #if !HAVE_GETNAMEINFO
 
-int getnameinfo (__const struct sockaddr *__sa,
-		socklen_t __salen,
-		char *__host, size_t __hostlen,
-		char *__serv, size_t __servlen,
-		int __flags)
+int getnameinfo (const struct sockaddr *sa,
+		socklen_t salen,
+		char *host, size_t hostlen,
+		char *serv, size_t servlen,
+		int flags)
 {
 	struct sockaddr_in *sin;
 
-	if (0 != (__flags & ~(NI_NUMERICHOST|NI_NUMERICSERV)))
-		panic(__flags, "fake getnameinfo() only implements NI_NUMERICHOST and NI_NUMERICSERV flags\n");
+	if (flags & ~(NI_NUMERICHOST|NI_NUMERICSERV))
+		panic(flags, "fake getnameinfo() only implements NI_NUMERICHOST and NI_NUMERICSERV flags\n");
 
-	sin = (struct sockaddr_in *) __sa;
-	if (!sin || __salen != sizeof(*sin))
-		panic(0, "fake getnameinfo(): bad __sa/__salen (%p/%d)\n", __sa, __salen);
+	sin = (struct sockaddr_in *) sa;
+	if (!sin || salen != sizeof(*sin))
+		panic(0, "fake getnameinfo(): bad sa/salen (%p/%d)\n", sa, salen);
 	if (sin->sin_family != AF_INET)
 		panic(0, "fake getnameinfo() only supports AF_INET\n");
 
-	if (0 != __host) {
-		snprintf(__host, __hostlen, "%s", inet_ntoa(sin->sin_addr));
+	if (host) {
+		snprintf(host, hostlen, "%s", inet_ntoa(sin->sin_addr));
 	}
-	if (0 != __serv) {
-		snprintf(__serv, __servlen, "%i", ntohs(sin->sin_port));
+	if (serv) {
+		snprintf(serv, servlen, "%i", ntohs(sin->sin_port));
 	}
 	return 0;	/* XXX */
 }

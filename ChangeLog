@@ -1,3 +1,8 @@
+2000-03-29  Richard Braakman  <dark@wapit.com>
+
+	* gwlib/socket.c: Tidied up gethostnameinfo(), removed excessive
+	use of __ in names.
+
 2000-03-30    <Kalle Marjola <rpr@wapit.com>>
 
 	* gwlib/octstr.c: removed wrong assertion from octstr_truncate
