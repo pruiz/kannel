@@ -205,6 +205,12 @@ static void *httpadmin_run(void *arg)
 	client = http2_server_accept_client(httpd);
 	if (client == NULL)
 	    continue;
+	if (is_allowed_ip(ha_allow_ip, ha_deny_ip, http2_socket_ip(client))==0) {
+	    info(0, "HTTP admin tried from denied host <%s>, disconnected",
+		 octstr_get_cstr(http2_socket_ip(client)));
+	    http2_server_close_client(client);
+	    continue;
+	}
 	if ((int)(start_thread(0, httpd_serve, client, 0)) == -1) {
 	    error(0, "Failed to start a new thread to handle HTTP admin command");
 	    http2_server_close_client(client);

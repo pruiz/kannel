@@ -1,5 +1,9 @@
 2000-05-23    <Kalle Marjola <rpr@wapit.com>>
 
+	* gw/bb_http.c: check for allow/deny IP for http admin
+	
+2000-05-23    <Kalle Marjola <rpr@wapit.com>>
+
 	* gwlib/socket.h|c: added host_ip to get, well, host IP. That
 	needed mutex because ntoa operation is not thread-safe, so added
 	socket_init and shutdown, too
