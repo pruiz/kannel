@@ -1,3 +1,7 @@
+2001-04-04  Kalle Marjola  <rpr@wapit.com>
+
+	* gw/smsbox.c: Bugfix. Fixed memory leak in header parsing
+
 2001-04-03  Richard Braakman  <dark@wapit.com>
 
 	* gwlib/fdset.c: When destroying an fdset with active fd's,

@@ -458,6 +458,8 @@ static void get_x_kannel_from_headers(List *headers, Octstr **from,
 		*udh = NULL;
 	    }
 	}
+	octstr_destroy(name);
+	octstr_destroy(val);
     }
 }
 
