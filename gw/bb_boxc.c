@@ -51,6 +51,8 @@ static Octstr *box_deny_ip;
 
 
 static long	boxid = 0;
+extern Mutex *boxid_mutex; 
+
 
 typedef struct _boxc {
     Connection	*conn;
@@ -262,7 +264,9 @@ static Boxc *boxc_create(int fd, Octstr *ip, int ssl)
     boxc->is_wap = 0;
     boxc->load = 0;
     boxc->conn = conn_wrap_fd(fd, ssl);
-    boxc->id = boxid++;		/* XXX  MUTEX! fix later... */
+    mutex_lock(boxid_mutex); 
+    boxc->id = boxid++;
+    mutex_unlock(boxid_mutex);
     boxc->client_ip = ip;
     boxc->alive = 1;
     boxc->connect_time = time(NULL);
