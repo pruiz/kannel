@@ -1,3 +1,8 @@
+Tue Nov 16 13:11:13 1999  Lars Wirzenius  <liw@wapit.com>
+
+	* Massive reorganization of the directory tree. Almost all files
+	moved to subdirectories. Makefile somewhat rewritten.
+
 1999-11-16    <rpr@rpr.wapit.com>
 
 	* bearerbox.c, boxc.c, smsbox.c, smsbox_req.c, smsbox_rq.h,
