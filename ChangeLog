@@ -1,3 +1,11 @@
+2003-04-15  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/smsc/smsc_http.c: harmonized smsc output to be in same style as others.
+      Fixed expected MO parameters to 'username' and 'password' instead of 'user'
+      and 'pass'. Now you can use the smsc_http module to loop messages from MT
+      to MO direction. See new user's guide section.
+    * doc/userguide/userguide.xml: added new 'MT to MO direction switching' 
+      section to illustrate how to use HTTP SMSC module to achive this.
+
 2003-04-14  Alexander Malysh  <a.malysh@centrium.de>
     * gw/smsc/smsc_emi2.c: fixed c&p typo.
 
