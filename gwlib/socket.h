@@ -16,8 +16,6 @@
 typedef int socklen_t;
 #endif
 
-#include "getnameinfo.h"
-
 #include "gwstr.h"
 #include "octstr.h"
 

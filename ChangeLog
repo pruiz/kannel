@@ -1,5 +1,11 @@
 2000-09-14  Lars Wirzenius  <liw@iki.fi>
 
+	* config.h.in, configure.in, configure, gwlib/socket.[ch],
+	gwlib/getnameinfo.h: Killed the getnameinfo implementation. Yet
+	another non-standard function that we don't even refer to anymore.
+
+2000-09-14  Lars Wirzenius  <liw@iki.fi>
+
 	* gwlib/log.[ch]: Removed the `forced' log level, since it is
 	pointless and unused.
 

@@ -26,37 +26,6 @@ static Mutex *inet_mutex;
 #endif
 
 
-#if !HAVE_GETNAMEINFO
-
-int getnameinfo (const struct sockaddr *sa,
-		socklen_t salen,
-		char *host, size_t hostlen,
-		char *serv, size_t servlen,
-		int flags)
-{
-	struct sockaddr_in *sin;
-
-	if (flags & ~(NI_NUMERICHOST|NI_NUMERICSERV))
-		panic(flags, "fake getnameinfo() only implements NI_NUMERICHOST and NI_NUMERICSERV flags\n");
-
-	sin = (struct sockaddr_in *) sa;
-	if (!sin || salen != sizeof(*sin))
-		panic(0, "fake getnameinfo(): bad sa/salen (%p/%d)\n", sa, salen);
-	if (sin->sin_family != AF_INET)
-		panic(0, "fake getnameinfo() only supports AF_INET\n");
-
-	if (host) {
-		snprintf(host, hostlen, "%s", inet_ntoa(sin->sin_addr));
-	}
-	if (serv) {
-		snprintf(serv, servlen, "%i", ntohs(sin->sin_port));
-	}
-	return 0;	/* XXX */
-}
-
-#endif
-
-
 int make_server_socket(int port) {
 	struct sockaddr_in addr;
 	int s;

@@ -252,3 +252,17 @@ Abstract data types, constructors and destructors
 	    void foo_destroy(Foo *);	/* Destroy a Foo */
 	    void foo_destroy_item(void *);
 	    	    	    	    	/* Wrapper, for list_destroy use */
+
+ChangeLog
+
+	We use the file called `ChangeLog' to log changes, not CVS
+	commit entries. CVS entries are not usable by people who don't
+	have CVS access (e.g., they are off-line at the moment, which
+	happens often for laptop users), and are also harder to browse
+	than a single file.
+
+	When writing an entry, please try to make sure the entry is at
+	least somewhat understandable without referring to the actual
+	patch it reflects. This helps immensly those who want to follow
+	Kannel development without having to wade through millions of
+	lines of patches per year.

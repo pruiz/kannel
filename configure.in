@@ -104,9 +104,6 @@ GW_HAVE_TYPE_FROM(sys/socket.h,
 	HAVE_SOCKLEN_T,
 	[Defined if there is a socklen_t in <sys/socket.h>])
 
-GW_HAVE_FUNC_FROM(netdb.h, getnameinfo,
-	HAVE_GETNAMEINFO, [Defined if we have getnameinfo() in <netdb.h>])
-
 dnl DocBook stuff
 
 AC_CHECK_PROG(JADE, jade, jade, :)
