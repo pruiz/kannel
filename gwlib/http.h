@@ -156,8 +156,6 @@ void http_close_proxy(void);
  *
  * XXX these are going away in the future
  */
-int http_get(Octstr *url, List *request_headers, 
-		List **reply_headers, Octstr **reply_body);
 int http_get_real(Octstr *url, List *request_headers, Octstr **final_url,
 		  List **reply_headers, Octstr **reply_body);
 

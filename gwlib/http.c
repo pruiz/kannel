@@ -959,13 +959,15 @@ static HTTPClient *client_create(Connection *conn, Octstr *ip)
 {
     HTTPClient *p;
     
+    debug("gwlib.http", 0, "HTTP: Creating HTTPClient for `%s'.",
+    	  octstr_get_cstr(ip));
     p = gw_malloc(sizeof(*p));
     p->conn = conn;
     p->ip = ip;
     p->state = reading_request_line;
     p->url = NULL;
     p->use_version_1_0 = 0;
-    p->headers = list_create();
+    p->headers = http_create_empty_headers();
     p->body = NULL;
     return p;
 }
@@ -975,13 +977,26 @@ static void client_destroy(void *client)
 {
     HTTPClient *p;
     
+    if (client == NULL)
+    	return;
+
     p = client;
+    debug("gwlib.http", 0, "HTTP: Destroying HTTPClient for `%s'.",
+    	  octstr_get_cstr(p->ip));
     conn_destroy(p->conn);
     octstr_destroy(p->ip);
     octstr_destroy(p->url);
     http_destroy_headers(p->headers);
     octstr_destroy(p->body);
     gw_free(p);
+}
+
+
+static void client_reset(HTTPClient *p)
+{
+    debug("gwlib.http", 0, "HTTP: Resetting HTTPClient for `%s'.",
+    	  octstr_get_cstr(p->ip));
+    p->state = reading_request_line;
 }
 
 
@@ -1047,8 +1062,11 @@ static void receive_request(Connection *conn, void *data)
 	switch (client->state) {
 	case reading_request_line:
     	    line = conn_read_line(conn);
-	    if (line == NULL)
+	    if (line == NULL) {
+		if (conn_eof(conn))
+		    goto error;
 	    	return;
+	    }
 	    ret = parse_request(&client->url, &client->use_version_1_0, 
 	    	    	    	line);
 	    octstr_destroy(line);
@@ -1074,7 +1092,6 @@ static void receive_request(Connection *conn, void *data)
     }
     
 error:
-    conn_destroy(conn);
     client_destroy(client);
 }
 
@@ -1253,13 +1270,12 @@ HTTPClient *http_accept_request(Octstr **client_ip, Octstr **url,
     	return NULL;
     }
 
-    *client_ip = client->ip;
+    *client_ip = octstr_duplicate(client->ip);
     *url = client->url;
     *headers = client->headers;
     *body = client->body;
     *cgivars = parse_cgivars(client->url);
     
-    client->ip = NULL;
     client->url = NULL;
     client->headers = NULL;
     client->body = NULL;
@@ -1291,23 +1307,17 @@ void http_send_reply(HTTPClient *client, int status, List *headers,
     (void) conn_write(client->conn, response);
     octstr_destroy(response);
 
+#if 0 /* conn_flush is broken atm XXX fix me when it's not */
     while (conn_flush(client->conn) == 1)
     	continue;
-#if 0
-/* XXX the conn_register seems to block forever */
+#endif
+
     if (client->use_version_1_0)
     	client_destroy(client);
     else {
-	int ret;
-	client->state = reading_request_line;
-debug("xxx", 0, "foo");
-	ret = 
+    	client_reset(client);
 	conn_register(client->conn, server_fdset, receive_request, client);
-debug("xxx", 0, "ret = %d", ret);
     }
-#else
-    client_destroy(client);
-#endif
 }
 
 
