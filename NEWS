@@ -1,9 +1,103 @@
-NEWS about Kannel: Open Source WAP and SMS Gateway version 1.2.1
+NEWS about Kannel: Open Source WAP and SMS Gateway version 1.3.0
 
-This is a STABLE version. It should be usable for production systems.
-Please do report problems to devel@kannel.3glab.org (the development 
+This is a DEVELOPMENT version. It should be usable for experimentation
+and testing, and is a release candidate for the 1.3 branch. Please do 
+try it out and report problems to devel@kannel.3glab.org (the development 
 mailing list). The bug tracking system is currently offline.
 
+
+Changes since version 1.2.1:
+
+Compatibility breakers:
+
+  * Added initial SMPP v3.4 optional fields support. Still very experimental.
+    Use the 'interface-version = 33' config directive if you don't want to
+    relly on this new code.
+
+  * HTTP servers can bind to specific interfaces now.
+
+  * WTP timer frequence can be set now manually with 'timer-freq' value.
+
+  * EMI2 handling of un-acked msg can be configured via 'wait-ack-expire'
+    directive. See User Guide for more details.
+
+New features:
+
+  * WTP-SAR (segmentation and re-assembly) is now available for the 
+    WAP gateway part. This enables Kannel to function as MMS proxy.
+    This has been tested with several new MMS capable phones.
+
+  * smsbox inbound routing has been added. It allows routing based upon 
+    smsc-id or receiver number rules to specific smsbox instances. This may 
+    be several real smsboxes or even own boxes that act to bearerbox as if 
+    they are smsboxes by using the same message communication interface. This 
+    is usefull for implementing own boxes that act as EMI/UCP or SMPP proxies.
+
+  * iconv support has been added for character encoding. Adds 'alt-charset' 
+    directive for the SMPP smsc group. Use iconv's type representation to 
+    define which charset is used by a specific smsc.
+
+  * HTTP connections are now established in non-blocking mode.
+
+  * Added speed 115200 for AT2 connections if system supports.
+
+  * Protection against malformed PDUs for AT2 has been increased.
+
+  * Added detection of invalid TP-OA address length and logging for AT2.
+
+  * Added National Replacement Codes (NCR) ISO 21 German for german umlauts 
+    to be used with 'alt-charset' directive.
+
+  * Added Siemens SL45 init strings for AT2.
+
+  * Added a WAP packet proxy application, test/wapproxy.c. This may be used
+    to act as a WDP, WTP proxy between WAP client and WAP gateway for 
+    packet analyzation purposes.
+
+  * Allows returning to the 'device-home' URL if 'smart-errors' are activated.
+    This can be used to let the phone go back to a pre-defined URL in case an
+    serious error happens, i.e. HTTP lookup of an URI fails.
+  
+Bugfixes:
+
+  * SMPP thread handling bug fixed.
+
+  * AT2 date encoding bug fixed.
+
+  * HTTP basic auth userid and password handling bug fixed. 
+
+  * Fixed WAP smart-error message bug, when HTTP lookup failed.
+
+  * AT2 init string in Siemens TC35 configuration fixed.
+
+  * Fixed various SSL connection related bugs.
+
+  * DLR race condition due to unlocked list fixed.
+
+  * Fixed memory leak in smsc abstraction layer for restarting smscs.
+
+  * Fixed initial approach for client SDU size to solve the problem with 
+    concatenated WSP requests.
+
+  * SMPP throttling problem fixed.
+
+  * Fixed HTTP queueing bug.
+
+  * Various improvements and fixes in the HTTP routine library.
+
+  * Fixed panics for /store-status calls if no store-file is used.
+  
+  * Fixed difftime calculation to make heartbeat work again.
+
+  * Fixed possible race condition in store file saving.
+
+Development news:
+
+  * We need to think about and rewrite the iconv() character encoding layer.
+    The character encoding should be done in the smsc module abstracted
+    layer and not in the smsc specific module layer. As a base encoding we
+    are going to use latin1.
+         
 
 Changes since version 1.2.0:
 
