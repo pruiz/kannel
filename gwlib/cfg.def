@@ -73,6 +73,9 @@ SINGLE_GROUP(wapbox,
     OCTSTR(log-file)
     OCTSTR(log-level)
     OCTSTR(syslog-level)
+)
+
+SINGLE_GROUP(wtls,
     OCTSTR(certificate-file)
     OCTSTR(privatekey-file)
     OCTSTR(privatekey-password)
