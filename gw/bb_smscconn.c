@@ -92,11 +92,21 @@ void bb_smscconn_killed(void)
 
 void bb_smscconn_sent(SMSCConn *conn, Msg *sms)
 {
+    Msg *mack;
+    
     counter_increase(outgoing_sms_counter);
 
-    /* XXX add write SMS-ACK to sms-store and generate
-     *     smsc-delivered notice */ 
+    /* write ACK to store file */
 
+    mack = msg_create(ack);
+    mack->ack.time = sms->sms.time;
+    mack->ack.id = sms->sms.id;
+    
+    (void) store_save(mack);
+    msg_destroy(mack);
+    
+    /* XXX relay confirmancy message should be generated here */
+    
     log_sms(conn, sms, "Sent SMS");
     msg_destroy(sms);
 }
@@ -111,10 +121,10 @@ void bb_smscconn_send_failed(SMSCConn *conn, Msg *sms, int reason)
 	list_produce(outgoing_sms, sms);
 	break;
     default:
-	/* XXX yell etc. here */
 	/* XXX add write SMS-NACK to sms-store and generate
-	 *     smsc-delivered notice */ 
-
+	 *     smsc-delivered notice
+	 * NOTE: right now, if the sending fails, the message is retried
+	 *   when store is loaded, etc. */ 
 	
 	log_sms(conn, sms, "FAILED Send SMS");
 	msg_destroy(sms);
@@ -125,6 +135,16 @@ void bb_smscconn_send_failed(SMSCConn *conn, Msg *sms, int reason)
 int bb_smscconn_receive(SMSCConn *conn, Msg *sms)
 {
     char *uf;
+
+    /* do some queue control *
+       
+     * if (list_len(incoming_sms) > 200) {
+     *	msg_destroy(sms);
+     *	return -1;
+     * }
+     * else if (list_len(incoming_sms) > 100)
+     *	gwthread_sleep(0.5);
+     */
     
     if (unified_prefix == NULL)
     	uf = NULL;
@@ -149,8 +169,11 @@ int bb_smscconn_receive(SMSCConn *conn, Msg *sms)
 	msg_destroy(sms);
 	return -1;
     }
-
-    /* XXX Add SMS to sms-store, if enabled */
+    sms->sms.sms_type = mo;
+    
+    /* write to store (if enabled) */
+    if (store_save(sms) == -1)
+	return -1;
     
     log_sms(conn, sms, "Receive SMS");
 

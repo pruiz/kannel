@@ -107,6 +107,27 @@ int httpadmin_start(Cfg *config);
 void httpadmin_stop(void);
 
 
+/*-----------------
+ * bb_store.c (SMS storing/retrieval functions)
+ */
+
+/* return number of SMS messages in current store (file) */
+long store_messages(void);
+/* assign ID and save given message to store. Return -1 if save failed */
+int store_save(Msg *msg);
+/* load store from file; delete any messages that have been relayed,
+ * and create a new store file from remaining. Calling this function
+ * might take a while, depending on store size
+ * Return -1 if something fails (bb can then PANIC normally)
+ */
+int store_load(void);
+/* initialize system. Return -1 if fname is baad (too long) */
+int store_init(Octstr *fname);
+/* destroy system, close files */
+void store_shutdown(void);
+
+
+
 /*----------------------------------------------------------------
  * Core bearerbox public functions;
  * used only via HTTP adminstration

@@ -118,6 +118,7 @@ static void signal_handler(int signum)
     } else if (signum == SIGHUP) {
         warning(0, "SIGHUP received, catching and re-opening logs");
         log_reopen();
+	store_load();
     }
 }
 
@@ -297,7 +298,12 @@ static int starter(Cfg *cfg)
 
 	octstr_destroy(log);
     }
-    
+
+    log = cfg_get(grp, octstr_imm("store-file"));
+    if (log != NULL) {
+	store_init(log);
+	octstr_destroy(log);
+    }
 	
     /* if all seems to be OK by the first glimpse, real start-up */
     
@@ -430,6 +436,9 @@ int main(int argc, char **argv)
 
     gwthread_sleep(5.0); /* give time to threads to register themselves */
 
+    if (store_load()== -1)
+	panic(0, "Cannot start with store-file failing");
+    
     info(0, "MAIN: Start-up done, entering mainloop");
     if (bb_status == BB_SUSPENDED) {
 	info(0, "Gateway is now SUSPENDED by startup arguments");
@@ -450,6 +459,7 @@ int main(int argc, char **argv)
     info(0, "All flow threads have died, killing core");
     bb_status = BB_DEAD;
     httpadmin_stop();
+    store_shutdown();
 
 /*    smsc_die(); */
     
@@ -598,7 +608,7 @@ Octstr *bb_print_status(int status_type)
 	    " <p>WDP: received %ld (%ld queued), sent %ld "
 	    "(%ld queued)</p>\n\n"
 	    " <p>SMS: received %ld (%ld queued), sent %ld "
-	    "(%ld queued)</p>\n\n";
+	    "(%ld queued), store size %ld</p>\n\n";
 	footer = "<p>";
     } else if (status_type == BBSTATUS_WML) {
 	frmt = "%s</p>\n\n"
@@ -606,12 +616,14 @@ Octstr *bb_print_status(int status_type)
 	    "   <p>WDP: received %ld (%ld queued)<br/>\n"
 	    "      WDP: sent %ld (%ld queued)</p>\n\n"
 	    "   <p>SMS: received %ld (%ld queued)<br/>\n"
-	    "      SMS: sent %ld (%ld queued)</p>\n\n";
+	    "      SMS: sent %ld (%ld queued)<br/>\n"
+            "      SMS: store size %ld</p>\n\n";
 	footer = "<p>";
     } else {
 	frmt = "%s\n\nStatus: uptime %ldd %ldh %ldm %lds, %s\n\n"
 	    "WDP: received %ld (%ld queued), sent %ld (%ld queued)\n\n"
-	    "SMS: received %ld (%ld queued), sent %ld (%ld queued)\n\n";
+	    "SMS: received %ld (%ld queued), sent %ld (%ld queued), "
+	    "store size %ld\n\n";
 	footer = "";
     }
     
@@ -625,7 +637,8 @@ Octstr *bb_print_status(int status_type)
 	    counter_value(incoming_sms_counter),
 	    list_len(incoming_sms),
 	    counter_value(outgoing_sms_counter),
-	    list_len(outgoing_sms));
+	    list_len(outgoing_sms),
+	    store_messages());
 
     octstr_destroy(version);
     ret = octstr_create(buf);

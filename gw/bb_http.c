@@ -224,8 +224,8 @@ static void httpd_serve(HTTPClient *client, Octstr *url, List *headers,
     octstr_append(final_reply, reply);
     octstr_append_cstr(final_reply, footer);
     
-    debug("bb.http", 0, "Result: '%s'", octstr_get_cstr(final_reply));
-    
+    /* debug("bb.http", 0, "Result: '%s'", octstr_get_cstr(final_reply));
+     */
     http_destroy_headers(headers);
     headers = list_create();
     http_header_add(headers, "Content-Type", content_type);

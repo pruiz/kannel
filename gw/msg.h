@@ -27,6 +27,11 @@ typedef struct {
 	#include "msg-decl.h"
 } Msg;
 
+enum {
+    mo = 0,
+    mt_reply = 1,
+    mt_push = 2
+};
 
 /*
  * Create a new, empty Msg object. Panics if fails.

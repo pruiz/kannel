@@ -555,7 +555,7 @@ error:
 
 static void obey_request_thread(void *arg) 
 {
-    Msg *msg;
+    Msg *msg, *reply_msg;
     Octstr *tmp, *reply;
     URLTranslation *trans;
     Octstr *p;
@@ -579,6 +579,13 @@ static void obey_request_thread(void *arg)
 	    continue;
 	}
     
+	/* create reply message to be sent afterwards */
+	
+	reply_msg = msg_create(ack);
+	reply_msg->ack.time = msg->sms.time;
+	reply_msg->ack.id = msg->sms.id;
+
+
 	trans = urltrans_find(translations, msg->sms.msgdata, 
 	    	    	      msg->sms.smsc_id);
 	if (trans == NULL) {
@@ -597,7 +604,7 @@ static void obey_request_thread(void *arg)
 	     octstr_get_cstr(msg->sms.msgdata),
 	     octstr_get_cstr(msg->sms.sender),
 	     octstr_get_cstr(msg->sms.receiver));
-    
+
 	/*
 	 * now, we change the sender (receiver now 'cause we swap them later)
 	 * if faked-sender or similar set. Note that we ignore if the 
@@ -618,6 +625,7 @@ static void obey_request_thread(void *arg)
 	}
 	octstr_destroy(msg->sms.receiver);
 	msg->sms.receiver = tmp;
+	msg->sms.sms_type = mt_reply;
     
 	/* TODO: check if the sender is approved to use this service */
 
@@ -641,6 +649,8 @@ static void obey_request_thread(void *arg)
 	    if (send_message(trans, msg) < 0)
 		error(0, "request_thread: failed");
 	}
+	write_to_bearerbox(reply_msg); /* implicit msg_destroy */
+
 	msg_destroy(msg);
     }
 }

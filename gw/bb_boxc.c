@@ -94,9 +94,10 @@ static void boxc_receiver(void *arg)
 	     *	   for smsbox connections as many of them listen to same
 	     *     list, but this is better than nothing   -kalle
              */
+	    /*
 	    msg = msg_create(heartbeat);
 	    msg->heartbeat.load = 0;
-	    list_produce(conn->incoming, msg); 
+	    list_produce(conn->incoming, msg); */
 	    break;
 	}
 	if ((msg = msg_unpack(pack))==NULL) {
@@ -107,11 +108,23 @@ static void boxc_receiver(void *arg)
 	}
 	octstr_destroy(pack);
 
-	if ((msg_type(msg) == sms && conn->is_wap == 0)
-	    || (msg_type(msg) == wdp_datagram && conn->is_wap))
+	if (msg_type(msg) == sms && conn->is_wap == 0)
 	{
-	    debug("bb.boxc", 0, 
-		  "boxc_receiver: message from client received");
+	    debug("bb.boxc", 0, "boxc_receiver: sms received");
+
+	    /* XXXX save modifies ID, so if the smsbox uses it, save
+	     *    it FIRST for the reply message!!! */
+	    store_save(msg);
+	    if (msg->sms.sms_type == mt_push) {
+		/* XXX generate ack-message and send it */
+	    }
+
+	    list_produce(conn->outgoing, msg);
+	}
+	else if (msg_type(msg) == wdp_datagram && conn->is_wap)
+	{
+	    debug("bb.boxc", 0, "boxc_receiver: wdp received");
+
 	    list_produce(conn->outgoing, msg);
 	} else {
 	    if (msg_type(msg) == heartbeat) {
@@ -119,6 +132,10 @@ static void boxc_receiver(void *arg)
 		    debug("bb.boxc", 0, "boxc_receiver: heartbeat with "
 			  "load value %ld received", msg->heartbeat.load);
 		conn->load = msg->heartbeat.load;
+	    }
+	    else if (msg_type(msg) == ack) {
+		store_save(msg);
+		debug("bb.boxc", 0, "boxc_receiver: got ack");
 	    }
 	    else
 		warning(0, "boxc_receiver: unknown msg received from <%s>, "

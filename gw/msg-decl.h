@@ -25,8 +25,16 @@ MSG(sms,
 		OCTSTR(msgdata);
 		INTEGER(time);
 		OCTSTR(smsc_id);
+		INTEGER(id);
+		INTEGER(sms_type);
 	})
 
+MSG(ack,
+	{
+		INTEGER(time);
+		INTEGER(id);
+	})
+    
 MSG(wdp_datagram,
 	{
 		OCTSTR(source_address);

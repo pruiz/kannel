@@ -1,3 +1,23 @@
+2001-02-12  Kalle Marjola  <rpr@wapit.com>
+
+	* gw/bb_boxc.c: removed heartbeat message kludge as it caused
+	other problems, had to think this more...
+
+	* gw/bb_http.c: removed debug information of HTTP query result
+	because it caused ankward output 
+
+	* gw/bb_store.c: Added. Handles SMS store 
+
+	* gw/msg-decl.h, gw/msg.h: added new 'ack' message type and new 
+	fields to sms. Name of these can change later.
+
+	* gw/bb_boxc.c, gw/bb_smscconn.c, gw/bearerbox.c, gw/smsbox.c: 
+	implemented first version of SMS storing/retrieval system. 
+	Consumes lots of memory when starting up, so does not work
+	well with checking malloc, will fix that today.
+
+	* gw/*kannel.conf: added (commented-out) store-file row
+
 2001-02-10  Uoti Urpala  <uau@wapit.com>
 
 	* gw/smsbox.c: Fixed bugs in smsbox_req_sendota(), added 'from'
