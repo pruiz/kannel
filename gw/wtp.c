@@ -14,7 +14,8 @@ enum {
     wrong_version,
     illegal_header,
     no_segmentation,
-    memory_error
+    memory_error,
+    no_concatenation
 };
 
 enum {
@@ -43,6 +44,13 @@ enum {
    NORESPONSE = 0x08,
    MESSAGETOOLARGE = 0x09
 };    
+
+enum {
+   body_segment,
+   group_trailer_segment,
+   transmission_trailer_segment,
+   single_message
+};
 
 /*
  * Global data structures:
@@ -96,7 +104,7 @@ static int message_header_fixed(char octet);
 
 static char deduce_pdu_type(char octet);
 
-static int single_message(char octet);
+static int message_type(char octet);
 
 static int protocol_version(char octet);
 
@@ -107,7 +115,17 @@ static WTPEvent *unpack_abort(long tid, char first_octet, char fourth_octet);
 static WTPEvent *unpack_invoke(Msg *msg, long tid, char first_octet, 
        char fourth_octet);
 
+static WTPEvent *unpack_segmented_invoke(long tid, char first_octet, 
+       char fourth_octet);
+
+static WTPEvent *unpack_negative_ack(long tid, char octet);
+
 static void tell_about_error(int type, WTPEvent *event);
+
+static int tpi_short(char octet);
+
+static WTPEvent *unpack_invoke_flags(WTPEvent *event, long tid, char first_octet, 
+                                     char fourth_octet);
 
 /******************************************************************************
  *
@@ -122,8 +140,8 @@ WTPEvent *wtp_event_create(enum event_name type) {
 	event->type = type;
 	event->next = NULL;
 	
-	#define INTEGER(name) p->name=0
-	#define OCTSTR(name) p->name=octstr_create_empty();\
+	#define INTEGER(name) p->name = 0
+	#define OCTSTR(name) p->name = octstr_create_empty();\
                              if (p->name == NULL)\
                                 goto error
 	#define EVENT(type, field) { struct type *p = &event->type; field } 
@@ -375,20 +393,19 @@ WTPMachine *wtp_machine_find_or_create(Msg *msg, WTPEvent *event){
 
 /*
  * Transfers data from fields of a message to fields of WTP event. User data has
- * the host byte order. Updates the log and sends protocol error messages.
+ * the host byte order. Updates the log and sends protocol error messages. Re-
+ * assembles segmented messages, too.
  */
 
 WTPEvent *wtp_unpack_wdp_datagram(Msg *msg){
 
          WTPEvent *event = NULL;
+
          char first_octet,
               fourth_octet,
-              this_octet,
               pdu_type;
  
-         int tid,
-             tpi_length_type,
-             tpi_length;
+         long tid;
 
          if (octstr_len(msg->wdp_datagram.user_data) < 3){
             tell_about_error(memory_error, event);
@@ -398,81 +415,60 @@ WTPEvent *wtp_unpack_wdp_datagram(Msg *msg){
          tid = deduce_tid(msg);
          first_octet = octstr_get_char(msg->wdp_datagram.user_data, 0);
          pdu_type = deduce_pdu_type(first_octet);
-         
-         if (message_header_fixed(first_octet)){
+
+         switch (pdu_type){
 /*
- * Message type was invoke
+ * Message type cannot be result, because we are a server.
  */
-            if (pdu_type == INVOKE){
+                case ERRONEOUS: case RESULT: case SEGMENTED_RESULT:
+                     tell_about_error(illegal_header, event);
+                     return NULL;
+                break;
 
-               fourth_octet = octstr_get_char(msg->wdp_datagram.user_data, 3);
-               if (fourth_octet == -1){
-                  tell_about_error(memory_error, event);
-                  return NULL;
-               }
-               return unpack_invoke(msg, tid, first_octet, fourth_octet);
-            }
-/*
- * Message type is supposed to be result. This is impossible, so we have an
- * illegal header.
- */
-            if (pdu_type == RESULT){
-               tell_about_error(illegal_header, event);
-               return NULL;
-            }
+                case NOT_ALLOWED:
+                     tell_about_error(no_concatenation, event);
+                     debug(0, "WTP: pdu type was %d", pdu_type);
+                     return NULL;
+                break;
+       
+	        case INVOKE:
+                     fourth_octet = octstr_get_char(msg->wdp_datagram.user_data, 3);
+                     if (fourth_octet == -1){
+                         tell_about_error(memory_error, event);
+                         return NULL;
+                     }
+                     return unpack_invoke(msg, tid, first_octet, fourth_octet);
+               break;
 
-            if (pdu_type == ACK){
-               return unpack_ack(tid, first_octet);
-            }
+               case ACK:
+                    return unpack_ack(tid, first_octet);
+               break;
 
-	    if (pdu_type == ABORT){
-               fourth_octet = octstr_get_char(msg->wdp_datagram.user_data, 4);
-               if (fourth_octet == -1){
-                  tell_about_error(memory_error, event);
-                  return NULL;
-               }
-               return unpack_abort(tid, first_octet, fourth_octet);
-            }
+	       case ABORT:
+                    fourth_octet = octstr_get_char(msg->wdp_datagram.user_data, 
+                                   4);
+                    if (fourth_octet == -1){
+                       tell_about_error(memory_error, event);
+                       return NULL;
+                    }
+                    return unpack_abort(tid, first_octet, fourth_octet);
+               break;
 
-/*
- * WDP does segmentation.
- */
-            if (pdu_type == SEGMENTED_INVOKE || pdu_type == SEGMENTED_RESULT ||
-                pdu_type == NEGATIVE_ACK){
-	       tell_about_error(no_segmentation, event);
-               return NULL; 
-            }
-
-            if (pdu_type == -1){
-               tell_about_error(illegal_header, event);
-               return NULL;
-            } 
-/*
- * Message is of variable length. This is possible only when we are receiving
- * an invoke message. The feature remains to be implemented.
- */
-         } /* if message_header fixed true */
-         else {
-           this_octet = fourth_octet = octstr_get_char(
-                        msg->wdp_datagram.user_data, 4);
-           tpi_length_type = this_octet>>2&1;
-/*
- * TPI can be long
- */
-           if (tpi_length_type == 1){           
-               tpi_length = 1;
-           } else {
-/* or short*/
-               tpi_length = 0;
-           } /* if tpi_length_type */
-
-           debug(0, "WTP: unpack_wdp_datagram: variable headers not implemented");
-           return NULL;
-	 } /* if message_header_fixed false */   
-	 
-	 panic(0, "WTP: this should never be reached or else there's a return statement missing here in " __FILE__);
-	 return NULL; /* this is an assumption */
-} /* function*/
+               case SEGMENTED_INVOKE:
+                    fourth_octet = octstr_get_char(msg->wdp_datagram.user_data, 
+                                   4);
+                    if (fourth_octet == -1){
+                       tell_about_error(memory_error, event);
+                       return NULL;
+                    }
+                    return unpack_segmented_invoke(tid, first_octet, fourth_octet);
+              break;
+                  
+              case NEGATIVE_ACK:
+                   return unpack_negative_ack(tid, first_octet);
+             break;
+         } /* switch */
+} /* function */
 
 /*
  * Feed an event to a WTP state machine. Handle all errors yourself, do not
@@ -669,8 +665,9 @@ static WTPMachine *wtp_machine_create_empty(void){
 }
 
 /*
- * Create a new WTPMachine for a given transaction, identified by the
- * five-tuple in the arguments.
+ * Create a new WTPMachine for a given transaction, identified by the five-tuple 
+ * in the arguments. In addition, update the transaction class field of the 
+ * machine.
  */
 WTPMachine *wtp_machine_create(Octstr *source_address, 
            long source_port, Octstr *destination_address, 
@@ -837,7 +834,7 @@ static char deduce_pdu_type(char octet){
        }
 }
 
-static int single_message(char octet){
+static int message_type(char octet){
 
        char this_octet,
             gtr,
@@ -848,10 +845,14 @@ static int single_message(char octet){
        this_octet = octet;
        ttr = this_octet>>1&1;
 
-       if (gtr == 0 || ttr == 0)
-	  return 0;  
-       else
-          return 1;
+       if (gtr == 1 && ttr == 1)
+	  return single_message;  
+       if (gtr == 0 && ttr == 0)
+          return body_segment;
+       if (gtr == 1 && ttr == 0)
+          return group_trailer_segment;
+       if (gtr == 0 && ttr == 1)
+          return transmission_trailer_segment;
 }
 
 static int protocol_version(char octet){
@@ -908,7 +909,7 @@ WTPEvent *unpack_abort(long tid, char first_octet, char fourth_octet){
 
 WTPEvent *unpack_invoke(Msg *msg, long tid, char first_octet, char fourth_octet){
 
-         WTPEvent *event;
+         static WTPEvent *event = NULL;
          char this_octet,
               tcl;
 
@@ -919,34 +920,30 @@ WTPEvent *unpack_invoke(Msg *msg, long tid, char first_octet, char fourth_octet)
             return NULL;
          }   
 
-         if (!single_message(first_octet)){
-            tell_about_error(no_segmentation, event);
+         if (message_type(first_octet) == body_segment){
+            debug(0, "WTP: Got body segment");
+            msg_dump(msg);
             return NULL;
 	 }
 
+         if (message_type(first_octet) == group_trailer_segment){
+            debug(0, "WTP: Got the last segment of the group");
+            return NULL;
+	 }
+
+         if (message_type(first_octet) == transmission_trailer_segment){
+            debug(0, "WTP: Got the last segment of the message");
+            return NULL;
+	 }
+ 
          if (protocol_version(fourth_octet) != CURRENT){
             tell_about_error(wrong_version, event);
             return NULL;
          }
 
-         this_octet = fourth_octet;
-         tcl = this_octet&3; 
-         if (tcl > 2){
-            tell_about_error(illegal_header, event);
-            return NULL;
-         }
-
-         event->RcvInvoke.tid = tid;
-         event->RcvInvoke.rid = first_octet&1;
-         this_octet = fourth_octet;               
-         event->RcvInvoke.tid_new = this_octet>>5&1;
-         this_octet = fourth_octet;
-         event->RcvInvoke.up_flag = this_octet>>4&1;
-         this_octet = fourth_octet;
-         event->RcvInvoke.tcl = tcl; 
- 
+         event = unpack_invoke_flags(event, tid, first_octet, fourth_octet);
 /*
- * At last, the message itself. We remove the header.
+ * Remove the unpacked WTP header.
  */
          octstr_delete(msg->wdp_datagram.user_data, 0, 4);
          event->RcvInvoke.user_data = msg->wdp_datagram.user_data; 
@@ -992,9 +989,58 @@ static void tell_about_error(int type, WTPEvent *event){
                 gw_free(event);
                 error(0, "WTP: No datagram received");
            break;
+
+           case no_concatenation:
+                free(event);
+                error(0, "WTP: No concatenation supported");
+           break;
      }
 }
 
+static WTPEvent *unpack_segmented_invoke(long tid, char first_octet, 
+       char fourth_octet){
+
+       debug(0, "WTP: got a segmented invoke package");
+       return NULL;
+}
+
+static WTPEvent *unpack_negative_ack(long tid, char octet){
+
+       debug(0, "WTP: got a negative ack");
+       return NULL;
+}
+
+static int tpi_short(char octet){
+       
+       return octet>>2&1;
+}
+
+static WTPEvent *unpack_invoke_flags(WTPEvent *event, long tid, char first_octet, 
+                                     char fourth_octet){
+
+         char this_octet,
+              tcl;
+
+         this_octet = fourth_octet;
+
+         tcl = this_octet&3; 
+         if (tcl > 2){
+            tell_about_error(illegal_header, event);
+            return NULL;
+         }
+
+         event->RcvInvoke.tid = tid;
+         event->RcvInvoke.rid = first_octet&1;
+         this_octet = fourth_octet;               
+         event->RcvInvoke.tid_new = this_octet>>5&1;
+         this_octet = fourth_octet;
+         event->RcvInvoke.up_flag = this_octet>>4&1;
+         this_octet = fourth_octet;
+         event->RcvInvoke.tcl = tcl; 
+
+         return event;
+}
+ 
 /*****************************************************************************/
 
 

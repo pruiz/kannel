@@ -36,7 +36,7 @@ typedef struct WTPEvent WTPEvent;
  */
 
 enum {
-
+     ERRONEOUS = -0x01,
      NOT_ALLOWED = 0x00,
      INVOKE = 0x01,
      RESULT = 0x02,
