@@ -1,3 +1,8 @@
+2003-01-04  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/bb_store.c: fixed possible race conditioning in store_save().
+      Thanks to Alexander for pointing this out and providing a patch.
+      [Msg-ID: <200301040008.44151.a.malysh@centrium.de>]
+
 2003-01-02  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/smsc/smsc_smpp.c: fixed typo from last commit.
     * gwlib/charset.c: fixed compiler warning.
