@@ -353,11 +353,11 @@ error:
 	return -1;
 }
 
-int emi_submit_msg(SMSCenter *smsc, MSG *msg) {
+int emi_submit_msg(SMSCenter *smsc, Msg *msg) {
 	return -1;
 }
 
-int emi_receive_msg(SMSCenter *smsc, MSG **msg) {
+int emi_receive_msg(SMSCenter *smsc, Msg **msg) {
 	return -1;
 }
 

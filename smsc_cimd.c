@@ -511,11 +511,11 @@ error:
 }
 
 
-int cimd_submit_msg(SMSCenter *smsc, MSG *msg) {
+int cimd_submit_msg(SMSCenter *smsc, Msg *msg) {
 	return -1;
 }
 
-int cimd_receive_msg(SMSCenter *smsc, MSG **msg) {
+int cimd_receive_msg(SMSCenter *smsc, Msg **msg) {
 	return -1;
 }
 

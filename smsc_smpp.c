@@ -432,11 +432,167 @@ error:
 	return -1;
 }
 
-int smpp_submit_msg(SMSCenter *smsc, MSG *msg) {
+int smpp_submit_msg(SMSCenter *smsc, Msg *msg) {
+
+
+	struct smpp_pdu *pdu = NULL;
+	struct smpp_pdu_submit_sm *submit_sm = NULL;
+
+	/* Validate *msg. */
+	if(smsc == NULL) goto error;
+	if(msg == NULL) goto error;
+
+	/* If we cannot really send yet, push message to
+	   smsc->unsent_mt where it will stay until
+	   smpp_pdu_act_bind_transmitter_resp is called. */
+
+	/* Push a SUBMIT_SM PDU on the smsc->fifo_t_out fifostack. */
+	pdu = pdu_new();
+	if(pdu == NULL) goto error;
+	memset(pdu, 0, sizeof(struct smpp_pdu));
+
+	submit_sm = malloc(sizeof(struct smpp_pdu_submit_sm));
+	if(submit_sm == NULL) goto error;
+	memset(submit_sm, 0, sizeof(struct smpp_pdu_submit_sm));
+
+	if(msg_type(msg) == plain_sms) {
+
+		submit_sm->esm_class = 0;
+		submit_sm->data_coding = 3;
+
+		strncpy(submit_sm->source_addr, octstr_get_cstr(msg->plain_sms.sender), 21);
+		strncat(submit_sm->dest_addr, octstr_get_cstr(msg->plain_sms.receiver)+2, 21);
+
+		submit_sm->sm_length = octstr_len(msg->plain_sms.text);
+		octstr_get_many_chars(submit_sm->short_message, msg->plain_sms.text, 0, 160);
+		charset_iso_to_smpp(submit_sm->short_message);
+	
+	} else if(msg_type(msg) == smart_sms) {
+
+		if(msg->smart_sms.flag_8bit == 1) {
+			/* As per GSM 03.38. */
+			submit_sm->esm_class = 67;
+		}
+
+		if(msg->smart_sms.flag_udh == 1) {
+			/* As per GSM 03.38. */
+			submit_sm->data_coding = 245;
+		}
+
+		strncpy(submit_sm->source_addr, octstr_get_cstr(msg->smart_sms.sender), 21);
+		strncat(submit_sm->dest_addr, octstr_get_cstr(msg->smart_sms.receiver)+2, 21);
+
+		submit_sm->sm_length = octstr_len(msg->smart_sms.udhdata) + 
+			octstr_len(msg->smart_sms.msgdata);
+
+		octstr_get_many_chars(submit_sm->short_message, msg->smart_sms.udhdata, 0, 160);
+
+		octstr_get_many_chars(
+			submit_sm->short_message + octstr_len(msg->smart_sms.udhdata),
+			msg->smart_sms.msgdata, 0, 160 - octstr_len(msg->smart_sms.udhdata));
+
+		charset_iso_to_smpp(submit_sm->short_message);
+
+	} else {
+		error(0, "smpp_submit_sms: Msg is WRONG TYPE");
+		goto error;
+	}
+
+	submit_sm->source_addr_npi = GSM_ADDR_NPI_UNKNOWN;
+	submit_sm->source_addr_ton = GSM_ADDR_TON_NETWORKSPECIFIC;
+
+	/* Notice that the +2 is to get rid of the 00 start. */
+	submit_sm->dest_addr_npi = GSM_ADDR_NPI_E164;
+	submit_sm->dest_addr_ton = GSM_ADDR_TON_INTERNATIONAL;
+
+	pdu->id = SMPP_SUBMIT_SM;
+	pdu->status = 0;
+	pdu->sequence_no = smsc->seq_t++;
+	pdu->message_body = submit_sm;
+	pdu->length = 16 + 
+		strlen(submit_sm->service_type) + 1 +
+		1 + 1 +
+		strlen(submit_sm->source_addr) + 1 +
+		1 + 1 +
+		strlen(submit_sm->dest_addr) + 1 +
+		1 + 1 + 1 +
+		strlen(submit_sm->schedule_delivery_time) + 1 +
+		strlen(submit_sm->validity_period) + 1 +
+		1 + 1 + 1 + 1 + 1 +
+		submit_sm->sm_length + 1;
+
+	if( smsc->smpp_t_state == SMPP_STATE_BOUND ) {
+		/* The message can be sent immediately. */
+		fifo_push(smsc->fifo_t_out, pdu);
+	} else {
+		/* The message has to be queued and sent
+	   	   upon receiving a BIND_TRANSMITTER_RESP. */
+		fifo_push(smsc->unsent_mt, pdu);
+	}
+
+	return 1;
+
+error:
 	return -1;
 }
 
-int smpp_receive_msg(SMSCenter *smsc, MSG **msg) {
+int smpp_receive_msg(SMSCenter *smsc, Msg **msg) {
+
+	Msg *newmsg = NULL;
+	struct smpp_pdu *pdu = NULL;
+	struct smpp_pdu_deliver_sm *deliver_sm = NULL;
+	char *newnum = NULL;
+
+	/* Pop a SMSMessage message from the MSG_MO stack. */
+	if( fifo_pop(smsc->received_mo, &pdu) == 1 ) {
+
+		deliver_sm = (struct smpp_pdu_deliver_sm*) pdu->message_body;
+
+		/* Change the number format on msg->sender. */
+		newnum = malloc(strlen(deliver_sm->source_addr)+1);
+		if(newnum==NULL) goto error;
+		strcpy(newnum, deliver_sm->source_addr);
+		strcpy(deliver_sm->source_addr, "00");
+		strncat(deliver_sm->source_addr, newnum, sizeof(deliver_sm->source_addr)-2);
+		free(newnum);
+
+		if( (deliver_sm->esm_class == 67) || (deliver_sm->data_coding == 245) ) {
+
+			newmsg = msg_create(smart_sms);
+			if(newmsg==NULL) goto error;
+
+			newmsg->smart_sms.flag_8bit = 1;
+			newmsg->smart_sms.flag_udh = 1;
+
+			newmsg->smart_sms.receiver = octstr_create(deliver_sm->dest_addr);
+			newmsg->smart_sms.sender = octstr_create(deliver_sm->source_addr);
+			newmsg->smart_sms.msgdata = octstr_create(deliver_sm->short_message);
+
+		} else if( deliver_sm->esm_class == 3 ) {
+
+			newmsg = msg_create(plain_sms);
+			if(newmsg==NULL) goto error;
+
+			newmsg->plain_sms.receiver = octstr_create(deliver_sm->dest_addr);
+			newmsg->plain_sms.sender = octstr_create(deliver_sm->source_addr);
+			newmsg->plain_sms.text = octstr_create(deliver_sm->short_message);
+
+		} else {
+
+			debug(0, "problemss....");
+			newmsg = NULL;
+			
+		}
+
+		*msg = newmsg;
+
+		return 1;
+	}
+
+	return 0;
+error:
+	error(errno, "smpp_receive_smsmessage: error");
+	msg_destroy(newmsg);
 	return -1;
 }
 
@@ -655,7 +811,7 @@ static int fifo_pop(fifostack *fifo, smpp_pdu **pdu) {
 	*pdu = fifo->right;
 
 	/* If this was the last PDU and the fifostack is now empty. */
-	if(fifo->right->left == NULL) {
+	if((fifo->right)->left == NULL) {
 		fifo->right = NULL;
 		fifo->left = NULL;
 	} else {
@@ -1406,8 +1562,6 @@ error:
 static int pdu_act_bind_transmitter_resp(SMSCenter *smsc, smpp_pdu *pdu) {
 
 	struct smpp_pdu *newpdu = NULL;
-	struct smpp_pdu_submit_sm *submit_sm = NULL;
-	SMSMessage *msg = NULL;
 
 	/* Validate *msg. */
 	if(smsc == NULL) goto error;
@@ -1418,50 +1572,8 @@ static int pdu_act_bind_transmitter_resp(SMSCenter *smsc, smpp_pdu *pdu) {
 	/* Process any messages that were sent through the HTTP
 	   interface while the transmitter connection was not
 	   bound. */
-	while( fifo_pop_smsmessage(smsc->unsent_mt, &msg) == 1 ) {
-
-		/* Push a SUBMIT_SM PDU on the smsc->fifo_t_out fifostack. */
-		newpdu = pdu_new();
-		if(newpdu == NULL) goto error;
-		memset(newpdu, 0, sizeof(struct smpp_pdu));
-
-		submit_sm = malloc(sizeof(struct smpp_pdu_submit_sm));
-		if(submit_sm == NULL) goto error;
-		memset(submit_sm, 0, sizeof(struct smpp_pdu_submit_sm));
-
-		strncpy(submit_sm->source_addr, msg->sender, 21);
-		submit_sm->source_addr_npi = GSM_ADDR_NPI_UNKNOWN;
-		submit_sm->source_addr_ton = GSM_ADDR_TON_NETWORKSPECIFIC;
-
-		/* Notice that the +2 is to get rid of the 00 start. */
-		strncat(submit_sm->dest_addr, msg->receiver+2, 21);
-		submit_sm->dest_addr_npi = GSM_ADDR_NPI_E164;
-		submit_sm->dest_addr_ton = GSM_ADDR_TON_INTERNATIONAL;
-
-		submit_sm->data_coding = 3;
-
-		submit_sm->sm_length = octstr_len(msg->text);
-		octstr_get_many_chars(submit_sm->short_message, msg->text, 0, 160);
-		charset_iso_to_smpp(submit_sm->short_message);
-
-		newpdu->id = SMPP_SUBMIT_SM;
-		newpdu->status = 0;
-		newpdu->sequence_no = smsc->seq_t++;
-		newpdu->message_body = submit_sm;
-		newpdu->length = 16 + 
-			strlen(submit_sm->service_type) + 1 +
-			1 + 1 +
-			strlen(submit_sm->source_addr) + 1 +
-			1 + 1 +
-			strlen(submit_sm->dest_addr) + 1 +
-			1 + 1 + 1 +
-			strlen(submit_sm->schedule_delivery_time) + 1 +
-			strlen(submit_sm->validity_period) + 1 +
-			1 + 1 + 1 + 1 + 1 +
-			submit_sm->sm_length + 1;
-
+	while( fifo_pop(smsc->unsent_mt, &newpdu) == 1 ) {
 		fifo_push(smsc->fifo_t_out, newpdu);
-
 	}
 
 	return 0;
@@ -1561,8 +1673,6 @@ static int pdu_encode_submit_sm(smpp_pdu* pdu, Octstr** str) {
 	   this is the last variable... */
 	memcpy(where, submit_sm->short_message, submit_sm->sm_length);
 
-/*	smpp_append_cstr(&where, &left, submit_sm->short_message); */
-
 	newstr = octstr_create_from_data(data, length);
 
 	*str = newstr;
@@ -1602,8 +1712,6 @@ static int pdu_act_deliver_sm(SMSCenter *smsc, smpp_pdu *pdu) {
 	struct smpp_pdu_deliver_sm *deliver_sm = NULL;
 	struct smpp_pdu_deliver_sm_resp *deliver_sm_resp = NULL;
 
-	SMSMessage *smsmsg = NULL;
-
 	/* If DELIVER_SM was sent to acknowledge that the terminal
 	   has received the message, ignore. */
 	deliver_sm = (struct smpp_pdu_deliver_sm*) pdu->message_body;
@@ -1612,14 +1720,8 @@ static int pdu_act_deliver_sm(SMSCenter *smsc, smpp_pdu *pdu) {
 	/* Convert message from the Default Charset to ISO-8859-1. */
 	charset_smpp_to_iso(deliver_sm->short_message);
 
-	/* Convert the PDU into a SMSMessage structure. */
-	smsmsg = smsmessage_construct(
-		deliver_sm->source_addr, 
-		deliver_sm->dest_addr,
-		octstr_create_from_data(deliver_sm->short_message, deliver_sm->sm_length));
-
 	/* Push the SMSMessage structure on the smsc->received_mo fifostack. */
-	fifo_push_smsmessage(smsc->received_mo, smsmsg);
+	fifo_push(smsc->received_mo, pdu);
 
 	/* Push a DELIVER_SM_RESP structure on the smsc->fifo_r_out fifostack. */
 	newpdu = pdu_new();

@@ -158,10 +158,10 @@ int fake_receive_smsmessage(SMSCenter *smsc, SMSMessage **msg) {
 	return 1;
 }
 
-int fake_submit_msg(SMSCenter *smsc, MSG *msg) {
+int fake_submit_msg(SMSCenter *smsc, Msg *msg) {
 	return -1;
 }
 
-int fake_receive_msg(SMSCenter *smsc, MSG **msg) {
+int fake_receive_msg(SMSCenter *smsc, Msg **msg) {
 	return -1;
 }
