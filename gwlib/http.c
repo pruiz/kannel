@@ -3200,11 +3200,15 @@ void http_header_dump(List *headers)
 void http_cgivar_dump(List *cgiargs)
 {
     HTTPCGIVar *v;
+    long i, len;
 
     gwlib_assert_init();
 
-    debug("gwlib.http", 0, "Dumping %ld cgi variables:", gwlist_len(cgiargs));
-    while ((v = gwlist_extract_first(cgiargs)) != NULL) {
+    len = gwlist_len(cgiargs);
+
+    debug("gwlib.http", 0, "Dumping %ld cgi variables:", len);
+    for (i = 0; i < len; i++) {
+        v = gwlist_get(cgiargs, i);
         octstr_dump(v->name, 0);
         octstr_dump(v->value, 0);
     }
