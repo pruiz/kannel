@@ -1207,6 +1207,10 @@ static struct packet *packet_encode_message(Msg *msg)
 
     gw_assert(msg != NULL);
     gw_assert(msg->type == sms);
+    gw_assert(msg->sms.receiver != NULL);
+
+    if (msg->sms.sender == NULL)
+        msg->sms.sender = octstr_create("");
 
     if (!parm_valid_address(msg->sms.receiver)) {
         warning(0, "cimd2_submit_msg: non-digits in "
@@ -1227,7 +1231,7 @@ static struct packet *packet_encode_message(Msg *msg)
     packet_add_address_parm(packet, P_DESTINATION_ADDRESS, msg->sms.receiver);
 
     /* We used to also set the originating address here, but CIMD2
-    	 * interprets such numbers as a sub-address to our connection
+     * interprets such numbers as a sub-address to our connection
      * number (so if the connection is "400" and we fill in "600"
      * as the sender number, the user sees "400600".  Since most
      * of the SMSC protocols ignore the sender field, we just ignore

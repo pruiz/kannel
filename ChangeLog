@@ -1,5 +1,10 @@
 2001-05-04  Richard Braakman  <dark@wapit.com>
 
+	* gw/smsc_cimd2.c: Made packet_encode_message() cope if the
+        sender field is not set.
+
+2001-05-04  Richard Braakman  <dark@wapit.com>
+
 	* configure.in, configure: Made libxml version check require
 	2.2.5 again, and added some output about the check.
 
