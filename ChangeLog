@@ -1,3 +1,8 @@
+2003-04-29  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/smsc/smsc_emi2.c: login operation 60 had a hard timeout of 30 sec.
+      Some SMSC may need longer to ACK the login, so use the 'wait-ack' time
+      value here too in case it's larger then 30 sec.
+
 2003-04-25  Alexander Malysh  <a.malysh@centrium.de>
     * gw/smsc/smsc_smpp.c: fixed cheking of esm_class for DLR's.
       Following SMPP v.3.4. spec., we should check only bits 2-5.
