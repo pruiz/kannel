@@ -223,6 +223,51 @@ Octstr *parse_get_nul_string(ParseContext *context)
     return result;
 }
 
+Octstr *parse_get_line(ParseContext *context)
+{
+    Octstr *result;
+    long pos;
+
+    gw_assert(context != NULL);
+
+    pos = octstr_search_char(context->data, '\n', context->pos);
+    if (pos < 0 || pos >= context->limit) {
+        context->error = 1;
+        return NULL;
+    }
+
+    result = octstr_copy(context->data, context->pos, pos - context->pos);
+    context->pos = pos + 1;
+
+    return result;
+}
+
+Octstr *parse_get_seperated_block(ParseContext *context, Octstr *seperator)
+{
+    Octstr *result;
+    long spos, epos;
+
+    gw_assert(context != NULL);
+    gw_assert(seperator != NULL);
+
+    spos = octstr_search(context->data, seperator, context->pos);
+    if (spos < 0 || spos >= context->limit) {
+        context->error = 1;
+        return NULL;
+    }
+    epos = octstr_search(context->data, seperator, spos + octstr_len(seperator));
+    if (epos < 0 || epos >= context->limit) {
+        context->error = 1;
+        return NULL;
+    }
+
+    spos = spos + octstr_len(seperator) + 1;
+    result = octstr_copy(context->data, spos, epos - spos);
+    context->pos = epos;
+
+    return result;
+}
+
 Octstr *parse_get_rest(ParseContext *context)
 {
     Octstr *rest;

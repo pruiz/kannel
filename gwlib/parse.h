@@ -88,7 +88,6 @@ void parse_skip_to_limit(ParseContext *context);
  */
 int parse_skip_to(ParseContext *context, long pos);
 
-
 /*
  * Return the next octet, but do not skip over it.
  * If already at the limit, return -1 and set the error flag.
@@ -125,11 +124,26 @@ unsigned long parse_get_uintvar(ParseContext *context);
 Octstr *parse_get_nul_string(ParseContext *context);
 
 /*
+ * Look for a EOL-terminated line starting at the current offset,
+ * and return it (without the EOL) as an Octstr.  Skip forward past
+ * the EOL.  If there is no EOL, return NULL and set the error flag.
+ */
+Octstr *parse_get_line(ParseContext *context);
+
+/*
+ * Look for an Octstr block that is between two seperators defined by
+ * the seperator Octstr. Return the Octstr between the seperators and
+ * move the parsing context up before the last of the two seperators. 
+ * So the last seperator is next in the parsing scope. If there are
+ * no two seperators in the parsing scope return NULL.
+ */
+Octstr *parse_get_seperated_block(ParseContext *context, Octstr *seperator);
+
+/*
  * Return unparsed content. This should be used only after all 
  * headers are parsed (and the headers and content are stored in
  * same octstr).
  */
- 
 Octstr *parse_get_rest(ParseContext *context);
 
 #endif
