@@ -1,3 +1,7 @@
+2005-03-09  Alexander Malysh <amalysh at kannel.org>
+    * gw/bb_smscconn.c, gw/smscconn.c: fixed memleaks in handling of
+      splitted messages.
+
 2005-03-08  Stipe Tolj  <stolj@wapme.de> 
     * wap/wtp_resp.h: adding patch from Igor to support larger objects
       via WTP SAR segments. Thanks to Igor for providing the patch and

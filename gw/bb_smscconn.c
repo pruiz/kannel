@@ -215,6 +215,7 @@ void bb_smscconn_sent(SMSCConn *conn, Msg *sms, Octstr *reply)
 {
     if (sms->sms.split_parts != NULL) {
         handle_split(conn, sms, SMSCCONN_SUCCESS);
+        octstr_destroy(reply);
         return;
     }
     
@@ -250,6 +251,7 @@ void bb_smscconn_send_failed(SMSCConn *conn, Msg *sms, int reason, Octstr *reply
 {
     if (sms->sms.split_parts != NULL) {
         handle_split(conn, sms, reason);
+        octstr_destroy(reply);
         return;
     }
     

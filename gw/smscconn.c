@@ -546,15 +546,12 @@ int smscconn_send(SMSCConn *conn, Msg *msg)
                  * bb_smscconn_XXX().
                  */
                 split->status = SMSCCONN_FAILED_REJECTED;
-                while (++i < parts_len) {
-                    msg_destroy(gwlist_get(parts, i));
-                    counter_decrease(split->parts_left);
-                }
+                counter_increase_with(split->parts_left, -(parts_len - i));
                 warning(0, "Could not send all parts of a split message");
                 break;
             }
         }
-        gwlist_destroy(parts, NULL);
+        gwlist_destroy(parts, msg_destroy_item);
     }
     mutex_unlock(conn->flow_mutex);
     return ret;
