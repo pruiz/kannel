@@ -1,3 +1,8 @@
+2005-03-01 Andreas Fink <afink@gni.ch>
+    * gw/smsc/smsc_at.c: be more friendly to modems which
+      are not ready after opening serial port or after AT&F.
+      Helps Ericsson T300
+
 2005-03-01 Aarno Syvanen <as@gni.ch>
     * gw/smsc/smsc_at.c: Fixed error messages in "slow modem start patch"
 

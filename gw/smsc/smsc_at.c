@@ -447,10 +447,21 @@ int	at2_init_device(PrivAT2data *privdata)
     	}
     }
 
-    if (at2_send_modem_command(privdata, "ATE0", 0, 0) == -1)
-        return -1;
+    at2_flush_buffer(privdata);
+
+    /* check if the modem responded */
+    if (at2_send_modem_command(privdata, "ATE0", 0, 0) == -1) {
+        error(0, "AT2[%s]: Wrong or no answer to ATE0. Trying again",
+              octstr_get_cstr(privdata->name));
+      if (at2_send_modem_command(privdata, "ATE0", 0, 0) == -1) {
+            error(0, "AT2[%s]: Second attempt to send ATE0 failed",
+                  octstr_get_cstr(privdata->name));
+            return -1;
+      }
+    }
 
     at2_flush_buffer(privdata);
+
 
     /* enable hardware handshake */
     if (octstr_len(privdata->modem->enable_hwhs)) {
