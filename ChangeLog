@@ -1,4 +1,9 @@
 2002-07-05  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/smpp_pdu.def, gw/smsc_smpp.c: added unbind PDU support,
+      patch submitted by Ignat Vassilev <ozzy@declera.com>
+      [Msg-ID: <3D17E046.1060806@declera.com>]
+
+2002-07-05  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/smsc_smpp.c, gwlib/cfg.def: added SMPP priority flag support using
       configuration directive 'priority', patch submitted 
       by Ignat Vassilev <ozzy@declera.com>
