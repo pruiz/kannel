@@ -421,7 +421,7 @@ static void dlr_add_mysql(char *smsc, char *ts, char *src, char *dst,
                         octstr_get_cstr(field_src), octstr_get_cstr(field_dst),
                         octstr_get_cstr(field_serv), octstr_get_cstr(field_url), 
                         octstr_get_cstr(field_mask), octstr_get_cstr(field_status),
-                        smsc, ts, dst, service,	url, mask, 0);
+                        smsc, ts, src, dst, service, url, mask, 0);
 
     mutex_lock(dlr_mutex);
   
@@ -448,7 +448,7 @@ static void dlr_add_sdb(char *smsc, char *ts, char *src, char *dst,
                         octstr_get_cstr(field_src), octstr_get_cstr(field_dst), 
                         octstr_get_cstr(field_serv), octstr_get_cstr(field_url), 
                         octstr_get_cstr(field_mask), octstr_get_cstr(field_status),
-                        smsc, ts, dst, service,	url, mask, 0);
+                        smsc, ts, src, dst, service, url, mask, 0);
 
     mutex_lock(dlr_mutex);
   

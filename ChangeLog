@@ -1,3 +1,6 @@
+2002-09-06 Andreas Fink <afink@gni.ch>
+    * gw/dlr.c: added Oded's patch to fix a missing parameter in mysql DLR.
+
 2002-09-05  Stipe Tolj  <tolj@wapme-systems.de>
     * gwlib/utils.[ch], gw/urltrans.c, gw/smscconn.c: moved the identical 
       routine does_prefix_match() from urltrans.c and smsccon.c to the 
