@@ -1,3 +1,14 @@
+2001-08-15 Aarno Syvänen <aarno@wiral.com>
+
+	* test/test_mime.c: Added a program for testing the mime parser
+	* test/test_si.c: Added a program to test the si compiler
+	* gw/wap_push_ppg.c: Send no X-Wap-Application-Id header, when 
+	push application id is wml.ua.
+	* gw/wap_push_pap_mime.c: Bugfixes. Return NULL instead of contents
+	when parsing not successfull.
+	* gw/wap_push_pap.c: Change code accordingly. Set ppg listening port
+	to 8080.
+
 2001-08-13 Bruno Rodrigues <bruno.rodrigues@litux.org>
 
 	* smsc_emi2.c: Added waiting for first alert command and fixed other 
