@@ -20,6 +20,7 @@
 #include "bb_smscconn_cb.h"
 #include "msg.h"
 #include "sms.h"
+#include "dlr.h"
 
 typedef struct privdata {
     List	*outgoing_queue;
@@ -188,12 +189,37 @@ static void main_connection_loop(SMSCConn *conn, Connection *client)
 
         while ((msg = list_extract_first(privdata->outgoing_queue)) != NULL) {
             if (sms_to_client(client, msg) == 1) {
+
+                /* 
+                 * Now look for the DLR entry and pass it to the upper layer.
+                 * There is no *real* DLR awaited from the fakesmsc.
+                 */
+                if (DLR_IS_ENABLED_DEVICE(msg->sms.dlr_mask)) {
+                    Msg *dlrmsg;
+                    Octstr *tmp;
+                    int dlrstat = DLR_SUCCESS;
+
+                    tmp = octstr_format("%ld", msg->sms.id);
+                    dlrmsg = dlr_find(conn->id,
+                                      tmp, /* smsc message id */
+                                      msg->sms.receiver, /* destination */
+                                      dlrstat);
+                    if (dlrmsg != NULL) {
+                        dlrmsg->sms.sms_type = report;
+                        bb_smscconn_receive(conn, dlrmsg);
+                    } else {
+                        error(0,"smsc_fale: got DLR but could not find message or was not interested in it");
+                    }
+                    octstr_destroy(tmp);
+                }
+
                 /* 
                  * Actually no quarantee of it having been really sent,
                  * but I suppose that doesn't matter since this interface
                  * is just for debugging anyway 
                  */
                 bb_smscconn_sent(conn, msg, NULL);
+
             } else {
                 bb_smscconn_send_failed(conn, msg,
 		            SMSCCONN_FAILED_REJECTED, octstr_create("REJECTED"));
@@ -327,6 +353,18 @@ static int add_msg_cb(SMSCConn *conn, Msg *sms)
 
     copy = msg_duplicate(sms);
     list_produce(privdata->outgoing_queue, copy);
+
+    /*  
+     * Send DLR if desired, which means first add the DLR entry 
+     * and then later find it and remove it
+     */
+    if (DLR_IS_ENABLED_DEVICE(sms->sms.dlr_mask)) {
+        Octstr *tmp;
+        tmp = octstr_format("%ld", sms->sms.id);
+        dlr_add(conn->id, tmp, sms);
+        octstr_destroy(tmp);
+    }
+
     gwthread_wakeup(privdata->connection_thread);
 
     return 0;
