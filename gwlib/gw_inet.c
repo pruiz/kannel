@@ -2,6 +2,7 @@
 
 #include "config.h"
 #include <errno.h>
+#include <string.h>
 #include <sys/socket.h>
 #include "gwlib/gw_inet.h"
 #include "gwlib/gwmem.h"

@@ -1,3 +1,7 @@
+2001-01-09  Derry Hamilton <rasilon@tardis.ed.ac.uk>
+
+	* gwlib/gw_inet.c: Included string.h to declare strncpy.
+
 2001-01-08  Derry Hamilton <rasilon@tardis.ed.ac.uk>
 
 	* gwlib/gw_inet.[ch]: Added initial implementation of
