@@ -16,7 +16,7 @@ AC_DEFINE_UNQUOTED(VERSION, "$VERSION")
 echo "configuring for Kannel gateway version... $VERSION"
 if test "x$VERSION" = "xcvs"; then
   AC_MSG_CHECKING([cvs checkout date])
-  AC_MSG_RESULT([`ls -cdla --full-time . | awk '{print $6,$7,$8,$9,$10}'`])
+  AC_MSG_RESULT([`ls -lcda  . | awk '{print $6,$7,$8}'`])
 fi
 
 dnl Solaris pkgadd support definitions
