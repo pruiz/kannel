@@ -50,6 +50,7 @@ struct modem_def
     int		pin_support;
     int		skip_smsc_addr;
     int		prepend_zero_smsc;
+    double	send_line_sleep;	/* wait seconds after having sent a line */
 };
 
 /* indexes into table below. Has to match ! */
@@ -65,14 +66,14 @@ struct modem_def
 #define	MAX_MODEM_TYPES		8
 struct modem_def ModemTypes[MAX_MODEM_TYPES] =
 {
-    { "autodetect", 	"AT+IFC=2,2" 	, 0     , "AT+CNMI=1,2,0,0,0",	NULL,		NULL, 	0, 0, 1, 0, 0	},
-    { "wavecom", 	"AT+IFC=2,2" 	, 9600  , "AT+CNMI=1,2,0,0,0",	"WAVECOM",	NULL,	0, 0, 1, 1, 1	},
-    { "premicell", 	"AT+IFC=2,2"	, 9600  , "AT+CNMI=1,2,0,0,0",	"PREMICEL",	NULL,	0, 0, 0, 0, 0	},
-    { "siemens-tc35",	"AT\\Q3" 	, 19200 , "AT+CNMI=1,2,0,0,1",	"SIEMENS", 	"TC35",	0, 1, 1, 1, 1	},
-    { "siemens",	"AT\\Q3" 	, 19200 , "AT+CNMI=1,2,0,0,0",	"SIEMENS", 	"M20",	0, 1, 1, 1, 1	},
-    { "nokiaphone",	"AT+IFC=2,2"	, 9600  , "AT+CNMI=1,2,0,0,0",	"NokiaPhone" ,	NULL,	0, 1, 1, 1, 1	},
-    { "falcom",		"AT+IFC=2,2"	, 9600  , "AT+CNMI=1,2,0,0,0",	"Falcom",	NULL,	0, 0, 1, 0, 0	},
-    { "ericsson",	"AT+IFC=2,2"	, 9600  , "AT+CNMI=3,2,0,0",	"R520m",	NULL,	0, 0, 1, 1, 1	}
+    { "autodetect", 	"AT+IFC=2,2" 	, 0     , "AT+CNMI=1,2,0,0,0",	NULL,		NULL, 	0, 0, 1, 0, 0, 0.1 },
+    { "wavecom", 	"AT+IFC=2,2" 	, 9600  , "AT+CNMI=1,2,0,0,0",	"WAVECOM",	NULL,	0, 0, 1, 1, 1, 0.1 },
+    { "premicell", 	"AT+IFC=2,2"	, 9600  , "AT+CNMI=1,2,0,0,0",	"PREMICEL",	NULL,	0, 0, 0, 0, 0, 0.1 },
+    { "siemens-tc35",	"AT\\Q3" 	, 19200 , "AT+CNMI=1,2,0,0,1",	"SIEMENS", 	"TC35",	0, 1, 1, 1, 1, 0.1 },
+    { "siemens",	"AT\\Q3" 	, 19200 , "AT+CNMI=1,2,0,0,0",	"SIEMENS", 	"M20",	0, 1, 1, 1, 1, 0.1 },
+    { "nokiaphone",	"AT+IFC=2,2"	, 9600  , "AT+CNMI=1,2,0,0,0",	"NokiaPhone" ,	NULL,	0, 1, 1, 1, 1, 0.1 },
+    { "falcom",		"AT+IFC=2,2"	, 9600  , "AT+CNMI=1,2,0,0,0",	"Falcom",	NULL,	0, 0, 1, 0, 0, 0.1 },
+    { "ericsson",	"AT+IFC=2,2"	, 9600  , "AT+CNMI=3,2,0,0",	"R520m",	NULL,	0, 0, 1, 1, 1, 0.1 }
 };
 
 /* maximum data to attempt to read in one go */
@@ -91,6 +92,7 @@ struct modem_def ModemTypes[MAX_MODEM_TYPES] =
 #define PNT_INTER       1
 #define PNT_NATIONAL    2
 
+#define	O_DESTROY(a)	{ if(a) octstr_destroy(a); a=NULL; }
 
 /* The number of times to attempt to send a message should sending fail */
 #define RETRY_SEND 3
@@ -121,8 +123,7 @@ void    at2_read_buffer(PrivAT2data *privdata);
 Octstr *at2_wait_line(PrivAT2data *privdata, time_t timeout, int gt_flag);
 Octstr *at2_read_line(PrivAT2data *privdata, int gt_flag);
 int	at2_write(PrivAT2data *privdata, char* line);
-int	at2_write_line(PrivAT2data *privdata, Octstr* line);
-int	at2_write_line_cstr(PrivAT2data *privdata, char* line);
+int	at2_write_line(PrivAT2data *privdata, char* line);
 int	at2_write_ctrlz(PrivAT2data *privdata);
 void	at2_flush_buffer(PrivAT2data *privdata);
 int	at2_init_device(PrivAT2data *privdata);
@@ -410,58 +411,57 @@ Octstr *at2_read_line(PrivAT2data *privdata, int gt_flag)
 }
 
 /******************************************************************************
-** at_write_line
+** at_write_line_cstr
 ** write a line out to the device
 ** and adds a carriage return/linefeed to it
-**
+** returns number of characters sent.
 */
 
-int  at2_write_line(PrivAT2data *privdata, Octstr* line)
-{
-    return at2_write_line_cstr(privdata,octstr_get_cstr(line));
-}
-
-int  at2_write_line_cstr(PrivAT2data *privdata, char* line)
+int  at2_write_line(PrivAT2data *privdata, char* line)
 {
     int i=0;
     int count;
     int s;
-    char eol = '\r';
+    Octstr *linestr = NULL;
+    
+    linestr = octstr_format("%s\r");
     
     debug("bb.smsc.at2", 0, "AT2[%s]: --> %s^M", octstr_get_cstr(privdata->device), line);
     
-    count = strlen(line);
-    if(count>0)
+    count = octstr_len(linestr);
+    s = write(privdata->fd, octstr_get_cstr(linestr), count);
+    O_DESTROY(linestr);
+    if( s < 0)
     {
-    	s = write(privdata->fd, line, count);
-    	if( s < 0)
-        	debug("bb.smsc.at2", 0, "AT2[%s]: write failed with errno %d", octstr_get_cstr(privdata->device), errno);
-    }
-    s = write(privdata->fd, &eol, 1);
-    if( s < 0)
-        debug("bb.smsc.at2", 0, "AT2[%s]: write failed with errno %d", octstr_get_cstr(privdata->device), errno);
-/*    tcdrain (privdata->fd); */
-    return i;
-}
-
-#define		at2_write_ctrlz(a)	at2_write(a,"\032")
-
-/*
-int  at2_write_ctrlz(PrivAT2data *privdata)
-{
-    int s;
-    char ctrlz[] =  { 26, 13, 0 };
-  
-    debug("bb.smsc.at2", 0, "AT2[%s]: --> ^Z^M", octstr_get_cstr(privdata->device));
- 
-    s = write(privdata->fd, ctrlz, 2);
-    if( s < 0)
    	debug("bb.smsc.at2", 0, "AT2[%s]: write failed with errno %d", octstr_get_cstr(privdata->device), errno);
+   	return s;
+    }
     tcdrain (privdata->fd);
+    gwthread_sleep( ModemTypes[privdata->modemid].send_line_sleep );
     return s;
 }
 
-*/
+/* #define		at2_write_ctrlz(a)	at2_write(a,"\032") */
+
+
+int  at2_write_ctrlz(PrivAT2data *privdata)
+{
+    int s;
+    char *ctrlz =  "\032" ;
+  
+    debug("bb.smsc.at2", 0, "AT2[%s]: --> ^Z", octstr_get_cstr(privdata->device));
+    s = write(privdata->fd, ctrlz, 1);
+    if( s < 0)
+    {
+   	debug("bb.smsc.at2", 0, "AT2[%s]: write failed with errno %d", octstr_get_cstr(privdata->device), errno);
+   	return s;
+    }
+    tcdrain (privdata->fd);
+    gwthread_sleep( ModemTypes[privdata->modemid].send_line_sleep );
+    return s;
+}
+
+
 
 int  at2_write(PrivAT2data *privdata, char* line)
 {
@@ -630,7 +630,7 @@ int	at2_init_device(PrivAT2data *privdata)
 
 int at2_send_modem_command(PrivAT2data *privdata,char *cmd, time_t timeout, int gt_flag)
 {
-    at2_write_line_cstr(privdata,cmd);
+    at2_write_line(privdata,cmd);
     return at2_wait_modem_command(privdata, timeout, gt_flag);
 }
 
@@ -686,7 +686,7 @@ int at2_wait_modem_command(PrivAT2data *privdata, time_t timeout, int gt_flag)
 	   
            if (-1 != octstr_search(line, octstr_imm("RING"), 0))
            {
-  	    	at2_write_line_cstr(privdata,"ATH0");
+  	    	at2_write_line(privdata,"ATH0");
 		continue;
 	   }
 
@@ -730,7 +730,7 @@ int at2_wait_modem_command(PrivAT2data *privdata, time_t timeout, int gt_flag)
                     	    bb_smscconn_receive(privdata->conn, msg);
                     	}
                     	if(privdata->phase2plus)
-		    	    at2_write_line_cstr(privdata,"AT+CNMA");
+		    	    at2_write_line(privdata,"AT+CNMA");
 			octstr_destroy(pdu);
 		    }
                 }
@@ -1342,9 +1342,7 @@ void at2_send_one_message(PrivAT2data *privdata, Msg *msg)
     	    	continue;
     	    /* ok the > has been see now so we can send the PDU now and a control Z but no CR or LF */
 	    sprintf(command, "%s%s", sc, pdu);
-	    sleep(1);
 	    at2_write(privdata,command);
-	    sleep(1);
 	    at2_write_ctrlz(privdata);
 	    ret = at2_wait_modem_command(privdata, 10, 0);
 	    debug("bb.at", 0, "send command status: %d", ret);
