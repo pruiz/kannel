@@ -1,7 +1,7 @@
 Summary: Kannel SMS/WAP gateway
 Name: kannel
-Version: 1.0
-Release: 2
+Version: 1.0.1
+Release: 1
 Copyright: Open source, FreeBSD-style license; see COPYING
 Group: Applications/Communications
 Source: gateway-%{version}.tar.gz
