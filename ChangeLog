@@ -1,3 +1,8 @@
+2000-06-27  Paul Keogh <paul.keogh@anam.ie>
+
+	* gw/cookies.c: Added a check for valid WSP session machine to prevent
+	possible crash.
+
 2000-06-26  Derry Hamilton <rasilon@tardis.ed.ac.uk>
 
 	* gw/cookies.c: casted char to int for several isspace() etc. calls.
