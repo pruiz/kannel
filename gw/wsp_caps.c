@@ -228,6 +228,18 @@ int wsp_cap_get_client_sdu(List *caps_list, unsigned long *sdu) {
 	return found;
 }
 
+int wsp_cap_get_server_sdu(List *caps_list, unsigned long *sdu) {
+	Octstr *data;
+	int found;
+
+	found = wsp_cap_get_data(caps_list, WSP_CAPS_SERVER_SDU_SIZE,
+					NULL, &data);
+	if (found > 0 && octstr_extract_uintvar(data, sdu, 0) < 0)
+		return -1;
+
+	return found;
+}
+
 int wsp_cap_get_method_mor(List *caps_list, unsigned long *mor) {
 	Octstr *data;
 	int found;

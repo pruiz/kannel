@@ -61,5 +61,6 @@ Octstr *wsp_cap_pack_list(List *caps_list);
  * parameter, they set it to the value of the first such request. */
 int wsp_cap_count(List *caps_list, int id, Octstr *name);
 int wsp_cap_get_client_sdu(List *caps_list, unsigned long *sdu);
+int wsp_cap_get_server_sdu(List *caps_list, unsigned long *sdu);
 int wsp_cap_get_method_mor(List *caps_list, unsigned long *mor);
 int wsp_cap_get_push_mor(List *caps_list, unsigned long *mor);

@@ -1,3 +1,11 @@
+2000-09-22  Richard Braakman  <dark@wapit.com>
+
+	* gw/wsp-session.c: Corrected capabilities negotiation.  This
+	is not the promised rewrite, and its replies are still longer
+	than they need to be, but it follows the standard now.
+
+	* gw/wsp_caps.[ch]: Added helper function wsp_cap_get_server_sdu.
+
 2000-09-22  Kalle Marjola  <rpr@wapit.com>
 
 	* gw/smsbox_req.c: edited access log entries, now the HTTP request

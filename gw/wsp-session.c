@@ -15,18 +15,6 @@
 #include "wsp_caps.h"
 #include "cookies.h"
 
-/* WAP standard defined values for capabilities */
-
-#define WSP_CAPS_CLIENT_SDU_SIZE	0x00
-#define WSP_CAPS_SERVER_SDU_SIZE	0x01
-#define WSP_CAPS_PROTOCOL_OPTIONS	0x02
-#define WSP_CAPS_METHOD_MOR		0x03
-#define WSP_CAPS_PUSH_MOR		0x04
-#define WSP_CAPS_EXTENDED_METHODS    	0x05
-#define WSP_CAPS_HEADER_CODE_PAGES    	0x06
-#define WSP_CAPS_ALIASES	   	0x07
-
-
 
 typedef enum {
 	#define STATE_NAME(name) name,
@@ -684,10 +672,14 @@ static void reply_known_capabilities(List *caps, List *req, WSPMachine *m) {
 	}
 
 	if (wsp_cap_count(caps, WSP_CAPS_SERVER_SDU_SIZE, NULL) == 0) {
-		/* We don't care what the client sent us, but we can
-		 * handle any size packet, so we tell the client that. */
+		/* Accept whatever size the client is willing
+		 * to send.  If the client did not specify anything,
+		 * then use the default. */
+		if (wsp_cap_get_server_sdu(req, &uint) <= 0) {
+			uint = 1400;
+		}
 		data = octstr_create("");
-		octstr_append_uintvar(data, 0);
+		octstr_append_uintvar(data, uint);
 		cap = wsp_cap_create(WSP_CAPS_SERVER_SDU_SIZE, NULL, data);
 		list_append(caps, cap);
 	}
@@ -701,11 +693,10 @@ static void reply_known_capabilities(List *caps, List *req, WSPMachine *m) {
 	}
 
 	/* Accept any Method-MOR the client sent; if it sent none,
-	 * reply that we can handle any number of Method requests.
-	 * ("any" is 255 because the encoding doesn't go higher) */
+	 * use the default. */
 	if (wsp_cap_count(caps, WSP_CAPS_METHOD_MOR, NULL) == 0) {
 		if (wsp_cap_get_method_mor(req, &uint) <= 0) {
-			uint = 255;
+			uint = 1;
 		}
 		data = octstr_create("");
 		octstr_append_char(data, uint);
