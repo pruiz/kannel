@@ -14,14 +14,14 @@ static Octstr *decode_type(Octstr *os)
     long p1, p2;
     Octstr *temp;
 
-    if (p1 = octstr_search_char(os, '!', 0) == -1) {
-        p1 = 0;
-    } else {
-        p1++;
-    }
-
     if ((p2 = octstr_search_char(os, ':', 0)) == -1)
         return NULL;
+
+    if ((p1 = octstr_search_char(os, '!', 0)) != -1 && p1 < p2) {
+        p1++;
+    } else {
+        p1 = 0;
+    }
 
     temp = octstr_copy(os, p1, p2 - p1);
 
@@ -92,7 +92,7 @@ SMASI_PDU *smasi_pdu_create(unsigned long type)
     } break;
     #include "smasi_pdu.def"
     default:
-        error(0, "Unknown SMASI_PDU type, internal error.");
+        warning(0, "Unknown SMASI_PDU type, internal error.");
         gw_free(pdu);
     return NULL;
     }
@@ -169,7 +169,7 @@ SMASI_PDU *smasi_pdu_unpack(Octstr *data_without_len)
     SMASI_PDU *pdu;
     char *type_name;
     Octstr *temp;
-    long pos, p1, p2;
+    long pos;
     unsigned long type = 0;
 
     /* extract the PDU type identifier */
@@ -182,7 +182,7 @@ SMASI_PDU *smasi_pdu_unpack(Octstr *data_without_len)
     #define PDU(name, id, fields) \
     else if (strcmp(type_name, #name) == 0) type = id;
     #include "smasi_pdu.def"
-    else error(0, "unknown SMASI PDU type");
+    else warning(0, "unknown SMASI PDU type");
 
     pdu = smasi_pdu_create(type);
     if (pdu == NULL) return NULL;
@@ -212,7 +212,7 @@ SMASI_PDU *smasi_pdu_unpack(Octstr *data_without_len)
         } break;
     #include "smasi_pdu.def"
     default:
-        error(0, "Unknown SMASI_PDU type, internal error while unpacking.");
+        warning(0, "Unknown SMASI_PDU type, internal error while unpacking.");
     }
 
     octstr_destroy(temp);
@@ -233,7 +233,7 @@ void smasi_pdu_dump(SMASI_PDU *pdu)
         case id: { struct name *p = &pdu->u.name; fields } break;
     #include "smasi_pdu.def"
     default:
-        error(0, "Unknown SMASI_PDU type, internal error.");
+        warning(0, "Unknown SMASI_PDU type, internal error.");
     break;
     }
     debug("sms.smasi", 0, "SMASI PDU dump ends.");
