@@ -54,7 +54,6 @@ static void dump_pdu(const char *msg, Octstr *id, SMPP_PDU *pdu)
 #define SMPP_DEFAULT_VERSION        0x34
 #define SMPP_DEFAULT_PRIORITY       0
 #define SMPP_THROTTLING_SLEEP_TIME  15
-#define SMPP_MSG_ID_TYPE            0x01  /* deliver_sm decimal, submit_sm_resp hex */
 
 
 /*
@@ -101,7 +100,8 @@ typedef struct {
     int version;
     int priority;       /* set default priority for messages */    
     time_t throttling_err_time;
-    int smpp_msg_id_type;  /* msg id in hex or decimal */
+    int smpp_msg_id_type;  /* msg id in C string, hex or decimal */
+    int autodetect_addr;
     SMSCConn *conn; 
 } SMPP; 
  
@@ -115,7 +115,7 @@ static SMPP *smpp_create(SMSCConn *conn, Octstr *host, int transmit_port,
                          int alt_dcs, int enquire_link_interval, 
                          int max_pending_submits, int reconnect_delay,
                          int version, int priority, Octstr *my_number,
-                         int smpp_msg_id_type) 
+                         int smpp_msg_id_type, int autodetect_addr) 
 { 
     SMPP *smpp; 
      
@@ -150,6 +150,7 @@ static SMPP *smpp_create(SMSCConn *conn, Octstr *host, int transmit_port,
     smpp->conn = conn; 
     smpp->throttling_err_time = 0; 
     smpp->smpp_msg_id_type = smpp_msg_id_type;    
+    smpp->autodetect_addr = autodetect_addr;
  
     return smpp; 
 } 
@@ -285,7 +286,9 @@ static SMPP_PDU *msg_to_pdu(SMPP *smpp, Msg *msg)
         /* setup default values */ 
         pdu->u.submit_sm.source_addr_ton = GSM_ADDR_TON_NATIONAL; /* national */ 
         pdu->u.submit_sm.source_addr_npi = GSM_ADDR_NPI_E164; /* ISDN number plan */ 
- 
+    }
+
+    if (smpp->autodetect_addr) {
         /* lets see if its international or alphanumeric sender */ 
         if (octstr_get_char(pdu->u.submit_sm.source_addr,0) == '+') { 
             if (!octstr_check_range(pdu->u.submit_sm.source_addr, 1, 256, gw_isdigit)) { 
@@ -672,14 +675,23 @@ static void handle_pdu(SMPP *smpp, Connection *conn, SMPP_PDU *pdu,
                      * if bit is set value is hex otherwise dec
                      *
                      * 0x00 deliver_sm dec, submit_sm_resp dec
-                     * 0x01 (default) deliver_sm dec, submit_sm_resp hex
+                     * 0x01 deliver_sm dec, submit_sm_resp hex
                      * 0x02 deliver_sm hex, submit_sm_resp dec
-                     * 0x03 deliver_sm hex, submit_sm_resp hex *
+                     * 0x03 deliver_sm hex, submit_sm_resp hex 
+                     *
+                     * Default behaviour is SMPP spec compliant, which means
+                     * msg_ids should be C strings and hence non modified.
                      */
-                    if (smpp->smpp_msg_id_type & 0x02)                         
-                        tmp = octstr_format("%ld", strtol(octstr_get_cstr(msgid), NULL, 16));
-                    else
-                        tmp = octstr_format("%ld", strtol(octstr_get_cstr(msgid), NULL, 10));
+                    if (smpp->smpp_msg_id_type == -1) {
+                        /* the default, C string */
+                        tmp = octstr_duplicate(msgid);
+                    } else {
+                        if (smpp->smpp_msg_id_type & 0x02) {                         
+                            tmp = octstr_format("%ld", strtol(octstr_get_cstr(msgid), NULL, 16));
+                        } else {
+                            tmp = octstr_format("%ld", strtol(octstr_get_cstr(msgid), NULL, 10));
+                        }
+                    }
  
                     dlrmsg = dlr_find(octstr_get_cstr(smpp->conn->id),  
                                       octstr_get_cstr(tmp), /* smsc message id */ 
@@ -794,13 +806,19 @@ static void handle_pdu(SMPP *smpp, Connection *conn, SMPP_PDU *pdu,
             } else {  
                 Octstr *tmp; 
 	 
-                /* check if msg_id is decimal or hex for this SMSC */
-                if (smpp->smpp_msg_id_type & 0x01)
-                    tmp = octstr_format("%ld", strtol(
+                /* check if msg_id is C string, decimal or hex for this SMSC */
+                if (smpp->smpp_msg_id_type == -1) {
+                    /* the default, C string */
+                    tmp = octstr_duplicate(pdu->u.submit_sm_resp.message_id);
+                } else {
+                    if (smpp->smpp_msg_id_type & 0x01) {   
+                        tmp = octstr_format("%ld", strtol(  /* hex */
                             octstr_get_cstr(pdu->u.submit_sm_resp.message_id), NULL, 16));
-                else
-                    tmp = octstr_format("%ld", strtol(
+                    } else {
+                        tmp = octstr_format("%ld", strtol(  /* decimal */
                             octstr_get_cstr(pdu->u.submit_sm_resp.message_id), NULL, 10));
+                    }
+                }
  
                 /* SMSC ACK.. now we have the message id. */ 
  				 
@@ -1110,10 +1128,12 @@ int smsc_smpp_create(SMSCConn *conn, CfgGroup *grp)
     long version;
     long priority;
     long smpp_msg_id_type;
+    int autodetect_addr;
  
     my_number = NULL; 
     transceiver_mode = 0;
     alt_dcs = 0;
+    autodetect_addr = 0;
  
     host = cfg_get(grp, octstr_imm("host")); 
     if (cfg_get_integer(&port, grp, octstr_imm("port")) == -1) 
@@ -1189,6 +1209,9 @@ int smsc_smpp_create(SMSCConn *conn, CfgGroup *grp)
                         octstr_imm("dest-addr-npi")) == -1) 
         dest_addr_npi = -1; 
 
+    /* if source addr autodetection should be used set this to 1 */
+    cfg_get_bool(&autodetect_addr, grp, octstr_imm("source-addr-autodetect")); 
+
     /* check for any specified interface version */
     if (cfg_get_integer(&version, grp, octstr_imm("interface-version")) == -1)
         version = SMPP_DEFAULT_VERSION;
@@ -1201,17 +1224,23 @@ int smsc_smpp_create(SMSCConn *conn, CfgGroup *grp)
         priority = SMPP_DEFAULT_PRIORITY;
 
     /* set the msg_id type variable for this SMSC */
-    if (cfg_get_integer(&smpp_msg_id_type, grp, octstr_imm("msg-id-type")) == -1)
-        smpp_msg_id_type = SMPP_MSG_ID_TYPE;
-    if (smpp_msg_id_type < 0 || smpp_msg_id_type > 3)
-        panic(0,"SMPP: Invlid value for msg-id-type directive in configuraton"); 
+    if (cfg_get_integer(&smpp_msg_id_type, grp, octstr_imm("msg-id-type")) == -1) {
+        /* 
+         * defaults to C string "as-is" style 
+         */
+        smpp_msg_id_type = -1; 
+    } else {
+        if (smpp_msg_id_type < 0 || smpp_msg_id_type > 3)
+            panic(0,"SMPP: Invlid value for msg-id-type directive in configuraton"); 
+    }
 
     smpp = smpp_create(conn, host, port, receive_port, system_type,  
     	    	       username, password, address_range, our_host, 
                        source_addr_ton, source_addr_npi, dest_addr_ton,  
                        dest_addr_npi, alt_dcs, enquire_link_interval, 
                        max_pending_submits, reconnect_delay, 
-                       version, priority, my_number, smpp_msg_id_type); 
+                       version, priority, my_number, smpp_msg_id_type,
+                       autodetect_addr); 
  
     conn->data = smpp; 
     conn->name = octstr_format("SMPP:%S:%d/%d:%S:%S",  
