@@ -1,3 +1,8 @@
+2000-02-02  Tuomas Luttinen  <tuo@tuo.wapit.fi>
+
+	* gw/wml_compiler.c (parse_attribute): Little bug fix: end tag added
+	to attribute lists.
+
 2000-02-02  Derry Hamilton  <rasilon@tardis.ed.ac.uk>
        * gw/smsc.c, gw/smsc_cimd.c, gw/smsc_emi.c, gw/wml.c, utils/OTAbitmap.c,
          utils/wbmp.c: all bzero functions changed to memset.

@@ -516,7 +516,7 @@ int parse_element(xmlNodePtr node)
       return -1;
     }
 
-  /* encode the attributes for this node. */
+  /* Encode the attribute list for this node and add end tag after the list. */
 
   if(node->properties != NULL)
     {
@@ -526,6 +526,8 @@ int parse_element(xmlNodePtr node)
 	  parse_attribute(attribute);
 	  attribute = attribute->next;
 	}
+      if (parse_end() != 0) 
+	error(0, "WML compiler: adding end tag to attribute list failed.");
     }
 
   return add_end_tag;
@@ -604,23 +606,27 @@ int parse_attribute(xmlAttrPtr attr)
    * compressed as it could be... This will be enchanced later.
    */
   if (coded_length < octstr_len(value))
-    if (coded_length == 0) 
-      {
-	if ((status = output_octet_string(octstr_create(attr->val->content))) 
-	    != 0)
-	  error(0, "WML compiler: could not output attribute value as a string.");
-      }
-    else
-      if ((status = output_octet_string(octstr_copy(value, coded_length, 
-						    octstr_len(value) -
-						    coded_length))) != 0)
-	error(0, "WML compiler: could not output attribute value as a string.");
+    {
+      if (coded_length == 0) 
+	{
+	  if ((status = output_octet_string(octstr_create(attr->val->content))) 
+	      != 0)
+	    error(0, 
+		  "WML compiler: could not output attribute value as a string.");
+	}
+      else
+	if ((status = output_octet_string(octstr_copy(value, coded_length, 
+						      octstr_len(value) -
+						      coded_length))) != 0)
+	  error(0, 
+		"WML compiler: could not output attribute value as a string.");
+    }
 
   if (wml_attributes[i].attribute == NULL)
     {
       error(0, "WML compiler: unknown attribute.");
       return -1;
-  } 
+    } 
   else 
     return status;
 }
