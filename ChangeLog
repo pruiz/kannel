@@ -1,3 +1,7 @@
+2004-08-08  Bruno Rodrigues  <bruno.rodrigues@litux.org>
+    * gw/smsbox.c: fix double encoding when transcoding from UCS2 to 
+      UTF-8 or ISO-8859-1
+
 2004-08-07  Stipe Tolj  <stolj@wapme.de>
     * doc/userguide/userguide.xml: parsed the beast via aspell and got
       rid of some grammer and spelling issues.

@@ -1563,11 +1563,12 @@ static void obey_request_thread(void *arg)
 
 	/* Recode to iso-8859-1 the MO message if possible */
 	if (mo_recode && msg->sms.coding == DC_UCS2) {
+        int converted = 0;
 	    Octstr *text;
-	    text = octstr_duplicate(msg->sms.msgdata);
 
-	    if(0 == octstr_recode (octstr_imm("iso-8859-1"), octstr_imm("UTF-16BE"), text) &&
-               octstr_search(text, octstr_imm("&#"), 0) == -1) {
+	    text = octstr_duplicate(msg->sms.msgdata);
+	    if(0 == octstr_recode (octstr_imm("iso-8859-1"), octstr_imm("UTF-16BE"), text)) {
+            if(octstr_search(text, octstr_imm("&#"), 0) == -1) {
                 /* XXX I'm trying to search for &#xxxx; text, which indicates that the
                  * text couldn't be recoded.
                  * We should use other function to do the recode or detect it using
@@ -1577,9 +1578,14 @@ static void obey_request_thread(void *arg)
                 msg->sms.msgdata = octstr_duplicate(text);
                 msg->sms.charset = octstr_create("ISO-8859-1");
                 msg->sms.coding = DC_7BIT;
+                converted=1;
+            } else {
+                octstr_destroy(text);
+	            text = octstr_duplicate(msg->sms.msgdata);
+            }
 	    }
-	    else if(0 == octstr_recode (octstr_imm("UTF-8"), octstr_imm("UTF-16BE"), text) &&
-               octstr_search(text, octstr_imm("&#"), 0) == -1) {
+	    if(!converted && 0 == octstr_recode (octstr_imm("UTF-8"), octstr_imm("UTF-16BE"), text)) {
+            if(octstr_search(text, octstr_imm("&#"), 0) == -1) {
                 /* XXX I'm trying to search for &#xxxx; text, which indicates that the
                  * text couldn't be recoded.
                  * We should use other function to do the recode or detect it using
@@ -1589,6 +1595,13 @@ static void obey_request_thread(void *arg)
                 msg->sms.msgdata = octstr_duplicate(text);
                 msg->sms.charset = octstr_create("UTF-8");
                 msg->sms.coding = DC_7BIT;
+            /* redundant, but this code could be used if another convertion is required
+                converted=1;
+            } else {
+                octstr_destroy(text);
+	            text = octstr_duplicate(msg->sms.msgdata);
+            */
+            }
 	    }
 	    octstr_destroy(text);
 	}
