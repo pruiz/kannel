@@ -4916,7 +4916,6 @@ field-status = status
 </programlisting>
 
 	</para>
-  </para>
   <para>Beware that you have the DB support build in your LibSDB 
   installation when trying to use a specific DB type within the URL.
   </para>
@@ -4928,7 +4927,7 @@ field-status = status
 	<para>For external database storage of DLR information in relational 
 	database management systems (RDMS) you will have tospecify which table
 	field are used to represend the stored data. This is done via the 
-	<literl>dlr-db</literal> group as follows:
+	<literal>dlr-db</literal> group as follows:
 	</para>
 
  <table frame=none>
