@@ -1383,7 +1383,10 @@ admin-password = f00bar
 		  internal, mysql, oracle. By default this is set to 'internal'.
      </entry></row>
 
-     <row><entry><literal>maximum-queue-length</literal></entry>
+     <row><entry>
+       <literal>maximum-queue-length (deprecated, see <literal>sms-incoming-queue-length</literal>)</literal>
+     </entry></row>
+     <row><entry><literal>sms-incoming-queue-length</literal></entry>
      <entry>number of messages</entry>
      <entry valign="bottom">
         Set maximum size of incoming message queue. After number of messages
