@@ -1135,9 +1135,10 @@ static int obey_request(Octstr **result, URLTranslation *trans, Msg *msg)
 
 	xml = octstr_create("");
 	octstr_append(xml, octstr_imm("<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\n")); 
-	// XXX damn windows that breaks with this :
-	// octstr_append(xml, octstr_imm("<!DOCTYPE message SYSTEM \"SMSmessage.dtd\">\n")); 
-
+    /*
+     * XXX  damn windows that breaks with this :
+     * octstr_append(xml, octstr_imm("<!DOCTYPE message SYSTEM \"SMSmessage.dtd\">\n"));
+     */
 	octstr_append(xml, octstr_imm("<message cid=\"1\">\n"));
 	octstr_append(xml, octstr_imm("\t<submit>\n"));
 
