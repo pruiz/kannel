@@ -40,7 +40,7 @@
  *   WSP_FIELD_VALUE_DATA: Leave parsing position at start of data, and set
  *        a parse limit at the end of data.
  */
-static int field_value(Context *context, int *well_known_value) {
+static int field_value(ParseContext *context, int *well_known_value) {
 	int val;
 	unsigned long len;
 
@@ -70,7 +70,7 @@ static int field_value(Context *context, int *well_known_value) {
 }
 
 /* Multi-octet-integer is defined in 8.4.2.1 */
-static long unpack_multi_octet_integer(Context *context, long len) {
+static long unpack_multi_octet_integer(ParseContext *context, long len) {
 	long val = 0;
 
 	if (len >= (long) sizeof(val) || len < 0)
@@ -101,7 +101,7 @@ static long unpack_multi_octet_integer(Context *context, long len) {
  * 0-length integers, but the definition of Multi-octet-integer does
  * not, so this is an unclear area of the specification.)
  */
-static int secondary_field_value(Context *context, long *result) {
+static int secondary_field_value(ParseContext *context, long *result) {
 	int val;
 	long length;
 
@@ -131,7 +131,7 @@ static int secondary_field_value(Context *context, long *result) {
 }
 
 /* Integer-value is defined in 8.4.2.3 */
-static Octstr *unpack_integer_value(Context *context) {
+static Octstr *unpack_integer_value(ParseContext *context) {
 	Octstr *decoded;
 	unsigned long value;
 	int val;
@@ -185,7 +185,7 @@ static Octstr *convert_q_value(int q) {
 }
 
 /* Q-value is defined in 8.4.2.3 */
-static Octstr *unpack_q_value(Context *context) {
+static Octstr *unpack_q_value(ParseContext *context) {
 	int c, c2;
 
 	c = parse_get_char(context);
@@ -223,7 +223,7 @@ static Octstr *unpack_version_value(long value) {
 /* Called with the parse limit set to the end of the parameter data,
  * and decoded containing the unpacked header line so far.
  * Parameter is defined in 8.4.2.4. */
-static int unpack_parameter(Context *context, Octstr *decoded) {
+static int unpack_parameter(ParseContext *context, Octstr *decoded) {
 	Octstr *parm = NULL;
 	Octstr *value = NULL;
 	int ret;
@@ -336,7 +336,7 @@ error:
 	return -1;
 }
 
-static void unpack_all_parameters(Context *context, Octstr *decoded) {
+static void unpack_all_parameters(ParseContext *context, Octstr *decoded) {
 	int ret = 0;
 
 	while (ret >= 0 && !parse_error(context) &&
@@ -345,7 +345,7 @@ static void unpack_all_parameters(Context *context, Octstr *decoded) {
 	}
 }
 
-static void unpack_optional_q_value(Context *context, Octstr *decoded) {
+static void unpack_optional_q_value(ParseContext *context, Octstr *decoded) {
 	if (parse_octets_left(context) > 0) {
 		Octstr *qval = unpack_q_value(context);
 		if (qval) {
@@ -358,7 +358,7 @@ static void unpack_optional_q_value(Context *context, Octstr *decoded) {
 }
 
 /* Date-value is defined in 8.4.2.3 */
-static Octstr *unpack_date_value(Context *context) {
+static Octstr *unpack_date_value(ParseContext *context) {
 	unsigned long timeval;
 	int length;
 
@@ -373,7 +373,7 @@ static Octstr *unpack_date_value(Context *context) {
 }
 
 /* Accept-general-form is defined in 8.4.2.7 */
-static Octstr *unpack_accept_general_form(Context *context) {
+static Octstr *unpack_accept_general_form(ParseContext *context) {
 	Octstr *decoded = NULL;
 	int ret;
 	long val;
@@ -416,7 +416,7 @@ static Octstr *unpack_accept_general_form(Context *context) {
 }
 
 /* Accept-charset-general-form is defined in 8.4.2.8 */
-static Octstr *unpack_accept_charset_general_form(Context *context) {
+static Octstr *unpack_accept_charset_general_form(ParseContext *context) {
 	Octstr *decoded = NULL;
 	int ret;
 	long val;
@@ -448,7 +448,7 @@ static Octstr *unpack_accept_charset_general_form(Context *context) {
 }
 
 /* Accept-language-general-form is defined in 8.4.2.10 */
-static Octstr *unpack_accept_language_general_form(Context *context) {
+static Octstr *unpack_accept_language_general_form(ParseContext *context) {
 	Octstr *decoded = NULL;
 	int ret;
 	long val;
@@ -482,7 +482,7 @@ static Octstr *unpack_accept_language_general_form(Context *context) {
 }
 
 /* Credentials is defined in 8.4.2.5 */
-static Octstr *unpack_credentials(Context *context) {
+static Octstr *unpack_credentials(ParseContext *context) {
 	Octstr *decoded = NULL;
 	int val;
 
@@ -534,7 +534,7 @@ static Octstr *unpack_credentials(Context *context) {
 }
 
 /* Challenge is defined in 8.4.2.5 */
-static Octstr *unpack_challenge(Context *context) {
+static Octstr *unpack_challenge(ParseContext *context) {
 	Octstr *decoded = NULL;
 	Octstr *realm_value = NULL;
 	int val;
@@ -568,7 +568,7 @@ static Octstr *unpack_challenge(Context *context) {
 }
 
 /* Content-range is defined in 8.4.2.23 */
-static Octstr *unpack_content_range(Context *context) {
+static Octstr *unpack_content_range(ParseContext *context) {
 	/* We'd have to figure out how to access the content range
 	 * length (i.e. user_data size) from here to parse this,
 	 * and I don't see why the _client_ would send this in any case. */
@@ -600,7 +600,7 @@ static Octstr *unpack_content_range(Context *context) {
 }
 
 /* Field-name is defined in 8.4.2.6 */
-static Octstr *unpack_field_name(Context *context) {
+static Octstr *unpack_field_name(ParseContext *context) {
 	Octstr *decoded = NULL;
 	int ret;
 	int val;
@@ -631,7 +631,7 @@ static Octstr *unpack_field_name(Context *context) {
 }
 
 /* Cache-directive is defined in 8.4.2.15 */
-static Octstr *unpack_cache_directive(Context *context) {
+static Octstr *unpack_cache_directive(ParseContext *context) {
 	Octstr *decoded = NULL;
 	int ret;
 	int val;
@@ -707,7 +707,7 @@ error:
 }
 
 /* Retry-after is defined in 8.4.2.44 */
-static Octstr *unpack_retry_after(Context *context) {
+static Octstr *unpack_retry_after(ParseContext *context) {
 	int selector;
 
 	selector = parse_get_char(context);
@@ -724,7 +724,7 @@ static Octstr *unpack_retry_after(Context *context) {
 }
 
 /* Disposition is defined in 8.4.2.53 */
-static Octstr *unpack_disposition(Context *context) {
+static Octstr *unpack_disposition(ParseContext *context) {
 	Octstr *decoded = NULL;
 	int selector;
 
@@ -739,7 +739,7 @@ static Octstr *unpack_disposition(Context *context) {
 }
 
 /* Range-value is defined in 8.4.2.42 */
-static Octstr *unpack_range_value(Context *context) {
+static Octstr *unpack_range_value(ParseContext *context) {
 	Octstr *decoded = NULL;
 	int selector;
 	unsigned long first_byte_pos, last_byte_pos, suffix_length;
@@ -783,7 +783,7 @@ error:
 }
 
 /* Warning-value is defined in 8.4.2.51 */
-static Octstr *unpack_warning_value(Context *context) {
+static Octstr *unpack_warning_value(ParseContext *context) {
 	Octstr *decoded = NULL;
 	unsigned long warn_code;
 	Octstr *warn_agent = NULL;
@@ -825,7 +825,8 @@ error:
 	return NULL;
 }
 
-static void unpack_well_known_field(List *unpacked, int field_type, Context *context) {
+static void unpack_well_known_field(List *unpacked, int field_type,
+		ParseContext *context) {
 	int val, ret;
 	unsigned char *headername = NULL;
 	unsigned char *ch = NULL;
@@ -1081,7 +1082,7 @@ value_error:
 	octstr_destroy(decoded);
 }
 
-static void unpack_app_header(List *unpacked, Context *context) {
+static void unpack_app_header(List *unpacked, ParseContext *context) {
 	Octstr *header = NULL;
 	Octstr *value = NULL;
 
@@ -1101,7 +1102,7 @@ static void unpack_app_header(List *unpacked, Context *context) {
 }
 
 List *unpack_headers(Octstr *headers, int content_type_present) {
-	Context *context;
+	ParseContext *context;
 	int byte;
     	List *unpacked;
 

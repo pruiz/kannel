@@ -1,5 +1,20 @@
 2000-09-04  Richard Braakman  <dark@wapit.com>
 
+	* Changes prompted by code review:
+
+	* gwlib/gwthread.h, gwlib/gwthread-pthread.h: Rename Threadfunc
+	to gwthread_func_t.
+
+	* gwlib/parse.h, gwlib/parse.c, gw/wsp_headers.c: Rename Context
+	to ParseContext.
+
+	* gwlib/gwmem-check.c: Give symbolic names to the memory-filling
+	patterns it uses.
+
+	* gwlib/conn.h: Improve comments.
+
+2000-09-04  Richard Braakman  <dark@wapit.com>
+
 	* Making release 0.11.1.
 
 2000-09-04  Derry Hamilton <rasilon@tardis.ed.ac.uk>

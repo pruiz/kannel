@@ -1,12 +1,13 @@
 /*
- * conn.h - implement Connection type to wrap a file descriptor
+ * conn.h - declare Connection type to wrap a file descriptor
  *
  * This file defines operations on the Connection type, which provides
  * input and output buffers for a two-way file descriptor, such as a
  * socket or a serial device.
  *
  * The operations are designed for non-blocking use.  Blocking can be
- * done explicitly with conn_wait().
+ * done explicitly with conn_wait() or conn_flush().  A thread that
+ * blocks in these functions can be woken up with gwthread_wakeup.
  *
  * The write operations will queue the data for sending.  They will
  * try to send whatever data can be sent immediately, if there's enough
@@ -19,7 +20,7 @@
  * the request (that would cause a busy-loop); instead, it should
  * wait for more data with conn_wait().
  *
- * The Connection structure has an internal lock, so it can be shared
+ * The Connection structure has internal locks, so it can be shared
  * safely between threads.  There is a race condition in the interface,
  * however, that can cause threads to wait unnecessarily if there are
  * multiple readers.  But in that case there will always be at least one
@@ -79,7 +80,7 @@ void conn_set_output_buffering(Connection *conn, unsigned int size);
  *   - The timeout expires
  *   - New data is available for reading
  *   - Some data queued for output is sent (if there was any)
- *   - The thread is woken up via the wakeup interface
+ *   - The thread is woken up via the wakeup interface (in gwthread.h)
  * Return 1 if the timeout expired.  Return 0 otherwise, if the
  * connection is okay.  Return -1 if the connection is broken.
  * If the timeout is 0 seconds, check for the conditions above without
@@ -107,7 +108,8 @@ int conn_write_data(Connection *conn, unsigned char *data, long length);
 int conn_write_withlen(Connection *conn, Octstr *data);
 
 /* Input functions.  Each of these takes an open connection and
- * returns data if it's available, or NULL if it's not. */
+ * returns data if it's available, or NULL if it's not.  They will
+ * not block. */
 
 /* Return exactly "length" octets of data, if at least that many
  * are available.  Otherwise return NULL.

@@ -12,7 +12,7 @@
 #ifndef GWTHREAD_H
 #define GWTHREAD_H
 
-typedef void Threadfunc(void *arg);
+typedef void gwthread_func_t(void *arg);
 
 /* Called by the gwlib init code */
 void gwthread_init(void);
@@ -21,7 +21,8 @@ void gwthread_shutdown(void);
 /* Start a new thread, running func(arg).  Return the new thread ID
  * on success, or -1 on failure.  Thread IDs are unique during the lifetime
  * of the entire process, unless you use more than LONG_MAX threads. */
-long gwthread_create_real(Threadfunc *func, const char *funcname, void *arg);
+long gwthread_create_real(gwthread_func_t *func, const char *funcname,
+			  void *arg);
 #define gwthread_create(func, arg) \
 	(gwthread_create_real(func, __FILE__ ":" ## #func, arg))
 
@@ -31,7 +32,7 @@ void gwthread_join(long thread);
 
 /* Wait for all threads whose main function is `func' to terminate.
  * Return immediately if none are running. */
-void gwthread_join_every(Threadfunc *func);
+void gwthread_join_every(gwthread_func_t *func);
 
 /* Wait for all threads to terminate.  Return immediately if none
  * are running.  This function is not intended to be called if new
@@ -44,7 +45,7 @@ void gwthread_join_all(void);
 long gwthread_self(void);
 
 /* If the other thread is currently in gwthread_pollfd or gwthread_sleep,
- * make it return immediately.  Otherwise, make it return immediately the
+ * make it return immediately.  Otherwise, make it return immediately, the
  * next time it calls one of those functions. */
 void gwthread_wakeup(long thread);
 

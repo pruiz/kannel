@@ -19,7 +19,7 @@
 struct threadinfo {
 	pthread_t self;
 	const char *name;
-	Threadfunc *func;
+	gwthread_func_t *func;
 	long number;
 	int wakefd_recv;
 	int wakefd_send;
@@ -27,7 +27,7 @@ struct threadinfo {
 };
 
 struct new_thread_args {
-	Threadfunc *func;
+	gwthread_func_t *func;
 	void *arg;
 	struct threadinfo *ti;
 };
@@ -90,7 +90,8 @@ static void flushpipe(int fd) {
  * it in a free slot in the thread table.  The thread table must already
  * be locked by the caller.  Return the thread number chosen for this
  * thread.  The caller must make sure that there is room in the table. */
-static long fill_threadinfo(pthread_t id, const char *name, Threadfunc *func,
+static long fill_threadinfo(pthread_t id, const char *name,
+			    gwthread_func_t *func,
 struct threadinfo *ti) {
 	int pipefds[2];
 	long first_try;
@@ -260,7 +261,7 @@ static void *new_thread(void *arg) {
 	return NULL;
 }
 
-long gwthread_create_real(Threadfunc *func, const char *name, void *arg) {
+long gwthread_create_real(gwthread_func_t *func, const char *name, void *arg) {
 	int ret;
 	pthread_t id;
 	struct new_thread_args *p;
@@ -349,7 +350,7 @@ void gwthread_wakeup_all(void) {
 	}
 }
 
-void gwthread_join_every(Threadfunc *func) {
+void gwthread_join_every(gwthread_func_t *func) {
 	long i;
 	struct threadinfo *ti;
 	int ret;

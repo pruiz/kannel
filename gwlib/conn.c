@@ -524,7 +524,8 @@ Octstr *conn_read_withlen(Connection *conn) {
 		length = decode_network_long(lengthbuf);
 
 		if (length < 0) {
-			warning(0, __FUNCTION__ ": got negative length, skipping");
+			warning(0, "conn_read_withlen: "
+				"got negative length, skipping");
 			conn->inbufpos += 4;
 			goto retry;
 		}

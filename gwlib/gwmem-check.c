@@ -27,7 +27,7 @@
  * that tries to use it after freeing will likely crash.  The freed area
  * is kept around for a while, to see if anything tries to write to it
  * after it's been freed.
- *
+ * 
  * Richard Braakman <dark@wapit.com>
  */
 
@@ -38,6 +38,20 @@
 
 #include "gwlib.h"
 
+/* Freshly malloced space is filled with NEW_AREA_PATTERN, to break
+ * code that assumes it is filled with zeroes. */
+#define NEW_AREA_PATTERN 0xcafebabe
+
+/* Freed space is filled with FREE_AREA_PATTERN, to break code that
+ * tries to read from it after freeing. */
+#define FREE_AREA_PATTERN 0xdeadbeef
+
+/* The marker before an area is filled with START_MARK_PATTERN
+ * (except for some bookkeeping bytes at the start of the marker). */
+#define START_MARK_PATTERN 0xdadaface
+
+/* The marker beyond an area is filled with END_MARK_PATTERN. */
+#define END_MARK_PATTERN 0xadadafec
 
 static int initialized = 0;
 
@@ -73,9 +87,9 @@ struct area {
 
 /* Freed areas are thrown into the free ring.  They are not released
  * back to the system until FREE_RING_SIZE other allocations have been
- * made.  This is more effective than releasing them immediately, because
- * before releasing them we can check that they have not been tampered
- * with in that time. */
+ * made.  This is more effective at finding bugs than releasing them
+ * immediately, because when we eventually release them we can check
+ * that they have not been tampered with in that time. */
 #define FREE_RING_SIZE 1024
 
 static struct area allocated[MAX_ALLOCATIONS];
@@ -89,7 +103,7 @@ static long num_allocations;
 static long free_ring_start;
 static long free_ring_len;
 
-/* The next two are used for informational messages at shutdown */
+/* The next three are used for informational messages at shutdown */
 /* Largest number of allocations we've had at one time */
 static long highest_num_allocations;
 /* Largest value of the sum of allocated areas we've had at one time */
@@ -152,7 +166,7 @@ static int untouched(unsigned char *p, size_t bytes, long pattern) {
 
 /* Fill the end marker for this area */
 static void endmark(unsigned char *p, size_t size) {
-	fill(p + size, MARKER_SIZE, 0xadadafec);
+	fill(p + size, MARKER_SIZE, END_MARK_PATTERN);
 }
 
 /* Fill the start marker for this area, and assign an number to the
@@ -164,7 +178,7 @@ static void startmark(unsigned char *p, long number) {
 
 	fill(p - MARKER_SIZE, sizeof(long), number);
 	fill(p - MARKER_SIZE + sizeof(long),
-		MARKER_SIZE - sizeof(long), 0xdadaface);
+		MARKER_SIZE - sizeof(long), START_MARK_PATTERN);
 }
 
 /* Check that the start marker for this area are intact, and return the
@@ -173,14 +187,14 @@ static void startmark(unsigned char *p, long number) {
 static long check_startmark(unsigned char *p) {
 	long number;
 	if (!untouched(p - MARKER_SIZE + sizeof(long),
-			MARKER_SIZE - sizeof(long), 0xdadaface))
+			MARKER_SIZE - sizeof(long), START_MARK_PATTERN))
 		return -1;
 	memcpy(&number, p - MARKER_SIZE, sizeof(number));
 	return number;
 }
 
 static int check_endmark(unsigned char *p, size_t size) {
-	if (!untouched(p + size, MARKER_SIZE, 0xadadafec))
+	if (!untouched(p + size, MARKER_SIZE, END_MARK_PATTERN))
 		return -1;
 	return 0;
 }
@@ -302,7 +316,7 @@ static void drop_from_free_ring(long index) {
 
 	area = &free_ring[index];
 	if (check_marks(area, index) < 0 ||
-	    !untouched(area->area, area->area_size, 0xdeadbeef)) {
+	    !untouched(area->area, area->area_size, FREE_AREA_PATTERN)) {
 		error(0, "Freed area %p has been tampered with.", area->area);
 		dump_area(area);
 	}
@@ -328,7 +342,7 @@ static void put_on_free_ring(struct area *area) {
 }
 
 static void free_area(struct area *area) {
-	fill(area->area, area->area_size, 0xdeadbeef);
+	fill(area->area, area->area_size, FREE_AREA_PATTERN);
 	put_on_free_ring(area);
 	remove_allocation(area);
 }
@@ -354,7 +368,7 @@ void *gw_check_malloc(size_t size, const char *filename, long lineno,
 	p += MARKER_SIZE;
 
 	lock();
-	fill(p, size, 0xcafebabe);
+	fill(p, size, NEW_AREA_PATTERN);
 	record_allocation(p, size, filename, lineno, function);
 	unlock();
 
@@ -399,7 +413,7 @@ void *gw_check_realloc(void *p, size_t size, const char *filename,
 		new_p += MARKER_SIZE;
 		memcpy(new_p, p, area->area_size);
 		fill(new_p + area->area_size, size - area->area_size,
-		     0xcafebabe);
+		     NEW_AREA_PATTERN);
 		new_area = record_allocation(new_p, size,
 				area->allocator.filename,
 				area->allocator.lineno,

@@ -14,8 +14,8 @@ struct context {
 	int error;
 };
 
-Context *parse_context_create(Octstr *str) {
-	Context *result;
+ParseContext *parse_context_create(Octstr *str) {
+	ParseContext *result;
 
 	result = gw_malloc(sizeof(*result));
 	result->data = str;
@@ -27,7 +27,7 @@ Context *parse_context_create(Octstr *str) {
 	return result;
 }
 
-void parse_context_destroy(Context *context) {
+void parse_context_destroy(ParseContext *context) {
 	gw_assert(context != NULL);
 
 	if (context->limit_stack) {
@@ -39,25 +39,25 @@ void parse_context_destroy(Context *context) {
 	gw_free(context);
 }
 
-int parse_error(Context *context) {
+int parse_error(ParseContext *context) {
 	gw_assert(context != NULL);
 
 	return context->error;
 }
 
-void parse_clear_error(Context *context) {
+void parse_clear_error(ParseContext *context) {
 	gw_assert(context != NULL);
 
 	context->error = 0;
 }
 
-void parse_set_error(Context *context) {
+void parse_set_error(ParseContext *context) {
 	gw_assert(context != NULL);
 	
 	context->error = 1;
 }
 
-int parse_limit(Context *context, long length) {
+int parse_limit(ParseContext *context, long length) {
 	long *elem;
 
 	gw_assert(context != NULL);
@@ -77,7 +77,7 @@ int parse_limit(Context *context, long length) {
 	return 0;
 }
 
-int parse_pop_limit(Context *context) {
+int parse_pop_limit(ParseContext *context) {
 	long *elem;
 
 	gw_assert(context != NULL);
@@ -94,13 +94,13 @@ int parse_pop_limit(Context *context) {
 	return 0;
 }
 
-long parse_octets_left(Context *context) {
+long parse_octets_left(ParseContext *context) {
 	gw_assert(context != NULL);
 
 	return context->limit - context->pos;
 }
 
-int parse_skip(Context *context, long count) {
+int parse_skip(ParseContext *context, long count) {
 	gw_assert(context != NULL);
 
 	if (context->pos + count > context->limit) {
@@ -113,13 +113,13 @@ int parse_skip(Context *context, long count) {
 	return 0;
 }
 
-void parse_skip_to_limit(Context *context) {
+void parse_skip_to_limit(ParseContext *context) {
 	gw_assert(context != NULL);
 
 	context->pos = context->limit;
 }
 
-int parse_skip_to(Context *context, long pos) {
+int parse_skip_to(ParseContext *context, long pos) {
 	gw_assert(context != NULL);
 
 	if (pos < 0) {
@@ -137,7 +137,7 @@ int parse_skip_to(Context *context, long pos) {
 	return 0;
 }
 
-int parse_peek_char(Context *context) {
+int parse_peek_char(ParseContext *context) {
 	gw_assert(context != NULL);
 	
 	if (context->pos == context->limit) {
@@ -148,7 +148,7 @@ int parse_peek_char(Context *context) {
 	return octstr_get_char(context->data, context->pos++);
 }
 
-int parse_get_char(Context *context) {
+int parse_get_char(ParseContext *context) {
 	gw_assert(context != NULL);
 
 	if (context->pos == context->limit) {
@@ -159,7 +159,7 @@ int parse_get_char(Context *context) {
 	return octstr_get_char(context->data, context->pos++);
 }
 
-Octstr *parse_get_octets(Context *context, long length) {
+Octstr *parse_get_octets(ParseContext *context, long length) {
 	Octstr *result;
 
 	gw_assert(context != NULL);
@@ -174,7 +174,7 @@ Octstr *parse_get_octets(Context *context, long length) {
 	return result;
 }
 
-unsigned long parse_get_uintvar(Context *context) {
+unsigned long parse_get_uintvar(ParseContext *context) {
 	long pos;
 	unsigned long value;
 
@@ -189,7 +189,7 @@ unsigned long parse_get_uintvar(Context *context) {
 	return value;
 }
 
-Octstr *parse_get_nul_string(Context *context) {
+Octstr *parse_get_nul_string(ParseContext *context) {
 	Octstr *result;
 	long pos;
 
