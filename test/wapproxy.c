@@ -111,6 +111,7 @@ static List *udpc_list;
 static Octstr *interface_name = NULL;
 static Octstr *wapgw;
 static int verbose = 0;
+static int server_port = 0;
 
 List *incoming_wdp;
 List *outgoing_wdp;
@@ -150,7 +151,9 @@ static WAPEvent *wdp_msg2event(Msg *msg)
 
     gw_assert(msg_type(msg) == wdp_datagram);
 
-    if (msg->wdp_datagram.destination_port == CONNECTION_ORIENTED_PORT ||
+    if (msg->wdp_datagram.destination_port == server_port ||
+        msg->wdp_datagram.source_port == server_port ||
+        msg->wdp_datagram.destination_port == CONNECTION_ORIENTED_PORT ||
         msg->wdp_datagram.source_port == CONNECTION_ORIENTED_PORT) {
 
         dgram = wap_event_create(T_DUnitdata_Ind);
@@ -488,8 +491,7 @@ static int udp_start(Cfg *cfg)
 
     udpc_list = gwlist_create();	/* have a list of running systems */
 
-    add_service(CONNECTION_ORIENTED_PORT, 
-                octstr_get_cstr(interface_name), NULL);  /* wsp/wtp */
+    add_service(server_port, octstr_get_cstr(interface_name), NULL);  /* wsp/wtp */
     
     gwlist_add_producer(incoming_wdp);
     udp_running = 1;
@@ -555,7 +557,7 @@ static int udp_addwdp_from_server(Msg *msg)
 
     /* now search for our inbound UDP socket */
     os = octstr_duplicate(interface_name);
-    source = udp_create_address(os, CONNECTION_ORIENTED_PORT);
+    source = udp_create_address(os, server_port);
 
     msg->wdp_datagram.source_address = udp_get_ip(source);
     msg->wdp_datagram.source_port = udp_get_port(source);
@@ -719,7 +721,9 @@ static void help(void)
     info(0, "-v number");
     info(0, "    set log level for stderr logging");
     info(0, "-i interface");
-    info(0, "    bind to the given interface for UDP sockets");
+    info(0, "    bind to the given interface for UDP server port (default: 0.0.0.0)");
+    info(0, "-p port");
+    info(0, "    bind to the given port for UDP server port (default: 9201)");
     info(0, "-m");
     info(0, "    dump WDP/UDP packets, msg_dump()");
     info(0, "-e");
@@ -735,8 +739,10 @@ int main(int argc, char **argv)
     Cfg *cfg = NULL;
 	
 	gwlib_init();
-
-    while ((opt = getopt(argc, argv, "v:meti:")) != EOF) {
+    
+    server_port = CONNECTION_ORIENTED_PORT;
+    
+    while ((opt = getopt(argc, argv, "v:meti:p:")) != EOF) {
 
         switch (opt) {
             case 'v':
@@ -754,14 +760,17 @@ int main(int argc, char **argv)
             case 't':
                 verbose += 4;
                 break;
-
-
+                
             case 'h':
                 help();
                 exit(0);
 
             case 'i':
                 interface_name = octstr_create(optarg);
+                break;
+                
+            case 'p':
+                server_port = atoi(optarg);
                 break;
 
             case '?':

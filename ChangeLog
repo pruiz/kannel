@@ -1,3 +1,7 @@
+2005-04-01  Stipe Tolj  <stolj@wapme.de> 
+    * test/wapproxy.c: added option -p for UDP port of wapproxy to list to.
+      Can be used to proxy WDP packets on the same machine/interface. 
+
 2005-03-29  Alexander Malysh <amalysh at kannel.org>
     * gwlib/http.c: fixed horrible bug in 'http_cgivar_dump' that
       used 'gwlist_extract_first' instead of 'gwlist_get'.
