@@ -1265,11 +1265,10 @@ admin-password = f00bar
      <entry valign=bottom>
         Set maximum size of incoming message queue. After number of messages
         has hit this value, Kannel began to discard them.
-        This variable has no effect, if length of the outgoing message queue is
-        zero. Value 0 means giving strict priority to outgoing messages. -1, 
+        Value 0 means giving strict priority to outgoing messages. -1, 
         default, means that the queue of infinite length is accepted. (This 
         works with any normal input, use this variable only when Kannel message
-        queues grow very long.
+        queues grow very long).
      </entry></row>
 
   </tbody>
