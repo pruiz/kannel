@@ -435,7 +435,7 @@ static char *sendsms_request(CGIArg *list)
 {
     Msg *msg;
     URLTranslation *t;
-    char *val, *from, *to, *text;
+    char *val, *from, *to, *text, *udh;
     int ret;
     
     if (cgiarg_get(list, "username", &val) == -1)

@@ -17,8 +17,6 @@
 #include "smsc.h"
 #include "sms_msg.h"
 
-typedef struct MSG MSG;
-
 /*
  * List of SMS center types that we support.
  */
@@ -127,7 +125,7 @@ void smscenter_remove_from_buffer(SMSCenter *smsc, size_t n);
 /* Send an SMS message via an SMS center. Return -1 for error,
    0 for OK. */
 int smscenter_submit_smsmessage(SMSCenter *smsc, SMSMessage *msg);
-int smscenter_submit_msg(SMSCenter *smsc, MSG *msg);
+int smscenter_submit_msg(SMSCenter *smsc, Msg *msg);
 
 
 /* Receive an SMS message from an SMS center. Return -1 for error,
@@ -136,7 +134,7 @@ int smscenter_submit_msg(SMSCenter *smsc, MSG *msg);
    pointer to it is returned via `*msg'. Note that this operation
    blocks until there is a message. */
 int smscenter_receive_smsmessage(SMSCenter *smsc, SMSMessage **msg);
-int smscenter_receive_msg(SMSCenter *smsc, MSG **msg);
+int smscenter_receive_msg(SMSCenter *smsc, Msg **msg);
 
 
 /* Is there an SMS message pending from an SMS center? Return -1 for
@@ -155,8 +153,8 @@ int fake_close(SMSCenter *smsc);
 int fake_submit_smsmessage(int socket, SMSMessage *msg);
 int fake_pending_smsmessage(SMSCenter *smsc);
 int fake_receive_smsmessage(SMSCenter *smsc, SMSMessage **msg);
-int fake_submit_msg(SMSCenter *smsc, MSG *msg);
-int fake_receive_msg(SMSCenter *smsc, MSG **msg);
+int fake_submit_msg(SMSCenter *smsc, Msg *msg);
+int fake_receive_msg(SMSCenter *smsc, Msg **msg);
 
 /*
  * Interface to Nokia SMS centers using CIMD.
@@ -167,8 +165,8 @@ int cimd_close(SMSCenter *smsc);
 int cimd_pending_smsmessage(SMSCenter *smsc);
 int cimd_submit_smsmessage(SMSCenter *smsc, SMSMessage *msg);
 int cimd_receive_smsmessage(SMSCenter *smsc, SMSMessage **msg);
-int cimd_submit_msg(SMSCenter *smsc, MSG *msg);
-int cimd_receive_msg(SMSCenter *smsc, MSG **msg);
+int cimd_submit_msg(SMSCenter *smsc, Msg *msg);
+int cimd_receive_msg(SMSCenter *smsc, Msg **msg);
 
 /*
  * Interface to CMG SMS centers using EMI.
@@ -183,8 +181,8 @@ int emi_close_ip(SMSCenter *smsc);
 int emi_pending_smsmessage(SMSCenter *smsc);
 int emi_submit_smsmessage(SMSCenter *smsc, SMSMessage *msg);
 int emi_receive_smsmessage(SMSCenter *smsc, SMSMessage **msg);
-int emi_submit_msg(SMSCenter *smsc, MSG *msg);
-int emi_receive_msg(SMSCenter *smsc, MSG **msg);
+int emi_submit_msg(SMSCenter *smsc, Msg *msg);
+int emi_receive_msg(SMSCenter *smsc, Msg **msg);
 
 /*
  * Interface to Aldiscon SMS centers using SMPP 3.3.
@@ -195,7 +193,7 @@ int smpp_close(SMSCenter *smsc);
 int smpp_pending_smsmessage(SMSCenter *smsc);
 int smpp_submit_smsmessage(SMSCenter *smsc, SMSMessage *msg);
 int smpp_receive_smsmessage(SMSCenter *smsc, SMSMessage **msg);
-int smpp_submit_msg(SMSCenter *smsc, MSG *msg);
-int smpp_receive_msg(SMSCenter *smsc, MSG **msg);
+int smpp_submit_msg(SMSCenter *smsc, Msg *msg);
+int smpp_receive_msg(SMSCenter *smsc, Msg **msg);
 
 #endif

@@ -370,14 +370,23 @@ static void normalize_numbers(RQueueItem *msg, SMSCenter *from)
     if (from != NULL) {
 	p = smsc_dial_prefix(from);
 	if (p != NULL) {
-	    sr = normalize_number(p, &(msg->msg->plain_sms.sender));
-	    rr = normalize_number(p, &(msg->msg->plain_sms.receiver));
+		if(msg_type(msg->msg) == plain_sms) {
+			sr = normalize_number(p, &(msg->msg->plain_sms.sender));
+			rr = normalize_number(p, &(msg->msg->plain_sms.receiver));
+		} else if(msg_type(msg->msg) == smart_sms) {
+			sr = normalize_number(p, &(msg->msg->smart_sms.sender));
+			rr = normalize_number(p, &(msg->msg->smart_sms.receiver));
+		}
 	}
     }
-    if (sr == 0)
-	sr = normalize_number(bbox->global_prefix, &(msg->msg->plain_sms.sender));
-    if (rr == 0)
-	rr = normalize_number(bbox->global_prefix, &(msg->msg->plain_sms.receiver));
+	if(msg_type(msg->msg) == plain_sms) {
+		if (sr == 0) sr = normalize_number(bbox->global_prefix, &(msg->msg->plain_sms.sender));
+		if (rr == 0) rr = normalize_number(bbox->global_prefix, &(msg->msg->plain_sms.receiver));
+	} else if(msg_type(msg->msg) == smart_sms) {
+		if (sr == 0) sr = normalize_number(bbox->global_prefix, &(msg->msg->smart_sms.sender));
+		if (rr == 0) rr = normalize_number(bbox->global_prefix, &(msg->msg->smart_sms.receiver));
+	}
+
 
     if (sr == -1 || rr == -1)
 	error(0, "Problems during number normalization");
@@ -1268,6 +1277,10 @@ static void print_threads(char *buffer)
     ret = pthread_mutex_unlock(&bbox->mutex);
     if (ret != 0)
 	goto error;
+
+    sprintf(buffer, "Total %d receiver threads, of which...\n"
+	    "active ones: %d SMSC, %d CSDR, %d SMS BOX, %d WAP BOX",
+	    num, smsc, csdr, smsbox,wapbox);
 
     if (bbox->http_port > -1) {
 	sprintf(buf, "[n/a] HTTP-Adminstration at port %d\n", bbox->http_port);
