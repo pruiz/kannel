@@ -79,6 +79,8 @@ SMSCConn *smscconn_create(CfgGroup *grp, int start_as_stopped)
 	ret = smsc_at2_create(conn,grp);
     else if (octstr_compare(smsc_type, octstr_imm("cgw")) == 0)
 	ret = smsc_cgw_create(conn,grp);
+    else if (octstr_compare(smsc_type, octstr_imm("smasi")) == 0)
+	ret = smsc_smasi_create(conn, grp);
     else
 	ret = smsc_wrapper_create(conn, grp);
 

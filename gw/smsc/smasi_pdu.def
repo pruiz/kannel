@@ -1,0 +1,156 @@
+/*
+ * smasi_pdu.def - definitions of SMASI PDU structure
+ *
+ * Stipe Tolj <tolj@wapme-systems.de>
+ */
+
+#ifndef PDU
+#error Macro PDU not defined.
+#endif
+
+#ifndef COMATERMINATED
+#error Macro COMATERMINATED not defined.
+#endif
+
+#ifndef NONTERMINATED
+#error Macro NONTERMINATED not defined.
+#endif
+
+#ifdef HEADER
+#error Macro HEADER was already defined.
+#endif
+#define HEADER \
+	NONTERMINATED(command)
+
+PDU(LogonReq,
+    0x00000001,
+    HEADER
+    COMATERMINATED(Name)
+    COMATERMINATED(Password)
+)
+
+PDU(LogonConf,
+    0x00000002,
+    HEADER
+)
+
+PDU(LogonRej,
+    0x00000003,
+    HEADER
+    COMATERMINATED(Reason)
+)
+
+PDU(LogoffReq,
+    0x00000004,
+    HEADER
+    COMATERMINATED(Reason)
+)
+
+PDU(LogoffConf,
+    0x00000005,
+    HEADER
+)
+
+PDU(SubmitReq,
+    0x00000010,
+    HEADER
+    COMATERMINATED(Originator)
+    COMATERMINATED(OriginatorType)
+    COMATERMINATED(OriginatorPlan)
+    COMATERMINATED(Destination)
+    COMATERMINATED(DestinationType)
+    COMATERMINATED(DestinationPlan)
+    COMATERMINATED(Sequence)
+    COMATERMINATED(MqPriority)
+    COMATERMINATED(Body)
+    COMATERMINATED(UserDataHeader)
+    COMATERMINATED(BodyEncoding)
+    COMATERMINATED(MsEncoding)
+    COMATERMINATED(Class)
+    COMATERMINATED(ProtocolID)
+)
+
+PDU(SubmitConf,
+    0x00000011,
+    HEADER
+    COMATERMINATED(MsgReference)
+    COMATERMINATED(JobId)
+    COMATERMINATED(Point)
+    COMATERMINATED(Sequence)
+)
+
+PDU(SubmitRej,
+    0x00000012,
+    HEADER
+    COMATERMINATED(RejectCode)
+    COMATERMINATED(MsgReference)
+    COMATERMINATED(Reason)
+    COMATERMINATED(JobId)
+    COMATERMINATED(At)
+    COMATERMINATED(Point)
+    COMATERMINATED(Sequence)
+)
+
+PDU(DeliverReq,
+    0x00000013,
+    HEADER
+    COMATERMINATED(Originator)
+    COMATERMINATED(Destination)
+    COMATERMINATED(Body)
+    COMATERMINATED(UserDataHeader)
+    COMATERMINATED(MsgReference)
+    COMATERMINATED(Sequence)
+    COMATERMINATED(mqTo)
+    COMATERMINATED(mqFrom)
+    COMATERMINATED(JobId)
+    COMATERMINATED(At)
+    COMATERMINATED(Point)
+    COMATERMINATED(SmscSequence)
+    COMATERMINATED(SmscReference)
+    COMATERMINATED(Scts)
+    COMATERMINATED(DestinationPlan)
+    COMATERMINATED(DestinationType)
+    COMATERMINATED(OriginatorPlan)
+    COMATERMINATED(OriginatorType)
+    COMATERMINATED(ProtocolId)
+    COMATERMINATED(PacketId)
+    COMATERMINATED(Position)
+    COMATERMINATED(Class)
+    COMATERMINATED(MsEncoding)
+)
+
+PDU(DeliverConf,
+    0x00000014,
+    HEADER
+    COMATERMINATED(MsgReference)
+    COMATERMINATED(Sequence)
+)
+
+PDU(DeliverRej,
+    0x00000015,
+    HEADER
+    COMATERMINATED(RejectCode)
+    COMATERMINATED(MsgReference)
+    COMATERMINATED(Sequence)
+)
+
+PDU(Error,
+    0x80000016,
+    HEADER
+    COMATERMINATED(Reason)
+)
+
+PDU(EnquireLinkReq,
+    0x80000017,
+    HEADER
+)
+
+PDU(EnquireLinkConf,
+    0x80000018,
+    HEADER
+)
+
+#undef PDU
+#undef COMATERMINATED
+#undef NONTERMINATED
+#undef HEADER

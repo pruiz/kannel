@@ -190,6 +190,8 @@ int smsc_cgw_create(SMSCConn *conn, CfgGroup *cfg);
 /* Responsible file: smsc/smsc_at2.c. */
 int smsc_at2_create(SMSCConn *conn, CfgGroup *cfg);
 
+/* Responsible file: smsc/smsc_smasi.c */
+int smsc_smasi_create(SMSCConn *conn, CfgGroup *cfg);
 
 /* ADD NEW CREATE FUNCTIONS HERE
  *
