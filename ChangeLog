@@ -1,4 +1,14 @@
 2001-10-08 Bruno Rodrigues <bruno.rodrigues@litux.org>
+	* gwlib/http.c: When url was like http://user:pass@site, the first
+	colon was changed to @ to differentiate from the colon for port
+	number. Now the code replaces it back to colon and replaces password
+	with "*". (unfortunatly keeps the same amount of chars)
+	* gw/smsc_at2.c: added a select command before the read, so kannel
+	delays some time if there's nothing to read (copy from old at). This
+	way, at2 doesn't eat my cpu :)
+	* gw/smsc_emi2.c: delay in x miliseconds was incorrect. Fixed.
+
+2001-10-08 Bruno Rodrigues <bruno.rodrigues@litux.org>
 	* gw/smsc_emi2.c, gwlib/cfg.def: Added "throughput" (messages per
 	second) variable to configuration. Delays 1/throughtput seconds 
 	between sending messages.

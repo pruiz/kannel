@@ -261,8 +261,10 @@ void	at2_close_device(PrivAT2data *privdata)
 void	at2_read_buffer(PrivAT2data *privdata)
 {
     char buf[MAX_READ+1];
-    int s;
+    int s, ret;
     int count;
+    fd_set read_fd;
+    struct timeval tv;
  
     if(privdata->fd == -1)
     {
@@ -276,6 +278,18 @@ void	at2_read_buffer(PrivAT2data *privdata)
     	count = SSIZE_MAX;
 #endif
 	
+    tv.tv_sec = 0;
+    tv.tv_usec = 1000;
+
+    FD_ZERO(&read_fd);
+    FD_SET(privdata->fd, &read_fd);
+    ret = select(privdata->fd + 1, &read_fd, NULL, NULL, &tv);
+    if (ret == -1) {
+	if (! (errno == EINTR || errno == EAGAIN))
+	    error(errno, "AT2[%s]: error on select");
+	return;
+    }
+
     s = read(privdata->fd, buf,count);
     if(s > 0)
     	octstr_append_data(privdata->ilb, buf, s);

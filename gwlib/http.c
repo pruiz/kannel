@@ -989,7 +989,7 @@ static int parse_url(Octstr *url, Octstr **host, long *port, Octstr **path,
 {
     Octstr *prefix, *prefix_https;
     long prefix_len;
-    int host_len, colon, slash, at;
+    int host_len, colon, slash, at, auth_sep;
 
     prefix = octstr_imm("http://");
     prefix_https = octstr_imm("https://");
@@ -1030,11 +1030,10 @@ static int parse_url(Octstr *url, Octstr **host, long *port, Octstr **path,
     at = octstr_search_char(url, '@', prefix_len);
     if ( at != -1 ) {
 	if ((slash == -1 || ( slash != -1 && at < slash))) {
-	    int colon2;
-	    colon2 = octstr_search_char(url, ':', prefix_len);
+	    auth_sep = octstr_search_char(url, ':', prefix_len);
 
-	    if (colon2 != -1 && (colon2 < at)) {
-		octstr_set_char(url, colon2, '@');
+	    if (auth_sep != -1 && (auth_sep < at)) {
+		octstr_set_char(url, auth_sep, '@');
 		colon = octstr_search_char(url, ':', prefix_len);
 	    }
 	} else {
@@ -1081,7 +1080,7 @@ static int parse_url(Octstr *url, Octstr **host, long *port, Octstr **path,
 
 
     if (at != -1) {
-	int at2;
+	int at2, i;
 	at2 = octstr_search_char(url, '@', prefix_len);
 	*username = octstr_copy(url, prefix_len, at2 - prefix_len);
 
@@ -1090,6 +1089,9 @@ static int parse_url(Octstr *url, Octstr **host, long *port, Octstr **path,
 	else
 	    *password = NULL;
 
+	octstr_set_char(url, auth_sep, ':');
+	for(i = at2 + 1; i < at ; i++)
+	    octstr_set_char(url, i, '*');
 	host_len = host_len - at + prefix_len - 1;
 	prefix_len = at + 1;
     }
@@ -1099,6 +1101,7 @@ static int parse_url(Octstr *url, Octstr **host, long *port, Octstr **path,
         *path = octstr_create("/");
     else
         *path = octstr_copy(url, slash, octstr_len(url) - slash);
+
 
     return 0;
 }

@@ -615,7 +615,7 @@ static void emi2_send_loop(SMSCConn *conn, Connection *server)
 	delay = 1.0 / privdata->throughput;
 	info(0, "Limiting throughput to %d messages per second " 
 		"(delay of %d miliseconds)",
-	         privdata->throughput, delay * 1000);
+	         privdata->throughput, (int) (1000.0 * delay));
     }
 
     check_time = time(NULL);
