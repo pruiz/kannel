@@ -358,6 +358,9 @@ int wap_addr_tuple_same(WAPAddrTuple *a, WAPAddrTuple *b) {
 
 
 WAPAddrTuple *wap_addr_tuple_duplicate(WAPAddrTuple *tuple) {
+	if (tuple == NULL)
+		return NULL;
+
 	return wap_addr_tuple_create(tuple->client->address,
 				     tuple->client->port,
 				     tuple->server->address,

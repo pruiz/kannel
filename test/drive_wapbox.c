@@ -48,6 +48,7 @@ enum {
 
 static long max_requests = 1;
 static long max_clients = 1;
+static long req_per_session = 1;
 static unsigned short http_port;
 static int wapbox_port = 30188;
 static Octstr *http_url = NULL;
@@ -218,6 +219,11 @@ static Client *find_client(unsigned short port) {
 	return clients + port;
 }
 
+static void client_done(Client *client) {
+	requests_complete++;
+	list_append(ready_clients, client);
+}
+
 static void increment_tid(Client *client) {
 	if (client->wtp_tid == 0x7fff) 
 		client->wtp_tid = 0;
@@ -289,12 +295,11 @@ static void set_tid(Octstr *pdu, int tid) {
 }
 
 static int get_tid(Octstr *pdu) {
-	int tid = (octstr_get_char(pdu, 1) << 8) + octstr_get_char(pdu, 2);
-	return tid & 0x7fff;
+	return octstr_get_bits(pdu, 8, 16);
 }
 
 static int wtp_type(Octstr *pdu) {
-	return (octstr_get_char(pdu, 0) >> 3) & 0x0f;
+	return octstr_get_bits(pdu, 1, 4);
 }
 
 static Msg *wdp_create(Octstr *data, Client *client) {
@@ -365,8 +370,6 @@ static void record_disconnect(Client *client) {
 	client->wsp_connected = 0;
 	client->wsp_session_id = -1;
 	increment_tid(client);
-	requests_complete++;
-	list_append(ready_clients, client);
 }
 
 static void send_invoke_disconnect(Connection *boxc, Client *client) {
@@ -385,6 +388,7 @@ static void send_invoke_disconnect(Connection *boxc, Client *client) {
 	octstr_destroy(pdu);
 
 	record_disconnect(client);
+	client_done(client);
 }
 
 static void handle_connect_reply(Connection *boxc, Client *client, Octstr *pdu) {
@@ -435,7 +439,11 @@ static void handle_get_reply(Connection *boxc, Client *client, Octstr *pdu) {
 	increment_tid(client);
 	client->pages_fetched++;
 
-	send_invoke_disconnect(boxc, client);
+	if (client->pages_fetched == req_per_session) {
+		send_invoke_disconnect(boxc, client);
+	} else {
+		client_done(client);
+	}
 }
 
 static void handle_reply(Connection *boxc, Msg *reply) {
@@ -470,9 +478,10 @@ static void handle_reply(Connection *boxc, Msg *reply) {
 		return;
 	}
 
-	if (get_tid(wtp) != client->wtp_tid) {
+	/* Server should invert the MSB of the tid in its replies */
+	if (get_tid(wtp) != (client->wtp_tid ^ 0x8000)) {
 		error(0, "Got packet with wrong tid %d, expected %d.",
-			get_tid(wtp), client->wtp_tid);
+			get_tid(wtp), client->wtp_tid ^ 0x8000);
 		if (!dumped) {
 			octstr_dump(wtp, 0);
 			dumped = 1;
@@ -488,12 +497,25 @@ static void handle_reply(Connection *boxc, Msg *reply) {
 		handle_get_reply(boxc, client, wtp);
 	} else if (client->wsp_connected == 2 && type == ACK) {
 		record_disconnect(client);
+		client_done(client);
 	} else {
 		error(0, "Got unexpected packet");
 		if (!dumped) {
 			octstr_dump(wtp, 0);
 			dumped = 1;
 		}
+	}
+}
+
+static void start_request(Connection *boxc, Client *client) {
+	gw_assert(client != NULL);
+	gw_assert(client->wsp_connected != 2);
+	gw_assert(client->wtp_invoked == 0);
+
+	if (client->wsp_connected == 0) {
+		send_invoke_connect(boxc, client); 
+	} else {
+		send_invoke_get(boxc, client);
 	}
 }
 
@@ -513,7 +535,7 @@ static long run_requests(Connection *boxc) {
 
 			if (requests_sent < max_requests
 			    && (client = list_extract_first(ready_clients))) {
-				send_invoke_connect(boxc, client); 
+				start_request(boxc, client);
 				requests_sent++;
 			}
 			ret = conn_wait(boxc, TIMEOUT);
@@ -547,6 +569,7 @@ static void help(void) {
 	info(0, "  -c clients   # of concurrent clients; default 1.");
 	info(0, "  -w wapport   Port wapbox should connect to; default 30188");
 	info(0, "  -u url       Use this url instead of internal http server");
+	info(0, "  -g requests  Number of requests per WSP session; default 1");
 	info(0, "  -U           Set the User ack flag on all WTP transactions");
 }
 
@@ -559,7 +582,7 @@ int main(int argc, char **argv) {
 
 	gwlib_init();
 
-	while ((opt = getopt(argc, argv, "hv:r:c:w:du:U")) != EOF) {
+	while ((opt = getopt(argc, argv, "hv:r:c:w:du:Ug:")) != EOF) {
 		switch (opt) {
 		case 'v':
 			set_output_level(atoi(optarg));
@@ -591,6 +614,10 @@ int main(int argc, char **argv) {
 
 		case 'd':
 			verbose_debug = 1;
+			break;
+
+		case 'g':
+			req_per_session = atoi(optarg);
 			break;
 
 		case '?':

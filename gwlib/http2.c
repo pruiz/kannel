@@ -498,14 +498,17 @@ void http2_header_pack(List *headers) {
 
 
 void http2_append_headers(List *to, List *from) {
+	Octstr *header;
 	long i;
 	
 	gwlib_assert_init();
 	gw_assert(to != NULL);
 	gw_assert(from != NULL);
 
-	for (i = 0; i < list_len(from); ++i)
-		list_append(to, list_get(from, i));
+	for (i = 0; i < list_len(from); ++i) {
+		header = list_get(from, i);
+		list_append(to, octstr_duplicate(header));
+	}
 }
 
 
