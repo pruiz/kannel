@@ -1,5 +1,14 @@
 2000-10-13  Lars Wirzenius  <liw@iki.fi>
 
+	* gwlib/http.c: Disable the start_request_thread as well. It
+	caused "make check" to fail (I ran it in the wrong directory
+	*sigh*).
+	
+	* test/test_http.c: Use http_get until http_start_get and
+	http_receive_result work properly.
+
+2000-10-13  Lars Wirzenius  <liw@iki.fi>
+
 	* gwlib/http.c: Disable the kludge_do_one_request thread, since
 	it isn't killed (or joined) properly.
 

@@ -162,7 +162,9 @@ void http_init(void)
     request_id_counter = counter_create();
     
     run_status = running;
+#if 0
     gwthread_create(start_request_thread, NULL);
+#endif
 }
 
 
@@ -256,6 +258,10 @@ long http_receive_result(HTTPCaller *caller, int *status, List **headers,
 {
     HTTPResponse *response;
     long request_id;
+
+#if 1 /* xxx this is a kludge to get the prototype work at least minimally */
+    start_request_thread(NULL);
+#endif
 
     response = list_consume(caller);
     if (response == NULL)
