@@ -7,7 +7,7 @@
  * to be able to use the AT SMSC:
  *     group = smsc
  *     smsc = at
- *     modemtype = wavecom | premicell | siemens
+ *     modemtype = wavecom | premicell | siemens | falcom | nokiaphone
  *     device = /dev/xxx 
  */
 
@@ -66,6 +66,8 @@ static int numtext(int num);
 #define WAVECOM		"wavecom"
 #define PREMICELL	"premicell"
 #define SIEMENS		"siemens"
+#define FALCOM		"falcom"
+#define NOKIAPHONE	"nokiaphone"
 
 /******************************************************************************
  * Open the connection
@@ -85,7 +87,8 @@ static int at_open_connection(SMSCenter *smsc) {
 	}
 
 	tcgetattr(fd, &tios);
-	if(strcmp(smsc->at_modemtype, SIEMENS) == 0) {
+	if((strcmp(smsc->at_modemtype, SIEMENS) == 0) 
+	   || (strcmp(smsc->at_modemtype, NOKIAPHONE) == 0)) {
 		cfsetospeed(&tios, B19200);  /* check radio pad parameter*/
 		cfsetispeed(&tios, B19200);
 	} else {
@@ -102,7 +105,6 @@ static int at_open_connection(SMSCenter *smsc) {
 	 * CRTSCTS: enable flow control */
 	tios.c_iflag |= IGNBRK | IGNPAR | INPCK;
 	tios.c_cflag |= CSIZE | HUPCL | CREAD | CRTSCTS;
-	tios.c_cflag ^= PARODD;
 	tios.c_cflag |=CS8;
 	ret = tcsetattr(fd, TCSANOW, &tios); /* apply changes now */
 	if(ret == -1){
@@ -247,10 +249,10 @@ int at_submit_msg(SMSCenter *smsc, Msg *msg) {
 	int ret = -1; 
 	char sc[3];
 
-	/* The Wavecom and Siemens modems need a '00' prepended to the PDU
-	 * to indicate to use the default SC. */
+	/* '00' prepended to the PDU to indicate to use the default SC.
+	 * The Premicell doesn't need this. */
 	sc[0] = '\0';
-	if((strcmp(smsc->at_modemtype, WAVECOM) == 0) || (strcmp(smsc->at_modemtype, SIEMENS) == 0))
+	if(strcmp(smsc->at_modemtype, PREMICELL) != 0)
 		strcpy(sc, "00");
 	
 	if(msg_type(msg)==sms) {
@@ -352,7 +354,7 @@ static int send_modem_command(int fd, char *cmd, int multiline) {
 	ostr = octstr_create("");
 
 	/* debug */
-	printf("Command: %s\n", cmd);
+	/*printf("Command: %s\n", cmd);*/
 	
 	/* DEBUG !!! - pretend to send but just return success (0)*/
 	/* return 0; */
@@ -366,7 +368,8 @@ static int send_modem_command(int fd, char *cmd, int multiline) {
 	for( i=0; i<1000; i++) {
 		ret = at_data_read(fd, ostr);
 		/* debug */
-		/*if(octstr_len(ostr)) {
+		/*
+		if(octstr_len(ostr)) {
 			printf("Read from modem: ");
 			for(i=0; i<octstr_len(ostr); i++) {
 				if(octstr_get_char(ostr, i) <32)
@@ -376,6 +379,7 @@ static int send_modem_command(int fd, char *cmd, int multiline) {
 			}
 			printf("\n");
 		}*/
+		
 		if(ret == -1)
 			goto error;
 
@@ -396,6 +400,9 @@ static int send_modem_command(int fd, char *cmd, int multiline) {
 			if(ret == -1)
 				ret = octstr_search(ostr, 
 				    	 octstr_create_immutable("READY"), 0);
+			if(ret == -1)
+				ret = octstr_search(ostr,
+				    	 octstr_create_immutable("CMGS"), 0);
 		}
 		if(ret != -1) {
 			octstr_destroy(ostr);
@@ -424,7 +431,6 @@ static int pdu_extract(SMSCenter *smsc, Octstr **pdu) {
 	long len = 0;
 	int pos = 0;
 	int tmp;
-	/*int i, c;  just for debug */
 
 	buffer = smsc->at_inbuffer;
 	
@@ -447,10 +453,8 @@ static int pdu_extract(SMSCenter *smsc, Octstr **pdu) {
 	while( isspace(octstr_get_char(buffer, pos)))
 		pos++;
 	
-	/* skip the SMSC address on the Wavecom (don't know about other modems -
-	 * Premicell doesn't need it) */
-	if(strcmp(smsc->at_modemtype, WAVECOM) == 0 
-	    || strcmp(smsc->at_modemtype, SIEMENS) == 0) {
+	/* skip the SMSC address but not on the Premicell */
+	if(strcmp(smsc->at_modemtype, PREMICELL) == 0 ) {
 		tmp = hexchar(octstr_get_char(buffer, pos))*16
 		    + hexchar(octstr_get_char(buffer, pos+1));
 		tmp = 2 + tmp * 2;
@@ -465,16 +469,6 @@ static int pdu_extract(SMSCenter *smsc, Octstr **pdu) {
 	*pdu = octstr_copy(buffer, pos, len*2);
 	octstr_delete(buffer, 0, pos+len*2);
 
-	/*printf("extracted pdu = ");
-	for(i=0; i<octstr_len(pdu); i++) {
-		c = octstr_get_char(pdu, i);
-		if(c<32)
-			printf("[%02x]", c);
-		else
-			printf("%c", c);
-	}
-	printf("\n");*/
-	
 	return 1;
 
 nomsg:
@@ -488,16 +482,8 @@ static Msg *pdu_decode(Octstr *data) {
 	int type;
 	Msg *msg = NULL;
 
-	/* debug info */
-	/* int i;
-	printf("Decoding PDU: ");
-	for(i=0; i<octstr_len(data); i++) {
-		printf("%c", octstr_get_char(data, i));
-	}
-	printf("\n");*/
-
 	/* Get the PDU type */
-	type = octstr_get_char(data, 0) & 3;
+	type = octstr_get_char(data, 1) & 3;
 	
 	switch(type) {
 
@@ -611,7 +597,6 @@ static Msg *pdu_decode_deliver_sm(Octstr *data) {
  */
 static int pdu_encode(Msg *msg, unsigned char *pdu) {
 	int pos = 0, i,len;
-	/*int c;*/ /* debug only */
 	
 	/* The message is encoded directly in the text representation of 
 	 * the hex values that will be sent to the modem.
@@ -656,17 +641,19 @@ static int pdu_encode(Msg *msg, unsigned char *pdu) {
 		pos++;
 	}
 	
-	/* protocal identifier */
-	pdu[pos] = numtext(0);
+	/* protocol identifier */
+	/* 0x1F GSM 03.40 default value */
+ 	pdu[pos] = numtext(1);
 	pos++;
-	pdu[pos] = numtext(0);
+	pdu[pos] = numtext(15);
 	pos++;
 	
 	/* data coding scheme */
-	/* we only know about the 7/8 bit coding */
-	pdu[pos] = numtext(0);
+	/* coding group bits: 1111 */
+	pdu[pos] = numtext(15);
 	pos++;
-	pdu[pos] = numtext(msg->sms.flag_8bit << 2);
+	/* data coding/message class: class 1 */
+	pdu[pos] = numtext(msg->sms.flag_8bit << 2) + 1;
 	pos++;
 
 	/* user data length - include length of UDH if it exists*/
@@ -695,25 +682,13 @@ static int pdu_encode(Msg *msg, unsigned char *pdu) {
 	}
 
 	/* user data */
-	/* if the data is too long, it is cut 
-	 * FIXME: add support for concatenated short messages */
+	/* if the data is too long, it is cut */
 	if(msg->sms.flag_8bit == 1) {
 		pos += encode8bituncompressed(msg->sms.msgdata, &pdu[pos]);
 	} else {
 		pos += encode7bituncompressed(msg->sms.msgdata, &pdu[pos]);
 	}
 	pdu[pos] = 0;
-
-	/* debug */
-	/*printf("pdu= ");
-	for(i=0; i<strlen(pdu); i++) {
-		c = pdu[i];
-		if(c<32)
-			printf("[%02x]", c);
-		else
-			printf("%c", c);
-	}
-	printf("\n");*/
 
 	return 0;
 }
