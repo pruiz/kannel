@@ -1,3 +1,10 @@
+1999-11-18    <rpr@rpr.wapit.com>
+
+	* gw/smsbox_req.c, gw/smsbox.c: Modified send_message to use
+	octstrings instead of char *. UDH part not yet ready.
+
+	* gwlib/octstr.c, gwlib/octstr.h: Added function octstr_truncate
+
 Thu Nov 18 15:13:44 1999  Lars Wirzenius  <liw@wapit.com>
 
 	* doc/arch/arch-smsbox.xml: Fixed DocBook syntax errors.

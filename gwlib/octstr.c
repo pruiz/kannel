@@ -328,6 +328,15 @@ int octstr_replace(Octstr *ostr, char *data, size_t len) {
 }
 
 
+void octstr_truncate(Octstr *ostr, int new_len) {
+    if (new_len >= ostr->len || new_len < 0)
+	return;
+    
+    ostr->len = new_len;
+    ostr->data[new_len] = '\0';
+}
+
+
 int octstr_insert_data(Octstr *ostr, size_t pos, char *data, size_t len) {
 	size_t needed;
 	char *p;

@@ -94,7 +94,6 @@ static sig_atomic_t 	abort_program = 0;
 
 int socket_sender(Msg *pmsg)
 {
-    int ret;
     Octstr *pack;
     
     pack = msg_pack(pmsg);
@@ -108,7 +107,10 @@ int socket_sender(Msg *pmsg)
 
     mutex_unlock(&socket_mutex);
 
-    debug(0, "write <%s>", octstr_get_cstr(pmsg->plain_sms.text));
+    if (msg_type(pmsg) == plain_sms)
+	debug(0, "write <%s>", octstr_get_cstr(pmsg->plain_sms.text));
+    else if (msg_type(pmsg) == smart_sms)
+	debug(0, "write smart <%s>", octstr_get_cstr(pmsg->smart_sms.msgdata));
     octstr_destroy(pack);
 
     msg_destroy(pmsg);

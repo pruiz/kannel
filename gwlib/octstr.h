@@ -172,6 +172,13 @@ int octstr_insert_data(Octstr *ostr, size_t pos, char *data, size_t len);
 
 
 /*
+ * truncate length of octstr to 'new_len'. If new_len is same or large
+ * than current, do nothing. cannot fail.
+ */
+void octstr_truncate(Octstr *ostr, int new_len);
+
+
+/*
  * Delete part of an octet string. This operation cannot fail.
  */
 void octstr_delete(Octstr *ostr1, size_t pos, size_t len);

@@ -18,6 +18,7 @@
 #include "smsbox_req.h"
 #include "urltrans.h"
 #include "wapitlib.h"
+#include "octstr.h"
 
 /*
  * this module handles the request handling - that is, finding
@@ -137,35 +138,19 @@ error:
 
 /*
  * sends the buf, with msg-info - does NO splitting etc. just the sending
- * Message is truncated by sms mag length
+ *
+ * NOTE: the sender frees the message!
  *
  * return -1 on failure, 0 if Ok.
  */
-static int do_sending(Msg *msg, char *str)
+static int do_sending(Msg *msg)
 {
-    Msg *pmsg;
-
     if (sms_max_length < 0) return -1;
-    
-    pmsg = msg_create(plain_sms);
-    if (pmsg == NULL)
+
+    if (sender(msg) < 0)
 	goto error;
 
-    pmsg->plain_sms.receiver = octstr_duplicate(msg->plain_sms.receiver);
-    pmsg->plain_sms.sender = octstr_duplicate(msg->plain_sms.sender);
-    pmsg->plain_sms.text = octstr_create_limited(str, sms_max_length);
-    pmsg->plain_sms.time = time(NULL);
-
-    if (pmsg->plain_sms.receiver == NULL ||
-	pmsg->plain_sms.sender == NULL ||
-	pmsg->plain_sms.text == NULL)
-
-	goto error;
-
-    if (sender(pmsg) < 0)
-	goto error;
-
-    /* sender does the freeing */
+    /* sender does the freeing (or uses msg as it sees fit) */
 
     return 0;
 error:
@@ -179,45 +164,71 @@ error:
  *
  * return -1 on failure, 0 if Ok.
  */
-static int do_split_send(Msg *msg, char *str, int maxmsgs,
-			 URLTranslation *trans)
+static int do_split_send(Msg *msg, int maxmsgs, URLTranslation *trans)
 {
-    char *p;
-    char *suf, *sc;
-    char buf[1024];
+    Octstr *text;
+    Msg *split;
+    
+    char *p, *suf, *sc;
     int slen = 0;
-    int size;
+    int size, total_len, loc;
 
     suf = urltrans_split_suffix(trans);
     sc = urltrans_split_chars(trans);
     if (suf != NULL)
 	slen = strlen(suf);
 
-    for(p = str; maxmsgs > 1 && strlen(p) > sms_max_length; maxmsgs--) {
-	size = sms_max_length - slen;	/* leave room to split-suffix */
+    if (msg_type(msg) == plain_sms)
+	text = msg->plain_sms.text;
+    else if (msg_type(msg) == smart_sms) {
+	warning(0, "Cannot send too long UDH!");
+	return 0;
+    }
+    else 
+	return -1;
 
+    total_len = octstr_len(text);
+    
+    for(loc = 0, p = octstr_get_cstr(text);
+	maxmsgs > 0 && loc < total_len;
+	maxmsgs--) {
+
+	if (maxmsgs == 1 || total_len-loc < sms_max_length) {
+	    slen = 0;
+	    suf = NULL;
+	    sc = NULL;
+	}
+	size = sms_max_length - slen;	/* leave room to split-suffix */
 	/*
 	 * if we use split chars, find the first from starting from
 	 * the end of sms message and return partion _before_ that
 	 */
-
 	if (sc)
-	    size = str_reverse_seek(p, size, sc) + 1;
+	    size = str_reverse_seek(p+loc, size-1, sc) + 1;
 
 	/* do not accept a bit too small fractions... */
 	if (size < sms_max_length/2)
 	    size = sms_max_length - slen;
 
-	sprintf(buf, "%.*s%s", size, p, suf ? suf : "");
-	if (do_sending(msg, buf) < 0)
+	if ((split = msg_duplicate(msg))==NULL)
+	    goto error;
+
+	octstr_replace(split->plain_sms.text, p+loc, size);
+	if (suf != NULL)
+	    octstr_insert_data(split->plain_sms.text, size, suf, slen);
+	
+	if (do_sending(split) < 0)
 	    return -1;
 
-	p += size;
+	loc += size;
     }
-    if (do_sending(msg, p) < 0)
-	return -1;
-
+    msg_destroy(msg);	/* we must delete at as it is supposed to be deleted */
     return 0;
+error:
+    error(0, "Memory allocation failed!");
+    msg_destroy(msg);
+    return -1;
+    
 }
 
 /*
@@ -225,38 +236,45 @@ static int do_split_send(Msg *msg, char *str, int maxmsgs,
  *
  * return -1 if failed utterly, 0 otherwise
  */
-static int send_message(URLTranslation *trans, Msg *msg, char *reply)
+static int send_message(URLTranslation *trans, Msg *msg)
 {
-    char *rstr = reply;
+    Octstr *text;
     int max_msgs;
-    int len;
+    static char *empty = "<Empty reply from service provider>";
     
     max_msgs = urltrans_max_messages(trans);
+
+    if (msg_type(msg) == plain_sms)
+	text = msg->plain_sms.text;
+    else if (msg_type(msg) == smart_sms)
+	text = msg->smart_sms.msgdata;
+    else
+	goto error;
     
-    if (strlen(reply)==0) {
+    if (octstr_len(text)==0) {
 	if (urltrans_omit_empty(trans) != 0) {
 	    max_msgs = 0;
 	}
-	else
-	    rstr = "<Empty reply from service provider>";
+	else { 
+	    if (octstr_replace(text, empty, strlen(empty)) == -1) 
+		goto error;
+	}
     }
-    len = strlen(rstr);
-
     if (max_msgs == 0)
 	info(0, "No reply sent, denied.");
-    else if (len <= sms_max_length) {
-	if (do_sending(msg, rstr) < 0)
+    else if (octstr_len(text) <= sms_max_length) {
+	if (do_sending(msg) < 0)
 	    goto error;
-    } else if (len > sms_max_length && max_msgs == 1) {
-	/* truncated reply */
-	if (do_sending(msg, rstr) < 0)
+    } else if (octstr_len(text) > sms_max_length && max_msgs == 1) {
+	octstr_truncate(text, sms_max_length);	/* truncate reply */
+	if (do_sending(msg) < 0)
 	    goto error;
     } else {
 	/*
 	 * we have a message that is longer than what fits in one
 	 * SMS message and we are allowed to split it
 	 */
-	if (do_split_send(msg, rstr, max_msgs, trans) < 0)
+	if (do_split_send(msg, max_msgs, trans) < 0)
 	    goto error;
     }
     return 0;
@@ -357,21 +375,28 @@ void *smsbox_req_thread(void *arg) {
 	      octstr_get_cstr(msg->plain_sms.sender),
 	      octstr_get_cstr(msg->plain_sms.receiver));
 
-    msg->plain_sms.time = time(NULL);	/* set current time */
     reply = obey_request(trans, msg);
     if (reply == NULL) {
 	error(0, "request failed");
 	reply = strdup("Request failed");
     }
-    if (reply == NULL || send_message(trans, msg, reply) < 0)
+    if (reply == NULL)
 	goto error;
 
-    msg_destroy(msg);
+    if (octstr_replace(msg->plain_sms.text, reply, strlen(reply)) == -1)
+	goto error;
+
+    msg->plain_sms.time = time(NULL);	/* set current time */
+
+    /* send_message frees the 'msg' */
+    if (send_message(trans, msg) < 0)
+	error(0, "request_thread: failed");
+    
     free(reply);
     req_threads--;
     return NULL;
 error:
-    error(errno, "request_thread: failed");
+    error(0, "request_thread: failed");
     msg_destroy(msg);
     free(reply);
     req_threads--;
@@ -429,10 +454,12 @@ char *smsbox_req_sendsms(CGIArg *list)
 
 		msg->plain_sms.receiver = octstr_create(to);
 		msg->plain_sms.sender = octstr_create(from);
-		msg->plain_sms.text = octstr_create("");
+		msg->plain_sms.text = octstr_create(text);
 		msg->plain_sms.time = time(NULL);
     
-		ret = send_message(t, msg, text);
+
+		/* send_message frees the 'msg' */
+		ret = send_message(t, msg);
 
     } else {
   
@@ -441,26 +468,24 @@ char *smsbox_req_sendsms(CGIArg *list)
 
 		msg->smart_sms.receiver = octstr_create(to);
 		msg->smart_sms.sender = octstr_create(from);
-		msg->smart_sms.msgdata = octstr_create("");
+		msg->smart_sms.msgdata = octstr_create(text);
 		msg->smart_sms.udhdata = octstr_create("");
 		msg->smart_sms.flag_8bit = 1;
 		msg->smart_sms.flag_udh  = 1;
 		msg->smart_sms.time = time(NULL);
     
-		ret = send_message(t, msg, text);
+		/* send_message frees the 'msg' */
+		ret = send_message(t, msg);
 
     }
 
     if (ret == -1)
 	goto error;
 
-    msg_destroy(msg);
     return "Sent.";
     
 error:
-    error(errno, "sendsms_request: failed");
-    msg_destroy(msg);
-    req_threads--;
+    error(0, "sendsms_request: failed");
     return "Sending failed.";
 }
 

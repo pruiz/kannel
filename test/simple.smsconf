@@ -15,6 +15,7 @@ split-suffix = "..."
 keyword = www
 aliases = "http"
 url = http://%S
+max-messages = 2
 
 keyword = tekstitv
 aliases = "teksti;tv"
