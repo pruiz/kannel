@@ -1,3 +1,9 @@
+Fri May 26 17:14:18 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* doc/arch/wapbox-arch.fig: New figure showing the planned
+	wapbox architecture. (Not visible in the actual documentation
+	yet, though.)
+
 Fri May 26 16:59:03 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* gwlib/http2.c: Destroy temporary header list in
