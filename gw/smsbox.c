@@ -46,7 +46,6 @@ static Octstr *sendota_url = NULL;
 static Octstr *xmlrpc_url = NULL;
 static Octstr *bb_host;
 static char *pid_file;
-static int heartbeat_freq;
 static Octstr *accepted_chars = NULL;
 static int only_try_http = 0;
 static URLTranslationList *translations = NULL;
@@ -2692,7 +2691,6 @@ static void init_smsbox(Cfg *cfg)
     bb_port = BB_DEFAULT_SMSBOX_PORT;
     bb_ssl = 0;
     bb_host = octstr_create(BB_DEFAULT_HOST);
-    heartbeat_freq = BB_DEFAULT_HEARTBEAT;
     logfile = NULL;
     lvl = 0;
 
@@ -2853,8 +2851,8 @@ static int check_args(int i, int argc, char **argv) {
 int main(int argc, char **argv)
 {
     int cf_index;
-    long heartbeat_thread;
     Octstr *cfg_name;
+    double heartbeat_freq = DEFAULT_HEARTBEAT;
 
     gwlib_init();
     cf_index = get_and_set_debugs(argc, argv, check_args);
@@ -2897,14 +2895,16 @@ int main(int argc, char **argv)
     connect_to_bearerbox(bb_host, bb_port, bb_ssl, NULL /* bb_our_host */);
 	/* XXX add our_host if required */
 
-    heartbeat_thread = heartbeat_start(write_to_bearerbox, heartbeat_freq,
-				       outstanding_requests);
+    if (0 > heartbeat_start(write_to_bearerbox, heartbeat_freq,
+				       outstanding_requests)) {
+        info(0, GW_NAME "Could not start heartbeat.");
+    }
 
     read_messages_from_bearerbox();
 
     info(0, GW_NAME " smsbox terminating.");
 
-    heartbeat_stop(heartbeat_thread);
+    heartbeat_stop(ALL_HEARTBEATS);
     http_close_all_ports();
     gwthread_join_every(sendsms_thread);
     list_remove_producer(smsbox_requests);

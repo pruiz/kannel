@@ -73,7 +73,7 @@ long heartbeat_start(hb_send_func_t *send_func, double freq,
 
     info = gw_malloc(sizeof(*info));
     info->send_func = send_func;
-    info->freq = freq;
+    info->freq = (freq <= 0 ? DEFAULT_HEARTBEAT : freq);
     info->load_func = load_func;
     info->running = 1;
     info->thread = gwthread_create(heartbeat_thread, info);
@@ -88,27 +88,44 @@ long heartbeat_start(hb_send_func_t *send_func, double freq,
     }
 }
 
+/*
+ * function : heartbeat_stop
+ * arguments: long hb_thread, the thread number of the heartbeat
+ *            that is wished to be stopped.
+ *            if hb_thread == ALL_HEARTBEATS then all heartbeats
+ *            are stopped.
+ * returns  : -
+ */
 void heartbeat_stop(long hb_thread)
 {
     List *matching_info;
     struct hb_info *info;
 
-    matching_info = list_extract_matching(heartbeats, &hb_thread, find_hb);
-    if (matching_info == NULL) {
-        warning(0, "Could not stop heartbeat %ld: not found.", hb_thread);
-	return;
+    if (hb_thread == ALL_HEARTBEATS) {
+        while (NULL != (info = list_extract_first(heartbeats))) {
+            gw_assert(info);
+            info->running = 0;
+            gwthread_wakeup(info->thread);
+            gwthread_join(info->thread);
+            gw_free(info);
+        }
+    } else {
+        matching_info = list_extract_matching(heartbeats, &hb_thread, find_hb);
+        if (matching_info == NULL) {
+            warning(0, "Could not stop heartbeat %ld: not found.", hb_thread);
+	    return;
+        }
+        gw_assert(list_len(matching_info) == 1);
+        info = list_extract_first(matching_info);
+        list_destroy(matching_info, NULL);
+     
+        info->running = 0;
+        gwthread_wakeup(hb_thread);
+        gwthread_join(hb_thread);
+        gw_free(info);
     }
-    gw_assert(list_len(matching_info) == 1);
-    info = list_extract_first(matching_info);
-    list_destroy(matching_info, NULL);
- 
-    info->running = 0;
-    gwthread_wakeup(hb_thread);
-    gwthread_join(hb_thread);
-
-    gw_free(info);
     if (list_len(heartbeats) == 0) {
-	list_destroy(heartbeats, NULL);
-	heartbeats = NULL;
+        list_destroy(heartbeats, NULL);
+        heartbeats = NULL;
     }
 }

@@ -8,6 +8,8 @@
 #include "gwlib/gwlib.h"
 #include "msg.h"
 
+#define DEFAULT_HEARTBEAT    30
+#define ALL_HEARTBEATS       -1
 /*
  * Signature for a function that returns the current load value.
  */

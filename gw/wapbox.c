@@ -40,8 +40,6 @@ enum { MAX_SMS_OCTETS = 140 };
 static Octstr *bearerbox_host;
 static long bearerbox_port = BB_DEFAULT_WAPBOX_PORT;
 static int bearerbox_ssl = 0;
-static long heartbeat_freq = BB_DEFAULT_HEARTBEAT;
-static long heartbeat_thread;
 static Counter *sequence_counter = NULL;
 int wtp_forced_sar = 0;
 int wsp_smart_errors = 0;
@@ -410,6 +408,7 @@ int main(int argc, char **argv)
     Msg *msg;
     Octstr *filename;
     Cfg *cfg;
+    double heartbeat_freq =  DEFAULT_HEARTBEAT;
     
     gwlib_init();
     cf_index = get_and_set_debugs(argc, argv, NULL);
@@ -467,8 +466,10 @@ int main(int argc, char **argv)
         wap_push_ota_bb_address_set(bearerbox_host);
 	    
     program_status = running;
-    heartbeat_thread = heartbeat_start(write_to_bearerbox, heartbeat_freq, 
-    	    	    	    	       wap_appl_get_load);
+    if (0 > heartbeat_start(write_to_bearerbox, heartbeat_freq, 
+    	    	    	    	       wap_appl_get_load)) {
+        info(0, GW_NAME "Could not start heartbeat.");
+    }
 
     while (program_status != shutting_down) {
 	WAPEvent *dgram;
@@ -520,7 +521,7 @@ int main(int argc, char **argv)
     info(0, GW_NAME " wapbox terminating.");
     
     program_status = shutting_down;
-    heartbeat_stop(heartbeat_thread);
+    heartbeat_stop(ALL_HEARTBEATS);
     counter_destroy(sequence_counter);
 
     if (cfg)
