@@ -1,3 +1,7 @@
+2000-02-14  Tuomas Luttinen  <tuo@tuo.wapit.fi>
+
+	* gw/wml_compiler.c: At the moment does not accept variables at all.
+
 2000-02-14 Aarno Syvänen <syvanen@wapit.com>
 
 	* wtp*: Compiled with -pedantic. Some of warnings removed.

@@ -36,6 +36,14 @@ int wml_compiler_not_implemented = 1;
 
 
 /***********************************************************************
+ * Declarations of data types. 
+ */
+
+typedef enum { NO, YES, NOT_CHECKED } var_allow_t;
+
+
+
+/***********************************************************************
  * Declarations of global variables. 
  */
 
@@ -261,12 +269,20 @@ int parse_document(xmlDocPtr document);
 int parse_node(xmlNodePtr node);
 int parse_element(xmlNodePtr node);
 int parse_attribute(xmlAttrPtr attr);
-void parse_text(xmlNodePtr node);
+int parse_text(xmlNodePtr node);
 
 int parse_end(void);
 
 
 unsigned char element_check_content(xmlNodePtr node);
+
+/*
+ * Variable functions. These functions are used to find and parse variables.
+ */
+
+int parse_variable(Octstr *text, int start, var_allow_t allowed,
+		   Octstr **output);
+
 
 /* Functions to get rid of extra white space. */
 
@@ -423,6 +439,8 @@ int parse_node(xmlNodePtr node)
 	return -1;
       }
     break;
+  case -1: /* Something went wrong in the parsing. */
+    return -1;
   default:
     error(0, "WML compiler: undefined return value in a parse function.");
     return -1;
@@ -646,22 +664,51 @@ int parse_end(void)
 
 /*
  * parse_text - a text string parsing function.
- * This function parses a text node.
+ * This function parses a text node. The text is searched for variables that
+ * are them passed to function that parses them with information if the 
+ * variables are allowed in this text context.
  */
 
-void parse_text(xmlNodePtr node)
+int parse_text(xmlNodePtr node)
 {
+  int i;
+  var_allow_t var_allowed = NOT_CHECKED;
   Octstr *temp1, *temp2;
 
   temp1 = octstr_create(node->content);
 
   text_shrink_blank(temp1);
 
+  if (octstr_search_char(temp1, '&') > -1)
+    return -1;
+
   temp2 = octstr_duplicate(wbxml_string);
   wbxml_string = octstr_cat(temp2, temp1);
 
-  return;
+  return 0;
 }
+
+
+
+/*
+ * parse_variable - a variable parsing function. 
+ * Arguments:
+ * - text: the octet string containing a variable
+ * - start: the starting position of the variable not including 
+ *   trailing &
+ * - allowed: iformation if the variables are allowed in this context
+ * - output: octet string that returns the encoded variable
+ * Returns: lenth of the variable for success, -1 for failure. A variable 
+ * encoutered in a context that doesn't allow them is considered a failure.
+ */
+
+int parse_variable(Octstr *text, int start, var_allow_t allowed,
+		   Octstr **output)
+{
+  return -1;
+}
+
+
 
 /*
 int parse_pi(xmlNodePtr node)
