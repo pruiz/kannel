@@ -1,3 +1,6 @@
+2002-06-28  Stipe Tolj <tolj@wapme-systems.de>
+    * gw/smsc_emi2.c: fixing an assertion checking bug
+
 2002-06-27  Stipe Tolj <tolj@wapme-systems.de>
     * doc/userguide/userguide.xml: added documentation about SMPP related
       configuration directives. Patch submitted by Alan.
