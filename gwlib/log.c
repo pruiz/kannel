@@ -549,7 +549,6 @@ void gw_panic(int err, const char *fmt, ...)
 
         size = backtrace(stack_frames, sizeof(stack_frames) / sizeof(void*));
         strings = backtrace_symbols(stack_frames, size);
-        gw_claim_area(strings);
 
         if (strings) {
             for (i = 0; i < size; i++)
@@ -560,7 +559,11 @@ void gw_panic(int err, const char *fmt, ...)
                 gw_panic_output(0, "%p", stack_frames[i]);
         }
 
-        gw_free(strings);
+        /*
+         * Note: we don't free 'strings' array because gw_free could panic's and we
+         *       have endless loop with SEGFAULT at the end. And this doesn't care
+         *       us in any case, because we are panic's and exiting immediately. (alex)
+         */
     }
 #endif
 
