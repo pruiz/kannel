@@ -333,6 +333,131 @@ static void add_x_wap_tod(List *headers) {
 
 
 /*
+ * Return the reply from an HTTP request to the phone via a WSP session.
+ */
+static void return_session_reply(long server_transaction_id, long status,
+    	    	    	    	 List *headers, Octstr *body, 
+				 long session_id)
+{
+    WAPEvent *e;
+    
+    e = wap_event_create(S_MethodResult_Req);
+    e->u.S_MethodResult_Req.server_transaction_id = server_transaction_id;
+    e->u.S_MethodResult_Req.status = status;
+    e->u.S_MethodResult_Req.response_headers = headers;
+    e->u.S_MethodResult_Req.response_body = body;
+    e->u.S_MethodResult_Req.session_id = session_id;
+    wsp_session_dispatch_event(e);
+}
+
+
+/*
+ * Return the reply from an HTTP request to the phone via connectionless
+ * WSP.
+ */
+static void return_unit_reply(WAPAddrTuple *tuple, long transaction_id,
+    	    	    	      long status, List *headers, Octstr *body)
+{
+    WAPEvent *e;
+
+    e = wap_event_create(S_Unit_MethodResult_Req);
+    e->u.S_Unit_MethodResult_Req.addr_tuple = 
+    	wap_addr_tuple_duplicate(tuple);
+    e->u.S_Unit_MethodResult_Req.transaction_id = transaction_id;
+    e->u.S_Unit_MethodResult_Req.status = status;
+    e->u.S_Unit_MethodResult_Req.response_headers = headers;
+    e->u.S_Unit_MethodResult_Req.response_body = body;
+    wsp_unit_dispatch_event(e);
+}
+
+
+/*
+ * Return an HTTP reply back to the phone.
+ */
+static void return_reply(int status, struct content content, List *headers,
+    	    	    	 long sdu_size, WAPEvent *orig_event,
+			 long session_id, Octstr *url, int x_wap_tod)
+{
+    if (content.url == NULL)
+	    content.url = octstr_duplicate(url);
+
+    if (status < 0) {
+	error(0, "WSP: http lookup failed, oops.");
+	status = HTTP_BAD_GATEWAY;
+	content.type = octstr_create("text/plain");
+	content.charset = octstr_create("");
+	content.body = octstr_create("");
+    } else {
+	int converted;
+
+	http_header_get_content_type(headers, &content.type, 
+	    	    	    	     &content.charset);
+	info(0, "WSP: Fetched <%s> (%s, charset='%s')", 
+		octstr_get_cstr(url), octstr_get_cstr(content.type),
+		octstr_get_cstr(content.charset));
+	if (status != HTTP_OK)
+		info(0, "WSP: Got status %d", status);
+
+#ifdef COOKIE_SUPPORT
+	if (session_id != -1)
+		if (get_cookies(headers, find_session_machine_by_id(session_id)) == -1)
+			error(0, "WSP: Failed to extract cookies");
+#endif		
+	
+	converted = convert_content(&content);
+	if (converted < 0) {
+		warning(0, "WSP: All converters for `%s' failed.",
+				octstr_get_cstr(content.type));
+		/* Don't change status; just send the client what
+		 * we did get. */
+	}
+	if (converted == 1)
+		http_header_mark_transformation(headers, content.body, 
+		    	    	    	    	content.type);
+    }
+
+    if (headers == NULL)
+    	headers = http_create_empty_headers();
+    http_remove_hop_headers(headers);
+    http_header_remove_all(headers, "X-WAP.TOD");
+    if (x_wap_tod)
+	add_x_wap_tod(headers);
+
+    if (content.body == NULL)
+	content.body = octstr_create("");
+
+    if (octstr_len(content.body) > sdu_size && sdu_size > 0) {
+	    /* XXX: This is the wrong status.  It says that the
+	     * client sent us a too large entity (for example with
+	     * POST).  There seems to be no way to indicate that the
+	     * response entity is too large. */
+	    status = HTTP_REQUEST_ENTITY_TOO_LARGE;
+	    warning(0, "WSP: Entity at %s too large (size %ld B, limit %lu B)",
+		    octstr_get_cstr(url), octstr_len(content.body), sdu_size);
+	    octstr_destroy(content.body);
+	    content.body = octstr_create("");
+    }
+
+    if (orig_event->type == S_MethodInvoke_Ind) {
+	return_session_reply(orig_event->u.S_MethodInvoke_Ind.server_transaction_id,
+			     status, headers, content.body, session_id);
+    } else {
+	return_unit_reply(orig_event->u.S_Unit_MethodInvoke_Ind.addr_tuple,
+			  orig_event->u.S_Unit_MethodInvoke_Ind.transaction_id,
+			  status, headers, content.body);
+    }
+
+    octstr_destroy(content.type); /* body was re-used above */
+    octstr_destroy(content.url);
+    octstr_destroy(content.charset);
+    octstr_destroy(url);
+    wap_event_destroy(orig_event);
+
+    counter_decrease(fetches);
+}
+
+
+/*
  * This WML deck is returned when the user asks for the URL "kannel:alive".
  */
 #define HEALTH_DECK \
@@ -342,7 +467,6 @@ static void add_x_wap_tod(List *headers) {
     "<wml><card id=\"health\"><p>Ok</p></card></wml>"
 
 static void fetch_thread(void *arg) {
-	int status;
 	int ret;
 	WAPEvent *event;
 	long client_SDU_size; /* 0 means no limit */
@@ -419,139 +543,39 @@ static void fetch_thread(void *arg) {
 
 	http_header_pack(actual_headers);
 
-	ret = HTTP_INTERNAL_SERVER_ERROR;
-	switch (method) {
-
-	case 0x40 :			/* Get request */
-	    	magic_url = octstr_create_immutable("kannel:alive");
-    	    	if (octstr_compare(url, magic_url) == 0) {
-		    ret = HTTP_OK;
-		    resp_headers = list_create();
-		    http_header_add(resp_headers, "Content-Type",
-		    	    	    "text/vnd.wap.wml");
-    	    	    content.body = octstr_create(HEALTH_DECK);
-		} else {
-		    ret = http_get(url, actual_headers, 
-				   &resp_headers, &content.body);
-		}
-		break;
-
-	case 0x60 :			/* Post request		*/
-		ret = http_post(url, actual_headers, request_body,
-		                &resp_headers, &content.body);
-		break;
-
-	case 0x41 :			/* Options	*/
-	case 0x42 :			/* Head		*/
-	case 0x43 :			/* Delete	*/
-	case 0x44 :			/* Trace	*/
-	case 0x61 :			/* Put		*/
-	default:
-		error(0, "WSP: Method %d not supported.", method);
-		content.body = octstr_create("");
-		resp_headers = NULL;
-		ret = HTTP_NOT_IMPLEMENTED;
-		break;
-	}
-
-	if (content.url == NULL)
-		content.url = octstr_duplicate(url);
-
-	if (ret < 0) {
-		error(0, "WSP: http lookup failed, oops.");
-		status = HTTP_BAD_GATEWAY;
-		content.type = octstr_create("text/plain");
-		content.charset = octstr_create("");
-		content.body = octstr_create("");
+	magic_url = octstr_create_immutable("kannel:alive");
+    	if (method == 0x40 && octstr_compare(url, magic_url) == 0) {
+	    ret = HTTP_OK;
+	    resp_headers = list_create();
+	    http_header_add(resp_headers, "Content-Type", "text/vnd.wap.wml");
+	    content.body = octstr_create(HEALTH_DECK);
+	    http_destroy_headers(actual_headers);
+	    octstr_destroy(request_body);
+	    return_reply(ret, content, resp_headers, client_SDU_size,
+			 event, session_id, url, x_wap_tod);
+	} else if (method == 0x40) {
+	    ret = http_get(url, actual_headers, &resp_headers, &content.body);
+	    http_destroy_headers(actual_headers);
+	    octstr_destroy(request_body);
+	    return_reply(ret, content, resp_headers, client_SDU_size,
+			 event, session_id, url, x_wap_tod);
+	} else if (method == 0x60) {
+	    ret = http_post(url, actual_headers, request_body,
+			    &resp_headers, &content.body);
+	    http_destroy_headers(actual_headers);
+	    octstr_destroy(request_body);
+	    return_reply(ret, content, resp_headers, client_SDU_size,
+			 event, session_id, url, x_wap_tod);
 	} else {
-		int converted;
-
-		http_header_get_content_type(resp_headers,
-				&content.type, &content.charset);
-		info(0, "WSP: Fetched <%s> (%s, charset='%s')", 
-			octstr_get_cstr(url), octstr_get_cstr(content.type),
-			octstr_get_cstr(content.charset));
-		status = ret;
-		if (status != HTTP_OK)
-			info(0, "WSP: Got status %d", status);
-
-#ifdef COOKIE_SUPPORT
-		if (session_id != -1)
-			if (get_cookies(resp_headers, find_session_machine_by_id(session_id)) == -1)
-				error(0, "WSP: Failed to extract cookies");
-#endif		
-		
-		converted = convert_content(&content);
-		if (converted < 0) {
-			warning(0, "WSP: All converters for `%s' failed.",
-					octstr_get_cstr(content.type));
-			/* Don't change status; just send the client what
-			 * we did get. */
-		}
-		if (converted == 1)
-			http_header_mark_transformation(resp_headers, content.body, content.type);
+	    error(0, "WSP: Method %d not supported.", method);
+	    content.body = octstr_create("");
+	    resp_headers = NULL;
+	    ret = HTTP_NOT_IMPLEMENTED;
+	    http_destroy_headers(actual_headers);
+	    octstr_destroy(request_body);
+	    return_reply(ret, content, resp_headers, client_SDU_size,
+			 event, session_id, url, x_wap_tod);
 	}
-
-	list_destroy(actual_headers, octstr_destroy_item);
-	/* resp_headers will be re-used below */
-	if (resp_headers == NULL)
-	    resp_headers = http_create_empty_headers();
-
-	http_remove_hop_headers(resp_headers);
-	http_header_remove_all(resp_headers, "X-WAP.TOD");
-	if (x_wap_tod)
-		add_x_wap_tod(resp_headers);
-
-	if (octstr_len(content.body) > client_SDU_size && client_SDU_size > 0) {
-		/* XXX: This is the wrong status.  It says that the
-		 * client sent us a too large entity (for example with
-		 * POST).  There seems to be no way to indicate that the
-		 * response entity is too large. */
-		status = HTTP_REQUEST_ENTITY_TOO_LARGE;
-		warning(0, "WSP: Entity at %s too large (size %ld B, limit %lu B)",
-			octstr_get_cstr(url), octstr_len(content.body),
-			client_SDU_size);
-                octstr_destroy(content.body);
-		content.body = octstr_create("");
-		octstr_destroy(content.type);
-		content.type = octstr_create("text/plain");
-	}
-
-	if (content.body == NULL)
-		content.body = octstr_create("");
-
-	if (event->type == S_MethodInvoke_Ind) {
-		WAPEvent *e = wap_event_create(S_MethodResult_Req);
-		e->u.S_MethodResult_Req.server_transaction_id = 
-			event->u.S_MethodInvoke_Ind.server_transaction_id;
-		e->u.S_MethodResult_Req.status = status;
-		e->u.S_MethodResult_Req.response_headers = resp_headers;
-		e->u.S_MethodResult_Req.response_body = content.body;
-		e->u.S_MethodResult_Req.session_id = session_id;
-	
-		wsp_session_dispatch_event(e);
-	} else {
-		WAPEvent *e = wap_event_create(S_Unit_MethodResult_Req);
-		e->u.S_Unit_MethodResult_Req.addr_tuple = 
-			wap_addr_tuple_duplicate(
-				event->u.S_Unit_MethodInvoke_Ind.addr_tuple);
-		e->u.S_Unit_MethodResult_Req.transaction_id = 
-			event->u.S_Unit_MethodInvoke_Ind.transaction_id;
-		e->u.S_Unit_MethodResult_Req.status = status;
-		e->u.S_Unit_MethodResult_Req.response_headers = resp_headers;
-		e->u.S_Unit_MethodResult_Req.response_body = content.body;
-	
-		wsp_unit_dispatch_event(e);
-	}
-
-	wap_event_destroy(event);
-	octstr_destroy(content.type); /* body was re-used above */
-	octstr_destroy(content.url);
-	octstr_destroy(content.charset);
-	octstr_destroy(url);
-	octstr_destroy(request_body);
-	
-	counter_decrease(fetches);
 }
 
 
