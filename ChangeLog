@@ -1,3 +1,21 @@
+2002-01-26  Stipe Tolj  <tolj@wapme-systems.de>
+    * doc/userguide/userguide.xml: Updated changes to OTA documentation
+    * gw/ota_prov.[ch]: Added OTA provisioning routines in an own
+      module so we keep smsbox.c more clean from those. Fixes a bug
+      in ota_tokenize_settings(), previously in smsbox_req_sendota()
+      which did not set PPP authentication and WTLS flags accordingly.
+      Seems the logic for the two parameters have been swapped.
+    * gw/smsbox.c: harmonized the literal names for the two options in 
+      sending OTA messages, via Aarno's OTA xml compiler or via the 
+      configuration groups in the config file. The 'otaconfig' group
+      has changed to 'ota-setting' group so we have the same "terms" for
+      both methods. *** BEWARE: this breaks backward compatibility with 
+      the previous gw/cfg.def rules for 'otaconfig' groups! ***
+      Added 'ota-bookmark' group logic to smsbox_req_sendota().
+    * gwlib/cfg.def: changed declaration of 'otaconfig' group to
+      'ota-setting' group to be harmonized with the OTA compiler CGI
+      type names and added 'ota-bookmark' group for OTA bookmarks.
+
 2002-01-25 Aarno Syvänen <aarno@wiral.com>
     * gw/ota_compiler.[ch]: Added compiler for XML OTA configuration documents
     * test/test_ota.c: Added a test program for it
