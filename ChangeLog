@@ -1,5 +1,14 @@
 2000-12-04  Lars Wirzenius  <liw@iki.fi>
 
+	* gw/smsbox.c: Merged smsbox_req.c into smsbox.c, because they
+	called each other backwards and forwards and the merged file is
+	small enough to be manageable, so there's no point in keeping
+	them separate.
+	
+	* gw/smsbox.h, gw/smsbox_req.[ch]: Removed.
+
+2000-12-04  Lars Wirzenius  <liw@iki.fi>
+
 	* gw/smsbox_req.c: Rearranged code to be somewhat clearer.
 	
 	* gw/smsbox.c: Removed ancient file comment.
