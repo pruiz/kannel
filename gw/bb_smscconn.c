@@ -157,8 +157,10 @@ int bb_smscconn_receive(SMSCConn *conn, Msg *sms)
 static void sms_router(void *arg)
 {
     Msg *msg;
-    SMSCConn *conn, *backup;
+    SMSCConn *conn, *best_preferred, *best_ok, *best_bad;
+    long bp_load, bo_load, bb_load;
     int i, s, ret;
+    StatusInfo info;
 
     list_add_producer(flow_threads);
     gwthread_wakeup(MAIN_THREAD_ID);
@@ -188,51 +190,68 @@ static void sms_router(void *arg)
         normalize_number(unified_prefix, &(msg->sms.receiver));
             
         /* select in which list to add this
-         * start - from random SMSC, as they are all 'equal'
+         * start - from random SMSCConn, as they are all 'equal'
          */
 
         list_lock(smsc_list);
 
         s = gw_rand() % list_len(smsc_list);
-        backup = NULL;
-        
+	best_preferred = best_ok = best_bad = NULL;
+
         for (i=0; i < list_len(smsc_list); i++) {
             conn = list_get(smsc_list,  (i+s) % list_len(smsc_list));
 
 	    ret = smscconn_usable(conn,msg);
 	    if (ret == -1)
 		continue;
-	    else if (ret == 0 && backup == NULL)
-		backup = conn;
-	    else if (ret == 1) {
-                debug("bb", 0, "sms_router: adding message to preferred <%s>",
-                      octstr_get_cstr(smscconn_name(conn)));
-		if (smscconn_send(conn, msg) == -1)
+
+	    /* if we already have a preferred one, skip non-preferred */
+	    if (ret != 1 && best_preferred)	
+		continue;
+
+	    smscconn_info(conn, &info);
+	    if (info.status != SMSCCONN_ACTIVE) {
+		if (best_bad == NULL || info.load < bb_load) {
+		    best_bad = conn;
+		    bb_load = info.load;
+		}
+		continue;
+	    }
+	    if (ret == 1) {          /* preferred */
+		if (best_preferred == NULL || info.load < bp_load) {
+		    best_preferred = conn;
+		    bp_load = info.load;
 		    continue;
-		msg_destroy(msg);
-                goto found;
-            }
-        }
-        if (backup) {
-            debug("bb", 0, "sms_router: adding message to <%s>",
-                  octstr_get_cstr(smscconn_name(backup)));
-	    if (smscconn_send(backup, msg) == -1)
-		list_produce(outgoing_sms, msg);
-	    else
-		msg_destroy(msg);
-        }
-        else {
-            warning(0, "Cannot find SMSC for message to <%s>, discarded.",
+		}
+	    }
+	    if (best_ok == NULL || info.load < bo_load) {
+		best_ok = conn;
+		bo_load = info.load;
+	    }
+	}
+	list_unlock(smsc_list);
+
+	if (best_preferred)
+	    ret = smscconn_send(best_preferred, msg);
+	else if (best_ok)
+	    ret = smscconn_send(best_ok, msg);
+	else if (best_bad)
+	    ret = smscconn_send(best_bad, msg);
+	else {
+            warning(0, "Cannot find SMSCConn for message to <%s>, discarded.",
 		    octstr_get_cstr(msg->sms.receiver));
-            alog("SMS DISCARDED - SMSC:%s receiver:%s msg: '%s'",
+            alog("SMS DISCARDED - SMSCID:%s receiver:%s msg: '%s'",
                  (msg->sms.smsc_id) == NULL ?
                  octstr_get_cstr(msg->sms.smsc_id) : "unknown",
                  octstr_get_cstr(msg->sms.receiver),
                  octstr_get_cstr(msg->sms.msgdata));
+	    ret = 0;
+	}
+
+	if (ret == -1)
+	    list_produce(outgoing_sms, msg);
+	else
             msg_destroy(msg);
-        }
-    found:
-        list_unlock(smsc_list);
     }
     /* router has died, make sure that rest die, too */
     

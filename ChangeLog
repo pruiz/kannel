@@ -1,3 +1,13 @@
+2000-12-29  Kalle Marjola  <rpr@wapit.com>
+
+	* gw/bb_smscconn.c: added load-based routing to outgoing SMS
+	messages, which takes into account reconnecting connections,
+	preferrations etc. (note that currently as all SMSC Connections
+	are used via smsc_wrapper their load is equal to internal queue
+	length, which is usually 0)
+
+	* gw/smsc_wrapper.c: a bit update to startup
+
 2000-12-28  Kalle Marjola  <rpr@wapit.com>
 
 	* gw/bb_http.c: added that HTTP admin commands can be used without

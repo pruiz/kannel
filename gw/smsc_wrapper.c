@@ -293,7 +293,7 @@ static long wrapper_queued(SMSCConn *conn)
     SmscWrapper *wrap = conn->data;
     long ret = list_len(wrap->outgoing_queue);
 
-    /* XXX use internal queue as load, maybe something else later */
+    /* use internal queue as load, maybe something else later */
     
     conn->load = ret;
     return ret;
@@ -350,6 +350,8 @@ error:
     if (wrap->smsc != NULL)
 	smsc_close(wrap->smsc);
     gw_free(wrap);
+    conn->is_killed = 1;
+    conn->status = SMSCCONN_KILLED;
     return -1;
 }
 
