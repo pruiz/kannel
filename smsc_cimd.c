@@ -511,9 +511,127 @@ error:
 }
 
 
+/******************************************************************************
+* Send a MT message, returns as in smsc_submit_smsmessage in smsc.h
+*/
 int cimd_submit_msg(SMSCenter *smsc, Msg *msg) {
+
+	char *tmpbuff = NULL, *tmptext = NULL;
+	char msgtext[1024];
+	int ret;
+	int cmd = 0, err = 0;
+	SMSMessage *sms_msg;
+
+	/* QUICK AND DIRTY, WILL FIX ASAP -MG */
+
+	sms_msg = smsmessage_construct(octstr_get_cstr(msg->plain_sms.sender),
+				       octstr_get_cstr(msg->plain_sms.receiver),
+				       msg->plain_sms.text);
+
+
+	/* Fix these by implementing a could-not-send-because-
+	   protocol-does-not-allow in smsc.c or smsgateway.c */
+	if(octstr_len(sms_msg->text) < 1) {
+		warning(0, "cimd_submit_smsmessage: ignoring message with 0-length field");
+		warning(0, "msg->text = <%s>", octstr_get_cstr(sms_msg->text));
+		goto okay; /* THIS IS NOT OKAY!!!! XXX */
+	}
+	if(strlen(sms_msg->sender) < 1) {
+		warning(0, "cimd_submit_smsmessage: ignoring message with 0-length field");
+		warning(0, "msg->sender = <%s>", sms_msg->sender);
+		goto okay; /* THIS IS NOT OKAY!!!! XXX */
+	}
+	if(strlen(sms_msg->receiver) < 1) {
+		warning(0, "cimd_submit_smsmessage: ignoring message with 0-length field");
+		warning(0, "msg->receiver = <%s>", sms_msg->receiver);
+		goto okay; /* THIS IS NOT OKAY!!!! XXX */
+	}
+
+	tmpbuff = malloc(10*1024);
+	tmptext = malloc(10*1024);
+
+	if( (tmpbuff==NULL) || (tmptext==NULL) ) {
+		debug(0, "cimd_submit_smsmessage: out of memory");
+		goto error;
+	}
+
+	bzero(tmpbuff, 10*1024);
+	bzero(tmptext, 10*1024);
+
+	/* XXX internal_cimd_parse_iso88591_to_cimd should use Octstr
+	 * directly, or get a char* and a length, instead of using NUL
+	 * terminated strings.
+	 */
+	octstr_get_many_chars(msgtext, sms_msg->text, 0, octstr_len(sms_msg->text));
+	msgtext[octstr_len(sms_msg->text)] = '\0';
+	internal_cimd_parse_iso88591_to_cimd( msgtext, tmptext, 10*1024,
+					      smsc->alt_charset ); 
+
+
+	/* If messages has UDHs, add the magic number 31 to the right spot */
+	sprintf(tmpbuff, "%c%s%c%s%c%s%c%s%c%s%c%s%c%s%c%c", 
+	  0x02, 
+	  "03", 0x09, 
+	  sms_msg->receiver, 0x09, 
+	  tmptext, 0x09, 
+	  "", 0x09,
+	  "", 0x09,
+	  (sms_msg->has_udh==1) ? "31" : "", 0x09,
+	  "11", 0x03, 0x0A); 
+
+	ret = write_to_socket(smsc->socket, tmpbuff);
+	if(ret < 0) {
+		debug(0, "cimd_submit_smsmessage: socket write error");
+		goto error;
+	}
+
+	/* The Nokia SMSC MAY be configured to send delivery
+	   information, which we then will HAVE to acknowledge.
+	   Naturally the CIMD 1.3 protocol does not include any
+	   kind of negotiation mechanism. */
+	ret = internal_cimd_expect_acknowledge(smsc, &cmd, &err);
+
+	if(ret >= 1) {
+
+		if(cmd == 4) {
+			internal_cimd_send_acknowledge(smsc);
+			goto okay;
+		} else if(cmd == 3) {
+			goto okay;
+		}
+
+	} else if(ret == 0) {
+
+		if(cmd == 4) {
+			internal_cimd_send_acknowledge(smsc);
+			goto okay; /* FIXME XXX THIS IS BOGUS, FIX SMSGATEWAY.C */
+			goto error;
+		} else if(cmd == 3) {
+			goto okay; /* FIXME XXX THIS IS BOGUS, FIX SMSGATEWAY.C */
+			goto error;
+		} else {
+			error(0, "Unexpected behaviour from the CIMD server");
+			debug(0, "cimd_submit_smsmessage: acknowledge was <%i>", ret);
+			debug(0, "cimd_submit_smsmessage: buffer==<%s>", smsc->buffer);
+			goto error;
+		}
+
+	}
+
+okay:
+	free(tmpbuff);
+	free(tmptext);
+	return 0;
+
+error:
+	debug(0, "cimd_submit_smsmessage: returning error");
+	free(tmpbuff);
+	free(tmptext);	
 	return -1;
+
 }
+
+
 
 int cimd_receive_msg(SMSCenter *smsc, Msg **msg) {
 	return -1;
