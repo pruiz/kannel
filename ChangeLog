@@ -1,3 +1,10 @@
+2003-05-26  Alexander Malysh  <a.malysh@centrium.de>
+    * gwlib/cfg.[ch], gw/bearerbox.c, doc/userguide/userguide.xml:
+      added new command line option ("-g" or "--generate") to bearebox.
+      This option just dump all known config
+      groups and options to stdout. Later (if we have module API) we can
+      dump default values also.
+
 2003-05-24  Alexander Malysh  <a.malysh@centrium.de>
     * gwlib/octstr.[ch]: Made functions arguments const, then it's clear
       for caller whether we manipulate arguments.

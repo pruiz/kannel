@@ -648,3 +648,20 @@ void cfg_dump(Cfg *cfg)
 
     debug("gwlib.cfg", 0, "Dump ends.");
 }
+
+void cfg_dump_all()
+{
+    #define OCTSTR(name) \
+        printf("%s = <please consult user doc>\n", #name);
+    #define SINGLE_GROUP(name, fields) \
+        printf("#\n#  Single Group\n#\n"); \
+        printf("group = %s\n", #name); \
+        fields; \
+        printf("\n\n");
+    #define MULTI_GROUP(name, fields) \
+        printf("#\n#  Multi Group\n#\n"); \
+        printf("group = %s\n", #name); \
+        fields; \
+        printf("\n\n");
+    #include "cfg.def"
+}

@@ -274,7 +274,10 @@ static int check_args(int i, int argc, char **argv) {
 	bb_status = BB_SUSPENDED;
     else if (strcmp(argv[i], "-I")==0 || strcmp(argv[i], "--isolated")==0)
 	bb_status = BB_ISOLATED;
-    else
+    else if (strcmp(argv[i], "-g")==0 || strcmp(argv[i], "--generate")==0) {
+        cfg_dump_all();
+        exit(0);
+    }
 	return -1;
 
     return 0;

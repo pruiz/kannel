@@ -146,7 +146,7 @@
         <para>In addition, Kannel operates as <emphasis>Push Proxy Gateway 
         </emphasis>, or <emphasis>PPG</emphasis>, making possible for content 
         servers to send data to the phones. This is a new type of WAP service,
-        and have many interesting applications. Usually servers know whether 
+        and have many interesting applications. Usually servers know whether
         some data is new, not the users. </para>
 
 	<para><ulink url="http://www.opensource.org">Open Source</ulink>
@@ -257,7 +257,7 @@
        or GPRS. Because Push Proxy Gateway tokenises SI and SL documents, it 
        may fit one SMS message (if not, it is segmented for transfer). </para>
 
-       <para>Using two bearers seems to be an unnecessary complication. But 
+       <para>Using two bearers seems to be an unnecessary complication. But
        quite simply, phones currently operate this way. Push over GPRS can 
        only simplify matters.</para>
 </sect1>
@@ -405,7 +405,7 @@
 	<orderedlist>
 	<listitem><para><citetitle>User's Guide</citetitle>, i.e., the one
 		you're reading at the moment.</para></listitem>
-	<listitem><para><citetitle>Architecture and 
+	<listitem><para><citetitle>Architecture and
 		Design</citetitle>, in <filename>doc/arch</filename> or
 		at <ulink url="http://www.kannel.3glab.org/arch.shtml">
 		http://www.kannel.3glab.org/arch.shtml</ulink></para></listitem>
@@ -661,7 +661,7 @@
         </para>
 	
 	<para>Removing Kannel</para>
-	
+
 	<para>1. Log in as root:</para>
 
 	<para>2. Remove the RPM package:
@@ -698,7 +698,7 @@ x	should now be able to run the Kannel init.d script that will
 	symbolic link to the Kannel script from the runlevel you want
 	Kannel to run in. E.g. to run Kannel in runlevel 5 add symbolic
 	links to /etc/rc.d/rc5.d/.</para>
-	
+
 	<screen><userinput>
 	cd /etc/rc.d/rc5.d/
 	ln -s ../init.d/kannel S91kannel
@@ -1075,10 +1075,10 @@ admin-password = f00bar
 	 <row><entry><literal>admin-port-ssl (o)</literal></entry>
      <entry>bool</entry>
      <entry valign="bottom">
-        If set to true a SSL-enabled administration HTTP server 
-		  will be used instead of the default unsecure plain HTTP 
+        If set to true a SSL-enabled administration HTTP server
+		  will be used instead of the default unsecure plain HTTP
 		  server. To access the administration pacges you will have
-		  to use a HTTP client that is capable of talking to such 
+		  to use a HTTP client that is capable of talking to such
 		  a server. Use the "https://" scheme to access the
 		  secured HTTP server. Defaults to "no".
      </entry></row>
@@ -1088,7 +1088,7 @@ admin-password = f00bar
      <entry valign="bottom">
          Password for HTTP administration commands (see below)
      </entry></row>
-   
+
     <row><entry><literal>status-password</literal></entry>
      <entry>string</entry>
      <entry valign="bottom">
@@ -1310,7 +1310,7 @@ admin-password = f00bar
      <entry>filename</entry>
      <entry valign="bottom">
      This file contains the certificates Kannel is willing to trust when
-     working as a HTTPS client. If this option is not set, certificates 
+     working as a HTTPS client. If this option is not set, certificates
      are not validated and those the identity of the server is not proven.
 	  </entry>
     </row>
@@ -1412,7 +1412,7 @@ white-list = "http://localhost/whitelist.txt"
   own specialized system.</para>
 
   <para>After the bearer box, you can start the WAP box:
-	
+
 	<screen><userinput>
 	./wapbox -v 1 [conffile]
 	</userinput></screen>
@@ -1449,7 +1449,7 @@ white-list = "http://localhost/whitelist.txt"
 
    <row><entry><literal>-D &lt;places&gt;</literal></entry>
         <entry morerows="1" valign="bottom">
-             Set debug-places for 'debug' level output. 
+             Set debug-places for 'debug' level output.
         </entry></row>
    <row><entry><literal>--debug &lt;places&gt;</literal></entry></row>
 
@@ -1490,6 +1490,13 @@ white-list = "http://localhost/whitelist.txt"
         </entry></row>
    <row><entry><literal>--tryhttp</literal></entry></row>
 
+   <row><entry><literal>-g</literal></entry>
+        <entry morerows="1" valign="bottom">
+             Dump all known config groups and config keys to stdout
+             and exit. (bearerbox only)
+        </entry></row>
+   <row><entry><literal>--generate</literal></entry></row>
+
  </tbody>
  </tgroup>
  </table>
@@ -1501,7 +1508,7 @@ white-list = "http://localhost/whitelist.txt"
 
     <para>In Kannel, there are four states for the program (which
     currently directly only apply to bearerbox):</para>
- 
+
     <orderedlist numeration="loweralpha">
      <listitem><para>
        Running. The gateway accepts, proceeds and relies 
