@@ -27,8 +27,8 @@ void bb_smscconn_ready(SMSCConn *conn);
 void bb_smscconn_killed(void);
 
 
-/* called after successful sending of Msg 'sms'. This callbacks takes
- * care of 'sms' and MAY NOT be used by caller again. */
+/* called after successful sending of Msg 'sms'. This callback takes
+ * care of 'sms' and it CAN NOT be used by caller again. */
 void bb_smscconn_sent(SMSCConn *conn, Msg *sms);
 
 
