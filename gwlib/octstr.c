@@ -899,6 +899,7 @@ int octstr_recv(int fd, Octstr **ostr) {
 	int ret = 0, readlength = 0;
 	
 	gw_assert(fd >= 0);
+	gw_assert(ostr != NULL);
 
 	nlength = 0;
 	*ostr = NULL;
@@ -943,6 +944,7 @@ int octstr_recv(int fd, Octstr **ostr) {
 		}
 	}
 
+	gw_assert(readlength == length);
 	newostr = octstr_create_from_data(data, length);
 
 	*ostr = newostr;
