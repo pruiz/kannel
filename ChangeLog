@@ -1,3 +1,8 @@
+2000-11-22  Kalle Marjola  <rpr@wapit.com>
+
+	* doc/userguide/userguide.xml: Moved some explanations to correct
+	places, to avoid mixed up context
+
 2000-11-22  Richard Braakman  <dark@wapi.com>
 
 	* gwlib/fdset.c: When destroying an fdset with active fd's,

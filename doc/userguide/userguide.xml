@@ -1956,7 +1956,10 @@ url = "http://%S"
    <row><entry><literal>max-messages</literal></entry>
      <entry>number</entry>
      <entry valign=bottom>
-        The total maximum of SMSes in reply. Default is 1. If
+        If the message to be sent is longer than maximum length of an SMS
+        it will be split into several parts. <literal>max-messages</literal>
+        lets you specify a maximum number of individual SMS messages that
+        can be used. If
         <literal>max-messages</literal> is set to 0, no reply is sent, 
         except for error messages. 
      </entry></row>
@@ -1964,8 +1967,10 @@ url = "http://%S"
    <row><entry><literal>concetenation</literal></entry>
      <entry>0 or 1</entry>
      <entry valign=bottom>
-         If set to 1 enables the concatenation of SMS's for long
-         messages (otherwise they are send as just multiple SMSes)
+        Long messages can be sent as independant SMS messages with
+        <literal>concatenation = 0</literal> or as concatenated messages
+        with <literal>concatenation = 1</literal>. Concatenated messages
+        are reassembled into one long message by the receiving device.
      </entry></row>
 
    <row><entry><literal>split-chars</literal></entry>
@@ -2177,22 +2182,10 @@ text = "No action spesified"
      </entry></row>
 
    <row><entry><literal>max-messages</literal></entry>
-     <entry>number</entry>
-     <entry valign=bottom>
-        If the message to be sent is longer than maximum length of an SMS
-        it will be split into several parts. <literal>max-messages</literal>
-        lets you specify a maximum number of individual SMS messages that
-        can be used.
-     </entry></row>
+     <entry>number</entry></row>
 
    <row><entry><literal>concatenation</literal></entry>
-     <entry>0 or 1</entry>
-     <entry valign=bottom>
-        Long messages can be sent as independant SMS messages with
-        <literal>concatenation = 0</literal> or as concatenated messages
-        with <literal>concatenation = 1</literal>. Concatenated messages
-        are reassembled into one long message by the receiving device.
-     </entry></row>
+     <entry>0 or 1</entry></row>
 
    <row><entry><literal>split-chars</literal></entry>
      <entry>string</entry></row>
