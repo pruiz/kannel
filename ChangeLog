@@ -1,3 +1,11 @@
+2003-08-24  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/shared.[ch]: changed read_from_bearerbox() to pass double value that
+      is passed to conn_wait() to have the call unblocked on pending connection
+      timeout. This can be used for smsbox connections that only temporarly
+      read messages from bearerbox. Added INFINITE_TIME define.
+    * gw/smsbox.c, gw/wapbox.c, utils/mtbatch.c: added INFINITE_TIME to 
+      read_from_bearerbox() calls. No behaviour change.
+
 2003-08-23  Alexander Malysh  <a.malysh@centrium.de>
     * gw/smsc/smsc_smpp.c: changed SMSC_FAIL dlr string to the form
       'NACK/error_code/human_readable_string'
