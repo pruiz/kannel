@@ -2068,7 +2068,7 @@ static void io_thread (void *arg)
     Msg       *msg;
     SMSCConn  *conn = arg;
     PrivData *pdata = conn->data;
-    double    sleep;
+    double    sleep = 0.0001;
 
     /* Make sure we log into our own log-file if defined */
     log_thread_to(conn->log_idx);
@@ -2097,8 +2097,6 @@ static void io_thread (void *arg)
             mutex_unlock(conn->flow_mutex);
         }
 
-        sleep = 0.0001;
-        
         /* receive messages */
         do { 
             msg = sms_receive(conn);
@@ -2120,6 +2118,7 @@ static void io_thread (void *arg)
         } while (msg);
  
         if (sleep > 0) {
+
             /* note that this implementations means that we sleep even
              * when we fail connection.. but time is very short, anyway
              */
@@ -2131,6 +2130,9 @@ static void io_thread (void *arg)
             sleep *= 2;
             if (sleep >= 2.0)
                 sleep = 1.999999;
+        }
+        else {
+            sleep = 0.0001;
         }
     }
 }
