@@ -357,8 +357,7 @@ static SMPP_PDU *msg_to_pdu(SMPP *smpp, Msg *msg)
     if (msg->sms.dlr_mask & (DLR_SUCCESS|DLR_FAIL)) 
         pdu->u.submit_sm.registered_delivery = 1;  
 
-    if (relation_UTC_time != NULL)
-        octstr_destroy(relation_UTC_time);
+    octstr_destroy(relation_UTC_time);
 
     return pdu; 
 } 
