@@ -871,11 +871,14 @@ static var_esc_t check_variable_syntax(Octstr *variable)
       octstr_truncate(escape, len);
       octstr_convert_range(escape, 0, octstr_len(escape), tolower);
 
-      if (octstr_str_compare(escape, "noesc") == 0)
+      if (octstr_str_compare(escape, "noesc") == 0 ||
+	  octstr_str_compare(escape, "n") == 0 )
 	ret = NOESC;
-      else if (octstr_str_compare(escape, "unesc") == 0)
+      else if (octstr_str_compare(escape, "unesc") == 0 ||
+	       octstr_str_compare(escape, "u") == 0 )
 	ret = UNESC;
-      else if (octstr_str_compare(escape, "escape") == 0)
+      else if (octstr_str_compare(escape, "escape") == 0 ||
+	       octstr_str_compare(escape, "e") == 0 )
 	ret = ESC;
       else
 	{

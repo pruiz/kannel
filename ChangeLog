@@ -1,3 +1,8 @@
+2000-08-10  Tuomas Luttinen  <tuo@wapit.com>
+
+	* gw/wml_compiler.c (check_variable_syntax): Escaping now possible 
+	with one letter acronyms 'e', 'u' and 'n'.
+
 2000-08-07  Tuomas Luttinen  <tuo@wapit.com>
 
 	* gw/wml_compiler.c: A little bit of code cleaning, changing return 
