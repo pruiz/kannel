@@ -387,6 +387,7 @@ SINGLE_GROUP(dlr-db,
     OCTSTR(table)
     OCTSTR(field-smsc)
     OCTSTR(field-timestamp)
+    OCTSTR(field-source)
     OCTSTR(field-destination)
     OCTSTR(field-service)
     OCTSTR(field-url)
