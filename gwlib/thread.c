@@ -58,7 +58,7 @@ pthread_t start_thread(int detached, Threadfunc *func, void *arg, size_t size)
 	return id;
 
 error:
-	return -1;
+	return (thread_t) -1;
 }
 
 

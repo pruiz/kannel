@@ -166,7 +166,7 @@ int tcpip_connect_to_server_with_port(char *hostname, int port, int our_port) {
 		error(errno, "setsockopt failed before bind");
 		goto error;
 	    }
-	    if (bind(s, &o_addr, sizeof(o_addr)) == -1) {
+	    if (bind(s, (struct sockaddr *) &o_addr, sizeof(o_addr)) == -1) {
 		error(0, "bind to local port %d failed", our_port);
 		goto error;
 	    }

@@ -1,3 +1,8 @@
+Thu Jan 27 14:01:50 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* gwlib/socket.c, gwlib/thread.c: Hopefully silenced compiler
+	warnings on non-Linux platforms.
+
 Thu Jan 27 13:47:34 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* gw/msg.c, gw/wtp.h, gwlib/socket.h: Added includes for
