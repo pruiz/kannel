@@ -54,6 +54,12 @@ Compiling and installing the gateway
 
 	You need to copy the gw/bearerbox, gw/wapbox, gw/smsbox and
 	test/test_wml programs somewhere suitable.
+	
+	You may need to add compilations flags to configure:
+	
+		CFLAGS='-pthread' ./configure
+	
+	The above, for instance, seems to be required on FreeBSD.
 
 For developers only: autoconf, configure, config.status, and Makefile
 

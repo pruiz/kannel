@@ -372,7 +372,7 @@ SOCKET connect_to_server_with_port(char *hostname, unsigned short port,
 
     dontlinger.l_onoff = 1;
     dontlinger.l_linger = 0;
-#if defined(BSD) && !defined(__NetBSD__)
+#if defined(SOL_TCP)
     setsockopt(s, SOL_TCP, SO_LINGER, &dontlinger, sizeof(dontlinger));
 #else
 {
