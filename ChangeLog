@@ -1,5 +1,13 @@
 2000-11-03  Lars Wirzenius  <liw@iki.fi>
 
+	* test/test_http_server.c: Converted to use the new HTTP server
+	interface. This displayed bugs in shutdown situations for the
+	new HTTP code.
+	
+	* gwlib/http.c: Fixed bugs in shutting down.
+
+2000-11-03  Lars Wirzenius  <liw@iki.fi>
+
 	* test/test_http_server.c: Reformatted to coding style.
 
 2000-11-03  Lars Wirzenius  <liw@iki.fi>

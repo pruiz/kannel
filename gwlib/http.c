@@ -252,7 +252,6 @@ void http_init(void)
     new_server_sockets = list_create();
     list_add_producer(new_server_sockets);
     clients_with_requests = list_create();
-    list_add_producer(clients_with_requests);
 
     run_status = running;
 }
@@ -268,7 +267,6 @@ void http_shutdown(void)
     gwthread_join_every(write_request_thread);
 
     list_remove_producer(new_server_sockets);
-    list_remove_producer(clients_with_requests);
     gwthread_wakeup(server_thread_id);
     gwthread_join_every(server_thread);
 
@@ -683,19 +681,23 @@ static void server_thread(void *dummy)
     HTTPClient *client;
 
     n = 0;
-    while (run_status == running || keep_servers_open) {
+    while (run_status == running && keep_servers_open) {
 	if (n == 0 || (n < MAX_SERVERS && list_len(new_server_sockets) > 0)) {
 	    p = list_consume(new_server_sockets);
-	    if (p == NULL)
+	    if (p == NULL) {
+		debug("gwlib.http", 0, "HTTP: No new servers. Quitting.");
 	    	break;
+	    }
 	    tab[n].fd = *p;
 	    tab[n].events = POLLIN;
 	    ++n;
 	    gw_free(p);
 	}
 
-	if (gwthread_poll(tab, n, -1.0) == -1)
-	    break;
+	if (gwthread_poll(tab, n, -1.0) == -1) {
+	    warning(0, "HTTP: gwthread_poll failed.");
+	    continue;
+	}
 
     	for (i = 0; i < n; ++i) {
 	    if (tab[i].revents & POLLIN) {
@@ -741,6 +743,7 @@ int http_open_server(int port)
     }
 
     list_produce(new_server_sockets, p);
+    keep_servers_open = 1;
     start_server_thread();
 
     return 0;
@@ -763,8 +766,10 @@ HTTPClient *http_accept_request(Octstr **client_ip, Octstr **url,
     HTTPClient *client;
 
     client = list_consume(clients_with_requests);
-    if (client == NULL)
+    if (client == NULL) {
+	debug("gwlib.http", 0, "HTTP: No clients with requests, quitting.");
     	return NULL;
+    }
 
     *client_ip = client->ip;
     *url = client->url;
@@ -2362,6 +2367,7 @@ static void start_server_thread(void)
 	mutex_lock(background_threads_lock);
 	if (!server_thread_is_running) {
 	    server_fdset = fdset_create();
+	    list_add_producer(clients_with_requests);
 	    server_thread_id = gwthread_create(server_thread, NULL);
 	    server_thread_is_running = 1;
 	}
