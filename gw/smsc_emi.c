@@ -320,13 +320,13 @@ int emi_submit_msg(SMSCenter *smsc, Msg *omsg) {
 	debug(0, "Submit Ok...");
 	
 	gw_free(tmpbuff);
-	return 1;
+	return 0;
 
 error:
 	debug(0, "Submit Error...");
 
 	gw_free(tmpbuff);
-	return 0;
+	return -1;
 }
 
 /******************************************************************************

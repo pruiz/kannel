@@ -1,0 +1,64 @@
+/*
+ * SMSC Interface design 2.0
+ *
+ * Kalle Marjola 2000 for Open SOurce Gateway
+ *
+ *
+ * NOTE: This interface might change in the future, but basic idea is
+ *       kept as it is now.
+ *
+ * All new SMSC protocols must implement these functions, with
+ * given functionality.
+ *
+ *
+ * In addition, following files must be edited accordingly:
+ *
+ * smsc_p.h   to support all fields required by the new protocol
+ * smsc.c     to call appropriate functions when this porotocol is used
+ *            (all functions with quite identical names as here is, recognized
+ *             switch()es for different kind of SMSC protocols)
+ *
+ * The new file should be named smsc_XXX.c, where XXX is the protocol
+ * name. If needed, a specific header can also be added.
+ *
+ */
+
+
+/* all functions may take whatever parameters they require, and are supplied
+ * by smsc.c. Parameters shown here are only TYPICAL ones, they can be changed
+ * as needed to
+ */
+
+/* this functions open a new connection to given SMSC
+ * Returns new SMSCenter structure or NULL if operation fails
+ */
+SMSCenter *XXX_open(....);
+
+/* reopen the connection to given SMSC. If already opne, close it first.
+ * Return 0 if successful, -1 on failure.
+ */
+int XXX_reopen(SMSCenter *smsc);
+
+/* close the connection to SMSC. If already closed, do nothing.
+ * return 0 if ok/nothing closed, -1 on error (should not happen)
+ */
+int XXX_close(SMSCenter *smsc);
+
+/* send given message to the SMSC.
+ * return 0 if ok, -1 on failure
+ */
+int XXX_submit_msg(SMSCenter *smsc, Msg *msg);
+
+/* check if there is an incoming message
+ * Return 1 if there is, 0 if not and -1 on error
+ *
+ * May NOT block!
+ */
+int XXX_pending_smsmessage(SMSCenter *smsc);
+
+/* Receive message from SMSC. 
+ * Return 1 if a message received, 0 if not (should NOT happen, as
+ *  smsc is always first checked with 'pending') and -1 on error
+ */ 
+int XXX_receive_msg(SMSCenter *smsc, Msg **msg);
+

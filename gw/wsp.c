@@ -486,6 +486,8 @@ static char *encode_language_str(Octstr *str, char *buf, int off, int data_len)
     else if (ret == WSP_FIELD_VALUE_DATA) {
 	ch = encoded_language(octstr_get_char(str, data_off),
 			      octstr_get_char(str, data_off+1));
+    } else {
+	ch = "Unknown";	/* should not happen */
     }
     if (data_off+len+1 == off+data_len) {
 	val = octstr_get_char(str, data_off+len);
@@ -502,7 +504,7 @@ static char *encode_language_str(Octstr *str, char *buf, int off, int data_len)
 int decode_well_known_field(int field_type, Octstr *headers, int *off)
 {
     unsigned long len;
-    int data_off, ret, val, val2;
+    int data_off, ret, val;
     char *ch, tmpbuf[1024];
     
     ret = field_value(headers, off, &val, &data_off, &len);

@@ -1,3 +1,15 @@
+2000-01-21    <rpr@rpr.wapit.com>
+
+	* gw/smsc.c: added comments of where to add new SMSCes
+
+	* gw/smsc_emi.c: fixed error in return values in submit_message
+
+	* gw/smsc_interface.def: ADDED interface definitions
+
+	* gw/wsp.c: removed some warnings
+
+	* test/fakewap.c: threaded fakewap from Antti Saarenheimo
+
 2000-01-20    <rpr@rpr.wapit.com>
 
 	* gw/wsp.c: now decodes all headers sent by 7110 except that

@@ -80,6 +80,8 @@ SMSCenter *smscenter_construct(void) {
 	smsc->emi_hostname = NULL;
 	smsc->emi_port = -1;
 
+	 /* add new SMSCes here */
+
 	/* Memory */
 	smsc->buflen = 0;
 	smsc->bufsize = 10*1024;
@@ -110,6 +112,8 @@ void smscenter_destruct(SMSCenter *smsc) {
 
 	/* EMI IP */
 	gw_free(smsc->emi_hostname);
+
+	 /* add new SMSCes here */
 
 	/* Memory */
 	gw_free(smsc->buffer);
@@ -144,6 +148,8 @@ int smscenter_submit_msg(SMSCenter *smsc, Msg *msg) {
 			goto error;
 		break;
 
+	 /* add new SMSCes here */
+		
 	default:
 		goto error;
 	}
@@ -436,6 +442,8 @@ SMSCenter *smsc_open(ConfigGroup *grp) {
 				 smpp_address_range);
 	    break;
 
+	 /* add new SMSCes here */
+
 	default:		/* Unknown SMSC type */
 		break;
 	}
@@ -463,6 +471,7 @@ int smsc_reopen(SMSCenter *smsc) {
 	    return emi_reopen(smsc);
 	case SMSC_TYPE_SMPP_IP:
 	    return smpp_reopen(smsc);
+	 /* add new SMSCes here */
 	default:		/* Unknown SMSC type */
 	    return -2;		/* no use */
 	}
@@ -547,6 +556,8 @@ int smsc_close(SMSCenter *smsc) {
 		if (smpp_close(smsc) == -1)
 			errors = 1;
 		break;
+
+	 /* add new SMSCes here */
 
 	default:		/* Unknown SMSC type */
 		break;
