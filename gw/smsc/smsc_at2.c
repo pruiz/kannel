@@ -2215,7 +2215,7 @@ int swap_nibbles(char byte)
 
 Octstr* at2_format_address_field(Octstr* msisdn)
 {
-    int ntype;
+    int ntype = PNT_UNKNOWN;
     Octstr* out = octstr_create("");
     Octstr* temp = octstr_duplicate(msisdn);
 
