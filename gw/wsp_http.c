@@ -131,6 +131,8 @@ void *wsp_http_thread(void *arg) {
 		headers = new_h;
 	}
 	header_pack(headers);
+	debug("wap.wsp.http", 0, "WSP: Headers used for request:");
+	header_dump(headers);
 
 	ret = http_get_u(url, &type, &data, &size, headers);
 	if (ret == -1) {

@@ -1,3 +1,9 @@
+Fri Feb 18 21:20:46 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* gwlib/http.c: Undid changes by Sanna, since they were crashing
+	some HTTP calls, and I didn't find the problem within an hour or
+	two of debugging. Sorry.
+
 Fri Feb 18 20:07:29 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* gwlib/utils.c: Don't report debug places unless they're set.
