@@ -1350,7 +1350,7 @@ static Octstr *convert_wmlscript_to_wmlscriptc(struct content *content)
  * value for now
  * ie. "Content-Type: (foo/bar);something=(value)" it gets value
  * without caring about what is "something" 
- * /
+ */
 
 /* DAVI: To-Do
 static Octstr *convert_multipart_mixed(struct content *content)
