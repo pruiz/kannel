@@ -130,6 +130,7 @@ wmlscriptobjs = $(wmlscriptsrcs:.c=.o)
 testsrcs = $(wildcard test/*.c)
 testobjs = $(testsrcs:.c=.o)
 testprogs = $(testsrcs:.c=@EXE_EXT@)
+tests = $(testprogs) $(wildcard test/*.sh)
 
 checksrcs = $(wildcard checks/*.c)
 checkobjs = $(checksrcs:.c=.o)
@@ -223,9 +224,8 @@ figs = $(figsrcs:.fig=.png)  $(figsrcs:.fig=.ps)
 .c.o:
 	$(CC) $(CFLAGS) -o $@ -c $<
 
-all: progs tests $(checkprogs) $(DOCSTARGET)
+all: progs $(testprogs) $(checkprogs) $(DOCSTARGET)
 progs: $(progs)
-tests: $(testprogs)
 docs: figs ps $(docs)
 no-docs:
 figs: $(figs)
@@ -255,14 +255,37 @@ install: all
 	$(INSTALL) -d $(DESTDIR)$(mandir)/man8
 	$(INSTALL) $(man8pages) $(DESTDIR)$(mandir)/man8
 
+install-test: all
+	$(INSTALL) -d $(DESTDIR)$(libdir)/kannel
+	$(INSTALL) -d $(DESTDIR)$(libdir)/kannel/test
+	(cd test && find . -type f ! -name "*.c" ! -name "*.o" | grep -v ".cvsignore" | grep -v "/CVS/" | while read a ; do $(INSTALL_DATA) $$a $(DESTDIR)$(libdir)/kannel/test ; done)
+	for prog in $(tests) ; do \
+                chmod 755 $(DESTDIR)$(libdir)/kannel/$$prog ; \
+        done
+
+install-checks: all
+	$(INSTALL) -d $(DESTDIR)$(libdir)/kannel/checks
+	(cd checks && find . -type f ! -name "*.c" ! -name "*.o" | grep -v ".cvsignore" | grep -v "/CVS/" | while read a ; do $(INSTALL_DATA) $$a $(DESTDIR)$(libdir)/kannel/checks ; done)
+	for prog in $(checks) ; do \
+                chmod 755 $(DESTDIR)$(libdir)/kannel/$$prog ; \
+        done
+
+install-contrib: all
+	$(INSTALL) -d $(DESTDIR)$(docdir)/contrib
+	(cd contrib && find . -type d ! -name "CVS" | while read a ; do $(INSTALL) -d $(DESTDIR)$(docdir)/contrib/$$a ; done )
+	(cd contrib && find . -type f ! -name ".cvsignore" | grep -v "/CVS/" | while read a ; do $(INSTALL_DATA) $$a $(DESTDIR)$(docdir)/contrib/$$a ; done )
+	find $(DESTDIR)$(docdir)/contrib/ -name "*.pl" -o -name "*.sh" -o -name "*.cgi" -o -name "sendsms" -o -name "kannel.monitor" | while read a ; do chmod 755 "$$a" ; done
+
 install-docs:
+	$(INSTALL) -d $(DESTDIR)$(docdir)/examples
+	$(INSTALL_DATA) doc/examples/*.conf $(DESTDIR)$(docdir)/examples
 	for docfile in userguide alligata wtls ; do \
 		$(INSTALL) -d $(DESTDIR)$(docdir)/$$docfile ; \
-		$(INSTALL) doc/$$docfile/$$docfile.ps $(DESTDIR)$(docdir)/$$docfile ; \
-		$(INSTALL) doc/$$docfile/$$docfile.html $(DESTDIR)$(docdir)/$$docfile ; \
-		$(INSTALL) doc/$$docfile/$$docfile.rtf $(DESTDIR)$(docdir)/$$docfile ; \
-		$(INSTALL) doc/$$docfile/$$docfile.pdf $(DESTDIR)$(docdir)/$$docfile ; \
-		$(INSTALL) doc/$$docfile/*.png $(DESTDIR)$(docdir)/$$docfile ; \
+		$(INSTALL_DATA) doc/$$docfile/$$docfile.ps $(DESTDIR)$(docdir)/$$docfile ; \
+		$(INSTALL_DATA) doc/$$docfile/$$docfile.html $(DESTDIR)$(docdir)/$$docfile ; \
+		$(INSTALL_DATA) doc/$$docfile/$$docfile.rtf $(DESTDIR)$(docdir)/$$docfile ; \
+		$(INSTALL_DATA) doc/$$docfile/$$docfile.pdf $(DESTDIR)$(docdir)/$$docfile ; \
+		$(INSTALL_DATA) doc/$$docfile/*.png $(DESTDIR)$(docdir)/$$docfile ; \
 	done
 clean:
 	rm -f */*.o gw/smsc/*.o *.a core $(progs) $(testprogs) $(checkprogs)
@@ -319,4 +342,3 @@ $(checkprogs): $(checkobjs) $(libs)
 pkg: all
 	(cd solaris; mk-solaris-package.sh)
 	echo Package is now in solaris directory
-

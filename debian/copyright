@@ -1,4 +1,7 @@
-This is Kannel, packaged for Debian by Lars Wirzenius <liw@iki.fi>.
+This is Kannel, originally packaged for Debian by Lars Wirzenius 
+<liw@iki.fi> and now maintained by Bruno Rodrigues 
+<bruno.rodrigues@litux.org>
+
 Original author is the Kannel project, see http://www.kannel.org,
 run by Wapit Ltd, see http://www.wapit.com.
 

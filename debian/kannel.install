@@ -1,0 +1,2 @@
+debian/kannel.conf /etc/kannel/
+debian/default /etc/default/kannel
