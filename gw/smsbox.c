@@ -1607,19 +1607,6 @@ static Octstr *smsbox_req_sendota(List *list, Octstr *client_ip, int *status)
 	*status = HTTP_BAD_REQUEST;
 	return octstr_create("Sender missing and no global set, rejected");
     }
-    
-    smsc = http_cgi_variable(list, "smsc");
-    if (urltrans_forced_smsc(t)) {
-        msg->sms.smsc_id = octstr_duplicate(urltrans_forced_smsc(t));
-        if (smsc)
-            info(0, "send-sms request smsc id ignored, as smsc id forced to %s",
-                 octstr_get_cstr(urltrans_forced_smsc(t)));
-    } else if (smsc) {
-        msg->sms.smsc_id = octstr_duplicate(smsc);
-    } else if (urltrans_default_smsc(t)) {
-        msg->sms.smsc_id = octstr_duplicate(urltrans_default_smsc(t));
-    } else
-        msg->sms.smsc_id = NULL;
         
     /* check does we have an external XML source for configuration */
     if ((ota_doc = http_cgi_variable(list, "text")) != NULL) {
@@ -1645,17 +1632,7 @@ static Octstr *smsbox_req_sendota(List *list, Octstr *client_ip, int *status)
 	        return octstr_create("Erroneous ota source, cannot compile\n");
         }
 
-        ret = send_message(t, msg); 
-        if (ret == -1) {
-	    error(0, "sendota_request: failed");
-	    *status = HTTP_INTERNAL_SERVER_ERROR;
-            msg_destroy(msg);
-	    return octstr_create("Sending failed.");
-        }
-        msg_destroy(msg);
-
-        *status = HTTP_ACCEPTED;
-        return octstr_create("Sent");
+        goto send;
 
     } else {
 
@@ -1712,13 +1689,27 @@ found:
     else
         msg = ota_tokenize_bookmarks(grp, from, phonenumber);
     octstr_dump(msg->sms.msgdata, 0);
-    
+
+send: 
+    /* we still need to check if smsc is forced for this */
+    smsc = http_cgi_variable(list, "smsc");
+    if (urltrans_forced_smsc(t)) {
+        msg->sms.smsc_id = octstr_duplicate(urltrans_forced_smsc(t));
+        if (smsc)
+            info(0, "send-sms request smsc id ignored, as smsc id forced to %s",
+                 octstr_get_cstr(urltrans_forced_smsc(t)));
+    } else if (smsc) {
+        msg->sms.smsc_id = octstr_duplicate(smsc);
+    } else if (urltrans_default_smsc(t)) {
+        msg->sms.smsc_id = octstr_duplicate(urltrans_default_smsc(t));
+    } else
+        msg->sms.smsc_id = NULL;
+
     info(0, "%s <%s> <%s>", octstr_get_cstr(sendota_url), 
     	 id ? octstr_get_cstr(id) : "<default>", octstr_get_cstr(phonenumber));
     
     ret = send_message(t, msg); 
     msg_destroy(msg);
-
 
     if (ret == -1) {
         error(0, "sendota_request: failed");
