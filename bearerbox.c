@@ -687,10 +687,10 @@ static void new_bbt_smsbox()
 static void *http_request_thread(void *arg)
 {
     int client;
-    char *path, *args;
+    char *path, *args, *client_ip;
     char answer[10*1024];
     
-    client = httpserver_get_request(bbox->http_fd, &path, &args);
+    client = httpserver_get_request(bbox->http_fd, &client_ip, &path, &args);
     if (client == -1) {
 	error(0, "Failed to get request from client, killing thread");
 	return NULL;
