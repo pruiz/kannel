@@ -23,11 +23,11 @@ int main(int argc, char **argv) {
 	gwlib_init();
 
 	for (i = 1; i < argc; i++) {
-		octstr_destroy(packet);
-		octstr_destroy(newpacket);
-		octstr_destroy(wsp_data);
-		wtp_pdu_destroy(pdu);
-		wsp_pdu_destroy(wsp);
+		octstr_destroy(packet);  packet = NULL;
+		octstr_destroy(newpacket);  newpacket = NULL;
+		octstr_destroy(wsp_data);  wsp_data = NULL;
+		wtp_pdu_destroy(pdu);  pdu = NULL;
+		wsp_pdu_destroy(wsp);  wsp = NULL;
 
 		packet = octstr_read_file(argv[i]);
 		pdu = wtp_pdu_unpack(packet);
