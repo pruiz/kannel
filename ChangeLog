@@ -1,3 +1,10 @@
+2001-07-18 Bruno Rodrigues <bruno.rodrigues@litux.org>
+
+	* gw/smsc_emi2.c: Added the "keepalive" code. If you want to keep
+	your connection always opened, set "keepalive" in conf file and
+	kannel will send alert commands to keep it alive.
+	* doc/userguide/userguide.xml: added the "keepalive" description.
+
 2001-07-18 Yann Muller <ymuller@3glab.com>
 
 	* doc/userguide/user2.1.xml, wtls.xml: applied fix by Jörg Pommnitz

@@ -40,6 +40,7 @@ typedef struct privdata {
 				 * TRN. Is 0 if the TRN is currently free. */
     int		sendtype[100];	/* OT of message, undefined if time == 0 */
     Msg		*sendmsg[100]; 	/* Corresponding message for OT == 51 */
+    int		keepalive; 	/* Seconds to send a Keepalive Command (OT=31) */
 } PrivData;
 
 
@@ -95,11 +96,11 @@ static int wait_for_ack(PrivData *privdata, Connection *server, int ot, int t)
 }
 
 
-static struct emimsg *make_emi31(PrivData *privdata)
+static struct emimsg *make_emi31(PrivData *privdata, int trn)
 {
     struct emimsg *emimsg;
 
-    emimsg = emimsg_create_op(31, 0);
+    emimsg = emimsg_create_op(31, trn);
     emimsg->fields[0] = octstr_duplicate(privdata->username);
     emimsg->fields[1] = octstr_create("0539");
     return emimsg;
@@ -192,7 +193,7 @@ static Connection *open_send_connection(SMSCConn *conn)
 	}
 
 	if (privdata->username) {
-	    emimsg = make_emi31(privdata);
+	    emimsg = make_emi31(privdata, 0);
 	    emimsg_send(server, emimsg);
 	    emimsg_destroy(emimsg);
 	    privdata->unacked = 1;
@@ -531,10 +532,32 @@ static void emi2_send_loop(SMSCConn *conn, Connection *server)
     struct emimsg *emimsg;
     Octstr	*str;
     Msg		*msg;
-    time_t	current_time, check_time;
+    time_t	current_time, check_time, keepalive_time;
+
+    // Initialize keepalive time counter
+    if ( privdata->keepalive > 0 )
+	keepalive_time = time(NULL);
 
     check_time = time(NULL);
     while (1) {
+	/* Send keepalive if there's room in the sending window */
+	while (privdata->keepalive > 0 && time(NULL) > keepalive_time + privdata->keepalive &&
+	       privdata->unacked < 100 && !privdata->shutdown ) {
+	    while (privdata->sendtime[nexttrn % 100] != 0)
+		nexttrn++; /* pick unused TRN */
+	    nexttrn %= 100;
+	    emimsg = make_emi31(privdata, nexttrn);
+	    privdata->sendtype[nexttrn]= 31;
+	    privdata->sendtime[nexttrn++] = time(NULL);
+	    privdata->unacked++;
+	    if (emimsg_send(server, emimsg) == -1) {
+		emimsg_destroy(emimsg);
+		return;
+	    }
+	    emimsg_destroy(emimsg);
+	    keepalive_time = time(NULL);
+	}
+					    
 	/* Send messages if there's room in the sending window */
 	while (privdata->unacked < 100 && !privdata->shutdown &&
 	       (msg = list_extract_first(privdata->outgoing_queue)) != NULL) {
@@ -551,6 +574,8 @@ static void emi2_send_loop(SMSCConn *conn, Connection *server)
 		return;
 	    }
 	    emimsg_destroy(emimsg);
+	    if ( privdata->keepalive > 0 )
+		keepalive_time = time(NULL);
 	}
 
 	/* Read acks/nacks from the server */
@@ -639,10 +664,16 @@ static void emi2_send_loop(SMSCConn *conn, Connection *server)
 	    break;
 
 	/* If the server doesn't ack our messages, wake up to resend them */
-	if (privdata->unacked == 0)
-	    conn_wait(server, -1);
-	else
-	    conn_wait(server, 40);
+	if (privdata->unacked == 0) 
+	    if (privdata->keepalive > 0)
+		conn_wait(server, privdata->keepalive + 1);
+	    else
+		conn_wait(server, -1);
+	else 
+	    if (privdata->keepalive > 0 && privdata->keepalive < 40)
+		conn_wait(server, privdata->keepalive + 1);
+	    else
+		conn_wait(server, 40);
 	if (conn_read_error(server)) {
 	    warning(0, "emi2: Error reading from the main connection");
 	    return;
@@ -881,7 +912,7 @@ int smsc_emi2_create(SMSCConn *conn, CfgGroup *cfg)
 {
     PrivData *privdata;
     Octstr *allow_ip, *deny_ip, *host;
-    long portno, our_port; /* has to be long because of cfg_get_integer */
+    long portno, our_port, keepalive; /* has to be long because of cfg_get_integer */
     int i;
 
     privdata = gw_malloc(sizeof(PrivData));
@@ -906,6 +937,11 @@ int smsc_emi2_create(SMSCConn *conn, CfgGroup *cfg)
 	deny_ip = NULL;
     privdata->username = cfg_get(cfg, octstr_imm("smsc-username"));
     privdata->password = cfg_get(cfg, octstr_imm("smsc-password"));
+
+    if (privdata->username && cfg_get_integer(&keepalive, cfg, octstr_imm("keepalive")) < 0)
+	privdata->keepalive = 0;
+    else
+	privdata->keepalive = keepalive;
 
     if (privdata->port == 0) {
 	error(0, "'port' missing/invalid in emi2 configuration.");
