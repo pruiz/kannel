@@ -44,6 +44,7 @@ static Cfg *cfg;
 static long bb_port;
 static int bb_ssl = 0;
 static long sendsms_port = 0;
+static Octstr *sendsms_interface = NULL;
 static Octstr *smsbox_id = NULL;
 static Octstr *sendsms_url = NULL;
 static Octstr *sendota_url = NULL;
@@ -2930,6 +2931,10 @@ static Cfg *init_smsbox(Cfg *cfg)
     }
 
     cfg_get_integer(&sendsms_port, grp, octstr_imm("sendsms-port"));
+    
+    /* check if want to bind to a specific interface */
+    sendsms_interface = cfg_get(grp, octstr_imm("sendsms-interface"));    
+
     cfg_get_integer(&sms_max_length, grp, octstr_imm("sms-length"));
 
 #ifdef HAVE_LIBSSL
@@ -2977,16 +2982,15 @@ static Cfg *init_smsbox(Cfg *cfg)
     cfg_get_integer(&http_queue_delay, grp, octstr_imm("http-queue-delay"));
 
     if (sendsms_port > 0) {
-	if (http_open_port(sendsms_port, ssl) == -1) {
-	    if (only_try_http)
-		error(0, "Failed to open HTTP socket, ignoring it");
-	    else
-		panic(0, "Failed to open HTTP socket");
-	}
-	else {
-	    info(0, "Set up send sms service at port %ld", sendsms_port);
-	    gwthread_create(sendsms_thread, NULL);
-	}
+        if (http_open_port_if(sendsms_port, ssl, sendsms_interface) == -1) {	
+            if (only_try_http)
+                error(0, "Failed to open HTTP socket, ignoring it");
+            else
+                panic(0, "Failed to open HTTP socket");
+        } else {
+            info(0, "Set up send sms service at port %ld", sendsms_port);
+            gwthread_create(sendsms_thread, NULL);
+        }
     }
 
     if (http_proxy_host != NULL && http_proxy_port > 0) {
@@ -3111,6 +3115,7 @@ int main(int argc, char **argv)
     octstr_destroy(reply_requestfailed);
     octstr_destroy(reply_couldnotfetch);
     octstr_destroy(reply_couldnotrepresent);
+    octstr_destroy(sendsms_interface);    
     numhash_destroy(black_list);
     numhash_destroy(white_list);
     cfg_destroy(cfg);

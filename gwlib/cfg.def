@@ -21,6 +21,7 @@
 SINGLE_GROUP(core,
     OCTSTR(admin-port)
     OCTSTR(admin-port-ssl)
+    OCTSTR(admin-interface)    
     OCTSTR(admin-password)
     OCTSTR(status-password)
     OCTSTR(admin-deny-ip)
@@ -137,6 +138,7 @@ SINGLE_GROUP(smsbox,
     OCTSTR(bearerbox-host)
     OCTSTR(sendsms-port)
     OCTSTR(sendsms-port-ssl)
+    OCTSTR(sendsms-interface)    
     OCTSTR(sendsms-url)
     OCTSTR(sendota-url)
     OCTSTR(xmlrpc-url)
