@@ -1,3 +1,13 @@
+2001-03-15  Tuomas Luttinen  <tuo@wapit.com>
+
+	* test/wml_tester.c: I refined the command line arguments a bit. Now 
+	the output is either a normal dump, the dump with source or the binary 
+	only. The output can be directed into a file that can then contain the
+	binary only if that was the selected output.
+
+	* test/decompile.c: Now decompiler accepts input from stdin. Added for 
+	piping to make writing tests easier.
+
 2001-03-15  Lars Wirzenius  <liw@iki.fi>
 
 	* Changed the HTTP server side code so that it allows easily

@@ -1359,6 +1359,18 @@ static void Init(P_WBXML_INFO buffer)
 	buffer->m_curpage = 0;
 }
 
+static size_t BufferLength(P_WBXML_INFO buffer)
+{
+	size_t ret;
+
+	while (buffer->m_curpos != '\0')
+		buffer->m_curpos++;
+
+	ret = buffer->m_curpos - buffer->m_start;
+	buffer->m_curpos = buffer->m_start;
+	return ret;
+}
+
 static void Free(P_WBXML_INFO buffer)
 {
 	if (buffer->m_start)
@@ -1385,35 +1397,48 @@ static long FileSize(FILE* file)
 	return endpos;
 }
 
-static void ReadBinary(P_WBXML_INFO buffer, char* filename)
+static void ReadBinary(P_WBXML_INFO buffer, FILE* file)
 {
-	if (buffer && filename)
+	char buf[4096];
+	int m = 1;
+	long n;
+
+	if (buffer && file)
 	{
-		FILE* file = fopen(filename, "r");
-		if (!file)
+		if (file != stdin)
 		{
-			ParseError(ERR_FILE_NOT_FOUND);
-		}
+			buffer->m_length = FileSize(file);
+			buffer->m_start = (P_WBXML) malloc(buffer->m_length);
+			buffer->m_curpos = buffer->m_start;
 
-		buffer->m_length = FileSize(file);
-		buffer->m_start = (P_WBXML) malloc(buffer->m_length);
-		buffer->m_curpos = buffer->m_start;
+			if (!buffer->m_start)
+			{
+				fclose(file);
+				ParseError(ERR_NOT_ENOUGH_MEMORY);
+			}
 
-		if (!buffer->m_start)
-		{
-			fclose(file);
-			ParseError(ERR_NOT_ENOUGH_MEMORY);
-		}
-
-		if (fread(buffer->m_start, 1, buffer->m_length, file) != buffer->m_length)
-		{
-			fclose(file);
-			ParseError(ERR_FILE_NOT_READ);
+			if (fread(buffer->m_start, 1, buffer->m_length, file) != buffer->m_length)
+			{
+				fclose(file);
+				ParseError(ERR_FILE_NOT_READ);
+			}
+			else
+			{
+				fclose(file);
+			}
 		}
 		else
 		{
-			fclose(file);
+			while ((n = fread(buf, 1, sizeof(buf), file)) > 0)
+			{
+				buffer->m_start = (P_WBXML) realloc(buffer->m_start, sizeof(buf) * m);
+				memcpy(buffer->m_start + (sizeof(buf) * (m - 1)), buf, sizeof(buf));
+				m++;
+			}
+			buffer->m_length = BufferLength(buffer);
+			buffer->m_curpos = buffer->m_start;
 		}
+				
 	}
 	else
 	{
@@ -1771,15 +1796,23 @@ static void DumpNodes(P_WBXML_INFO buffer)
 int main(int argc, char** argv)
 {
 	WBXML_INFO buffer;
+	FILE* file;
 
 	if (argc < 2)
 	{
-		printf("Usage: decompile <file>\n");
-		return 0;
+		file = stdin;
+	}
+	else
+	{
+	        file = fopen(argv[1], "r");
+		if (!file)
+		{
+			ParseError(ERR_FILE_NOT_FOUND);
+		}
 	}
 
     Init(&buffer);
-	ReadBinary(&buffer, argv[1]);
+	ReadBinary(&buffer, file);
 	Read_start(&buffer);
 	DumpNodes(&buffer);
 	Free(&buffer);

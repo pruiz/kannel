@@ -11,56 +11,72 @@
 #include "gw/wml_compiler.h"
 
 
+typedef enum { NORMAL_OUT, SOURCE_OUT, BINARY_OUT } output_t;
 
 static void help(void) {
-    info(0, "Usage: wml_tester [-hsz] [-n number] [-f file] [-b file] "
+    info(0, "Usage: wml_tester [-hsbz] [-n number] [-f file] "
 	 "[-c charset] file.wml\n"
 	 "where\n"
 	 "  -h  this text\n"
-	 "  -s  output also the WML source\n"
-	 "  -z  insert a '\\0'-character in the midlle of the input\n"
+	 "  -s  output also the WML source, cannot be used with b\n"
+	 "  -b  output only the compiled binary, cannot be used with s\n"
+	 "  -z  insert a '\\0'-character in the middle of the input\n"
 	 "  -n number   the number of times the compiling is done\n"
 	 "  -f file     direct the output into a file\n"
-	 "  -b file     binary output into a file\n"
 	 "  -c charset  character set as given by the http");
+}
+
+
+static void set_zero(Octstr *ostr)
+{
+    octstr_set_char(ostr, (1 + (int) (octstr_len(ostr) *gw_rand()/
+				      (RAND_MAX+1.0))), '\0');
 }
 
 
 int main(int argc, char **argv)
 {
+    output_t outputti = NORMAL_OUT;
     FILE *fp = NULL;
-    FILE *fb = NULL;
     Octstr *output = NULL;
     Octstr *filename = NULL;
-    Octstr *binary_file_name = NULL;
     Octstr *wml_text = NULL;
     Octstr *charset = NULL;
     Octstr *wml_binary = NULL;
-    Octstr *number = NULL;
 
-    int i, ret = 0, opt, file = 0, source = 0, zero = 0, numstatus = 0;
+    int i, ret = 0, opt, file = 0, zero = 0, numstatus = 0;
     long num = 0;
-
-    gwlib_init();
-    wml_init();
 
     /* You can give an wml text file as an argument './wml_tester main.wml' */
 
-    while ((opt = getopt(argc, argv, "hszn:f:b:c:")) != EOF) {
+    gwlib_init();
+
+    while ((opt = getopt(argc, argv, "hsbzn:f:c:")) != EOF) {
 	switch (opt) {
 	case 'h':
 	    help();
 	    exit(0);
 	case 's':
-	    source = 1;
+	    if (outputti == NORMAL_OUT)
+		outputti = SOURCE_OUT;
+	    else {
+		help();
+		exit(0);
+	    }
+	    break;
+	case 'b':
+	    if (outputti == NORMAL_OUT)
+		outputti = BINARY_OUT;
+	    else {
+		help();
+		exit(0);
+	    }
 	    break;
 	case 'z':
 	    zero = 1;
 	    break;
 	case 'n':
-	    number = octstr_create(optarg);
-	    numstatus = octstr_parse_long(&num, number, 0, 0);
-	    octstr_destroy(number);
+	    numstatus = octstr_parse_long(&num, octstr_imm(optarg), 0, 0);
 	    if (numstatus == -1) { 
 		/* Error in the octstr_parse_long */
 		error(num, "Error in the handling of argument to option n");
@@ -74,9 +90,6 @@ int main(int argc, char **argv)
 	    fp = fopen(optarg, "a");
 	    if (fp == NULL)
 		panic(0, "Couldn't open output file.");	
-	    break;
-	case 'b':
-	    binary_file_name = octstr_create(optarg);
 	    break;
 	case 'c':
 	    charset = octstr_create(optarg);
@@ -95,15 +108,17 @@ int main(int argc, char **argv)
 	panic(0, "Stopping.");
     }
 
+    if (outputti == BINARY_OUT)
+	 log_set_output_level(GW_PANIC);
+    wml_init();
+
     while (optind < argc) {
 	wml_text = octstr_read_file(argv[optind]);
 	if (wml_text == NULL)
 	    panic(0, "Couldn't read WML source file.");
 
 	if (zero)
-	    octstr_set_char(wml_text, 
-			    (1 + (int) (octstr_len(wml_text) *gw_rand()/
-					(RAND_MAX+1.0))), '\0');
+	    set_zero(wml_text);
 
 	for (i = 0; i <= num; i++) {
 	    ret = wml_compile(wml_text, charset, &wml_binary);
@@ -117,39 +132,39 @@ int main(int argc, char **argv)
 	if (ret == 0) {
 	    if (fp == NULL)
 		fp = stdout;
-	
-	    if (source) {
-		octstr_insert(output, wml_text, octstr_len(output));
-		octstr_append_char(output, '\n');
+
+	    if (outputti != BINARY_OUT) {
+		if (outputti == SOURCE_OUT) {
+		    octstr_insert(output, wml_text, octstr_len(output));
+		    octstr_append_char(output, '\n');
+		}
+
+		octstr_append(output, octstr_imm(
+		    "Here's the binary output: \n\n"));
+		octstr_print(fp, output);
 	    }
 
-	    octstr_append(output, octstr_imm(
-		    "Here's the binary output: \n\n"));
-	    octstr_print(fp, output);
-	
-	    if (binary_file_name) {
-		fb = fopen(octstr_get_cstr(binary_file_name), "w");
-		octstr_print(fb, wml_binary);
-		fclose(fb);
-		octstr_destroy(binary_file_name);
-	    }
-	    if (file) {
+	    if (file && outputti != BINARY_OUT) {
 		fclose(fp);
 		log_open(octstr_get_cstr(filename), 0);
 		octstr_dump(wml_binary, 0);
 		log_close_all();
 		fp = fopen(octstr_get_cstr(filename), "a");
-	    } else
+	    } else if (outputti != BINARY_OUT)
 		octstr_dump(wml_binary, 0);
+	    else 
+		octstr_print(fp, wml_binary);
 
-	    octstr_destroy(output);
-	    output = octstr_format("\n And as a text: \n\n");
-	    octstr_print(fp, output);
+	    if (outputti != BINARY_OUT) {
+		octstr_destroy(output);
+		output = octstr_format("\n And as a text: \n\n");
+		octstr_print(fp, output);
       
-	    octstr_pretty_print(fp, wml_binary);
-	    octstr_destroy(output);
-	    output = octstr_format("\n\n");
-	    octstr_print(fp, output);
+		octstr_pretty_print(fp, wml_binary);
+		octstr_destroy(output);
+		output = octstr_format("\n\n");
+		octstr_print(fp, output);
+	    }
 	}
 
 	octstr_destroy(wml_text);
