@@ -105,7 +105,7 @@ extern List *isolated;
 
 static volatile sig_atomic_t smsc_running;
 static List *smsc_list;
-static RWLock smsc_list_lock = GW_RWLOCK_INITIALIZER;
+static RWLock smsc_list_lock;
 static List *smsc_groups;
 static Octstr *unified_prefix;
 
@@ -410,6 +410,7 @@ int smsc2_start(Cfg *cfg)
     if (smsc_running) return -1;
 
     smsc_list = list_create();
+    gw_rwlock_init_static(&smsc_list_lock);
 
     grp = cfg_get_single_group(cfg, octstr_imm("core"));
     unified_prefix = cfg_get(grp, octstr_imm("unified-prefix"));
@@ -661,6 +662,7 @@ void smsc2_cleanup(void)
         gw_regex_destroy(white_list_regex);
     if (black_list_regex != NULL)
         gw_regex_destroy(black_list_regex);
+    gw_rwlock_destroy(&smsc_list_lock);
 }
 
 

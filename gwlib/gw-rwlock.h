@@ -70,9 +70,6 @@ typedef struct {
     int dynamic;
 } RWLock;
 
-#define GW_RWLOCK_INITIALIZER \
-    { PTHREAD_RWLOCK_INITIALIZER, 0 }
-
 RWLock *gw_rwlock_create(void);
 void gw_rwlock_init_static(RWLock *lock);
 void gw_rwlock_destroy(RWLock *lock);

@@ -73,7 +73,7 @@
  * of his list is looked up once a delivery report comes in
  */
 static List *dlr_waiting_list;
-static RWLock rwlock = GW_RWLOCK_INITIALIZER;
+static RWLock rwlock;
 
 /*
  * Destroy dlr_waiting_list.
@@ -83,6 +83,7 @@ static void dlr_mem_shutdown()
     gw_rwlock_wrlock(&rwlock);
     list_destroy(dlr_waiting_list, (list_item_destructor_t *)dlr_entry_destroy);
     gw_rwlock_unlock(&rwlock);
+    gw_rwlock_destroy(&rwlock);
 }
 
 /*
@@ -194,6 +195,7 @@ static struct dlr_storage  handles = {
 struct dlr_storage *dlr_init_mem(Cfg *cfg)
 {
     dlr_waiting_list = list_create();
+    gw_rwlock_init_static(&rwlock);
 
     return &handles;
 }

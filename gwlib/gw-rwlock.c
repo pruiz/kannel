@@ -68,7 +68,7 @@
 
 RWLock *gw_rwlock_create(void)
 {
-    RWLock *ret = gw_malloc(sizeof(RWLock));
+    RWLock *ret = gw_malloc(sizeof(*ret));
     pthread_rwlock_init(&ret->rwlock, NULL);
     ret->dynamic = 1;
 
