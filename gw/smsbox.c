@@ -411,6 +411,7 @@ static void main_loop(void)
 		break;
 	    }
 	    else if (ret == -1) {
+#if 0 /* XXX we assume run_kannel_box will re-start us, yes? --liw */
 		info(0, "Connection to Bearerbox failed, reconnecting");
 	    reconnect:
 		socket_fd = tcpip_connect_to_server(bb_host, bb_port);
@@ -418,6 +419,9 @@ static void main_loop(void)
 		    continue;
 		sleep(10);
 		goto reconnect;
+#else
+		panic(0, "Connection to Bearerbox failed, NOT reconnecting");
+#endif
 	    }
 	    mutex_unlock(socket_mutex);
 

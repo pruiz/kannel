@@ -1,3 +1,13 @@
+Tue Apr 11 21:57:17 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* gw/bearerbox.c: Try harder to read from smsbox to avoid the
+	problem of not noticing smsbox heartbeats when incoming traffic
+	is too fast.
+	
+	* gw/smsbox.c: Panic if bearerbox connection fails. 
+	
+	* test/fakesmsc.c: Rewritten so as not to busy loop.
+
 2000-04-11  Richard Braakman  <dark@wapit.com>
 
 	* gwlib/socket.c, gwlib/socket.h: Added socket_query_blocking

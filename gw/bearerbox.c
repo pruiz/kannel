@@ -817,7 +817,7 @@ static void *smsboxconnection_thread(void *arg)
 {
     BBThread	*us;
     time_t	our_time, last_time;
-    int		ret, written = 0;
+    int		ret, written = 0, read_or_written;
     RQueueItem	*qmsg;
     
     us = arg;
@@ -851,6 +851,8 @@ static void *smsboxconnection_thread(void *arg)
 	if (written < 0)
 	    written = 0;
 
+	read_or_written = 0;
+
 	/* check for any messages to us in request-queue,
 	 * if any, put into socket and if accepted, add ACK
 	 * about that to reply-queue, otherwise NACK (unless it
@@ -872,7 +874,10 @@ static void *smsboxconnection_thread(void *arg)
 		    break;
 		}
 		written++;
+		read_or_written = 1;
+#if 0 /* XXX this makes bearerbox notice that smsbox does write things */
 		continue;
+#endif
 	    }
 	}
 
@@ -883,7 +888,10 @@ static void *smsboxconnection_thread(void *arg)
 	if (us->boxc->fd == BOXC_THREAD) {
 	    written--;
 	    usleep(10000);
+	    read_or_written = 1;
+#if 0 /* XXX this makes bearerbox notice that smsbox does write things */
 	    continue;
+#endif
 	}
 	
 	/* read socket, adding any new messages to reply-queue */
@@ -899,10 +907,14 @@ static void *smsboxconnection_thread(void *arg)
 	    route_msg(us, qmsg);
 	    rq_push_msg(bbox->reply_queue, qmsg);
 	    written--;
+	    read_or_written = 1;
+#if 0 /* XXX this makes bearerbox notice that smsbox does write things */
 	    continue;
+#endif
 	}
 	written--;
-	usleep(10000);
+	if (!read_or_written)
+	    usleep(10000);
     }
 disconnect:    
     warning(0, "SMSBOXC: Closing and dying...");
