@@ -546,6 +546,7 @@ static void return_reply(int status, Octstr *content_body, List *headers,
 	        octstr_get_cstr(url), octstr_len(content.body), sdu_size);
 	octstr_destroy(content.body);
 	content.body = octstr_create("");
+	http_header_mark_transformation(headers, content.body, content.type);
     }
 
     if (orig_event->type == S_MethodInvoke_Ind) {
