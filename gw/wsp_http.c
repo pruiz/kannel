@@ -346,9 +346,12 @@ void *wsp_http_thread(void *arg) {
 		octstr_destroy(charset);
 	}
 	octstr_destroy(resp_body);
+	gw_assert(req_headers);
 	while ((os = list_extract_first(req_headers)) != NULL)
 		octstr_destroy(os);
 	list_destroy(req_headers);
+
+	gw_assert(resp_headers);
 	while ((os = list_extract_first(resp_headers)) != NULL)
 		octstr_destroy(os);
 	list_destroy(resp_headers);
