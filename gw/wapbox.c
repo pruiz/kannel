@@ -612,7 +612,7 @@ int main(int argc, char **argv)
     cfg = init_wapbox(cfg);
 
     info(0, "------------------------------------------------------------");
-    info(0, GW_NAME " wapbox version %s starting up.", VERSION);
+    info(0, GW_NAME " wapbox version %s starting up.", GW_VERSION);
     
     sequence_counter = counter_create();
     wsp_session_init(&wtp_resp_dispatch_event,

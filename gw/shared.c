@@ -62,7 +62,7 @@ Octstr *version_report_string(const char *boxname)
              "Using SQLite %s.\n"
 #endif
              "Using %s malloc.\n",
-			 boxname, VERSION,
+			 boxname, GW_VERSION,
 			 u.sysname, u.release, u.version, u.machine,
 			 octstr_get_cstr(get_official_name()),
 			 octstr_get_cstr(get_official_ip()),

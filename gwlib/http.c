@@ -2276,7 +2276,7 @@ void http_send_reply(HTTPClient *client, int status, List *headers,
     	response = octstr_format("HTTP/1.1 %d Foo\r\n", status);
 
     /* identify ourselfs */
-    octstr_format_append(response, "Server: " GW_NAME "/%s\r\n", VERSION);
+    octstr_format_append(response, "Server: " GW_NAME "/%s\r\n", GW_VERSION);
 
     octstr_format_append(response, "Content-Length: %ld\r\n",
 			 octstr_len(body));

@@ -24,7 +24,7 @@
  * and --make-pidfile options, placed in public domain aswell.
  */
 
-#include "config.h"
+#include "gw-config.h"
 
 #if defined(linux)
 #define OSLinux
@@ -194,7 +194,7 @@ do_help(void)
 	printf("\
 start-stop-daemon for Debian GNU/Linux - small and fast C version written by\n\
 Marek Michalkiewicz <marekm@i17linuxb.ists.pwr.wroc.pl>, public domain.\n"
-VERSION "\n\
+GW_VERSION "\n\
 \n\
 Usage:\n\
   start-stop-daemon -S|--start options ... -- arguments ...\n\
@@ -225,7 +225,7 @@ Exit status:  0 = done  1 = nothing done (=> 0 if --oknodo)  2 = trouble\n");
 	printf("\
 start-stop-daemon for Debian GNU/Linux - small and fast C version written by\n\
 Marek Michalkiewicz <marekm@i17linuxb.ists.pwr.wroc.pl>, public domain.\n"
-VERSION "\n\
+GW_VERSION "\n\
 \n\
 Usage:\n\
   start-stop-daemon -S options ... -- arguments ...\n\
@@ -357,7 +357,7 @@ parse_options(int argc, char * const *argv)
 			start = 1;
 			break;
 		case 'V':  /* --version */
-			printf("start-stop-daemon " VERSION "\n");
+			printf("start-stop-daemon " GW_VERSION "\n");
 			exit(0);
 		case 'a':  /* --startas <pathname> */
 			startas = optarg;

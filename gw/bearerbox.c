@@ -493,7 +493,7 @@ int main(int argc, char **argv)
     init_bearerbox(cfg);
 
     info(0, "----------------------------------------");
-    info(0, GW_NAME " bearerbox II version %s starting", VERSION);
+    info(0, GW_NAME " bearerbox II version %s starting", GW_VERSION);
 
 
     gwthread_sleep(5.0); /* give time to threads to register themselves */

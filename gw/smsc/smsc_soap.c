@@ -1029,7 +1029,7 @@ static void soap_send(PrivData* privdata, Octstr* xmlbuffer, Msg* msg)
 
     /* create request headers */
     requestHeaders = http_create_empty_headers();
-    http_header_add(requestHeaders, "User-Agent", "Kannel " VERSION);
+    http_header_add(requestHeaders, "User-Agent", "Kannel " GW_VERSION);
 
     if (privdata->form_urlencoded) {
         http_header_add(requestHeaders, "Content-Type", "application/x-www-form-urlencoded");

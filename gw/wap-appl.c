@@ -443,7 +443,7 @@ static int deconvert_content(struct content *content)
 /* Add a header identifying our gateway version */
 static void add_kannel_version(List *headers) 
 {
-    http_header_add(headers, "X-WAP-Gateway", GW_NAME "/" VERSION);
+    http_header_add(headers, "X-WAP-Gateway", GW_NAME "/" GW_VERSION);
 }
 
 
@@ -522,7 +522,7 @@ static void add_via(List *headers)
     version = http_header_value(headers, octstr_imm("Encoding-Version"));
     os = octstr_format("WAP/%s %S (" GW_NAME "/%s)", 
                        (version ? octstr_get_cstr(version) : "1.1"),
-                       get_official_name(), VERSION);
+                       get_official_name(), GW_VERSION);
     http_header_add(headers, "Via", octstr_get_cstr(os));
     octstr_destroy(os);
     octstr_destroy(version);
@@ -742,6 +742,7 @@ static void return_reply(int status, Octstr *content_body, List *headers,
         server = http_header_value(headers, octstr_imm("Server"));
 
         /* log the access */
+        /* XXX make this configurable in the future */
         alog("%s %s <%s> (%s, charset='%s') %ld %d <%s> <%s>", 
              octstr_get_cstr(addr_tuple->remote->address), 
              octstr_get_cstr(method), octstr_get_cstr(url), 

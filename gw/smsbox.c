@@ -1174,7 +1174,7 @@ static int obey_request(Octstr **result, URLTranslation *trans, Msg *msg)
      */
     case TRANSTYPE_GET_URL:
 	request_headers = http_create_empty_headers();
-        http_header_add(request_headers, "User-Agent", GW_NAME "/" VERSION);
+        http_header_add(request_headers, "User-Agent", GW_NAME "/" GW_VERSION);
         if (trans != 0) {
 	    if (urltrans_send_sender(trans)) {
 	        http_header_add(request_headers, "X-Kannel-From",
@@ -1192,7 +1192,7 @@ static int obey_request(Octstr **result, URLTranslation *trans, Msg *msg)
 
     case TRANSTYPE_POST_URL:
 	request_headers = http_create_empty_headers();
-	http_header_add(request_headers, "User-Agent", GW_NAME "/" VERSION);
+	http_header_add(request_headers, "User-Agent", GW_NAME "/" GW_VERSION);
 	if (msg->sms.coding == DC_8BIT)
 	    http_header_add(request_headers, "Content-Type",
 			    "application/octet-stream");
@@ -1363,7 +1363,7 @@ static int obey_request(Octstr **result, URLTranslation *trans, Msg *msg)
 	octstr_append(xml, octstr_imm(">\n"));
 
 	request_headers = http_create_empty_headers();
-	http_header_add(request_headers, "User-Agent", GW_NAME "/" VERSION);
+	http_header_add(request_headers, "User-Agent", GW_NAME "/" GW_VERSION);
         if(msg->sms.coding == DC_UCS2) {
 	    http_header_add(request_headers, "Content-Type", 
 			    "text/xml; charset=\"ISO-8859-1\""); /* for account and other strings */
@@ -3317,7 +3317,7 @@ int main(int argc, char **argv)
     }
 
     debug("sms", 0, "----------------------------------------------");
-    debug("sms", 0, GW_NAME " smsbox version %s starting", VERSION);
+    debug("sms", 0, GW_NAME " smsbox version %s starting", GW_VERSION);
     write_pid_file();
 
     translations = urltrans_create();
