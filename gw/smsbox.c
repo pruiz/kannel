@@ -1836,6 +1836,179 @@ send:
 }
 
 
+/*
+ * Create and send an SMS OTA (auto configuration) message from an HTTP POST 
+ * request. Take the X-Kannel-foobar HTTP headers as parameter information.
+ * Args: list contains the CGI parameters
+ *
+ * We still care about passed GET variable, in case the X-Kannel-foobar
+ * parameters are not used but the POST contains the XML body itself.
+ */
+static Octstr *smsbox_sendota_post(List *args, List *headers, Octstr *body,
+                                   Octstr *client_ip, int *status)
+{
+    Octstr *name, *val, *ret;
+    Octstr *from, *to, *id, *user, *pass, *smsc;
+    Octstr *type, *charset, *doc_type, *ota_doc;
+    URLTranslation *t;
+    Msg *msg;
+    long l;
+    int r;
+
+    id = from = to = user = pass = smsc = NULL;
+    doc_type = ota_doc = NULL;
+
+    /* 
+     * process all special HTTP headers 
+     */
+    for (l = 0; l < list_len(headers); l++) {
+	http_header_get(headers, l, &name, &val);
+
+	if (octstr_case_compare(name, octstr_imm("X-Kannel-OTA-ID")) == 0) {
+	    id = octstr_duplicate(val);
+	    octstr_strip_blanks(id);
+	}
+	else if (octstr_case_compare(name, octstr_imm("X-Kannel-From")) == 0) {
+	    from = octstr_duplicate(val);
+	    octstr_strip_blanks(from);
+	}
+	else if (octstr_case_compare(name, octstr_imm("X-Kannel-To")) == 0) {
+	    to = octstr_duplicate(val);
+	    octstr_strip_blanks(to);
+	}
+	else if (octstr_case_compare(name, octstr_imm("X-Kannel-Username")) == 0) {
+		user = octstr_duplicate(val);
+		octstr_strip_blanks(user);
+	}
+	else if (octstr_case_compare(name, octstr_imm("X-Kannel-Password")) == 0) {
+		pass = octstr_duplicate(val);
+		octstr_strip_blanks(pass);
+	}
+	else if (octstr_case_compare(name, octstr_imm("X-Kannel-SMSC")) == 0) {
+		smsc = octstr_duplicate(val);
+		octstr_strip_blanks(smsc);
+	}
+    }
+
+    /* 
+     * try to catch at least the GET variables if available 
+     */
+    id = !id ? http_cgi_variable(args, "otaid") : id;
+    from = !from ? http_cgi_variable(args, "from") : from;
+    to = !to ? http_cgi_variable(args, "phonenumber") : to;
+    user = !user ? http_cgi_variable(args, "username") : user;
+    pass = !pass ? http_cgi_variable(args, "password") : pass;
+    smsc = !smsc ? http_cgi_variable(args, "smsc") : smsc;
+
+    /* check the username and password */
+    t = authorise_username(user, pass, client_ip);
+    if (t == NULL) {
+	   *status = HTTP_FORBIDDEN;
+	   ret = octstr_create("Authorization failed for sendota");
+    }
+    /* let's see if we have at least a target msisdn */
+    else if (to == NULL) {
+	   error(0, "%s needs a valid phone number.", octstr_get_cstr(sendota_url));
+	   *status = HTTP_BAD_REQUEST;
+       ret = octstr_create("Wrong sendota args.");
+    } else {
+
+    if (urltrans_faked_sender(t) != NULL) {
+        from = octstr_duplicate(urltrans_faked_sender(t));
+    } else if (from != NULL && octstr_len(from) > 0) {
+    } else if (urltrans_default_sender(t) != NULL) {
+        from = octstr_duplicate(urltrans_default_sender(t));
+    } else if (global_sender != NULL) {
+        from = octstr_duplicate(global_sender);
+    } else {
+        *status = HTTP_BAD_REQUEST;
+        ret = octstr_create("Sender missing and no global set, rejected");
+        goto error;
+    }
+
+    /*
+     * get the content-type of the body document 
+     */
+    http_header_get_content_type(headers, &type, &charset);
+
+	if (octstr_case_compare(type, 
+        octstr_imm("application/x-wap-prov.browser-settings")) == 0) {
+        doc_type = octstr_format("%s", "settings");
+    } 
+    else if (octstr_case_compare(type, 
+             octstr_imm("application/x-wap-prov.browser-bookmarks")) == 0) {
+	    doc_type = octstr_format("%s", "bookmarks");
+    }
+
+    if (doc_type == NULL) {
+	    error(0, "%s got weird content type %s", octstr_get_cstr(sendota_url),
+              octstr_get_cstr(type));
+	    *status = HTTP_UNSUPPORTED_MEDIA_TYPE;
+	    ret = octstr_create("Unsupported content-type, rejected");
+	} else {
+
+        /* 
+         * ok, this is want we expect
+         * now lets compile the whole thing 
+         */
+        ota_doc = octstr_duplicate(body);
+
+        if ((r = ota_pack_message(&msg, ota_doc, doc_type, from, to)) < 0) {
+            *status = HTTP_BAD_REQUEST;
+            msg_destroy(msg);
+            if (r == -2) {
+                ret = octstr_create("Erroneous document type, cannot"
+                                     " compile\n");
+                goto error;
+            }
+            else if (r == -1) {
+	           ret = octstr_create("Erroneous ota source, cannot compile\n");
+               goto error;
+            }
+        }
+
+        /* we still need to check if smsc is forced for this */
+        if (urltrans_forced_smsc(t)) {
+            msg->sms.smsc_id = octstr_duplicate(urltrans_forced_smsc(t));
+            if (smsc)
+                info(0, "send-sms request smsc id ignored, as smsc id forced to %s",
+                     octstr_get_cstr(urltrans_forced_smsc(t)));
+        } else if (smsc) {
+            msg->sms.smsc_id = octstr_duplicate(smsc);
+        } else if (urltrans_default_smsc(t)) {
+            msg->sms.smsc_id = octstr_duplicate(urltrans_default_smsc(t));
+        } else
+            msg->sms.smsc_id = NULL;
+
+        info(0, "%s <%s> <%s>", octstr_get_cstr(sendota_url), 
+             id ? octstr_get_cstr(id) : "<default>", octstr_get_cstr(to));
+    
+        r = send_message(t, msg); 
+        msg_destroy(msg);
+
+        if (r == -1) {
+            error(0, "sendota_request: failed");
+            *status = HTTP_INTERNAL_SERVER_ERROR;
+            ret = octstr_create("Sending failed.");
+        }
+
+        *status = HTTP_ACCEPTED;
+        ret = octstr_create("Sent.");
+    }
+    }    
+      
+error:
+    octstr_destroy(id);
+    octstr_destroy(from);
+    octstr_destroy(to);
+    octstr_destroy(user);
+    octstr_destroy(pass);
+    octstr_destroy(smsc);
+
+    return ret;
+}
+
+
 static void sendsms_thread(void *arg)
 {
     HTTPClient *client;
@@ -1875,7 +2048,10 @@ static void sendsms_thread(void *arg)
 	}
 	else if (octstr_compare(url, sendota_url) == 0)
 	{
+	    if (body == NULL)
 	    answer = smsbox_req_sendota(args, ip, &status);
+	    else
+		answer = smsbox_sendota_post(args, hdrs, body, ip, &status);
 	}
 	else {
 	    answer = octstr_create("Unknown request.");
