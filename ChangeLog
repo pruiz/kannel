@@ -1,5 +1,10 @@
 2001-07-10 Aarno Syvänen <aarno@wiral.com>
 
+	* gw/wap_push_ppg.c: Committed bug fixes made by Bernard Valton.
+	Fixed a memory leak.
+
+2001-07-10 Aarno Syvänen <aarno@wiral.com>
+
 	* test/test_ppg.c: Fixed a memory leak
 	* gw/wap_push_pap.c: Do not panic when the order of command line files
 	  is wrong. Tobias Seelig spotted this problem.

@@ -384,24 +384,28 @@ static void handle_ppg_event(WAPEvent *e)
         octstr_destroy(type);
         wap_event_destroy(e);
         return;
+
 unit_push_delivered:
         wap_addr_tuple_destroy(tuple);
         remove_push_data(sm, pm, cless);
         octstr_destroy(type);
         wap_event_destroy(e);
         return;
+
 store_push:
         wap_addr_tuple_destroy(tuple);
         octstr_destroy(type);
         wap_event_destroy(e);
         return;
+
 no_start:
-       wap_addr_tuple_destroy(tuple);
-       remove_push_data(sm, pm, cless);
-       if (sm)
-           remove_pushless_session(sm);
-       wap_event_destroy(e);
-       return;
+        octstr_destroy(type);
+        wap_addr_tuple_destroy(tuple);
+        remove_push_data(sm, pm, cless);
+        if (sm)
+            remove_pushless_session(sm);
+        wap_event_destroy(e);
+        return;
 /*
  * PAP, Chapter 11.1.3 states that if client is incapable, we should abort the
  * push and inform PI. We do this here.
@@ -471,7 +475,6 @@ no_start:
         session_machine_assert(sm);
         push_machine_assert(pm);
         reason = e->u.Po_PushAbort_Ind.reason;
-        reason = ota_abort_to_pap(reason);
         pm = update_push_data_with_attribute(&sm, pm, reason, PAP_ABORTED);
         remove_session_data(sm);
         wap_event_destroy(e);
@@ -880,7 +883,7 @@ static Octstr *set_time(void)
 
     now = gw_gmtime(time(NULL));
     current_time = octstr_format("%04d-%02d-%02dT%02d:%02d:%02dZ", 
-                                 now.tm_year + 1899, now.tm_mon + 1, 
+                                 now.tm_year + 1900, now.tm_mon + 1, 
                                  now.tm_mday, now.tm_hour, now.tm_min, 
                                  now.tm_sec);
 
@@ -1383,13 +1386,11 @@ static void deliver_pending_pushes(PPGSessionMachine *sm, int last)
 static PPGPushMachine *abort_delivery(PPGSessionMachine *sm)
 {
     PPGPushMachine *pm;
-    long i,
-         reason,
+    long reason,
          code;
 
     session_machine_assert(sm);
 
-    i = 0;
     pm = NULL;
     reason = PAP_ABORT_USERPND;
     code = PAP_CAPABILITIES_MISMATCH;
@@ -1414,20 +1415,17 @@ static PPGPushMachine *abort_delivery(PPGSessionMachine *sm)
  */
 static void remove_session_data(PPGSessionMachine *sm)
 {
-    long i,
-         code;
+    long code;
     PPGPushMachine *pm;
 
     session_machine_assert(sm);
-    i = 0;
 
     code = PAP_ABORT_USERPND;
     
     while (list_len(sm->push_machines) > 0) {
-        pm = list_get(sm->push_machines, i);
+        pm = list_get(sm->push_machines, 0);
         response_push_message(pm, code);
         remove_push_data(sm, pm, sm == NULL);
-        ++i;
     }
 
     list_delete_equal(ppg_machines, sm);
@@ -1675,7 +1673,7 @@ static int cless_accepted(WAPEvent *e, PPGSessionMachine *sm)
 
 static void initialize_time_item_array(long time_data[], struct tm now) 
 {
-    time_data[0] = now.tm_year + 1899;
+    time_data[0] = now.tm_year + 1900;
     time_data[1] = now.tm_mon + 1;
     time_data[2] = now.tm_mday;
     time_data[3] = now.tm_hour;
