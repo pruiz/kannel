@@ -7,7 +7,7 @@
 #include <string.h>
 
 
-#include "gwlib.h"
+#include "gwlib/gwlib.h"
 #include "wsp.h"
 
 

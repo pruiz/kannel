@@ -1,5 +1,7 @@
 /*
  * utils.c - generally useful, non-application specific functions for Gateway
+ *
+ * Kalle Marjola <rpr@wapit.com>
  */
 
 #ifndef _GW_UTILS_H
@@ -13,7 +15,7 @@
  */
 
 typedef unsigned char Octet;		/* 8-bit basic data */
-typedef unsigned int MultibyteInt;	/* limited to 32 bits, not 35 */
+typedef unsigned long MultibyteInt;	/* limited to 32 bits, not 35 */
 
 /* get value of a multibyte ineteger. Note that it MUST be a valid
  * numbers, otherwise an overflow may occur as the function keeps

@@ -1,9 +1,9 @@
-#include "gwlib.h"
-#include "gwmem.h"
-#include "thread.h"
 #include <stdlib.h>
 #include <errno.h>
 #include <string.h>
+#include "gwlib.h"
+#include "gwmem.h"
+#include "thread.h"
 
 void *gw_malloc(size_t size)
 {

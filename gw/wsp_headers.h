@@ -1,11 +1,13 @@
 /*
  * wsp.h - WSP PHU headers implementation header
+ *
+ * Kalle Marjola <rpr@wapit.com>
  */
 
 #ifndef WSP_HEADERS_H
 #define WSP_HEADERS_H
 
-#include "gwlib.h"
+#include "gwlib/gwlib.h"
 #include "wsp.h"
 
 

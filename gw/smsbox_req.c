@@ -156,7 +156,7 @@ static int do_sending(Msg *msg)
 
     return 0;
 error:
-    error(0, "Failed");
+    error(0, "Msg send failed");
     return -1;
 }
 

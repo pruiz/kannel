@@ -9,8 +9,8 @@
 
 
 /* Split string `buf' up to `max' words at space characters. Return number
-   of words found. If there are more than `max' words, all the remaining
-   words are the last word, even if it may contain spaces. */
+ * of words found. If there are more than `max' words, all the remaining
+ * words are the last word, even if it may contain spaces. */
 int split_words(char *buf, int max, char **words);
 
 
@@ -31,8 +31,8 @@ char *str_case_str(char *str, char *pat);
 
 
 /* seek string 's' backward from offset 'start_offset'. Return offset of
-   the first occurance of any character in 'accept' string, or -1 if not
-   found  */
+ * the first occurance of any character in 'accept' string, or -1 if not
+ * found  */
 int str_reverse_seek(const char *s, int start_offset, const char *accept);
 
 

@@ -1,16 +1,17 @@
 /*
- * Bearer box
+ * bearerbox
  *
  * (WAP/SMS) Gateway
  *
- * Kalle Marjola 1999 for Wapit ltd.
+ * Kalle Marjola <rpr@wapit.com>
  */
 
 /*
- * Bearer box is the router/load balance part of the Gateway.
+ * Bearerbox is the router/load balance part of the Gateway.
  *
  * It's responsibility is to connect SMS Centers, open ports for
- * CSD Routers and accept connections from SMS and WAP Boxes.
+ * CSD Routers (actually: listens to UDP packets from any router/modem bank)
+ * and accept connections from SMS and WAP Boxes.
  *
  * It receivers SMS Messages and WAP datagrams which it queues and
  * sends to appropriate boxes. It receives replies from SMS and
@@ -24,7 +25,7 @@
  * - SMSC threads connect specified SMS Center and receive and send
  *   messages concerning it
  *
- * - CSDR thread listens to WAP WDP packets, and similarly sends them
+ * - CSDR thread listens to UDP packets, and similarly sends them
  *
  * - SMS BOX Connection does all the required data transfer with one
  *   sms box. On thread is started for each SMS BOX Connection.
@@ -46,7 +47,7 @@
 #include <signal.h>
 #include <assert.h>
 
-#include "gwlib.h"
+#include "gwlib/gwlib.h"
 
 #include "cgi.h"
 #include "urltrans.h"
@@ -60,7 +61,7 @@
 #include "boxc.h"
 #include "smsbox_req.h"
 
-/* bearer box thread types */
+/* bearerbox thread types */
 enum {
     BB_TTYPE_SMSC,
     BB_TTYPE_CSDR,
@@ -72,7 +73,7 @@ enum {
     BB_STATUS_CREATED,		/* created but not functioning, yet */
     BB_STATUS_OK,
     BB_STATUS_SUSPENDED,	/* reserved for future use */
-    BB_STATUS_KILLED,		/* main program or other has killed */
+    BB_STATUS_KILLED,		/* killed by main program or other thread */
     BB_STATUS_DEAD,		/* thread itself has died, can be removed */
 };
 
@@ -195,10 +196,10 @@ static int route_limit = 0;
 
 /*
  * this is 'normal' binary search except that index of last compare
- * is inserted into -1
+ * is inserted into *index
  *
- * Return 0 if last matched, <0 or >0 if not. '*i' is set as last comprasion
- * index
+ * Return 0 if last matched, <0 or >0 if not. '*index' is set as
+ * last comprasion index
  */
 static int bsearch_receiver(char *str, int *index)
 {
@@ -504,8 +505,6 @@ static int normalize_number(char *dial_prefixes, Octstr **number)
 		if (start != official) {
 		    Octstr *nstr;
 		    nstr = octstr_create_limited(official, official_len);
-		    if (nstr == NULL)
-			goto error;
 		    octstr_insert_data(nstr, official_len,
 					   octstr_get_cstr(*number) + len,
 					   octstr_len(*number) - len);
@@ -525,9 +524,6 @@ static int normalize_number(char *dial_prefixes, Octstr **number)
 	t++;
     }
     return 0;
-error:
-    error(0, "Memory allocation failed");
-    return -1;
 }
 
 
@@ -537,9 +533,6 @@ static void normalize_numbers(RQueueItem *msg, SMSCenter *from)
     int sr, rr;
 
     assert(msg != NULL);
-#if 0
-    assert(from != NULL);
-#endif
 
     sr = rr = 0;
     if (from != NULL) {
@@ -589,7 +582,7 @@ static void update_heartbeat(BBThread *thr)
 static void *smscenter_thread(void *arg)
 {
     BBThread	*us;
-    RQueueItem	*msg;
+    RQueueItem	*qmsg;
     time_t	our_time, last_time;
     int 	ret;
     
@@ -610,9 +603,9 @@ static void *smscenter_thread(void *arg)
 	/* check for any messages to us in reply-queue
 	 */
 
-	msg = rq_pull_msg(bbox->reply_queue, us->id);
-	if (msg) {
-	    ret = smsc_send_message(us->smsc, msg, bbox->request_queue);
+	qmsg = rq_pull_msg(bbox->reply_queue, us->id);
+	if (qmsg) {
+	    ret = smsc_send_message(us->smsc, qmsg, bbox->request_queue);
 	    if (ret == -1)
 		break;
 	    continue;
@@ -623,7 +616,7 @@ static void *smscenter_thread(void *arg)
 	    bbox->suspended == 0 &&
 	    rq_queue_len(bbox->request_queue, NULL) < bbox->max_queue) {
 
-	    ret = smsc_get_message(us->smsc, &msg);
+	    ret = smsc_get_message(us->smsc, &qmsg);
 	    if (ret == -1) {
 		error(0, "SMSC: <%s> failed permanently, killing thread",
 		      smsc_name(us->smsc));
@@ -632,10 +625,10 @@ static void *smscenter_thread(void *arg)
 	    if (ret == 1) {
 		debug("bb", 0, "SMSC: Received a message from <%s>",
 		      smsc_name(us->smsc));
-		normalize_numbers(msg, us->smsc);
-		route_msg(us, msg);
+		normalize_numbers(qmsg, us->smsc);
+		route_msg(us, qmsg);
 	    
-		rq_push_msg(bbox->request_queue, msg);
+		rq_push_msg(bbox->request_queue, qmsg);
 		continue;
 	    }
 	}
@@ -659,7 +652,7 @@ static void *smscenter_thread(void *arg)
 static void *csdrouter_thread(void *arg)
 {
     BBThread	*us;
-    RQueueItem	*msg;
+    RQueueItem	*qmsg;
     time_t	our_time, last_time;
     int		ret;
     
@@ -673,16 +666,16 @@ static void *csdrouter_thread(void *arg)
 
 	/* check for any messages to us in reply-queue
 	 */
-	msg = rq_pull_msg(bbox->reply_queue, us->id);
-	if (msg) {
-	    ret = csdr_send_message(us->csdr, msg);
-	    if (msg->msg_type == R_MSG_TYPE_MT) {
+	qmsg = rq_pull_msg(bbox->reply_queue, us->id);
+	if (qmsg) {
+	    ret = csdr_send_message(us->csdr, qmsg);
+	    if (qmsg->msg_type == R_MSG_TYPE_MT) {
 		if (ret < 0)
-		    msg->msg_type = R_MSG_TYPE_NACK;
+		    qmsg->msg_type = R_MSG_TYPE_NACK;
 		else
-		    msg->msg_type = R_MSG_TYPE_ACK;
+		    qmsg->msg_type = R_MSG_TYPE_ACK;
 
-		rq_push_msg(bbox->request_queue, msg);
+		rq_push_msg(bbox->request_queue, qmsg);
 	    }
 	    continue;	/* is this necessary? */
 	}
@@ -692,10 +685,10 @@ static void *csdrouter_thread(void *arg)
 	    bbox->suspended == 0 &&
 	    rq_queue_len(bbox->request_queue, NULL) < bbox->max_queue) {
 
-	    msg = csdr_get_message(us->csdr);
-	    if (msg) {
-		route_msg(us, msg);
-		rq_push_msg(bbox->request_queue, msg);
+	    qmsg = csdr_get_message(us->csdr);
+	    if (qmsg) {
+		route_msg(us, qmsg);
+		rq_push_msg(bbox->request_queue, qmsg);
 		continue;	/* is this necessary? */
 	    }
 	}
@@ -720,7 +713,7 @@ static void *csdrouter_thread(void *arg)
 static void *wapboxconnection_thread(void *arg)
 {
     BBThread	*us;
-    RQueueItem	*msg;
+    RQueueItem	*qmsg;
     time_t	our_time, last_time;
     int 	ret;
 
@@ -753,20 +746,20 @@ static void *wapboxconnection_thread(void *arg)
 	 * if any, put into socket and if accepted, add ACK
 	 * about that to reply-queue, otherwise NACK
 	 */
-	msg = rq_pull_msg(bbox->request_queue, us->id);
-	if (msg == NULL) {
-	    msg = rq_pull_msg_class(bbox->request_queue, R_MSG_CLASS_WAP);
+	qmsg = rq_pull_msg(bbox->request_queue, us->id);
+	if (qmsg == NULL) {
+	    qmsg = rq_pull_msg_class(bbox->request_queue, R_MSG_CLASS_WAP);
 
 	    /*
 	     * if we catch an general WAP message (sent to '-1') lets
 	     * catch them _all_
 	     */
-	    if (msg)
-		add_receiver(bbox->request_queue, msg, -1, us->id);
+	    if (qmsg)
+		add_receiver(bbox->request_queue, qmsg, -1, us->id);
 		
 	}
-	if (msg) {
-	    ret = boxc_send_message(us->boxc, msg, bbox->reply_queue); 
+	if (qmsg) {
+	    ret = boxc_send_message(us->boxc, qmsg, bbox->reply_queue); 
 	    if (ret < 0) {
 		error(0, "WAPBOXC: [%d] send message failed, killing", us->id);
 		break;
@@ -777,14 +770,14 @@ static void *wapboxconnection_thread(void *arg)
 	/* read socket, adding any new messages to reply-queue */
 	/* if socket is closed, set us to die-mode */
 
-	ret = boxc_get_message(us->boxc, &msg);
+	ret = boxc_get_message(us->boxc, &qmsg);
 	if (ret < 0) {
 	    error(0, "WAPBOXC: [%d] get message failed, killing", us->id);
 	    break;
 	} else if (ret > 0) {
-	    assert(msg != NULL);
-	    route_msg(us, msg);
-	    rq_push_msg(bbox->reply_queue, msg);
+	    assert(qmsg != NULL);
+	    route_msg(us, qmsg);
+	    rq_push_msg(bbox->reply_queue, qmsg);
 	    continue;
 	}
 	usleep(10000);
@@ -826,7 +819,7 @@ static void *smsboxconnection_thread(void *arg)
     BBThread	*us;
     time_t	our_time, last_time;
     int		ret, written = 0;
-    RQueueItem	*msg;
+    RQueueItem	*qmsg;
     
     us = arg;
     if (us->boxc == NULL)
@@ -869,12 +862,12 @@ static void *smsboxconnection_thread(void *arg)
 
 	assert(us->boxc != NULL);
 	if (written + us->boxc->load < 100) {
-	    msg = rq_pull_msg(bbox->request_queue, us->id);
-	    if (msg == NULL) {
-		msg = rq_pull_msg_class(bbox->request_queue, R_MSG_CLASS_SMS);
+	    qmsg = rq_pull_msg(bbox->request_queue, us->id);
+	    if (qmsg == NULL) {
+		qmsg = rq_pull_msg_class(bbox->request_queue, R_MSG_CLASS_SMS);
 	    }
-	    if (msg) {
-		ret = boxc_send_message(us->boxc, msg, bbox->reply_queue);
+	    if (qmsg) {
+		ret = boxc_send_message(us->boxc, qmsg, bbox->reply_queue);
 		if (ret < 0) {
 		    error(0, "SMSBOXC: [%d] send message failed, killing", us->id);
 		    break;
@@ -897,15 +890,15 @@ static void *smsboxconnection_thread(void *arg)
 	/* read socket, adding any new messages to reply-queue */
 	/* if socket is closed, set us to die-mode */
 
-	ret = boxc_get_message(us->boxc, &msg);
+	ret = boxc_get_message(us->boxc, &qmsg);
 	if (ret < 0) {
 	    error(0, "SMSBOXC: [%d] get message failed, killing", us->id);
 	    break;
 	} else if (ret > 0) {
-	    assert(msg != NULL);
-	    normalize_numbers(msg, NULL);
-	    route_msg(us, msg);
-	    rq_push_msg(bbox->reply_queue, msg);
+	    assert(qmsg != NULL);
+	    normalize_numbers(qmsg, NULL);
+	    route_msg(us, qmsg);
+	    rq_push_msg(bbox->reply_queue, qmsg);
 	    written--;
 	    continue;
 	}

@@ -5,7 +5,9 @@
  * This is the SMS Service requester handler
  *
  * It can be used as a part of an independent SMS Box, or in
- * Bearebox thread SMS Box
+ * bearerbox thread SMS Box
+ *
+ * Kalle Marjola <rpr@wapit.com>
  */
 
 #include "urltrans.h"
@@ -19,7 +21,7 @@
  * 'global-sender' is backup sender number. String is strdupped
  *
  * 'sender' is function pointer to function that does the actual sending,
- *     that is either uses a socket (to bearer box) or appends into reply
+ *     that is either uses a socket (to bearerbox) or appends into reply
  *     queue (bearerbox thread smsbox). The sender function must free the
  *     message unless it stores it - however, it is now its responsibility.
  *     Sender function must return 0 on success, and -1 on failure
