@@ -132,7 +132,7 @@ figsrcs = $(shell echo doc/*/*.fig)
 figs = $(figsrcs:.fig=.png)  $(figsrcs:.fig=.ps)
 
 
-.SUFFIXES: $(SUFFIXES) .xml .html .ps .fig .png .y .c
+.SUFFIXES: $(SUFFIXES) .xml .html .ps .fig .png .y .c .o
 
 .xml.html:
 	sed "s/#FIGTYPE#/.png/;s/#VERSION#/`head -1 VERSION`/" $< > $*.tmp
@@ -159,6 +159,9 @@ figs = $(figsrcs:.fig=.png)  $(figsrcs:.fig=.ps)
 	if test -f y.tab.h; then \
 	if cmp -s y.tab.h $*.h; then rm -f y.tab.h; else mv y.tab.h $*.h; fi; \
 	else :; fi
+
+.c.o:
+	$(CC) $(CFLAGS) -o $@ -c $<
 
 all: progs tests $(DOCSTARGET)
 progs: $(progs)
