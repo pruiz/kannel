@@ -1,3 +1,8 @@
+2001-01-19  Tuomas Luttinen  <tuo@wapit.com>
+
+	* gw/wml_compiler.c: Added function set_charset to fix bug with 
+	the character set read from the http-headers.
+
 2001-01-18  Lars Wirzenius  <liw@iki.fi>
 
 	* gwlib/octstr.[ch]: Renamed the horribly long name

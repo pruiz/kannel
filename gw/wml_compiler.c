@@ -213,6 +213,7 @@ static int check_do_elements(xmlNodePtr node);
 static var_esc_t check_variable_name(xmlNodePtr node);
 static Octstr *get_do_element_name(xmlNodePtr node);
 static int check_if_url(int hex);
+static void set_charset(Octstr *document, Octstr* charset);
 
 static int wml_table_len(wml_table_t *table);
 static int wml_table3_len(wml_table3_t *table);
@@ -245,7 +246,7 @@ static void string_table_output(Octstr *ostr, wml_binary_t **wbxml);
 #else
 #define create_octstr_from_node(node) (octstr_create(node->content))
 #endif
- 
+
 
 
 /***********************************************************************
@@ -278,7 +279,8 @@ int wml_compile(Octstr *wml_text,
        -- tuo */
 
     parse_entities(wml_text);
-
+    set_charset(wml_text, charset);
+	    
     size = octstr_len(wml_text);
     wml_c_text = octstr_get_cstr(wml_text);
 
@@ -1498,6 +1500,36 @@ static int check_if_url(int hex)
 	break;
     }
     return 0;
+}
+
+
+
+/*
+ * set_charset - set the charset of the http headers into the document, if 
+ * it has no encoding set.
+ */
+
+static void set_charset(Octstr *document, Octstr* charset)
+{
+    long gt = 0, enc = 0;
+    Octstr *encoding;
+
+    if (octstr_len(charset) == 0)
+	return;
+
+    encoding = octstr_create(" encoding=\"");
+    enc = octstr_search(document, encoding, 0);
+    gt = octstr_search_char(document, '>', 0);
+
+    if (enc < 0 || enc > gt) {
+	gt --;
+	octstr_insert(document, encoding, gt);
+	gt = gt + octstr_len(encoding);
+	octstr_append_char(charset, '"');
+	octstr_insert(document, charset, gt);
+    }
+
+    octstr_destroy(encoding);
 }
 
 
