@@ -402,10 +402,7 @@ int smsc2_stop_smsc(Octstr *id)
         return -1;
     }
     info(0,"HTTP: Shutting down smsc-id `%s'", octstr_get_cstr(id));
-    debug("",0,"XXX shutdown conn->status %d", conn->status);
     smscconn_shutdown(conn, 1);   /* shutdown the smsc */
-    //list_delete(smsc_list, i, 1); /* drop it from the active smsc list */
-	//smscconn_destroy(conn);       /* destroy the connection */
     return 0;
 }
 
