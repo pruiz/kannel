@@ -1,3 +1,12 @@
+2002-08-07  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/bb_http.c, gw/bearerbox.[ch] : renaming start operation to 'restart'
+      to indicate that this is used after bearerbox has started and individual
+      smsc have been shutdown previously.
+    * gw/bb_smscconn.c: fixed serious problems in /stop-smsc, /start-smsc
+      admin commands and /status page retrieval
+    * gw/smsc_emi2.c, gw/smsc_fake.c: fixed a segmenation fault bug, which was
+      caused by /status page lookup when a specific conn was already shutdown
+
 2002-08-07 Harrie Hazewinkel <harrie@mod-snmp.com>
     * Fix/partial rollback of the access log facility for the wapbox.
 
