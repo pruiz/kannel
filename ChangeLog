@@ -1,3 +1,7 @@
+2000-10-17  Kalle Marjola  <rpr@wapit.com>
+
+	* gw/smsbox.c: Added requested event of sent message
+
 2000-10-16  Lars Wirzenius  <liw@iki.fi>
 
 	* gwlib/log.c: Reformatted. Also made kannel_syslog's mapping of
