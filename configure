@@ -2475,7 +2475,7 @@ fi
 fi
 if eval "test \"`echo '$ac_cv_file_'$ac_safe`\" = yes"; then
   echo "$ac_t""yes" 1>&6
-  CFLAGS="$CFLAGS -I$loc/include/mysql"; LIBS="$LIBS -L$dir/lib/mysql"
+  CFLAGS="$CFLAGS -I$loc/include/mysql"; LIBS="$LIBS -L$loc/lib/mysql"
 else
   echo "$ac_t""no" 1>&6
 
@@ -2497,7 +2497,7 @@ fi
 fi
 if eval "test \"`echo '$ac_cv_file_'$ac_safe`\" = yes"; then
   echo "$ac_t""yes" 1>&6
-  CFLAGS="$CFLAGS -I$loc/include"; LIBS="$LIBS -L$dir/lib"
+  CFLAGS="$CFLAGS -I$loc/include"; LIBS="$LIBS -L$loc/lib"
 else
   echo "$ac_t""no" 1>&6
 { echo "configure: error: Unable to find mysql.h under $loc" 1>&2; exit 1; }
