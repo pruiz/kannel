@@ -1,4 +1,9 @@
 2004-01-23  Alexander Malysh  <a.malysh@centrium.de>
+    * gw/bb_boxc.c: fixed double free.
+      Thanks to Benjamin Lee for pointing this.
+      Msg-Id: <20040123123650.GA22906@xaos.realthought.net>.
+
+2004-01-23  Alexander Malysh  <a.malysh@centrium.de>
     * gwlib/octstr.c: fixed bug that space was not replaced when all chars
       were safe except a space.
 

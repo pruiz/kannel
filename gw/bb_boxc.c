@@ -998,7 +998,7 @@ static void init_smsbox_routes(Cfg *cfg)
                 debug("bb.boxc",0,"Adding smsbox routing to id <%s> for smsc id <%s>",
                       octstr_get_cstr(boxc_id), octstr_get_cstr(item));
 
-                dict_put(smsbox_by_smsc, item, boxc_id);
+                dict_put(smsbox_by_smsc, item, octstr_duplicate(boxc_id));
             }
             list_destroy(items, octstr_destroy_item);
             octstr_destroy(smsc_ids);
@@ -1013,11 +1013,12 @@ static void init_smsbox_routes(Cfg *cfg)
                 debug("bb.boxc",0,"Adding smsbox routing to id <%s> for receiver no <%s>",
                       octstr_get_cstr(boxc_id), octstr_get_cstr(item));
             
-                dict_put(smsbox_by_receiver, item, boxc_id);
+                dict_put(smsbox_by_receiver, item, octstr_duplicate(boxc_id));
             }
             list_destroy(items, octstr_destroy_item);
             octstr_destroy(shortcuts);
         }
+        octstr_destroy(boxc_id);
     }
 
     list_destroy(list, NULL);
