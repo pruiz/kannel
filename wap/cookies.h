@@ -47,8 +47,6 @@ int get_cookies(List*, const WSPMachine*);
  */
 int set_cookies(List*, WSPMachine*);
 
-WSPMachine *find_session_machine_by_id(int);
-
 #define MAX_HTTP_DATE_LENGTH	128
 
 #endif
