@@ -1,6 +1,7 @@
 2000-05-09  Derry Hamilton <rasilon@tardis.ed.ac.uk>
 
-	* gw/wapbox.c, configure.in, configure:     Cleaned up SunOS definition
+	* gw/wapbox.c, configure.in, configure,util/start-stop-daemon.c:
+	Cleaned up SunOS definition
 
 2000-05-08  Derry Hamilton <rasilon@tardis.ed.ac.uk>
 
