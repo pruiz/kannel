@@ -1,3 +1,11 @@
+Sat May 27 02:50:09 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* gwlib/gwthread.[ch]: Added function gwthread_join_all, which
+	joins all threads running a specific function.
+	
+	* gw/wap-appl.c, gw/wapbox.c, gw/wsp.c: Use gwthread_join_all to
+	synchronize shutdown properly.
+
 Sat May 27 02:05:41 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* gw/wap-events.c: Only the fields for the correct event type

@@ -29,6 +29,10 @@ long gwthread_create_real(Threadfunc *func, const char *funcname, void *arg);
  * has already terminated. */
 void gwthread_join(long thread);
 
+/* Wait for all threads whose main function is `func' to terminate.
+ * Return immediately if none are running. */
+void gwthread_join_all(Threadfunc *func);
+
 /* Return the thread id of this thread. */
 long gwthread_self(void);
 

@@ -25,6 +25,7 @@
 struct threadinfo {
 	pthread_t self;
 	const char *name;
+	Threadfunc *func;
 	long number;
 	int wakefd_send;
 	int wakefd_recv;
@@ -86,7 +87,7 @@ static void flushpipe(int fd) {
  * it in a free slot in the thread table.  The thread table must already
  * be locked by the caller.  Return the thread number chosen for this
  * thread. */
-static long fill_threadinfo(pthread_t id, const char *name, 
+static long fill_threadinfo(pthread_t id, const char *name, Threadfunc *func,
 struct threadinfo *ti) {
 	int pipefds[2];
 	long first_try;
@@ -94,6 +95,7 @@ struct threadinfo *ti) {
 
 	ti->self = id;
 	ti->name = name;
+	ti->func = func;
 
 	if (pipe(pipefds) < 0) {
 		panic(errno, "cannot allocate wakeup pipe for new thread");
@@ -154,7 +156,7 @@ static void create_threadinfo_main(void) {
 	int ret;
 
 	ti = gw_malloc(sizeof(*ti));
-	fill_threadinfo(pthread_self(), "main", ti);
+	fill_threadinfo(pthread_self(), "main", NULL, ti);
 	ret = pthread_setspecific(tsd_key, ti);
 	if (ret != 0) {
 		panic(ret, "gwthread-pthread: pthread_setspecific failed");
@@ -238,6 +240,8 @@ static void *new_thread(void *arg) {
 	(p->func)(p->arg);
 
 	lock();
+	debug("gwlib.gwthread", 0, "Thread %ld (%s) terminates.",
+		p->ti->number, p->ti->name);
 	delete_threadinfo();
 	unlock();
 
@@ -277,8 +281,11 @@ long gwthread_create_real(Threadfunc *func, const char *name, void *arg) {
 		warning(ret, "Could not detach new thread.");
 	}
 
-	number = fill_threadinfo(id, name, p->ti);
+	number = fill_threadinfo(id, name, func, p->ti);
 	unlock();
+	
+	debug("gwlib.gwthread", 0, "Started new thread %ld (%s)", 
+		number, name);
 
 	return number;
 }
@@ -303,6 +310,27 @@ void gwthread_join(long thread) {
 	if (ret != 0) {
 		warning(ret, "gwthread_join: error in pthread_cond_wait");
 	}
+}
+
+void gwthread_join_all(Threadfunc *func) {
+	long i;
+	struct threadinfo *ti;
+	int ret;
+
+	lock();
+	for (i = 0; i < THREADTABLE_SIZE; ++i) {
+		ti = THREAD(i);
+		if (ti == NULL || ti->func != func)
+			continue;
+		debug("gwlib.gwthread", 0, "Waiting for %ld (%s) to terminate",
+			ti->number, ti->name);
+		ret = pthread_cond_wait(&ti->exiting, &threadtable_lock);
+		if (ret != 0) {
+			warning(ret, "gwthread_join_all: error in "
+					"pthread_cond_wait");
+		}
+	}
+	unlock();
 }
 
 /* Return the thread id of this thread. */
