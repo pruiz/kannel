@@ -1,4 +1,8 @@
 2002-04-17  Stipe Tolj <tolj@wapme-systems.de>
+    * gw/wap_push_ppg.c: turned default PPG HTTP instance off if no 'ppg'
+      group is in config file, for security reasons
+
+2002-04-17  Stipe Tolj <tolj@wapme-systems.de>
     * gw/bb_smscconn.c: added smsc id information to status.xml
       patch provided by Angel.
       [Msg-ID: <FMEKKCFKIGBADHGIJKPJAEPADCAA.afradejas@mediafusion.es>]
