@@ -112,9 +112,20 @@ RQueueItem *csdr_get_message(CSDRouter *router)
 	struct sockaddr_in cliaddr, servaddr;
 	socklen_t len, servlen;
 
+	/* Initialize datasets. */
+	memset(data, 0, sizeof(data));
+	memset(client_ip, 0, sizeof(client_ip));
+	memset(client_port, 0, sizeof(client_port));
+	memset(server_ip, 0, sizeof(server_ip));
+	memset(server_port, 0, sizeof(server_port));
+
 	FD_ZERO(&rset);
 	FD_SET(router->fd, &rset);
 
+	item = rqi_new(R_MSG_CLASS_WAP, R_MSG_TYPE_MO);
+	if(item==NULL) goto error;
+
+	/* Block until we get a datagram. */
 	for(;;) {
 		nready = select(router->fd+1, &rset, NULL, NULL, NULL);
 		if(nready == -1) {
@@ -126,13 +137,8 @@ RQueueItem *csdr_get_message(CSDRouter *router)
 		}
 	}
 
-	item = rqi_new(R_MSG_CLASS_WAP, R_MSG_TYPE_MO);
-	if(item==NULL) goto error;
-
 	/* Maximum size of UDP datagram == 64*1024 bytes. */	
 	length = recvfrom(router->fd, data, sizeof(data), 0, &cliaddr, &len);
-
-	item->msg->wdp_datagram.user_data = octstr_create_from_data(data, length);
 
 	getsockname(router->fd, (struct sockaddr*)&servaddr, &servlen);
 
@@ -150,6 +156,7 @@ RQueueItem *csdr_get_message(CSDRouter *router)
 	item->msg->wdp_datagram.source_port    = atoi(client_port);
 	item->msg->wdp_datagram.destination_address = octstr_create(server_ip);
 	item->msg->wdp_datagram.destination_port    = atoi(server_port);
+	item->msg->wdp_datagram.user_data = octstr_create_from_data(data, length);
 
 	return item;
 
