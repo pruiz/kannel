@@ -1,5 +1,9 @@
 2000-05-29  Richard Braakman  <dark@wapit.com>
 
+	* gwlib/conn.c: Implemented conn_read_packet().
+
+2000-05-29  Richard Braakman  <dark@wapit.com>
+
 	* gw/bb_boxc.c: If listening socket cannot be opened, handle it
 	by panicking rather than segfaulting.
 

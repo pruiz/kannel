@@ -8,7 +8,6 @@
 /* TODO: unlocked_close() on error */
 /* TODO: have I/O functions check if connection is open */
 /* TODO: implement conn_open_tcp */
-/* TODO: implement conn_read_packet */
 
 #include <signal.h>
 #include <unistd.h>
@@ -443,44 +442,73 @@ Octstr *conn_read_withlen(Connection *conn) {
 	Octstr *result = NULL;
 	unsigned char lengthbuf[4];
 	long length;
+	int try;
 
 	lock(conn);
 
-retry:
-	/* First get the length. */
-	if (unlocked_inbuf_len(conn) < 4) {
-		unlocked_read(conn);
-		if (unlocked_inbuf_len(conn) < 4) {
-			unlock(conn);
-			return NULL;
-		}
-	}
-	octstr_get_many_chars(lengthbuf, conn->inbuf, conn->inbufpos, 4);
-	length = decode_network_long(lengthbuf);
+	for (try = 1; try <= 2; try++) {
+		if (try > 1)
+			unlocked_read(conn);
 
-	if (length < 0) {
-		warning(0, __FUNCTION__ ": got negative length, skipping");
+	retry:
+		/* First get the length. */
+		if (unlocked_inbuf_len(conn) < 4)
+			continue;
+	
+		octstr_get_many_chars(lengthbuf, conn->inbuf,
+					conn->inbufpos, 4);
+		length = decode_network_long(lengthbuf);
+
+		if (length < 0) {
+			warning(0, __FUNCTION__ ": got negative length, skipping");
+			conn->inbufpos += 4;
+			goto retry;
+		}
+
+		/* Then get the data. */
+		if (unlocked_inbuf_len(conn) - 4 < length)
+			continue;
+
 		conn->inbufpos += 4;
-		goto retry;
+		result = unlocked_get(conn, length);
+		break;
 	}
-
-	/* Then get the data. */
-	if (unlocked_inbuf_len(conn) - 4 < length) {
-		unlocked_read(conn);
-		if (unlocked_inbuf_len(conn) - 4 < length) {
-			unlock(conn);
-			return NULL;
-		}
-	}
-
-	conn->inbufpos += 4;
-	result = unlocked_get(conn, length);
 
 	unlock(conn);
-	return result;
+	return NULL;
 }
 
 Octstr *conn_read_packet(Connection *conn, int startmark, int endmark) {
-	panic(0, "conn_read_packet not implemented");
-	return NULL;
+	int startpos, endpos;
+	Octstr *result = NULL;
+	int try;
+
+	lock(conn);
+
+	for (try = 1; try <= 2; try++) {
+		if (try > 1)
+			unlocked_read(conn);
+
+		/* Find startmark, and discard everything up to it */
+		startpos = octstr_search_char_from(conn->inbuf, startmark,
+				conn->inbufpos);
+		if (startpos < 0) {
+			conn->inbufpos = octstr_len(conn->inbuf);
+			continue;
+		} else {
+			conn->inbufpos = startpos;
+		}
+
+		/* Find first endmark after startmark */
+		endpos = octstr_search_char_from(conn->inbuf, endmark,
+				conn->inbufpos);
+		if (endpos < 0)
+			continue;
+
+		result = unlocked_get(conn, endpos - startpos + 1);
+		break;
+	}
+
+	unlock(conn);
+	return result;
 }
