@@ -1,3 +1,8 @@
+2001-05-22  Richard Braakman  <dark@wapit.com>
+
+	* gw/urltrans.c: Fixed bug in find_default_translation() that would
+	make the smsbox panic if there was no default.
+
 2001-05-24  Paul Keogh <paul.keogh@anam.com>
 
 	* gw/bb_http.c, gw/bb_boxc.c, gw/bb_smscconn.c, bearerbox.c: Added

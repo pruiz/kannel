@@ -809,7 +809,7 @@ static URLTranslation *find_default_translation(URLTranslationList *trans,
 
     list = dict_get(trans->dict, octstr_imm("default"));
     t = NULL;
-    for (i = 0; i < list_len(trans->list); ++i) {
+    for (i = 0; i < list_len(list); ++i) {
 	t = list_get(list, i);
 	if (smsc && t->accepted_smsc) {
 	    if (!list_search(t->accepted_smsc, smsc, octstr_item_match)) {
