@@ -48,22 +48,27 @@ for control_file in $ip_control_files;
             sleep 2
 
             test/test_ppg -c $contents http://localhost:$push_port/cgi-bin/wap-push.cgi?username=$username'&'password=$password $content_file $control_file > check_ppg.tmp 2>&1 
+            sleep 2
+
             if ! grep "and type push response" check_ppg.tmp > /dev/null
             then
                 cat check_ppg.tmp >> check_ppg.log 2>&1
                 error=yes
+                echo "ppg failed"
             fi
 
             if ! grep "Connectionless push accepted" check_wap.tmp > /dev/null
             then
                 cat check_wap.tmp >> check_wap.log 2>&1
                 error="yes"
+                echo "wap failed"
             fi
         
             if ! grep "got wdp from wapbox" check_bb.tmp > /dev/null
             then
                 cat check_bb.tmp >> check_bb.log 2>&1
                 error=yes
+                echo "bb failed"
             fi
 
             kill -SIGINT $wappid
@@ -78,18 +83,21 @@ for control_file in $ip_control_files;
                 then
                     cat check_bb.tmp >> check_bb.log 2>&1
                     error="yes"
+                    echo "got errors in bb"
                 fi
 
                 if grep 'WARNING:|ERROR:|PANIC:' check_wap.tmp > /dev/null
                 then
                     cat check_wap.tmp >> check_wap.log 2>&1
                     error="yes"
+                    echo "got errors in wap"
                 fi 
 
                 if grep 'WARNING:|ERROR:|PANIC:' check_ppg.tmp > /dev/null
                 then
                     cat check_ppg.tmp >> check_ppg.log 2>&1
                     error="yes"
+                    echo "got errors in ppg"
                 fi 
            fi
          
@@ -110,12 +118,15 @@ for control_file in $wrong_ip_files;
             gw/wapbox -v $loglevel $conf_file > check_wap.tmp 2>&1 & wappid=$!
             sleep 2
 
-            test/test_ppg -c $contents http://localhost:$push_port/cgi-bin/wap-push.cgi?username=$username'&'password=$password $content_file $control_file > check_ppg.tmp 2>&1 
+            test/test_ppg -c $contents http://localhost:$push_port/cgi-bin/wap-push.cgi?username=$username'&'password=$password $content_file $control_file > check_ppg.tmp 2>&1
+            sleep 2
+
             if ! grep "and type push response" check_ppg.tmp > /dev/null &&
                ! grep "and type bad message response" check_ppg.tmp > /dev/null
             then
                 cat check_ppg.tmp >> check_ppg.log 2>&1
                 error=yes
+                echo "ppg failed"
             fi
 
             if grep "Connectionless push accepted" check_wap.tmp > /dev/null &&
@@ -123,12 +134,14 @@ for control_file in $wrong_ip_files;
             then
                 cat check_wap.tmp >> check_wap.log 2>&1
                 error="yes"
+                echo "wap failed"
             fi
         
             if grep "got wdp from wapbox" check_bb.tmp > /dev/null
             then
                 cat check_bb.tmp >> check_bb.log 2>&1
                 error=yes
+                echo "bb failed"
             fi
 
             kill -SIGINT $wappid
@@ -143,18 +156,21 @@ for control_file in $wrong_ip_files;
                 then
                     cat check_bb.tmp >> check_bb.log 2>&1
                     error="yes"
+                    echo "got errors in bb"
                 fi
 
                 if grep 'ERROR:|PANIC:' check_wap.tmp > /dev/null
                 then
                     cat check_wap.tmp >> check_wap.log 2>&1
                     error="yes"
+                    echo "got errors in wap"
                 fi 
 
                 if grep 'ERROR:|PANIC:' check_ppg.tmp > /dev/null
                 then
                     cat check_ppg.tmp >> check_ppg.log 2>&1
                     error="yes"
+                    echo "got errors in ppg"
                 fi 
            fi
          
@@ -182,6 +198,7 @@ for control_file in $sms_control_files;
             then
                 cat check_ppg.tmp >> check_ppg.log 2>&1
                 error=yes
+                echo "ppg failed"
             fi
 
             if ! grep "Connectionless push accepted" check_wap.tmp > /dev/null
