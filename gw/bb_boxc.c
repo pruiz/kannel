@@ -713,15 +713,13 @@ int wapbox_start(Config *config)
 }
 
 
-Octstr *boxc_status(int xml)
+Octstr *boxc_status(int status_type)
 {
     char tmp[1024], buf[256];
-    int i, boxes;
+    char *lb, *ws;
+    int i, boxes, para = 0;
     time_t orig, t;
     Boxc *bi;
-
-    if (xml)
-	return octstr_create("XML not yet supported");
 
     orig = time(NULL);
     /*
@@ -730,7 +728,20 @@ Octstr *boxc_status(int xml)
      *    Ok, this has to be fixed, but now I am too tired.
      */
     
-    sprintf(tmp, "Box connections:<BR>\n");
+    if ((lb = bb_status_linebreak(status_type))==NULL)
+	return octstr_create("Un-supported format");
+
+    if (status_type == BBSTATUS_HTML)
+	ws = "&nbsp;&nbsp;&nbsp;&nbsp;";
+    else if (status_type == BBSTATUS_TEXT)
+	ws = "    ";
+    else
+	ws = "";
+
+    if (status_type == BBSTATUS_HTML || status_type == BBSTATUS_WML)
+	para = 1;
+    
+    sprintf(tmp, "%sBox connections:%s", para ? "<p>" : "", lb);
     boxes = 0;
     
     if (wapbox_list) {
@@ -738,10 +749,9 @@ Octstr *boxc_status(int xml)
 	for(i=0; i < list_len(wapbox_list); i++) {
 	    bi = list_get(wapbox_list, i);
 	    t = orig - bi->connect_time;
-	    sprintf(buf, "&nbsp;&nbsp;&nbsp;&nbsp;wapbox %s "
-		    "(on-line %ldd %ldh %ldm %lds)<br>\n",
-		    octstr_get_cstr(bi->client_ip),
-		    t/3600/24, t/3600%24, t/60%60, t%60);
+	    sprintf(buf, "%swapbox %s (on-line %ldd %ldh %ldm %lds)%s",
+		    ws, octstr_get_cstr(bi->client_ip),
+		    t/3600/24, t/3600%24, t/60%60, t%60, lb);
 	    strcat(tmp, buf);
 	    boxes++;
 	}
@@ -752,17 +762,19 @@ Octstr *boxc_status(int xml)
 	for(i=0; i < list_len(smsbox_list); i++) {
 	    bi = list_get(smsbox_list, i);
 	    t = orig - bi->connect_time;
-	    sprintf(buf, "&nbsp;&nbsp;&nbsp;&nbsp;smsbox %s "
-		    "(on-line %ldd %ldh %ldm %lds)<br>\n",
-		    octstr_get_cstr(bi->client_ip),
-		    t/3600/24, t/3600%24, t/60%60, t%60);
+	    sprintf(buf, "%ssmsbox %s (on-line %ldd %ldh %ldm %lds)%s",
+		    ws, octstr_get_cstr(bi->client_ip),
+		    t/3600/24, t/3600%24, t/60%60, t%60, lb);
 	    strcat(tmp, buf);
 	    boxes++;
 	}
 	list_unlock(smsbox_list);
     }
     if (boxes == 0)
-	sprintf(tmp, "No boxes connected<BR>\n");
+	sprintf(tmp, "%sNo boxes connected", para ? "<p>" : "");
+    if (para)
+	strcat(tmp, "</p>");
+    strcat(tmp, "\n\n");
     return octstr_create(tmp);
 }
 

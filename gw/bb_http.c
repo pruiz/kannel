@@ -67,14 +67,9 @@ static Octstr *httpd_check_status(void)
 
 
 
-static Octstr *httpd_status(List *cgivars)
+static Octstr *httpd_status(List *cgivars, int status_type)
 {
-    return bb_print_status(0);
-}
-
-static Octstr *httpd_xmlstatus(List *cgivars)
-{
-    return bb_print_status(1);
+    return bb_print_status(status_type);
 }
 
 static Octstr *httpd_shutdown(List *cgivars)
@@ -134,10 +129,20 @@ static void httpd_serve(HTTPClient *client, Octstr *url, List *headers,
     char *content_type;
     
     if (octstr_str_compare(url, "/cgi-bin/status")==0) {
-	reply = httpd_status(cgivars);
+	/* XXX this SHOULD choose the type according to accept-header */
+	reply = httpd_status(cgivars, BBSTATUS_HTML);
 	content_type = "text/html";
-    } else if (octstr_str_compare(url, "/cgi-bin/xmlstatus")==0) {
-	reply = httpd_xmlstatus(cgivars);
+    } else if (octstr_str_compare(url, "/cgi-bin/status.html")==0) {
+	reply = httpd_status(cgivars, BBSTATUS_HTML);
+	content_type = "text/html";
+    } else if (octstr_str_compare(url, "/cgi-bin/status.wml")==0) {
+	reply = httpd_status(cgivars, BBSTATUS_WML);
+	content_type = "text/vnd.wap.wml";
+    } else if (octstr_str_compare(url, "/cgi-bin/status.txt")==0) {
+	reply = httpd_status(cgivars, BBSTATUS_TEXT);
+	content_type = "text/plain";
+    } else if (octstr_str_compare(url, "/cgi-bin/status.xml")==0) {
+	reply = httpd_status(cgivars, BBSTATUS_XML);
 	content_type = "text/x-kannelstatus";
     } else if (octstr_str_compare(url, "/cgi-bin/shutdown")==0) {
 	reply = httpd_shutdown(cgivars);

@@ -538,40 +538,61 @@ int bb_restart(void)
                                  octstr_destroy(s); }
 
 
-Octstr *bb_print_status(int xml)
+Octstr *bb_print_status(int status_type)
 {
-    char *s;
+    char *s, *lb;
+    char *footer, *frmt, *header;
     char buf[1024];
     Octstr *ret, *str, *version;
     time_t t;
 
-    if (xml) {
-	return octstr_create("XML status not currently supported");
-    }
-    
+    if ((lb = bb_status_linebreak(status_type))==NULL)
+	return octstr_create("Un-supported format");
+
     t = time(NULL) - start_time;
     
-    switch(bb_status) {
-    case BB_RUNNING:
+    if (bb_status == BB_RUNNING)
 	s = "running";
-	break;
-    case BB_ISOLATED:
+    else if (bb_status == BB_ISOLATED)
 	s = "isolated";
-	break;
-    case BB_SUSPENDED:
+    else if (bb_status == BB_SUSPENDED)
 	s = "suspended";
-	break;
-    default:
+    else
 	s = "going down";
-    }
+
     version = version_report_string("");
-    sprintf(buf, "<p>%s</p><p>Status: uptime %ldd %ldh %ldm %lds, %s, %d threads</p>"
-	    "<p>WDP: received %ld (%ld queued), sent %ld (%ld queued)</p>"
-	    "<p>SMS: received %ld (%ld queued), sent %ld (%ld queued)</p>"
-	    "<p>",
+
+    if (status_type == BBSTATUS_HTML) {
+	header = "<html>\n<title>Kannel status</title>\n<body>\n";
+	frmt = " <p>%s</p>\n\n"
+	    " <p>Status: uptime %ldd %ldh %ldm %lds, %s</p>\n\n"
+	    " <p>WDP: received %ld (%ld queued), sent %ld (%ld queued)</p>\n\n"
+	    " <p>SMS: received %ld (%ld queued), sent %ld (%ld queued)</p>\n\n";
+	footer = "</body></html>\n";
+    } else if (status_type == BBSTATUS_WML) {
+	header = "<?xml version=\"1.0\"?>\n"
+	    "<!DOCTYPE wml PUBLIC \"-//WAPFORUM//DTD WML 1.1//EN\" "
+	    "\"http://www.wapforum.org/DTD/wml_1.1.xml\">\n"
+	    "\n<wml>\n <card>\n";
+	frmt = "   <p>%s</p>\n\n"
+	    "   <p>Status: uptime %ldd %ldh %ldm %lds, %s</p>\n\n"
+	    "   <p>WDP: received %ld (%ld queued)<br/>\n"
+	    "      WDP: sent %ld (%ld queued)</p>\n\n"
+	    "   <p>SMS: received %ld (%ld queued)<br/>\n"
+	    "      SMS: sent %ld (%ld queued)</p>\n\n";
+	footer = " </card>\n</wml>\n";
+    } else {
+	header = "";
+	frmt = "%s\n\nStatus: uptime %ldd %ldh %ldm %lds, %s\n\n"
+	    "WDP: received %ld (%ld queued), sent %ld (%ld queued)\n\n"
+	    "SMS: received %ld (%ld queued), sent %ld (%ld queued)\n\n";
+	footer = "";
+
+    }
+    
+    sprintf(buf, frmt,
 	    octstr_get_cstr(version),
 	    t/3600/24, t/3600%24, t/60%60, t%60, s,
-	    list_producer_count(flow_threads),
 	    counter_value(incoming_wdp_counter),
 	    list_len(incoming_wdp) + boxc_incoming_wdp_queue(),
 	    counter_value(outgoing_wdp_counter),
@@ -582,12 +603,28 @@ Octstr *bb_print_status(int xml)
 	    list_len(outgoing_sms));
 
     octstr_destroy(version);
-    ret = octstr_create(buf);
-
-    append_status(ret, str, boxc_status, xml);
-    append_status(ret, str, smsc2_status, xml);
-    octstr_append(ret, octstr_create_immutable("</p>"));
+    ret = octstr_create(header);
+    octstr_append_cstr(ret, buf);
+    
+    append_status(ret, str, boxc_status, status_type);
+    append_status(ret, str, smsc2_status, status_type);
+    octstr_append_cstr(ret, footer);
     
     return ret;
 }
 
+
+char *bb_status_linebreak(int status_type)
+{
+    switch(status_type) {
+    case BBSTATUS_HTML:
+	return "<br>\n";
+    case BBSTATUS_WML:
+	return "<br/>\n";
+    case BBSTATUS_TEXT:
+	return "\n";
+    case BBSTATUS_XML:
+    default:
+	return NULL;
+    }
+}

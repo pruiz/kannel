@@ -1,3 +1,17 @@
+2000-12-28  Kalle Marjola  <rpr@wapit.com>
+
+	* gw/bearerbox.c, gw/bearerbox.h, gw/bb_boxc.c, gw/bb_smscconn.c:
+	updated to format status inquiry into HTML, WML or plain text.
+
+	* gw/bb_http.c: added new HTTP admin functions cgi-bin/status.wml,
+	cgi-bin/status.html and cgi-bin/status.txt if the client wants a 
+	specific type. Plain cgi-bin/status returns HTML currently,
+	updated to return whatever client requests via Accept -header in
+	near future (as would all other commands, too)
+
+	* gw/bb_http.c: removed cgi-bin/xmlstatus, replaced with
+	cgi-bin/status.xml which still does not return anything sensible.
+
 2000-12-27  Kalle Marjola  <rpr@wapit.com>
 
 	* gw/smscconn.c, gw/smscconn_p.h: added new smsc configuration

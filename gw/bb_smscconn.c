@@ -344,19 +344,26 @@ void smsc2_cleanup(void)
 }
 
 
-Octstr *smsc2_status(int xml)
+Octstr *smsc2_status(int status_type)
 {
     char tmp[512], tmp2[256], tmp3[64];
-    int i;
+    char *lb;
+    int i, para = 0;
     SMSCConn *conn;
     StatusInfo info;
-    
-    if (xml)
-        return octstr_create("XML not yet supported");
 
-    if (!smsc_running) return octstr_create("No SMSC connections<br>");
+    if ((lb = bb_status_linebreak(status_type))==NULL)
+	return octstr_create("Un-supported format");
 
-    sprintf(tmp, "<br>SMSC connections:<br>");
+    if (status_type == BBSTATUS_HTML || status_type == BBSTATUS_WML)
+	para = 1;
+
+    if (!smsc_running) {
+	sprintf(tmp, "%sNo SMSC connections%s\n\n", para ? "<p>" : "",
+		para ? "</p>" : "");
+	return octstr_create(tmp);
+    }
+    sprintf(tmp, "%sSMSC connections:%s", para ? "<p>" : "", lb);
     
     for(i=0; i < list_len(smsc_list); i++) {
         conn = list_get(smsc_list, i);
@@ -364,8 +371,11 @@ Octstr *smsc2_status(int xml)
 
 	if (info.status == SMSCCONN_KILLED)
 	    continue;
-	
-        strcat(tmp, "&nbsp;&nbsp;&nbsp;&nbsp;");
+
+	if (status_type == BBSTATUS_HTML)
+	    strcat(tmp, "&nbsp;&nbsp;&nbsp;&nbsp;");
+	else if (status_type == BBSTATUS_TEXT)
+	    strcat(tmp, "    ");
         strcat(tmp, octstr_get_cstr(smscconn_name(conn)));
 	switch(info.status) {
 	case SMSCCONN_ACTIVE:
@@ -379,10 +389,13 @@ Octstr *smsc2_status(int xml)
 	}
 	
 	sprintf(tmp2, " (%s, received %ld, sent %ld, failed to "
-		"send %ld, queued %ld messages)<br>", tmp3,
-		info.received, info.sent, info.failed, info.queued);
+		"send %ld, queued %ld messages)%s", tmp3,
+		info.received, info.sent, info.failed, info.queued, lb);
 	strcat(tmp, tmp2);
     }
+    if (para)
+	strcat(tmp, "</p>");
+    strcat(tmp, "\n\n");
     return octstr_create(tmp);
 }
 

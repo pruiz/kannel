@@ -18,6 +18,14 @@ enum {
 };
 
 
+/* type of output given by various status functions */
+enum {
+    BBSTATUS_HTML = 0,
+    BBSTATUS_TEXT = 1,
+    BBSTATUS_WML = 2,
+    BBSTATUS_XML = 3
+};
+
 /*---------------------------------------------------------------
  * Module interface to core bearerbox
  *
@@ -41,7 +49,7 @@ int smsbox_restart(Config *config);
 
 int wapbox_start(Config *config);
 
-Octstr *boxc_status(int xml);
+Octstr *boxc_status(int status_type);
 /* tell total number of messages in seperate wapbox incoming queues */
 int boxc_incoming_wdp_queue(void);
 
@@ -71,7 +79,7 @@ int smsc2_restart(Config *config);
 int smsc2_shutdown(void);
 void smsc2_cleanup(void); /* final clean-up */
 
-Octstr *smsc2_status(int xml);
+Octstr *smsc2_status(int status_type);
 
 
 
@@ -105,4 +113,15 @@ int bb_resume(void);
 int bb_restart(void);
 
 /* return string of current status */
-Octstr *bb_print_status(int xml);
+Octstr *bb_print_status(int status_type);
+
+
+/*----------------------------------------------------------------
+ * common function to all (in bearerbox.c)
+ */
+
+/* return linebreak for given output format, or NULL if format
+ * not supported */
+char *bb_status_linebreak(int status_type);
+
+
