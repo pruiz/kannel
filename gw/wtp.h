@@ -88,7 +88,6 @@ struct WTPMachine {
         #define QUEUE(name) WTPEvent *name;
         #define WSP_EVENT(name) WAPEvent *name;
 	#define TIMER(name) WTPTimer *name;
-	#define LIST(name) List *name;
 	#define ADDRTUPLE(name) WAPAddrTuple *name;
         #define MACHINE(field) field
         #include "wtp_machine-decl.h"

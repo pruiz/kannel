@@ -43,7 +43,7 @@
 #if !defined(MACHINE) || !defined(INTEGER) || !defined(ENUM) || \
 	!defined(OCTSTR) || !defined(TIMER) || \
 	!defined(MSG) || \
-	!defined(WSP_EVENT) || !defined(LIST) || !defined(ADDRTUPLE)
+	!defined(WSP_EVENT) || !defined(ADDRTUPLE)
 #error "wsp_machine-decl.h: Some required macro is missing."
 #endif
 
@@ -74,5 +74,4 @@ MACHINE(ENUM(state)
 #undef TIMER
 #undef MSG
 #undef WSP_EVENT
-#undef LIST
 #undef ADDRTUPLE

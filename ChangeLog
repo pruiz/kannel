@@ -1,3 +1,8 @@
+2000-09-19  Richard Braakman  <dark@wapit.com>
+
+	* gw/wtp.[ch], gw/wtp_machine_decl.h: Removed unused field
+	type LIST from state machines.
+
 2000-09-19  Lars Wirzenius  <liw@iki.fi>
 
 	* gwlib/list.[ch]: Removed list_cat function, as it is now unused.

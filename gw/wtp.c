@@ -556,7 +556,6 @@ WTPMachine *wtp_machine_create(WAPAddrTuple *tuple, long tid, long tcl) {
         #define OCTSTR(name) machine->name = NULL;
         #define WSP_EVENT(name) machine->name = NULL;
         #define TIMER(name) machine->name = wtp_timer_create();
-	#define LIST(name) machine->name = list_create();
 	#define ADDRTUPLE(name) machine->name = NULL;
         #define MACHINE(field) field
         #include "wtp_machine-decl.h"
@@ -594,7 +593,6 @@ static void wtp_machine_destroy(void *p){
         #define OCTSTR(name) octstr_destroy(machine->name);
         #define WSP_EVENT(name) machine->name = NULL;
         #define TIMER(name) wtp_timer_destroy(machine->name);
-	#define LIST(name) list_destroy(machine->name);
 	#define ADDRTUPLE(name) wap_addr_tuple_destroy(machine->name);
         #define MACHINE(field) field
         #include "wtp_machine-decl.h"
