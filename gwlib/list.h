@@ -102,6 +102,15 @@ void list_append(List *list, void *item);
 
 
 /*
+ * This is similar to list_append(). If the item is *not* present in the 
+ * list it is added to the end of the list, otherwise the item is 
+ * discarded and *not* added to the list. Hence you can assume that using
+ * this append function you result in a unique item inside the list.
+ */
+void list_append_unique(List *list, void *item, list_item_matches_t *cmp);
+
+
+/*
  * Insert an item into the list so that it becomes item number `pos'.
  */
 void list_insert(List *list, long pos, void *item);
