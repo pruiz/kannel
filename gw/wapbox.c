@@ -85,8 +85,7 @@ static Msg *msg_receive(int s) {
 	if (octstr_recv(s, &os) < 1)
 		return NULL;
 	msg = msg_unpack(os);
-        debug(0, "WAPBOX: message received");
-        msg_dump(msg);
+
 	if (msg == NULL)
 		return NULL;
 	octstr_destroy(os);
