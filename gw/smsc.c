@@ -93,11 +93,15 @@ SMSCenter *smscenter_construct(void) {
 	smsc->emi_serialdevice = NULL;
 	smsc->emi_username = NULL;
 	smsc->emi_password = NULL;
-	smsc->emi_backup_allow_ip = NULL;
 
 	/* EMI IP */
 	smsc->emi_hostname = NULL;
 	smsc->emi_port = -1;
+	smsc->emi_backup_fd = -1;
+	smsc->emi_backup_port = -1;
+	smsc->emi_backup_allow_ip = NULL;
+	smsc->emi_our_port = -1;
+	smsc->emi_secondary_fd = -1;
 
 	/* SEMA SMS2000 */
 

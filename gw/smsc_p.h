@@ -125,6 +125,7 @@ struct SMSCenter {
         int emi_backup_port;		/* different one! rename! */
         char *emi_backup_allow_ip;     
         int emi_our_port;		/* port to bind us when connecting smsc */
+        int emi_secondary_fd;
 
 	/* SMPP */
 	char *smpp_system_id, *smpp_password;
