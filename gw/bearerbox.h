@@ -94,6 +94,9 @@ Octstr *smsc2_status(int status_type);
  * (otherwise it is) */
 int smsc2_rout(Msg *msg);
 
+int smsc2_stop_smsc(Octstr *id);   /* shutdown a specific smsc */
+int smsc2_start_smsc(Octstr *id);  /* re-start a specific smsc */
+
 
 /*---------------
  * bb_http.c (HTTP Admin)
@@ -147,6 +150,8 @@ int bb_suspend(void);
 int bb_resume(void);
 int bb_restart(void);
 int bb_flush_dlr(void);
+int bb_stop_smsc(Octstr *id);
+int bb_start_smsc(Octstr *id);
 
 /* return string of current status */
 Octstr *bb_print_status(int status_type);

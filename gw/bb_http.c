@@ -157,11 +157,11 @@ static Octstr *httpd_stop_smsc(List *cgivars)
     smsc = http_cgi_variable(cgivars, "smsc");
     if (smsc) {
         if (bb_stop_smsc(smsc) == -1)
-            return octstr_format("Could not stop smsc-id '%s'", octstr_get_cstr(smsc));
+            return octstr_format("Could not shut down smsc-id `%s'", octstr_get_cstr(smsc));
         else
-            return octstr_format("smsc-id '%s' stopped", octstr_get_cstr(smsc));
+            return octstr_format("SMSC `%s' shut down", octstr_get_cstr(smsc));
     } else
-        return octstr_create("smsc-id not given");
+        return octstr_create("SMSC id not given");
 }
 
 static Octstr *httpd_start_smsc(List *cgivars)
@@ -175,11 +175,11 @@ static Octstr *httpd_start_smsc(List *cgivars)
     smsc = http_cgi_variable(cgivars, "smsc");
     if (smsc) {
         if (bb_start_smsc(smsc) == -1)
-            return octstr_format("Could not start smsc-id '%s'", octstr_get_cstr(smsc));
+            return octstr_format("Could not re-start smsc-id `%s'", octstr_get_cstr(smsc));
         else
-            return octstr_format("smsc-id '%s' started", octstr_get_cstr(smsc));
+            return octstr_format("SMSC `%s' re-started", octstr_get_cstr(smsc));
     } else
-        return octstr_create("smsc-id not given");
+        return octstr_create("SMSC id not given");
 }
 
 static void httpd_serve(HTTPClient *client, Octstr *url, List *headers, 
