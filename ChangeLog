@@ -1,3 +1,6 @@
+2002-01-04 Andreas Fink <andreas@fink.org>
+    * gw/smsc_emi2.c: fixed a PANIC situation after idle expired
+
 2002-01-03 Andreas Fink <andreas@fink.org>
     * gwlib/thread.c: changed mutex_unlock to report calling location
     in case of failure 

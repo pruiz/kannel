@@ -1073,7 +1073,7 @@ static void emi2_send_loop(SMSCConn *conn, Connection **server)
 	case EMI2_TIMEOUT:
 	    break;
 	}
-        if (emi2_handle_smscreq (conn, *server) < 0) {
+        if ((*server !=NULL) && (emi2_handle_smscreq (conn, *server) < 0)) {
             return; /* reopen the connection */
         }
 	

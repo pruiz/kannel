@@ -42,7 +42,7 @@ CREATE TABLE DLR (
 /* #define	MYSQL_DLR	0 */
 /* #define	SQL_DEBUG	1 */
 
-#if (MYSQL_DLR)
+#if (MYSQL_DLR) 
 
 #include <mysql/mysql.h>
 MYSQL	*connection;
