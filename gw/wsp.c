@@ -223,7 +223,6 @@ WSPMachine *wsp_machine_create(void) {
 	
 	list_append(session_machines, p);
 
-	debug("wap.wsp", 0, "WSP: Created machine %p.", (void *) p);
 	return p;
 }
 
@@ -271,11 +270,10 @@ void wsp_handle_event(WSPMachine *sm, WSPEvent *current_event) {
 	}
 
 	do {
-		debug("wap.wsp", 0, "WSP: state is %s, event is %s",
+		debug("wap.wsp", 0, "WSP: machine %p, state %s, event %s",
+			(void *) sm,
 			wsp_state_to_string(sm->state), 
 			wsp_event_name(current_event->type));
-		debug("wap.wsp", 0, "WSP: event is:");
-		wsp_event_dump(current_event);
 
 		#define STATE_NAME(name)
 		#define ROW(state_name, event, condition, action, next_state) \
@@ -285,11 +283,7 @@ void wsp_handle_event(WSPMachine *sm, WSPEvent *current_event) {
 				if (sm->state == state_name && \
 				   current_event->type == event && \
 				   (condition)) { \
-					debug("wap.wsp", 0, "WSP: Doing action for %s", \
-						#state_name); \
 					action \
-					debug("wap.wsp", 0, "WSP: Setting state to %s", \
-						#next_state); \
 					sm->state = next_state; \
 					goto end; \
 				} \
@@ -478,25 +472,20 @@ static int unpack_connect_pdu(WSPMachine *m, Octstr *user_data) {
 	    unpack_octstr(&headers, headers_len, user_data, &off) == -1)
 		return -1;
 
+#if 0
 	debug("wap.wsp", 0, "Unpacked Connect PDU: version=%lu, caps_len=%lu, hdrs_len=%lu",
 	      version, caps_len, headers_len);
+#endif
 	if (caps_len > 0) {
-	    debug("wap.wsp", 0, "Unpacked caps:");
-	    octstr_dump(caps, 0);
-
 	    unpack_caps(caps, m);
 	}
 	if (headers_len > 0) {
 	    HTTPHeader *hdrs;
 	    
-	    octstr_dump(headers, 0);
-	    
 	    hdrs = unpack_headers(headers);
 
 	    /* pack them for more compact form */
 	    header_pack(hdrs);
-	    debug("wap.wsp", 0, "WSP: Connect PDU had headers:");
-	    header_dump(hdrs);
 
 	    m->http_headers = hdrs;
 	}
@@ -517,11 +506,8 @@ static int unpack_get_pdu(Octstr **url, HTTPHeader **headers, Octstr *pdu) {
 		h = octstr_copy(pdu, off, octstr_len(pdu) - off);
 		*headers = unpack_headers(h);
 		octstr_destroy(h);
-		debug("wap.wsp", 0, "WSP: Get PDU had headers:");
-		header_dump(*headers);
 	} else
 		*headers = NULL;
-	/*debug("wap.wsp", 0, "WSP: Get PDU had URL <%s>", octstr_get_cstr(*url));*/
 	return 0;
 }
 
@@ -550,10 +536,6 @@ static int unpack_post_pdu(Octstr **url, Octstr **headers, Octstr *pdu) {
 	{
 		return -1;
 	}
-/*
-	debug("wap.wsp", 0, "WSP: Post PDU had  URL len <%d>", url_len);
-	debug("wap.wsp", 0, "WSP: Post PDU had  param len <%d>", param_len);
-*/
 	if(  unpack_octstr(url, url_len, pdu, &off) == -1)
 	{
 		return -1;

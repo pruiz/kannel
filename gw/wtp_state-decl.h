@@ -37,7 +37,6 @@ ROW(LISTEN,
      current_primitive = TR_Invoke_Ind;
 
      wsp_event = pack_wsp_event(current_primitive, event, machine);
-     debug("wap.wtp", 0, "Sending TR-Invoke.ind to WSP, tid being valid");
      wsp_dispatch_event(machine, wsp_event);
 
      timer_event = wtp_event_create(TimerTO_A);
@@ -71,7 +70,6 @@ ROW(LISTEN,
     {
      current_primitive = TR_Invoke_Ind;
      wsp_event = pack_wsp_event(current_primitive, event, machine);
-     debug("wap.wtp", 0, "RcvInvoke: generated TR-Invoke.ind for WSP");
      wsp_dispatch_event(machine, wsp_event);
      wtp_machine_mark_unused(machine);
     },

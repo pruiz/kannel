@@ -54,7 +54,6 @@ WTPTimer *wtp_timer_create(void) {
 
         mutex_unlock(timers.lock);
 
-        debug("wap.wtp.timer", 0, "creating timer %p", (void *) timer);
 	return timer;
 }
 
@@ -66,11 +65,15 @@ void wtp_timer_destroy(WTPTimer *timer) {
 
 	if (timers.list == timer) {
 	   timers.list = timer->next;
+#if 0
            debug("wap.wtp.timer", 0, "First item in the list: %p. Destroying it", (void *) timer);
+#endif
 
 	} else {
 	   for (t = timers.list; t != NULL && t != timer; t = t->next){
+#if 0
                debug("wap.wtp.timer", 0, "Going thru timers list. Met timer %p, belonging to machine %p", (void *) timer, (void *) timer->machine);
+#endif
 	       continue;
            }
 
@@ -81,7 +84,9 @@ void wtp_timer_destroy(WTPTimer *timer) {
 	   }
 
 	   gw_assert(t == timer);
+#if 0
            debug("wap.wtp.timer", 0, "destroying timer %p", (void *) t);
+#endif
 	   timer->next = t->next;
 	}
         
@@ -101,8 +106,10 @@ void wtp_timer_start(WTPTimer *timer, long interval, WTPMachine *sm,
      timer->interval = interval;
      timer->machine = sm;
      timer->event = e;
+#if 0
      debug("wap.wtp.timer", 0, "Timer %p started at %ld, duration %ld.", 
 	   (void *) timer, timer->start_time, timer->interval);
+#endif
 
      mutex_unlock(timers.lock);
 }
@@ -113,8 +120,10 @@ void wtp_timer_stop(WTPTimer *timer) {
      mutex_lock(timers.lock);
      
      timer->interval = 0;
+#if 0
      debug("wap.wtp.timer", 0, "Timer %p stopped at %ld.", (void *) timer,
 	    (long) time(NULL));
+#endif
 
      mutex_unlock(timers.lock);
 }
@@ -127,7 +136,9 @@ void wtp_timer_check(void) {
 	long now;
 
 	now = (long) time(NULL);
+#if 0
 	debug("wap.wtp.timer", 0, "Checking timers at %ld.", now);
+#endif
 
         mutex_lock(timers.lock);
 
@@ -135,7 +146,9 @@ void wtp_timer_check(void) {
 
 	while ( timer != NULL) {
 
+#if 0
             debug("wap.wtp.timer", 0, "Going thru timers list. This timer belongs to the machine %p and its timer interval was %ld", (void *) timer->machine, timer->interval);
+#endif
 
 	    if (timer->interval == 0) {
                debug("wap.wtp.timer", 0, "Timer %p stopped.", 
@@ -161,8 +174,10 @@ void wtp_timer_check(void) {
                timer = temp;
 
 	    } else {
+#if 0
 	       debug("wap.wtp.timer", 0, "Timer %p has not elapsed.", 
                     (void *) timer);
+#endif
                timer = timer->next;
             }          
 	}

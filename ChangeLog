@@ -1,3 +1,12 @@
+Fri Apr  7 19:20:41 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* gw/bearerbox.c, gw/boxc.c, gw/smsbox.c, gw/smsbox_req.c,
+	gw/wapbox.c, gw/wsp.c, gw/wsp_http.c, gw/wsp_state-decl.h,
+	gw/wtp.c, gw/wtp_send.c, gw/wtp_state-decl.h, gw/wtp_tid.c,
+	gw/wtp_timer.c, gwlib/http.c: Removed hopefully unnecessary
+	debugging output to make it possible to run things in heavy
+	production use.
+
 Fri Apr  7 17:25:39 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* gwlib/gwmem.c: gw_free: Removed #if 0 around call to real free.

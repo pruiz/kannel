@@ -112,10 +112,12 @@ static int socket_sender(Msg *pmsg)
     }
     mutex_unlock(socket_mutex);
 
+#if 0
     debug("sms", 0, "write <%.*s> [%ld]",
 	  (int) octstr_len(pmsg->smart_sms.msgdata),
 	  octstr_get_cstr(pmsg->smart_sms.msgdata),
 	  octstr_len(pmsg->smart_sms.udhdata));
+#endif
 
     octstr_destroy(pack);
     msg_destroy(pmsg);
@@ -331,7 +333,9 @@ static int send_heartbeat(void)
     if ((pack = msg_pack(msg)) == NULL)
 	return -1;
 
+#if 0
     debug("sms", 0, "sending heartbeat load %d", smsbox_req_count()); 
+#endif
     if (octstr_send(socket_fd, pack))
 	return -1;
     octstr_destroy(pack);
@@ -343,7 +347,9 @@ static int send_heartbeat(void)
     
     msg = msg_create(heartbeat);
     msg->heartbeat.load = smsbox_req_count();
+#if 0
     debug("sms", 0, "sending heartbeat load %ld", msg->heartbeat.load); 
+#endif
     pack = msg_pack(msg);
     ret = octstr_send(socket_fd, pack);
     octstr_destroy(pack);

@@ -300,7 +300,9 @@ int http_get_u(char *urltext, char **type, char **data, size_t *size,
     httprequest_add_header(request, "User-Agent",
 			   "Mozilla/2.0 (compatible; Open Source WAP Gateway)");
 
+#if 0
     header_dump(request->baseheader);
+#endif
     
     /* ..username */
     if(request->url->username != NULL) {
@@ -329,8 +331,10 @@ int http_get_u(char *urltext, char **type, char **data, size_t *size,
     
     for(;;) {
 	
+#if 0
 	debug("gwlib.http", 0, "http_get_u: Making request using headers:");
 	header_dump(request->baseheader);
+#endif
 
 	/* Open connection, send request, get response. */
 	response = httprequest_execute(request);
@@ -1156,8 +1160,10 @@ char *httprequest_unwrap(HTTPRequest *request) {
 /* terminate headers */
     strcat(bigbuff, "\r\n");
     
+#if 0
     debug("gwlib.http", 0,
 	  "request_unwrap: preparing to put entity: <%s>", request->data);
+#endif
     
 /* data */
     if(request->data != NULL) 

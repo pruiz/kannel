@@ -30,7 +30,6 @@ ROW(NULL_STATE,
 		wtp_event->TR_Invoke_Res.tid = e->machine->tid;
 		wtp_event->TR_Invoke_Res.exit_info = NULL;
 		wtp_event->TR_Invoke_Res.exit_info_present = 0;
-		debug("wap.wsp", 0, "WSP: sending TR-Invoke.res event to WTP");
 		wtp_handle_event(e->machine, wtp_event);
 
 		sm->n_methods = 0;
@@ -44,7 +43,6 @@ ROW(NULL_STATE,
 		 * don't have any such layer, we'll just send .res to
 		 * ourselves.
 		 */
-		debug("wap.wsp", 0, "WSP: sending S-Connect.res to ourselves");
 		new_event = wsp_event_create(S_Connect_Res);
 		new_event->S_Connect_Res.machine = e->machine;
 		wsp_handle_event(sm, new_event);
@@ -71,10 +69,8 @@ ROW(NULL_STATE,
 
 		++sm->n_methods;
 
-		debug("wap.wsp", 0, "WSP: Got Get PDU, state being NULL_STATE");
                 if (unpack_get_pdu(&url, &headers, e->user_data) == -1)
 			error(0, "Unpacking Get PDU failed, oops.");
-		debug("wap.wsp", 0, "WSP: sending Release to ourselves");
 		new_event = wsp_event_create(Release);
 		new_event->Release.machine = e->machine;
 		new_event->Release.url = url;
@@ -117,7 +113,6 @@ ROW(CONNECTING,
 		 * session for this client. 
 		 */
 		sm->session_id = wsp_next_session_id();
-		debug("wap.wsp", 0, "WSP: Session ID is %ld", sm->session_id);
 
 		/* Make a ConnectReply PDU for WSP. */
 		pdu = make_connectreply_pdu(sm, sm->session_id);
@@ -126,7 +121,6 @@ ROW(CONNECTING,
 		wtp_event = wtp_event_create(TR_Result_Req);
 		wtp_event->TR_Result_Req.tid = e->machine->tid;
 		wtp_event->TR_Result_Req.user_data = pdu;
-		debug("wap.wsp", 0, "WSP: sending TR-Result.req event to old WTPMachine");
 		wtp_handle_event(e->machine, wtp_event);
 
 		/* Release all method transactions in HOLDING state. */
@@ -155,7 +149,6 @@ ROW(CONNECTED,
 		if (unpack_get_pdu(&url, &headers, e->user_data) == -1)
 			error(0, "Unpacking Get PDU failed, oops.");
 		else {
-			debug("wap.wsp", 0, "WSP: sending Release to ourselves");
 			new_event = wsp_event_create(Release);
 			new_event->Release.machine = e->machine;
 			new_event->Release.url = url;
@@ -177,11 +170,9 @@ ROW(CONNECTED,
 
 		++sm->n_methods;
 
-		debug("wap.wsp", 0, "WSP: Post Request received");
 		if (unpack_post_pdu(&url, &headers, e->user_data) == -1)
 			error(0, "Unpacking Post PDU failed, oops.");
 		else {
-			debug("wap.wsp", 0, "WSP: sending Release to ourselves");
 			new_event = wsp_event_create(Release);
 			new_event->Release.machine = e->machine;
 			new_event->Release.url = url;
@@ -195,7 +186,6 @@ ROW(CONNECTED,
 	TR_Invoke_Ind,
 	e->tcl == 0 && wsp_deduce_pdu_type(e->user_data, 0) == Disconnect_PDU,
 	{
-		debug("wap.wsp", 0, "WSP: Got Disconnect PDU.");
 	},
 	NULL_STATE)
 
@@ -209,7 +199,6 @@ ROW(CONNECTED,
 		WTPEvent *wtp_event;
 		Octstr *pdu;
 		
-		debug("wap.wsp", 0, "WSP: Got Reconnect PDU.");
 		/* Send Disconnect event to existing sessions for client. */
 
 		/* Make a TR-Result.req event for WTP. */
@@ -290,7 +279,6 @@ ROW(REQUESTING,
 		wtp_event->TR_Invoke_Res.tid = e->machine->tid;
 		wtp_event->TR_Invoke_Res.exit_info = NULL;
 		wtp_event->TR_Invoke_Res.exit_info_present = 0;
-		debug("wap.wsp", 0, "WSP: sending TR-Invoke.res event to WTP");
 		wtp_handle_event(e->machine, wtp_event);
 	},
 	PROCESSING)
@@ -307,7 +295,6 @@ ROW(PROCESSING,
 		wtp_event->TR_Result_Req.user_data = 
 			make_reply_pdu(e->status, e->response_type,
 					e->response_body);
-		debug("wap.wsp", 0, "WSP: sending TR-Result.req event to WTP");
 		wtp_handle_event(e->machine, wtp_event);
 	},
 	REPLYING)

@@ -158,8 +158,10 @@ static struct wsp_http_map *wsp_http_map_find(char *s)
 			break;
 	if (run) {
 		debug("wap.wsp.http", 0, "WSP: found mapping for url <%s>", s);
+#if 0
 	} else {
 		debug("wap.wsp.http", 0, "WSP: no mapping for url <%s>", s);
+#endif
 	}
 	return run;
 }
@@ -241,17 +243,13 @@ void *wsp_http_thread(void *arg) {
 	};
 	static int num_converters = sizeof(converters) / sizeof(converters[0]);
 
-	debug("wap.wsp.http", 0, "WSP: wsp_http_thread starts");
-
 	event = arg;
 	wtp_sm = event->S_MethodInvoke_Res.machine;
 	sm = event->S_MethodInvoke_Res.session;
-	debug("wap.wsp.http", 0, "WSP: Sending S-MethodInvoke.Res to WSP");
 	wsp_dispatch_event(wtp_sm, event);
 
 	wsp_http_map_url(&event->S_MethodInvoke_Res.url);
 	url = octstr_get_cstr(event->S_MethodInvoke_Res.url);
-	debug("wap.wsp.http", 0, "WSP: url is <%s>", url);
 
 	body = NULL;
 
@@ -315,8 +313,10 @@ void *wsp_http_thread(void *arg) {
 		headers = new_h;
 	}
 	header_pack(headers);
+#if 0
 	debug("wap.wsp.http", 0, "WSP: Headers used for request:");
 	header_dump(headers);
+#endif
 
 	ret = http_get_u(url, &type, &data, &size, headers);
 	if (ret == -1) {
@@ -324,9 +324,7 @@ void *wsp_http_thread(void *arg) {
 		status = 500; /* Internal server error; XXX should be 503 */
 		type = "text/plain";
 	} else {
-		info(0, "WSP: Fetched <%s>", url);
-		debug("wap.wsp.http", 0, "WSP: Type is <%s> (0x%02x)", type,
-			encode_content_type(type));
+		info(0, "WSP: Fetched <%s> (%s)", url, type);
 		status = 200; /* OK */
 		
 		if (strchr(type, ';') != NULL) {
@@ -341,8 +339,6 @@ void *wsp_http_thread(void *arg) {
 		converter_failed = 0;
 		for (i = 0; i < num_converters; ++i) {
 			if (strcmp(type, converters[i].type) == 0) {
-				debug("wap.wsp.http", 0, "WSP: converting to `%s'",
-					converters[i].result_type);
 				body = converters[i].convert(input, url);
 				if (body != NULL)
 					break;
@@ -386,10 +382,8 @@ void *wsp_http_thread(void *arg) {
 	e->S_MethodResult_Req.response_body = body;
 	e->S_MethodResult_Req.machine = event->S_MethodInvoke_Res.machine;
 
-	debug("wap.wsp.http", 0, "WSP: sending S-MethodResult.req to WSP");
 	wsp_dispatch_event(event->S_MethodInvoke_Res.machine, e);
 
-	debug("wap.wsp.http", 0, "WSP: wsp_http_thread ends");
 	return NULL;
 }
 
@@ -443,8 +437,6 @@ static Octstr *convert_wml_to_wmlc_old(Octstr *wml, char *url) {
 	Octstr *wmlc;
 	int e;
 	
-	debug("wap.wsp.http", 0, "WSP: Compiling WML using Peter's compiler");
-
 	test_wml = getenv("TEST_WML");
 	if (test_wml == NULL) {
 		error(0, "TEST_WML not specified.");
@@ -503,12 +495,10 @@ static Octstr *convert_wml_to_wmlc(Octstr *wml, char *url) {
 	mutex_lock(kludge);
 #endif
 
-	debug("wap.wsp.http", 0, "WSP: Compiling WML.");
 	ret = wml_compile(wml, &wmlc);
 #if 0
 	mutex_unlock(kludge);
 #endif
-	debug("wap.wsp.http", 0, "WSP: wml_compile returned %d", ret);
 	if (ret == 0)
 		return wmlc;
 	warning(0, "WSP: WML compilation failed.");
@@ -523,8 +513,6 @@ static Octstr *convert_wmlscript_to_wmlscriptc(Octstr *wmlscript, char *url) {
 	unsigned char *result_data;
 	size_t result_size;
 	Octstr *wmlscriptc;
-
-	debug("wap.wsp.http", 0, "WSP: Compiling WMLScript");
 
 	memset(&params, 0, sizeof(params));
 	params.use_latin1_strings = 0;
@@ -557,6 +545,5 @@ static Octstr *convert_wmlscript_to_wmlscriptc(Octstr *wmlscript, char *url) {
 		wmlscriptc = octstr_create_from_data(result_data, result_size);
 	}
 
-	debug("wap.wsp.http", 0, "WSP: WMLScript compilation done.");
 	return wmlscriptc;
 }

@@ -133,7 +133,6 @@ Msg *wtp_send_result(WTPMachine *machine, WTPEvent *event){
 
      dup = msg_duplicate(msg);
      put_msg_in_queue(msg);
-     debug("wap.wtp.send", 0, "WTP_SEND: put the message to the send queue");
 
      return dup;
 }

@@ -76,7 +76,9 @@ int wtp_tid_is_valid(WTPEvent *event, WTPMachine *machine){
     long rcv_tid = -1,
          last_tid = -1;
 
+#if 0
     debug("wap.wtp.tid", 0, "starting validation");
+#endif
     rcv_tid = machine->tid;
    
     if (event->RcvInvoke.tid_new == 0) {
@@ -85,17 +87,23 @@ int wtp_tid_is_valid(WTPEvent *event, WTPMachine *machine){
           if (event->RcvInvoke.no_cache_supported == 1)
              return no_cached_tid;
           else {
+#if 0
              debug("wap.wtp.tid", 0, "empty cache");    
+#endif
 	     add_tid(machine, rcv_tid);
              return ok;
          }
       }
       
       if (tid_in_window(rcv_tid, last_tid) == 0){
+#if 0
          debug("wap.wtp.tid", 0, "tid out of the window");
+#endif
          return fail;
       } else {
+#if 0
          debug("wap.wtp.tid", 0, "tid in the window");
+#endif
          set_tid(rcv_tid);
          return ok;
       }
@@ -129,7 +137,9 @@ int wtp_tid_is_valid(WTPEvent *event, WTPMachine *machine){
  */
 static int tid_in_window(long rcv_tid, long last_tid){
 
+#if 0
        debug("wap.wtp.tid", 0, "tids were %ld and %ld", rcv_tid, last_tid); 
+#endif
        if (last_tid == rcv_tid) {
           return 0;
        } 

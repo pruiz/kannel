@@ -88,8 +88,6 @@ static char *obey_request(URLTranslation *trans, Msg *sms)
 
 	/* URL */
 
-	debug("sms", 0, "formatted url: <%s>", pattern);
-
 	if (http_get(pattern, &type, &data, &size) == -1) {
 		gw_free(pattern);
 		goto error;

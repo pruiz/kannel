@@ -121,8 +121,6 @@ static Msg *msg_receive(int s) {
 		return NULL;
 	msg = msg_unpack(os);
 
-        debug("wap", 0, "WAPBOX: message received");
-
 	if (msg == NULL)
 		return NULL;
 	octstr_destroy(os);
@@ -155,10 +153,6 @@ static void msg_send(int s, Msg *msg) {
         if (octstr_send(s, os) == -1)
 	   error(0, "wapbox: octstr_send failed");
 	octstr_destroy(os);
-	if (msg->type != heartbeat) {
-		debug("wap.msg.send", 0, "WAPBOX: Sent message:");
-		msg_dump(msg, 0);
-	}
         /* Yeah, we now allways free the memory allocated to msg.*/
         msg_destroy(msg);
 #if 0
@@ -323,22 +317,17 @@ int main(int argc, char **argv) {
 		msg = msg_receive(bbsocket);
 		if (msg == NULL)
 			break;
-                debug("wap.msg.received", 0, "WAPBOX: message received");
-                msg_dump(msg, 0);
-                if (msg->wdp_datagram.destination_port == CONNECTIONLESS_PORT){
-                   debug("wap.msg.received", 0, "WAPBOX: connectionless mode not yet implemented");
-                   continue;
+                if (msg->wdp_datagram.destination_port == CONNECTIONLESS_PORT) {
+			error(0, "WAPBOX: connectionless mode PDU ignored");
+			continue;
                 }
 		wtp_event = wtp_unpack_wdp_datagram(msg);
-                debug("wap.event", 0, "WAPBOX: datagram unpacked");
                 if (wtp_event == NULL)
                    continue;
 		wtp_machine = wtp_machine_find_or_create(msg, wtp_event);
-                debug("wap.machine", 0, "WAPBOX: machine found or created");
                 if (wtp_machine == NULL)
                    continue;
 	        wtp_handle_event(wtp_machine, wtp_event);
-                debug("wap.handled", 0, "WAPBOX: event handled");
 	}
 	list_remove_producer(queue);
 

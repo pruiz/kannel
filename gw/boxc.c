@@ -123,11 +123,15 @@ int boxc_send_message(BOXC *boxc, RQueueItem *msg, RQueue *reply_queue)
 	if (msg->msg_class == R_MSG_CLASS_SMS) {
 
 	    if(msg_type(msg->msg) == smart_sms) {
+#if 0
 		debug("bb", 0, "BOXC: Write < %s >", 
 		      octstr_get_cstr(msg->msg->smart_sms.msgdata));
+#endif
 	    }
 	} else {
+#if 0
 	    debug("bb", 0, "BOXC: Write < WAP >");
+#endif
 	    }
 	ack = 1;
     }
@@ -210,7 +214,9 @@ int boxc_get_message(BOXC *boxc, RQueueItem **rmsg)
 		    return -1;
 		}
 		msg->msg = pmsg;
+#if 0
 		debug("bb", 0, "BOXC: Read < %s >", octstr_get_cstr(pmsg->smart_sms.msgdata));
+#endif
 	    }
 	    else if (msg_type(pmsg) == wdp_datagram) {
 		
@@ -220,7 +226,9 @@ int boxc_get_message(BOXC *boxc, RQueueItem **rmsg)
 		    return -1;
 		}
 		msg->msg = pmsg;
+#if 0
 		debug("bb", 0, "BOXC: Read < WAP >");
+#endif
 	    }
 	    octstr_destroy(os);
 	}

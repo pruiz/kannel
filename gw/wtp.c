@@ -388,7 +388,6 @@ WTPMachine *wtp_machine_find_or_create(Msg *msg, WTPEvent *event){
 				     msg->wdp_datagram.destination_port,
 				     tid, event->RcvInvoke.tcl);
                            machine->in_use = 1;
-                           debug("wap.wtp", 0, "machine_find_or_create: invoke or error received, a new machine created");
                       break;
 
 	              case RcvAck: 
@@ -565,22 +564,22 @@ void wtp_handle_event(WTPMachine *machine, WTPEvent *event){
  * queue.
  */
      if (mutex_try_lock(machine->mutex) == -1) {
-        debug("wap.wtp", 0, "WTP: handle_event: event %s appended to event queue", name_event(event->type));
 	append_to_event_queue(machine, event);
 	return;
      }
 
      do {
-	  debug("wap.wtp", 0, "WTP: handle_event: machine %p, state %s, event %s.", (void *) machine, name_state(machine->state), name_event(event->type));
+	  debug("wap.wtp", 0, "WTP: machine %p, state %s, event %s.", 
+	  	(void *) machine, 
+		name_state(machine->state), 
+		name_event(event->type));
 
 	  #define STATE_NAME(state)
 	  #define ROW(wtp_state, event_type, condition, action, next_state) \
 		  if (machine->state == wtp_state && \
 		     event->type == event_type && \
 		     (condition)) { \
-                     debug("wap.wtp", 0, "WTP: doing action for %s", #wtp_state); \
 		     action \
-                     debug("wap.wtp", 0, "WTP: setting state to %s", #next_state); \
                      machine->state = next_state; \
 		  } else 
 	  #include "wtp_state-decl.h"
@@ -592,7 +591,6 @@ void wtp_handle_event(WTPMachine *machine, WTPEvent *event){
 		  }
 
 	  if (event != NULL) {
-             debug("wap.wtp", 0, "WTP: handle_event: destroying event %s", name_event(event->type));
 	     wtp_event_destroy(event);  
           }
 
@@ -691,7 +689,9 @@ static WTPMachine *wtp_machine_find(Octstr *source_address, long source_port,
 	pat.tid = tid;
 	
 	m = list_search(machines, &pat, is_wanted_machine);
+#if 0
 	debug("wap.wtp", 0, "WTP: wtp_machine_find: %p", (void *) m);
+#endif
 	return m;
 }
 
@@ -732,7 +732,6 @@ WTPMachine *wtp_machine_create(Octstr *source_address,
 	   WTPMachine *machine = NULL;
 	   
            machine = wtp_machine_create_empty();
-           debug("wap.wtp", 0, "empty machine created");
 
            machine->source_address = octstr_duplicate(source_address);
            machine->source_port = source_port;
@@ -1039,7 +1038,9 @@ WTPEvent *unpack_invoke(Msg *msg, WTPSegment *segments_list, long tid,
 	        break;
 
 	        case  single_message:
+#if 0
                       debug("wap.wtp", 0, "WTP: Got a single message");
+#endif
                       event->RcvInvoke.user_data = octstr_duplicate(
                                                    msg->wdp_datagram.user_data); 
                       return event;

@@ -622,8 +622,10 @@ static void *smscenter_thread(void *arg)
 		break;		/* kill us */
 	    }
 	    if (ret == 1) {
+#if 0
 		debug("bb", 0, "SMSC: Received a message from <%s>",
 		      smsc_name(us->smsc));
+#endif
 		normalize_numbers(qmsg, us->smsc);
 		route_msg(us, qmsg);
 	    
