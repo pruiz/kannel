@@ -96,6 +96,12 @@
 	a way to serve many more clients than just those using a new
 	WAP phone.</para>
 
+        <para>In addition, Kannel operates as <emphasis>Push Proxy Gateway 
+        </emphasis>, making possible for content servers to send data 
+        to the phones. This is a new type of WAP service, and have many
+        interesting applications. Usually servers know whether some data
+        is new, not the users. </para>
+
 	<para><ulink url="http://www.opensource.org">Open Source</ulink>
 	is a way to formalize the principle of openness by placing the
 	source code of a product under a Open Source compliant software
@@ -105,9 +111,7 @@
 	practice this means that Kannel is going to be a fully-featured
 	WAP implementation and compatible with the maximum number of
 	bearers with special emphasis on SMSC compatibility.
-	The Kannel project was founded by <ulink
-	url="http://www.wapit.com">Wapit Ltd.</ulink> in June,
-	1999.</para>
+	The Kannel project was founded by Wapit Ltd in June, 1999.</para>
 	
 	
 <sect1>
@@ -151,7 +155,8 @@
 	content to the phones.</para>
 
         <figure>
-        <title>Logical position of WAP gateway between a phone and a content server.</title>
+        <title>Logical position of WAP gateway (and Push Proxy Gateway)
+        between a phone and a content server.</title>
         <graphic fileref="wap-gateway&figtype;"></graphic>
         </figure>
 
@@ -173,6 +178,41 @@
 	thus quite useful. Therefore, Kannel functions simultaneously
 	as both a WAP and an SMS gateway.</para>
 
+</sect1>
+
+<sect1>
+<title>Overview of WAP Push</title>
+       <para>Previous chapter explained pull mode of operation: the phone
+       iniatiates the transaction. There is, however, situations when the
+       server (called in this context a push initiator) should be the 
+       initiator, for instance, when it must send a mail notification or a
+       stock quote. For this purpose Wapforum defined WAP Push.</para>
+
+       <para>Push is an application level service, sitting on the top of
+       existing WAP stack. It defines two protocols, OTA and PAP. OTA is
+       a ligthweigth protocol speaking with WAP stack (to be more specific,
+       with WSP), PAP speaks with the push initiator. It defines three kind
+       of XML documents, one for the push data itself and another for 
+       protocol purposes (this is called pap document or push control 
+       document). Third one is not supported by Kannel, yet.</para>
+
+       <para>The server does not simply send push content to the phone, the
+       user would surely not accept, for instance, interrupting of a voice 
+       call. Instead it sends a specific XML document, called Service 
+       Indication. This informs the user about the content becomed available, 
+       and it is displayed only when it is not interrupting anything. It 
+       contains an URL specifying the service and a text for user describing 
+       the content. Then the user can decide does he accept push or not.
+       </para>
+
+       <para>The push content is sended to the phones over SMS, but the 
+       content is fetched by the phone over IP bearer, for instance CSD
+       or GPRS. Because Push Proxy Gateway tokenises SI document, it may fit
+       one SMS message (if not, it is segmented for tranfer). </para>
+
+       <para>Using two bearers seems to be an unnecessary complication. But 
+       quite simply, phones currently operate this way. Push over GPRS can 
+       only simplify matters.</para>
 </sect1>
 	
 <sect1>
@@ -4320,6 +4360,111 @@ otaid=myconfig&amp;username=foo&amp;password=bar&amp;phonenumber=0123456
 </chapter>
 
 
+<chapter id="ppg">
+<title>Setting up Push Proxy Gateway</title>
+      <para>This chapter explains how to set up a push proxy gateway. An
+      example configuration file are given. A working push proxy gateway
+      is described. </para>
+<sect1>
+<title>Configuring wapbox ppg group</title>
+     <para>This will be written when we have a ppg group. Essentially, this
+     will contain instructions how to configure a separate, meaning one not 
+     working with a trusted push initiator, push proxy gateway.</para>
+</sect1>
+<sect1>
+<title>Finishing ppg configuration</title>
+     <para>PPG uses SMS for sending SI to the phone and an IP bearer to
+     fetch content specified by it (see chapter Overview of WAP Push). This
+     means both wapbox and bearer smsc connections are in use. So your push 
+     proxy gateway configuration file must contain groups core, wapbox, smsc 
+     and smsbox. These are configured normal way, only smsc group may have 
+     push-specific variables. Note that following configurations are only an 
+     example, you may need more complex ones.
+     </para>
+     <para>Bearerbox setup does not require any new variables:</para>
+<screen><userinput>
+group = core
+admin-port = 13000
+smsbox-port = 13001
+wapbox-port = 13002
+admin-password = b
+wdp-interface-name = "*"
+log-file = "filename"
+log-level = 1
+box-deny-ip = "*.*.*.*"
+box-allow-ip = "127.0.0.1"
+unified-prefix = "00358,0"
+</userinput></screen>
+      <para>You mut set up wapbox, for pulling (fetching) the wap data, and
+      of course starting the push itself. No new variables here, either.
+      </para> 
+<screen><userinput>
+group = wapbox
+bearerbox-host = localhost
+log-file = "filename"
+log-level = 0
+syslog-level = none
+</userinput></screen>
+      <para>To set up smsc connections, for pushing SI or SL over SMS. Here
+      HTTP SMSC is used as an example. Variables no-sender and no-coding 
+      simplify HTTP request generated by Kannel. Send-url specifies content 
+      gateway, or sendsms service.
+      </para>
+<screen><userinput>
+group = smsc
+smsc = http
+smsc-id = HTTP
+port = 10000
+system-type = kannel
+smsc-username = foo
+smsc-password = bar
+no-sender = true
+no-coding = true
+send-url = http://host:port/path
+</userinput></screen>
+     <para>To set up smsbox. This group will eventually disappear, use here
+     only necessary configuration variables.</para>
+<screen><userinput>
+group = smsbox
+bearerbox-host = localhost
+</userinput></screen>
+      <para>Kannel sources contain a sample push configuration file 
+      <literal>gw/pushkannel.conf</literal>.</para>
+</sect1>
+<sect1>
+<title>Running a push proxy gateway</title>
+     <para>Push proxy gateway is started by simply typing, using separate 
+     windows:
+     <screen><userinput>
+      gw/bearerbox [confile]
+      gw/wapbox [conffile]
+     </userinput></screen>
+     You can, of course, use more complex command line options.</para>
+</sect1>
+<sect1>
+<title>An example using HTTP SMSC</title>
+     <para>An easy way to test and implement push services is to put ppg
+     in the front of an existing sendsms service capable to send SMS data
+     messages and to to understand HTTP requests generated by HTTP SMSC.
+     (See next chapter.) Then you need only configure SMSC configuration 
+     send-url to point to sendsms service.</para>
+</sect1>
+<sect1>
+<title>Output generated by HTTP SMSC</title>
+       <para>HTTP SMSC generates a HTTP get request when it get a sendmessage 
+       event, expressed in unicode. The content gateway, or the sendsms 
+       service must, of course, understand this URL. So here is an example.
+       (Text is a tokenised SI document.)</para>
+<screen><userinput>
+http://matrix:8080/phplib/kannelgw.php?user=*deleted*&amp;pass=*deleted*=
+to=%2B358408676001&amp;text=3D%02%06%17%AE%96localhost%3A8080%00%AF%80%8D%CF%B4
+%80%02%05j%00E%C6%0C%03wap.iobox.fi%00%11%031%40wiral.com%00%07%0A%C3%07%19%
+99%06%25%15%23%15%10%C3%04+%02%060%01%03Want+to+test+a+fetch%3F%00%01%01&amp;
+udh=%06%05%04%0B%84%23%F0
+</userinput></screen>
+</sect1>
+     
+</chapter>
 
 
 <chapter id="bug-reporting">
@@ -4522,6 +4667,160 @@ test/fakesmsc -m 1 "100 500 udh %0eudh+stuff+here main+message"
 
 </appendix>
 
+<appendix>
+<title>Setting up a test environment for Push Proxy Gateway</title>
+
+       <para>This appendix explains how to set a test environment for PPG. 
+       This contains a simulated SMSC, for instance a http server simulation
+       (this is used as example, because it is simplest) and a simulated
+       push initiator. Between them, there is the push proxy gateway to be
+       tested.</para>
+<sect1>
+<title>Creating push content and control document for testing</title>
+      <para>
+      Here is an example of a push control document, which gives PPG 
+      instructions how to do the pushing.
+      <screen><userinput>
+&#60;?xml version="1.0"?&#62;
+&#60;!DOCTYPE pap PUBLIC "-//WAPFORUM//DTD PAP//EN"
+          "http://www.wapforum.org/DTD/pap_1.0.dtd"&#62;
+&#60;pap&#62;
+  &#60;push-message push-id="9fjeo39jf084@pi.com"
+  deliver-before-timestamp="2001-09-28T06:45:00Z"
+  deliver-after-timestamp="2001-02-28T06:45:00Z"
+  progress-notes-requested="false"&#62;
+    &#60;address address-value="WAPPUSH=+358408676001/TYPE=PLMN@ppg.carrier.com"&#62;
+    &#60;/address&#62;
+    &#60;quality-of-service
+    priority="low"
+    delivery-method="unconfirmed"
+    network-required="true"
+    network="GSM"
+    bearer-required="true"
+    bearer="SMS"&#62;
+    &#60;/quality-of-service&#62;
+  &#60;/push-message&#62;
+&#60;/pap&#62;
+      </userinput></screen>
+      Because the push content is sended to th phone over SMS, you must set
+      <literal>network-required</literal> and <literal>bearer-required
+      </literal> true, <literal>network</literal> GSM and <literal>bearer
+      </literal> SMS. Address value is international phone number and it must
+      start with plus. It is used here as an unique identifier, SMSC, or 
+      sendsms script must transform it to an usable phone number.
+      </para>
+      <para>
+      Here is an example of Service Indication, a type of push content. 
+      Essentially, the phone displays, when it receives this SI, the text 
+      "Want to test a fetch" and if the user wants, fetches the content 
+      located by URL "http://wap.iobox.fi".
+      <screen><userinput>
+&#60;?xml version="1.0"?&#62;
+    &#60;!DOCTYPE si PUBLIC "-//WAPFORUM//DTD SI 1.0//EN"
+                 "http://www.wapforum.org/DTD/si.dtd"&#62;
+&#60;si&#62;
+    &#60;indication href="http://wap.iobox.fi"
+                si-id="1@wiral.com"
+                action="signal-medium"
+                created="1999-06-25T15:23:15Z"
+                si-expires="2002-06-30T00:00:00"&#62;
+                Want to test a fetch?
+    &#60;/indication&#62;
+&#60;/si&#62;
+      </userinput></screen>
+      Note that the date value of the si-expires attribute contains trailing
+      zeroes. They are OK here, because SI tokenizer removes them. But phones
+      does not accept them in the final SMS data message. You should probably
+      use <literal>action="signal-high"</literal> for testing purposes, the
+      it causes an immediate presentation of the push message. Prodcution
+      usage is quite another matter.
+      </para>
+</sect1>
+<sect1>
+<title>Starting necessary programs</title>
+       <para>PPG test environment contains, in addition of wapbox and 
+       bearerbox, two test programs, <literal>test_ppg</literal> (simulating
+       push initiator) and <literal>test_http_server</literal> (simulating 
+       a SMSC center accepting pushed content sended over SMS. You can find 
+       both of these programs in <literal>test</literal> directory, and they 
+       both are short and easily editable. </para>
+
+       <para>To set up a test environment, you must first configure a push
+       proxy gateway. This explained in Chapter "Setting up push proxy 
+       gateway". Then issue following commands, in Kannel's root directory and
+       in separate windows:
+       <screen><userinput>
+       gw/bearerbox [conffile]
+       gw/wapbox [conffile]
+       </userinput></screen>
+       You can use more complicated wapbox and bearerbox options, if you
+       want, but they do not change the way PPG works </para>
+
+       <para>To run a http smsc,  start http server simulation:
+       <screen><userinput>
+       test/test_http_server -p port
+       </userinput></screen>
+       You can, of course, select the port at will. Remember, though, that
+       PPG listens at port 8080. Other <literal>test_http_server</literal>
+        options are irrelevant here.</para>
+
+       <para>Lastly, start making push requests, for instance with <literal>
+       test_ppg</literal>. Its first argument is a URL specifying location of
+       push services. Other arguments are two file names, first one push 
+       content and second one pap control document. (For command line options,
+        see Table C.1.). For example:</para>
+       <screen><userinput>
+       test/test_ppg -q http://name:port/cgi-bin/wap-push.cgi?username=foo'&'
+       password=bar
+       </userinput></screen>
+       <table frame=none>
+             <title>Test_ppg's command line options</title>
+             <tgroup cols=3><thead><row>
+             <entry>Switch</entry>
+             <entry>Value</entry>
+             <entry>Description</entry>
+             </row></thead>
+             <tbody>
+             <row><entry><literal>-c</literal></entry>
+             <entry><emphasis>string</emphasis></entry>
+             <entry valign=bottom>
+             Use content qualifier <emphasis>string</emphasis> instead of 
+             default <literal>si</literal> (service indication). Allowed 
+             values are wml, multipart, nil and scrap. Nil and scrap are used 
+             for debugging purposes. 
+             </entry></row>
+             <row><entry><literal>-a</literal></entry>
+             <entry><emphasis>string</emphasis></entry>
+             <entry valign=bottom>
+             Use application id <emphasis>string</emphasis> instead of default
+             <literal>any</literal>. Application identifies the application in
+             the phone that should handle the push request. Sia, ua, mms, nil
+             and scrap are accepted. Nil and scrap are used for debugging 
+             purposes.
+             </entry></row>
+             <row><entry><literal>-i</literal></entry>
+             <entry><emphasis>number</emphasis></entry>
+             <entry valign=bottom>
+             Wait interval <emphasis>number</emphasis> instead of default
+             <literal>0</literal> between pushes.
+             </entry></row>
+             <row><entry><literal>-r</literal></entry>
+             <entry><emphasis>number</emphasis></entry>
+             <entry valign=bottom>
+             Do <emphasis>number</emphasis> requests instead of default
+             <literal>1</literal>.
+             </entry></row>
+             <row><entry><literal>-t</literal></entry>
+             <entry><emphasis>number</emphasis></entry>
+             <entry valign=bottom>
+             Use <emphasis>number</emphasis> threads instead of default
+             <literal>1</literal>.
+             </entry></row>
+             </tbody>
+             </tgroup>
+       </table>
+</sect1>
+</appendix>
 
 <appendix>
 <title>Setting up a dial-up line</title>
@@ -4626,3 +4925,8 @@ test/fakesmsc -m 1 "100 500 udh %0eudh+stuff+here main+message"
 
 
 </book>
+
+
+
+
+

@@ -1,3 +1,8 @@
+2001-10-03 Aarno Syvänen <aarno@wiral.com>
+
+	* doc/userguide/userguide.xml: Added documentation for push proxy
+	gateway
+
 2001-09-27 Aarno Syvänen <aarno@wiral.com>
 	
 	* gw/wap_push_ppg.c: Removed #if 0 -code. Send username-password-pair
