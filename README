@@ -101,12 +101,14 @@ Using the gateway with a Nokia 7110
 Controlling the gateway via HTTP
 
 	The gateway can be controlled with HTTP calls to the bearer box.
-	If the bearer box is running on host example.com. These are at
-	the moment undocumented except for comments in gw/bearerbox.conf.
+	These are at the moment undocumented except for comments in
+	gw/bearerbox.conf.
 	
 	The SMS box also listens for HTTP calls so that it is possible
 	to send SMS messages via HTTP. This is also undocumented at
 	the moment.
+	
+	See gw/control.html for examples, however.
 
 Feedback and more information
 
