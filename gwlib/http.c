@@ -901,7 +901,7 @@ static void handle_transaction(Connection *conn, void *data)
 	trans->persistent = 0;
     octstr_destroy(h);
 
-#if 1 /* Reuse enabled again, let's see if anyone complains... */
+#if 0 /* Reuse disabled again until this gets fixed... */
     if (trans->persistent)
         conn_pool_put(trans->conn, trans->host, trans->port);
     else

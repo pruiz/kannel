@@ -1,3 +1,6 @@
+2002-03-27  Bruno Rodrigues  <bruno.rodrigues@litux.org>
+    * gwlib/http.c: Disabled keepalive until someone fixes it for good
+
 2002-03-27  Stipe Tolj  <tolj@wapme-systems.de>
     * test/test_http_server.c: included SSL support for HTTP test server
 
