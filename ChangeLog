@@ -1,4 +1,8 @@
 2002-01-31  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/bearerbox.c, gw/smsbox.c: added SIGQUIT signal handling in
+      signal_handler() to call gw_check_leaks() like in gw/wapbox.c.
+
+2002-01-31  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/smsbox.c: applied missinc forced-smsc patch for sendota service in
       smsbox_req_sendota(), sumbited by Indrek Mandre <indrek.mandre@trigger.ee>
       [Msg-ID: <B9A4FDCD41EAD411B0C900D0B7A959211451D8@EXCHANGE>]
