@@ -1,4 +1,14 @@
 2005-01-23  Alexander Malysh <amalysh at kannel.org>
+    * gwlib/http.c: apllied patch that includes some http server fixes:
+      - don't close listen filedescriptor when accept failed (that can be caused
+        bei client just now disconnected or network error)
+      - added 'active_list' that saves all active http clients and so while
+        shutdown all active clients can be disconnected gracefully (w/o fdset
+        warning about active entries) and when listen port removed all active
+        clients for this port could be disconnected.
+      [Msg-Id: <csluqr$bah$1@sea.gmane.org>]
+
+2005-01-23  Alexander Malysh <amalysh at kannel.org>
     * gw/bb_boxc.c: applied patch that change behaviour in communication
       thread creation. With this patch threads are created only after successful
       accept and so eliminate possible DOS.

@@ -381,7 +381,7 @@ static void deduce_body_state(HTTPEntity *ent)
     h = http_header_find_first(ent->headers, "Content-Length");
     if (h != NULL) {
         if (octstr_parse_long(&ent->expected_body_len, h, 0, 10) == -1 ||
-	    ent->expected_body_len < 0) {
+            ent->expected_body_len < 0) {
 	    error(0, "HTTP: Content-Length header wrong: <%s>",
 		  octstr_get_cstr(h));
 	    ent->state = body_error;
@@ -802,8 +802,8 @@ static Connection *conn_pool_get(Octstr *host, int port, int ssl, Octstr *certke
         else
 #endif /* HAVE_LIBSSL */
             conn = conn_open_tcp_nb(host, port, our_host);
-            debug("gwlib.http", 0, "HTTP: Opening connection to `%s:%d' (fd=%d).",
-                  octstr_get_cstr(host), port, conn_get_id(conn));
+        debug("gwlib.http", 0, "HTTP: Opening connection to `%s:%d' (fd=%d).",
+              octstr_get_cstr(host), port, conn_get_id(conn));
     } else {
         debug("gwlib.http", 0, "HTTP: Reusing connection to `%s:%d' (fd=%d).",
               octstr_get_cstr(host), port, conn_get_id(conn)); 
@@ -1764,6 +1764,10 @@ struct HTTPClient {
 };
 
 
+/* List with all active HTTPClient's */
+static List *active_connections;
+
+
 static HTTPClient *client_create(int port, Connection *conn, Octstr *ip)
 {
     HTTPClient *p;
@@ -1786,6 +1790,11 @@ static HTTPClient *client_create(int port, Connection *conn, Octstr *ip)
     p->persistent_conn = 1;
     p->conn_time = time(NULL);
     p->request = NULL;
+    debug("gwlib.http", 0, "HTTP: Created HTTPClient area %p.", p);
+    
+    /* add this client to active_connections */
+    list_produce(active_connections, p);
+    
     return p;
 }
 
@@ -1795,13 +1804,17 @@ static void client_destroy(void *client)
     HTTPClient *p;
     
     if (client == NULL)
-    	return;
+        return;
 
     p = client;
     debug("gwlib.http", 0, "HTTP: Destroying HTTPClient area %p.", p);
     gw_assert_allocated(p, __FILE__, __LINE__, __func__);
     debug("gwlib.http", 0, "HTTP: Destroying HTTPClient for `%s'.",
-    	  octstr_get_cstr(p->ip));
+          octstr_get_cstr(p->ip));
+    
+    /* drop this client from active_connections list */
+    list_delete_equal(active_connections, p);
+    
     conn_destroy(p->conn);
     octstr_destroy(p->ip);
     octstr_destroy(p->url);
@@ -1854,8 +1867,6 @@ static int client_is_persistent(List *headers, int use_version_1_0)
 /*
  * Port specific lists of clients with requests.
  */
-
-
 struct port {
     List *clients_with_requests;
     Counter *active_consumers;
@@ -1866,16 +1877,26 @@ static Mutex *port_mutex = NULL;
 static Dict *port_collection = NULL;
 
 
+static int port_match(void *client, void *port)
+{
+    return ((HTTPClient*)client)->port == *((int*)port);
+}
+
+
 static void port_init(void)
 {
     port_mutex = mutex_create();
     port_collection = dict_create(1024, NULL);
+    /* create list with all active_connections */
+    active_connections = list_create();
 }
 
 static void port_shutdown(void)
 {
     mutex_destroy(port_mutex);
     dict_destroy(port_collection);
+    /* destroy active_connections list */
+    list_destroy(active_connections, client_destroy);
 }
 
 
@@ -1890,14 +1911,17 @@ static void port_add(int port)
     Octstr *key;
     struct port *p;
 
-    p = gw_malloc(sizeof(*p));
-    p->clients_with_requests = list_create();
-    list_add_producer(p->clients_with_requests);
-    p->active_consumers = counter_create();
-
     key = port_key(port);
     mutex_lock(port_mutex);
-    dict_put(port_collection, key, p);
+    if ((p = dict_get(port_collection, key)) == NULL) {
+        p = gw_malloc(sizeof(*p));
+        p->clients_with_requests = list_create();
+        list_add_producer(p->clients_with_requests);
+        p->active_consumers = counter_create();
+        dict_put(port_collection, key, p);
+    } else {
+        warning(0, "HTTP: port_add called for existing port (%d)", port);
+    }
     mutex_unlock(port_mutex);
     octstr_destroy(key);
 }
@@ -1907,12 +1931,18 @@ static void port_remove(int port)
 {
     Octstr *key;
     struct port *p;
+    List *l;
 
     key = port_key(port);
     mutex_lock(port_mutex);
     p = dict_remove(port_collection, key);
     mutex_unlock(port_mutex);
     octstr_destroy(key);
+    
+    if (p == NULL) {
+        error(0, "HTTP: Could not find port (%d) in port_collection.", port);
+        return;
+    }
 
     list_remove_producer(p->clients_with_requests);
     while (counter_value(p->active_consumers) > 0)
@@ -1920,6 +1950,10 @@ static void port_remove(int port)
     list_destroy(p->clients_with_requests, client_destroy);
     counter_destroy(p->active_consumers);
     gw_free(p);
+    
+    /* drop all active_connections for this port */
+    l = list_extract_matching(active_connections, &port, port_match);
+    list_destroy(l, client_destroy);
 }
 
 
@@ -2073,16 +2107,16 @@ static void receive_request(Connection *conn, void *data)
 	    return;
 
 	case sending_reply:
-        /* Implicite conn_unregister() and _destroy */
-        if (conn_error(conn))
-            goto error;
+            /* Implicite conn_unregister() and _destroy */
+            if (conn_error(conn))
+                goto error;
 	    if (conn_outbuf_len(conn) > 0)
-            return;
+                return;
 	    /* Reply has been sent completely */
 	    if (!client->persistent_conn) {
-            conn_unregister(conn);
-            client_destroy(client);
-            return;
+                conn_unregister(conn);
+                client_destroy(client);
+                return;
 	    }
 	    /* Start reading another request */
 	    client_reset(client);
@@ -2138,7 +2172,7 @@ static void server_thread(void *dummy)
 
         if ((ret = gwthread_poll(tab, n, -1.0)) == -1) {
             if (errno != EINTR) /* a signal was caught during poll() function */
-                warning(0, "HTTP: gwthread_poll failed.");
+                warning(errno, "HTTP: gwthread_poll failed.");
             continue;
         }
 
@@ -2148,11 +2182,6 @@ static void server_thread(void *dummy)
                 fd = accept(tab[i].fd, (struct sockaddr *) &addr, &addrlen);
                 if (fd == -1) {
                     error(errno, "HTTP: Error accepting a client.");
-                    (void) close(tab[i].fd);
-                    port_remove(ports[i]);
-                    tab[i].fd = -1;
-                    ports[i] = -1;
-                    ssl[i] = 0;
                 } else {
                     Octstr *client_ip = host_ip(addr);
                     /*
@@ -2171,7 +2200,7 @@ static void server_thread(void *dummy)
                 }
             }
         }
-	
+
         while ((portno = list_extract_first(closed_server_sockets)) != NULL) {
             for (i = 0; i < n; ++i) {
                 if (ports[i] == *portno) {
@@ -2184,7 +2213,7 @@ static void server_thread(void *dummy)
             }
             gw_free(portno);
         }
-       
+        
         j = 0;
         for (i = 0; i < n; ++i) {
             if (tab[i].fd != -1) {
@@ -3142,6 +3171,7 @@ void http_header_dump(List *headers)
     debug("gwlib.http", 0, "End of dump.");
 }
 
+
 void http_cgivar_dump(List *cgiargs)
 {
     HTTPCGIVar *v;
@@ -3290,11 +3320,11 @@ void http_init(void)
     proxy_init();
     client_init();
     conn_pool_init();
+    port_init();
     server_init();
 #ifdef HAVE_LIBSSL
     server_ssl_init();
 #endif /* HAVE_LIBSSL */
-    port_init();
     
     run_status = running;
 }
@@ -3307,10 +3337,10 @@ void http_shutdown(void)
 
     run_status = terminating;
 
-    port_shutdown();
     conn_pool_shutdown();
     client_shutdown();
     server_shutdown();
+    port_shutdown();
     proxy_shutdown();
 #ifdef HAVE_LIBSSL
     openssl_shutdown_locks();
