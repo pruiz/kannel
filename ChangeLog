@@ -1,8 +1,13 @@
+2000-07-07  Kalle Marjola  <rpr@wapit.com>
+
+	* doc/dialup.txt: updated to reflect current configuration, and
+	added data on how to get it work with Siemens S25i from Matthias Wutke
+
 2000-07-07 Aarno Syvänen <syvanen@wapit.com>
 
-	wtp.c: Bugfixes in the separation code
+	* gw/wtp.c: Bugfixes in the separation code
 
-	test/fakewap.c: Added sending of a concatenated message, for testing
+	* test/fakewap.c: Added sending of a concatenated message, for testing
 	separation.
 
 2000-07-07  Kalle Marjola  <rpr@wapit.com>
