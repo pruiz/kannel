@@ -1,5 +1,18 @@
 2000-10-13  Lars Wirzenius  <liw@iki.fi>
 
+	* gwlib/gw-getopt.h: Wrote. This header makes sure getopt()
+	and the corresponding variables are declared properly so that
+	any program that includes gwlib/gwlib.h can use getopt without
+	worrying. This should make it unnecessary to clutter all programs
+	with #if HAVE_GETOPT_H stuff.
+	
+	* gwlib/gwlib.h: Include gw-getopt.h.
+	
+	* wmlscript/wmlsc.c, wmlscript/wmlsdasm.c: Make sure gwlib.h is
+	included.
+
+2000-10-13  Lars Wirzenius  <liw@iki.fi>
+
 	* gwlib/http.c: Disable the start_request_thread as well. It
 	caused "make check" to fail (I ran it in the wrong directory
 	*sigh*).

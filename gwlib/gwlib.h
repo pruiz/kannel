@@ -15,6 +15,8 @@
 
 #include "config.h"
 
+#include "gw-getopt.h"
+
 #include "gwstr.h"
 #include "gwmem.h"
 #include "utils.h"

@@ -12,6 +12,7 @@
  */
 
 #include "wsint.h"
+#include "gwlib/gwlib.h"
 
 #include <sys/stat.h>
 

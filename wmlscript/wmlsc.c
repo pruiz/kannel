@@ -26,6 +26,7 @@
 #include <sys/stat.h>
 
 #include "ws.h"
+#include "gwlib/gwlib.h"
 
 /********************* Prototypes for static functions ******************/
 
