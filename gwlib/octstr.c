@@ -1310,6 +1310,27 @@ List *octstr_split_words(Octstr *ostr)
 }
 
 
+List *octstr_split(Octstr *os, Octstr *sep)
+{
+    List *list;
+    long next, pos, seplen;
+    
+    list = list_create();
+    pos = 0;
+    seplen = octstr_len(sep);
+
+    while ((next = octstr_search(os, sep, pos)) != -1) {
+	list_append(list, octstr_copy(os, pos, next - pos));
+	pos = next + seplen;
+    }
+    
+    if (pos < octstr_len(os))
+    	list_append(list, octstr_copy(os, pos, octstr_len(os)));
+    
+    return list;
+}
+
+
 void octstr_dump(Octstr *ostr, int level)
 {
     unsigned char *p, *d, buf[1024], charbuf[256];

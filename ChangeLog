@@ -1,5 +1,13 @@
 2000-12-05  Lars Wirzenius  <liw@iki.fi>
 
+	* gwlib/octstr.[ch]: Wrote octstr_split.
+	
+	* gw/urltrans.c: Use a Dict to look up the URLTranslation,
+	instead of a linear search from the whole list. This is somewhat
+	faster and results in cleaner code.
+
+2000-12-05  Lars Wirzenius  <liw@iki.fi>
+
 	* gwlib/gwstr.[ch], gwlib/conffile.c: Moved trim_ends to
 	conffile.c, and the other functions were no longer used, so
 	removed the gwstr module.

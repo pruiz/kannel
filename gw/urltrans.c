@@ -26,8 +26,8 @@
  * Hold one keyword/options entity
  */
 struct URLTranslation {
-    char *keyword;	/* keyword in SMS (similar) query */
-    char *aliases;	/* separated with ':', after each (inc. last one) */
+    Octstr *keyword;	/* keyword in SMS (similar) query */
+    List *aliases;	/* keyword aliases, List of Octstr */
     int type;		/* see enumeration in header file */
     Octstr *pattern;	/* url, text or file-name pattern */
     Octstr *prefix;	/* for prefix-cut */
@@ -60,6 +60,7 @@ struct URLTranslation {
  */
 struct URLTranslationList {
     List *list;
+    Dict *dict;
 };
 
 
@@ -82,12 +83,20 @@ static Octstr *encode_for_url(Octstr *str);
  * header for explanations of what they should do.
  */
 
+
+static void destroy_keyword_list(void *list)
+{
+    list_destroy(list, NULL);
+}
+
+
 URLTranslationList *urltrans_create(void) 
 {
     URLTranslationList *trans;
     
     trans = gw_malloc(sizeof(URLTranslationList));
     trans->list = list_create();
+    trans->dict = dict_create(1024, destroy_keyword_list);
     return trans;
 }
 
@@ -95,6 +104,7 @@ URLTranslationList *urltrans_create(void)
 void urltrans_destroy(URLTranslationList *trans) 
 {
     list_destroy(trans->list, destroy_onetrans);
+    dict_destroy(trans->dict);
     gw_free(trans);
 }
 
@@ -102,6 +112,9 @@ void urltrans_destroy(URLTranslationList *trans)
 int urltrans_add_one(URLTranslationList *trans, ConfigGroup *grp)
 {
     URLTranslation *ot;
+    long i;
+    List *list;
+    Octstr *alias;
 	
     if (config_get(grp, "keyword") == NULL &&
 	config_get(grp, "username") == NULL)
@@ -112,6 +125,27 @@ int urltrans_add_one(URLTranslationList *trans, ConfigGroup *grp)
 	return -1;
 		
     list_append(trans->list, ot);
+    
+    if (ot->keyword == NULL || ot->type == TRANSTYPE_SENDSMS)
+    	return 0;
+
+    list = dict_get(trans->dict, ot->keyword);
+    if (list == NULL) {
+    	list = list_create();
+	dict_put(trans->dict, ot->keyword, list);
+    }
+    list_append(list, ot);
+
+    for (i = 0; i < list_len(ot->aliases); ++i) {
+	alias = list_get(ot->aliases, i);
+	list = dict_get(trans->dict, alias);
+	if (list == NULL) {
+	    list = list_create();
+	    dict_put(trans->dict, alias, list);
+	}
+	list_append(list, ot);
+    }
+
     return 0;
 }
 
@@ -438,7 +472,8 @@ static URLTranslation *create_onetrans(ConfigGroup *grp)
     
     ot = gw_malloc(sizeof(URLTranslation));
 
-    ot->keyword = ot->aliases = NULL;
+    ot->keyword = NULL;
+    ot->aliases = NULL;
     ot->pattern = NULL;
     ot->prefix = ot->suffix = NULL;
     ot->faked_sender = NULL;
@@ -512,17 +547,18 @@ static URLTranslation *create_onetrans(ConfigGroup *grp)
 
     if (ot->type != TRANSTYPE_SENDSMS) {	/* sms-service */
 	if (keyword)
-	    ot->keyword = gw_strdup(keyword);
+	    ot->keyword = octstr_create(keyword);
 	else {
 	    error(0, "keyword required for sms-service");
 	    goto error;
 	}
 	if (aliases) {
-	    ot->aliases = gw_malloc(strlen(aliases)+2);
-	    sprintf(ot->aliases, "%s;", aliases);
-	}
-	else
-	    ot->aliases = gw_strdup("");
+	    Octstr *temp = octstr_create(aliases);
+	    ot->aliases = octstr_split(temp, 
+	    	    	    	       octstr_create_immutable(";"));
+    	    octstr_destroy(temp);
+	} else
+	    ot->aliases = list_create();
 
 	if (accepted_smsc)
 	    ot->accepted_smsc = octstr_create(accepted_smsc);
@@ -620,41 +656,36 @@ static void destroy_onetrans(void *p)
 static URLTranslation *find_translation(URLTranslationList *trans, 
 	List *words, Octstr *smsc)
 {
-    char *keyword;
+    Octstr *keyword;
     int i, n;
     URLTranslation *t;
+    List *list;
     
     n = list_len(words);
     if (n == 0)
 	return NULL;
-    keyword = octstr_get_cstr(list_get(words, 0));
+    keyword = list_get(words, 0);
     
+    list = dict_get(trans->dict, keyword);
     t = NULL;
-    for (i = 0; i < list_len(trans->list); ++i) {
-	t = list_get(trans->list, i);
-	if (t->type != TRANSTYPE_SENDSMS && t->keyword != NULL) {
-	    if ((strcasecmp(keyword, t->keyword) == 0 &&
-		strlen(keyword) == strlen(t->keyword))
-		||
-		str_find_substr(t->aliases, keyword, ";") == 1)
+    for (i = 0; i < list_len(list); ++i) {
+	t = list_get(list, i);
+
+	/* if smsc_id set and accepted_smsc exist, accept
+	 * translation only if smsc id is in accept string
+	 */
+	if (smsc && t->accepted_smsc) {
+	    if (str_find_substr(octstr_get_cstr(t->accepted_smsc),
+				octstr_get_cstr(smsc), ";")==0)
 	    {
-		/* if smsc_id set and accepted_smsc exist, accept
-		 * translation only if smsc id is in accept string
-		 */
-		if (smsc && t->accepted_smsc) {
-		    if (str_find_substr(octstr_get_cstr(t->accepted_smsc),
-					octstr_get_cstr(smsc), ";")==0)
-		    {
-			t = NULL;
-			continue;
-		    }
-		}
-		if (n - 1 == t->args)
-		    break;
-		if (t->has_catchall_arg && n - 1 >= t->args)
-		    break;
+		t = NULL;
+		continue;
 	    }
 	}
+	if (n - 1 == t->args)
+	    break;
+	if (t->has_catchall_arg && n - 1 >= t->args)
+	    break;
 	t = NULL;
     }
     
@@ -671,7 +702,8 @@ static URLTranslation *find_default_translation(URLTranslationList *trans)
     for (i = 0; i < list_len(trans->list); ++i) {
 	t = list_get(trans->list, i);
 	if (t->keyword != NULL && t->type != TRANSTYPE_SENDSMS
-	    && strcasecmp("default", t->keyword) == 0)
+	    && octstr_compare(octstr_create_immutable("default"), 
+	    	    	      t->keyword) == 0)
 	    break;
     }
     return t;

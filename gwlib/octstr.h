@@ -419,6 +419,13 @@ List *octstr_split_words(Octstr *ostr);
 
 
 /*
+ * Split an octet string into substrings at every occurence of `sep'.
+ * Return List with the substrings.
+ */
+List *octstr_split(Octstr *os, Octstr *sep);
+
+
+/*
  * Print debugging information about octet string.
  */
 void octstr_dump(Octstr *ostr, int level);
