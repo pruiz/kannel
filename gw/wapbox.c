@@ -141,7 +141,6 @@ Msg *remove_msg_from_queue(void) {
 static int send_heartbeat(int socket, int load)
 {
     static Msg *msg = NULL;
-    Octstr *pack;
     
     if (msg == NULL)
         if ((msg = msg_create(heartbeat)) == NULL)

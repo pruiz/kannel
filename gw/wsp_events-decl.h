@@ -84,6 +84,7 @@ WSP_EVENT(SMethodResultRequest,
 	  {
 	  INTEGER(server_transaction_id);
 	  INTEGER(status);
+	  INTEGER(response_type);
 	  OCTSTR(response_body);
 	  MACHINE(machine);
 	  })

@@ -5,6 +5,8 @@
  */
 
 
+#include <assert.h>
+
 #include "gwlib.h"
 #include "wsp.h"
 #include "wml.h"
@@ -60,7 +62,7 @@ static void append_octstr(Octstr *pdu, Octstr *os);
 
 static Octstr *make_connectionmode_pdu(long type);
 static Octstr *make_connectreply_pdu(long session_id);
-static Octstr *make_reply_pdu(long status, Octstr *body);
+static Octstr *make_reply_pdu(long status, long type, Octstr *body);
 
 static long convert_http_status_to_wsp_status(long http_status);
 
@@ -477,15 +479,18 @@ static Octstr *make_connectreply_pdu(long session_id) {
 }
 
 
-static Octstr *make_reply_pdu(long status, Octstr *body) {
+static Octstr *make_reply_pdu(long status, long type, Octstr *body) {
 	Octstr *pdu;
 	
 	/* XXX this is a hardcoded kludge */
 	pdu = make_connectionmode_pdu(Reply_PDU);
 	append_uint8(pdu, convert_http_status_to_wsp_status(status));
 	append_uintvar(pdu, 1);
-	append_uint8(pdu, 0x94); /* XXX */
-	append_octstr(pdu, body);
+	assert(type >= 0x00);
+	assert(type < 0x80);
+	append_uint8(pdu, type | 0x80);
+	if (body != NULL)
+		append_octstr(pdu, body);
 	return pdu;
 }
 
@@ -496,6 +501,7 @@ static long convert_http_status_to_wsp_status(long http_status) {
 		long wsp_status;
 	} tab[] = {
 		{ 200, 0x20 },
+		{ 415, 0x4F },
 	};
 	int i;
 	
@@ -516,15 +522,31 @@ static int transaction_belongs_to_session(WTPMachine *wtp, WSPMachine *session)
 }
 
 
+static int encode_content_type(const char *type) {
+	static struct {
+		char *type;
+		int shortint;
+	} tab[] = {
+		{ "text/plain", 0x03 },
+		{ "application/vnd.wap.wmlc", 0x14 },
+		{ "image/vnd.wap.wbmp", 0x21 },
+	};
+	int i;
+	
+	for (i = 0; i < sizeof(tab) / sizeof(tab[0]); ++i)
+		if (strcmp(type, tab[i].type) == 0)
+			return tab[i].shortint;
+	return 0x03; /* Unknown type, assume text/plain */
+}
+
+
 static void *wsp_http_thread(void *arg) {
-#if 1
 	char *type, *data;
 	size_t size;
 	Octstr *body;
 	WSPEvent *e;
 	int status;
 	struct wmlc *wmlc_data;
-#endif
 	char *url;
 	WSPEvent *event;
 
@@ -536,61 +558,46 @@ static void *wsp_http_thread(void *arg) {
 
 	url = octstr_get_cstr(event->SMethodInvokeResult.url);
 	debug(0, "WSP: url is <%s>", url);
-#if 1
+
+	body = NULL;
+
 	if (http_get(url, &type, &data, &size) == -1) {
 		error(0, "WSP: http_get failed, oops.");
-		status = 500; /* Internal server error */
-		body = NULL;
+		status = 500; /* Internal server error; XXX should be 503 */
+		type = "text/plain";
 	} else {
 		info(0, "WSP: Fetched <%s>", url);
+		debug(0, "WSP: Type is <%s> (0x%02x)", type,
+			encode_content_type(type));
 		status = 200; /* OK */
-
-		data = gw_realloc(data, size + 1);
-		data[size] = '\0';
-
-		wmlc_data = wml2wmlc(data);
-		if (wmlc_data == NULL)
-			panic(0, "Out of memory");
 		
-		body = octstr_create_from_data(wmlc_data->wbxml, 
+		if (strcmp(type, "text/vnd.wap.wml") == 0) {
+			type = "application/vnd.wap.wmlc";
+			data = gw_realloc(data, size + 1);
+			data[size] = '\0';
+
+			wmlc_data = wml2wmlc(data);
+			if (wmlc_data == NULL)
+				panic(0, "Out of memory");
+			body = octstr_create_from_data(wmlc_data->wbxml, 
 						wmlc_data->wml_length);
-		if (body == NULL)
-			panic(0, "octstr_create_from_data failed, oops");
+			if (body == NULL)
+				panic(0, "octstr_create_from_data failed, oops");
+		} else /* if (strcmp(type, "image/vnd.wap.wbmp") != 0) */
+			status = 415; /* Unsupported media type */
 	}
 		
 	e = wsp_event_create(SMethodResultRequest);
 	e->SMethodResultRequest.server_transaction_id = 
 		event->SMethodInvokeIndication.server_transaction_id;
-	e->SMethodResultRequest.status = 200;
+	e->SMethodResultRequest.status = status;
+	e->SMethodResultRequest.response_type = encode_content_type(type);
 	e->SMethodResultRequest.response_body = body;
 	e->SMethodResultRequest.machine = 
 		event->SMethodInvokeResult.machine;
 	debug(0, "WSP: sending S-MethodResult.req to WSP");
 	wsp_dispatch_event(event->SMethodInvokeResult.machine, e);
-#else
-	{
-		Octstr *data;
-		WSPEvent *e;
-		
-		data = octstr_read_file("../main.wmlc");
-		if (data == NULL) {
-			error(0, "octstr_read_file failed, oops");
-			goto end;
-		}
-		
-		e = wsp_event_create(SMethodResultRequest);
-		e->SMethodResultRequest.server_transaction_id = 
-			event->SMethodInvokeIndication.server_transaction_id;
-		e->SMethodResultRequest.status = 200;
-		e->SMethodResultRequest.response_body = data;
-		e->SMethodResultRequest.machine = 
-			event->SMethodInvokeResult.machine;
-		debug(0, "WSP: sending S-MethodResult.req to WSP");
-		wsp_dispatch_event(event->SMethodInvokeResult.machine, e);
-	}
-#endif
 
-end:
 	debug(0, "WSP: wsp_http_thread ends");
 	return NULL;
 }

@@ -1,3 +1,17 @@
+Fri Jan  7 18:06:38 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* gw/boxc.c, gwlib/http.c, gw/wapbox.c, gw/wtp.c: Made sure
+	variables are initialized (compiled with gcc -Wall -O2, which
+	hasn't been done for a while), or removed unused variables.
+	
+	* gw/wsp_events-decl.h, gw/wsp_state-decl.h: Added response_type
+	member to SMethodResultRequest so that the Content-Type header
+	can be communicated to the phone.
+	
+	* gw/wsp.c: Set response_type according to what the HTTP server
+	returns as Content-Type. Also, don't blindly assume everything
+	is WML.
+
 Fri Jan  7 14:47:09 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* Making release 0.2.

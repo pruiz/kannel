@@ -158,6 +158,7 @@ int boxc_get_message(BOXC *boxc, RQueueItem **rmsg)
     RQueueItem *msg;
     int ret;
 
+    msg = NULL;
     *rmsg = NULL;
     if (boxc->fd == BOXC_THREAD)
 
@@ -218,8 +219,6 @@ int boxc_get_message(BOXC *boxc, RQueueItem **rmsg)
 		debug(0, "BOXC: Read < WAP >");
 	    }
 	}
-	else 
-	    msg = NULL; /* nothing to read */
     }
     if (msg) {
 	*rmsg = msg;

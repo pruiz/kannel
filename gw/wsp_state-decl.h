@@ -204,7 +204,8 @@ ROW(PROCESSING,
 			panic(0, "wtp_event_create failed");
 		wtp_event->TRResult.tid = e->machine->tid;
 		wtp_event->TRResult.user_data = 
-			make_reply_pdu(e->status, e->response_body);
+			make_reply_pdu(e->status, e->response_type,
+					e->response_body);
 		debug(0, "WSP: sending TR-Result.req event to WTP");
 		wtp_handle_event(e->machine, wtp_event);
 	},
@@ -220,5 +221,3 @@ ROW(REPLYING,
 
 #undef ROW
 #undef STATE_NAME
-
-

@@ -1092,6 +1092,7 @@ static char *internal_base6t4(char *pass) {
 	if(result==NULL) goto error;
 	result[0] = 0;
 
+	twentyfour = 0;
 	for (ictr=0;ictr<strlen(pass);ictr++) {
 	
         	switch(ictr%3) {

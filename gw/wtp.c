@@ -260,6 +260,7 @@ WTPMachine *wtp_machine_find_or_create(Msg *msg, WTPEvent *event){
            WTPMachine *machine;
            long tid;
 
+          machine = NULL;
           switch (event->type){
 
 	          case RcvInvoke:
@@ -324,6 +325,9 @@ WTPEvent *wtp_unpack_wdp_datagram(Msg *msg){
              abort_type,
              tpi_length_type,
              tpi_length;
+
+
+	 event = NULL;
 
 /*
  * Every message type uses the second and the third octets for tid. Bytes are 
