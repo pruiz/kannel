@@ -28,7 +28,7 @@ static Octstr *extra_headers = NULL;
 static Octstr *content_file = NULL;
 static int file = 0;
 static List *split = NULL;
-static use_post = 0; /* defaults to GET method */
+static int use_post = 0; /* defaults to GET method */
 
 
 static Octstr *post_content_create(void)
