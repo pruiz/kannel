@@ -92,7 +92,6 @@ void list_destroy(List *list, list_item_destructor_t *destructor)
             destructor(item);
     }
 
-    mutex_lock(list->permanent_lock);
     mutex_destroy(list->permanent_lock);
     mutex_destroy(list->single_operation_lock);
     pthread_cond_destroy(&list->nonempty);
