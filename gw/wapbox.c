@@ -389,6 +389,34 @@ static void dispatch_datagram(WAPEvent *dgram)
     wap_event_destroy(dgram);
 }
 
+
+/*
+ * Reloading functions
+ */
+
+static void reload_int(int reload, Octstr *desc, long *o, long *n)
+{
+    if (reload && *o != *n) {
+        info(0, "Reloading int '%s' from %ld to %ld", 
+             octstr_get_cstr(desc), *o, *n);
+        *o = *n;
+    }
+}
+
+static void reload_bool(int reload, Octstr *desc, int *o, int *n)
+{
+    if (reload && *o != *n) {
+        info(0, "Reloading bool '%s' from %s to %s", 
+             octstr_get_cstr(desc), 
+             (*o ? "yes" : "no"), (*n ? "yes" : "no"));
+        *o = *n;
+    }
+}
+
+
+/*
+ * Read all reloadable configuration directives
+ */
 static void config_reload(int reload) {
     Cfg *cfg;
     CfgGroup *grp;
@@ -407,9 +435,11 @@ static void config_reload(int reload) {
 
     /* XXX TO-DO: if(reload) implement wapbox.suspend/mutex.lock */
     
-    if(reload)
-	debug("config_reload", 0, "Reloading configuration");
-    /* NOTE: we could lstat config file and only reload if it was modified, 
+    if (reload)
+        debug("config_reload", 0, "Reloading configuration");
+
+    /* 
+     * NOTE: we could lstat config file and only reload if it was modified, 
      * but as we have a include directive, we don't know every file's
      * timestamp at this point
      */
@@ -417,10 +447,9 @@ static void config_reload(int reload) {
     cfg = cfg_create(config_filename);
 
     if (cfg_read(cfg) == -1) {
-	warning(0, "Couldn't %sload configuration from `%s'.", 
-                   (reload ? "re" : ""),
-                   octstr_get_cstr(config_filename));
-    	return;
+        warning(0, "Couldn't %sload configuration from `%s'.", 
+                   (reload ? "re" : ""), octstr_get_cstr(config_filename));
+        return;
     }
 
     grp = cfg_get_single_group(cfg, octstr_imm("core"));
@@ -440,73 +469,49 @@ static void config_reload(int reload) {
     octstr_destroy(http_proxy_username);
     octstr_destroy(http_proxy_password);
     list_destroy(http_proxy_exceptions, octstr_destroy_item);
-      
 
     grp = cfg_get_single_group(cfg, octstr_imm("wapbox"));
     if (grp == NULL) {
         warning(0, "No 'wapbox' group in configuration.");
-	return;
+        return;
     }
     
-    if (cfg_get_integer(&new_value, grp, octstr_imm("log-level")) != -1 &&
-	new_value != logfilelevel) {
-	if(reload)
-	    info(0, "Changing log level from %ld to %ld", logfilelevel, 
-		    new_value);
-	log_set_log_level(new_value);
-	logfilelevel = new_value;
+    if (cfg_get_integer(&new_value, grp, octstr_imm("log-level")) != -1) {
+        reload_int(reload, octstr_imm("log level"), &logfilelevel, &new_value);
+        log_set_log_level(new_value);
     }
 
     /* 
      * users may define 'smart-errors' to have WML decks returned with
      * error information instread of signaling using the HTTP reply codes
      */
-    new_bool = 0;
     cfg_get_bool(&new_bool, grp, octstr_imm("smart-errors"));
-    if(reload && new_bool != wsp_smart_errors) {
-	info(0, "<smart-errors> is now %s", 
-	     (new_bool ? "activated" : "deactivated"));
+    reload_bool(reload, octstr_imm("smart error messaging"), &wsp_smart_errors, &new_bool);
+
+    cfg_get_bool(&new_bool, grp, octstr_imm("concatenation"));
+    reload_bool(reload, octstr_imm("concatenation"), &concatenation, &new_bool);
+
+    if (cfg_get_integer(&new_value, grp, octstr_imm("max-messages")) != -1) {
+        max_messages = new_value;
+        reload_int(reload, octstr_imm("max messages"), &max_messages, &new_value);
     }
-    wsp_smart_errors = new_bool;
-
-
-    /* XXX Comment me!
-     */
-    new_bool = 0;
-    if (cfg_get_bool(&new_bool, grp, octstr_imm("concatenation")) < 0)
-        new_bool = 1;
-    if(reload && new_bool != concatenation) {
-	info(0, "<concatenation> is now %s", 
-	     (new_bool ? "activated" : "deactivated"));
-    }
-    concatenation = new_bool;
-
-
-    /* XXX Comment me!
-     */
-    new_value = 0;
-    cfg_get_integer(&new_value, grp, octstr_imm("max-messages"));
-    if(reload && new_value != max_messages) {
-	info(0, "<max-messages> are now %ld", new_value);
-    }
-    max_messages = new_value;
-
 
     /* configure URL mappings */
     map_url_max = -1;
     cfg_get_integer(&map_url_max, grp, octstr_imm("map-url-max"));
-    if(map_url_max > 0)
-	warn_map_url=1;
-    if(reload) {  /* clear old map */
-	wsp_http_map_destroy();
-	wsp_http_map_user_destroy();
+    if (map_url_max > 0)
+        warn_map_url = 1;
+
+    if (reload) { /* clear old map */
+        wsp_http_map_destroy();
+        wsp_http_map_user_destroy();
     }
 	
     if ((device_home = cfg_get(grp, octstr_imm("device-home"))) != NULL) {
         wsp_http_map_url_config_device_home(octstr_get_cstr(device_home));
     }
     if ((s = cfg_get(grp, octstr_imm("map-url"))) != NULL) {
-	warn_map_url=1;
+        warn_map_url = 1;
         wsp_http_map_url_config(octstr_get_cstr(s));
         octstr_destroy(s);
     }
@@ -514,50 +519,54 @@ static void config_reload(int reload) {
 
     for (i = 0; i <= map_url_max; i++) {
         Octstr *name;
-
-	warn_map_url=1;
         name = octstr_format("map-url-%d", i);
         if ((s = cfg_get(grp, name)) != NULL)
             wsp_http_map_url_config(octstr_get_cstr(s));
         octstr_destroy(name);
     }
 
-    if(warn_map_url)
-	warning(0, "<map-url> and related are deprecated, please use wap-url-map group");
+    /* warn the user that he/she should use the new wap-url-map groups */
+    if (warn_map_url)
+        warning(0, "'map-url' config directive and related are deprecated, "
+                   "please use wap-url-map group");
 
+    /* configure wap-url-map */
+    if ((groups = cfg_get_multi_group(cfg, octstr_imm("wap-url-map"))) != NULL) {
+        for (i = 0; i < list_len(groups); i++) {
+            Octstr *name, *url, *map_url, *send_msisdn_query;
+            Octstr *send_msisdn_header, *send_msisdn_format;
+            int accept_cookies;
 
-    if( (groups = cfg_get_multi_group(cfg, octstr_imm("wap-url-map"))) != NULL) {
-    	for(i=0; i<list_len(groups); i++) {
-	    Octstr *name, *url, *map_url, *send_msisdn_query;
-	    Octstr *send_msisdn_header, *send_msisdn_format;
-	    int accept_cookies;
+            grp = list_get(groups, i);
+            name = cfg_get(grp, octstr_imm("name"));
+            url = cfg_get(grp, octstr_imm("url"));
+            map_url = cfg_get(grp, octstr_imm("map-url"));
+            send_msisdn_query = cfg_get(grp, octstr_imm("send-msisdn-query"));
+            send_msisdn_header = cfg_get(grp, octstr_imm("send-msisdn-header"));
+            send_msisdn_format = cfg_get(grp, octstr_imm("send-msisdn-format"));
+            accept_cookies = -1;
+            cfg_get_bool(&accept_cookies, grp, octstr_imm("accept-cookies"));
 
-	    grp = list_get(groups, i);
-	    name = cfg_get(grp, octstr_imm("name"));
-	    url = cfg_get(grp, octstr_imm("url"));
-	    map_url = cfg_get(grp, octstr_imm("map-url"));
-	    send_msisdn_query = cfg_get(grp, octstr_imm("send-msisdn-query"));
-	    send_msisdn_header = cfg_get(grp, octstr_imm("send-msisdn-header"));
-	    send_msisdn_format = cfg_get(grp, octstr_imm("send-msisdn-format"));
-	    accept_cookies = -1;
-	    cfg_get_bool(&accept_cookies, grp, octstr_imm("accept-cookies"));
-	    wsp_http_url_map(name, url, map_url, send_msisdn_query, send_msisdn_header,
-			     send_msisdn_format, accept_cookies);
-	}
+            wsp_http_url_map(name, url, map_url, send_msisdn_query, send_msisdn_header,
+                             send_msisdn_format, accept_cookies);
+        }
     }
     wsp_http_map_url_config_info();	/* debugging aid */
     list_destroy(groups, NULL);
 
-    if( (groups = cfg_get_multi_group(cfg, octstr_imm("wap-user-map"))) != NULL) {
-    	for(i=0; i<list_len(groups); i++) {
-	    Octstr *name, *user, *pass, *msisdn;
-	    grp = list_get(groups, i);
-	    name = cfg_get(grp, octstr_imm("name"));
-	    user = cfg_get(grp, octstr_imm("user"));
-	    pass = cfg_get(grp, octstr_imm("pass"));
-	    msisdn = cfg_get(grp, octstr_imm("msisdn"));
-	    wsp_http_user_map(name, user, pass, msisdn);
-	}
+    /* configure wap-user-map */
+    if ((groups = cfg_get_multi_group(cfg, octstr_imm("wap-user-map"))) != NULL) {
+        for (i = 0; i < list_len(groups); i++) {
+            Octstr *name, *user, *pass, *msisdn;
+
+            grp = list_get(groups, i);
+            name = cfg_get(grp, octstr_imm("name"));
+            user = cfg_get(grp, octstr_imm("user"));
+            pass = cfg_get(grp, octstr_imm("pass"));
+            msisdn = cfg_get(grp, octstr_imm("msisdn"));
+            
+            wsp_http_user_map(name, user, pass, msisdn);
+        }
     }
     wsp_http_map_user_config_info();	/* debugging aid */
     list_destroy(groups, NULL);
