@@ -90,7 +90,7 @@
  *    pool.
  * done 2. Test harness for http2_get.
  * 3. Enough server things to get rid of old http.
- * client done 4. Multiple requests per tcp socket, client and server end.
+ * done 4. Multiple requests per tcp socket, client and server end.
  * done 5. Proxy support for client end.
  * 6. POST client and server end.
  * 7. Basic auth.
