@@ -1,5 +1,11 @@
 2001-01-11  Kalle Marjola  <rpr@wapit.com>
 
+	* gw/bearerbox.c|h: added suspend for SMSCConn
+
+	* gw/smscconn*.c: fixed suspend in various parts
+	
+2001-01-11  Kalle Marjola  <rpr@wapit.com>
+
 	* gw/*smscconn*.*: changed SMSCCONN_KILLED to SMSCCONN_DEAD, and
 	clarified some callbacks
 

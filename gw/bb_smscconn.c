@@ -171,8 +171,8 @@ static void sms_router(void *arg)
 
     while(bb_status != BB_DEAD) {
 
-        list_consume(suspended);        /* block here if suspended */
-
+        /* list_consume(suspended);        * block here if suspended */
+	
         if ((msg = list_consume(outgoing_sms)) == NULL)
             break;
 
@@ -293,7 +293,7 @@ int smsc2_start(Config *config)
 
     grp = config_find_first_group(config, "group", "smsc");
     while(grp != NULL) {
-        conn = smscconn_create(grp, 0); /* should we start as stopped? */
+        conn = smscconn_create(grp, 1); /* start as stopped */
         if (conn == NULL)
             panic(0, "Cannot start with SMSC connection failing");
         
@@ -319,6 +319,30 @@ int smsc2_addwdp(Msg *msg)
     if (!smsc_running) return -1;
     
     return -1;
+}
+
+
+void smsc2_resume(void)
+{
+    SMSCConn *conn;
+    int i;
+    
+    for(i=0; i < list_len(smsc_list); i++) {
+        conn = list_get(smsc_list, i);
+	smscconn_start(conn);
+    }
+}
+
+
+void smsc2_suspend(void)
+{
+    SMSCConn *conn;
+    int i;
+    
+    for(i=0; i < list_len(smsc_list); i++) {
+        conn = list_get(smsc_list, i);
+	smscconn_stop(conn);
+    }
 }
 
 

@@ -76,6 +76,9 @@ int udp_outgoing_queue(void);
 
 int smsc2_start(Config *config);
 int smsc2_restart(Config *config);
+
+void smsc2_suspend(void);    /* suspend (can still send but not receive) */
+void smsc2_resume(void);     /* resume */
 int smsc2_shutdown(void);
 void smsc2_cleanup(void); /* final clean-up */
 

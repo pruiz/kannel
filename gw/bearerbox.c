@@ -406,12 +406,13 @@ int main(int argc, char **argv)
     gwthread_sleep(5.0); /* give time to threads to register themselves */
 
     info(0, "MAIN: Start-up done, entering mainloop");
-    if (bb_status == BB_SUSPENDED)
+    if (bb_status == BB_SUSPENDED) {
 	info(0, "Gateway is now SUSPENDED by startup arguments");
-    else if (bb_status == BB_ISOLATED) {
+    } else if (bb_status == BB_ISOLATED) {
 	info(0, "Gateway is now ISOLATED by startup arguments");
 	list_remove_producer(suspended);
     } else {
+	smsc2_resume();
 	list_remove_producer(suspended);	
 	list_remove_producer(isolated);
     }
@@ -485,9 +486,10 @@ int bb_isolate(void)
 	mutex_unlock(status_mutex);
 	return -1;
     }
-    if (bb_status == BB_RUNNING)
+    if (bb_status == BB_RUNNING) {
+	smsc2_suspend();
 	list_add_producer(isolated);
-    else
+    } else
 	list_remove_producer(suspended);
 
     bb_status = BB_ISOLATED;
@@ -502,9 +504,10 @@ int bb_suspend(void)
 	mutex_unlock(status_mutex);
 	return -1;
     }
-    if (bb_status != BB_ISOLATED)
+    if (bb_status != BB_ISOLATED) {
+	smsc2_suspend();
 	list_add_producer(isolated);
-
+    }
     bb_status = BB_SUSPENDED;
     list_add_producer(suspended);
     mutex_unlock(status_mutex);
@@ -520,7 +523,8 @@ int bb_resume(void)
     }
     if (bb_status == BB_SUSPENDED)
 	list_remove_producer(suspended);
-	
+
+    smsc2_resume();
     bb_status = BB_RUNNING;
     list_remove_producer(isolated);
     mutex_unlock(status_mutex);

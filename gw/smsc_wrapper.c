@@ -292,6 +292,7 @@ static void wrapper_stop(SMSCConn *conn)
 {
     SmscWrapper *wrap = conn->data;
 
+    debug("smscconn", 0, "Stopping wrapper");
     list_add_producer(wrap->stopped);
 
 }
@@ -300,6 +301,7 @@ static void wrapper_start(SMSCConn *conn)
 {
     SmscWrapper *wrap = conn->data;
 
+    debug("smscconn", 0, "Starting wrapper");
     list_remove_producer(wrap->stopped);
 }
 

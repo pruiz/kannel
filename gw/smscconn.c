@@ -32,8 +32,6 @@ SMSCConn *smscconn_create(ConfigGroup *grp, int start_as_stopped)
     conn->connect_time = -1;
     conn->load = 0;
 
-    conn->is_stopped = start_as_stopped;
-    
     conn->received = counter_create();
     conn->sent = counter_create();
     conn->failed = counter_create();
@@ -73,6 +71,8 @@ SMSCConn *smscconn_create(ConfigGroup *grp, int start_as_stopped)
 	return NULL;
     }
     gw_assert(conn->send_msg != NULL);
+
+    conn->is_stopped = start_as_stopped;
     if (start_as_stopped && conn->stop_conn)
 	conn->stop_conn(conn);
 
@@ -128,11 +128,13 @@ int smscconn_destroy(SMSCConn *conn)
 int smscconn_stop(SMSCConn *conn)
 {
     gw_assert(conn != NULL);
-    if (conn->status == SMSCCONN_DEAD || conn->is_stopped
-	|| conn->why_killed != SMSCCONN_ALIVE)
-	return -1;
-
     mutex_lock(conn->flow_mutex);
+    if (conn->status == SMSCCONN_DEAD || conn->is_stopped != 0
+	|| conn->why_killed != SMSCCONN_ALIVE)
+    {
+	mutex_unlock(conn->flow_mutex);
+	return -1;
+    }
     conn->is_stopped = 1;
 
     if (conn->stop_conn)
@@ -146,14 +148,15 @@ int smscconn_stop(SMSCConn *conn)
 void smscconn_start(SMSCConn *conn)
 {
     gw_assert(conn != NULL);
-    if (conn->status == SMSCCONN_DEAD || conn->is_stopped == 0)
-	return;
-
     mutex_lock(conn->flow_mutex);
+    if (conn->status == SMSCCONN_DEAD || conn->is_stopped == 0) {
+	mutex_unlock(conn->flow_mutex);
+	return;
+    }
     conn->is_stopped = 0;
 
-    if (conn->stop_conn)
-	conn->stop_conn(conn);
+    if (conn->start_conn)
+	conn->start_conn(conn);
     mutex_unlock(conn->flow_mutex);
 }
 
