@@ -1,5 +1,5 @@
 KANNEL 1.x STATUS: 
-  Last modified at [$Id: STATUS,v 1.8 2002-03-05 22:02:34 davi Exp $]
+  Last modified at [$Id: STATUS,v 1.9 2002-03-08 17:39:18 davi Exp $]
 
 Release:
 
@@ -51,11 +51,6 @@ Available Patches:
     Updated: <FMEKKCFKIGBADHGIJKPJAEFECPAA.afradejas@mediafusion.es>
     Status: Stipe -1 (conceptual clash to global-sender?!)
 
-    * Mysql database values on configuration
-    Posted by: "Oded Arbel" <oded@m-wise.com>
-    Message-ID: <2CFC21DAF860CC49AF57333C4459DD4B166DD1@exchange.m-wise.com>
-    Status: 
-
 Open issues:
 
     * Clashing unified-prefix when several SMSCs send their incoming messages
@@ -86,7 +81,3 @@ Open issues:
     Message-ID: <3C4F4BFE.AE3C687B@wapme-systems.de>
     Status: Stipe: "Andrea Viscovich" <anviscov@tin.it> has done this for a 
             own solutions, needs to be revised and cleaned up.
-
-    * Send coding and charset in sms-service post
-    Posted by: Bruno Rodrigues <bruno.rodrigues@litux.org>
-    Status: I've added to get but forgotten post. And I'll check smsc_http too.

@@ -1160,6 +1160,41 @@ admin-password = f00bar
         can duplicate when system is taken down violently. 
      </entry></row>
 
+    <row><entry><literal>mysql-host</literal></entry>
+     <entry>hostname or IP</entry>
+     <entry valign=bottom>
+        Hostname or IP of a server running a MySQL database to connect to 
+	for use with delivery reports persistant storage. When building 
+	Kannel with --enable-mysql-dlr it will attempt to connect to this 
+	database for storing delivery report data. By default this is set 
+	to 'localhost',	so unless your MySQL server is running on the same 
+	server as Kannel, then you need to set this.
+     </entry></row>
+
+    <row><entry><literal>mysql-username</literal></entry>
+     <entry>username</entry>
+     <entry valign=bottom>
+        User name for connecting to MySQL database for storing delivery reports
+	persistant data. By default this is set to 'username', so you probably 
+	want to set this if you use MySQL for delivery reports persistancy.
+     </entry></row>
+
+    <row><entry><literal>mysql-password</literal></entry>
+     <entry>password</entry>
+     <entry valign=bottom>
+        Password for connecting to MySQL database for storing delivery reports
+	persistant data. By default this is set to 'password', so you probably
+	want to set this if you use MySQL for delivery reports persistancy.
+     </entry></row>
+
+    <row><entry><literal>mysql-dbname</literal></entry>
+     <entry>string</entry>
+     <entry valign=bottom>
+        Name of database in MySQL database server to connect to for storing delivery
+	reports persistant data. by default this is set to 'DLR'. unless you want to use
+	multiple Kannels with the same MySQL server you wouldn't want to change that.
+     </entry></row>
+
     <row><entry><literal>http-proxy-host</literal></entry>
      <entry>hostname</entry>
      <entry morerows=1 valign=bottom>

@@ -1,5 +1,10 @@
 2002-03-08  Bruno Rodrigues  <bruno.rodrigues@litux.org>
-    * gwlib/cfg.h: removed to warnings
+    * doc/userguide/userguide.xml: added mysql config information from Oded 
+      Arbel patch 
+      [Msg-ID: <2CFC21DAF860CC49AF57333C4459DD4B166DF5@exchange.m-wise.com>]
+
+2002-03-08  Bruno Rodrigues  <bruno.rodrigues@litux.org>
+    * gwlib/cfg.h: removed two warnings
 
 2002-03-08  Bruno Rodrigues  <bruno.rodrigues@litux.org>
     * gw/bearerbox.c, gwlib/cfg.def: Added mysql-* configuration variables to 
