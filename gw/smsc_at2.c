@@ -33,7 +33,6 @@
 #include "sms.h"
 #include "dlr.h"
 
-
 /******************************************************************************
  * Types of GSM modems (as used in kannel.conf: modemtype=xxxx)
  */
@@ -151,6 +150,19 @@ int 	at2_numtext(int num);
 void	at2_detect_speed(PrivAT2data *privdata);
 int	at2_detect_modem_type(PrivAT2data *privdata);
 int	at2_modem2id(char *name);
+
+/******************************************************************************
+** For debugging purposes octstr_destroy might be a macro,
+** so function pointers won't work. at2_octstr_destroy is
+** here to make them work again. It is semantically identical
+** to octstr_destroy from gwlib/octstr.h
+**
+*/
+static void at2_octstr_destroy(Octstr *ostr)
+{
+    octstr_destroy(ostr);
+}
+
 
 /******************************************************************************
 ** at2_open_device
@@ -582,7 +594,7 @@ int	at2_init_device(PrivAT2data *privdata)
 	ts = list_search(vals, octstr_imm("1"),(void *) octstr_case_compare);
 	if(ts)
 	    privdata->phase2plus = 1;
-	list_destroy(vals,(void *) octstr_destroy);
+	list_destroy(vals,(void *) at2_octstr_destroy);
     }
     if(privdata->phase2plus)
     {
@@ -1779,7 +1791,7 @@ int at2_detect_modem_type(PrivAT2data *privdata)
 	ts = list_search(vals, octstr_imm("1"),(void *) octstr_case_compare);
 	if(ts)
 	    privdata->phase2plus = 1;
-	list_destroy(vals,(void *) octstr_destroy);
+	list_destroy(vals,(void *) at2_octstr_destroy);
     }
     if(privdata->phase2plus)
     	info(0,"AT2[%s]: Phase 2+ is supported",octstr_get_cstr(privdata->device));

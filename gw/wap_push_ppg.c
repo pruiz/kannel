@@ -474,7 +474,7 @@ static void http_read_thread(void *arg)
            *url,
            *ip,
            *not_found,
-           *username;
+           *username = NULL;
     int compiler_status,
         http_status;
     List *push_headers,                /* MIME headers themselves */
@@ -620,7 +620,7 @@ static void http_read_thread(void *arg)
 
         http_destroy_headers(push_headers);
         http_destroy_cgiargs(cgivars);
-        octstr_destroy(username);
+        if (username) octstr_destroy(username);
         octstr_destroy(mime_content);
         octstr_destroy(pap_content);
         octstr_destroy(push_data);

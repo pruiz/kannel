@@ -1,3 +1,10 @@
+2001-11-14 Jörg Pommnitz <jpo@condat.de>
+    * gw/wap_push_ppg.c: fix octstr_destroy of uninitialized username
+    * gw/smsc_at2.c: new function: at2_octstr_destroy(Octstr *ostr)
+      that makes function pointers work when octstr_destroy is a macro
+    * gwlib/octstr.c.debug,gwlib/octstr.h.debug: debug versions
+      of gwlib/octstr.[ch]
+
 2001-11-13 Jörg Pommnitz <jpo@condat.de>
     * test/test_ppg.c, gw/smsc_emi.c: minor fixes to get through
       Intel C/C++ compiler for Linux 5.0.1
