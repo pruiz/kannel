@@ -135,6 +135,12 @@ int http_post(char *urltext, char **type, char **data, size_t *size, HTTPHeader 
 
 
 /**********************************************************
+ * header_create - create a header
+ */
+
+HTTPHeader *header_create(char *key, char *value);
+    
+/**********************************************************
  * header_dump - dump headers
  * Dump all headers into debug(). Return 0.
  */

@@ -87,6 +87,7 @@ WSP_EVENT(SMethodInvokeResult,
 	  WTP_MACHINE(machine);
 	  OCTSTR(url);
 	  INTEGER(method);
+	  HTTPHEADER(http_headers);
 	  INTEGER(server_transaction_id);
 	  SESSION_MACHINE(session);
 	  })

@@ -158,6 +158,7 @@ ROW(CONNECTED,
 			new_event = wsp_event_create(Release);
 			new_event->Release.machine = e->machine;
 			new_event->Release.url = url;
+			new_event->Release.http_headers = headers;
 			wsp_handle_event(sm, new_event);
 		}
 
@@ -269,6 +270,8 @@ ROW(HOLDING,
 		new_event->SMethodInvokeResult.machine = e->machine;
 		new_event->SMethodInvokeResult.url = e->url;
 		new_event->SMethodInvokeResult.method = Get_PDU;
+		new_event->SMethodInvokeResult.http_headers = 
+			e->http_headers;
 		new_event->SMethodInvokeResult.server_transaction_id = 
 			new_server_transaction_id();
 		(void) start_thread(1, wsp_http_thread, new_event, 0);

@@ -13,6 +13,7 @@
 #include "wsp_headers.h"
 #include "wml.h"
 #include "ws.h"
+#include "http.h"
 
 /* WAP standard defined values for capabilities */
 
@@ -493,7 +494,7 @@ static int unpack_connect_pdu(WSPMachine *m, Octstr *user_data) {
 
 	    /* pack them for more compact form */
 	    header_pack(hdrs);
-	    debug(0, "(packed) Unpacked headers:");
+	    debug(0, "WSP: Connect PDU had headers:");
 	    header_dump(hdrs);
 
 	    m->http_headers = hdrs;
@@ -842,6 +843,7 @@ static void *wsp_http_thread(void *arg) {
 	unsigned long body_size, client_SDU_size;
 	WTPMachine *wtp_sm;
 	WSPMachine *sm;
+	HTTPHeader *headers, *last, *h, *new_h;
 
 	debug(0, "WSP: wsp_http_thread starts");
 
@@ -856,7 +858,26 @@ static void *wsp_http_thread(void *arg) {
 
 	body = NULL;
 
-	ret = http_get_u(url, &type, &data, &size, sm->http_headers);
+	headers = NULL;
+	last = NULL;
+	for (h = sm->http_headers; h != NULL; h = h->next) {
+		new_h = header_create(h->key, h->value);
+		if (last != NULL)
+			last->next = new_h;
+		else
+			headers = new_h;
+		last = new_h;
+	}
+	for (h = event->SMethodInvokeResult.http_headers; h != NULL; h = h->next) {
+		new_h = header_create(h->key, h->value);
+		if (last != NULL)
+			last->next = new_h;
+		else
+			headers = new_h;
+		last = new_h;
+	}
+
+	ret = http_get_u(url, &type, &data, &size, headers);
 	if (ret == -1) {
 		error(0, "WSP: http_get failed, oops.");
 		status = 500; /* Internal server error; XXX should be 503 */

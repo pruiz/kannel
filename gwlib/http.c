@@ -1170,15 +1170,7 @@ int httprequest_add_header(HTTPRequest *request, char *key, char *value) {
     for(;;) {
 
 	if(thisheader == NULL) {
-
-	    thisheader = gw_malloc(sizeof(HTTPHeader));
-
-	    thisheader->key = gw_strdup(key);
-	    if(thisheader->key==NULL) goto error;
-
-	    thisheader->value = gw_strdup(value);
-	    if(thisheader->value==NULL) goto error;
-
+	    thisheader = header_create(key, value);
 	    thisheader->next = NULL;
 	    prev->next = thisheader;
 
@@ -1200,6 +1192,18 @@ error:
 
 
 
+
+/************/
+
+HTTPHeader *header_create(char *key, char *value) {
+	HTTPHeader *h;
+	
+	h = gw_malloc(sizeof(HTTPHeader));
+	h->key = gw_strdup(key);
+	h->value = gw_strdup(value);
+	h->next = NULL;
+	return h;
+}
 
 /************/
 
