@@ -245,6 +245,14 @@ static void *smscenter_thread(void *arg)
 	if (us->status == BB_STATUS_KILLED) break;
 	HEARTBEAT_UPDATE(our_time, last_time, us);
 
+	/* check for any messages to us in reply-queue
+	 */
+
+	msg = rq_pull_msg(bbox->reply_queue, us->id);
+	if (msg) {
+	    ret = smsc_send_message(us->smsc, msg, bbox->request_queue);
+	    continue;
+	}
 	/* check for any new messages from SMSC
 	 */
 	msg = smsc_get_message(us->smsc);
@@ -256,14 +264,6 @@ static void *smscenter_thread(void *arg)
 	    wait = 0;
 	}
 
-	/* check for any messages to us in reply-queue
-	 */
-
-	msg = rq_pull_msg(bbox->reply_queue, us->id);
-	if (msg) {
-	    ret = smsc_send_message(us->smsc, msg, bbox->request_queue);
-	    wait = 0;
-	}
 	if (wait)
 	    usleep(1000);
     }
@@ -357,7 +357,7 @@ static void *smsboxconnection_thread(void *arg)
 {
     BBThread	*us;
     time_t	our_time, last_time;
-    int		ret;
+    int		ret, written = 0;
     RQueueItem	*msg;
     
     us = arg;
@@ -366,11 +366,36 @@ static void *smsboxconnection_thread(void *arg)
     
     while(us->boxc != NULL && !bbox->abort_program) {
 	if (us->status == BB_STATUS_KILLED) break;
-	HEARTBEAT_UPDATE(our_time, last_time, us);
-
 	/* update heartbeat if too much from the last update
 	 * die if forced to, closing the socket */
+	HEARTBEAT_UPDATE(our_time, last_time, us);
 
+	if (written < 0)
+	    written = 0;
+
+	/* check for any messages to us in request-queue,
+	 * if any, put into socket and if accepted, add ACK
+	 * about that to reply-queue, otherwise NACK (unless it
+	 *  was an ACK/NACK message already)
+	 *
+	 * NOTE: there should be something load balance here?
+	 */
+
+	if (written + us->boxc->load < 100) {
+	    msg = rq_pull_msg(bbox->request_queue, us->id);
+	    if (msg == NULL) {
+		msg = rq_pull_msg_class(bbox->request_queue, R_MSG_CLASS_SMS);
+	    }
+	    if (msg) {
+		ret = boxc_send_message(us->boxc, msg, bbox->reply_queue);
+		if (ret < 0) {
+		    error(0, "SMS BOX %d send message failed, killing", us->id);
+		    break;
+		}
+		written++;
+		continue;
+	    }
+	}
 	/* read socket, adding any new messages to reply-queue */
 	/* if socket is closed, set us to die-mode */
 
@@ -381,27 +406,10 @@ static void *smsboxconnection_thread(void *arg)
 	} else if (ret > 0) {
 	    route_msg(us, msg);
 	    rq_push_msg(bbox->reply_queue, msg);
-	    continue;
-	}	    
-	/* check for any messages to us in request-queue,
-	 * if any, put into socket and if accepted, add ACK
-	 * about that to reply-queue, otherwise NACK (unless it
-	 *  was an ACK/NACK message already)
-	 *
-	 * NOTE: there should be something load balance here?
-	 */
-	msg = rq_pull_msg(bbox->request_queue, us->id);
-	if (msg == NULL) {
-	    msg = rq_pull_msg_class(bbox->request_queue, R_MSG_CLASS_SMS);
-	}
-	if (msg) {
-	    ret = boxc_send_message(us->boxc, msg, bbox->reply_queue);
-	    if (ret < 0) {
-		error(0, "SMS BOX %d send message failed, killing", us->id);
-		break;
-	    }
+	    written--;
 	    continue;
 	}
+	written--;
 	usleep(1000);
     }
     boxc_close(us->boxc);

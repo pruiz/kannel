@@ -44,6 +44,7 @@ enum {
     TRANSTYPE_URL,
     TRANSTYPE_TEXT,
     TRANSTYPE_FILE,
+    TRANSTYPE_SENDSMS,
 };
 
 /*
@@ -70,6 +71,9 @@ void urltrans_destroy(URLTranslationList *list);
  * algorithm.)
  *
  * There can only be one pattern with keyword "default", however.
+ *
+ * Sendsms-translations do not use keyword. Instead they use username and
+ * password
  *
  * Return -1 for error, or 0 for OK.
  */
@@ -98,6 +102,11 @@ int urltrans_add_cfg(URLTranslationList *trans, Config *cfg);
  */
 URLTranslation *urltrans_find(URLTranslationList *trans, SMSMessage *sms);
 
+/*
+ * find matching URLTranslation for the given 'username', or NULL
+ * if not found. Password must be checked afterwards
+ */
+URLTranslation *urltrans_find_username(URLTranslationList *trans, char *name);
 
 /*
  * Return a pattern given contents of an SMS message. Find the appropriate
@@ -157,6 +166,12 @@ char *urltrans_split_suffix(URLTranslation *t);
  * Return if set that should not send 'empty reply' messages
  */
 int urltrans_omit_empty(URLTranslation *t);
+
+/*
+ * return the password string, or NULL if not set (used only with
+ *  TRANSTYPE_SENDSMS)
+ */
+char *urltrans_password(URLTranslation *t);
 
 
 #endif

@@ -52,29 +52,35 @@
 #include <time.h>
 #include <string.h>
 #include <signal.h>
+#include <sys/time.h>
 
 #include "wapitlib.h"
 #include "config.h"
 #include "urltrans.h"
 #include "http.h"
 #include "html.h"
+#include "cgi.h"
 #include "sms_msg.h"
 #include "bb.h"
 
 
 /* global variables */
 
+static Config 	*cfg;
 static int 	bb_port;
+static int	sendsms_port = 0;
 static char 	*bb_host;
 static char	*pid_file;
 static int	sms_len = 160;
 static char	*global_sender;
 
 static int 	socket_fd;
+static int 	http_fd;
 
 /* thread handling */
 
 static pthread_mutex_t 	socket_mutex;
+static pthread_mutex_t 	http_mutex;
 static sig_atomic_t 	abort_program = 0;
 static sig_atomic_t	req_threads = 0;
 
@@ -265,7 +271,7 @@ static int send_message(URLTranslation *trans, SMSMessage *msg, char *reply)
 	if (do_sending(msg, rstr) < 0)
 	    goto error;
     } else if (len > sms_len && max_msgs == 1) {
-	info(0, "Truncated reply");
+	/* truncated reply */
 	if (do_sending(msg, rstr) < 0)
 	    goto error;
     } else {
@@ -393,6 +399,104 @@ static void new_request(char *buf)
 
 
 
+/*-----------------------------------------------------------
+ * HTTP ADMINSTRATION
+ */
+
+static char *sendsms_request(CGIArg *list)
+{
+    SMSMessage *msg;
+    URLTranslation *t;
+    char *val, *from, *to, *text;
+    int ret;
+    
+    if (cgiarg_get(list, "username", &val) == -1)
+	return "Authorization failed";	
+
+    t = urltrans_find_username(translations, val);
+    if (t == NULL || cgiarg_get(list, "password", &val) == -1 ||
+	strcmp(val, urltrans_password(t)) != 0)
+
+	return "Authorization failed";	
+
+    if (cgiarg_get(list, "to", &to) == -1 ||
+	cgiarg_get(list, "text", &text) == -1) {
+
+	error(0, "/cgi-bin/sendsms got wrong args");
+	return "Wrong sendsms args.";
+    }
+    if (urltrans_faked_sender(t) != NULL)
+	from = urltrans_faked_sender(t);
+    else if (global_sender != NULL)
+	from = global_sender;
+    else if (cgiarg_get(list, "from", &from) == -1)
+	return "Sender missing";
+    
+    info(0, "/cgi-bin/sendsms <%s> <%s> <%s>", from, to, text);
+    
+    msg = smsmessage_construct(to, from, octstr_create(""));
+    
+    ret = send_message(t, msg, text);
+
+    if (ret == -1)
+	goto error;
+
+    smsmessage_destruct(msg);
+    return "Sent.";
+    
+error:
+    error(errno, "sendsms_request: failed");
+    smsmessage_destruct(msg);
+    req_threads--;
+    return "Sending failed.";
+}
+
+
+static void *http_request_thread(void *arg)
+{
+    int client;
+    char *path, *args;
+    char *answer;
+    CGIArg *arglist;
+    
+    client = httpserver_get_request(http_fd, &path, &args);
+    if (client == -1) {
+	error(0, "Failed to get request from client, killing thread");
+	return NULL;
+    }
+    /* print client information */
+
+    info(0, "Get HTTP request < %s >", path);
+    
+    if (strcmp(path, "/cgi-bin/sendsms") == 0) {
+	
+	arglist = cgiarg_decode_to_list(args);
+	answer = sendsms_request(arglist);
+	
+	cgiarg_destroy_list(arglist);
+    } else
+	answer = "unknown request";
+    info(0, "%s", answer);
+
+    if (httpserver_answer(client, answer) == -1)
+	error(0, "Error responding to client. Too bad.");
+
+    /* answer closes the socket */
+    
+    return NULL;
+}
+
+
+static void http_start_thread()
+{
+    (void)start_thread(1, http_request_thread, NULL, 0);
+}
+
+
+
+/*------------------------------------------------------------*/
+
+
 static void write_pid_file(void) {
     FILE *f;
         
@@ -443,6 +547,8 @@ static void init_smsbox(Config *cfg)
 	    bb_port = atoi(p);
 	if ((p = config_get(grp, "bearerbox-host")) != NULL)
 	    bb_host = p;
+	if ((p = config_get(grp, "sendsms-port")) != NULL)
+	    sendsms_port = atoi(p);
 	if ((p = config_get(grp, "sms-length")) != NULL)
 	    sms_len = atoi(p);
 	if ((p = config_get(grp, "pid-file")) != NULL)
@@ -462,53 +568,53 @@ static void init_smsbox(Config *cfg)
 	info(0, "Starting to log to file %s level %d", logfile, lvl);
 	open_logfile(logfile, lvl);
     }
+    if (sendsms_port > 0) {
+	http_fd = httpserver_setup(sendsms_port);
+	if (http_fd < 0)
+	    error(0, "Failed to open HTTP socket, ignoring it");
+	else
+	    info(0, "Set up send sms service at port %d", sendsms_port);
+    } else
+	http_fd = -1;
+    
     return;
 }
 
 
 
-int main(int argc, char **argv)
+void main_loop()
 {
     char linebuf[1024+1], buf[32];
-    Config *cfg;
-    int cf_index;
-    int ret;
+    time_t start, t;
+    int ret, secs;
     int total = 0;
-    time_t t;
+    fd_set rf;
+    struct timeval to;
     
-    cf_index = get_and_set_debugs(argc, argv, NULL);
-
-    warning(0, "Gateway SMS BOX version %s starting", VERSION);
-
-    setup_signal_handlers();
-    cfg = config_from_file(argv[cf_index], "smsbox.conf");
-    if (cfg == NULL)
-	panic(0, "No configuration, aborting.");
-
-    init_smsbox(cfg);
-    write_pid_file();
-
-    translations = urltrans_create();
-    if (translations == NULL)
-	panic(errno, "urltrans_create failed");
-    if (urltrans_add_cfg(translations, cfg) == -1)
-	panic(errno, "urltrans_add_cfg failed");
-
-
-    
-    while(!abort_program) {
-	socket_fd = tcpip_connect_to_server(bb_host, bb_port);
-	if (socket_fd > -1)
-	    break;
-	sleep(10);
-    }
-    info(0, "Connected to Bearer Box at %s port %d", bb_host, bb_port);
-
-    t = time(NULL);
+    start = t = time(NULL);
     while(!abort_program) {
 
-	ret = read_available(socket_fd);
-	if (ret > 0) {
+	if (time(NULL)-t > 5) {
+	    sprintf(buf, "H%d\n", req_threads);
+	    if (write_to_socket(socket_fd, buf)<0)
+		goto error;
+	    t = time(NULL);
+	}
+	FD_ZERO(&rf);
+	FD_SET(socket_fd, &rf);
+	if (http_fd != -1)
+	    FD_SET(http_fd, &rf);
+	to.tv_sec = 0;
+	to.tv_usec = 0;
+
+	ret = select(FD_SETSIZE, &rf, NULL, NULL, &to);
+
+	if (ret < 0)
+	    goto error;
+	if (ret > 0 && http_fd != -1 && FD_ISSET(http_fd, &rf)) {
+	    http_start_thread();
+	}
+	else if (ret > 0 && FD_ISSET(socket_fd, &rf)) {
 	    ret = read_line(socket_fd, linebuf, 1024);
 	    if (ret < 1) {
 		error(0, "read line failed!");
@@ -528,26 +634,73 @@ int main(int argc, char **argv)
 		sprintf(buf, "H%d\n", req_threads);
 		if (write_to_socket(socket_fd, buf)<0)
 		    goto error;
+		t = time(NULL);
 	    }
 	    ret = pthread_mutex_unlock(&socket_mutex);
 	    if (ret != 0) goto error;
 
+	    if (total == 0)
+		t = time(NULL);
 	    total++;
 	    new_request(linebuf);
-	}
-	else {
-	    ret = pthread_mutex_unlock(&socket_mutex);
+
+	    ret = pthread_mutex_lock(&socket_mutex);
 	    if (ret != 0) goto error;
+	    continue;
 	}
+	ret = pthread_mutex_unlock(&socket_mutex);
+	if (ret != 0) goto error;
+	    
 	usleep(1000);
 
 	ret = pthread_mutex_lock(&socket_mutex);
 	if (ret != 0) goto error;
     }
-    info(0, "Received %d requests", total);
-    return 0;
+    secs = time(NULL) - start;
+    info(0, "Received (and handled?) %d requests in %d seconds (%.2f per second)",
+	 total, secs, (float)total/secs);
+    return;
 
 error:
     panic(0, "Mutex error, exiting");
-    return 0; /* never reached */
 }
+
+
+
+int main(int argc, char **argv)
+{
+    int cf_index;
+    
+    cf_index = get_and_set_debugs(argc, argv, NULL);
+
+    warning(0, "Gateway SMS BOX version %s starting", VERSION);
+
+    pthread_mutex_init(&socket_mutex, NULL);
+    pthread_mutex_init(&http_mutex, NULL);
+
+    setup_signal_handlers();
+    cfg = config_from_file(argv[cf_index], "smsbox.conf");
+    if (cfg == NULL)
+	panic(0, "No configuration, aborting.");
+
+    init_smsbox(cfg);
+    write_pid_file();
+
+    translations = urltrans_create();
+    if (translations == NULL)
+	panic(errno, "urltrans_create failed");
+    if (urltrans_add_cfg(translations, cfg) == -1)
+	panic(errno, "urltrans_add_cfg failed");
+
+    while(!abort_program) {
+	socket_fd = tcpip_connect_to_server(bb_host, bb_port);
+	if (socket_fd > -1)
+	    break;
+	sleep(10);
+    }
+    info(0, "Connected to Bearer Box at %s port %d", bb_host, bb_port);
+
+    main_loop();
+    return 0;
+}
+

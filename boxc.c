@@ -73,33 +73,15 @@ int boxc_send_message(BOXC *boxc, RQueueItem *msg, RQueue *reply_queue)
     else {
 	char buffer[1024];
 	    
-	if (msg->msg_type == R_MSG_TYPE_ACK) {
-	    sprintf(buffer, "A\n");
-	} else if (msg->msg_type == R_MSG_TYPE_NACK) {
-	    sprintf(buffer, "N\n");
-	}
-	else {
+	if (msg->msg_type != R_MSG_TYPE_ACK &&
+	    msg->msg_type != R_MSG_TYPE_NACK) {
+
 	    sprintf(buffer, "%d %s %s %s\n", msg->id, msg->sender,
 		    msg->receiver, octstr_get_cstr(msg->msg));
-	    ack = 1;
-	}
-	write_to_socket(boxc->fd, buffer);
+	    write_to_socket(boxc->fd, buffer);
 
-	debug(0, "BOXC:write < %s >", buffer);
-#if 0	
-	if (ack) {
-	    debug(0, "BOXC:write < %s >, waiting for ack", buffer);
-	
-	    ret = read_line(boxc->fd, buf, 1025);
-	    if (ret < 1)
-		return -1;	/* time to die */
-
-	    if (*buf == 'A')
-		ack = 1;
-	    
-	    debug(0, "BOXC:ack < %s > got", buf);
+	    debug(0, "BOXC:write < %s >", buffer);
 	}
-#endif	
     }
     if (msg->msg_type == R_MSG_TYPE_MO) {
 	if (ack)

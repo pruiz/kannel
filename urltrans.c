@@ -28,7 +28,7 @@
 struct URLTranslation {
     char *keyword;	/* keyword in SMS (similar) query */
     char *aliases;	/* separated with ':', after each (inc. last one) */
-    int type;		/* see enumeration above */
+    int type;		/* see enumeration in header file */
     char *pattern;	/* url, text or file-name pattern */
     char *prefix;	/* for prefix-cut */
     char *suffix;	/* for suffix-cut */
@@ -37,6 +37,9 @@ struct URLTranslation {
     char *split_chars;	/* allowed chars to be used to split message */
     char *split_suffix;	/* chars added to end after each split (not last) */
     int omit_empty;	/* if the reply is empty, is notification send */
+
+    char *username;	/* send sms username */
+    char *password;	/* password associated */
     
     int args;
     int has_catchall_arg;
@@ -103,7 +106,8 @@ int urltrans_add_one(URLTranslationList *trans, ConfigGroup *grp)
 {
     URLTranslation *ot;
 	
-    if (config_get(grp, "keyword") == NULL)
+    if (config_get(grp, "keyword") == NULL &&
+	config_get(grp, "username") == NULL)
 	return 0;
     
     ot = create_onetrans(grp);
@@ -145,6 +149,23 @@ URLTranslation *urltrans_find(URLTranslationList *trans, SMSMessage *sms) {
 }
 
 
+
+URLTranslation *urltrans_find_username(URLTranslationList *trans, 
+				       char *name)
+{
+    URLTranslation *t;
+
+    for (t = trans->list; t != NULL; t = t->next) {
+	if (t->type == TRANSTYPE_SENDSMS) {
+	    if (strcmp(name, t->username) == 0)
+		return t;
+	}
+    }
+    return NULL;
+}
+
+
+
 char *urltrans_get_pattern(URLTranslation *t, SMSMessage *request)
 {
 	char *buf, *enc, *s, *p, *pattern, *tilde;
@@ -155,6 +176,9 @@ char *urltrans_get_pattern(URLTranslation *t, SMSMessage *request)
 	int max_words;
 	OctstrList *word_list;
 	int n;
+
+	if (t->type == TRANSTYPE_SENDSMS)
+	    return strdup("");
 	
 	word_list = octstr_split_words(request->text);
 	if (word_list == NULL)
@@ -324,6 +348,11 @@ int urltrans_omit_empty(URLTranslation *t) {
 	return t->omit_empty;
 }
 
+char *urltrans_password(URLTranslation *t) {
+	return t->password;
+}
+
+
 
 
 
@@ -341,6 +370,7 @@ static URLTranslation *create_onetrans(ConfigGroup *grp)
     char *keyword, *aliases, *url, *text, *file;
     char *prefix, *suffix, *faked_sender, *max_msgs;
     char *split_chars, *split_suffix, *omit_empty;
+    char *username, *password;
     
     ot = malloc(sizeof(URLTranslation));
     if (ot == NULL)
@@ -349,6 +379,7 @@ static URLTranslation *create_onetrans(ConfigGroup *grp)
     ot->keyword = ot->aliases = ot->pattern = NULL;
     ot->prefix = ot->suffix = ot->faked_sender = NULL;
     ot->split_chars = ot->split_suffix = NULL;
+    ot->username = ot->password = NULL;
     
     keyword = config_get(grp, "keyword");
     aliases = config_get(grp, "aliases");
@@ -362,6 +393,8 @@ static URLTranslation *create_onetrans(ConfigGroup *grp)
     split_chars = config_get(grp, "split-chars");
     split_suffix = config_get(grp, "split-suffix");
     omit_empty = config_get(grp, "omit-empty");
+    username = config_get(grp, "username");
+    password = config_get(grp, "password");
 
     if (url) {
 	ot->type = TRANSTYPE_URL;
@@ -372,11 +405,19 @@ static URLTranslation *create_onetrans(ConfigGroup *grp)
     } else if (text) {
 	ot->type = TRANSTYPE_TEXT;
 	ot->pattern = strdup(text);
+    } else if (username) {
+	ot->type = TRANSTYPE_SENDSMS;
+	ot->pattern = strdup("");
+	ot->username = strdup(username);
+	if (password)
+	    ot->password = strdup(password);
     } else {
 	error(0, "No url, file or text spesified");
 	goto error;
-    }    
-    ot->keyword = strdup(keyword);
+    }
+    if (keyword)
+	ot->keyword = strdup(keyword);
+
     if (aliases) {
 	ot->aliases = malloc(strlen(aliases)+2);
 	if (ot->aliases != NULL)
@@ -385,7 +426,8 @@ static URLTranslation *create_onetrans(ConfigGroup *grp)
     else
 	ot->aliases = strdup("");
     
-    if (ot->keyword == NULL || ot->pattern == NULL || ot->aliases == NULL)
+    if ((ot->keyword == NULL && (ot->username == NULL || ot->password == NULL)) ||
+	ot->pattern == NULL || ot->aliases == NULL)
 	goto error;
     if (prefix != NULL && suffix != NULL) {
 	ot->prefix = strdup(prefix);
@@ -424,7 +466,11 @@ static URLTranslation *create_onetrans(ConfigGroup *grp)
 	(count_occurences(ot->pattern, "%a") > 0);
 
     ot->next = NULL;
-    debug(0, "Created translation '%s'", ot->keyword);
+    if (ot->keyword)
+	debug(0, "Created translation '%s'", ot->keyword);
+    else
+	debug(0, "Created sendsms user '%s'", ot->username);
+	
     return ot;
 error:
     error(errno, "Couldn't create a URLTranslation.");
@@ -468,13 +514,15 @@ static URLTranslation *find_translation(URLTranslationList *trans,
 	sprintf(alias_keyword, "%s;", keyword);
 
 	for (t = trans->list; t != NULL; t = t->next) {
-	    if (strcasecmp(keyword, t->keyword) == 0 ||
-		strstr(t->aliases, alias_keyword) != NULL) {
+	    if (t->keyword != NULL) {
+		if (strcasecmp(keyword, t->keyword) == 0 ||
+		    strstr(t->aliases, alias_keyword) != NULL) {
 
-		if (n - 1 == t->args)
-		    break;
-		if (t->has_catchall_arg && n - 1 >= t->args)
-		    break;
+		    if (n - 1 == t->args)
+			break;
+		    if (t->has_catchall_arg && n - 1 >= t->args)
+			break;
+		}
 	    }
 	}
 	
@@ -487,7 +535,7 @@ static URLTranslation *find_default_translation(URLTranslationList *trans)
     URLTranslation *t;
 	
     for (t = trans->list; t != NULL; t = t->next) {
-	if (strcasecmp("default", t->keyword) == 0)
+	if (t->keyword != NULL && strcasecmp("default", t->keyword) == 0)
 	    break;
 	t = t->next;
     }

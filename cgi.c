@@ -51,6 +51,7 @@ CGIArg *cgiarg_decode_to_list(char *args) {
 				*args++ = '\0';
 		} else
 			args = value;
+
 		new = new_cgiarg(name, value);
 		if (new == NULL)
 			goto error;
