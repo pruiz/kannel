@@ -20,6 +20,7 @@
 struct HTTPSocket
 {
     int in_use;
+    int use_version_1_0;
     time_t last_used;
     int socket;
     Octstr *host;
@@ -59,6 +60,7 @@ static int pool_socket_old_and_unused(void *a, void *b);
  */
 static HTTPSocket *socket_create_client(Octstr *host, int port);
 static HTTPSocket *socket_create_server(int port);
+static void socket_close(HTTPSocket *p);
 static void socket_destroy(HTTPSocket *p);
 static HTTPSocket *socket_accept(HTTPSocket *p);
 static int socket_read_line(HTTPSocket *p, Octstr **line);
@@ -497,9 +499,13 @@ int http_server_get_request(HTTPSocket *socket, Octstr **url, List **headers,
         goto error;
     *url = octstr_copy(line, 0, space);
     octstr_delete(line, 0, space + 1);
-    if (octstr_str_compare(line, "HTTP/1.0") != 0 &&
-        octstr_str_compare(line, "HTTP/1.1") != 0)
-        goto error;
+
+    if (octstr_str_compare(line, "HTTP/1.0") == 0)
+    	socket->use_version_1_0 = 1;
+    else if (octstr_str_compare(line, "HTTP/1.1") == 0)
+    	socket->use_version_1_0 = 0;
+    else
+    	goto error;
 
     *cgivars = parse_cgivars(*url);
 
@@ -531,7 +537,10 @@ int http_server_send_reply(HTTPSocket *socket, int status, List *headers,
     gw_assert(headers != NULL);
     gw_assert(body != NULL);
 
-    response = octstr_format("HTTP/1.1 %d Foo\r\n", status);
+    if (socket->use_version_1_0)
+	response = octstr_format("HTTP/1.0 %d Foo\r\n", status);
+    else
+        response = octstr_format("HTTP/1.1 %d Foo\r\n", status);
     if (body == NULL)
         len = 0;
     else
@@ -546,6 +555,10 @@ int http_server_send_reply(HTTPSocket *socket, int status, List *headers,
         octstr_append(response, body);
     ret = socket_write(socket, response);
     octstr_destroy(response);
+    
+    if (socket->use_version_1_0)
+    	socket_close(socket);
+    
     return ret;
 }
 
@@ -1265,6 +1278,7 @@ static HTTPSocket *socket_create_client(Octstr *host, int port)
     }
 
     p->in_use = 0;
+    p->use_version_1_0 = 0;
     p->last_used = (time_t) - 1;
     p->host = octstr_duplicate(host);
     p->port = port;
@@ -1292,6 +1306,7 @@ static HTTPSocket *socket_create_server(int port)
     }
 
     p->in_use = 0;
+    p->use_version_1_0 = 0;
     p->last_used = (time_t) - 1;
     p->host = octstr_create("server socket");
     p->port = port;
@@ -1302,7 +1317,7 @@ static HTTPSocket *socket_create_server(int port)
 
 
 /*
- * Destroy a HTTPSocket.
+ * Destroy an HTTPSocket.
  */
 static void socket_destroy(HTTPSocket *p)
 {
@@ -1310,10 +1325,24 @@ static void socket_destroy(HTTPSocket *p)
 
     debug("gwlib.http", 0, "HTTP: Closing socket <%s:%d>",
           octstr_get_cstr(p->host), p->port);
-    (void) close(p->socket);
+    if (p->socket != -1 && close(p->socket) == -1)
+    	error(errno, "HTTP: Closing of socket failed.");
     octstr_destroy(p->host);
     octstr_destroy(p->buffer);
     gw_free(p);
+}
+
+
+/*
+ * Close an HTTPSocket, but don't destroy it. Further I/O operations on
+ * the socket will fail, but it still needs to be destroyed with
+ * socket_destroy.
+ */
+static void socket_close(HTTPSocket *p)
+{
+    if (close(p->socket) == -1)
+    	error(errno, "HTTP: Closing of socket failed.");
+    p->socket = -1;
 }
 
 
@@ -1325,6 +1354,8 @@ static HTTPSocket *socket_accept(HTTPSocket *server)
     int s, addrlen;
     struct sockaddr_in addr;
     HTTPSocket *client;
+
+    gw_assert(server->socket != -1);
 
     addrlen = sizeof(addr);
     s = accept(server->socket, (struct sockaddr *) & addr, &addrlen);
@@ -1358,6 +1389,9 @@ static int socket_read_line(HTTPSocket *p, Octstr **line)
 {
     int newline;
 
+    if (p->socket == -1)
+    	return 0;
+
     while ((newline = octstr_search_char(p->buffer, '\n', 0)) == -1) {
         switch (octstr_append_from_socket(p->buffer, p->socket)) {
         case -1:
@@ -1385,6 +1419,9 @@ static int socket_read_line(HTTPSocket *p, Octstr **line)
  */
 static int socket_read_bytes(HTTPSocket *p, Octstr **os, long bytes)
 {
+    if (p->socket == -1)
+    	return 0;
+
     while (octstr_len(p->buffer) < bytes) {
         switch (octstr_append_from_socket(p->buffer, p->socket)) {
         case -1:
@@ -1405,6 +1442,9 @@ static int socket_read_bytes(HTTPSocket *p, Octstr **os, long bytes)
  */
 static int socket_read_to_eof(HTTPSocket *p, Octstr **os)
 {
+    if (p->socket == -1)
+    	return -1;
+    
     for (; ; ) {
         switch (octstr_append_from_socket(p->buffer, p->socket)) {
         case -1:
@@ -1423,6 +1463,8 @@ static int socket_read_to_eof(HTTPSocket *p, Octstr **os)
  */
 static int socket_write(HTTPSocket *p, Octstr *os)
 {
+    if (p->socket == -1)
+    	return -1;
     return octstr_write_to_socket(p->socket, os);
 }
 

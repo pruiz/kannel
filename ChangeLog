@@ -1,3 +1,12 @@
+2000-10-12  Lars Wirzenius  <liw@iki.fi>
+
+	* gwlib/http.c: When we are the server side, and the client uses
+	HTTP 1.0, we will close the connection. If the client uses HTTP
+	1.1, we keep it open.
+
+	* gw/smsbox.c: Remove the workaround for the missing feature
+	now implemented.
+
 2000-10-12  Kalle Marjola  <rpr@wapit.com>
 
 	* gw/bearerbox.c, gw/bb_boxc.c, gw/bb_udp.c, gw/bb_smsc.c: Startup
