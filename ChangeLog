@@ -1,3 +1,9 @@
+2001-05-14  Derry Hamilton <rasilon@tardis.ed.ac.uk>
+
+	* gw/smsbox.c: Wrapped the ssl_certkey_file declaration in 
+	ifdefs, like the code that uses it so that we don't have gcc
+	complaining about unused variables.
+
 2001-05-14  Nick Clarey  <nclarey@3glab.com>
 
 	* gw/smsc_at.c: 7-bit messages plus UDH now encoded correctly. 

@@ -1621,7 +1621,9 @@ static void init_smsbox(Cfg *cfg)
     List *http_proxy_exceptions = NULL;
     Octstr *http_proxy_username = NULL;
     Octstr *http_proxy_password = NULL;
+#ifdef HAVE_LIBSSL
     Octstr *ssl_certkey_file;
+#endif /* HAVE_LIBSSL */
 
 
     bb_port = BB_DEFAULT_SMSBOX_PORT;
