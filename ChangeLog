@@ -10,9 +10,12 @@
 
 	* wsp_events-decl.h: Superflous events removed
 
-	* wtp_send.c: Internal function wtp_add_datagram_address added, pack*
-	functions changed respectively. Added functions pack_ack and 
-	pack_abort
+	* wtp_send.c: Internal function wtp_add_datagram_address added, send*
+	functions changed respectively. Added functions send_ack and 
+	send_abort
+
+        * wtp_machine-decl.h: added attribute tid_ve, which tells are we 
+	doing tid verification or normal acknowledgement   
 	
 
 1999-12-22    <rpr@rpr.wapit.com>
