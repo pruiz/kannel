@@ -9,6 +9,7 @@
 #include <limits.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 #include "urltrans.h"
 #include "gwlib.h"

@@ -4,6 +4,9 @@
 #ifndef GW_AC_CONFIG_H
 #define GW_AC_CONFIG_H
 
+/* Gateway version number. */
+#undef VERSION
+
 /* Define to empty if the keyword does not work.  */
 #undef const
 

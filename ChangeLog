@@ -1,3 +1,10 @@
+Mon Jan 10 10:10:22 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* Removed automake. Automake makes huge, complicated Makefiles
+	that I am rather reluctant to decipher, and I would have had to
+	do that to incorporate WMLScript compiler source. So I removed
+	the Makefile.am's and made a Makefile.in by hand.
+
 Mon Jan 10 07:36:36 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* gw/wsp.c: Fixed function wsp_http_thread so that is handles

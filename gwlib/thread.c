@@ -22,7 +22,7 @@ pthread_t start_thread(int detached, Threadfunc *func, void *arg, size_t size)
 {
 	void *copy;
 	pthread_t id;
-#if HAVE_THREADS
+#if HAVE_PTHREAD_H
 	pthread_attr_t attr;
 	int ret;
 #endif
@@ -38,7 +38,7 @@ pthread_t start_thread(int detached, Threadfunc *func, void *arg, size_t size)
 		memcpy(copy, arg, size);
 	}
 	
-#if HAVE_THREADS
+#if HAVE_PTHREAD_H
 	pthread_attr_init(&attr);
 	if (detached)
 		pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);

@@ -7,7 +7,7 @@
 
 
 
-#if HAVE_THREADS
+#if HAVE_PTHREAD_H
 #include <pthread.h>
 #else
 typedef int pthread_t;
