@@ -115,6 +115,30 @@
 /* Do we have <pthread.h>? */
 #undef HAVE_PTHREAD_H
 
+/* Define if lex declares yytext as a char * by default, not a char[].  */
+#undef YYTEXT_POINTER
+
+/* Enable non-reentrant development time debugging. */
+#undef WS_DEBUG
+
+/* The number of bytes in a int.  */
+#undef SIZEOF_INT
+
+/* The number of bytes in a long.  */
+#undef SIZEOF_LONG
+
+/* Define if you have the <stdarg.h> header file.  */
+#undef HAVE_STDARG_H
+
+/* Define if you have the <stdlib.h> header file.  */
+#undef HAVE_STDLIB_H
+
+/* Define if you have the <string.h> header file.  */
+#undef HAVE_STRING_H
+
+/* Define if you have the <unistd.h> header file.  */
+#undef HAVE_UNISTD_H
+
 #endif
 
 /* config.h.bot - config.h.in suffix, used by autoheader */

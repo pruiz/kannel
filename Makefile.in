@@ -64,7 +64,7 @@ CONFIG_CLEAN_FILES =
 VERSION=$(shell head -1 VERSION)
 
 LIBS=@LIBS@
-CFLAGS=@CFLAGS@ -I. -Igw -Igwlib -Iwmlscript
+CFLAGS=@CFLAGS@ -I. -Igw -Igwlib
 LDFLAGS=@LDFLAGS@
 
 MKDEPEND=$(CC) $(CFLAGS) -MM
@@ -107,38 +107,6 @@ docs: $(docs)
 #install:
 clean:
 	rm -f core $(progs) $(testprogs) $(objs) $(docs) *.a
-
-#Makefile: $(srcdir)/Makefile.in  $(top_builddir)/config.status $(BUILT_SOURCES)
-#	cd $(top_builddir) \
-#	  && CONFIG_FILES=$@ CONFIG_HEADERS= $(SHELL) ./config.status
-#
-#config.status: $(srcdir)/configure $(CONFIG_STATUS_DEPENDENCIES)
-#	$(SHELL) ./config.status --recheck
-#$(srcdir)/configure: $(srcdir)/configure.in $(ACLOCAL_M4) $(CONFIGURE_DEPENDENCIES)
-#	cd $(srcdir) && $(AUTOCONF)
-#
-#config.h: stamp-h
-#	@if test ! -f $@; then \
-#		rm -f stamp-h; \
-#		$(MAKE) stamp-h; \
-#	else :; fi
-#stamp-h: $(srcdir)/config.h.in $(top_builddir)/config.status
-#	cd $(top_builddir) \
-#	  && CONFIG_FILES= CONFIG_HEADERS=config.h \
-#	     $(SHELL) ./config.status
-#	@echo timestamp > stamp-h 2> /dev/null
-#$(srcdir)/config.h.in: $(srcdir)/stamp-h.in
-#	@if test ! -f $@; then \
-#		rm -f $(srcdir)/stamp-h.in; \
-#		$(MAKE) $(srcdir)/stamp-h.in; \
-#	else :; fi
-#$(srcdir)/stamp-h.in: $(top_srcdir)/configure.in $(ACLOCAL_M4) acconfig.h config.h.top config.h.bot
-#	cd $(top_srcdir) && $(AUTOHEADER)
-#	@echo timestamp > $(srcdir)/stamp-h.in 2> /dev/null
-
-
-
-# ------------------------------------------------
 
 depend .depend:
 	for dir in $(srcdirs); do \

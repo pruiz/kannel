@@ -85,8 +85,10 @@ static Msg *msg_receive(int s) {
 static void msg_send(int s, Msg *msg) {
 	Octstr *os;
 
+#if 0
 	debug(0, "msg_send: sending message:");
 	msg_dump(msg);
+#endif
 	os = msg_pack(msg);
 	if (os == NULL)
 		panic(0, "msg_pack failed");
