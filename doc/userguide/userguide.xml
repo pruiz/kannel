@@ -1350,6 +1350,14 @@ admin-password = f00bar
         can duplicate when system is taken down violently. 
      </entry></row>
 
+    <row><entry><literal>store-dump-freq</literal></entry>
+     <entry>seconds</entry>
+     <entry valign="bottom">
+        Approximated frequency how often the memory dump of current
+        pending messages are stored to store-file, providing something
+        has happened. Defaults to 10 seconds if not set.
+     </entry></row>
+
     <row><entry><literal>http-proxy-host</literal></entry>
      <entry>hostname</entry>
      <entry morerows="1" valign="bottom">
@@ -7665,7 +7673,7 @@ ppg-smsbox-id = dlrbox
 http_header_add(push_headers, "X-Kannel-SMSC", "link0");
 http_header_add(push_headers, "X-Kannel-DLR-Url",
                 "http://193.53.0.56:8001/notification-dlr?smsc-id=%i"
-                "&amp;status=%d&amp;answer=%A&amp;to=%P&amp;from=%p&amp;ts=%t);
+                "&amp;status=%d&amp;answer=%A&amp;to=%P&amp;from=%p&amp;ts=%t");
 http_header_add(push_headers, "X-Kannel-DLR-Mask",
                 octstr_get_cstr(dos = octstr_format("%d", 31)));
 http_header_add(push_headers, "X-Kannel-Smsbox-Id", "dlrbox"));

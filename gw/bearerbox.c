@@ -345,7 +345,7 @@ static Cfg *init_bearerbox(Cfg *cfg)
 {
     CfgGroup *grp;
     Octstr *log, *val;
-    long loglevel;
+    long loglevel, store_dump_freq;
     int lf, m;
 #ifdef HAVE_LIBSSL
     Octstr *ssl_server_cert_file;
@@ -390,10 +390,14 @@ static Cfg *init_bearerbox(Cfg *cfg)
         octstr_destroy(log);
     }
 
+    if (cfg_get_integer(&store_dump_freq, grp,
+                           octstr_imm("store-dump-freq")) == -1)
+        store_dump_freq = -1;
+
     log = cfg_get(grp, octstr_imm("store-file"));
     /* initialize the store file */
     if (log != NULL) {
-        store_init(log);
+        store_init(log, store_dump_freq);
         octstr_destroy(log);
     }
 

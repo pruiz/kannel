@@ -1,3 +1,17 @@
+2004-12-13    <kmarjola@enpocket.com>
+
+    * gw/bb_store.c: use Dict to make things much more faster. Also
+      introduce 'store-dump-freq' to set up how often the situation
+      is stored to file
+    * gw/bearerbox.*, gwlib/cfg.def, doc/userguide/userguide.xml: 
+      relevant changes
+
+    * test/fakesmsc.c: update usage to reflect changed command line
+      argument (-p to -r)
+
+    * gw/smskannel.conf: updated to include much more explanations
+      and fixed above thing
+	
 2004-11-30    <kmarjola@enpocket.com>
 
     * gwlib/conn.c: Bug fix: try not to read negative number of bytes

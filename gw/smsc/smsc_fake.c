@@ -115,7 +115,7 @@ static int sms_to_client(Connection *client, Msg *msg)
     int len;
 
     debug("bb.sms", 0, "smsc_fake: sending message to client");
-    msg_dump(msg, 0);
+//    msg_dump(msg, 0);
 
     line = octstr_duplicate(msg->sms.sender);
     octstr_append_char(line, ' ');
@@ -224,7 +224,7 @@ static void msg_to_bb(SMSCConn *conn, Octstr *line)
     msg->sms.smsc_id = octstr_duplicate(conn->id);
 
     debug("bb.sms", 0, "smsc_fake: new message received");
-    msg_dump(msg, 0);
+//    msg_dump(msg, 0);
     bb_smscconn_receive(conn, msg);
     return;
 error:

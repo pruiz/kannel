@@ -58,6 +58,14 @@
  * bb_store.c : bearerbox box SMS storage/retrieval module
  *
  * Kalle Marjola 2001 for project Kannel
+ *
+ * Updated Oct 2004
+ *
+ * New features:
+ *  - uses dict to save messages, for faster retrieval
+ *  - acks are no longer saved (to memory), they simply delete
+ *    messages from dict
+ *  - better choice when dump done; configurable frequency
  */
 
 #include <errno.h>
@@ -90,11 +98,12 @@ static Octstr *newfile = NULL;
 static Octstr *bakfile = NULL;
 static Mutex *file_mutex = NULL;
 static long cleanup_thread;
+static long dump_frequency = 0;
 
-static List *sms_store;
-static List *ack_store;
+static Dict *sms_dict = NULL;
 
-
+static int active = 1;
+static time_t last_dict_mod = 0;
 
 static void write_msg(Msg *msg)
 {
@@ -143,7 +152,9 @@ static int rename_store(void)
 
 static int do_dump(void)
 {
+    Octstr *key;
     Msg *msg;
+    List *sms_list;
     long l;
 
     if (filename == NULL)
@@ -155,15 +166,15 @@ static int do_dump(void)
     if (open_file(newfile)==-1)
 	return -1;
 
-    for (l=0; l < list_len(sms_store); l++) {
-	msg = list_get(sms_store, l);
-	write_msg(msg);
-    }
-    for (l=0; l < list_len(ack_store); l++) {
-	msg = list_get(ack_store, l);
-	write_msg(msg);
+    sms_list = dict_keys(sms_dict);
+    for (l=0; l < list_len(sms_list); l++) {
+	key = list_get(sms_list, l);
+	msg = dict_get(sms_dict, key);
+	if (msg)
+	    write_msg(msg);
     }
     fflush(file);
+    list_destroy(sms_list, octstr_destroy_item);
 
     /* rename old storefile as .bak, and then new as regular file
      * without .new ending */
@@ -186,50 +197,29 @@ static int cmp_msgs(void *item, void *pattern) {
 
 
 /*
- * thread to cleanup store and to write it to file now and then
+ * thread to write current store to file now and then, to prevent
+ * it from becoming far too big (slows startup)
  */
-static void store_cleanup(void *arg)
+static void store_dumper(void *arg)
 {
     Msg *ack;
     List *match;
-    time_t last, now;
-    long len;
-    int cleanup = 0;
+    time_t now;
 
     list_add_producer(flow_threads);
-    last = time(NULL);
 
-    while((ack = list_consume(ack_store)) != NULL) {
-
-        list_lock(sms_store);
-	match = list_extract_matching(sms_store, ack, cmp_msgs);
-        list_unlock(sms_store);
-	msg_destroy(ack);
-
-	if (match == NULL) {
-	    warning(0, "bb_store: get ACK of message not found "
-		    "from store, strange?");
-	    continue;
-	}
-
-	if (list_len(match) > 1)
-	    warning(0, "bb-store cleanup: Found %ld matches!?",
-		    list_len(match));
-	list_destroy(match, msg_destroy_item);
-
-	len = list_len(ack_store);
-	if (len > 100)
-	    cleanup = 1;
+    while(active) {
 	now = time(NULL);
 	/*
-	 * write store to file up to each 10. second, providing
+	 * write store to file up to each N. second, providing
 	 * that something happened, of course
 	 */
-	if (now - last > 10 || (len == 0 && cleanup)) {
+	if (now - last_dict_mod > dump_frequency) {
 	    store_dump();
-	    last = now;
-	    if (len == 0)
-		cleanup = 0;
+	    /* make sure that no new dump is done for a while unless
+	     * something happens */
+	    last_dict_mod = time(NULL) + 3600*24;
+	    gwthread_sleep(dump_frequency);
 	}
     }
     store_dump();
@@ -240,12 +230,11 @@ static void store_cleanup(void *arg)
     octstr_destroy(bakfile);
     mutex_destroy(file_mutex);
 
-    list_destroy(ack_store, msg_destroy_item);
-    list_destroy(sms_store, msg_destroy_item);
+    dict_destroy(sms_dict);
     /* set all vars to NULL */
     filename = newfile = bakfile = NULL;
     file_mutex = NULL;
-    ack_store = sms_store = NULL;
+    sms_dict = NULL;
 
     list_remove_producer(flow_threads);
 }
@@ -257,10 +246,11 @@ static void store_cleanup(void *arg)
 Octstr *store_status(int status_type)
 {
     char *frmt;
-    Octstr *ret;
+    Octstr *ret, *key;
     unsigned long l;
     struct tm tm;
     Msg *msg;
+    List *keys;
     char id[UUID_STR_LEN + 1];
 
     ret = octstr_create("");
@@ -279,9 +269,13 @@ Octstr *store_status(int status_type)
     if (filename == NULL)
         goto finish;
 
-    list_lock(sms_store);
-    for (l = 0; l < list_len(sms_store); l++) {
-        msg = list_get(sms_store, l);
+    keys = dict_keys(sms_dict);
+
+    for (l = 0; l < list_len(keys); l++) {
+	key = list_get(keys, l);
+        msg = dict_get(sms_dict, key);
+	if (msg == NULL)
+	    continue;
 
         if (msg_type(msg) == sms) {
 
@@ -341,7 +335,7 @@ Octstr *store_status(int status_type)
                 octstr_hex_to_binary(msg->sms.msgdata);
         }
     }
-    list_unlock(sms_store);
+    list_destroy(keys, octstr_destroy_item);
 
 finish:
     /* set the type based footer */
@@ -355,14 +349,16 @@ finish:
 
 long store_messages(void)
 {
-    return (sms_store ? list_len(sms_store) : -1);
+    return (sms_dict ? dict_key_count(sms_dict) : -1);
 }
 
 
-int store_save(Msg *msg)
+int store_to_dict(Msg *msg)
 {
     Msg *copy;
-    
+    Octstr *uuid_os;
+    char id[UUID_STR_LEN + 1];
+	
     /* always set msg id and timestamp */
     if (msg_type(msg) == sms && uuid_is_null(msg->sms.id))
         uuid_generate(msg->sms.id);
@@ -370,21 +366,41 @@ int store_save(Msg *msg)
     if (msg_type(msg) == sms && msg->sms.time == MSG_PARAM_UNDEFINED)
         time(&msg->sms.time);
 
-    if (filename == NULL)
-        return 0;
-
     if (msg_type(msg) == sms) {
 	copy = msg_duplicate(msg);
-	list_produce(sms_store, copy);
+
+        uuid_unparse(copy->sms.id, id);
+        uuid_os = octstr_create(id);
+
+	dict_put(sms_dict, uuid_os, copy);
+	octstr_destroy(uuid_os);
+	last_dict_mod = time(NULL);
     }
     else if (msg_type(msg) == ack) {
-	copy = msg_duplicate(msg);
-	list_produce(ack_store, copy);
+	uuid_unparse(msg->ack.id, id);
+	uuid_os = octstr_create(id);
+	copy = dict_remove(sms_dict, uuid_os);
+	octstr_destroy(uuid_os);
+	if (copy == NULL) {
+	    warning(0, "bb_store: get ACK of message not found "
+		    "from store, strange?");
+	} else {
+	    msg_destroy(copy);
+	    last_dict_mod = time(NULL);
+	}
     }
     else
 	return -1;
-
-
+    return 0;
+}
+    
+int store_save(Msg *msg)
+{
+    if (filename == NULL)
+	return 0;
+    if (store_to_dict(msg) == -1)
+	return -1;
+    
     /* write to file, too */
     mutex_lock(file_mutex);
     write_msg(msg);
@@ -415,12 +431,8 @@ int store_save_ack(Msg *msg, ack_status_t status)
     uuid_copy(mack->ack.id, msg->sms.id);
     mack->ack.nack = status;
 
-    /* write to file */
-    mutex_lock(file_mutex);
-    write_msg(mack);
-    mutex_unlock(file_mutex);
-
-    list_produce(ack_store, mack);
+    store_save(mack);
+    msg_destroy(mack);
 
     return 0;
 }
@@ -431,7 +443,6 @@ int store_load(void)
 {
     List *keys;
     Octstr *store_file, *pack, *key;
-    Dict *msg_hash;
     Msg *msg, *dmsg, *copy;
     int retval, msgs;
     long end, pos;
@@ -440,15 +451,6 @@ int store_load(void)
 
     if (filename == NULL)
 	return 0;
-
-    list_lock(ack_store);
-    list_lock(sms_store);
-
-    while((msg = list_extract_first(sms_store))!=NULL)
-	msg_destroy(msg);
-
-    while((msg = list_extract_first(ack_store))!=NULL)
-	msg_destroy(msg);
 
     mutex_lock(file_mutex);
     if (file != NULL) {
@@ -468,10 +470,8 @@ int store_load(void)
 	    if (store_file != NULL)
 		info(0, "Loading store file `%s'", octstr_get_cstr(bakfile));
 	    else {
-		info(0, "Cannot open any store file, starting new one");
+		info(0, "Cannot open any store file, starting a new one");
 		retval = open_file(filename);
-		list_unlock(sms_store);
-		list_unlock(ack_store);
 		mutex_unlock(file_mutex);
 		return retval;
 	    }
@@ -481,7 +481,6 @@ int store_load(void)
     info(0, "Store-file size %ld, starting to unpack%s", octstr_len(store_file),
 	 octstr_len(store_file) > 10000 ? " (may take awhile)" : "");
 
-    msg_hash = dict_create(101, msg_destroy_item);  /* XXX should be different? */
 
     pos = 0;
     msgs = 0;
@@ -504,23 +503,11 @@ int store_load(void)
         }
 
 	if (msg_type(msg) == sms) {
-            uuid_unparse(msg->sms.id, id);
-	    key = octstr_create(id);
-	    dict_put(msg_hash, key, msg);
-	    octstr_destroy(key);
+	    store_to_dict(msg);
 	    msgs++;
 	}
 	else if (msg_type(msg) == ack) {
-            uuid_unparse(msg->sms.id, id);
-            key = octstr_create(id);
-	    dmsg = dict_remove(msg_hash, key);
-	    if (dmsg != NULL)
-		msg_destroy(dmsg);
-	    else
-		info(0, "Acknowledge of non-existant message found '%s', "
-		   "discarded", octstr_get_cstr(key));
-	    msg_destroy(msg);
-	    octstr_destroy(key);
+	    store_to_dict(msg);
 	} else {
 	    warning(0, "Strange message in store-file, discarded, "
 		    "dump follows:");
@@ -530,17 +517,15 @@ int store_load(void)
     }
     octstr_destroy(store_file);
 
-    store_size = dict_key_count(msg_hash);
     info(0, "Retrieved %d messages, non-acknowledged messages: %ld",
-	 msgs, store_size);
+	 msgs, dict_key_count(sms_dict));
 
     /* now create a new sms_store out of messages left
      */
 
-    keys = dict_keys(msg_hash);
+    keys = dict_keys(sms_dict);
     while((key = list_extract_first(keys))!=NULL) {
-	msg = dict_remove(msg_hash, key);
-	octstr_destroy(key);
+	msg = dict_get(sms_dict, key);
 
 	if (msg_type(msg) != sms) {
 	    error(0, "Found non sms message in dictionary!");
@@ -548,36 +533,30 @@ int store_load(void)
 	    msg_destroy(msg);
 	    continue;
 	}
-	copy = msg_duplicate(msg);
-	list_produce(sms_store, copy);
 
 	if (msg->sms.sms_type == mo ||
 	    msg->sms.sms_type == report_mo) {
-	    list_produce(incoming_sms, msg);
+	    copy = msg_duplicate(msg);
+	    list_produce(incoming_sms, copy);
         }
 	else if (msg->sms.sms_type == mt_push ||
 	    msg->sms.sms_type == mt_reply ||
 	    msg->sms.sms_type == report_mt) {
-	    list_produce(outgoing_sms, msg);
+	    copy = msg_duplicate(msg);
+	    list_produce(outgoing_sms, copy);
         }
 	else {
-	    msg_dump(msg,0);
-            msg_destroy(msg);
+	    msg_dump(msg, 0);
+	    dict_remove(sms_dict, key);
 	}
     }
-    list_destroy(keys, NULL);
+    list_destroy(keys, octstr_destroy_item);
 
     /* Finally, generate new store file out of left messages
      */
     retval = do_dump();
 
     mutex_unlock(file_mutex);
-
-    /* destroy the hash */
-    dict_destroy(msg_hash);
-
-    list_unlock(ack_store);
-    list_unlock(sms_store);
 
     return retval;
 }
@@ -588,10 +567,8 @@ int store_dump(void)
 {
     int retval;
 
-    list_lock(ack_store);
-    list_lock(sms_store);
-    debug("bb.store", 0, "Dumping %ld messages and %ld acks to store",
-	  list_len(sms_store), list_len(ack_store));
+    debug("bb.store", 0, "Dumping %ld messages to store",
+	  dict_key_count(sms_dict));
     mutex_lock(file_mutex);
     if (file != NULL) {
 	fclose(file);
@@ -599,14 +576,12 @@ int store_dump(void)
     }
     retval = do_dump();
     mutex_unlock(file_mutex);
-    list_unlock(ack_store);
-    list_unlock(sms_store);
 
     return retval;
 }
 
 
-int store_init(const Octstr *fname)
+int store_init(const Octstr *fname, long dump_freq)
 {
     if (fname == NULL)
         return 0; /* we are done */
@@ -619,13 +594,17 @@ int store_init(const Octstr *fname)
     newfile = octstr_format("%s.new", octstr_get_cstr(filename));
     bakfile = octstr_format("%s.bak", octstr_get_cstr(filename));
 
-    sms_store = list_create();
-    ack_store = list_create();
+    sms_dict = dict_create(201, msg_destroy_item);
+
+    if (dump_freq > 0)
+	dump_frequency = dump_freq;
+    else
+	dump_frequency = BB_STORE_DEFAULT_DUMP_FREQ;
 
     file_mutex = mutex_create();
-    list_add_producer(ack_store);
+    active = 1;
 
-    if ((cleanup_thread = gwthread_create(store_cleanup, NULL))==-1)
+    if ((cleanup_thread = gwthread_create(store_dumper, NULL))==-1)
 	panic(0, "Failed to create a cleanup thread!");
 
     return 0;
@@ -637,5 +616,7 @@ void store_shutdown(void)
     if (filename == NULL)
 	return;
 
-    list_remove_producer(ack_store);
+    active = 0;
+    gwthread_wakeup(cleanup_thread);
+
 }

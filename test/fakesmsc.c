@@ -75,7 +75,7 @@
  */
 
 static char usage[] = "\n\
-Usage: fakesmsc [-H host] [-p port] [-i interval] [-m max] [-r <type>] <msg> ... \n\
+Usage: fakesmsc [-H host] [-r port] [-i interval] [-m max] [-r <type>] <msg> ... \n\
 \n\
 * 'host' and 'port' define bearerbox connection (default localhost:10000),\n\
 * 'interval' is time in seconds (floats allowed) between generated messages,\n\
