@@ -20,7 +20,7 @@
 
 #define  INET_ADDRSTRLEN 16
 #define INET6_ADDRSTRLEN 46 /* You don't get to use this, but define it
-                             * so compilers won't barf.                  */
+* so compilers won't barf.                  */
 
 
 #define inet_ntop(af, src, dst, size) gw_inet_ntop(af, src, dst, size)

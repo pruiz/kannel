@@ -520,3 +520,52 @@ void socket_shutdown(void)
     octstr_destroy(official_name);
     official_name = NULL;
 }
+
+
+Octstr *gw_netaddr_to_octstr4(unsigned char* src)
+{
+    return octstr_format("%d.%d.%d.%d",src[0],src[1],src[2],src[3]);
+}
+
+
+#ifdef AF_INET6
+
+#define INET6_OCTETS 16
+
+Octstr *gw_netaddr_to_octstr6(unsigned char* src)
+{
+    char tmp[4];
+    int pos;
+    Octstr *address, *byte_in_hex;
+
+    address = octstr_create("");
+    
+    for(pos=0;pos < INET6_OCTETS;++pos){
+	snprintf(tmp,2,"%x:",src[pos]);
+	byte_in_hex = octstr_create(tmp);
+	octstr_append(address,byte_in_hex);
+	octstr_destroy(byte_in_hex);
+    }
+    return address;
+}
+#endif
+
+Octstr *gw_netaddr_to_octstr(int af, void* src)
+{
+    switch(af){
+
+	case AF_INET:
+	return gw_netaddr_to_octstr4((char*)src);
+
+#ifdef AF_INET6
+	case AF_INET6:
+	return gw_netaddr_to_octstr6((char*)src);
+#endif
+	default:
+	    return NULL;
+    } 
+
+    return NULL;
+}
+
+

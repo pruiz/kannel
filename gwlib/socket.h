@@ -126,4 +126,11 @@ void socket_init(void);
  */
 void socket_shutdown(void);
 
+/*
+ *  Converts an address of various types to an Octstr representation.
+ *  Similar to host_ip, but works with more than IPv4
+ */
+Octstr *gw_netaddr_to_octstr(int af, void* src);
+
+
 #endif

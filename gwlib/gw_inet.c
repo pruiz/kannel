@@ -9,7 +9,7 @@
 
 char *gw_inet_ntop(int af, const void *src, char *dst, size_t size)
 {
-    const char* ba;  /* ByteAddress - allow us to bytewise address the src.*/
+    const char* ba;   /* ByteAddress - allow us to bytewise address the src.*/
     char* dst_tmp;
     int ret;
 
@@ -36,7 +36,7 @@ char *gw_inet_ntop(int af, const void *src, char *dst, size_t size)
 
         /* If ret > size then we don't have the space to continue.
          * If ret > sizeof(INET_ADDRSTRLEN) then it is stuffed anyway. */
-        if (ret > size || ret > sizeof(INET_ADDRSTRLEN)) {
+        if (ret >= size || ret > sizeof(INET_ADDRSTRLEN)) {
             errno = ENOSPC;
             return NULL;
         }

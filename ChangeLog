@@ -1,3 +1,9 @@
+2001-01-11  Derry Hamilton <rasilon@tardis.ed.ac.uk>
+
+	* gwlib/gw_inet.c: Fixed off by one errors.
+	* gwlib/socket.c, gwlib/socket.h: Implemnted a basic inet_ntop
+	using Octstrs.  IPv6 handling is basic, but appears to work.
+
 2001-01-11  Lars Wirzenius  <liw@iki.fi>
 
 	* gwlib/octstr.c: octstr_copy_real: Changed the code that checks
