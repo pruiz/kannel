@@ -2237,14 +2237,16 @@ int octstr_isnum(Octstr *ostr1)
 
 void octstr_replace(Octstr *haystack, Octstr *needle, Octstr *repl)
 {
-    int p = -1;
-    long len;
+    int p = 0;
+    long len, repl_len;
 
     len = octstr_len(needle);
+    repl_len = octstr_len(repl);
 
-    while ((p = octstr_search(haystack, needle, p + 1)) != -1) {
+    while ((p = octstr_search(haystack, needle, p)) != -1) {
         octstr_delete(haystack, p, len);
         octstr_insert(haystack, repl, p);
+        p += repl_len;
     }
 }
 
