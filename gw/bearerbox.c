@@ -19,6 +19,7 @@
 #include "gwlib/gwlib.h"
 #include "msg.h"
 #include "bearerbox.h"
+#include "shared.h"
 
 /* global variables; included to other modules as needed */
 

@@ -1,3 +1,8 @@
+2000-10-18  Lars Wirzenius  <liw@iki.fi>
+
+	* gw/bearerbox.c, gw/smsbox.c, gw/wapbox.c: Added missing #include
+	"shared.h".
+
 2000-10-17  Lars Wirzenius  <liw@iki.fi>
 
     	* gwlib/gwlib.c: Reformatted to new coding style.

@@ -62,6 +62,7 @@
 #include "cgi.h"
 #include "msg.h"
 #include "bb.h"
+#include "shared.h"
 
 #include "smsbox_req.h"
 

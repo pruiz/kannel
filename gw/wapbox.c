@@ -11,6 +11,7 @@
 #include <signal.h>
 
 #include "gwlib/gwlib.h"
+#include "shared.h"
 #include "wapbox.h"
 #include "msg.h"
 #include "wsp.h"
