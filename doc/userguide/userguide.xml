@@ -1943,13 +1943,12 @@ bearerbox-host = localhost
 <programlisting>
 group = radius-acct
 our-port = 1646
-remote-port = 2646
 secret-nas = radius
-secret-radius = radius
 </programlisting>
 
-   There is, however, multiple optional variables for the 'radius-acct'
-   group.</para>
+   This example does not forward any accouting packets to a remote 
+	RADIUS server. There is, however, multiple optional variables for 
+	the 'radius-acct' group.</para>
 
  <table frame="none">
   <title>RADIUS-Acct Group Variables</title>
@@ -1975,11 +1974,11 @@ secret-radius = radius
 	    Specifies the shared secret between NAS and our RADIUS accounting proxy.
      </entry></row>
 
-   <row><entry><literal>secret-radius (m)</literal></entry>
+   <row><entry><literal>secret-radius</literal></entry>
      <entry><literal>string</literal></entry>
      <entry valign="bottom">
 	    Specifies the shared secret between our RADIUS accounting proxy and the
-		 remote RADIUS server itself.
+		 remote RADIUS server itself in case we are forwarding packets.
      </entry></row>
 
    <row><entry><literal>our-host</literal></entry>
@@ -1993,7 +1992,8 @@ secret-radius = radius
      <entry><literal>FQDN or IP address</literal></entry>
      <entry valign="bottom">
 	    Specifies the remote RADIUS server to which we forward the 
-		 accounting packets. (defaults to localhost)
+		 accounting packets. If none is given, then no forwarding of
+		 accouting packets is performed.
      </entry></row>
 
    <row><entry><literal>our-port</literal></entry>
