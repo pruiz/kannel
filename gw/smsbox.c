@@ -1303,19 +1303,10 @@ static void init_smsbox(Cfg *cfg)
 
     grp = cfg_get_single_group(cfg, octstr_create_immutable("core"));
     
-    p = cfg_get(grp, octstr_create_immutable("smsbox-port"));
-    if (p == NULL)
-	panic(0, "No 'smsbox-port' in core group");
-    if (octstr_parse_long(&bb_port, p, 0, 0) == -1)
-	panic(0, "Malformed 'smsbox-port' in core group");
-    octstr_destroy(p);
+    if (cfg_get_integer(&bb_port, grp, octstr_create_immutable("smsbox-port")) == -1)
+	panic(0, "Missing or bad 'smsbox-port' in core group");
 
-    p = cfg_get(grp, octstr_create_immutable("http-proxy-port"));
-    if (p != NULL) {
-	if (octstr_parse_long(&http_proxy_port, p, 0, 0) == -1)
-	    panic(0, "Malformed 'http-proxy-port' in core group");
-	octstr_destroy(p);
-    }
+    cfg_get_integer(&http_proxy_port, grp, octstr_create_immutable("http-proxy-port"));
 
     http_proxy_host = cfg_get(grp, 
     	    	    	octstr_create_immutable("http-proxy-host"));
@@ -1323,12 +1314,8 @@ static void init_smsbox(Cfg *cfg)
     	    	    	    octstr_create_immutable("http-proxy-username"));
     http_proxy_password = cfg_get(grp, 
     	    	    	    octstr_create_immutable("http-proxy-password"));
-
-    p = cfg_get(grp, octstr_create_immutable("http-proxy-exceptions"));
-    if (p != NULL) {
-	http_proxy_exceptions = octstr_split_words(p);
-	octstr_destroy(p);
-    }
+    http_proxy_exceptions = cfg_get_list(grp,
+    	    	    	    octstr_create_immutable("http-proxy-exceptions"));
 
 
     /*
@@ -1344,44 +1331,14 @@ static void init_smsbox(Cfg *cfg)
 	bb_host = p;
     }
 
-    p = cfg_get(grp, octstr_create_immutable("sendsms-port"));
-    if (p != NULL) {
-	if (octstr_parse_long(&sendsms_port, p, 0, 0) == -1)
-	    panic(0, "Malformed 'sendsms-port' in smsbox group");
-	octstr_destroy(p);
-    }
+    cfg_get_integer(&sendsms_port, grp, octstr_create_immutable("sendsms-port"));
+    cfg_get_integer(&sms_max_length, grp, octstr_create_immutable("sms-length"));
 
-    p = cfg_get(grp, octstr_create_immutable("sms-length"));
-    if (p != NULL) {
-	if (octstr_parse_long(&sms_max_length, p, 0, 0) == -1)
-	    panic(0, "Malformed 'sms-length' in smsbox group");
-	octstr_destroy(p);
-    }
+    global_sender = cfg_get(grp, octstr_create_immutable("global-sender"));
+    accepted_chars = cfg_get(grp, octstr_create_immutable("sendsms-chars"));
+    logfile = cfg_get(grp, octstr_create_immutable("log-file"));
 
-    p = cfg_get(grp, octstr_create_immutable("global-sender"));
-    if (p != NULL) {
-	octstr_destroy(global_sender);
-	global_sender = p;
-    }
-
-    p = cfg_get(grp, octstr_create_immutable("sendsms-chars"));
-    if (p != NULL) {
-	octstr_destroy(accepted_chars);
-	accepted_chars = p;
-    }
-
-    p = cfg_get(grp, octstr_create_immutable("log-file"));
-    if (p != NULL) {
-	octstr_destroy(logfile);
-	logfile = p;
-    }
-
-    p = cfg_get(grp, octstr_create_immutable("log-level"));
-    if (p != NULL) {
-	if (octstr_parse_long(&lvl, p, 0, 0) == -1)
-	    panic(0, "Malformed 'log-level' in smsbox group");
-	octstr_destroy(p);
-    }
+    cfg_get_integer(&lvl, grp, octstr_create_immutable("log-level"));
 
     if (logfile != NULL) {
 	info(0, "Starting to log to file %s level %ld", 

@@ -22,7 +22,8 @@ int main(int argc, char **argv) {
 	long repeats;
 	URLTranslationList *list;
 	URLTranslation *t;
-	Config *cfg;
+	Cfg *cfg;
+	Octstr *name;
 	
 	gwlib_init();
 
@@ -51,8 +52,10 @@ int main(int argc, char **argv) {
 		help();
 		panic(0, "Stopping.");
 	}
-	cfg = config_create(argv[optind]);
-	if (config_read(cfg) == -1)
+	name = octstr_create(argv[optind]);
+	cfg = cfg_create(name);
+	octstr_destroy(name);
+	if (cfg_read(cfg) == -1)
 		panic(0, "Couldn't read configuration file.");
 	
 	list = urltrans_create();
@@ -68,7 +71,7 @@ int main(int argc, char **argv) {
 		}
 	}
 	urltrans_destroy(list);
-	config_destroy(cfg);
+	cfg_destroy(cfg);
 	
 	gwlib_shutdown();
 	

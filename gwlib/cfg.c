@@ -305,6 +305,38 @@ Octstr *cfg_get(CfgGroup *grp, Octstr *varname)
 }
 
 
+int cfg_get_integer(long *n, CfgGroup *grp, Octstr *varname)
+{
+    Octstr *os;
+    int ret;
+    
+    os = cfg_get(grp, varname);
+    if (os == NULL)
+    	return -1;
+    if (octstr_parse_long(n, os, 0, 0) == -1)
+    	ret = -1;
+    else
+    	ret = 0;
+    octstr_destroy(os);
+    return ret;
+}
+
+
+List *cfg_get_list(CfgGroup *grp, Octstr *varname)
+{
+    Octstr *os;
+    List *list;
+    
+    os = cfg_get(grp, varname);
+    if (os == NULL)
+    	return NULL;
+
+    list = octstr_split_words(os);
+    octstr_destroy(os);
+    return list;
+}
+
+
 void cfg_set(CfgGroup *grp, Octstr *varname, Octstr *value)
 {
     dict_put(grp->vars, varname, octstr_duplicate(value));

@@ -19,6 +19,8 @@ CfgGroup *cfg_get_single_group(Cfg *cfg, Octstr *name);
 List *cfg_get_multi_group(Cfg *cfg, Octstr *name);
 
 Octstr *cfg_get(CfgGroup *grp, Octstr *varname);
+int cfg_get_integer(long *n, CfgGroup *grp, Octstr *varname);
+List *cfg_get_list(CfgGroup *grp, Octstr *varname);
 void cfg_set(CfgGroup *grp, Octstr *varname, Octstr *value);
 
 void cfg_dump(Cfg *cfg);
