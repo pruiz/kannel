@@ -13,6 +13,9 @@
 #ifndef CHARSET_H
 #define CHARSET_H
 
+#include <libxml/encoding.h>
+#include <libxml/tree.h>
+
 /* Convert a string in the GSM default character set (GSM 03.38)
  * to ISO-8859-1.  A series of Greek characters (codes 16, 18-26)
  * are not representable and are converted to '?' characters.
@@ -33,5 +36,23 @@ void charset_latin1_to_gsm(Octstr *latin1);
  * Return 1 if any characters were removed, otherwise 0. 
  */
 int charset_gsm_truncate(Octstr *gsm, long max);
+
+/* Convert a string from  character set specified by charset_from into 
+ * UTF-8 character set. The result is stored in the octet string *to that 
+ * is allocated by the function. The function returns the number of bytes 
+ * written for success, -1 for general error, -2 for an transcoding error 
+ * (the input string wasn't valid string in the character set it was said 
+ * to be or there was no converter found for the character set).
+ */
+int charset_to_utf8(Octstr *from, Octstr **to, Octstr *charset_from);
+
+/* Convert a string from UTF-8 character set into another character set 
+ * specified by charset_from. The result is stored in the octet string *to 
+ * that is allocated by the function. The function returns the number of 
+ * bytes written for success, -1 for general error, -2 for an transcoding 
+ * error (the input string wasn't valid string in the character set it 
+ * was said to be or there was no converter found for the character set).
+ */
+int charset_from_utf8(Octstr *utf8, Octstr **to, Octstr *charset_to);
 
 #endif

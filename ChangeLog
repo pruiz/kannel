@@ -1,3 +1,13 @@
+2001-02-21  Tuomas Luttinen  <tuo@wapit.com>
+
+	* gw/wml_compiler.c (set_charset): The function uses now 
+	charset_to_utf8 function to convert the WML document into the 
+	UTF-8 charset before feeding it to the libxml parser.
+
+	* gwlib/charset.[ch]: Added the functions charset_to_utf8 and 
+	charset_from_utf8. These are frontend for the libxml character set
+	converion funtions.
+
 2001-02-20  Peter Grönholm  <peter@wapit.com>
 
 	* userguide: Updated section "Installing Kannel from RPM packages"

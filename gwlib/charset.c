@@ -294,3 +294,61 @@ int charset_gsm_truncate(Octstr *gsm, long max)
     }
     return 0;
 }
+
+int charset_to_utf8(Octstr *from, Octstr **to, Octstr *charset_from)
+{
+    int ret;
+    xmlCharEncodingHandlerPtr handler = NULL;
+    xmlBufferPtr frombuffer = NULL;
+    xmlBufferPtr tobuffer = NULL;
+
+    handler = xmlFindCharEncodingHandler(octstr_get_cstr(charset_from));
+    if (handler == NULL)
+	return -2;
+
+    /* Build the libxml buffers for the transcoding. */
+    tobuffer = xmlBufferCreate();
+    frombuffer = xmlBufferCreate();
+    xmlBufferAdd(frombuffer, octstr_get_cstr(from), octstr_len(from));
+
+    ret = xmlCharEncInFunc(handler, tobuffer, frombuffer);
+
+    *to = octstr_create_from_data(tobuffer->content, tobuffer->use);
+
+    /* Memory cleanup. */
+    xmlBufferFree(tobuffer);
+    xmlBufferFree(frombuffer);
+
+    return ret;
+}
+
+int charset_from_utf8(Octstr *utf8, Octstr **to, Octstr *charset_to)
+{
+    int ret;
+    xmlCharEncodingHandlerPtr handler = NULL;
+    xmlBufferPtr frombuffer = NULL;
+    xmlBufferPtr tobuffer = NULL;
+
+    handler = xmlFindCharEncodingHandler(octstr_get_cstr(charset_to));
+    if (handler == NULL)
+	return -2;
+
+    /* Build the libxml buffers for the transcoding. */
+    tobuffer = xmlBufferCreate();
+    frombuffer = xmlBufferCreate();
+    xmlBufferAdd(frombuffer, octstr_get_cstr(utf8), octstr_len(utf8));
+
+    ret = xmlCharEncOutFunc(handler, tobuffer, frombuffer);
+    if (ret < -2)
+	/* Libxml seems to be here a little uncertain what would be the 
+	 * return code -3, so let's make it -1. Ugly thing, indeed. --tuo */
+	ret = -1; 
+
+    *to = octstr_create_from_data(tobuffer->content, tobuffer->use);
+
+    /* Memory cleanup. */
+    xmlBufferFree(tobuffer);
+    xmlBufferFree(frombuffer);
+
+    return ret;
+}

@@ -1514,7 +1514,7 @@ static int check_if_url(int hex)
 static void set_charset(Octstr *document, Octstr* charset)
 {
     long gt = 0, enc = 0;
-    Octstr *encoding;
+    Octstr *encoding = NULL, *text = NULL, *temp = NULL;
 
     if (octstr_len(charset) == 0)
 	return;
@@ -1524,13 +1524,16 @@ static void set_charset(Octstr *document, Octstr* charset)
     gt = octstr_search_char(document, '>', 0);
 
     if (enc < 0 || enc > gt) {
-	gt --;
-	octstr_append_char(encoding, '=');
-	octstr_append_char(encoding, '"');
-	octstr_insert(document, encoding, gt);
-	gt = gt + octstr_len(encoding);
-	octstr_append_char(charset, '"');
-	octstr_insert(document, charset, gt);
+	gt ++;
+	text = octstr_copy(document, gt, octstr_len(document) - gt);
+	if (charset_to_utf8(text, &temp, charset) >= 0) {
+	    octstr_delete(document, gt, octstr_len(document) - gt);
+	    octstr_append_data(document, octstr_get_cstr(temp), 
+			       octstr_len(temp));
+	}
+
+	octstr_destroy(temp);
+	octstr_destroy(text);
     }
 
     octstr_destroy(encoding);
