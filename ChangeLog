@@ -1,4 +1,9 @@
 2004-06-14  Alexander Malysh  <a.malysh@centrium.de> 
+    * configure.in, configure, gw-config.h.in: added check for pthread_rwlock.
+      Fixed MySQL detection when no reentrant client libs are installed.
+      Added '-rdynamic' to LDFLAGS on Linux for better panic/backtrace support.
+
+2004-06-14  Alexander Malysh  <a.malysh@centrium.de> 
     * gwlib/protected.[ch]: added 'gw_strftime()' function. Fixed macro for 'gethostbyname'.
     * gwlib/thread.c: added panic for attempt to destroy locked mutex. so we can at least
       try to catch such cases.

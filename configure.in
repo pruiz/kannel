@@ -62,6 +62,7 @@ case "$host" in
     ;;
    *-linux-*)
     CFLAGS="$CFLAGS -D_XOPEN_SOURCE=600 -D_BSD_SOURCE"
+    LDFLAGS="$LDFLAGS -rdynamic"
     ;;
 esac
 AC_SUBST(EXE_EXT)
@@ -76,6 +77,7 @@ AC_ARG_WITH(libs,
 LIBS="$LIBS $withval")
 
 dnl Checks for programs.
+
 AC_PROG_CC
 AC_PROG_INSTALL
 AC_PROG_RANLIB
@@ -176,7 +178,7 @@ GW_HAVE_FUNC_FROM(unistd.h, getopt, HAVE_GETOPT_IN_UNISTD_H,
     	    	  [Does <unistd.h> declare getopt()?])
 
 
-dnl POSIX regular expression check  
+dnl POSIX regular expression check
 
 AC_CHECK_HEADERS(regex.h, [
   AC_CHECK_FUNC(regcomp, [ 
@@ -189,6 +191,7 @@ AC_CHECK_HEADERS(regex.h, [
 dnl Misfeature checks
 
 AC_CONFIG_SECTION([Checking for POSIX threads support])
+
 AC_MSG_CHECKING(for working pthreads)
 AC_TRY_RUN([#include <pthread.h>
 #include <unistd.h>
@@ -225,6 +228,18 @@ pthread_spin_lock(&lock);
 pthread_spin_unlock(&lock);
 pthread_spin_destroy(&lock);
 ], [AC_MSG_RESULT(yes); AC_DEFINE(HAVE_PTHREAD_SPINLOCK_T)], AC_MSG_RESULT(no));
+
+dnl checking pthread_rwlock support
+AC_MSG_CHECKING([for pthread_rwlock support])
+AC_TRY_COMPILE([#include <pthread.h>], [
+pthread_rwlock_t lock;
+pthread_rwlock_init(&lock, NULL);
+pthread_rwlock_rdlock(&lock);
+pthread_rwlock_unlock(&lock);
+pthread_rwlock_wrlock(&lock);
+pthread_rwlock_unlock(&lock);
+pthread_rwlock_destroy(&lock);
+], [AC_MSG_RESULT(yes); AC_DEFINE(HAVE_PTHREAD_RWLOCK_T)], AC_MSG_RESULT(no));
 
 
 dnl Check if we have libxml2 installed and which version it is.
@@ -620,7 +635,7 @@ dnl Implement the --with-ssl option.
 
 AC_CONFIG_SECTION([Configuring OpenSSL support])
 AC_ARG_WITH(ssl,
-[  --with-ssl[=DIR]        where to look for OpenSSL libs and header files
+[  --with-ssl[=DIR]          where to look for OpenSSL libs and header files
                           DIR points to the installation [/usr/local/ssl]],
 [ if test -d "$withval"; then
     ssllib="$withval/lib";
@@ -769,29 +784,33 @@ else
     AC_MSG_CHECKING([mysql version])
     mysql_version=`$MYSQL_CONFIG --version`
     AC_MSG_RESULT([$mysql_version])
-    AC_MSG_CHECKING([mysql libs])
     dnl mysql-4.x style
+    MYSQL_LIBS=""
     if $MYSQL_CONFIG --libs_r &>/dev/null ; then
-        LIBS="$LIBS `$MYSQL_CONFIG --libs_r`"
-        AC_MSG_RESULT([`$MYSQL_CONFIG --libs_r`])
-    else
-        LIBS="$LIBS `$MYSQL_CONFIG --libs`"
-        AC_MSG_RESULT([`$MYSQL_CONFIG --libs`])
+        MYSQL_LIBS="$($MYSQL_CONFIG --libs_r)"
+        AC_MSG_CHECKING([mysql reentrant libs])
+        AC_MSG_RESULT([ $MYSQL_LIBS ])
+        AC_CHECK_LIB(mysqlclient_r, mysql_init, [ LIBS="$LIBS $MYSQL_LIBS" ],
+            [ MYSQL_LIBS="" ], [ $MYSQL_LIBS ])
+    fi
+    if test -z "$MYSQL_LIBS" ; then
+        MYSQL_LIBS="$($MYSQL_CONFIG --libs)"
+        AC_MSG_CHECKING([mysql libs])
+        AC_MSG_RESULT([ $MYSQL_LIBS ])
+        AC_CHECK_LIB(mysqlclient, mysql_init, [ LIBS="$LIBS $MYSQL_LIBS" ],
+            [AC_MSG_ERROR([Unable to find MySQL client libraries])], [ $MYSQL_LIBS ])
     fi
     AC_MSG_CHECKING([mysql includes])
     dnl mysql-4.x style
     if $MYSQL_CONFIG --include &>/dev/null ; then
-        CFLAGS="$CFLAGS `$MYSQL_CONFIG --include`"
-        AC_MSG_RESULT([`$MYSQL_CONFIG --include`])
+        CFLAGS="$CFLAGS $($MYSQL_CONFIG --include)"
+        AC_MSG_RESULT([$($MYSQL_CONFIG --include)])
     else
-        CFLAGS="$CFLAGS `$MYSQL_CONFIG --cflags`"
-        AC_MSG_RESULT([`$MYSQL_CONFIG --cflags`])
+        CFLAGS="$CFLAGS $($MYSQL_CONFIG --cflags)"
+        AC_MSG_RESULT([$($MYSQL_CONFIG --cflags)])
     fi
   fi
-
-  AC_CHECK_HEADERS(mysql/mysql.h mysql/mysql_com.h mysql/mysql_version.h)
-  dnl first check reentrant 'mysqlclient_r' and if not found 'mysqlclient'
-  AC_CHECK_LIB(mysqlclient_r, mysql_init, [], [AC_CHECK_LIB(mysqlclient, mysql_init)])
+  AC_CHECK_HEADERS(mysql/mysql.h mysql/mysql_version.h)
   AC_DEFINE(HAVE_MYSQL)
   AC_MSG_CHECKING([whether to compile with MySQL support])
   AC_MSG_RESULT(yes)
