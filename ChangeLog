@@ -1,5 +1,9 @@
 2000-09-21  Lars Wirzenius  <liw@iki.fi>
 
+	* gw/octstr.c: Reformatted to new code layout.
+
+2000-09-21  Lars Wirzenius  <liw@iki.fi>
+
 	* gw/wapbox.c: Start the WAP application layer before the
 	heartbeat thread. This prevents a race condition at startup.
 
