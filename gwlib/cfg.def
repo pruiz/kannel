@@ -87,7 +87,7 @@ SINGLE_GROUP(wtls,
 SINGLE_GROUP(ppg,
     OCTSTR(ppg-url)
     OCTSTR(ppg-port)
-    OCTSTR(ppg-ssl-port)
+    OCTSTR(ppg-port-ssl)
     OCTSTR(trusted-pi)
     OCTSTR(concurrent-pushes)
     OCTSTR(users)
