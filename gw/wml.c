@@ -702,11 +702,6 @@ char * inline_string(char *temp, int *count, struct wmlc *binary_string, struct 
 			else {	
 				
 				temp--;
-
-				/* inline string stops here */
-				binary_string->wbxml[*count]=0x00;
-				(*count)++;
-
 				temp = put_variable_in_memory (temp, variable, binary_string, count);
 				variable = variable->next;
 				variable_memory = variable;
