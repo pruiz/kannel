@@ -3929,7 +3929,7 @@ marked as "not tested" because the table is still new.</para>
    <row>
     <entry></entry>
     <entry>n</entry>
-    <entry>n</entry>
+    <entry>y</entry>
     <entry>y</entry>
     <entry>n</entry>
     <entry>y</entry>
@@ -3991,6 +3991,23 @@ marked as "not tested" because the table is still new.</para>
     <entry>?</entry>
    </row>
 
+   <row>
+    <entry spanname="feature">Can set binfo / tarrif class</entry>
+   </row>
+   <row>
+    <entry></entry>
+    <entry>?</entry>
+    <entry>y</entry>
+    <entry>?</entry>
+    <entry>?</entry>
+    <entry>?</entry>
+    <entry>?</entry>
+    <entry>?</entry>
+    <entry>?</entry>
+    <entry>?</entry>
+    <entry>?</entry>
+   </row>
+   
   </tbody>
  </tgroup>
 </table>
