@@ -756,15 +756,17 @@ void http_remove_hop_headers(List *headers)
     connection_headers = http_header_find_all(headers, "Connection");
     while ((h = list_consume(connection_headers))) {
 	List *hop_headers;
-	Octstr *v, *e;
+	Octstr *e;
 
-	v = octstr_copy(h, strlen("Connection: "), octstr_len(h));
-	hop_headers = http_header_split_value(v);
-	octstr_destroy(v);
+	octstr_delete(h, 0, strlen("Connection:"));
+	hop_headers = http_header_split_value(h);
+	octstr_destroy(h);
+
 	while ((e = list_consume(hop_headers))) {
 	    http_header_remove_all(headers, octstr_get_cstr(e));
 	    octstr_destroy(e);
 	}
+
 	list_destroy(hop_headers, NULL);
     }
     list_destroy(connection_headers, NULL);

@@ -15,6 +15,7 @@
 
 	* gwlib/http.c: Fixed silly bug in http_remove_hop_headers that
 	would make the wapbox panic if a server used the Connection: header.
+	Fixed memory leak in same function.
 
 2000-10-05  Yann Muller  <ymuller@3glab.com>
 
