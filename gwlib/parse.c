@@ -235,9 +235,11 @@ Octstr *parse_get_line(ParseContext *context)
         context->error = 1;
         return NULL;
     }
-
+    
     result = octstr_copy(context->data, context->pos, pos - context->pos);
     context->pos = pos + 1;
+
+    octstr_strip_crlfs(result);
 
     return result;
 }
@@ -261,7 +263,7 @@ Octstr *parse_get_seperated_block(ParseContext *context, Octstr *seperator)
         return NULL;
     }
 
-    spos = spos + octstr_len(seperator) + 1;
+    spos = spos + octstr_len(seperator);
     result = octstr_copy(context->data, spos, epos - spos);
     context->pos = epos;
 
