@@ -19,6 +19,7 @@ phones can send and receive SMS messages, so this is a way to serve many more
 clients than just those using WAP phones. 
 
 %prep
+rm -rf $RPM_BUILD_ROOT
 
 %setup -n gateway-%{version}
 %build
@@ -26,7 +27,6 @@ clients than just those using WAP phones.
 make
 
 %install
-rm -rf $RPM_BUILD_ROOT
 make bindir=$RPM_BUILD_ROOT/usr/local/bin suffix=  install
 mkdir -p $RPM_BUILD_ROOT/etc/rc.d/init.d
 mkdir -p $RPM_BUILD_ROOT/etc/kannel
@@ -82,6 +82,7 @@ rm -rf $RPM_BUILD_ROOT
 
 %changelog
 * Tue Feb 27 2001 Peter Gronholm <peter@wapit.com>
+- moved rm -rf $RPM_BUILD_ROOT from %install to %prep
 - added that Kannel requires libxml2 < 2.3.0
 
 * Tue Feb 06 2001 Peter Gronholm <peter@wapit.com>
