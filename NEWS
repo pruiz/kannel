@@ -1,9 +1,59 @@
-NEWS about Kannel: Open Source WAP and SMS Gateway version 1.3.0
+NEWS about Kannel: Open Source WAP and SMS Gateway version 1.3.1
 
 This is a DEVELOPMENT version. It should be usable for experimentation
 and testing, and is a release candidate for the 1.3 branch. Please do 
 try it out and report problems to devel@kannel.3glab.org (the development 
 mailing list). The bug tracking system is currently offline.
+
+
+Changes since version 1.3.0:
+
+Compatibility breakers:
+
+  * SMPP changed default behaviour of the 'source-addr-autodetect' to yes.
+    Now the module will try to set TON and NPI automatically by scanning the
+    given source adddress.
+
+  * Added proxying of the smsc-id value to attached smsbox instances via 
+    the HTTP SMSC module. This allows spreading load from one smsbox
+    to several bearerbox instances.
+
+New features:
+
+  * Additional debian packaging files.
+
+  * Documentation section about log file rotation.
+
+  * PPG now allows routing to explicite smsc-id's. New config directives
+    'default-smsc' for ppg group and 'forced-smsc' and 'default-smsc' for
+    wap-push-user group have been added.
+
+  * Added debug info about ammount of outstanding HTTP reqeusts in 
+    the smsbox retry queue.
+
+  * OIS added direct module.
+  
+  * CIMD2 added validity setting.
+
+Bugfixes:
+
+  * CIMD2 various fixes for correct urltrans()ing.
+
+  * AT2 fixed double-increment bug for outgoing messages counter.
+
+  * Fixed a keep-alive lookup problem when using a HTTP proxy.
+
+  * HTTP SMSC various fixes.
+
+  * Fixed infinite loop bug if /TYPE=xxx is missing in the PAP document.
+
+  * Fixed a bug in the smsbox routing behaviour of bearerbox. 
+
+  * SMPP various fixes for the optional fields decoding.
+
+  * EMI2 fixed MO counter bug and assignmend of non-existing fields bug.
+
+  * Various fixes in the WAP application layer.
 
 
 Changes since version 1.2.1:
