@@ -61,7 +61,7 @@ void wtp_tid_cache_shutdown(void);
 int wtp_tid_is_valid(WAPEvent *event, WTPRespMachine *machine);
 
 /*
- * Changes the tid value belonging to an existing iniator
+ * Changes the tid value belonging to an existing initiator
  */
 void wtp_tid_set_by_machine(WTPRespMachine *machine, long tid);
 
