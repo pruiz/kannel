@@ -1,3 +1,7 @@
+2003-06-27  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/wap-appl.c: enhanced the 'access-log' logging of wapbox group to have
+      more information stored to the log entries.
+
 2003-06-25  Alexander Malysh  <a.malysh@centrium.de>
     * gwlib/conn.c: fixed not critical memory leak.
 
