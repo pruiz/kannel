@@ -1,5 +1,7 @@
 2000-08-04  Tuomas Luttinen  <tuo@wapit.com>
 
+	* test/decompile.[ch]: A patch by Chris Wulff applied.
+
 	* gw/wml_definitions.h: STRING_TABLE_MIN defined
 
 	* gw/wml_compiler.c: The first attemp to use string table more 
