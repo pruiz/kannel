@@ -679,7 +679,7 @@ static void pap_request_thread(void *arg)
                                           ders */
          *cgivars;
     HTTPClient *client;
-    Octstr *smsc_id;
+    Octstr *smsc_id = NULL;
     Octstr *retos;
     
     http_status = 0;                
@@ -837,9 +837,11 @@ static void pap_request_thread(void *arg)
             /* check if we have an explicit routing information */
             retos = http_cgi_variable(cgivars, "smsc");
             if (retos == NULL) {
-                /* get the push user specific smsc routing */
-                smsc_id = wap_push_ppg_pushuser_smsc_id_get(username);
-                /* if there was no user specific, then set the ppg global */
+                /* if we have a valid username, get the user specific routing */
+                if (username && octstr_len(username) > 0)
+                    smsc_id = wap_push_ppg_pushuser_smsc_id_get(username);
+                /* if there was no user specific or the user didn't exist, 
+                 * then set the ppg global */
                 smsc_id = smsc_id ? 
                     smsc_id : (ppg_default_smsc ? octstr_duplicate(ppg_default_smsc) : NULL);
             } else {

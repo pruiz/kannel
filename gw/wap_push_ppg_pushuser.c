@@ -308,14 +308,19 @@ found:
 }
 
 /*
- * Returns smsc pushes by this user must use, NULL when there was an error.
+ * Returns smsc-id that pushes by this user must use, 
+ * NULL when there was an error.
  */
 Octstr *wap_push_ppg_pushuser_smsc_id_get(Octstr *username)
 {
     WAPPushUser *u;
     Octstr *smsc_id;
 
-    u = user_find_by_username(username);
+    if ((u = user_find_by_username(username)) == NULL) {
+        /* no user found with this username */
+        return NULL;
+    }
+
     if ((smsc_id = forced_smsc(u)) != NULL)
         return octstr_duplicate(smsc_id);
 
