@@ -1,3 +1,8 @@
+2003-02-23 Aarno Syvanen <as@gni.ch>
+    * doc/userguide/userguide.xml: changed the added si doc
+      to minimum one, so that users can minimize the 
+      generated si message.
+
 2005-02-20 Aarno Syvanen <as@gni.ch>
     * doc/userguide/userguide.xml: added an example si document
     * gw/smsbox.c: ppg dlr-url should work now when it is a
