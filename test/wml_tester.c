@@ -63,8 +63,8 @@ int main(int argc, char **argv)
   
       for (i = 0; i < octstr_len(wml_binary); i ++)
 	{
-	  printf("%c ", octstr_get_char(wml_binary, i));
-	  if ((i % 25) == 0 && i != 0)
+	  printf("%c", octstr_get_char(wml_binary, i));
+	  if ((i % 40) == 0 && i != 0)
 	    printf("\n");
 	}
       printf("\n\n");

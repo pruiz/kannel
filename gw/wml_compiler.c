@@ -218,14 +218,6 @@ struct {
 
 
 /*
- * xmlDocPtr parse_tree contains the parsing tree that compiler
- * builds from the WML text.
- */
-
-xmlDocPtr parse_tree;
-
-
-/*
  * Octstr *wbxml_string is the final output in WBXML format.
  */
 
@@ -263,11 +255,12 @@ int wml_state_tag_code_page;
  * definitions.
  */
 
-int parse_node(xmlNodePtr node);
 
-int parse_document(xmlNodePtr node);
+int parse_document(xmlDocPtr document);
+
+int parse_node(xmlNodePtr node);
 int parse_element(xmlNodePtr node);
-int parse_attribute(xmlNodePtr node);
+int parse_attribute(xmlAttrPtr attr);
 void parse_text(xmlNodePtr node);
 
 int parse_end(void);
@@ -335,8 +328,7 @@ int wml_compile(Octstr *wml_text,
 
   wbxml_string = octstr_create_empty();
 
-  parse_tree = xmlParseMemory(wml_c_text, size+1);
-  ret = parse_node(xmlDocGetRootElement(parse_tree));
+  ret = parse_document(xmlParseMemory(wml_c_text, size+1));
 
   *wml_binary = octstr_duplicate(wbxml_string);
 
@@ -366,22 +358,21 @@ int parse_node(xmlNodePtr node)
 
   /* Call for the parser function of the node type. */
   switch (node->type) {
-  case XML_DOCUMENT_NODE:
-    debug(0, "WML compiler: Parsing document node.");
-    status = parse_document(node);
-    break;
   case XML_ELEMENT_NODE:
-    debug(0, "WML compiler: Parsing element node.");
     status = parse_element(node);
-    break;
-  case XML_ATTRIBUTE_NODE:
-    debug(0, "WML compiler: Parsing attribute node.");
-    status = parse_attribute(node);
     break;
   case XML_TEXT_NODE:
     parse_text(node);
     break;
     /* ignored at this state of development 
+  case XML_DOCUMENT_NODE:
+    debug(0, "WML compiler: Parsing document node.");
+    status = parse_document(node);
+    break;
+  case XML_ATTRIBUTE_NODE:
+    debug(0, "WML compiler: Parsing attribute node.");
+    status = parse_attribute(node);
+    break;
   case XML_CDATA_SECTION_NODE:
     parse_cdata(node);
     break;
@@ -451,7 +442,7 @@ int parse_node(xmlNodePtr node)
  * character set values into start of the wbxml_string.
  */
 
-int parse_document(xmlNodePtr node)
+int parse_document(xmlDocPtr document)
 {
   int ret = 0;
 
@@ -470,7 +461,7 @@ int parse_document(xmlNodePtr node)
     error(0, "WML compiler: could not output WBXML version number.");
 
   if (ret == 0)
-    return 0;
+    return parse_node(xmlDocGetRootElement(document));
   else
     {
       error(0, "WML compiler: could not output charset.");
@@ -491,6 +482,7 @@ int parse_element(xmlNodePtr node)
 {
   int i, add_end_tag = 0;
   unsigned char wbxml_hex, status_bits;
+  xmlAttrPtr attribute;
   Octstr *name;
 
   name = octstr_create_tolower(node->name);
@@ -506,13 +498,13 @@ int parse_element(xmlNodePtr node)
 	    {
 	      wbxml_hex = wbxml_hex + status_bits;
 	      add_end_tag = 1;
-	      break;
 	    }
 	  if (output_char(wbxml_hex) != 0)
 	    {
 	      error(0, "WML compiler: could not output WML tag.");	      
 	      return -1;
 	    }
+	  break;
 	}
     }
 
@@ -523,8 +515,20 @@ int parse_element(xmlNodePtr node)
       error(0, "WML compiler: unknown tag.");
       return -1;
     }
-  else 
-    return add_end_tag;
+
+  /* encode the attributes for this node. */
+
+  if(node->properties != NULL)
+    {
+      attribute = node->properties;
+      while (attribute != NULL)
+	{
+	  parse_attribute(attribute);
+	  attribute = attribute->next;
+	}
+    }
+
+  return add_end_tag;
 }
 
 
@@ -538,12 +542,10 @@ unsigned char element_check_content(xmlNodePtr node)
 {
   unsigned char status_bits = 0x00;
 
-  if ((node->last != NULL && 
-       node->last->type != XML_ATTRIBUTE_NODE) ||
-      node->content != NULL )
+  if (node->childs != NULL)
     status_bits = 0x40;
 
-  if (node->childs != NULL && node->childs->type == XML_ATTRIBUTE_NODE)
+  if (node->properties != NULL)
     status_bits = status_bits + 0x80;
 
   return status_bits;
@@ -559,34 +561,40 @@ unsigned char element_check_content(xmlNodePtr node)
  */
 
 
-int parse_attribute(xmlNodePtr node)
+int parse_attribute(xmlAttrPtr attr)
 {
   int i, j, status = 0, coded_length = 0;
   unsigned char wbxml_hex = 0x00;
-  Octstr *attribute;
+  Octstr *attribute, *value, *attr_i, *val_j;
 
-  attribute = octstr_create_from_data(node->name, strlen(node->name));
+  attribute = octstr_create_tolower(attr->name);
+  value     = octstr_create_tolower(attr->val->content);
 
   /* Check if the attribute is found on the code page. */
 
   for (i = 0; wml_attributes[i].attribute != NULL; i++)
     {
       if (octstr_compare(attribute, 
-			 octstr_create(wml_attributes[i].attribute)) == 0)
+			 (attr_i = octstr_create(wml_attributes[i].attribute)))
+			 == 0)
 	{
 	  /* Check if there's an attribute start token with good value on 
 	     the code page. */
 
-	  for (j = 0; 
-	       strcmp(wml_attributes[i].attribute, wml_attributes[j].attribute)
+	  for (j = i; 
+	       octstr_compare(attr_i,
+			      octstr_create(wml_attributes[j].attribute))
 		 == 0; j++)
-	    if (octstr_ncompare(octstr_create(wml_attributes[j].a_value),
-				attribute, 
-				coded_length = strlen(wml_attributes[j].a_value)) 
+	    if (wml_attributes[j].a_value != NULL &&
+		octstr_ncompare((val_j = 
+				 octstr_create(wml_attributes[j].a_value)),
+				value, 
+				coded_length = octstr_len(val_j)) 
 		== 0)
 	      wbxml_hex = wml_attributes[j].token;
 	    else
 	      wbxml_hex = wml_attributes[i].token;
+	  break;
 	}
     }
   output_char(wbxml_hex);
@@ -595,16 +603,25 @@ int parse_attribute(xmlNodePtr node)
    * The rest of the attribute is coded as a inline string. Not as 
    * compressed as it could be... This will be enchanced later.
    */
-  if (coded_length < strlen(node->content))    
-    if ((status = output_octet_string(octstr_copy(attribute, coded_length, 
-						  octstr_len(attribute) -
-						  coded_length))) != 0)
-      error(0, "WML compiler: could not output attribute value as a string.");
+  if (coded_length < octstr_len(value))
+    if (coded_length == 0) 
+      {
+	if ((status = output_octet_string(octstr_create(attr->val->content))) 
+	    != 0)
+	  error(0, "WML compiler: could not output attribute value as a string.");
+      }
+    else
+      if ((status = output_octet_string(octstr_copy(value, coded_length, 
+						    octstr_len(value) -
+						    coded_length))) != 0)
+	error(0, "WML compiler: could not output attribute value as a string.");
 
-  if (wml_attributes[i].attribute == NULL) {
-    error(0, "WML compiler: unknown attribute.");
-    return -1;
-  } else 
+  if (wml_attributes[i].attribute == NULL)
+    {
+      error(0, "WML compiler: unknown attribute.");
+      return -1;
+  } 
+  else 
     return status;
 }
 
@@ -720,10 +737,11 @@ void text_shrink_blank(Octstr *text)
     {
       if(isspace(octstr_get_char(text, i)))
 	{
-	  j = i + i;
-	  while (isspace(octstr_get_char(text, i)))
-	    i ++;
-	  octstr_delete(text, j, i - j);
+	  j = i + 1;
+	  while (isspace(octstr_get_char(text, j)))
+	    j ++;
+	  if (j - i > 1)
+	    octstr_delete(text, i, j - i);
 	}
     }
 
