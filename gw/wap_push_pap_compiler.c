@@ -1521,7 +1521,6 @@ static long parse_ppg_specifier(Octstr **address, long pos)
 
 /*
  * Output: the type of a client address.
- *
  * Return a negative value, when error, positive (the position of the parsing 
  * cursor) otherwise.
  */
@@ -1591,22 +1590,32 @@ parse_error:
     return -2;
 }
 
+/*
+ * XXX We have a kludge here. WAP-249-PPGService-20010713-a defines in 
+ * section 6.1 the constant strings "WAPPUSH" and "TYPE" in upper-case. 
+ * But in the examples of section 6.2 they use lower-case too. Some PI
+ * vendors (ie. Jatayuu's MMSC) have implemented lower-case in their PAP 
+ * documents. So we'll support this too for sake of operatibility -- st.
+ */
 static long parse_constant(const char *field_name, Octstr **address, long pos)
 {
-    size_t i,    
-           size;
+    size_t i, size;
     Octstr *nameos;
 
     nameos = octstr_format("%s", field_name);
     size = octstr_len(nameos);
     i = 0;
     
+    /* convert both to lower case, see above note */
+    octstr_convert_range(nameos, 0, octstr_len(nameos), tolower);
+    octstr_convert_range(*address, 0, octstr_len(*address), tolower);
+    
     while (octstr_get_char(*address, pos - i)  == 
                octstr_get_char(nameos, size-1 - i) && i <  size) {
         ++i;
     }
 
-    while ((octstr_len (*address) > 0) && octstr_get_char(*address, pos) !=
+    while ((octstr_len(*address) > 0) && octstr_get_char(*address, pos) !=
                octstr_get_char(nameos, 0) && pos >= 0) {
         pos = drop_character(address, pos);
     }
