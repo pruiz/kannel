@@ -133,7 +133,7 @@ static void downheap(gw_prioqueue_t *queue, register long index)
     void *v = queue->tab[index];
     register long j;
     
-    while(index <= queue->len / 2) {
+    while (index <= queue->len / 2) {
         j = 2 * index;
         /* take the biggest child item */
         if (j < queue->len && queue->cmp(queue->tab[j], queue->tab[j + 1]) < 0)
@@ -222,7 +222,9 @@ void gw_prioqueue_insert(gw_prioqueue_t *queue, void *item)
 void gw_prioqueue_foreach(gw_prioqueue_t *queue, void(*fn)(const void *, long))
 {
     register long i;
+
     gw_assert(queue != NULL && fn != NULL);
+    
     queue_lock(queue);
     for (i = 1; i < queue->len; i++)
         fn(queue->tab[i], i - 1);
@@ -272,6 +274,7 @@ void *gw_prioqueue_consume(gw_prioqueue_t *queue)
     void *ret;
     
     gw_assert(queue != NULL);
+
     queue_lock(queue);
     while (queue->len == 1 && queue->producers > 0) {
         queue->mutex->owner = -1;
@@ -286,6 +289,7 @@ void *gw_prioqueue_consume(gw_prioqueue_t *queue)
         ret = NULL;
     }
     queue_unlock(queue);
+    
     return ret;
 }
 
@@ -293,6 +297,7 @@ void *gw_prioqueue_consume(gw_prioqueue_t *queue)
 void gw_prioqueue_add_producer(gw_prioqueue_t *queue)
 {
     gw_assert(queue != NULL);
+
     queue_lock(queue);
     queue->producers++;
     queue_unlock(queue);
@@ -302,6 +307,7 @@ void gw_prioqueue_add_producer(gw_prioqueue_t *queue)
 void gw_prioqueue_remove_producer(gw_prioqueue_t *queue)
 {
     gw_assert(queue != NULL);
+
     queue_lock(queue);
     gw_assert(queue->producers > 0);
     queue->producers--;
@@ -313,9 +319,13 @@ void gw_prioqueue_remove_producer(gw_prioqueue_t *queue)
 long gw_prioqueue_producer_count(gw_prioqueue_t *queue)
 {
     long ret;
+
     gw_assert(queue != NULL);
+    
     queue_lock(queue);
     ret = queue->producers;
     queue_unlock(queue);
+    
     return ret;
 }
+

@@ -1,3 +1,8 @@
+2004-08-20  Stipe Tolj  <stolj@wapme.de>
+    * gwlib/gw-prioqueue.c: some source beautifying ;) no logic change.
+    * test/test_prioqueue.c: adding Alex's simple test program for testing
+      the generic priority queue he introduced to gwlib.
+
 2004-08-19 Alexander Malysh <amalysh at kannel.org>
     * gw/smsc/smsc_at.c: fixed segfault when modemtype is set to 'auto'
       or 'autodetect'. Fixed '+CPIN', some modem needs '"'.
