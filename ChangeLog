@@ -1,5 +1,9 @@
 2000-05-23  Richard Braakman  <dark@wapit.com>
 
+	* test/drive_wapbox.c: Fix free-port-hunting code for fake httpd.
+
+2000-05-23  Richard Braakman  <dark@wapit.com>
+
 	* gw/smsc_cimd2.c: The maximum message length was always set to 140.
 	It should be 160 for normal (non-UDH, non-8bit) messages.  Fixed.
 

@@ -178,7 +178,7 @@ static int start_http_thread(void) {
 	unsigned short port;
 
 	for (port = 40000; port < 41000; port += 13) {
-		server = http2_server_open(40000);
+		server = http2_server_open(port);
 		if (server)
 			break;
 	}

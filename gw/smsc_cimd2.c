@@ -1188,7 +1188,16 @@ static struct packet *packet_encode_message(Msg *msg) {
 	 * with those reports anyway. */
 	packet_add_int_parm(packet, P_STATUS_REPORT_REQUEST, 0);
 
-	spaceleft = 140;
+	/* CIMD2 specs are not entirely clear on this, but it looks like
+	 * once UDH is used, even a plaintext body can be at most 140 octets.
+	 * That's why we set it to 140 if either UDH or 8bit is true. 
+         * Currently it does not matter, since they're always both true
+	 * or both false. */
+	if (msg->smart_sms.flag_udh || msg->smart_sms.flag_8bit) {
+		spaceleft = 140;
+	} else {
+		spaceleft = 160;
+	}
 	truncated = 0;
 
 	if (msg->smart_sms.flag_udh) {
