@@ -129,7 +129,7 @@ static void httpd_serve(void *arg)
     Octstr *url, *body;
     Octstr *reply;
     
-    if (http_server_get_request(client, &url, &headers, &body, &cgivars) < 0)
+    if (http_server_get_request(client, &url, &headers, &body, &cgivars) < 1)
     {
 	warning(0, "Malformed line from client, ignored");
 	http_server_close_client(client);

@@ -1650,6 +1650,11 @@ url = "http://%S"
      message. Any result is sent back to the phone (or requester), but is
      truncated to 160 characters, naturally.</para>
 
+     <para>Service group <literal>default</literal> has a special
+     meaning: if the incoming message is not routed to any other
+     service, <literal>default</literal> 'sms-service' group is used.
+     You should always define <literal>default</literal> service.</para>
+
  <table frame=none>
   <title>SMS-Service Group Variables</title>
   <tgroup cols=3>

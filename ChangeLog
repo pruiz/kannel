@@ -1,3 +1,11 @@
+2000-10-11  Kalle Marjola  <rpr@wapit.com>
+
+	* gw/bb_http.c: fixed that query parsing value '0' is not
+	accepted, only '1'
+
+	* doc/userguide/userguide.xml: added notes about sms-service
+	'default'
+
 2000-10-10  Richard Braakman  <dark@wapit.com>
 
 	* wmlscript/{ws.c, wsgram.y, wsstree.[ch]}: Remove WsPair and
