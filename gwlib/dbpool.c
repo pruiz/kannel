@@ -29,7 +29,7 @@ struct DBPool
     List *pool; /* queue representing the pool */
     enum dbpool_type type;
     unsigned int max_size;
-    void *conf; /* the DB type specific configuration block */
+    void *conf; /* the database type specific configuration block */
 };
 
 /* Increase pool size by #conn connections. */
