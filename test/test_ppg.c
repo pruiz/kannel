@@ -749,7 +749,6 @@ int main(int argc, char **argv)
         error(0, "No ppg address or config file, stopping");
         exit(1);
     }
-    push_url = octstr_create(push_data[0]);
            
     use_config = 0;
     if (!use_hardcoded) {
@@ -760,6 +759,9 @@ int main(int argc, char **argv)
             use_config = 1;
         }
     }
+
+    if (!use_config)
+        push_url = octstr_format("%s", push_data[0]);
 
     if (!use_hardcoded && !use_config && push_data[1] != NULL) {
         if (push_data[2] == NULL) {

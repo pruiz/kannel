@@ -25,7 +25,7 @@ static void client_thread(void *arg)
     Octstr *reply_body, *reply_type;
     
     if (arg == NULL) {
-	reply_body = octstr_create("hello, world");
+	reply_body = octstr_create("Sent.");
 	reply_type = octstr_create("Content-Type: text/plain; "
 	    	    	    	   "charset=\"UTF-8\"");
     } else {
@@ -61,12 +61,12 @@ static void client_thread(void *arg)
 	    run = 0;
         } else if (octstr_compare(url, octstr_imm("/whitelist")) == 0) {
 	    octstr_destroy(reply_body);
-            reply_body = octstr_imm("+358408676001;+358408676005;\n"
-                                    "+358408676006\n");
+            reply_body = octstr_imm("+358408676005\n+358408676006\n"
+                                    "+358408227749\n+358408201681\n");
 	} else if (octstr_compare(url, octstr_imm("/blacklist")) == 0) {
             octstr_destroy(reply_body);
-            reply_body = octstr_imm("+358408676004\n"
-                                    "+358408676002;+358408676003\n");
+            reply_body = octstr_imm("+358408676004\n+358408676002\n"
+                                    "+358408676003\n");
         }
         
         if (verbose) {
@@ -109,8 +109,10 @@ int main(int argc, char **argv) {
     Octstr *log_filename;
     Octstr *file_contents;
     int ssl = 0;   /* indicate if SSL-enabled server should be used */
+#ifdef HAVE_LIBSSL
     Octstr *ssl_server_cert_file = NULL;
     Octstr *ssl_server_key_file = NULL;
+#endif
 
     gwlib_init();
 
@@ -147,18 +149,24 @@ int main(int argc, char **argv) {
 	    use_threads = 1; /* XXX unimplemented as of now */
 	    break;
 
-    case 'c':
+        case 'c':
+#ifdef HAVE_LIBSSL
 	    octstr_destroy(ssl_server_cert_file);
 	    ssl_server_cert_file = octstr_create(optarg);
+#endif
         break;
 
-    case 'k':
+        case 'k':
+#ifdef HAVE_LIBSSL
 	    octstr_destroy(ssl_server_key_file);
 	    ssl_server_key_file = octstr_create(optarg);
+#endif
         break;
 
 	case 's':
+#ifdef HAVE_LIBSSL
         ssl = 1;
+#endif   
         break;
 
 	case 'f':
@@ -187,7 +195,6 @@ int main(int argc, char **argv) {
     	file_contents = NULL;
     else
     	file_contents = octstr_read_file(filename);
-
 #ifdef HAVE_LIBSSL
     /*
      * check if we are doing a SSL-enabled server version here
