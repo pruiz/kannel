@@ -1,4 +1,8 @@
 2003-08-23  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/smsbox.c: fixed segmentation fault bug in remember_receiver() when
+      trans == NULL and urltrans_name() is called.
+
+2003-08-23  Stipe Tolj  <tolj@wapme-systems.de>
     * doc/userguide/userguide.xml, gw/smsc/smsc_fake.c: added DLR handling
       for fake smsc type. Now you can test DLR handling even while unattached
       to a real SMSC. At least in some extend. 
