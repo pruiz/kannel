@@ -732,7 +732,7 @@ case "$host" in
     LIBTOOL="libtool -static -o" 
     ;;
    *-linux-*)
-    CFLAGS="$CFLAGS -D_XOPEN_SOURCE=500 -D_BSD_SOURCE"
+    CFLAGS="$CFLAGS -D_XOPEN_SOURCE=600 -D_BSD_SOURCE"
     ;;
 esac
 

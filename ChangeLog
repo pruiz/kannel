@@ -1,3 +1,6 @@
+2004-01-06  Alexander Malysh  <a.malysh@centrium.de>
+    * configure.in, configure: fixed CFLAGS for pthread_spinlock support.
+
 2004-01-05  Alexander Malysh  <a.malysh@centrium.de>
     * gwlib/gw_uuid.c: trivial change, don't define _SVID_SOURCE if it's already
       defined.
