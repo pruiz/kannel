@@ -81,6 +81,8 @@ static int 	socket_fd;
 static HTTPSocket *http_server_socket;
 static char 	*http_allow_ip = NULL;
 static char 	*http_deny_ip = NULL;
+static char 	*http_proxy_host = NULL;
+static int  	http_proxy_port = -1;
 
 static int	only_try_http = 0;
 
@@ -290,6 +292,10 @@ static void init_smsbox(Config *cfg)
     
     if ((p = config_get(grp, "smsbox-port")) == NULL)
 	panic(0, "No 'smsbox-port' in core group");
+    if ((p = config_get(grp, "http-proxy-host")) != NULL)
+    	http_proxy_host = p;
+    if ((p = config_get(grp, "http-proxy-port")) != NULL)
+    	http_proxy_port = atoi(p);
 
     bb_port = atoi(p);
 
@@ -340,6 +346,14 @@ static void init_smsbox(Config *cfg)
 	    info(0, "Set up send sms service at port %d", sendsms_port);
     } else
 	http_server_socket = NULL;
+
+    if (http_proxy_host != NULL && http_proxy_port > 0) {
+	Octstr *os;
+	
+	os = octstr_create(http_proxy_host);
+    	http_use_proxy(os, http_proxy_port, NULL);
+	octstr_destroy(os);
+    }
     
     return;
 }

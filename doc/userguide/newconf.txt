@@ -127,6 +127,12 @@ used:
  #       As white-list, but SMS messages from these numbers are
  #       automatically discarded
  
+To use an HTTP proxy for all HTTP requests, set the following two
+variables:
+
+ http-proxy-host = <hostname>
+ http-proxy-port = <portnumber>
+
 No other configuration variables for core group are currently
 supported. A sample core group is shown at the end of the file.
 

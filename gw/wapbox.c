@@ -37,8 +37,8 @@ static int heartbeat_freq = BB_DEFAULT_HEARTBEAT;
 static int timer_freq = WB_DEFAULT_TIMER_TICK;
 static char *logfile = NULL;
 static int logfilelevel = 0;
-extern char dosyslog;
-extern int sysloglevel;
+static char *http_proxy_host = NULL;
+static int http_proxy_port = -1;
 
 
 static enum {
@@ -93,6 +93,11 @@ static void read_config(char *filename) {
 	    bearerbox_host = s;
 	if ((s = config_get(grp, "heartbeat-freq")) != NULL)
 		heartbeat_freq = atoi(s);
+
+	if ((s = config_get(grp, "http-proxy-host")) != NULL)
+		http_proxy_host = s;
+	if ((s = config_get(grp, "http-proxy-port")) != NULL)
+		http_proxy_port = atoi(s);
 	
 	if ((s = config_get(grp, "timer-freq")) != NULL)
 	    timer_freq = atoi(s);
