@@ -47,89 +47,91 @@ static sig_atomic_t req_threads = 0;
  */
 static char *obey_request(URLTranslation *trans, Msg *sms)
 {
-    char *pattern;
-    char *data, *tmpdata;
-    size_t size;
-    int type;
-    char replytext[1024*10+1];       /* ! absolute limit ! */
+	char *pattern;
+	char *data, *tmpdata;
+	size_t size;
+	char *type = NULL;
+	char replytext[1024*10+1];       /* ! absolute limit ! */
 
 
-    pattern = urltrans_get_pattern(trans, sms);
-    if (pattern == NULL) {
-	error(0, "Oops, urltrans_get_pattern failed.");
-	return NULL;
-    }
-    if (urltrans_type(trans) == TRANSTYPE_TEXT) {
-	debug(0, "formatted text answer: <%s>", pattern);
-	return pattern;
-    }
-    else if (urltrans_type(trans) == TRANSTYPE_FILE) {
-	int fd;
-	size_t len;
-	
-	fd = open(pattern, O_RDONLY);
-	if (fd == -1) {
-	    error(errno, "Couldn't open file <%s>", pattern);
-	    return NULL;
+	pattern = urltrans_get_pattern(trans, sms);
+	if (pattern == NULL) {
+		error(0, "Oops, urltrans_get_pattern failed.");
+		return NULL;
 	}
-	replytext[0] = '\0';
-	len = read(fd, replytext, 1024*10);
-	close(fd);
-	replytext[len-1] = '\0';	/* remove trainling '\n' */
+
+	if (urltrans_type(trans) == TRANSTYPE_TEXT) {
+
+		debug(0, "formatted text answer: <%s>", pattern);
+		return pattern;
+
+	} else if (urltrans_type(trans) == TRANSTYPE_FILE) {
+		int fd;
+		size_t len;
+	
+		fd = open(pattern, O_RDONLY);
+		if (fd == -1) {
+		    error(errno, "Couldn't open file <%s>", pattern);
+		    return NULL;
+		}
+		replytext[0] = '\0';
+		len = read(fd, replytext, 1024*10);
+		close(fd);
+		replytext[len-1] = '\0';	/* remove trainling '\n' */
+
+		return strdup(replytext);
+	}
+
+	/* URL */
+
+	debug(0, "formatted url: <%s>", pattern);
+
+	if (http_get(pattern, &type, &data, &size) == -1) {
+		free(pattern);
+		goto error;
+	}
+	free(pattern);		/* no longer needed */
+	
+	/* Make sure the data is NUL terminated. */
+	tmpdata = realloc(data, size + 1);
+	if (tmpdata == NULL) {
+		error(errno, "Out of memory allocating HTTP response.");
+		free(data);
+		goto error;
+	}
+	data = tmpdata;
+	data[size] = '\0';
+
+	if(strcmp(type, "text/html") == 0) {
+
+		if (urltrans_prefix(trans) != NULL &&
+		    urltrans_suffix(trans) != NULL) {
+
+		    tmpdata = html_strip_prefix_and_suffix(data,
+			       urltrans_prefix(trans), urltrans_suffix(trans));
+		    free(data);	
+		    data = tmpdata;
+		}
+		html_to_sms(replytext, sizeof(replytext), data);
+
+	} else if(strcmp(type, "text/plain") == 0) {
+
+		strncpy(replytext, data, sizeof(replytext) - 1);
+
+	} else {
+
+		strcpy(replytext,
+		       "Result could not be represented as an SMS message.");
+
+	}
+
+	free(data);
+	free(type);
+
+	if (strlen(replytext)==0)
+		return strdup("");
 
 	return strdup(replytext);
-    }
-    /* URL */
-
-    debug(0, "formatted url: <%s>", pattern);
-
-    if (http_get(pattern, &type, &data, &size) == -1) {
-	free(pattern);
-	goto error;
-    }
-    free(pattern);		/* no longer needed */
-	
-    /* Make sure the data is NUL terminated. */
-    tmpdata = realloc(data, size + 1);
-    if (tmpdata == NULL) {
-	error(errno, "Out of memory allocating HTTP response.");
-	free(data);
-	goto error;
-    }
-    data = tmpdata;
-    data[size] = '\0';
-
-/*
- * http_get is buggy at the moment, and doesn't set type correctly.
- * work around this. XXX fix this
- */
-    type = HTTP_TYPE_HTML;
-
-    switch (type) {
-    case HTTP_TYPE_HTML:
-	if (urltrans_prefix(trans) != NULL &&
-	    urltrans_suffix(trans) != NULL) {
-
-	    tmpdata = html_strip_prefix_and_suffix(data,
-		       urltrans_prefix(trans), urltrans_suffix(trans));
-	    free(data);	
-	    data = tmpdata;
-	}
-	html_to_sms(replytext, sizeof(replytext), data);
-	break;
-    case HTTP_TYPE_TEXT:
-	strncpy(replytext, data, sizeof(replytext) - 1);
-	break;
-    default:
-	strcpy(replytext,
-	       "Result could not be represented as an SMS message.");
-	break;
-    }
-    free(data);
-
-    if (strlen(replytext)==0)
-	return strdup("");
-    return strdup(replytext);
 
 error:
     return NULL;
@@ -238,50 +240,55 @@ error:
  */
 static int send_message(URLTranslation *trans, Msg *msg)
 {
-    Octstr *text;
-    int max_msgs;
-    static char *empty = "<Empty reply from service provider>";
+	Octstr *text;
+	int max_msgs;
+	static char *empty = "<Empty reply from service provider>";
     
-    max_msgs = urltrans_max_messages(trans);
+	max_msgs = urltrans_max_messages(trans);
 
-    if (msg_type(msg) == plain_sms)
-	text = msg->plain_sms.text;
-    else if (msg_type(msg) == smart_sms)
-	text = msg->smart_sms.msgdata;
-    else
-	goto error;
-    
-    if (octstr_len(text)==0) {
-	if (urltrans_omit_empty(trans) != 0) {
-	    max_msgs = 0;
-	}
-	else { 
-	    if (octstr_replace(text, empty, strlen(empty)) == -1) 
+	if (msg_type(msg) == plain_sms)
+		text = msg->plain_sms.text;
+	else if (msg_type(msg) == smart_sms)
+		text = msg->smart_sms.msgdata;
+	else
 		goto error;
+    
+	if (octstr_len(text)==0) {
+
+		if (urltrans_omit_empty(trans) != 0) {
+			max_msgs = 0;
+		} else { 
+			if (octstr_replace(text, empty, strlen(empty)) == -1) 
+				goto error;
+		}
 	}
-    }
-    if (max_msgs == 0)
-	info(0, "No reply sent, denied.");
-    else if (octstr_len(text) <= sms_max_length) {
-	if (do_sending(msg) < 0)
-	    goto error;
-    } else if (octstr_len(text) > sms_max_length && max_msgs == 1) {
-	octstr_truncate(text, sms_max_length);	/* truncate reply */
-	if (do_sending(msg) < 0)
-	    goto error;
-    } else {
-	/*
-	 * we have a message that is longer than what fits in one
-	 * SMS message and we are allowed to split it
-	 */
-	if (do_split_send(msg, max_msgs, trans) < 0)
-	    goto error;
-    }
-    return 0;
+
+	if (max_msgs == 0)
+
+		info(0, "No reply sent, denied.");
+
+	else if (octstr_len(text) <= sms_max_length) {
+
+		if (do_sending(msg) < 0) goto error;
+
+	} else if (octstr_len(text) > sms_max_length && max_msgs == 1) {
+
+		octstr_truncate(text, sms_max_length);	/* truncate reply */
+		if (do_sending(msg) < 0) goto error;
+
+	} else {
+		/*
+		 * we have a message that is longer than what fits in one
+		 * SMS message and we are allowed to split it
+		 */
+		if (do_split_send(msg, max_msgs, trans) < 0)
+			goto error;
+	}
+	return 0;
 
 error:
-    error(0, "send message failed");
-    return -1;
+	error(0, "send message failed");
+	return -1;
 }
 
 
@@ -324,84 +331,79 @@ void *smsbox_req_thread(void *arg) {
 
     req_threads++;	/* possible overflow */
     
-    if (octstr_len(msg->plain_sms.text) == 0 ||
-	octstr_len(msg->plain_sms.sender) == 0 ||
-	octstr_len(msg->plain_sms.receiver) == 0) {
-	error(0, "EMPTY: Text is <%s>, sender is <%s>, receiver is <%s>",
-	      octstr_get_cstr(msg->plain_sms.text),
-	      octstr_get_cstr(msg->plain_sms.sender),
-	      octstr_get_cstr(msg->plain_sms.receiver));
+	if (octstr_len(msg->plain_sms.text) == 0 ||
+		octstr_len(msg->plain_sms.sender) == 0 ||
+		octstr_len(msg->plain_sms.receiver) == 0) 
+	{
 
-	/* NACK should be returned here if we use such things... future
-	   implementation! */
+		error(0, "smsbox_req_thread: EMPTY Msg, dump follows:");
+		msg_dump(msg);
+		/* NACK should be returned here if we use such 
+		   things... future implementation! */
 	   
-	return NULL;
-    }
-    if (octstr_compare(msg->plain_sms.sender, msg->plain_sms.receiver) == 0) {
-	info(0, "NOTE: sender and receiver same number <%s>, ignoring!",
-	     octstr_get_cstr(msg->plain_sms.sender));
-	return NULL;
-    }
-    trans = urltrans_find(translations, msg->plain_sms.text);
-    if (trans == NULL)
-	goto error;
+		return NULL;
+	}
 
-    /*
-     * now, we change the sender (receiver now 'cause we swap them later)
-     * if faked-sender or similar set. Note that we ignore if the replacement
-     * fails.
-     */
-    tmp = octstr_duplicate(msg->plain_sms.sender);
-    if (tmp == NULL)
-	goto error;
+	if (octstr_compare(msg->plain_sms.sender, msg->plain_sms.receiver) == 0) {
+		info(0, "NOTE: sender and receiver same number <%s>, ignoring!",
+		     octstr_get_cstr(msg->plain_sms.sender));
+		return NULL;
+	}
+
+	trans = urltrans_find(translations, msg->plain_sms.text);
+	if (trans == NULL) goto error;
+
+	/*
+	 * now, we change the sender (receiver now 'cause we swap them later)
+	 * if faked-sender or similar set. Note that we ignore if the replacement
+	 * fails.
+	 */
+	tmp = octstr_duplicate(msg->plain_sms.sender);
+	if (tmp == NULL) goto error;
 	
-    p = urltrans_faked_sender(trans);
-    if (p != NULL)
-	octstr_replace(msg->plain_sms.sender, p, strlen(p));
-    else if (global_sender != NULL)
-	octstr_replace(msg->plain_sms.sender, global_sender, strlen(global_sender));
-    else {
-	Octstr *t = msg->plain_sms.sender;
-	msg->plain_sms.sender = msg->plain_sms.receiver;
-	msg->plain_sms.receiver = t;
-    }
-    octstr_destroy(msg->plain_sms.receiver);
-    msg->plain_sms.receiver = tmp;
+	p = urltrans_faked_sender(trans);
+	if (p != NULL)
+		octstr_replace(msg->plain_sms.sender, p, strlen(p));
+	else if (global_sender != NULL)
+		octstr_replace(msg->plain_sms.sender, global_sender, strlen(global_sender));
+	else {
+		Octstr *t = msg->plain_sms.sender;
+		msg->plain_sms.sender = msg->plain_sms.receiver;
+		msg->plain_sms.receiver = t;
+	}
+	octstr_destroy(msg->plain_sms.receiver);
+	msg->plain_sms.receiver = tmp;
 
-    /* TODO: check if the sender is approved to use this service */
+	/* TODO: check if the sender is approved to use this service */
 
-    info(0, "creating service request <%s> from <%s> to <%s>",
-	      octstr_get_cstr(msg->plain_sms.text),
-	      octstr_get_cstr(msg->plain_sms.sender),
-	      octstr_get_cstr(msg->plain_sms.receiver));
+	info(0, "creating service request, dump follows:");
+	msg_dump(msg);
 
-    reply = obey_request(trans, msg);
-    if (reply == NULL) {
-	error(0, "request failed");
-	reply = strdup("Request failed");
-    }
-    if (reply == NULL)
-	goto error;
+	reply = obey_request(trans, msg);
+	if (reply == NULL) {
+		error(0, "request failed");
+		reply = strdup("Request failed");
+		goto error;
+	}
 
-    if (octstr_replace(msg->plain_sms.text, reply, strlen(reply)) == -1)
-	goto error;
+	 if (octstr_replace(msg->plain_sms.text, reply, strlen(reply)) == -1)
+		goto error;
 
-    msg->plain_sms.time = time(NULL);	/* set current time */
+	msg->plain_sms.time = time(NULL);	/* set current time */
 
-    /* send_message frees the 'msg' */
-    if (send_message(trans, msg) < 0)
-	error(0, "request_thread: failed");
+	/* send_message frees the 'msg' */
+	if(send_message(trans, msg) < 0)
+		error(0, "request_thread: failed");
     
-    free(reply);
-    req_threads--;
-    return NULL;
+	free(reply);
+	req_threads--;
+	return NULL;
 error:
-    error(0, "request_thread: failed");
-    msg_destroy(msg);
-    free(reply);
-    req_threads--;
-    return NULL;
-        
+	error(0, "request_thread: failed");
+	msg_destroy(msg);
+	free(reply);
+	req_threads--;
+	return NULL;
 }
 
 
