@@ -402,8 +402,8 @@ static WAPPushUser *create_oneuser(CfgGroup *grp)
     u->country_prefix = cfg_get(grp, octstr_imm("country-prefix"));
     u->allowed_prefix = cfg_get(grp, octstr_imm("allowed-prefix"));
     u->denied_prefix = cfg_get(grp, octstr_imm("denied-prefix"));
-    u->smsc_id = cfg_get(grp, octstr_imm("forced-smsc-id"));
-    u->default_smsc_id = cfg_get(grp, octstr_imm("default-smsc-id"));
+    u->smsc_id = cfg_get(grp, octstr_imm("forced-smsc"));
+    u->default_smsc_id = cfg_get(grp, octstr_imm("default-smsc"));
 
     os = cfg_get(grp, octstr_imm("white-list"));
     if (os != NULL) {
