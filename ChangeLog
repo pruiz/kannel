@@ -1,3 +1,9 @@
+2000-11-21  Richard Braakman  <dark@wapi.com>
+
+	* gwlib/gwthread-pthread.c, gwlib/conn.c, gwlib/list.c,
+	gwlib/utils.c (roundup_div): Formatted according to our coding style.
+	All of gwlib/ is now converted.
+
 2000-11-21  Lars Wirzenius  <liw@iki.fi>
 
 	* gwlib/http.c: Made persistent connection detection work with
