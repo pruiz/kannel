@@ -6311,7 +6311,7 @@ trusted-pi = false
              denied, too.
              </entry></row>
 				 <row><entry><literal>default-smsc</literal></entry>
-     		    <entry><emphasis<string</emphasis></entry>
+     		    <entry><emphasis>string</emphasis></entry>
      			 <entry valign=bottom>
         		 If no SMSC ID is given with the wappush HTTP request (see below), use
              this one as default route for all push messages.
@@ -6411,13 +6411,13 @@ allow-ip = 62.254.217.163
              in either list are denied, too.
              </entry></row>
 			    <row><entry><literal>default-smsc</literal></entry>
-     		    <entry><emphasis<string</emphasis></entry>
+     		    <entry><emphasis>string</emphasis></entry>
      			 <entry valign=bottom>
         		 If no SMSC ID is given with the wappush HTTP request (see below), use
              this one as default route for this specific push user.
      			 </entry></row>
 			    <row><entry><literal>forced-smsc</literal></entry>
-     		    <entry><emphasis<string</emphasis></entry>
+     		    <entry><emphasis>string</emphasis></entry>
      			 <entry valign=bottom>
         		 Allow only routing to a defined SMSC ID for this specific push user.
      			 </entry></row>
