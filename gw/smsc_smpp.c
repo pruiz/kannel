@@ -495,6 +495,7 @@ static void handle_pdu(SMPP *smpp, Connection *conn, SMPP_PDU *pdu,
  	{
         /* ensure the smsc-id is set */
         msg = pdu_to_msg(pdu);
+        time(&msg->sms.time);
         msg->sms.smsc_id = octstr_duplicate(smpp->conn->id);
 	    (void) bb_smscconn_receive(smpp->conn, msg);
 	    resp = smpp_pdu_create(deliver_sm_resp, 
@@ -829,7 +830,10 @@ int smsc_smpp_create(SMSCConn *conn, CfgGroup *grp)
     
     /* Check that config is OK */
     ok = 1;
-    if (username == NULL) {
+    if (host == NULL) {
+        error(0,"SMPP: Configuration file doesn't specify host");
+        ok = 0;
+    }    if (username == NULL) {
 	error(0, "SMPP: Configuration file doesn't specify username.");
 	ok = 0;
     }
