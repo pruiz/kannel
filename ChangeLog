@@ -1,3 +1,7 @@
+2003-01-09  Stipe Tolj  <tolj@wapme-systems.de>
+	* gw/wap-appl.c: fixed assertion panic in case HTTP method is not
+	  supported. Thanks to Vjacheslav Chekushin <slava@lmt.lv>.
+
 2003-01-07  Stipe Tolj  <tolj@wapme-systems.de>
 	* test/wapproxy.c: fixed compiler warning.
 
