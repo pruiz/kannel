@@ -318,10 +318,11 @@
 <screen><userinput>./configure</userinput>
 <userinput>make</userinput></screen>
 	
-	The <filename>configure</filename> script investigates various things on your computer for the Kannel compilation needs, and
+	The <filename>configure</filename> script investigates various
+	things on your computer for the Kannel compilation needs, and
 	writes out the <filename>Makefile</filename> used to compile
-	Kannel. <command>make</command> then runs the commands to
-	actually compile Kannel.</para>
+	Kannel. <command>make</command> then runs the commands to actually
+	compile Kannel.</para>
 	
 	<para>If either command writes out an error message and stops
 	before it finishes its job, you have a problem, and you either
@@ -330,7 +331,64 @@
 	for details.</para>
 	
 	<para>For detailed instruction on using the configuration
-	script, see file <filename>INSTALL</filename>.</para>
+	script, see file <filename>INSTALL</filename>. That file is
+	a generic documentation for <command>configure</command>. Kannel
+	defines a few additional options, most of which are only useful
+	for development:
+	
+    	<itemizedlist>
+	
+	<listitem><para><literal>--enable-docs</literal>
+
+	    Build documentation, b.e., converting the User Guide and
+	    the Architecture Guide from the DocBook markup language to
+	    PostScript and HTML.</para></listitem>
+
+	<listitem><para><literal>--disable-docs</literal>
+
+	    Don't build documentation.</para></listitem>
+
+	<listitem><para><literal>--enable-debug</literal>
+
+	    Enable non-reentrant development time
+	    debugging.</para></listitem>
+
+	<listitem><para><literal>--enable-localtime</literal>
+
+	    Write log file time stamps in local time, not
+	    GMT.</para></listitem>
+
+	<listitem><para><literal>--with-malloc=</literal><replaceable>type</replaceable>
+
+	    Select malloc wrapper to use: <replaceable>type</replaceable>
+	    is either <literal>native</literal> or
+	    <literal>checking</literal>. For production use, you probably
+	    want <literal>native</literal>.</para></listitem>
+
+	<listitem><para><literal>--enable-mutex-stats</literal>
+
+	    Produce information about lock contention.</para></listitem>
+
+	<listitem><para><literal>--enable-start-stop-daemon</literal>
+
+	    Compile the start-stop-daemon program.</para></listitem>
+
+	</itemizedlist>
+
+	</para>
+	
+	<para>You may need to add compilations flags to configure:
+
+<screen><userinput>CFLAGS='-pthread' ./configure</userinput></screen>
+
+	The above, for instance, seems to be required on FreeBSD. If you
+	want to develop Kannel, you probably want to add CFLAGS that make
+	your compiler use warning messages. For example, for GCC:
+	
+<screen><userinput>CFLAGS='-Wall -O2 -g' ./configure</userinput></screen>
+	
+	(You may, at your preference, use even stricter checking options.)
+	</para>
 
 </sect1>
 

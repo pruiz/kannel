@@ -93,30 +93,9 @@ Compiling and installing the gateway
 		make
 		make bindir=/somewhere/suitable install
 
-	You need to copy the gw/bearerbox, gw/wapbox and gw/smsbox 
-	programs somewhere suitable.
-	
-	You may need to add compilations flags to configure:
-	
-		CFLAGS='-pthread' ./configure
-	
-	The above, for instance, seems to be required on FreeBSD.
-
-	You may also give extra arguments to disable and enable certain 
-	features of the build, of which the most interesting are:
-
-		--disable-docs		Build no documentation
-		--with-malloc=native	Use standard malloc implementation
-		--with-malloc=check	Use checking malloc, slower but
-					very useful for debugging (default)
-	
-	If you want to develop Kannel, you probably want to add CFLAGS
-	that make your compiler use warning messages. For example, for
-	GCC:
-	
-		CFLAGS='-Wall -O2 -g' ./configure
-		
-	(you may even want to use -ansi -pedantic; we don't, at least yet).
+	See the User Guide (doc/userguide/ or
+	http://www.kannel.org/userguide.shtml) for Kannel specific
+	options to configure.
 
 For developers only: autoconf, configure, config.status, and Makefile
 
