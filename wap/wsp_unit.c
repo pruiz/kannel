@@ -235,6 +235,7 @@ static WAPEvent *pack_into_push_datagram(WAPEvent *event) {
 	unsigned char push_id;
 
         gw_assert(event->type == S_Unit_Push_Req);
+        debug("wap.wsp.unit", 0, "WSP_UNIT: Connectionless push accepted");
         pdu = wsp_pdu_create(Push);
 	pdu->u.Push.headers = wsp_headers_pack(
             event->u.S_Unit_Push_Req.push_headers, 1);
@@ -248,7 +249,6 @@ static WAPEvent *pack_into_push_datagram(WAPEvent *event) {
         push_id = event->u.S_Unit_Push_Req.push_id;
 	octstr_insert_data(ospdu, 0, &push_id, 1);
 
-        debug("wap.wsp.unit", 0, "WSP_UNIT: Connectionless push accepted");
         datagram = wap_event_create(T_DUnitdata_Req);
 
         datagram->u.T_DUnitdata_Req.addr_tuple =
@@ -257,6 +257,7 @@ static WAPEvent *pack_into_push_datagram(WAPEvent *event) {
 	    event->u.S_Unit_Push_Req.address_type;
 
 	datagram->u.T_DUnitdata_Req.user_data = ospdu;
+        debug("wap.wsp.unit", 0, "WSP_UNIT: delivering to wdp");
         
         return datagram;
 }
