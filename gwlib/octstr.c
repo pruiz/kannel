@@ -183,7 +183,7 @@ Octstr *octstr_create_immutable(const char *cstr)
             break;
         i = (i + 1) % MAX_IMMUTABLES;
         if (i == index)
-            panic_hard(0, "Too many immutable strings.", 0, 0, 0);
+            panic(0, "Too many immutable strings.");
     }
     os = immutables[i];
     if (os == NULL) {
@@ -1910,7 +1910,7 @@ static void convert(Octstr *os, struct format *format, const char **fmt,
     	break;
 
     default:
-        panic_hard(0, "octstr_format format string syntax error.", 0, 0, 0);
+        panic(0, "octstr_format format string syntax error.");
     }
 
     if (format->zero)

@@ -28,19 +28,6 @@ enum output_level {
  */
 void panic(int, const char *, ...) PRINTFLIKE ;
 
-/* Print a panicky error message and terminate the program with a failure.
- * So, this function is called when there is no other choice than to exit
- * immediately, with given reason. This function differs from panic() in
- * that it will not call any Octstr functions. Functions that are called
- * directly or indirectly by Octstr functions must call panic_hard instead;
- * these include gw_assert(), gw_malloc and gw_realloc.
- *
- * Since this function can't call octstr_format, it will only print a
- * constant string, without formatting.
- */
-void panic_hard(int e, const char *msg, const char *file, long line,
-    	    	const char *func);
-
 /* Print a normal error message. Used when something which should be
  * investigated and possibly fixed, happens. The error might be fatal, too,
  * but we have time to put system down peacefully.

@@ -27,7 +27,7 @@ void *gw_native_malloc(size_t size)
 
     ptr = malloc(size);
     if (ptr == NULL)
-        panic_hard(errno, "Memory allocation failed", 0, 0, 0);
+        panic(errno, "Memory allocation failed");
 
     return ptr;
 }
@@ -41,7 +41,7 @@ void *gw_native_realloc(void *ptr, size_t size)
 
     new_ptr = realloc(ptr, size);
     if (new_ptr == NULL)
-        panic_hard(errno, "Memory re-allocation failed", 0, 0, 0);
+        panic(errno, "Memory re-allocation failed");
 
     return new_ptr;
 }

@@ -242,93 +242,6 @@ static void kannel_syslog(char *format, va_list args, int level)
 }
 
 
-void panic_hard(int e, const char *msg, const char *file, long line, 
-    	    	const char *func) 
-{
-    int i;
-    char buf[FORMAT_SIZE];
-    size_t len;
-    char *end;
-
-    add_stderr();
-    format(buf, GW_PANIC, "", e, msg);
-    if (file != NULL && line > 0 && func != NULL) {
-	len = strlen(buf) + strlen(file) + strlen(func);
-	len += sizeof(line) * CHAR_BIT;
-	len += 32; /* For constant texts */
-	if (strlen(buf) + len < FORMAT_SIZE) {
-	    end = strchr(buf, '\0');
-	    if (end > buf && end[-1] == '\n')
-	    	--end;
-	    sprintf(end, " (Called from %s:%ld:%s)\n", file, line, func);
-	}
-    }
-    for (i = 0; i < num_logfiles; ++i) {
-	fputs(buf, logfiles[i].file);
-	fflush(logfiles[i].file);
-    }
-    if (dosyslog)
-	kannel_syslog(buf, NULL, GW_PANIC);
-    exit(EXIT_FAILURE);
-}
-
-
-#define FUNCTION_GUTS(level, place) \
-    do { \
-	int i; \
-	char buf[FORMAT_SIZE]; \
-	va_list args; \
-	Octstr *os; \
-	 \
-	add_stderr(); \
-	format(buf, level, place, e, fmt); \
-	\
-	va_start(args, fmt); \
-	os = octstr_format_valist(buf, args); \
-	va_end(args); \
-	for (i = 0; i < num_logfiles; ++i) { \
-	    if (level >= logfiles[i].minimum_output_level) { \
-		(void) octstr_print(logfiles[i].file, os); \
-		(void) fflush(logfiles[i].file); \
-	    } \
-	} \
-	\
-	if (dosyslog) { \
-	    va_start(args, fmt); \
-	    kannel_syslog(buf, args, level); \
-	    va_end(args); \
-	} \
-    } while (0)
-
-
-void panic(int e, const char *fmt, ...) 
-{
-    FUNCTION_GUTS(GW_PANIC, "");
-    exit(EXIT_FAILURE);
-}
-
-
-void error(int e, const char *fmt, ...) 
-{
-    FUNCTION_GUTS(GW_ERROR, "");
-}
-
-
-void warning(int e, const char *fmt, ...) 
-{
-    FUNCTION_GUTS(GW_WARNING, "");
-}
-
-
-void info(int e, const char *fmt, ...) 
-{
-   FUNCTION_GUTS(GW_INFO, "");
-}
-
-
-#undef FUNCTION_GUTS
-
-
 /*
  * Almost all of the message printing functions are identical, except for
  * the output level they use. This macro contains the identical parts of
@@ -360,6 +273,30 @@ void info(int e, const char *fmt, ...)
 	    } \
 	} while (0)
 
+
+void panic(int e, const char *fmt, ...) 
+{
+    FUNCTION_GUTS(GW_PANIC, "");
+    exit(EXIT_FAILURE);
+}
+
+
+void error(int e, const char *fmt, ...) 
+{
+    FUNCTION_GUTS(GW_ERROR, "");
+}
+
+
+void warning(int e, const char *fmt, ...) 
+{
+    FUNCTION_GUTS(GW_WARNING, "");
+}
+
+
+void info(int e, const char *fmt, ...) 
+{
+   FUNCTION_GUTS(GW_INFO, "");
+}
 
 
 static int place_matches(const char *place, const char *pat) 

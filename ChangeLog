@@ -1,5 +1,15 @@
 2001-01-10  Lars Wirzenius  <liw@iki.fi>
 
+	* gwlib/gwassert.h, gwlib/gwmem-check.c, gwlib/gwmem-native.c,
+	gwlib/log.[ch], gwlib/octstr.c: Undid changes to make logging
+	functions use octstr_format instead of fprintf. The interactions
+	between debug(), gwmem, gwthread, and other low-level parts of
+	gwlib are too intricate and error prone. It is better to suffer
+	the use of octstr_get_cstr when logging things instead of making
+	logging error prone.
+
+2001-01-10  Lars Wirzenius  <liw@iki.fi>
+
     	* gwlib/octstr.c: Implemented %p in octstr_format.
 
 	* test/test_octstr_format.c: Related changes.
