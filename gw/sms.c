@@ -13,7 +13,8 @@
  * mode = 0= encode using 00xxx, 1= encode using Fx mode
  *
  */
-int fields_to_dcs(Msg *msg, int mode) {
+int fields_to_dcs(Msg *msg, int mode) 
+{
     int dcs=0;
 
     /* Coding defaults to 7BIT or to 8BIT if udh is set */
@@ -76,8 +77,8 @@ int fields_to_dcs(Msg *msg, int mode) {
 /*
  * Decode DCS to sms fields
  */
-int dcs_to_fields(Msg **msg, int dcs) {
-
+int dcs_to_fields(Msg **msg, int dcs) 
+{
     /* Non-MWI Mode 1 */
     if ((dcs & 0xF0) == 0xF0) { 
         dcs &= 0x07;
@@ -117,8 +118,8 @@ int dcs_to_fields(Msg **msg, int dcs) {
  * Compute length of an Octstr after it will be converted to GSM 03.38 
  * 7 bit alphabet - escaped characters would be counted as two septets
  */
-int sms_msgdata_len(Msg* msg) {
-
+int sms_msgdata_len(Msg* msg) 
+{
 	int ret = 0;
 	Octstr* msgdata = NULL;
 	
@@ -135,5 +136,23 @@ int sms_msgdata_len(Msg* msg) {
 		ret = octstr_len(msg->sms.msgdata);
 
 	return ret;
+}
+
+
+int sms_swap(Msg *msg) 
+{
+    Octstr *sender = NULL;
+
+    if (msg->sms.sender != NULL && msg->sms.receiver != NULL) {
+        sender = octstr_duplicate(msg->sms.sender);
+        octstr_destroy(msg->sms.sender);
+        msg->sms.sender = octstr_duplicate(msg->sms.receiver);
+        octstr_destroy(msg->sms.receiver);
+        msg->sms.receiver = sender;
+
+        return 1;
+    }
+
+    return 0;
 }
 

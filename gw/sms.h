@@ -89,4 +89,13 @@ int dcs_to_fields(Msg **msg, int mode);
  */
 int sms_msgdata_len(Msg *msg);
 
+
+/*
+ * Swap an MO message to an MT message (hence swap receiver/sender addresses)
+ * and vice versa for internal bearerbox rerouting (if needed).
+ * Returns 1 if successfull, 0 otherwise.
+ */
+int sms_swap(Msg *msg);
+
+
 #endif
