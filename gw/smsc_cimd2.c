@@ -1,6 +1,6 @@
 /* Driver for CIMD 2 SMS centres.
  * Copyright 2000  WapIT Oy Ltd.
- * Author: Richard Braakman <dark@xs4all.nl>
+ * Author: Richard Braakman
  */
 
 /* TODO: Check checksums on incoming packets */
