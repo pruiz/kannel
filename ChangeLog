@@ -1,6 +1,6 @@
 2001-01-31  Peter Grönholm  <peter@wapit.com>
 
-	* /doc/userguide/userguide.xml: Wrote section 'Using pre-compiled
+	* doc/userguide/userguide.xml: Wrote section 'Using pre-compiled
 	binary packages'.
 
 2001-01-31  Lars Wirzenius  <liw@iki.fi>

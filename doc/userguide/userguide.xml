@@ -504,8 +504,52 @@
 <sect1>
 <title>Using pre-compiled binary packages</title>
 
-	<para>Pre-compiled binary packages are not yet available,
-	sorry.</para>
+<sect2>
+<title>Installing Kannel from RPM packages</title>
+
+	<para>This chapter explains how to install, upgrade and remove
+	Kannel binary RPM packages.</para>
+		
+	<para>Before you install Kannel, check that you have libxml2
+	installed on your system:</para>
+
+	<screen><userinput>rpm -q libxml2</userinput></screen>
+	
+	<para>Installing Kannel</para>
+
+	<para>1. Download the binary RPM packet from the Kannel
+	website.</para>
+	
+	<para>2. Log in as root:</para>
+
+	<screen><userinput>su -</userinput></screen>
+
+	<para>3. Install the RPM package:
+
+	<screen><userinput>rpm -ivh kannel-VERSION.i386.rpm</userinput></screen>
+	</para>
+
+	<para>Upgrading Kannel</para>
+
+	<para>1. Download the binary RPM packet from the Kannel
+        website.</para>
+
+	<para>2. Log in as root</para>
+	
+	<para>3. Upgrade the RPM package:
+
+        <screen><userinput>rpm -Uvh kannel-VERSION.i386.rpm</userinput></screen>
+        </para>
+	
+	<para>Removing Kannel</para>
+	
+	<para>1. Log in as root:</para>
+
+	<para>2. Remove the RPM package:
+	
+	<screen><userinput>rpm -e kannel</userinput></screen>
+	</para>
+</sect2>
 
 </sect1>
 
