@@ -13,6 +13,7 @@ do
 		echo " OK."
 	else
 		echo " FAILURE!"
+		echo "Check: $prog" >> check.log
 		cat check.log.new >> check.log
 	fi
 	rm check.log.new

@@ -85,7 +85,7 @@ static void skip_field_value(ParseContext *context) {
 static long unpack_multi_octet_integer(ParseContext *context, long len) {
 	long val = 0;
 
-	if (len >= (long) sizeof(val) || len < 0)
+	if (len > (long) sizeof(val) || len < 0)
 		return -1;
 
 	while (len > 0) {

@@ -115,7 +115,7 @@ long date_parse_http(Octstr *date)
     pos++;  /* Skip the space */
 
     /* Distinguish between the three acceptable formats */
-    if (isdigit(octstr_get_char(date, pos + 1)) &&
+    if (isdigit(octstr_get_char(date, pos)) &&
         octstr_get_char(date, pos + 2) == ' ') {
         if (octstr_len(date) - pos < (long)strlen("06 Nov 1994 08:49:37 GMT"))
             goto error;
@@ -131,7 +131,7 @@ long date_parse_http(Octstr *date)
         if (octstr_parse_long(&t.second, date, pos + 18, 10) != pos + 20)
             goto error;
         /* Take the GMT part on faith. */
-    } else if (isdigit(octstr_get_char(date, pos + 1)) &&
+    } else if (isdigit(octstr_get_char(date, pos)) &&
                octstr_get_char(date, pos + 2) == '-') {
         if (octstr_len(date) - pos < (long)strlen("06-Nov-94 08:49:37 GMT"))
             goto error;
@@ -152,7 +152,7 @@ long date_parse_http(Octstr *date)
             goto error;
         /* Take the GMT part on faith. */
     } else {
-        if (octstr_len(date) - pos < (long)strlen("Nov  6 08:49:37 1994"))
+        if (octstr_len(date) - pos < (long)strlen(" 6 08:49:37 1994"))
             goto error;
         monthstr = octstr_copy(date, pos, 3);
         if (octstr_parse_long(&t.day, date, pos + 4, 10) != pos + 6)

@@ -144,7 +144,7 @@ int parse_peek_char(ParseContext *context) {
 		return -1;
 	}
 
-	return octstr_get_char(context->data, context->pos++);
+	return octstr_get_char(context->data, context->pos);
 }
 
 int parse_get_char(ParseContext *context) {
@@ -185,6 +185,7 @@ unsigned long parse_get_uintvar(ParseContext *context) {
 		return 0;
 	}
 
+	context->pos = pos;
 	return value;
 }
 

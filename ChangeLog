@@ -1,3 +1,16 @@
+2000-10-03  Richard Braakman  <dark@wapit.com>
+
+	* gw/wsp_headers.c: Bugfix in multi_octet_integer for integers
+	exactly as large as a long.
+
+	* gwlib/date.c: Bugfixes for parsing non-recommended (but still
+	standard) date formats.
+
+	* gwlib/parse.c: Bugfixes in parse_peek_char and parse_get_uintvar.
+
+	* utils/run-checks: Don't report success if a test failed silently.
+	Add the name of the failing check to check.log.
+
 2000-10-03  Tuomas Luttinen  <tuo@wapit.com>
 
 	* gw/wml_definitions.h: some data types unified.
