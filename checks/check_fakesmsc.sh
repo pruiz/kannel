@@ -3,6 +3,7 @@
 # Use `test/fakesmsc' to test the bearerbox and the smsbox.
 
 set -e
+#set -x
 
 times=10
 interval=0
@@ -41,3 +42,5 @@ then
 fi
 
 rm check_fakesmsc*.log
+
+exit 0

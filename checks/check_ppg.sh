@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 #
 # Use 'test/test_ppg' and 'test/test_http_server' to test PPG. It presumes
 # using of http smsc.
@@ -72,9 +72,9 @@ for control_file in $ip_control_files;
                 echo "bb failed with control file $control_file"
             fi
 
-            kill -SIGINT $wappid
+            kill -INT $wappid
             sleep 2
-            kill -SIGINT $bbpid
+            kill -INT $bbpid
             sleep 2
 
 # We can panic when we are going down, too
@@ -113,6 +113,7 @@ for control_file in $wrong_ip_files;
     do 
         if [ -e $control_file ]
         then
+            have_iperrors=yes
             gw/bearerbox -v $loglevel $conf_file > check_bb.tmp 2>&1 & bbpid=$!
             sleep 2 
 
@@ -145,9 +146,9 @@ for control_file in $wrong_ip_files;
                 echo "bb failed when control file $control_file"
             fi
 
-            kill -SIGINT $wappid
+            kill -INT $wappid
             sleep 2
-            kill -SIGINT $bbpid
+            kill -INT $bbpid
             sleep 2
 
 # We can panic when we are going down, too
@@ -215,10 +216,9 @@ for control_file in $sms_control_files;
                 error=yes
                 echo "bb failed with control file $control_file"
             fi
-
-            
-            kill -SIGINT $wappid
-            kill -SIGINT $bbpid
+           
+            kill -INT $wappid
+            kill -INT $bbpid
             sleep 2
             test/test_http -qv 4 http://localhost:$server_port/quit
             sleep 1
@@ -299,9 +299,9 @@ for control_file in $wrong_sms_files;
                 echo "bb failed, going down with control file $control_file"
             fi
 
-            kill -SIGINT $wappid
+            kill -INT $wappid
             sleep 2
-            kill -SIGINT $bbpid
+            kill -INT $bbpid
             sleep 2
             test/test_http -qv 4 http://localhost:$server_port/quit
             sleep 1

@@ -9,6 +9,7 @@ times=10
 interval=0
 loglevel=0
 sendsmsport=13013
+global_sender=13013 
 username=tester
 password=foobar
 
@@ -45,7 +46,7 @@ if grep 'WARNING:|ERROR:|PANIC:' check_sendsms*.log >/dev/null ||
    [ $times -ne `grep -c 'Got message .*: <123 234 text test>' \
     check_sendsms_smsc.log` ]
 then
-	echo check_sendsms.sh failed 1>&2
+	echo check_sendsms.sh failed with non-empty fields 1>&2
 	echo See check_sendsms*.log for info 1>&2
 	exit 1
 fi
@@ -60,21 +61,21 @@ if grep 'WARNING:|ERROR:|PANIC:' check_sendsms*.log >/dev/null ||
    [ 1 -ne `grep -c '<123 234 text <Empty reply from service provider>' \
        check_sendsms_smsc.log` ]
 then
-	echo check_sendsms.sh failed 1>&2
+	echo check_sendsms.sh failed with empty message 1>&2
 	echo See check_sendsms*.log for info 1>&2
 	exit 1
 fi
 
-#From. This is OK, too: now sendsms port replaces from field
+#From. This is OK, too: now global-sender replaces from field
 url="http://localhost:$sendsmsport/cgi-bin/sendsms?from=&to=234&\
 text=test&username=$username&password=$password"
 
 test/test_http $url >> check_sendsms.log 2>&1
 
 if grep 'WARNING:|ERROR:|PANIC:' check_sendsms*.log >/dev/null ||
-   [ 1 -ne `grep -c '<'$sendsmsport' 234 text test>' check_sendsms_smsc.log` ]
+   [ 1 -ne `grep -c '<'$global_sender' 234 text test>' check_sendsms_smsc.log` ]
 then
-	echo check_sendsms.sh failed 1>&2
+	echo check_sendsms.sh failed with empty from field 1>&2
 	echo See check_sendsms*.log for info 1>&2
 	exit 1
 fi
@@ -88,7 +89,7 @@ test/test_http $url >> check_sendsms.log 2>&1
 if grep 'WARNING:|ERROR:|PANIC:' check_sendsms*.log >/dev/null ||
    [ 1 -ne `grep -c 'got empty to cgi variable' check_sendsms_sms.log` ]
 then
-	echo check_sendsms.sh failed 1>&2
+	echo check_sendsms.sh failed with empty to field 1>&2
 	echo See check_sendsms*.log for info 1>&2
 	exit 1
 fi
@@ -103,7 +104,7 @@ if grep 'WARNING:|ERROR:|PANIC:' check_sendsms*.log >/dev/null ||
    [ 1 -ne `grep -c '<Authorization failed for sendsms>' \
        check_sendsms_sms.log` ]
 then
-	echo check_sendsms.sh failed 1>&2
+	echo check_sendsms.sh failed with empty username 1>&2
 	echo See check_sendsms*.log for info 1>&2
 	exit 1
 fi
@@ -116,7 +117,7 @@ if grep 'WARNING:|ERROR:|PANIC:' check_sendsms*.log >/dev/null ||
    [ 1 -ne `grep -c '<Authorization failed for sendsms>' \
        check_sendsms_sms.log` ]
 then
-	echo check_sendsms.sh failed 1>&2
+	echo check_sendsms.sh failed with empty password 1>&2
 	echo See check_sendsms*.log for info 1>&2
 	exit 1
 fi
@@ -127,7 +128,7 @@ wait
 # Do we panic when going down ?
 if grep 'WARNING:|ERROR:|PANIC:' check_sendsms*.log >/dev/null
 then
-	echo check_sendsms.sh failed 1>&2
+	echo check_sendsms.sh failed when going down 1>&2
 	echo See check_sendsms*.log for info 1>&2
 	exit 1
 fi

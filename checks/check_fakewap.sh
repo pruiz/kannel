@@ -29,7 +29,7 @@ test/fakewap -m $times $url > check_fake.log 2>&1
 ret=$?
 
 test/test_http -qv 4 http://localhost:$port/quit
-kill -SIGINT $bbpid $wappid
+kill -INT $bbpid $wappid
 wait
 
 if [ "$ret" != 0 ]
@@ -43,3 +43,5 @@ fi
 rm check_bb.log check_wap.log check_fake.log check_http.log
 
 exit 0
+
+

@@ -494,6 +494,9 @@ static int read_ppg_config(Cfg *cfg)
 
 static int ip_allowed_by_ppg(Octstr *ip)
 {
+    if (ip == NULL)
+        return 0;    
+
     if (trusted_pi)
         return 1;
 
@@ -672,13 +675,10 @@ static void pap_request_thread(void *arg)
     http_status = 0;                
   
     while (run_status == running && (p = list_consume(pap_queue)) != NULL) {
-        if (client != NULL)
-	    break;
 
         http_status = HTTP_NOT_FOUND;
         pap_event_unpack(p, &ip, &url, &push_headers, &mime_content, 
                          &cgivars, &client);      
-        pap_event_destroy(p);
 
         if (octstr_compare(url, ppg_url) != 0) {
             error(0,  "Request <%s> from <%s>: service not found", 
@@ -689,7 +689,7 @@ static void pap_request_thread(void *arg)
         }
 
         http_status = HTTP_UNAUTHORIZED;
-
+   
         if (!ip_allowed_by_ppg(ip)) {
             error(0,  "Request <%s> from <%s>: ip forbidden, closing the"
                   " client", octstr_get_cstr(url), octstr_get_cstr(ip));
@@ -833,6 +833,7 @@ static void pap_request_thread(void *arg)
             }
         }
 
+        pap_event_destroy(p);
         http_destroy_headers(push_headers);
         http_destroy_cgiargs(cgivars);
         octstr_destroy(username);
@@ -844,6 +845,7 @@ static void pap_request_thread(void *arg)
         continue;
 
 no_transform:
+        pap_event_destroy(p);
         http_destroy_headers(push_headers);
         http_destroy_cgiargs(cgivars);
         octstr_destroy(username);
@@ -855,6 +857,7 @@ no_transform:
         continue;
 
 no_compile:
+        pap_event_destroy(p);
         http_destroy_headers(push_headers);
         http_destroy_cgiargs(cgivars);
         octstr_destroy(username);
@@ -866,6 +869,7 @@ no_compile:
         continue;
 
 not_acceptable:
+        pap_event_destroy(p);
         http_destroy_headers(push_headers);
         http_destroy_cgiargs(cgivars);
         octstr_destroy(username);
@@ -878,6 +882,7 @@ not_acceptable:
         continue;
 
 clean:
+        pap_event_destroy(p);
         http_destroy_headers(push_headers);
         http_destroy_headers(content_headers);
         octstr_destroy(pap_content);
@@ -889,6 +894,7 @@ clean:
         continue;
 
 ferror:
+        pap_event_destroy(p);
         http_destroy_headers(push_headers);
         http_destroy_cgiargs(cgivars);
         octstr_destroy(username);
@@ -896,7 +902,9 @@ ferror:
         octstr_destroy(ip);
         octstr_destroy(mime_content);
         continue;
+
 herror:
+        pap_event_destroy(p);
         http_destroy_headers(push_headers);
         http_destroy_cgiargs(cgivars);
         octstr_destroy(username);
@@ -904,6 +912,7 @@ herror:
         continue;
 
 berror:
+        pap_event_destroy(p);
         http_destroy_headers(push_headers);
         http_destroy_cgiargs(cgivars);
         octstr_destroy(username);

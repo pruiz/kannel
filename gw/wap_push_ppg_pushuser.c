@@ -275,7 +275,8 @@ int wap_push_ppg_pushuser_search_ip_from_wildcarded_list(Octstr *haystack,
     gw_assert(haystack);
     gw_assert(list_sep);
     gw_assert(ip_sep);
-    
+
+    /*There are no wildcards in the list*/    
     if (octstr_search_char(haystack, '*', 0) < 0) {
         if (octstr_search(haystack, needle, 0) >= 0) {
 	    return 1;
@@ -284,6 +285,7 @@ int wap_push_ppg_pushuser_search_ip_from_wildcarded_list(Octstr *haystack,
         }
     }
     
+    /*There are wildcards in the list*/
     ips = octstr_split(haystack, list_sep);
     for (i = 0; i < list_len(ips); ++i) {
         ip = list_get(ips, i);

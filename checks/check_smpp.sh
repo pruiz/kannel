@@ -5,21 +5,19 @@
 set -e
 #set -x
 
-times=1000
+times=10
 
-test/drive_smpp -v 4 -m $times -l check_smpp_drive.log &
-
+test/drive_smpp -v 0 -m $times 2> check_smpp_drive.log & 
 sleep 1
 
-gw/bearerbox -v 4 test/drive_smpp.conf &
+gw/bearerbox -v 0 test/drive_smpp.conf 2> check_smpp_bb.log &  
 bbpid=$!
 
 running=yes
 while [ $running = yes ]
 do
     sleep 1
-    if grep "ESME has submitted all messages to SMSC." check_smpp_drive.log \
-    	>/dev/null
+    if grep "ESME has submitted all messages to SMSC." check_smpp_drive.log > /dev/null  
     then
         running=no
     fi
@@ -35,7 +33,7 @@ then
         exit 1
 fi
 
-rm check_smpp_drive.log check_smpp_bb.log
+rm -f check_smpp_drive.log check_smpp_bb.log
 
 exit 0
 

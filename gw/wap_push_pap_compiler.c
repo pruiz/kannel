@@ -1911,19 +1911,26 @@ static long parse_ipv4_fragment(Octstr **address, long pos)
     i = 0;
     c = '=';
 
-    if (isdigit(octstr_get_char(*address, pos)) && pos >= 0) {
+    if (isdigit(c = octstr_get_char(*address, pos)) && pos >= 0) {
         --pos;
         ++i;
     } else {
+        debug("wap.push.pap.compiler", 0, "non-digit found in ip address,"
+              " address unacceptable");
         return -2;
     }
-    
+    debug("wap.push.pap.compiler", 0, "starting main loop, got character %c,"
+          " position %ld", c, pos);
     while (i <= 3 && ((c = octstr_get_char(*address, pos)) != '.' &&  c != '=')
             && pos >= 0) {
         if (isdigit(c)) {
 	    --pos;
+            debug("wap.push.pap.compiler", 0, "got character %c, new position"
+                 " is %d", c, pos);
             ++i;
         } else {
+	    debug("wap.push.pap.compiler", 0, "parse_ipv4_fragment: non-digit"
+                  " in ipv4 address, address unacceptable");
 	    return -2;
         }
     }
