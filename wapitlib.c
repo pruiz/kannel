@@ -610,6 +610,22 @@ error:
 }
 
 
+char *str_case_str(char *str, char *pat) {
+	char *p, *s;
+	
+	while (*str != '\0') {
+		for (p = pat, s = str; *p != '\0' && *s != '\0'; ++p, ++s)
+			if (tolower(*p) != tolower(*s))
+				break;
+		if (*p == '\0')
+			return str;
+		++str;
+	}
+	return NULL;
+}
+
+
+
 /*
  * seek string 's' backward from offset 'start_offset'. Return offset of
  * the first occurance of any character in 'accept' string, or -1 if not

@@ -144,6 +144,12 @@ int url_decode(char *string);
 
 
 /*
+ * like strstr, but ignore case
+ */
+char *str_case_str(char *str, char *pat);
+
+
+/*
  * seek string 's' backward from offset 'start_offset'. Return offset of
  * the first occurance of any character in 'accept' string, or -1 if not
  * found  */
