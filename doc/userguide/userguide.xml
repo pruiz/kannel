@@ -25,7 +25,7 @@
 		<surname>Wirzenius</surname>
 		<affiliation>
 			<jobtitle>Gateway architect</jobtitle>
-			<orgname>WapIT Ltd</orgname>
+			<orgname>Wapit Ltd</orgname>
 			<address> <email>liw@wapit.com</email>
 			<otheraddr>http://www.wapit.com</otheraddr>
 			<otheraddr>http://www.kannel.org</otheraddr>
@@ -36,7 +36,7 @@
 		<title>Abstract</title> 
 		<para>This document describes how
 		to install and use Kannel, the Open Source WAP and SMS Gateway
-		produced by WapIT Ltd.
+		produced by Wapit Ltd.
 		</para>
 	</abstract>
 </bookinfo>
@@ -54,7 +54,7 @@
 	
 	<para>With hundreds of millions of mobile phones in use all over the
 	world, the market for services targeted at mobile users
-	is mindbogglingly immense.  Even simple services find plenty of users,
+	is mind-bogglingly immense.  Even simple services find plenty of users,
 	as long as they're useful or fun. Being able to get news, send e-mail
 	or just be entertained wherever you are is extremely attractive to
 	lots of people.</para>
@@ -88,11 +88,11 @@
 	bearers with special emphasis on SMSC compatibility.</para>
 
 	<para>The Kannel project was founded by <ulink
-	url="http://www.wapit.com">WapIT Ltd.</ulink> in June, 1999. WapIT
+	url="http://www.wapit.com">Wapit Ltd.</ulink> in June, 1999. Wapit
 	Ltd. was founded on October 6th 1998 in Helsinki, Finland to
 	organize the work of the team which had built the most extensive
-	set of SMS services so far. WapIT Ltd. acts as a content innovator
-	and a packager for wireless services. WapIT is a member of the
+	set of SMS services so far. Wapit Ltd. acts as a content innovator
+	and a packager for wireless services. Wapit is a member of the
 	<ulink url="http://www.wapforum.org">WAP Forum</ulink>.</para>
 	
 	
@@ -138,7 +138,7 @@
 	content to the phones.</para>
 
         <figure>
-        <title>Logcial position of WAP gateway between phone and content server.</title>
+        <title>Logical position of WAP gateway between phone and content server.</title>
         <graphic fileref="wap-gateway&figtype;"></graphic>
         </figure>
 
@@ -322,7 +322,7 @@
 	
 	<para>If either command writes out an error message and stops
 	before it finishes its job, you have a problem, and you either
-	need the expertese to fix it yourself, or you need to report the
+	need the expertise to fix it yourself, or you need to report the
 	problem to the Kannel project. See <xref linkend="bug-reporting">
 	for details.</para>
 	
@@ -401,7 +401,7 @@
 	one wapbox group. In smsbox part there is one smsbox group and
 	then number of sms-service and sendsms-user groups.</para>
 
-	<para>Details of each part is in appropritae section of this
+	<para>Details of each part is in appropriate section of this
         documentation. The 'core' group used by the bearerbox is
         explained in this chapter, while 'wapbox' part is in next
         chapter and 'smsbox', 'sms center', 'sms-service' and
@@ -484,7 +484,7 @@ admin-password = f00bar
  # 
  admin-port = &lt;port-number&gt;
  #       The port number in which the bearerbox listens to HTTP
- #       adminstration commands. It is NOT the same as the HTTP
+ #       administration commands. It is NOT the same as the HTTP
  #       port of the local www server, just invent any port, but
  #       must be over 1023 unless you are running Kannel as a
  #       root process (not recommended)
@@ -502,7 +502,7 @@ admin-password = f00bar
  # 
  wdp-interface-name = &lt;IP&gt;
  #       If this is set, Kannel listens to WAP UDP packets incoming to
- #       ports 9200-9208, bound to given IP. If no spesific IP is
+ #       ports 9200-9208, bound to given IP. If no specific IP is
  #       needed, use just an asterisk ("*"). If UDP messages are
  #       listened to, wapbox-port variable MUST be set.
 
@@ -528,7 +528,7 @@ admin-password = f00bar
  #
  admin-deny-ip = &lt;IP-list&gt;
  admin-deny-ip = &lt;IP-list&gt;
- #       As above, but for adminstration HTTP requests
+ #       As above, but for administration HTTP requests
  #
  unified-prefix = &lt;prefix-list&gt;
  #       String to unify received phone numbers, for SMSC routing and
@@ -704,7 +704,7 @@ admin-password = f00bar
     <orderedlist numeration=loweralpha>
      <listitem><para>
        Running. The gateway accepts, proceeds and relies 
-       messages normally. This is the defaul state for the bearerbox.
+       messages normally. This is the default state for the bearerbox.
      </para></listitem>
      <listitem><para>
  Suspended. The gateway does not accept any new messages from SMS
@@ -731,7 +731,7 @@ admin-password = f00bar
     </orderedlist>
  
   <para>
-The state can be changed via HTTP adminstration interface (see below),
+The state can be changed via HTTP administration interface (see below),
 and shutdown can also be initiated via TERM or INT signal from
 terminal. In addition, the bearerbox can be started already in
 suspended or isolated state with -S or -I command line option, see
@@ -741,9 +741,9 @@ above.
 </sect2>
 
 <sect2>
-<title>HTTP Adminstration</title>
+<title>HTTP Administration</title>
 
-<para>Kannel can be controlled via an HTTP adminstration interface. All
+<para>Kannel can be controlled via an HTTP administration interface. All
 commands are done as normal HTTP queries, so they can be easily done
 from command line like this:
 
@@ -751,12 +751,12 @@ from command line like this:
 
 ...in which the '12345' is the configured admin-port in Kannel
 configuration file (see above). For most commands, admin-password is required as a
-cgi-bin argument as shown above. In addition, HTTP adminstration can
+cgi-bin argument as shown above. In addition, HTTP administration can
 be denied from certain IP addresses, as explained in configuration
 chapter.</para>
 
  <table frame=none>
-  <title>Kannel HTTP Adminstration Commands</title>
+  <title>Kannel HTTP Administration Commands</title>
   <tgroup cols=2>
   <tbody>
    <row><entry><literal>status</literal></entry>
@@ -835,7 +835,7 @@ chapter.</para>
   'core' configuration group, you <emphasis>MUST</emphasis> supply
   'wapbox' group.</para>
 
-  <para>The simpliest working 'wapbox' group looks like this:
+  <para>The simplest working 'wapbox' group looks like this:
 <programlisting>
 group = wapbox
 bearerbox-host = localhost
@@ -915,7 +915,7 @@ bearerbox-host = localhost
 	the media to transfer SMS messages to actual
 	phones.</para></listitem>
 
-        <listitem><para><citetitle>SMS-services</citetitle>, services for mobile orientated
+        <listitem><para><citetitle>SMS-services</citetitle>, services for mobile oriented
         messages.</para></listitem>
 
         <listitem><para><citetitle>SMS push</citetitle>,
@@ -979,7 +979,7 @@ bearerbox-host = localhost
 </sect1>
 
 <sect1>
-<title>SMS Service Definations</title>
+<title>SMS Service Definitions</title>
 
     <para>Now that you have a SMS center connection to send and
     receive SMS messages you need to define services for incoming
@@ -1006,7 +1006,7 @@ url = "http://%S"
 
     <para>The basic service system is very limited - it can only
     answer to original requester and it cannot send UDH data, for
-    example. To create more sophicated systems, SMS Push is
+    example. To create more sophisticated systems, SMS Push is
     used.</para>
 
     <para>The idea is to get the initial request, but then send no
@@ -1108,7 +1108,7 @@ http://smsbox.host.name:13013/cgi-bin/sendsms?username=foo&amp;password=bar&amp;
    <row><entry><literal>smsc</literal></entry>
    <entry valign=top>
         Optional guideline of which SMS Center is used to send the
-        message (see above). This cariable can be overridden with
+        message (see above). This variable can be overridden with
         <literal>forced-smsc</literal> configuration
         variable. Likewise, <literal>default-smsc</literal> variable
         can be used to set the SMSC if it is not set otherwise.
