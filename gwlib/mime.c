@@ -116,9 +116,9 @@ static Octstr *mime_entity_to_octstr_real(MIMEEntity *m, unsigned int level)
     if (list_len(m->multiparts) == 0) {
         for (i = 0; i < list_len(m->headers); i++) {
             octstr_append(mime, list_get(m->headers, i));
-            octstr_append(mime, octstr_imm("\n"));
+            octstr_append(mime, octstr_imm("\r\n"));
         }
-        octstr_append(mime, octstr_imm("\n"));
+        octstr_append(mime, octstr_imm("\r\n"));
         if (m->body != NULL)
             octstr_append(mime, m->body);
         goto finished;
@@ -146,7 +146,7 @@ static Octstr *mime_entity_to_octstr_real(MIMEEntity *m, unsigned int level)
     /* headers */
     for (i = 0; i < list_len(headers); i++) {
         octstr_append(mime, list_get(headers, i));
-        octstr_append(mime, octstr_imm("\n"));
+        octstr_append(mime, octstr_imm("\r\n"));
     }
     http_destroy_headers(headers);
 
@@ -156,10 +156,10 @@ static Octstr *mime_entity_to_octstr_real(MIMEEntity *m, unsigned int level)
         Octstr *body;
 
         if (i != 0)
-            octstr_append(mime, octstr_imm("\n"));
-        octstr_append(mime, octstr_imm("\n--"));
+            octstr_append(mime, octstr_imm("\r\n"));
+        octstr_append(mime, octstr_imm("\r\n--"));
         octstr_append(mime, boundary);
-        octstr_append(mime, octstr_imm("\n"));
+        octstr_append(mime, octstr_imm("\r\n"));
 
         /* call ourself to produce the MIME entity body */
         body = mime_entity_to_octstr_real(e, level + 1);
@@ -170,11 +170,11 @@ static Octstr *mime_entity_to_octstr_real(MIMEEntity *m, unsigned int level)
 
     /* add the last boundary statement, but hive an EOL 
      * if we are on the top of the recursion stack. */
-    if (level > 0)
-        octstr_append(mime, octstr_imm("\n"));
-    octstr_append(mime, octstr_imm("\n--"));
+    /* if (level > 0) */
+        octstr_append(mime, octstr_imm("\r\n"));
+    octstr_append(mime, octstr_imm("\r\n--"));
     octstr_append(mime, boundary);
-    octstr_append(mime, octstr_imm("--\n"));
+    octstr_append(mime, octstr_imm("--\r\n"));
 
     octstr_destroy(boundary);
 
@@ -233,9 +233,11 @@ MIMEEntity *mime_octstr_to_entity(Octstr *mime)
         while ((entity = parse_get_seperated_block(context, seperator)) != NULL) {
             MIMEEntity *m;
 
-            /* delete the last two octets, because these are the newlines
-             * required for the boundary seperator. */
-            octstr_delete(entity, octstr_len(entity) - 2, 2);
+            /* we have still two linefeeds at the beginning and end that we 
+             * need to remove, these are from the seperator. 
+             * XXX we don't know if it is \n or \r\n?! */
+            octstr_delete(entity, 0, 2);
+            octstr_delete(entity, octstr_len(entity) - 4, 4);
 
             debug("mime.parse",0,"MIME multipart: Parsing entity:");
             octstr_dump(entity, 0);
