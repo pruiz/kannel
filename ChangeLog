@@ -1,3 +1,11 @@
+2001-12-27  Stipe Tolj  <tolj@wapme-systems.de>
+    * configure.in: re-wrote checking for openssl library and headers
+      and a couple of cosmetic clean-ups and re-arrangement of single 
+      checking routines. Added Solaris pkgadd support definitions.
+    * configure: the resulting output of configure.in produced by
+      autoconf 2.13.
+    * gw/shared.c: added mysql version output in version_report_string()
+      
 2001-12-25  Stipe Tolj  <tolj@wapme-systems.de>
     * gwlib/conn.c: remoted label error for conn_wrap_fd() in case
       the ssl specific code causes an connection error. This also fixes
