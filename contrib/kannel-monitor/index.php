@@ -17,18 +17,18 @@ include("xmlfunc.php");
 /* config section: define which Kannel status URLs to monitor */
 
 $configs = array(
-            array( "base_url" => "http://kannel.sms.wapme.net:13000",
-                   "status_passwd" => "pr0theu5",
+            array( "base_url" => "http://kannel.yourdomain.com:13000",
+                   "status_passwd" => "foobar",
                    "admin_passwd" => "",
                    "name" => "Kannel 1"
                  ),
-            array( "base_url" => "http://kannel.sms.wapme.net:23000",
-                   "status_passwd" => "pr0theu5",
+            array( "base_url" => "http://kannel.yourdomain.com:23000",
+                   "status_passwd" => "foobar",
                    "admin_passwd" => "",
                    "name" => "Kannel 2"
                  ),
-            array( "base_url" => "http://kannel.sms.wapme.net:33000",
-                   "status_passwd" => "pr0theu5",
+            array( "base_url" => "http://kannel.yourdomain.com:33000",
+                   "status_passwd" => "foobar",
                    "admin_passwd" => "",
                    "name" => "Kannel 3"
                  )
