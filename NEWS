@@ -1,10 +1,272 @@
-NEWS about Kannel: Open Source WAP and SMS Gateway version 1.3.1
+NEWS about Kannel: Open Source WAP and SMS Gateway version 1.3.2
 
 This is a DEVELOPMENT version. It should be usable for experimentation
-and testing, and is a release candidate for the 1.3 branch. Please do 
-try it out and report problems to devel@kannel.3glab.org (the development 
+and testing, and is a release candidate for the 1.4 branch. Please do 
+try it out and report problems to devel@kannel.org (the development 
 mailing list). The bug tracking system is currently offline.
 
+
+Changes since version 1.3.1: 
+
+[*** Beware that the version move from 1.3.1 to 1.3.2 contains more then 400 
+changesets, with major bugfixes and improvemnts. Following is a summary of the 
+main issues. For a complete and detailed set of changes please refer to the 
+specific ChangeLog in the doc/ directory of the distribution. ***]
+
+Compatibility breakers:
+
+  * LICENSE changed to Kannel Software License v1.0. BSD-style as before with 
+    some more restrictions to the name "Kannel" and usage of it.
+ 
+  * SMPP changed recoding of source_addr and destination_addr on the MO side. 
+    We will pass an prefixed '+' to the smsbox side. Otherwise there is no 
+    chance for backend applicatins, like smsbox to descide what type of number 
+    it is. 
+
+  * EMI2 login operation 60 had a hard timeout of 30 sec. Some SMSC may need 
+    longer to ACK the login, so use the 'wait-ack' time value here too in case 
+    it's larger then 30 sec. 
+
+  * CIMD2 harmonized 'my-number' directive, this makes 'sender-prefix' 
+    absolete, interpretation of 'keepalive' is now in seconds instead of 
+    minutes. 
+
+  * HTTP SMSC changed 'dlrurl' to 'dlr-url', 'dlrmask' to 'dlr-mask' in order 
+    to reflect changes within smsbox's sendsms interface.
+ 
+  * Removed no more needed 'retry' smsc group directive. This is now handled 
+    via the more abstracted 'reconnect-delay' value. 
+
+  * WAP access.log file of wapbox has now some more elements, ie. remote IP of
+    client, HTTP method, length of content body, user agent string, HTTP 
+    server string, cookie support is enabled now by default, added new 
+    'wap-url-map' and 'wap-user-map groups to replace deprecated 'map-url' map.
+
+  * Renamed innternal SMSC module identifiers for the smsc group directive 
+    'smsc', which identifies which SMSC module is to be used for the specific
+    link, according to these: <emi2> to <emi>, <at2> to <at>, <emi> to 
+    <emi_x25>. 
+
+  * The configure option switch --with-defaults default value is now "speed". 
+
+  * (!!!) smsbox's sendsms interface changed for values passed to various 
+    variables, according to this: pid=0 says that you want a pid value in pdu, 
+    with value 0; mclass is now 0-3; coding is 0-2; alt-dcs is 0-1; mwi is 0-7 
+    to comply with ETSI values; dlrmask and dlrurl query parameters are 
+    deprecated, but still functional; please use dlr-mask and dlr-url; flash 
+    was removed.
+ 
+  * Changed core group config option 'maximum-queue-length' to 
+    'sms-incoming-queue-limit' for the sake of semantics.
+
+  * Added 'binfo' billing identifier/information element to bearerbox's 
+    access.log log format.
+
+  * Changed the way how DLR storage is "defined" while configure time, accoding
+    to this: removes '--with-dlr', --with-mysql to --with-mysql-dir,
+    --enable-[mysql|oracle|sdb|sqlite] to --with-[mysql|oracle|sdb|sqlite].
+ 
+  * Account field is required in DLR tablespace and dlr config sections too.
+
+New features:
+
+  * SMPP added facility to specify SMSC service type with 
+    'service-type = foo', adding handling of invaid userid and/or passwd to  
+    shutdown SMSC connection rather then retrying to reconnect, a set of 
+    optional parameters (SMPP v3.4) have been added, UDH support for MOs,
+    handling of intermediately delivery notifications, added 'message_payload' 
+    handling, added enhanced DLR parsing and handling of DLR's optional
+    parameters, added "more messages to send" support.
+
+  * EMI added XSer $0c and $0d handling, OP/31 handling for the sake of EMI
+    implementations that use this construct as server-side initiated keep-alive
+    mechanism.
+
+  * CIMD2 has been rewriten to the new SMSCConn API layer, added additional 
+    support features 'our-host', 'our-port' and parameter 069 (service center 
+    address), harmonzied log message formating, new 'no-dlr' config directive 
+    to indicate if DLR requests should be proceeeded, added RPI 
+    (return-path-indication) support and binfo support via tariff class, allows
+    setting PID for MT messages, adds "more messages to send" support.
+
+  * HTTP SMSC added 'system-type = brunet' for an implemenation of bruNET's
+    specific HTTP interface (bruHTP 2.1), harmonized debug output, added 
+    'system-type = xidris' for an implementation of Xidris, 'dlrurl' and 
+    'dlrmask' handling for Kannel message proxying, added 'system-type = wapme'
+    for the Wapme SMS Proxy gateway interface.
+
+  * SOAP/XML over HTTP module added. Yet not bound to abstraction layer. Hence
+    this is yet experimental.
+
+  * FAKE added DLR handling for fake smsc type. Now you can test DLR handling 
+    even while unattached to real SMSC.
+
+  * AT added +CMTI support for MO messages, 2 new config options 
+    'max-error-count' and 'reset-string' for hard reset of the modem when modem 
+    crashed.
+    
+  * OISD has been rewriten to SMSCConn API, added validity support.
+    
+  * HTTP admin command 'restart' added to restart bearerbox, 'loglevel' to  
+    change log-level of log-files while bearerbox is running.
+
+  * Added 'our-host' interface support for binding to an explicite interface 
+    on SMSC connections. 
+
+  * Added smsc specific logging capability by handling open log files in 
+    exclusive or non-explusive mode, using 'log-file' and 'log-level' as smsc 
+    config directives. 
+
+  * Added --disable-wap and --disable-sms configure switches to disable parts 
+    in bearerbox. 
+
+  * Moved smsc group config directive 'reconnect-delay' into higher abstraction 
+    layer to provide this for all SMSC modules. Reconnect delay is defaulting 
+    to 10 sec.
+ 
+  * Added internal restarting msg command among boxes.
+
+  * Added new command line option ("-g" or "--generate") to bearebox. This 
+    option just dump all known config groups and options to stdout. 
+
+  * WAP added support for EFI inside WMLScript, added new application ids from 
+    OMNA web page, WSP encoding-version handling, logging of upstream HTTP server 
+    failures with HTTP response code 502 (bad gateway), new config option 
+    'http-interface-name' to wapbox configuration and allow selecting of interface 
+    for outgoing HTTP requests, allows to put semicolon-separated list of IP 
+    addresses in 'wdp-interfaces' statement in config file and kannel send 
+    responses from proper addresses.
+
+  * WAP Push added missing official WINA URIs, 'concatenation' and 
+    'max-messages' config directive support for wapbox group, handling of PPG 
+    related DLR reports. PPG sends SMS with DLR, but smsbox has to do the DLR 
+    signalization to the specified DLR-URL. The stored service name is read 
+    from PPG core group, added 'default-dlr-url', 'ppg-smsbox-id', 
+    'service-name' to ppg core group and 'dlr-url', 'smsbox-id' to 
+    wap-push-user group. 
+    
+  * RADIUS accounting proxy implemenation added for MSISDN provisioning within
+    WAP operations. 
+
+  * Added 'throughput' smsc group config directive for MT message per sec. 
+    limitation.
+
+  * Added bearerbox internal re-routing via config directives 'reroute', 
+    'reroute-smsc-id' and 'reroute-receiver' to multi-group 'smsc'. This allows
+    MOs to be directly turned into MTs within bearerbox.
+
+  * ORACLE 8i/9i support added for database pools and DLR handling.
+  
+  * PostgrSQL support added for database pools.
+  
+  * SQLITE added SQLite support for database pools. 
+  
+  * Added new escape code '%I' for URL translations to allow inclussion of the 
+    internal SMS ID into the processing, new escape code '%T' for sending the 
+    UNIX epoch timestamp in favor of '%t'.
+
+  * Added shell script 'gw-config' to allow 3rd party software to check for
+    CFLAGS, LIBS and version of the installed Kannel instance.
+
+  * Added 'binfo' to smsbox's sendsms interface to pass relevant billing 
+    identifier/information to smsc modules.
+
+  * Added POSIX regular expression support.
+  
+  * Added Perl compatible regular expression (PCRE) library support via 
+    --enable-pcre configure option.  
+
+  * Added backtrace support for specific architectures for better debugging
+    information on panics. Hint: use address within [] with addr2line or 
+    add -rdynamic to CFLAGS. 
+
+  * Added new config directives 'access-log-clean' and 'access-log-format' to
+    allow custom core access.log formatting, 'access-log-time' to indicate if
+    localtime or gmt should be used within access.log.
+
+  * Added new command line parameters for deamons (all boxes): 
+      -P/--parachute : start watcher father process that catch and restart  
+	                   crashed child process 
+      -X/--panic-script : execute this script if child process crashed 
+	  -u/--user : change process user-id (security) 
+	  -p/--pid-file : write PID into the given file 
+	  -d/--daemonize : daemonize the process 
+
+  * Added new config directive 'smsbox-max-pending'.
+
+Bugfixes:
+  
+  * SM/ASI fixed TON and NPI values, PDU decoding, decoding of binary MOs, 
+    enquire link pdu's were not sent within regular timeframe. 
+
+  * SMPP fixed generic_nack definition, sequence incrementation, charset 
+    encoding misbehaviour when msgs get split into multiple sms chunks, 
+    checking of esm_class for DLRs (only bits 2-5), PDU decoding bug for UDH
+    sequence, wrong esm_class checking for deliver_sm PDU, improved error
+    handling for wrong MO PDUs, shutdown sequence improvements, bug for 
+    re-encoding character set, bug that source-autodetect was 'false' if not
+    defined in the config although userguide mentioned 'true', race conditions 
+    amonst status and connect_time while set in various threads, optional 
+    parameters handling improved.
+    
+  * CIMD2 fixed for CPU load consume while idle, wrong time for messages, wrong 
+    parameter length for "service description" field.   
+
+  * AT fixed panic if UDHI in PDU is set but user data length = 0, bug in
+    non-blocking write to modem device, few race conditions.
+    
+  * HTTP SMSC fixed a number of bugs. Including bearerbox crash if smsc-id is 
+    stopped and /status page is called, don't 'fail' a MT message when the HTTP 
+    server can not be triggered, instead use 'reconnect-delay' to try again,
+    expected MO parameters to 'username' and 'password' instead of 'user' and 
+    'pass'.
+
+  * SSL fixed a serious pthread_mutex bug for call-back function to the 
+    openssl thread locking, non-blocking write mode, memory leak in SSL
+    handshake sequence, various improvements. 
+
+  * Fixed generic alt_dcs re-coding misbehaviour.
+
+  * HTTP fixed basic auth problem with the passwd, redirecting, serious bug 
+    in the HTTP client code causing smsbox to crash if the connection is 
+    closed directly by the HTTP server.
+  
+  * Fixed bearerbox behaviour while receiving SIGHUP (restart) signal, signal 
+    handling that may have caused deadlock. 
+
+  * Fixed ACK/NACK handling beween bearerbox and smsbox.
+
+  * WAP fixed and improved XML charset encoding handling, WSP header 
+    'Encoding-Version' handling, HTTP referer header removed due to breaking 
+    specific WAP Forum certification tests, various fixes in WML compiler 
+    character encoding handling, DOS bug within WML compiler, possible 
+    segfault if WML document doesn't contain DTD section, crashing wapbox
+    while comparing empty cookie strings, various memory leaks, WTP bug for 
+    abort PDU in speficic timeout events, fixed variable substitution within
+    WML compiler.
+
+  * WAP Push fixed malformed xml reponses for the PAP document, none accepted 
+    <pap> attribute 'product-name', case insesitive handling of constants 
+    "WAPPUSH" and "TYPE" for sake of interopertibility with existing PIs, 
+    handling of Push flag, PPG specifier and prologue parsing to support other 
+    PIs, including delimiter parsing, PAP MIME parsing, various memory leaks.
+    
+  * Fixed partially panics caused by too long UDH sequences.    
+
+  * DLR smsc-id is added now to DLR MOs from the temporary DB tablespace.
+
+  * Queue policies have been improved for internal bearerbox to smsbox 
+    message transmission.
+
+  * Fixed race conditions within store-file handling.
+
+  * Fixed serious poll() handling of POLLHUP and POLLERR.
+ 
+  * Fixed bug that config directive 'sendsms-chars' was not used at all in the 
+    logic, only the default remained. 
+    
+  * Fixed bug in smsbox that crashed if %A is used in get-url.
+                                                  
 
 Changes since version 1.3.0:
 
