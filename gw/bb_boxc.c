@@ -40,10 +40,12 @@ static List	*smsbox_list;
 static int	smsbox_port;
 static int	wapbox_port;
 
+static long	boxid = 0;
 
 typedef struct _boxc {
     int   	fd;
     int		is_wap;
+    long      	id;
     Octstr    	*client_ip;
     List      	*incoming;
     List      	*retry;   	/* If sending fails */
@@ -148,7 +150,7 @@ static void *boxc_sender(void *arg)
 }
 
 /*---------------------------------------------------------------
- * accept/create thingies
+ * accept/create/kill thingies
  */
 
 
@@ -159,6 +161,7 @@ static Boxc *boxc_create(int fd, char *ip)
     boxc = gw_malloc(sizeof(Boxc));
     boxc->is_wap = 0;
     boxc->fd = fd;
+    boxc->id = boxid++;		/* XXX  MUTEX! fix later... */
     boxc->client_ip = octstr_create(ip);
     return boxc;
 }    
@@ -306,7 +309,73 @@ cleanup:
 }
 
 
-/*------------------------------------------------*/
+/*------------------------------------------------
+ * main single thread functions
+ */
+
+typedef struct _addrpar {
+    Octstr *address;
+    int	port;
+    int wapboxid;
+} AddrPar;
+
+static void ap_destroy(AddrPar *addr)
+{
+    octstr_destroy(addr->address);
+    gw_free(addr);
+}
+
+static int cmp_route(void *ap, void *ms)
+{
+    AddrPar *addr = ap;
+    Msg *msg = ms;
+    
+    if (msg->wdp_datagram.source_port == addr->port  &&
+	octstr_compare(msg->wdp_datagram.source_address, addr->address)==0)
+	return 1;
+
+    return 0;
+}
+
+static int cmp_boxc(void *bc, void *ap)
+{
+    Boxc *boxc = bc;
+    AddrPar *addr = ap;
+
+    if (boxc->id == addr->wapboxid) return 1;
+    return 0;
+}
+
+static Boxc *route_msg(List *route_info, Msg *msg)
+{
+    AddrPar *ap;
+    Boxc *conn;
+    
+    ap = list_search(route_info, msg, cmp_route);
+    if (ap == NULL) {
+route:	    
+
+	ap = gw_malloc(sizeof(AddrPar));
+	ap->address = octstr_duplicate(msg->wdp_datagram.source_address);
+	ap->port = msg->wdp_datagram.source_port;
+
+	/* XXX this SHOULD according to load levels! *
+	 * (and be thread-safe, which is NOT right now) */
+	list_wait_until_nonempty(wapbox_list);
+	conn = list_get(wapbox_list, 0);
+	ap->wapboxid = conn->id;
+    } else
+	conn = list_search(wapbox_list, ap, cmp_boxc);
+
+    if (conn == NULL) {
+	/* routing failed; wapbox has disappeared!
+	 * ..remove routing info and re-route   */
+
+	ap_destroy(ap);
+	goto route;
+    }
+    return conn;
+}
 
 
 /*
@@ -316,6 +385,7 @@ cleanup:
 static void *wdp_to_wapboxes(void *arg)
 {
     List *route_info;
+    AddrPar *ap;
     Boxc *conn;
     Msg *msg;
 
@@ -334,14 +404,12 @@ static void *wdp_to_wapboxes(void *arg)
 
 	assert(msg_type(msg) == wdp_datagram);
 
-	/*
-	 * this is not the way to route these, but fix this later
-	 */
-	list_wait_until_nonempty(wapbox_list);
-	conn = list_get(wapbox_list, 0);
+	conn = route_msg(route_info, msg);
 	list_produce(conn->incoming, msg);
     }
     debug("bb", 0, "wdp to wapboxes router: exiting");
+    while((ap = list_consume(route_info)) != NULL)
+	ap_destroy(ap);
     list_destroy(route_info);
     return NULL;
 }

@@ -273,10 +273,8 @@ int udp_addwdp(Msg *msg)
     list_lock(udpc_list);
     for (i=0; i < list_len(udpc_list); i++) {
 	udpc = list_get(udpc_list, i);
-	/* here we need to check msg-addr versus udpc address */
 
-	/* if (octstr_cmp(msg->addr, udpc->addr)==0) */
-
+	if (msg->wdp_datagram.source_port == udp_get_port(udpc->addr))
 	{
 	    list_produce(udpc->outgoing_list, msg);
 	    list_unlock(udpc_list);

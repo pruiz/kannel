@@ -1,3 +1,13 @@
+2000-05-04    <Kalle Marjola <rpr@wapit.com>>
+
+	* gw/bb_boxc.c: added basic routing thingies, now it only needs
+	some load balancing to wap side, otherwise this module is about
+	complete.. oh I forgot the dynamic configuration, but that later -
+	the old one does not have it either
+
+	* gw/bb_udp.c: added routing, now this function is about ready,
+	except dynamic configuration and some testing etc.
+
 2000-05-04  Richard Braakman  <dark@wapit.com>
 
 	* gwlib/conn.c, gwlib/conn.h: Got rid of network_long functions.
