@@ -361,7 +361,7 @@ Connection *conn_open_ssl(Octstr *host, int port, Octstr *certkeyfile,
 			  Octstr *our_host)
 {
     Connection *ret;
-    int SSL_ret;
+    int SSL_ret = 0;
     int connected = 0;
     time_t timeout;
 
