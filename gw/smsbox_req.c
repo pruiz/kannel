@@ -440,6 +440,8 @@ void smsbox_req_thread(void *arg) {
     
     gw_free(reply);
     req_threads--;
+    return;
+
 error:
     error(0, "Request_thread: failed");
     msg_destroy(msg);

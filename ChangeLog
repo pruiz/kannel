@@ -1,5 +1,9 @@
 2000-05-29  Richard Braakman  <dark@wapit.com>
 
+	* gw/smsbox_req.c: Fixed silly mistake.
+
+2000-05-29  Richard Braakman  <dark@wapit.com>
+
 	* gwlib/conn.c: Implemented conn_read_packet().
 
 2000-05-29  Richard Braakman  <dark@wapit.com>
