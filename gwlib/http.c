@@ -2176,6 +2176,40 @@ void http_header_get(List *headers, long i, Octstr **name, Octstr **value)
     }
 }
 
+Octstr *http_header_value(List *headers, Octstr *name)
+{
+    Octstr *value;
+    long i;
+    Octstr *os;
+    long colon;
+    Octstr *current_name;
+    
+    gwlib_assert_init();
+    gw_assert(name);
+    
+    value = NULL;
+    i = 0;
+    while (i < list_len(headers)) {
+        os = list_get(headers, i);
+        if (os == NULL)
+            colon = -1;
+        else
+            colon = octstr_search_char(os, ':', 0);
+        if (colon == -1) {
+            return NULL;      
+        } else {
+            current_name = octstr_copy(os, 0, colon);
+        }
+        if (octstr_case_compare(current_name, name) == 0) {
+            value = octstr_copy(os, colon + 1, octstr_len(os));
+            octstr_strip_blanks(value);
+            return value;
+        }
+        ++i;
+    }
+    
+    return value;
+}
 
 List *http_header_duplicate(List *headers)
 {

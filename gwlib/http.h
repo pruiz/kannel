@@ -358,7 +358,7 @@ void http_header_get(List *headers, long i, Octstr **name, Octstr **value);
 List *http_header_duplicate(List *headers);
 void http_header_pack(List *headers);
 void http_append_headers(List *to, List *from);
-Octstr *http_header_value(Octstr *header);
+Octstr *http_header_value(List *headers, Octstr *header);
 
 
 /*
