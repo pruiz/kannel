@@ -1349,28 +1349,29 @@ int header_destroy(HTTPHeader *hdr)
 
 int header_pack(HTTPHeader *hdr)
 {
-    HTTPHeader *ptr, *prev;
+    HTTPHeader *ptr = NULL, *prev = NULL;
     char *buf = NULL;
-    size_t size = 0;
     int ret = 0;
+    size_t len = 0;
     
     while(hdr != NULL) {
 	/* find identical headers and merge them */
 	for(prev = hdr, ptr = hdr->next; ptr != NULL; ptr = ptr->next) {
 	    if (strcasecmp(hdr->key, ptr->key)==0) {
-		size = strlen(hdr->value) + 2 + strlen(ptr->value);
-		buf = malloc(size);
+		len = strlen(hdr->value) + 2 + strlen(ptr->value); 
+		buf = gw_malloc(len);
 		ret = sprintf(buf, "%s, %s", hdr->value, ptr->value);
-		if(ret < size) return -1;
-		debug("",0,"ret<%d>, len<%d>",ret,size);
+		debug("gwlib.http",0,"header_pack: ret:<%d> len:<%d>",
+		      ret, len);
+		if(ret < len) return -1;
 		gw_free(hdr->value);
 		hdr->value = gw_strdup(buf);
+		gw_free(buf);
 		prev->next = ptr->next;
 		gw_free(ptr->key);
 		gw_free(ptr->value);
 		gw_free(ptr);
-		gw_free(buf);
-
+		
 		ptr = prev;     /* rewind */
 	    }
 	    else
