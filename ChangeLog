@@ -1,3 +1,8 @@
+Mon Feb 21 15:20:39 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* README, doc/userguide/userguide.xml: Documented requirement
+	to use at least version 1.8.1 of libxml.
+
 2000-02-21 Aarno Syvänen <syvanen@wapit.com>
 
 	* test/fakewap.c: commented tid verification protocol used by the 
