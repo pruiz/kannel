@@ -100,10 +100,7 @@ static void udp_receiver(void *arg)
 
 	/* discard the message if the client is not allowed */
     	ip = udp_get_ip(cliaddr);
-	if (!is_allowed_ip(allow_ip ? octstr_get_cstr(allow_ip) : 0, 
-			   deny_ip ? octstr_get_cstr(deny_ip) : 0, 
-			   ip))
-	{
+	if (!is_allowed_ip(allow_ip, deny_ip, ip)) {
     	    warning(0, "UDP: Discarding packet from %s, IP is denied.",
 		       octstr_get_cstr(ip));
     	    octstr_destroy(datagram);

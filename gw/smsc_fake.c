@@ -239,9 +239,7 @@ static void fake_listener(void *arg)
 	    continue;
 	}
 	ip = host_ip(client_addr);
-	if (!is_allowed_ip(privdata->allow_ip ? octstr_get_cstr(privdata->allow_ip) : 0, 
-	    	    	   privdata->deny_ip ? octstr_get_cstr(privdata->deny_ip) : 0, 
-			   ip)) {
+	if (!is_allowed_ip(privdata->allow_ip, privdata->deny_ip, ip)) {
 	    info(0, "Fakesmsc connection tried from denied host <%s>,"
 		 " disconnected", octstr_get_cstr(ip));
 	    octstr_destroy(ip);

@@ -785,17 +785,8 @@ static URLTranslation *default_authorise_user(List *list, char *client_ip)
         Octstr *ip = octstr_create(client_ip);
 	Octstr *allow_ip = urltrans_allow_ip(t);
 	Octstr *deny_ip = urltrans_deny_ip(t);
-	char *p, *q;
 	
-    	if (allow_ip == NULL)
-	    p = NULL;
-	else
-	    p = octstr_get_cstr(allow_ip);
-    	if (deny_ip == NULL)
-	    q = NULL;
-	else
-	    q = octstr_get_cstr(deny_ip);
-        if (is_allowed_ip(p, q, ip) == 0) {
+        if (is_allowed_ip(allow_ip, deny_ip, ip) == 0) {
 	    warning(0, "Non-allowed connect tried by <%s> from <%s>, ignored",
 		    user ? octstr_get_cstr(user) : "default-user" ,
 		    client_ip);

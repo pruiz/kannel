@@ -80,7 +80,7 @@ int check_ip(char *accept_string, char *ip, char *match_buffer);
  *  in deny_ip)
  * return -1 on error ('ip' is NULL)
  */
-int is_allowed_ip(char *allow_ip, char *deny_ip, Octstr *ip);
+int is_allowed_ip(Octstr *allow_ip, Octstr *deny_ip, Octstr *ip);
 
 
 /*

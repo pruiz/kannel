@@ -220,7 +220,6 @@ static Boxc *accept_boxc(int fd)
 {
     Boxc *newconn;
     Octstr *ip;
-    char *allow, *deny;
 
     int newfd;
     struct sockaddr_in client_addr;
@@ -234,15 +233,7 @@ static Boxc *accept_boxc(int fd)
 
     ip = host_ip(client_addr);
 
-    if (box_allow_ip == NULL)
-    	allow = NULL;
-    else
-    	allow = octstr_get_cstr(box_allow_ip);
-    if (box_deny_ip == NULL)
-    	deny = NULL;
-    else
-    	deny = octstr_get_cstr(box_deny_ip);
-    if (is_allowed_ip(allow, deny, ip) == 0) {
+    if (is_allowed_ip(box_allow_ip, box_deny_ip, ip) == 0) {
 	info(0, "Box connection tried from denied host <%s>, disconnected",
 	     octstr_get_cstr(ip));
 	octstr_destroy(ip);

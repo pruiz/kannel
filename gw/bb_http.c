@@ -252,8 +252,7 @@ static void httpadmin_run(void *arg)
     	client = http_accept_request(&ip, &url, &headers, &body, &cgivars);
 	if (client == NULL)
 	    break;
-	if (is_allowed_ip(octstr_get_cstr(ha_allow_ip), 
-	    	    	  octstr_get_cstr(ha_deny_ip), ip) == 0) {
+	if (is_allowed_ip(ha_allow_ip, ha_deny_ip, ip) == 0) {
 	    info(0, "HTTP admin tried from denied host <%s>, disconnected",
 		 octstr_get_cstr(ip));
 	    http_close_client(client);

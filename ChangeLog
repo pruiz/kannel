@@ -1,5 +1,14 @@
 2001-01-30  Lars Wirzenius  <liw@iki.fi>
 
+	* gwlib/utils.[ch]: Made is_allowed_ip accept Octstr arguments
+	instead of char *. Dies, cstr, die.
+	
+	* gw/bb_boxc.c, gw/bb_http.c, gw/bb_udp.c, gw/smsbox.c,
+	gw/smsc_emi.c, gw/smsc_fake.c: Fixed the calls to is_allowed_ip
+	to follow new calling convention.
+
+2001-01-30  Lars Wirzenius  <liw@iki.fi>
+
 	* Makefile.in: Moved the wildcard patterns to the beginning, where
 	they are more visible. Should've done this when I first wrote them.
 	

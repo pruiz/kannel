@@ -706,16 +706,22 @@ static int get_data(SMSCenter *smsc, char *buff, int length)
         }
         if ((smsc->emi_backup_fd > 0) && FD_ISSET(smsc->emi_backup_fd, &rf)) {
             if (smsc->emi_secondary_fd == -1) {
-		Octstr *ip;
+		Octstr *ip, *allow;
 		
                 smsc->emi_secondary_fd = accept(smsc->emi_backup_fd,
 			  (struct sockaddr *)&client_addr, &client_addr_len);
 
 		ip = host_ip((struct sockaddr_in)client_addr);
-		if (is_allowed_ip(smsc->emi_backup_allow_ip, "*.*.*.*", ip)==0) {
-		    info(0, "SMSC secondary connection tried from  <%s>, disconnected",
-			 octstr_get_cstr(ip));
+		if (smsc->emi_backup_allow_ip == NULL)
+		    allow = NULL;
+		else
+		    allow = octstr_create(smsc->emi_backup_allow_ip);
+		if (is_allowed_ip(allow, octstr_imm("*.*.*.*"), ip) == 0) {
+		    info(0, "SMSC secondary connection tried from <%s>, "
+		    	    "disconnected",
+			    octstr_get_cstr(ip));
 		    octstr_destroy(ip);
+		    octstr_destroy(allow);
 		    close(smsc->emi_secondary_fd);
 		    smsc->emi_secondary_fd = -1;
 		    return 0;
@@ -723,6 +729,7 @@ static int get_data(SMSCenter *smsc, char *buff, int length)
                 info(0, "Secondary socket opened by SMSC from <%s>",
 		     octstr_get_cstr(ip));
 		octstr_destroy(ip);
+		octstr_destroy(allow);
             } else
                 info(0, "New connection request while old secondary is open!");
         }
