@@ -1,4 +1,5 @@
 2003-02-24  Stipe Tolj  <tolj@wapme-systems.de>
+    * doc/userguide/userguide.xml: entry about 'restart' command
     * gw/bearerbox.c, gw/bb_boxc.c, gw/bb_http.c: admin HTTP command 'restart' added
       to restart bearerbox. Patch by Alexander.
       [Msg-ID: <200302222202.55347.a.malysh@centrium.de>]
