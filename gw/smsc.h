@@ -86,6 +86,11 @@ int smsc_send_message(SMSCenter *smsc, RQueueItem *msg, RQueue *request_queue);
  */
 int smsc_get_message(SMSCenter *smsc, RQueueItem **new);
 
+/*
+ * this function is used to signal smsc by other thread that it must
+ * now die (as smsc may spend quite a time in sleeps...)
+ */
+void smsc_set_killed(SMSCenter *smsc, int kill_status);
 
 
 #endif

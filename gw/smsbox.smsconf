@@ -159,6 +159,12 @@ log-level = 0
 #	if set to other than '0', 'no data' messages are not sent to receiver
 #	in a case of empty reply from the service provider.
 #	
+# header = (string)
+#	if specified, this string is automatically added to each SMS send with
+#	this service. If message is split, it is added to each part
+#
+# footer = (string)
+#	as header, but not inserted into head but appended to end
 #
 # Sample services and user:
 #

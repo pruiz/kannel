@@ -198,7 +198,7 @@ static int do_split_send(Msg *msg, int maxmsgs, URLTranslation *trans)
 	maxmsgs > 0 && loc < total_len;
 	maxmsgs--) {
 
-	if (maxmsgs == 1 || total_len-loc < sms_max_length) {
+	if (maxmsgs == 1 || total_len-loc < sms_max_length-fl-hl) {
 	    slen = 0;
 	    suf = NULL;
 	    sc = NULL;
@@ -213,16 +213,24 @@ static int do_split_send(Msg *msg, int maxmsgs, URLTranslation *trans)
 
 	/* do not accept a bit too small fractions... */
 	if (size < sms_max_length/2)
-	    size = sms_max_length - slen;
+	    size = sms_max_length - slen -hl -fl;
 
 	if ((split = msg_duplicate(msg))==NULL)
 	    goto error;
 
 	
-	octstr_replace(split->smart_sms.msgdata, p+loc, size);
+	if (h != NULL) {	/* add header and message */
+	    octstr_replace(split->smart_sms.msgdata, h, hl);
+	    octstr_insert_data(split->smart_sms.msgdata, hl, p+loc, size);    
+	} else			/* just the message */
+	    octstr_replace(split->smart_sms.msgdata, p+loc, size);
+	
 	if (suf != NULL)
 	    octstr_insert_data(split->smart_sms.msgdata, size, suf, slen);
 	
+	if (f != NULL)	/* add footer */
+	    octstr_insert_data(split->smart_sms.msgdata, size+hl, f, fl);
+
 	if (do_sending(split) < 0)
 	    return -1;
 

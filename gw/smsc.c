@@ -52,6 +52,7 @@ SMSCenter *smscenter_construct(void) {
 	if (smsc == NULL)
 		goto error;
 
+	smsc->killed = 0;
 	smsc->type = SMSC_TYPE_DELETED;
 	smsc->dial_prefix = NULL;
 	smsc->route_prefix = NULL;
@@ -626,7 +627,7 @@ int smsc_close(SMSCenter *smsc) {
 int smsc_send_message(SMSCenter *smsc, RQueueItem *msg, RQueue *request_queue)
 {
     int ret;
-    int wait = 1;
+    int wait = 1, l;
     
     if (msg->msg_class == R_MSG_CLASS_WAP) {
 	error(0, "SMSC:WAP messages not yet supported, tough");
@@ -652,7 +653,11 @@ retry:
 	    }
 	    else if (ret == -1) {
 		error(0, "Reopen failed, retrying after %d minutes...", wait);
-		sleep(wait*60);	/* wait for a while */
+		for(l = 0; l < wait*60; l++) {
+		    if (smsc->killed)	/* only after failed re-open..*/
+			return -1;
+		    sleep(1);
+		}
 		wait = wait > 10 ? 10 : wait*2 + 1;
 		goto retry;
 	    }
@@ -681,7 +686,7 @@ int smsc_get_message(SMSCenter *smsc, RQueueItem **new)
 	RQueueItem *msg = NULL;
 	Msg *newmsg = NULL;
 	int ret;
-	int wait = 1;
+	int l, wait = 1;
    
 	*new = NULL;
     
@@ -702,7 +707,11 @@ int smsc_get_message(SMSCenter *smsc, RQueueItem **new)
 			    return -1;
 			else if (ret == -1) {
 			    error(0, "Reopen failed, retrying after %d minutes...", wait);
-			    sleep(wait*60);	/* wait for a while */
+			    for(l = 0; l < wait*60; l++) {
+				if (smsc->killed)	/* only after failed re-open..*/
+				    return -1;
+				sleep(1);
+			    }
 			    wait = wait > 10 ? 10 : wait*2 + 1;
 			    goto retry;
 			}
@@ -722,4 +731,10 @@ error:
 }
 
 
+void smsc_set_killed(SMSCenter *smsc, int kill_status)
+{
+    if (smsc == NULL)
+	return;
+    smsc->killed = kill_status;
+}
 

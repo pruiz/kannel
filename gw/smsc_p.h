@@ -55,6 +55,9 @@ struct SMSCenter {
 	/* For locking/unlocking. */
 	pthread_mutex_t mutex;
 
+        /* for dying */
+        sig_atomic_t killed;
+
 	/* General IO device */
 	int socket;
 

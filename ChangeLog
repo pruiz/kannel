@@ -1,12 +1,11 @@
 1999-11-24    <rpr@rpr.wapit.com>
 
-	* gw/smsc.c: delayed re-open calls
+	* gw/smsc.c: delayed re-open calls, with panic-option
 
 	* gw/bearerbox.c: added load of mutex lockings
 
 	* gw/smsbox_req.c, gw/urltrans.*: added 'footer' and 'header'
-	service configurations, implementation not ready for split
-	messages
+	service configurations
 
 	* utils/makedist: partial update
 

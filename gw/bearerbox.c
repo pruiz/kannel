@@ -1411,8 +1411,17 @@ static void check_threads(void)
 		del_bbt(thr);
 		del++;
 	    }
-	    else
+	    else {
 		num++;
+		/*
+		 * if we are driving into oblivion, we should set all
+		 * SMSCenters as killed, so they do not keep on retrying
+		 * doomed re-opens (or not perhaps doomed, but you got the
+		 * point, righto?)
+		 */
+		if (thr->type == BB_TTYPE_SMSC && bbox->abort_program > 0)
+		    smsc_set_killed(thr->smsc, 1);
+	    }
 	}
     }
     bbox->num_threads = num;
