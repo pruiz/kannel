@@ -1157,7 +1157,11 @@ void text_shrink_blank(Octstr *text)
     {
       if(isspace(octstr_get_char(text, i)))
 	{
-	  j = i + 1;
+	  /* Change the remaining space into single space. */
+	  if(octstr_get_char(text, i) != ' ')
+	    octstr_set_char(text, i, ' ');
+
+	  j = i = i + 1;
 	  while (isspace(octstr_get_char(text, j)))
 	    j ++;
 	  if (j - i > 1)
