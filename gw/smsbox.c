@@ -215,6 +215,7 @@ static Counter *num_outstanding_requests;
 struct receiver {
     Msg *msg;
     URLTranslation *trans;
+    int method;  /* the HTTP method to use */
     Octstr *url; /* the after pattern URL */
     List *http_headers; 
     Octstr *body; /* body content of the request */
@@ -222,8 +223,9 @@ struct receiver {
 };
 
 
-static void *remember_receiver(Msg *msg, URLTranslation *trans, Octstr *url, 
-                               List *headers, Octstr *body, unsigned int retries)
+static void *remember_receiver(Msg *msg, URLTranslation *trans, int method, 
+                               Octstr *url, List *headers, Octstr *body, 
+                               unsigned int retries)
 {
     struct receiver *receiver;
     
@@ -254,6 +256,7 @@ static void *remember_receiver(Msg *msg, URLTranslation *trans, Octstr *url,
     receiver->trans = trans;
 
     /* remember the HTTP request if we need to queue this */
+    receiver->method = method;
     receiver->url = octstr_duplicate(url);
     receiver->http_headers = http_header_duplicate(headers);
     receiver->body = octstr_duplicate(body);
@@ -263,14 +266,16 @@ static void *remember_receiver(Msg *msg, URLTranslation *trans, Octstr *url,
 }
 
 
-static void get_receiver(void *id, Msg **msg, URLTranslation **trans, Octstr **url,
-                         List **headers, Octstr **body, unsigned long *retries)
+static void get_receiver(void *id, Msg **msg, URLTranslation **trans, int *method,
+                         Octstr **url, List **headers, Octstr **body, 
+                         unsigned long *retries)
 {
     struct receiver *receiver;
     
     receiver = id;
     *msg = receiver->msg;
     *trans = receiver->trans;
+    *method = receiver->method;
     *url = receiver->url;
     *headers = receiver->http_headers;
     *body = receiver->body;
@@ -830,6 +835,7 @@ static void http_queue_thread(void *arg)
     List *req_headers;
     Octstr *req_body;
     unsigned long retries;
+    int method;
  
     while ((id = list_consume(smsbox_http_requests)) != NULL) {
         /* 
@@ -844,16 +850,17 @@ static void http_queue_thread(void *arg)
          * Get all required HTTP request data from the queue and reconstruct 
          * the id pointer for later lookup in url_result_thread.
          */
-        get_receiver(id, &msg, &trans, &req_url, &req_headers, &req_body, &retries);
+        get_receiver(id, &msg, &trans, &method, &req_url, &req_headers, &req_body, &retries);
         
         if (retries < max_http_retries) {
-            id = remember_receiver(msg, trans, req_url, req_headers, req_body, ++retries);
+            id = remember_receiver(msg, trans, method, req_url, req_headers, req_body, ++retries);
         
             debug("sms.http",0,"HTTP: Retrying request <%s> (%ld/%ld)",  
                   octstr_get_cstr(req_url), retries, max_http_retries);
 
             /* re-queue this request to the HTTPCaller list */
-            http_start_request(caller, req_url, req_headers, req_body, 1, id, NULL);
+            http_start_request(caller, method, req_url, req_headers, req_body, 
+                               1, id, NULL);
         }
     }
 }
@@ -863,7 +870,7 @@ static void url_result_thread(void *arg)
 {
     Octstr *final_url, *reply_body, *type, *charset, *replytext;
     List *reply_headers;
-    int status;
+    int status, method;
     void *id;
     Msg *msg;
     URLTranslation *trans;
@@ -901,7 +908,7 @@ static void url_result_thread(void *arg)
         if (id == NULL)
             break;
     	
-        get_receiver(id, &msg, &trans, &req_url, &req_headers, &req_body, &retries);
+        get_receiver(id, &msg, &trans, &method, &req_url, &req_headers, &req_body, &retries);
      
         from = to = udh = smsc = NULL;
         octets = mclass = mwi = coding = compress = pid = alt_dcs = rpi = 0;
@@ -959,7 +966,7 @@ static void url_result_thread(void *arg)
             octstr_destroy(type);
             octstr_destroy(charset);
         } else if (max_http_retries > 0) {
-            id = remember_receiver(msg, trans, req_url, req_headers, req_body, retries);
+            id = remember_receiver(msg, trans, method, req_url, req_headers, req_body, retries);
             list_produce(smsbox_http_requests, id);
             queued++;
             goto requeued;
@@ -1082,9 +1089,9 @@ static int obey_request(Octstr **result, URLTranslation *trans, Msg *msg)
 			    octstr_get_cstr(msg->sms.receiver));
 	}
 	
-	id = remember_receiver(msg, trans, pattern, request_headers, NULL, 0);
-	http_start_request(caller, pattern, request_headers, NULL, 1, id,
- 			   NULL);
+	id = remember_receiver(msg, trans, HTTP_METHOD_GET, pattern, request_headers, NULL, 0);
+	http_start_request(caller, HTTP_METHOD_GET, pattern, request_headers, 
+                       NULL, 1, id, NULL);
 	octstr_destroy(pattern);
 	http_destroy_headers(request_headers);
 	*result = NULL;
@@ -1200,9 +1207,9 @@ static int obey_request(Octstr **result, URLTranslation *trans, Msg *msg)
 	    	octstr_get_cstr(os));
 	    octstr_destroy(os);
 	}
-	id = remember_receiver(msg, trans, pattern, request_headers, msg->sms.msgdata, 0);
-	http_start_request(caller, pattern, request_headers, 
- 			   msg->sms.msgdata, 1, id, NULL);
+	id = remember_receiver(msg, trans, HTTP_METHOD_POST, pattern, request_headers, msg->sms.msgdata, 0);
+	http_start_request(caller, HTTP_METHOD_POST, pattern, request_headers, 
+ 			           msg->sms.msgdata, 1, id, NULL);
 	octstr_destroy(pattern);
 	http_destroy_headers(request_headers);
 	*result = NULL;
@@ -1345,9 +1352,9 @@ static int obey_request(Octstr **result, URLTranslation *trans, Msg *msg)
 	msg->sms.msgdata = xml;
 
 	debug("sms", 0, "XMLBuild: XML: <%s>", octstr_get_cstr(msg->sms.msgdata));
-	id = remember_receiver(msg, trans, pattern, request_headers, msg->sms.msgdata, 0);
-	http_start_request(caller, pattern, request_headers,
-			msg->sms.msgdata, 1, id, NULL);
+	id = remember_receiver(msg, trans, HTTP_METHOD_POST, pattern, request_headers, msg->sms.msgdata, 0);
+	http_start_request(caller, HTTP_METHOD_POST, pattern, request_headers,
+			           msg->sms.msgdata, 1, id, NULL);
 	octstr_destroy(pattern);
 	http_destroy_headers(request_headers);
 	*result = NULL;
