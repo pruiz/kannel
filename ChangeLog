@@ -1,4 +1,16 @@
 2003-03-19  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/smsc/smsc_smpp.c: added UDH support for MOs. Thanks to 
+      David White <David.White@one.at> for this patch.
+      [Msg-ID: <3E770BA2.5030701@i-one.at>]
+    * gw/smscconn[.c|_p.h]: moved smsc group config directive 'reconnect-delay'
+      into higher abstraction layer to provide this for all SMSC modules. 
+      Reconnect delay is defaulting to 10 sec.
+    * gw/smsc/smsc_[at2|emi2|smasi].c: changed reconnecting behaviour to use
+      value in the abstraction layer. Thanks to Angel for his patch here!
+    * gwlib/cfg.def: removed no more needed 'retry' smsc group directive. This
+      is now handled via the more abstracted 'reconnect-delay' value.
+
+2003-03-19  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/wml_compiler.c: fixed compiler warning.
 
 2003-03-18  Stipe Tolj  <tolj@wapme-systems.de>
