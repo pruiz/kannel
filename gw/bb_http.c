@@ -282,6 +282,8 @@ static void httpd_serve(HTTPClient *client, Octstr *ourl, List *headers,
     pos = octstr_search(url, octstr_imm("/cgi-bin/"), 0);
     if (pos != -1)
         octstr_delete(url, pos, 9);
+    else if (octstr_get_char(url, 0) == '/')
+        octstr_delete(url, 0, 1);
 
     /* look for type and kill it */
     pos = octstr_search_char(url, '.', 0);

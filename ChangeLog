@@ -1,3 +1,7 @@
+2003-10-27  Alexander Malysh  <a.malysh@centrium.de>
+    * gw/bb_http.c: small bug fix. Allow http admin commands w/o /cgi-bin/ prefix
+      (e.g. /status).
+
 2003-10-26  Alexander Malysh  <a.malysh@centrium.de>
     * gw/bearerbox.c: applied patch that should fix bearerbox signal handling.
       Otherwise is a deadlock possible while signal arrived. For more details see
