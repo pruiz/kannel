@@ -7,22 +7,56 @@ or bugs@kannel.org (the bug tracking system).
 
 Changes since version 0.11:
 
-* X-WAP-Gateway header now uses a slash to separate "kannel" from
+Compatibility breakers:
+
+  * X-WAP-Gateway header now uses a slash to separate "kannel" from
   the version number, rather than a space.  This makes it consistent
   with the HTTP definition of a "product token".
 
-* No longer supports libxml 1.8.6 or older.
+  * No longer supports libxml 1.8.6 or older.
 
-* Debugging feature: SIGQUIT is caught to report memory usage.
+  * wdp-interface-name is now actually used, so that the WAP port listens
+  to only one interface.
 
-* WML compiler uses string table more efficiently, to produce smaller
+New features:
+
+  * Working WTP timers.
+
+  * Access logging.
+
+  * Support for assigning names to SMSC configurations, and use of those
+  names in access logs and sendsms interface.
+
+  * X-WAP-Client-SDU-Size header in HTTP requests.
+
+  * Debugging: SIGQUIT is caught to report memory usage.
+
+  * WML compiler uses string table more efficiently, to produce smaller
   compiled pages.
 
-* Bugfix: WML compiler also accepts 'e', 'u', and 'n' as aliases for "noesc",
+  * Better handling of clients that try to use unsupported WSP extensions.
+
+  * Wapboxes now report load average to the bearer box.
+
+  * Better Solaris support.
+
+Bugfixes:
+
+  * WML compiler also accepts 'e', 'u', and 'n' as aliases for "noesc",
   "unesc", and "escape".
 
-* Better Solaris support.
+  * More reliable signal handling.
 
-* Various bugs and memory leaks fixed.
+  * Various bugs and memory leaks fixed.
+
+Development news:
+
+  * Adopted official formatting style for Kannel code.
+
+  * Added "immutable octet strings", a way to use Octstr functions
+  with C string literals.
+
+  * Added octstr_format, which will simplify use of Octstrs in
+  many places.
 
 See ChangeLog for detailed information.
