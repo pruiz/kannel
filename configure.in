@@ -184,20 +184,24 @@ AC_CHECK_PROG(FIG2DEV, fig2dev, fig2dev, :)
 AC_CHECK_PROG(CONVERT, convert, convert, :)
 AC_CHECK_PROG(PS2PDF, ps2pdf, ps2pdf, :)
 AC_SUBST(HTML_DSL)
-for file in /usr/lib/sgml/stylesheet/dsssl/docbook/nwalsh/html/docbook.dsl \
-	/usr/lib/sgml/stylesheets/nwalsh-modular/html/docbook.dsl \
-	/usr/share/sgml/docbook/dsssl-stylesheets-1.59/html/docbook.dsl \
-	/usr/share/sgml/docbook/dsssl-stylesheets/html/docbook.dsl
-do
+for loc in /usr /usr/local; do
+  for file in ${loc}/lib/sgml/stylesheet/dsssl/docbook/nwalsh/html/docbook.dsl \
+	${loc}/lib/sgml/stylesheets/nwalsh-modular/html/docbook.dsl \
+	${loc}/share/sgml/docbook/dsssl-stylesheets-1.59/html/docbook.dsl \
+	${loc}/share/sgml/docbook/dsssl-stylesheets/html/docbook.dsl
+  do
 	AC_CHECK_FILE($file,HTML_DSL=$file)
+  done
 done
 AC_SUBST(TEX_DSL)
-for file in /usr/lib/sgml/stylesheet/dsssl/docbook/nwalsh/print/docbook.dsl \
-	/usr/lib/sgml/stylesheets/nwalsh-modular/print/docbook.dsl \
-	/usr/share/sgml/docbook/dsssl-stylesheets-1.59/print/docbook.dsl \
-	/usr/share/sgml/docbook/dsssl-stylesheets/print/docbook.dsl
-do
+for loc in /usr /usr/local; do
+  for file in ${loc}/lib/sgml/stylesheet/dsssl/docbook/nwalsh/print/docbook.dsl \
+	${loc}/lib/sgml/stylesheets/nwalsh-modular/print/docbook.dsl \
+	${loc}/share/sgml/docbook/dsssl-stylesheets-1.59/print/docbook.dsl \
+	${loc}/share/sgml/docbook/dsssl-stylesheets/print/docbook.dsl
+  do
 	AC_CHECK_FILE($file,TEX_DSL=$file)
+  done
 done
 
 
