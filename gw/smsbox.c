@@ -2679,7 +2679,7 @@ static void setup_signal_handlers(void) {
 
 
 
-static void init_smsbox(Cfg *cfg)
+static Cfg *init_smsbox(Cfg *cfg)
 {
     CfgGroup *grp;
     Octstr *logfile;
@@ -2839,6 +2839,8 @@ static void init_smsbox(Cfg *cfg)
     octstr_destroy(http_proxy_username);
     octstr_destroy(http_proxy_password);
     list_destroy(http_proxy_exceptions, octstr_destroy_item);
+
+    return cfg;
 }
 
 
@@ -2855,7 +2857,7 @@ static int check_args(int i, int argc, char **argv) {
 int main(int argc, char **argv)
 {
     int cf_index;
-    Octstr *cfg_name;
+    Octstr *filename;
     double heartbeat_freq = DEFAULT_HEARTBEAT;
 
     gwlib_init();
@@ -2864,14 +2866,15 @@ int main(int argc, char **argv)
     setup_signal_handlers();
     
     if (argv[cf_index] == NULL)
-	cfg_name = octstr_create("kannel.conf");
+	filename = octstr_create("kannel.conf");
     else
-	cfg_name = octstr_create(argv[cf_index]);
-    cfg = cfg_create(cfg_name);
-    octstr_destroy(cfg_name);
+	filename = octstr_create(argv[cf_index]);
+    cfg = cfg_create(filename);
 
     if (cfg_read(cfg) == -1)
-	panic(0, "Error reading configuration file, cannot start.");
+	panic(0, "Couldn't read configuration from `%s'.", octstr_get_cstr(filename));
+
+    octstr_destroy(filename);
 
     report_versions("smsbox");
 

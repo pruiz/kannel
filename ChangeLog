@@ -1,3 +1,8 @@
+2002-07-08 Harrie Hazewinkel <harrie@mod-snmp.com>
+    * Making the init phase and the initialization of the smsbox, wapbox
+      and bearerbox equal in approach.
+      All three had the same thing done differently.
+
 2002-07-08  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/smsc_smpp.c: fixing an obvious bug and compiler warning due to 
       typo in smsc_smpp_create().

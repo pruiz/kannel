@@ -281,7 +281,7 @@ static int check_args(int i, int argc, char **argv) {
 } 
 
 
-static int starter(Cfg *cfg)
+static Cfg *init_bearerbox(Cfg *cfg)
 {
     CfgGroup *grp;
     Octstr *log, *val;
@@ -302,9 +302,6 @@ static int starter(Cfg *cfg)
 	log_open(octstr_get_cstr(log), loglevel);
 	octstr_destroy(log);
     }
-
-    info(0, "----------------------------------------");
-    info(0, GW_NAME " bearerbox II version %s starting", VERSION);
 
     if (check_config(cfg) == -1)
 	panic(0, "Cannot start with corrupted configuration");
@@ -391,7 +388,7 @@ static int starter(Cfg *cfg)
 	start_wap(cfg);
 #endif
     
-    return 0;
+    return cfg;
 }
 
 
@@ -463,13 +460,15 @@ int main(int argc, char **argv)
     cf_index = get_and_set_debugs(argc, argv, check_args);
 
     if (argv[cf_index] == NULL)
-    	filename = octstr_create("kannel.conf");
+        filename = octstr_create("kannel.conf");
     else
-    	filename = octstr_create(argv[cf_index]);
-    cfg = cfg_create(filename);
-    octstr_destroy(filename);
+        filename = octstr_create(argv[cf_index]);
+    cfg = cfg_create(filename); 
+    
     if (cfg_read(cfg) == -1)
-        panic(0, "No configuration or bad configuration, aborting.");
+        panic(0, "Couldn't read configuration from `%s'.", octstr_get_cstr(filename));
+    
+    octstr_destroy(filename);
 
     dlr_init(cfg);
     
@@ -477,7 +476,11 @@ int main(int argc, char **argv)
 
     flow_threads = list_create();
     
-    starter(cfg);
+    init_bearerbox(cfg);
+
+    info(0, "----------------------------------------");
+    info(0, GW_NAME " bearerbox II version %s starting", VERSION);
+
 
     gwthread_sleep(5.0); /* give time to threads to register themselves */
 

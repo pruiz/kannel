@@ -49,12 +49,11 @@ RSA* private_key = NULL;
 X509* x509_cert = NULL;
 #endif
 
-static Cfg *read_config(Octstr *filename) 
+static Cfg *init_wapbox(Cfg *cfg)
 {
     CfgGroup *grp;
     Octstr *s;
     long i;
-    Cfg *cfg;
     Octstr *logfile;
     long logfilelevel;
     Octstr *http_proxy_host;
@@ -64,10 +63,6 @@ static Cfg *read_config(Octstr *filename)
     Octstr *http_proxy_password;
     long map_url_max;
 
-    cfg = cfg_create(filename);
-    if (cfg_read(cfg) == -1)
-        panic(0, "Couldn't read configuration from `%s'.", 
-              octstr_get_cstr(filename));
     cfg_dump(cfg);
     
     /*
@@ -413,17 +408,23 @@ int main(int argc, char **argv)
     gwlib_init();
     cf_index = get_and_set_debugs(argc, argv, NULL);
     
-    if (argc > cf_index)
-	filename = octstr_create(argv[cf_index]);
+    setup_signal_handlers();
+    
+    if (argv[cf_index] == NULL)
+        filename = octstr_create("kannel.conf");
     else
-	filename = octstr_create("kannel.conf");
-    cfg = read_config(filename);
+        filename = octstr_create(argv[cf_index]);
+    cfg = cfg_create(filename);
+
+    if (cfg_read(cfg) == -1)
+        panic(0, "Couldn't read configuration from `%s'.", octstr_get_cstr(filename));
+
     octstr_destroy(filename);
     
     report_versions("wapbox");
 
-    setup_signal_handlers();
-    
+    cfg = init_wapbox(cfg);
+
     info(0, "------------------------------------------------------------");
     info(0, GW_NAME " wapbox version %s starting up.", VERSION);
     
