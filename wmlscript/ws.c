@@ -132,7 +132,7 @@ static int sort_functions_cmp(const void *a, const void *b);
 
 /********************* Global functions *********************************/
 
-WsCompilerPtr ws_create(const WsCompilerParams *params)
+WsCompilerPtr ws_create(WsCompilerParams *params)
 {
     WsCompilerPtr compiler = ws_calloc(1, sizeof(*compiler));
 

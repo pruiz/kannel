@@ -1,3 +1,7 @@
+2004-08-17  Stipe Tolj  <stolj@wapme.de>
+    * gw/shared.c: fix compiler warning for tcc.
+    * wmlscript/ws.[ch]: fix const compiler warning for tcc.
+
 2004-08-16 Andreas Fink <afink@global.networks.ch>
 	* gwlib/semaphore.c: dont use native semaphores on MacOS X
 	  to avoid a "not implemented" error

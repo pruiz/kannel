@@ -191,7 +191,7 @@ typedef struct WsCompilerRec *WsCompilerPtr;
    takes a copy of the value of the `params' argument.  You can free
    it after this call.  The function returns NULL if the operation
    fails (out of memory). */
-WsCompilerPtr ws_create(const WsCompilerParams *params);
+WsCompilerPtr ws_create(WsCompilerParams *params);
 
 /* Destroy the WMLScript compiler `compiler' and free all resources it
    has allocated. */

@@ -122,7 +122,7 @@ Octstr *version_report_string(const char *boxname)
              (__DATE__ " " __TIME__) ,
              __VERSION__,
 #else 
-             "unknown" , "unknown"
+             "unknown" , "unknown",
 #endif 
 			 u.sysname, u.release, u.version, u.machine,
 			 octstr_get_cstr(get_official_name()),
