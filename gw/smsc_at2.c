@@ -1351,7 +1351,8 @@ void at2_send_one_message(PrivAT2data *privdata, Msg *msg)
 	    sprintf(command, "%s%s", sc, pdu);
 	    at2_write(privdata,command);
 	    at2_write_ctrlz(privdata);
-	    ret = at2_wait_modem_command(privdata, 10, 0);
+        /* wait 20 secs for modem command */
+	    ret = at2_wait_modem_command(privdata, 20, 0);
 	    debug("bb.at", 0, "send command status: %d", ret);
 	    if(ret != 0) /* OK only */
 	    	continue;
@@ -1360,7 +1361,11 @@ void at2_send_one_message(PrivAT2data *privdata, Msg *msg)
 	}
 	if(ret != 0)
 	{
-	    counter_increase(privdata->conn->failed);
+		/* 
+         * no need to do counter_increase(privdata->conn->failed) here, 
+         * since bb_smscconn_send_failed() will inc the counter on 
+         * SMSCCONN_FAILED_MALFORMED
+         */
 	    bb_smscconn_send_failed(privdata->conn,msg,SMSCCONN_FAILED_MALFORMED);
 	}
     }
@@ -1497,17 +1502,19 @@ int at2_pdu_encode(Msg *msg, unsigned char *pdu, PrivAT2data *privdata)
     pdu[pos] = at2_numtext(setvalidity & 15);
     pos++;
 
-    /* user data length - include length of UDH if it exists*/
-    len = octstr_len(msg->sms.msgdata);
+    /* user data length - include length of UDH if it exists */
+	len = sms_msgdata_len(msg);
 
     if(octstr_len(msg->sms.udhdata)) {
         if (msg->sms.coding == DC_8BIT || msg->sms.coding == DC_UCS2) {
             len += octstr_len(msg->sms.udhdata);
         } else {
-            /* The reason we branch here is because UDH data length is determined
-               in septets if we are in GSM coding, otherwise it's in octets. Adding 6
-               will ensure that for an octet length of 0, we get septet length 0,
-               and for octet length 1 we get septet length 2.*/
+            /*
+             * The reason we branch here is because UDH data length is determined
+             * in septets if we are in GSM coding, otherwise it's in octets. Adding 6
+             * will ensure that for an octet length of 0, we get septet length 0,
+             * and for octet length 1 we get septet length 2. 
+             */
             len += (((8*octstr_len(msg->sms.udhdata)) + 6)/7);        
     }
     }
