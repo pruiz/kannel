@@ -1,4 +1,10 @@
 2002-01-15  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/smsbox.c: fixed a bug regarding MWI messages reported by
+      Bernino Lind <lind@catpipe.net> 
+      [Msg-ID: <OPEOKAFGKKMPLPGLEINCAEKICFAA.lind@catpipe.net>]
+      caused by the commit to revision 1.162.
+      
+2002-01-15  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/smsc_cgw.c: added interface implementation to Sonera 
       ContentGateway. Contributed by Anders Lindh <alindh@flyerone.com>.
       [Msg-ID: <000a01c19931$f126e5b0$8078a8c0@alindh>]
