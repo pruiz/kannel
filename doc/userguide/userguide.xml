@@ -1755,9 +1755,10 @@ smsc-password = bar
    <row><entry><literal>receive-port</literal></entry>
      <entry><literal>port-number</literal></entry>
      <entry valign=bottom>
-        The port number we have to listen to and to which the SMS center
-        connects when it has messages to send. TCP/IP
-        connection only.
+        Optional port number we listen to and to which the SMS center
+        connects when it has messages to send. Required if SMS center
+	needs one connection to send and other to receive.
+	TCP/IP connection only.
      </entry></row>
 
    <row><entry><literal>connect-allow-ip</literal></entry>

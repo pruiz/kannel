@@ -336,7 +336,7 @@ static struct emimsg *msg_to_emimsg(Msg *msg, int trn)
 	    octstr_append_char(str, 4);
 	    octstr_append_char(str, 1);
 	    octstr_append_char(str, 2);
-	    octstr_append_char(str, mwi & 0x03 | (octstr_len(msg->sms.msgdata) == 0 ? 0x00 : 0x80));
+	    octstr_append_char(str, (msg->sms.flag_mwi - 1) & 0x03 | (octstr_len(msg->sms.msgdata) == 0 ? 0x00 : 0x80));
 	    octstr_append_char(str, msg->sms.mwimessages);
 	    msg->sms.udhdata = octstr_create("");
 	    octstr_append(msg->sms.udhdata, str);
@@ -750,7 +750,8 @@ static void emi2_sender(void *arg)
     while (!privdata->shutdown) {
 	if ((server = open_send_connection(conn)) == NULL) {
 	    privdata->shutdown = 1;
-	    gwthread_wakeup(privdata->receiver_thread);
+	    if (privdata->rport > 0)
+		gwthread_wakeup(privdata->receiver_thread);
 	    break;
 	}
 	emi2_send_loop(conn, server);
@@ -760,7 +761,8 @@ static void emi2_sender(void *arg)
 
     while((msg = list_extract_first(privdata->outgoing_queue)) != NULL)
 	bb_smscconn_send_failed(conn, msg, SMSCCONN_FAILED_SHUTDOWN);
-    gwthread_join(privdata->receiver_thread);
+    if (privdata->rport > 0)
+	gwthread_join(privdata->receiver_thread);
     mutex_lock(conn->flow_mutex);
 
     conn->status = SMSCCONN_DEAD;
@@ -935,7 +937,8 @@ static int shutdown_cb(SMSCConn *conn, int finish_sending)
 	}
     }
 
-    gwthread_wakeup(privdata->receiver_thread);
+    if (privdata->rport > 0)
+	gwthread_wakeup(privdata->receiver_thread);
     return 0;
 }
 
@@ -945,7 +948,8 @@ static void start_cb(SMSCConn *conn)
     PrivData *privdata = conn->data;
 
     /* in case there are messages in the buffer already */
-    gwthread_wakeup(privdata->receiver_thread);
+    if (privdata->rport > 0)
+	gwthread_wakeup(privdata->receiver_thread);
     debug("smsc.emi2", 0, "smsc_emi2: start called");
 }
 
@@ -997,11 +1001,11 @@ int smsc_emi2_create(SMSCConn *conn, CfgGroup *cfg)
     else
 	privdata->keepalive = keepalive;
 
-    if (privdata->port == 0) {
+    if (privdata->port <= 0 || privdata->port > 65535) {
 	error(0, "'port' missing/invalid in emi2 configuration.");
 	goto error;
     }
-    if (privdata->rport == 0) {
+    if (privdata->rport < 0 || privdata->rport > 65535) {
 	error(0, "'receive-port' missing/invalid in emi2 configuration.");
 	goto error;
     }
@@ -1014,7 +1018,7 @@ int smsc_emi2_create(SMSCConn *conn, CfgGroup *cfg)
     privdata->deny_ip = deny_ip;
     privdata->host = host;
 
-    if (emi2_open_listening_socket(privdata) < 0) {
+    if (privdata->rport > 0 && emi2_open_listening_socket(privdata) < 0) {
 	gw_free(privdata);
 	privdata = NULL;
 	goto error;
@@ -1033,14 +1037,16 @@ int smsc_emi2_create(SMSCConn *conn, CfgGroup *cfg)
     conn->status = SMSCCONN_CONNECTING;
     conn->connect_time = time(NULL);
 
-    if ( (privdata->receiver_thread =
+    if ( privdata->rport > 0 && (privdata->receiver_thread =
 	  gwthread_create(emi2_listener, conn)) == -1)
 	  goto error;
 
     if ((privdata->sender_thread = gwthread_create(emi2_sender, conn)) == -1) {
 	privdata->shutdown = 1;
-	gwthread_wakeup(privdata->receiver_thread);
-	gwthread_join(privdata->receiver_thread);
+	if (privdata->rport > 0) {
+	    gwthread_wakeup(privdata->receiver_thread);
+	    gwthread_join(privdata->receiver_thread);
+	}
 	goto error;
     }
 

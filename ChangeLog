@@ -1,3 +1,7 @@
+2001-07-22 Bruno Rodrigues <bruno.rodrigues@litux.org>
+
+	* smsc_emi2.c, userguide.xml: receive-port now is optional
+
 2001-07-19 Bruno Rodrigues <bruno.rodrigues@litux.org>
 
 	* userguide.xml: removed some extra characters.
