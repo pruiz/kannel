@@ -34,7 +34,7 @@ if test "x$VERSION" = "xcvs"; then
     "Nov") month="11" ;;
     "Dec") month="12" ;;
   esac
-  year=`echo $cvs_date | cut -c20-23`
+  year=`echo $cvs_date | cut -c21-24`
   cvs_date="$year$month$day"
   AC_MSG_RESULT([$cvs_date])
   VERSION="$VERSION-$cvs_date"
