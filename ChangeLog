@@ -1,4 +1,11 @@
 2004-04-18  Alexander Malysh  <a.malysh@centrium.de> 
+    * README: adds docbook entries for Gentoo and Mandrake.
+    * doc/userguide/userguide.xml: replaces `README.docbook'
+      with `README'.
+      Thanks to Guillaume Cottenceau <guillaume.cottenceau@mnc.ch>.
+      [Msg-Id: <84brluwris.fsf@frozen.mnc.ch>].
+
+2004-04-18  Alexander Malysh  <a.malysh@centrium.de> 
     * gw/smsbox.c: applied patch enhances the log and output messages
       when gw/smsbox.c encounters a message without a recipient field.
       Thanks to Guillaume Cottenceau <guillaume.cottenceau@mnc.ch>.

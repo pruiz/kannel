@@ -416,10 +416,10 @@
 		want to compile Kannel).</para></listitem>
 
 	<listitem><para>DocBook processing tools: DocBook stylesheets,
-		jade, jadetex, etc; see <filename>README.docbook</filename> for
-		more information (pre-formatted versions of the documentation
-		are available, and you can compile Kannel itself even without
-		the documentation tools).</para></listitem>
+		jade, jadetex, etc; see <filename>README</filename>, section
+                `Documentation', for more information (pre-formatted versions
+                of the documentation are available, and you can compile Kannel
+                itself even without the documentation tools).</para></listitem>
 	
 	<listitem><para>GNU autoconf, if you want to modify the
 		configuration script.</para></listitem>

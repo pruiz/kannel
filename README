@@ -65,6 +65,14 @@ Documentation
 
     	See http://www.rpmfind.net to find the packages.
 
+        On a Gentoo system, the following should do:
+
+	    emerge transfig jadetex docbook-dsssl-stylesheets
+
+        On a Mandrakelinux system, the following should do:
+
+	    urpmi transfig jadetex docbook-style-dsssl
+
 	Then apply this change to /usr/share/texmf/web2c/texmf.cnf:
 	
 		hash_extra.jadetex = 15000
