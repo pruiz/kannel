@@ -1,3 +1,7 @@
+2000-11-22  Richard Braakman  <dark@wapi.com>
+
+	* gw/smsc.c, gw/smsc_cimd.c: Reformatted.
+
 2000-11-22  Lars Wirzenius  <liw@iki.fi>
 
 	* test/drive_wapbox.c: Killed a memory leak by destroying a
