@@ -1,3 +1,11 @@
+1999-12-21    <rpr@rpr.wapit.com>
+
+	* gw/smsbox_req.c: fixed default username printing problem. Still
+	waiting for Mikael to fix that split_send, it is not working
+	properly right now.
+
+	* gw/bearerbox.c: little modifications to debug output
+
 Tue Dec 21 15:17:32 1999  Lars Wirzenius  <liw@wapit.com>
 
 	* README.docbook: Wrote. Includes instructions for getting Docbook

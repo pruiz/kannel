@@ -660,10 +660,10 @@ char *smsbox_req_sendsms(CGIArg *list)
 {
 	Msg *msg = NULL;
 	URLTranslation *t = NULL;
-	char *user, *val, *from, *to, *text;
+	char *user = NULL, *val, *from, *to, *text;
 	char *udh = NULL;
 	int ret;
-    
+
 	if (cgiarg_get(list, "username", &user) == -1)
 		t = urltrans_find_username(translations, "default");
 	else 

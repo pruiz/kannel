@@ -487,9 +487,6 @@ static int normalize_number(char *dial_prefixes, Octstr **number)
 
     t = official = dial_prefixes;
 
-    debug(0, "Normalizing <%s> with <%s>",octstr_get_cstr(*number),
-	  dial_prefixes);
-    
     while(1) {
 
 	for(p = octstr_get_cstr(*number), start = t, len = 0; ; t++, p++, len++) {
@@ -1766,8 +1763,6 @@ static void init_bb(Config *cfg)
     if (logfile != NULL)
 	open_logfile(logfile, lvl);
 
-    warning(0, "Gateway bearer box version %s starting", VERSION);
-
     if (bbox->allow_ip != NULL && bbox->deny_ip == NULL)
 	warning(0, "Allow IP-string set without any IPs denied!");
     
@@ -1976,6 +1971,8 @@ int main(int argc, char **argv)
     Config *cfg;
         
     start_time = time(NULL);
+    warning(0, "Gateway bearer box version %s starting", VERSION);
+
     cf_index = get_and_set_debugs(argc, argv, NULL);
 
     setup_signal_handlers();
