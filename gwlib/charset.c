@@ -8,6 +8,12 @@
 
 #include "gwlib/gwlib.h"
 
+#if HAVE_ICONV_H
+#include <errno.h>
+#include <iconv.h>
+#endif
+
+
 /* Map GSM default alphabet characters to ISO-Latin-1 characters.
  * The greek characters at positions 16 and 18 through 26 are not
  * mappable.  They are mapped to '?' characters.
@@ -458,3 +464,55 @@ int charset_from_utf8(Octstr *utf8, Octstr **to, Octstr *charset_to)
 
     return ret;
 }
+
+
+int charset_convert(Octstr *string, char *charset_from, char *charset_to)
+{
+#if HAVE_ICONV_H
+    char *from_buf, *to_buf, *pointer;
+    size_t inbytes, outbytes;
+    int ret;
+    iconv_t cd;
+     
+    if (!charset_from || !charset_to || !string) /* sanity check */
+        return -1;
+         
+    cd = iconv_open(charset_to, charset_from);
+    /* Did I succeed in getting a conversion descriptor ? */
+    if (cd == (iconv_t)(-1)) {
+        /* I guess not */
+        error(0,"Failed to convert string from <%s> to <%s> - probably broken type names.", 
+              charset_from, charset_to);
+        return -1; 
+    }
+    from_buf = octstr_get_cstr(string);
+    /* allocate max sized buffer, assuming target encoding may be 4 byte unicode */
+    inbytes = octstr_len(string);
+    outbytes = sizeof(char) *octstr_len(string) * 4;
+    pointer = to_buf = gw_malloc(outbytes + 1);
+    memset(to_buf, 0, outbytes + 1);
+    ret = iconv(cd, (const char**)&from_buf, &inbytes, &pointer, &outbytes);
+    iconv_close(cd);
+    if (ret != -1) {
+        /* conversion succeeded */
+        octstr_delete(string, 0, octstr_len(string));
+        octstr_append_cstr(string, to_buf);
+    if (ret)
+        debug("charset", 0, "charset_convert did %d non-reversible conversions", ret);
+        ret = 0;
+    } else {
+        error(0,"Failed to convert string from <%s> to <%s>, errno was <%d>",
+              charset_from, charset_to, errno);
+    }
+
+    if (errno == EILSEQ) {
+        debug("charset_convert", 0, "Found an invalid multibyte sequence at position <%d>",
+              from_buf - octstr_get_cstr(string));     
+    }
+    gw_free(to_buf);
+    return ret;
+#endif
+    return 0;
+}
+
+

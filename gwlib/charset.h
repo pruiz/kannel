@@ -79,4 +79,10 @@ int charset_to_utf8(Octstr *from, Octstr **to, Octstr *charset_from);
  */
 int charset_from_utf8(Octstr *utf8, Octstr **to, Octstr *charset_to);
 
+/* 
+ * Use iconv library to convert an Octstr in place, from source character 
+ * set to destination character set
+ */
+int charset_convert(Octstr *string, char *charset_from, char *charset_to);
+
 #endif
