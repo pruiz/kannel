@@ -830,7 +830,8 @@ static void handle_pdu(SMPP *smpp, Connection *conn, SMPP_PDU *pdu,
                             octstr_get_cstr(msg->sms.receiver), 
                             octstr_get_cstr(msg->sms.service), 
                             octstr_get_cstr(msg->sms.dlr_url), 
-                            msg->sms.dlr_mask); 
+                            msg->sms.dlr_mask, 
+                            octstr_get_cstr(msg->sms.boxc_id)); 
   
                 /* gen DLR_SMSC_SUCCESS */ 
                 if (msg->sms.dlr_mask & DLR_SMSC_SUCCESS) { 

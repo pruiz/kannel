@@ -41,6 +41,11 @@ static volatile sig_atomic_t wapbox_running;
 static List	*wapbox_list = NULL;
 static List	*smsbox_list = NULL;
 
+/* dictionaries for holding the smsbox routing information */
+static Dict *smsbox_by_id = NULL; 
+static Dict *smsbox_by_smsc = NULL; 
+static Dict *smsbox_by_receiver = NULL; 
+
 static long	smsbox_port;
 static int smsbox_port_ssl = 0;
 static long	wapbox_port;
@@ -65,6 +70,7 @@ typedef struct _boxc {
     List      	*retry;   	/* If sending fails */
     List       	*outgoing;
     volatile sig_atomic_t alive;
+    Octstr *boxc_id; /* identifies the connected smsbox instance */
 } Boxc;
 
 
@@ -121,63 +127,90 @@ static void boxc_receiver(void *arg)
     Msg *msg;
 
     /* remove messages from socket until it is closed */
-    while(bb_status != BB_DEAD && conn->alive) {
+    while (bb_status != BB_DEAD && conn->alive) {
 
-	      list_consume(suspended);	/* block here if suspended */
+        list_consume(suspended);	/* block here if suspended */
 
-	      msg = read_from_box(conn);
+        msg = read_from_box(conn);
 
-	      if (msg == NULL) {	/* garbage/connection lost */
-	          conn->alive = 0;
-	          break;
-	      }
+        if (msg == NULL) {	/* garbage/connection lost */
+            conn->alive = 0;
+            break;
+        }
 
-	      if (msg_type(msg) == sms && conn->is_wap == 0)
-	      {
-	          debug("bb.boxc", 0, "boxc_receiver: sms received");
+        if (msg_type(msg) == sms && conn->is_wap == 0) {
+            debug("bb.boxc", 0, "boxc_receiver: sms received");
 
-	    /* XXXX save modifies ID, so if the smsbox uses it, save
-	     *    it FIRST for the reply message!!! */
-	          store_save(msg);
-	          if (smsc2_rout(msg)== -1) {
-		          warning(0, "Message rejected by bearerbox, no router!");
-		          /* send NACK */
-	              bb_smscconn_send_failed(NULL, msg, SMSCCONN_FAILED_DISCARDED);
-	          }
-	          if (msg->sms.sms_type == mt_push) {
-		/* XXX generate ack-message and send it - in fact, this
-		 *  should include information did it succeed, wa sit queued
-		 *  or rejected... */
-	          }
-	     } else if (msg_type(msg) == wdp_datagram  && conn->is_wap) {
-	          debug("bb.boxc", 0, "boxc_receiver: got wdp from wapbox");
+            /* 
+             * XXX save modifies ID, so if the smsbox uses it, save
+             * it FIRST for the reply message!!! 
+             */
+            store_save(msg);
+            if (smsc2_rout(msg)== -1) {
+                warning(0, "Message rejected by bearerbox, no router!");
+                /* send NACK */
+                bb_smscconn_send_failed(NULL, msg, SMSCCONN_FAILED_DISCARDED);
+            }
+            if (msg->sms.sms_type == mt_push) {
+                /* 
+                 * XXX generate ack-message and send it - in fact, this
+                 * should include information did it succeed, wa sit queued
+                 * or rejected... 
+                 */
+            }
+
+        } else if (msg_type(msg) == wdp_datagram  && conn->is_wap) {
+            debug("bb.boxc", 0, "boxc_receiver: got wdp from wapbox");
             
-	          list_produce(conn->outgoing, msg);
-	     } else if (msg_type(msg) == sms  && conn->is_wap) {
-              debug("bb.boxc", 0, "boxc_receiver: got sms from wapbox");
+            list_produce(conn->outgoing, msg);
 
-              store_save(msg);
-              if (smsc2_rout(msg)== -1) {
-		          warning(0, "Message rejected by bearerbox, no router!");
-		          msg_destroy(msg);
-              }
+        } else if (msg_type(msg) == sms  && conn->is_wap) {
+            debug("bb.boxc", 0, "boxc_receiver: got sms from wapbox");
+
+            store_save(msg);
+            if (smsc2_rout(msg)== -1) {
+                warning(0, "Message rejected by bearerbox, no router!");
+                msg_destroy(msg);
+            }
+
         /* Generate ack here. SM from wapbox is certainly mt push.*/
-         } else {
-	          if (msg_type(msg) == heartbeat) {
-		          if (msg->heartbeat.load != conn->load)
+        } else {
+            if (msg_type(msg) == heartbeat) {
+                if (msg->heartbeat.load != conn->load)
 		              debug("bb.boxc", 0, "boxc_receiver: heartbeat with "
 			                "load value %ld received", msg->heartbeat.load);
-		              conn->load = msg->heartbeat.load;
-	          }
-	     else if (msg_type(msg) == ack) {
-		      store_save(msg);
-		      debug("bb.boxc", 0, "boxc_receiver: got ack");
-	     }
-	     else
-		      warning(0, "boxc_receiver: unknown msg received from <%s>, "
-		    	"ignored", octstr_get_cstr(conn->client_ip));
-	          msg_destroy(msg);
-	    }
+                conn->load = msg->heartbeat.load;
+            }
+            else if (msg_type(msg) == ack) {
+                store_save(msg);
+                debug("bb.boxc", 0, "boxc_receiver: got ack");
+            }
+            /* if this is an identification message from an smsbox instance */
+            else if (msg_type(msg) == admin && msg->admin.command == cmd_identify) {
+                List *newlist;
+
+                /* and add the boxc_ud into conn for boxc_status() output */
+                if (conn->boxc_id == NULL)
+                    conn->boxc_id = octstr_duplicate(msg->admin.boxc_id);
+                /* 
+                 * re-link the incoming queue for this connection to an independent
+                 */
+                newlist = list_create();
+                list_add_producer(newlist);
+                conn->incoming = newlist;
+                conn->retry = newlist;
+
+                /* add this identified smsbox to the dictionary */       
+                dict_put(smsbox_by_id, msg->admin.boxc_id, conn);
+                debug("bb.boxc", 0, "boxc_receiver: got boxc_id <%s> from <%s>",
+                octstr_get_cstr(msg->admin.boxc_id),
+                octstr_get_cstr(conn->client_ip));
+            }
+            else
+                warning(0, "boxc_receiver: unknown msg received from <%s>, "
+                           "ignored", octstr_get_cstr(conn->client_ip));
+            msg_destroy(msg);
+        }
     }    
 }
 
@@ -270,6 +303,7 @@ static Boxc *boxc_create(int fd, Octstr *ip, int ssl)
     boxc->client_ip = ip;
     boxc->alive = 1;
     boxc->connect_time = time(NULL);
+    boxc->boxc_id = NULL;
     return boxc;
 }    
 
@@ -283,6 +317,7 @@ static void boxc_destroy(Boxc *boxc)
     if (boxc->conn)
 	    conn_destroy(boxc->conn);
     octstr_destroy(boxc->client_ip);
+    octstr_destroy(boxc->boxc_id);
     gw_free(boxc);
 }    
 
@@ -368,6 +403,13 @@ static void run_smsbox(void *arg)
     gwthread_join(sender);
 
 cleanup:    
+    if (newconn->boxc_id) {
+        dict_remove(smsbox_by_id, newconn->boxc_id);
+        while (list_producer_count(newconn->incoming) > 0)
+            list_remove_producer(newconn->incoming);
+        gw_assert(list_len(newconn->incoming) == 0);
+        list_destroy(newconn->incoming, NULL);
+    }
     list_delete_equal(smsbox_list, newconn);
     boxc_destroy(newconn);
 
@@ -676,6 +718,14 @@ static void smsboxc_run(void *arg)
 
     list_destroy(smsbox_list, NULL);
     smsbox_list = NULL;
+
+    /* destroy things related to smsbox routing */
+    dict_destroy(smsbox_by_id);
+    smsbox_by_id = NULL;
+    dict_destroy(smsbox_by_smsc);
+    smsbox_by_smsc = NULL;
+    dict_destroy(smsbox_by_receiver);
+    smsbox_by_receiver = NULL;
     
     list_remove_producer(flow_threads);
 }
@@ -721,6 +771,66 @@ static void wapboxc_run(void *arg)
 }
 
 
+/*
+ * Populates the corresponding smsbox_by_foobar dictionary hash tables
+ */
+static void init_smsbox_routes(Cfg *cfg)
+{
+    CfgGroup *grp;
+    List *list, *items;
+    Octstr *boxc_id, *smsc_ids, *shortcuts;
+    int i;
+
+    boxc_id = smsc_ids = shortcuts = NULL;
+
+    list = cfg_get_multi_group(cfg, octstr_imm("smsbox-route")); 
+ 
+    /* loop multi-group "smsbox-route" */
+    while (list && (grp = list_extract_first(list)) != NULL) { 
+         
+        if ((boxc_id = cfg_get(grp, octstr_imm("smsbox-id"))) == NULL) { 
+            grp_dump(grp); 
+            panic(0,"'smsbox-route' group without valid 'smsbox-id' directive!"); 
+        }
+
+        /*
+         * If smsc-ids are given, then any message comming from the specified
+         * smsc-id will be routed to this smsbox instance.
+         * If shortcuts are given, then any message with receiver number 
+         * matching those will be routed to this smsbox instance.
+         */
+        smsc_ids = cfg_get(grp, octstr_imm("smsc-ids"));
+        shortcuts = cfg_get(grp, octstr_imm("shortcuts"));
+
+        /* now parse the smsc-ids and shortcuts semicolon seperated list */
+        if (smsc_ids) {
+            items = octstr_split(smsc_ids, octstr_imm(";"));
+            for (i = 0; i < list_len(items); i++) {
+                Octstr *item = list_get(items, i);
+
+                debug("bb.boxc",0,"Adding smsbox routing to id <%s> for smsc id <%s>",
+                      octstr_get_cstr(boxc_id), octstr_get_cstr(item));
+
+                dict_put(smsbox_by_smsc, item, boxc_id);
+            }
+            list_destroy(items, octstr_destroy_item);
+        }
+        
+        if (shortcuts) {
+            items = octstr_split(shortcuts, octstr_imm(";"));
+            for (i = 0; i < list_len(items); i++) {
+                Octstr *item = item = list_get(items, i);
+
+                debug("bb.boxc",0,"Adding smsbox routing to id <%s> for receiver no <%s>",
+                      octstr_get_cstr(boxc_id), octstr_get_cstr(item));
+            
+                dict_put(smsbox_by_receiver, item, boxc_id);
+            }
+            list_destroy(items, octstr_destroy_item);
+        }
+    }       
+}
+
 
 /*-------------------------------------------------------------
  * public functions
@@ -747,9 +857,17 @@ int smsbox_start(Cfg *cfg)
 
     if (smsbox_port_ssl)
         debug("bb", 0, "smsbox connection module is SSL-enabled");
-
     
     smsbox_list = list_create();	/* have a list of connections */
+
+    /* the smsbox routing specific inits */
+    smsbox_by_id = dict_create(10, NULL);  /* and a hash directory of identified */
+    smsbox_by_smsc = dict_create(30, (void(*)(void *)) octstr_destroy);
+    smsbox_by_receiver = dict_create(50, (void(*)(void *)) octstr_destroy);
+
+    /* load the defined smsbox routing rules */
+    init_smsbox_routes(cfg);
+
     list_add_producer(outgoing_sms);
 
     smsbox_running = 1;
@@ -907,8 +1025,9 @@ Octstr *boxc_status(int status_type)
 #endif
                     );
             else
-	            octstr_format_append(tmp, "%ssmsbox, IP %s (on-line %ldd %ldh %ldm %lds) %s %s",
-		            ws, octstr_get_cstr(bi->client_ip),
+                octstr_format_append(tmp, "%ssmsbox:%s, IP %s (on-line %ldd %ldh %ldm %lds) %s %s",
+                    ws, (bi->boxc_id ? octstr_get_cstr(bi->boxc_id) : "(none)"), 
+                    octstr_get_cstr(bi->client_ip),
 		            t/3600/24, t/3600%24, t/60%60, t%60, 
 #ifdef HAVE_LIBSSL
                     conn_get_ssl(bi->conn) != NULL ? "using SSL" : "",
@@ -958,3 +1077,59 @@ void boxc_cleanup(void)
     box_allow_ip = NULL;
     box_deny_ip = NULL;
 }
+
+
+/*
+ * Route the incoming message to a specific smsbox conn
+ * or simply to a random if no shortcut routing and msg->sms.boxc_id
+ * match.
+ */
+void route_incoming_sms(Msg *msg)
+{
+    Boxc *conn = NULL;
+    Octstr *s, *r;
+
+    s = r = NULL;
+    gw_assert(msg_type(msg) == sms);
+
+    /* msg_dump(msg, 0); */
+
+    /* 
+     * We have a specific route to pass this msg to smsbox-id 
+     * Lookup the connection in the dictionary.
+     */
+    if (msg->sms.boxc_id != NULL) {
+        
+        conn = dict_get(smsbox_by_id, msg->sms.boxc_id);
+        if (conn == 0) {
+            /* 
+             * something is wrong, this was the smsbox connection we used 
+             * for sending, so it seems this smsbox is gone
+             */
+            error(0,"Could not route message to smsbox id <%s>, smsbox is gone!",
+                  octstr_get_cstr(msg->sms.boxc_id));
+        } 
+    }
+
+    /*
+     * Check if we have a "smsbox-route" for this msg.
+     * Where the shortcut route has a higher priority then the smsc-id rule.
+     */
+    if (conn == NULL) {
+        s = (msg->sms.smsc_id ? dict_get(smsbox_by_smsc, msg->sms.smsc_id) : NULL);
+        r = (msg->sms.receiver ? dict_get(smsbox_by_receiver, msg->sms.receiver) : NULL);
+        conn = r ? dict_get(smsbox_by_id, r) : (s ? dict_get(smsbox_by_id, s) : NULL);
+    }
+
+    /* 
+     * ok, none of the routing things applied previously, so route it to
+     * a random smsbox via the shared incoming_sms queue, otherwise to the
+     * smsc specific incoming queue
+     */
+    if (conn == NULL)
+        list_produce(incoming_sms, msg);
+    else
+        list_produce(conn->incoming, msg);
+
+}
+

@@ -3905,6 +3905,17 @@ ssl-certkey-file
         The machine in which the bearerbox is. 
      </entry></row>
 
+   <row><entry><literal>smsbox-id (o)</literal></entry>
+     <entry>string</entry>
+     <entry valign=bottom>
+        Optional smsbox instance identifier. This is used to 
+ 		  identify an smsbox connected to an bearerbox for the purpose
+		  of having smsbox specific routing inside bearerbox. So if you
+		  you own boxes that do pass messages into bearerbox for delivery
+		  you may want that answers to those are routed back to your 
+		  specific smsbox instance, i.e. SMPP or EMI proxying boxes.
+     </entry></row>
+
     <row><entry><literal>sendsms-port (c)</literal></entry>
      <entry>port-number</entry>
      <entry valign=bottom>
@@ -4064,6 +4075,101 @@ log-level = 0
 </programlisting>
  </para>
 
+
+</sect2>
+
+<sect2>
+<title>Smsbox routing inside bearerbox</title>
+
+  <para>The communication link between bearerbox and smsbox has been
+  designed for the purpose of load-balancing via random assignment. 
+  Which means, bearerbox holds all smsc connections and passes inbound
+  message to one of the connected smsboxes. So you have a determined route
+  for outbound messages, but no determinated route for inbound messages.
+  </para>
+
+  <para>The smsbox routing solves this for the inbound direction. In
+  certain scenarios you want that bearerbox to know to which smsbox
+  instance it should pass messages. I.e. if you implement our own boxes
+  that pass messages to bearerbox and expect to receive messages defined
+  on certain rules, like receiver number or smsc-id. This is the case
+  for EMI/UCP and SMPP proxys that can be written easly using smsbox
+  routing facility.
+  </para>
+
+  <para>If you smppbox handles the SMPP specific communication to your
+  EMSEs, and if an client send a submit_sm PDU, smppbox would transform
+  the message into Kannel message representation and inject the message to
+  bearerbox as if it would be an smsbox. As you want to assign your clients
+  shortcuts for certain networks or route any inbound traffic from a certain
+  smsc link connected to bearerbox, you need to seperate in the scope of 
+  bearerbox where the inbound message will be going to. An example may
+  look like this:
+
+<programlisting>
+group = smsbox
+...
+smsbox-id = mysmsc
+...
+
+group = smsbox-route
+smsbox-id = mysmsc
+shortcuts = "1111;2222;3333"
+</programlisting>
+
+	which means and inbound message with receiver number 1111, 2222 or 3333
+	will be delivered to the smsbox instance that has identified itself
+	via the id "mysmsc" to bearerbox. Using this routing the smsbox instance
+	(which may be an EMI/UCP or SMPP proxy) is able to send a deliver_sm PDU
+	</para>
+
+   <para>smsbox-route inherits from core the following fields:
+   </para>
+
+ <table frame=none>
+  <title>Smsbox-route Group Variables</title>
+  <tgroup cols=3>
+  <thead>
+   <row>
+     <entry>Variable</entry>
+     <entry>Value</entry>
+     <entry>Description</entry>
+   </row>
+  </thead>
+  <tbody>
+   <row><entry><literal>group (m)</literal></entry>
+     <entry><literal>smsbox-route</literal></entry>
+     <entry valign=bottom>
+       This is a mandatory variable
+     </entry></row>
+
+   <row><entry><literal>smsbox-id (m)</literal></entry>
+     <entry><literal>string</literal></entry>
+     <entry valign=bottom>
+        Defines for which smsbox instance the routing rules do apply.
+     </entry></row>
+
+	 <row><entry><literal>smsc-ids</literal></entry>
+     <entry>word-list</entry>
+     <entry valign=bottom>
+        If set, specifies from which smsc-ids all inbound messages should
+		  be routed to this smsbox instance. List contains smsc-ids seperated
+		  by semilon (";"). This rule may be used to pull any smsc specific
+		  message stream to an smsbox instance.
+     </entry></row>
+
+	 <row><entry><literal>shortcuts</literal></entry>
+     <entry>number-list</entry>
+     <entry valign=bottom>
+        If set, specifies which receiver numbers for inbound messages should
+		  be routed to this smsbox instance. List contains numbers seperated
+		  by semilon (";"). This rule may be used to pull receiver number
+		  specific message streams to an smsbox instance.
+     </entry></row>
+
+  </tbody>
+  </tgroup>
+ </table>
 
 </sect2>
 

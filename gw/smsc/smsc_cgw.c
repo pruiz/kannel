@@ -1127,7 +1127,8 @@ static int cgw_handle_op(SMSCConn *conn, Connection *server, struct cgwop *cgwop
                     octstr_get_cstr(msg->sms.receiver),
                     octstr_get_cstr(msg->sms.service),
                     octstr_get_cstr(msg->sms.dlr_url),
-                    msg->sms.dlr_mask);
+                    msg->sms.dlr_mask,
+                    octstr_get_cstr(msg->sms.boxc_id));
 
             octstr_destroy(ts);
             privdata->dlr[trn] = 1;

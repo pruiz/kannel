@@ -78,11 +78,13 @@ SINGLE_GROUP(wapbox,
     OCTSTR(access-log)
 )
 
+
 SINGLE_GROUP(wtls,
     OCTSTR(certificate-file)
     OCTSTR(privatekey-file)
     OCTSTR(privatekey-password)
 )
+
 
 SINGLE_GROUP(ppg,
     OCTSTR(ppg-url)
@@ -98,6 +100,7 @@ SINGLE_GROUP(ppg,
     OCTSTR(global-sender)
 )
 
+
 MULTI_GROUP(wap-push-user,
     OCTSTR(wap-push-user)
     OCTSTR(ppg-username)
@@ -111,12 +114,14 @@ MULTI_GROUP(wap-push-user,
     OCTSTR(allow-ip)
 )
 
+
 SINGLE_GROUP(test-ppg,
     OCTSTR(retries)
     OCTSTR(pi-ssl)
     OCTSTR(ssl-client-certkey-file)
     OCTSTR(ssl-trusted-ca-file)
 )
+
 
 SINGLE_GROUP(configuration,
     OCTSTR(push-url)
@@ -126,7 +131,9 @@ SINGLE_GROUP(configuration,
     OCTSTR(password)
 )
 
+
 SINGLE_GROUP(smsbox,
+    OCTSTR(smsbox-id)
     OCTSTR(bearerbox-host)
     OCTSTR(sendsms-port)
     OCTSTR(sendsms-port-ssl)
@@ -151,6 +158,13 @@ SINGLE_GROUP(smsbox,
     OCTSTR(xmlrpc-url)
     OCTSTR(http-request-retry)
     OCTSTR(http-queue-delay)
+)
+
+
+MULTI_GROUP(smsbox-route,
+    OCTSTR(smsbox-id)
+    OCTSTR(smsc-ids)
+    OCTSTR(shortcuts)
 )
 
 
@@ -305,11 +319,13 @@ MULTI_GROUP(ota-setting,
     OCTSTR(secret)
 )
 
+
 MULTI_GROUP(ota-bookmark,
     OCTSTR(ota-id)
     OCTSTR(name)
     OCTSTR(url)
 )
+
 
 SINGLE_GROUP(emibox,
        OCTSTR(port)
@@ -317,6 +333,7 @@ SINGLE_GROUP(emibox,
        OCTSTR(log-file)
        OCTSTR(log-level)
 )
+
 
 SINGLE_GROUP(webbox,
        OCTSTR(forward-host)
@@ -328,6 +345,7 @@ SINGLE_GROUP(webbox,
        OCTSTR(log-file)
        OCTSTR(log-level)
 )
+
 
 SINGLE_GROUP(milbox,
     OCTSTR(admin-port)
@@ -352,6 +370,7 @@ SINGLE_GROUP(milbox,
     OCTSTR(smpp-port)
 )
 
+
 MULTI_GROUP(modems,
     OCTSTR(id)
     OCTSTR(name)
@@ -370,6 +389,7 @@ MULTI_GROUP(modems,
     OCTSTR(enable-mms)
 )
 
+
 MULTI_GROUP(mysql-connection,
     OCTSTR(id)
     OCTSTR(host)
@@ -378,10 +398,12 @@ MULTI_GROUP(mysql-connection,
     OCTSTR(database)
 )
 
+
 MULTI_GROUP(sdb-connection,
     OCTSTR(id)
     OCTSTR(url)
 )
+
  
 SINGLE_GROUP(dlr-db,
     OCTSTR(id)
@@ -395,6 +417,7 @@ SINGLE_GROUP(dlr-db,
     OCTSTR(field-mask)
     OCTSTR(field-status)
 )
+
 
 #undef OCTSTR
 #undef SINGLE_GROUP

@@ -44,6 +44,7 @@ static Cfg *cfg;
 static long bb_port;
 static int bb_ssl = 0;
 static long sendsms_port = 0;
+static Octstr *smsbox_id = NULL;
 static Octstr *sendsms_url = NULL;
 static Octstr *sendota_url = NULL;
 static Octstr *xmlrpc_url = NULL;
@@ -74,6 +75,23 @@ long get_tag(Octstr *body, Octstr *tag, Octstr **value, long pos, int nostrip);
 /***********************************************************************
  * Communication with the bearerbox.
  */
+
+
+/* 
+ * If we have a smsbox-id set, identify to bearerbox for smsbox-specific
+ * routing inside bearerbox.
+ */
+static void identify_to_bearerbox(void)
+{
+    Msg *msg;
+    
+    if (smsbox_id != NULL) {
+        msg = msg_create(admin);
+        msg->admin.command = cmd_identify;
+        msg->admin.boxc_id = octstr_duplicate(smsbox_id);
+        write_to_bearerbox(msg);
+    }
+}
 
 
 /*
@@ -155,6 +173,15 @@ static int send_message(URLTranslation *trans, Msg *msg)
     if (max_msgs == 0) {
 	info(0, "No reply sent, denied.");
 	return 0;
+    }
+
+    /* 
+     * Encode our smsbox-id to the msg structure.
+     * This will allow bearerbox to return specific answers to the
+     * same smsbox, mainly for DLRs and SMS proxy modes.
+     */
+    if (smsbox_id != NULL) {
+        msg->sms.boxc_id = octstr_duplicate(smsbox_id);
     }
     
     /* Empty message?  Either ignore it or substitute the "empty"
@@ -1443,7 +1470,6 @@ static void obey_request_thread(void *arg)
 	reply_msg->ack.nack = 0;
 	reply_msg->ack.time = msg->sms.time;
 	reply_msg->ack.id = msg->sms.id;
-
     
 	if (dreport) {
 	    trans = urltrans_find_service(translations, msg);
@@ -2861,6 +2887,8 @@ static Cfg *init_smsbox(Cfg *cfg)
     if (grp == NULL)
 	panic(0, "No 'smsbox' group in configuration");
 
+    smsbox_id = cfg_get(grp, octstr_imm("smsbox-id"));
+
     p = cfg_get(grp, octstr_imm("bearerbox-host"));
     if (p != NULL) {
 	octstr_destroy(bb_host);
@@ -3047,6 +3075,7 @@ int main(int argc, char **argv)
         info(0, GW_NAME "Could not start heartbeat.");
     }
 
+    identify_to_bearerbox();
     read_messages_from_bearerbox();
 
     info(0, GW_NAME " smsbox terminating.");
@@ -3074,6 +3103,7 @@ int main(int argc, char **argv)
     octstr_destroy(bb_host);
     octstr_destroy(global_sender);
     octstr_destroy(accepted_chars);
+    octstr_destroy(smsbox_id);
     octstr_destroy(sendsms_url);
     octstr_destroy(sendota_url);
     octstr_destroy(xmlrpc_url);

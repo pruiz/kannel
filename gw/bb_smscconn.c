@@ -44,6 +44,7 @@ extern Counter *outgoing_sms_counter;
 extern List *flow_threads;
 extern List *suspended;
 extern List *isolated;
+extern Dict *smsbox_routes;
 
 /* our own thingies */
 
@@ -58,6 +59,8 @@ static Numhash *white_list;
 static long maximum_queue_length;
 
 static long router_thread = -1;
+
+void route_incoming_sms(Msg *sms);
 
 static void log_sms(SMSCConn *conn, Msg *sms, char *message)
 {
@@ -233,7 +236,14 @@ int bb_smscconn_receive(SMSCConn *conn, Msg *sms)
     else
 	log_sms(conn, sms, "DLR SMS");
 
-    list_produce(incoming_sms, sms);
+    /*
+     * Now try to route the message to a specific smsbox
+     * connection based on the existing msg->sms.boxc_id or
+     * the registered receiver numbers for specific smsbox'es.
+     */
+    route_incoming_sms(sms);
+    /* list_produce(incoming_sms, sms); */
+
     counter_increase(incoming_sms_counter);
     counter_increase(conn->received);
 

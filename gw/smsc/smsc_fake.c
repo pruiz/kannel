@@ -129,6 +129,13 @@ static void msg_to_bb(SMSCConn *conn, Octstr *line)
         msg->sms.msgdata = octstr_copy(line, p + 1, LONG_MAX);
         if (octstr_url_decode(msg->sms.msgdata) == -1)
             warning(0, "smsc_fake: urlcoded data from client looks malformed");
+    } 
+    else if (!octstr_compare(type, octstr_imm("route"))) {
+        p2 = octstr_search_char(line, ' ', p + 1);
+        if (p2 == -1)
+            goto error;
+        msg->sms.boxc_id = octstr_copy(line, p + 1, p2 - p - 1);
+        msg->sms.msgdata = octstr_copy(line, p2 + 1, LONG_MAX);
     }
     else if (!octstr_compare(type, octstr_imm("udh"))) {
         p2 = octstr_search_char(line, ' ', p + 1);

@@ -1831,7 +1831,8 @@ int cimd2_submit_msg(SMSCenter *smsc, Msg *msg)
                 octstr_get_cstr(msg->sms.receiver),
                 octstr_get_cstr(msg->sms.service),
                 octstr_get_cstr(msg->sms.dlr_url),
-                msg->sms.dlr_mask);
+                msg->sms.dlr_mask,
+                octstr_get_cstr(msg->sms.boxc_id));
             octstr_destroy(ts);
             ts = NULL;		
 	}

@@ -883,7 +883,8 @@ static int emi2_do_send (SMSCConn *conn, Connection *server)
 		    octstr_get_cstr(emimsg->fields[E50_ADC]),
 		    octstr_get_cstr(msg->sms.service),
 		    octstr_get_cstr(msg->sms.dlr_url),
-		    msg->sms.dlr_mask);
+		    msg->sms.dlr_mask,
+		    octstr_get_cstr(msg->sms.boxc_id));
 	    
 	    octstr_destroy(ts);
 	    PRIVDATA(conn)->slots[nexttrn].dlr = 1;
@@ -1020,7 +1021,8 @@ static int emi2_handle_smscreq (SMSCConn *conn, Connection *server)
 					    octstr_get_cstr(adc),
 					    octstr_get_cstr(m->sms.service),
 					    octstr_get_cstr(m->sms.dlr_url),
-					    m->sms.dlr_mask);
+					    m->sms.dlr_mask,
+					    octstr_get_cstr(m->sms.boxc_id));
 				}
 				octstr_destroy(ts);
 				octstr_destroy(adc);

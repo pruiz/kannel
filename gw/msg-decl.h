@@ -16,9 +16,10 @@ MSG(heartbeat,
 	})
 
 MSG(admin,
-        {
-	        INTEGER(command);
-	})
+    {
+        INTEGER(command);
+        OCTSTR(boxc_id);
+    })
     
 MSG(sms,
 	{
@@ -44,6 +45,7 @@ MSG(sms,
 		INTEGER(alt_dcs);
         INTEGER(rpi);
 		OCTSTR(charset);
+        OCTSTR(boxc_id);
 	})
 
 MSG(ack,

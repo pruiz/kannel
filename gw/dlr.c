@@ -13,6 +13,11 @@
  *     added more abstraction to fit for several other storage types
  * 2002-08-04: tolj@wapme-systems.de:
  *     added simple database library (sdb) support
+ * 2002-11-14: tolj@wapme-systems.de:
+ *     added re-routing info for DLRs to route via bearerbox to the same smsbox
+ *     instance. This is required if you use state conditioned smsboxes or smppboxes
+ *     via one bearerbox. Previously bearerbox was simple ignoring to which smsbox
+ *     connection a msg is passed. Now we can route the messages inside bearerbox.
  */
  
 #include <ctype.h>
@@ -43,6 +48,7 @@ typedef struct dlr_wle {
    Octstr *service;
    Octstr *url;	
    int mask;
+   Octstr *boxc_id;
 } dlr_wle;
 
 /* 
@@ -102,6 +108,8 @@ static void dlr_db_init(CfgGroup *grp)
         panic(0, "DLR: DB: directive 'field-mask' is not specified!");
     if (!(field_status = cfg_get(grp, octstr_imm("field-status"))))
    	    panic(0, "DLR: DB: directive 'field-status' is not specified!");
+    if (!(field_boxc = cfg_get(grp, octstr_imm("field-boxc-id"))))
+   	    panic(0, "DLR: DB: directive 'field-boxc-id' is not specified!");
 }
 #endif
    
@@ -375,6 +383,7 @@ static void dlr_destroy(dlr_wle *dlr)
 	O_DELETE (dlr->destination);
 	O_DELETE (dlr->service);
 	O_DELETE (dlr->url);
+    O_DELETE (dlr->boxc_id);
 	dlr->mask = 0;
 	gw_free(dlr);
 }
@@ -385,15 +394,15 @@ static void dlr_destroy(dlr_wle *dlr)
  */
 
 static void dlr_add_mem(char *smsc, char *ts, char *src, char *dst, 
-                        char *service, char *url, int mask)
+                        char *service, char *url, int mask, char *boxc)
 {
    dlr_wle *dlr;
 	
    if (mask & 0x1F) {
         dlr = dlr_new(); 
 
-        debug("dlr.dlr", 0, "Adding DLR smsc=%s, ts=%s, src=%s, dst=%s, mask=%d", 
-              smsc, ts, src, dst, mask);
+        debug("dlr.dlr", 0, "Adding DLR smsc=%s, ts=%s, src=%s, dst=%s, mask=%d, boxc=%s", 
+              smsc, ts, src, dst, mask, boxc);
 	
         dlr->smsc = octstr_create(smsc);
         dlr->timestamp = octstr_create(ts);
@@ -401,13 +410,14 @@ static void dlr_add_mem(char *smsc, char *ts, char *src, char *dst,
         dlr->destination = octstr_create(dst);
         dlr->service = octstr_create(service); 
         dlr->url = octstr_create(url);
+        dlr->boxc_id = octstr_create(boxc);
         dlr->mask = mask;
         list_append(dlr_waiting_list,dlr);
     }
 }
 
 static void dlr_add_mysql(char *smsc, char *ts, char *src, char *dst, 
-                          char *service, char *url, int mask)
+                          char *service, char *url, int mask, char *boxc)
 {
 #ifdef DLR_MYSQL
     Octstr *sql;
@@ -417,14 +427,15 @@ static void dlr_add_mysql(char *smsc, char *ts, char *src, char *dst,
               smsc, ts, src, dst, mask);
 #endif
 
-    sql = octstr_format("INSERT INTO %s (%s, %s, %s, %s, %s, %s, %s, %s) VALUES "
-                        "('%s', '%s', '%s', '%s', '%s', '%s', '%d', '%d');",
+    sql = octstr_format("INSERT INTO %s (%s, %s, %s, %s, %s, %s, %s, %s, %s) VALUES "
+                        "('%s', '%s', '%s', '%s', '%s', '%s', '%d', '%s', '%d');",
 		                octstr_get_cstr(table), octstr_get_cstr(field_smsc), 
                         octstr_get_cstr(field_ts), 
                         octstr_get_cstr(field_src), octstr_get_cstr(field_dst),
                         octstr_get_cstr(field_serv), octstr_get_cstr(field_url), 
-                        octstr_get_cstr(field_mask), octstr_get_cstr(field_status),
-                        smsc, ts, src, dst, service, url, mask, 0);
+                        octstr_get_cstr(field_mask), octstr_get_cstr(field_boxc),
+                        octstr_get_cstr(field_status),
+                        smsc, ts, src, dst, service, url, mask, boxc, 0);
 
     mutex_lock(dlr_mutex);
   
@@ -442,20 +453,21 @@ octstr_destroy(sql);
 }
 
 static void dlr_add_sdb(char *smsc, char *ts, char *src, char *dst, 
-                        char *service, char *url, int mask)
+                        char *service, char *url, int mask, char *boxc)
 {
 #ifdef DLR_SDB
     Octstr *sql;
     int	state;
 
-    sql = octstr_format("INSERT INTO %s (%s, %s, %s, %s, %s, %s, %s, %s) VALUES "
-                        "('%s', '%s', '%s', '%s', '%s', '%s', '%d', '%d')",
+    sql = octstr_format("INSERT INTO %s (%s, %s, %s, %s, %s, %s, %s, %s, %s) VALUES "
+                        "('%s', '%s', '%s', '%s', '%s', '%s', '%d', '%s', '%d')",
 		                octstr_get_cstr(table), octstr_get_cstr(field_smsc), 
                         octstr_get_cstr(field_ts), 
                         octstr_get_cstr(field_src), octstr_get_cstr(field_dst), 
                         octstr_get_cstr(field_serv), octstr_get_cstr(field_url), 
-                        octstr_get_cstr(field_mask), octstr_get_cstr(field_status),
-                        smsc, ts, src, dst, service, url, mask, 0);
+                        octstr_get_cstr(field_mask), octstr_get_cstr(field_boxc), 
+                        octstr_get_cstr(field_status),
+                        smsc, ts, src, dst, service, url, mask, boxc, 0);
 
     mutex_lock(dlr_mutex);
   
@@ -469,16 +481,16 @@ static void dlr_add_sdb(char *smsc, char *ts, char *src, char *dst,
 }
 
 void dlr_add(char *smsc, char *ts, char *src, char *dst, 
-             char *keyword, char *id, int mask)
+             char *keyword, char *id, int mask, char *boxc)
 {
     if (octstr_compare(dlr_type, octstr_imm("internal")) == 0) {
-        dlr_add_mem(smsc, ts, src, dst, keyword, id, mask);
+        dlr_add_mem(smsc, ts, src, dst, keyword, id, mask, boxc);
     } else 
     if (octstr_compare(dlr_type, octstr_imm("mysql")) == 0) {
-        dlr_add_mysql(smsc, ts, src, dst, keyword, id, mask);
+        dlr_add_mysql(smsc, ts, src, dst, keyword, id, mask, boxc);
     } else 
     if (octstr_compare(dlr_type, octstr_imm("sdb")) == 0) {
-        dlr_add_sdb(smsc, ts, src, dst, keyword, id, mask);
+        dlr_add_sdb(smsc, ts, src, dst, keyword, id, mask, boxc);
 
     /*
      * add aditional types here
@@ -529,6 +541,13 @@ static Msg *dlr_find_mem(char *smsc, char *ts, char *dst, int typ)
                  */
                 msg->sms.msgdata = NULL;
 
+                /* 
+                 * If a boxc_id is available, then instruct bearerbox to 
+                 * route this msg back to originating smsbox
+                 */
+                msg->sms.boxc_id = octstr_len(dlr->boxc_id) ?
+                    octstr_duplicate(dlr->boxc_id) : NULL;
+
                 time(&msg->sms.time);
                 debug("dlr.dlr", 0, "created DLR message for URL <%s>", 
                       octstr_get_cstr(msg->sms.dlr_url));
@@ -562,12 +581,14 @@ static Msg *dlr_find_mysql(char *smsc, char *ts, char *dst, int typ)
     Octstr *dlr_service;
     Octstr *dlr_url;
     Octstr *source_addr;
+    Octstr *boxc_id;
     MYSQL_RES *result;
     MYSQL_ROW row;
     
-    sql = octstr_format("SELECT %s, %s, %s, %s FROM %s WHERE %s='%s' AND %s='%s';",
+    sql = octstr_format("SELECT %s, %s, %s, %s, %s FROM %s WHERE %s='%s' AND %s='%s';",
                         octstr_get_cstr(field_mask), octstr_get_cstr(field_serv), 
                         octstr_get_cstr(field_url), octstr_get_cstr(field_src),
+                        octstr_get_cstr(field_boxc),
                         octstr_get_cstr(table), octstr_get_cstr(field_smsc),
                         smsc, octstr_get_cstr(field_ts), ts);
 
@@ -599,15 +620,13 @@ static Msg *dlr_find_mysql(char *smsc, char *ts, char *dst, int typ)
         return NULL;
     }
     
-    debug("dlr.mysql", 0, "Found entry, row[0]=%s, row[1]=%s, row[2]=%s, row[3]=%s", 
-          row[0], row[1], row[2], row[3] ? row[3] : "NULL");
+    debug("dlr.mysql", 0, "Found entry, row[0]=%s, row[1]=%s, row[2]=%s, row[3]=%s, row[4]=%s", 
+          row[0], row[1], row[2], (row[3] ? row[3] : "NULL"), (row[4] ? row[4] : "NULL"));
     dlr_mask = atoi(row[0]);
     dlr_service = octstr_create(row[1]);
     dlr_url = octstr_create(row[2]);
-    if(row[3])		
-    	source_addr = octstr_create(row[3]);
-    else
-	source_addr = octstr_create("");
+    source_addr = row[3] ? octstr_create(row[3]) : octstr_create("");
+    boxc_id = row[4] ? octstr_create(row[4]) : octstr_create("");
     mysql_free_result(result);
     
     mutex_unlock(dlr_mutex);
@@ -649,6 +668,13 @@ static Msg *dlr_find_mysql(char *smsc, char *ts, char *dst, int typ)
          */
         msg->sms.msgdata = NULL;
 
+        /* 
+         * If a boxc_id is available, then instruct bearerbox to 
+         * route this msg back to originating smsbox
+         */
+        msg->sms.boxc_id = octstr_len(boxc_id) ?
+            octstr_duplicate(boxc_id) : NULL;
+
         time(&msg->sms.time);
         debug("dlr.dlr", 0, "created DLR message for URL <%s>", 
               octstr_get_cstr(msg->sms.dlr_url));
@@ -678,6 +704,7 @@ static Msg *dlr_find_mysql(char *smsc, char *ts, char *dst, int typ)
     octstr_destroy(dlr_service);
     octstr_destroy(dlr_url);
     octstr_destroy(source_addr);
+    octstr_destroy(boxc_id);
 
 #endif
     return msg;
@@ -693,7 +720,7 @@ static int sdb_callback_add(int n, char **p, void *row)
 
     /* strip string into words */
     row = octstr_split(octstr_imm(p[0]), octstr_imm(" "));
-    if (list_len(row) != 4) {
+    if (list_len(row) != 5) {
         debug("dlr.sdb", 0, "Row has wrong length %ld", list_len(row));
         return 0;
     }
@@ -715,11 +742,13 @@ static Msg *dlr_find_sdb(char *smsc, char *ts, char *dst, int typ)
     Octstr *dlr_service;
     Octstr *dlr_url;
     Octstr *source_addr;
+    Octstr *boxc_id;
     List *row;
     
-    sql = octstr_format("SELECT %s, %s, %s, %s FROM %s WHERE %s='%s' AND %s='%s'",
+    sql = octstr_format("SELECT %s, %s, %s, %s, %s FROM %s WHERE %s='%s' AND %s='%s'",
                         octstr_get_cstr(field_mask), octstr_get_cstr(field_serv), 
-                        octstr_get_cstr(field_url), octstr_get_cstr(field_src), 
+                        octstr_get_cstr(field_url), octstr_get_cstr(field_src),
+                        octstr_get_cstr(field_boxc),
                         octstr_get_cstr(table), octstr_get_cstr(field_smsc),
                         smsc, octstr_get_cstr(field_ts), ts);
 
@@ -733,16 +762,18 @@ static Msg *dlr_find_sdb(char *smsc, char *ts, char *dst, int typ)
         return NULL;
     }
 
-    debug("dlr.sdb", 0, "Found entry, row[0]=%s, row[1]=%s, row[2]=%s, row[3]=%s", 
+    debug("dlr.sdb", 0, "Found entry, row[0]=%s, row[1]=%s, row[2]=%s, row[3]=%s row[4]=%s", 
           octstr_get_cstr(list_get(row, 0)), 
           octstr_get_cstr(list_get(row, 1)), 
           octstr_get_cstr(list_get(row, 2)),
-          octstr_get_cstr(list_get(row, 3)));
+          octstr_get_cstr(list_get(row, 3))
+          octstr_get_cstr(list_get(row, 4)));
 
     dlr_mask = atoi(octstr_get_cstr(list_get(row, 0)));
     dlr_service = octstr_duplicate(list_get(row, 1));
     dlr_url = octstr_duplicate(list_get(row, 2));
     source_addr = octstr_duplicate(list_get(row, 3));
+    boxc_id = octstr_duplicate(list_get(row, 4));
     list_destroy(row, octstr_destroy_item);
     
     mutex_unlock(dlr_mutex);
@@ -784,6 +815,13 @@ static Msg *dlr_find_sdb(char *smsc, char *ts, char *dst, int typ)
          */
         msg->sms.msgdata = NULL;
 
+        /* 
+         * If a boxc_id is available, then instruct bearerbox to 
+         * route this msg back to originating smsbox
+         */
+        msg->sms.boxc_id = octstr_len(boxc_id) ?
+            octstr_duplicate(boxc_id) : NULL;
+
         time(&msg->sms.time);
         debug("dlr.dlr", 0, "created DLR message for URL <%s>", 
               octstr_get_cstr(msg->sms.dlr_url));
@@ -813,6 +851,7 @@ static Msg *dlr_find_sdb(char *smsc, char *ts, char *dst, int typ)
     octstr_destroy(dlr_service);
     octstr_destroy(dlr_url);
     octstr_destroy(source_addr);
+    octstr_destroy(boxc_id);
 
 #endif
     return msg;

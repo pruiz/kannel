@@ -38,7 +38,7 @@ char *connection;
 #endif
 Octstr *table;
 Octstr *field_smsc, *field_ts, *field_src, *field_dst, *field_serv;
-Octstr *field_url, *field_mask, *field_status;
+Octstr *field_url, *field_mask, *field_status, *field_boxc;
 #endif
 
 /* macros */
@@ -54,7 +54,7 @@ void dlr_shutdown(void);
  * Add a new entry to the list 
  */
 void dlr_add(char *smsc, char *ts, char *src, char *dst, 
-             char *keyword, char *id, int mask);
+             char *keyword, char *id, int mask, char *boxc);
 
 /* 
  * Find an entry in the list. If there is one a message is returned and 
