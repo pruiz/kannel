@@ -1,5 +1,11 @@
 2000-06-09  Richard Braakman  <dark@wapit.com>
 
+	* gw/wap-appl.c: In fetch_thread, also clean up "url" octstr.
+	This fixes the last big memory leak.  I now get only a handful
+	of leaked areas after 100 requests.
+
+2000-06-09  Richard Braakman  <dark@wapit.com>
+
 	* gw/wsp-session.c: Fixed two of the memory leaks, still hunting
 	for others.
 

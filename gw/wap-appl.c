@@ -336,6 +336,7 @@ static void fetch_thread(void *arg) {
 
 	wap_event_destroy(event);
 	octstr_destroy(type);
+	octstr_destroy(url);
 }
 
 
