@@ -1,4 +1,11 @@
 2004-11-05 Alexander Malysh <amalysh at kannel.org>
+    * gwlib/utils.c: fixes daemon mode (make sure stdin/stdout/sdterr are
+      opened and do chdir("/")) and change user code (set supplementary group
+      id's and don't destroy passwd struct).
+    * doc/userguide/userguide.xml: documented the fact that daemon mode changes
+      CDW to `/'.
+
+2004-11-05 Alexander Malysh <amalysh at kannel.org>
     * gwlib/protected.c: fixed linux version of gw_gethostbyname when
       gethostbyname_r failed. Also free buffer on error.
       Bug: #157.

@@ -59,6 +59,8 @@
  *
  */
 
+#include "gw-config.h"
+ 
 #include <ctype.h>
 #include <errno.h>
 #include <stdarg.h>
@@ -74,6 +76,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <pwd.h>
+#include <grp.h>
 
 #include "gwlib.h"
 
@@ -176,6 +179,7 @@ static int is_executable(const char *filename)
  */
 static int become_daemon(void)
 {
+    int fd;
     if (getppid() != 1) {
        signal(SIGTTOU, SIG_IGN);
        signal(SIGTTIN, SIG_IGN);
@@ -188,16 +192,19 @@ static int become_daemon(void)
     close(STDIN_FILENO);
     close(STDOUT_FILENO);
     close(STDERR_FILENO);
+    fd = open("/dev/null", O_RDWR); /* stdin */
+    if (fd == -1)
+        panic(errno, "Could not open `/dev/null'");
+    dup(fd); /* stdout */
+    dup(fd); /* stderr */
 
-    /* XXX chdir breaks restart of boxes when
-       started w/o a full path to binary */
-    /* chdir("/"); */
+    chdir("/");
     return 1;
 }
 
 #define PANIC_SCRIPT_MAX_LEN 4096
 
-static void execute_panic_script(const char *panic_script, const char *format, ...)
+static PRINTFLIKE(2,3) void execute_panic_script(const char *panic_script, const char *format, ...)
 {
     char *args[3];
     char buf[PANIC_SCRIPT_MAX_LEN + 1];
@@ -351,33 +358,22 @@ static int change_user(const char *user)
         error(0, "Could not find a user `%s' in system.", user);
         return -1;
     }
-    gw_claim_area(pass);
-    gw_claim_area(pass->pw_name);
-    gw_claim_area(pass->pw_passwd);
-    gw_claim_area(pass->pw_gecos);
-    gw_claim_area(pass->pw_dir);
-    gw_claim_area(pass->pw_shell);
 
     if (-1 == setgid(pass->pw_gid)) {
         error(errno, "Could not change group id from %ld to %ld.", (long) getgid(), (long) pass->pw_gid);
-        goto out;
+        return -1;
     }
 
+    if (initgroups(user, -1) == -1) {
+        error(errno, "Could not set supplementary group ID's.");
+    }
+    
     if (-1 == setuid(pass->pw_uid)) {
         error(errno, "Could not change user id from %ld to %ld.", (long) getuid(), (long) pass->pw_uid);
-        goto out;
+        return -1;
     }
 
     return 0;
-
-out:
-    gw_free(pass->pw_name);
-    gw_free(pass->pw_passwd);
-    gw_free(pass->pw_gecos);
-    gw_free(pass->pw_dir);
-    gw_free(pass->pw_shell);
-    gw_free(pass);
-    return -1;
 }
 
 /*

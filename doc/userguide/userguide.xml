@@ -1640,7 +1640,10 @@ white-list = "http://localhost/whitelist.txt"
 
    <row><entry><literal>-d</literal></entry>
         <entry morerows="1" valign="bottom">
-             Start process in as daemon (detached from a current shell session).
+             Start process as daemon (detached from a current shell session).
+             Note: Process will change CWD (Current working directory) to <literal>/</literal>,
+                   therefore you should ensure that all paths to binary/config/config-includes are
+                   absolute instead of relative.
         </entry></row>
    <row><entry><literal>--daemonize</literal></entry></row>
 
