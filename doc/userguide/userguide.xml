@@ -1530,22 +1530,42 @@ commands never arrive nor can you restart it via WAP anymore.</para>
   <title>Kannel HTTP Administration Commands</title>
   <tgroup cols=2>
   <tbody>
-   <row><entry><literal>status or status.html</literal></entry>
+   <row><entry><literal>status or status.txt</literal></entry>
    <entry valign=bottom>
-        Get the current status of the gateway in HTML. Tells the current 
+        Get the current status of the gateway in a text version. Tells the current 
 	state (see above) and total number of messages relied and queueing 
 	in the system right now. Also lists the total number of smsbox
         and wapbox connections. No password required, unless
         <literal>status-password</literal> set, in which case either
         that or main admin password must be supplied.
    </entry></row>
-   <row><entry><literal>status.txt</literal></entry>
+   <row><entry><literal>status.html</literal></entry>
    <entry valign=bottom>
-        Text version of status
+        HTML version of status
    </entry></row>
    <row><entry><literal>status.xml</literal></entry>
    <entry valign=bottom>
         XML version of status
+   </entry></row>
+   <row><entry><literal>status.wml</literal></entry>
+   <entry valign=bottom>
+        WML version of status
+   </entry></row>
+
+   <row><entry><literal>store-status or store-status.txt</literal></entry>
+   <entry valign=bottom>
+        Get the current content of the store queue of the gateway 
+		  in a text version. No password required, unless
+        <literal>status-password</literal> set, in which case either
+        that or main admin password must be supplied.
+   </entry></row>
+   <row><entry><literal>store-status.html</literal></entry>
+   <entry valign=bottom>
+        HTML version of store-status
+   </entry></row>
+   <row><entry><literal>store-status.xml</literal></entry>
+   <entry valign=bottom>
+        XML version of store-status
    </entry></row>
 
    <row><entry><literal>suspend</literal></entry>
@@ -1579,6 +1599,19 @@ commands never arrive nor can you restart it via WAP anymore.</para>
    <entry valign=bottom>
         If Kannel state is 'suspended' this will flush all queued DLR
 		  messages in the current storage space. Password required.
+   </entry></row>
+
+	<row><entry><literal>start-smsc</literal></entry>
+   <entry valign=bottom>
+        Re-start a single SMSC link. Password required. Additionally
+		  the <literal>smsc</literal> parameter must be given to identify
+ 		  which <literal>smsc-id</literal> should be re-started.
+   </entry></row>
+
+  	<row><entry><literal>stop-smsc</literal></entry>
+   <entry valign=bottom>
+        Shutdown a single SMSC link. Password required. Additionally
+		  the <literal>smsc</literal> parameter must be given (see above).
    </entry></row>
 
   </tbody>
