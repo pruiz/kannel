@@ -1,3 +1,9 @@
+2000-06-12  Tuomas Luttinen  <tuo@wapit.com>
+
+	* gw/wml_compiler.c: Character set and string table length changed 
+	from chars to uintvars. Now WML compiler can handle string table 
+	length greater than 127.
+
 2000-06-12  Richard Braakman  <dark@wapit.com>
 
 	* Making development release 0.9.2.
