@@ -1279,69 +1279,42 @@ int httprequest_add_header(HTTPRequest *request, char *key, char *value) {
 	hdr = hdr->next;
 
     hdr = header_create(key, value);
-
+    assert(hdr!=NULL);
     return 0;
 }
 
 /*****************************************************************************
- * Add a HTTPHeader to the linked list HTTPRequst structure.
- * If a header with the same key already exists, its value is overwritten.
- * Otherwise, this is identical to httprequest_add_header().
+ * httprequest_replace_header - replace the existing header and return 0. If
+ * header doesn't exist create it. Return -1 for errors.
  */
-int httprequest_replace_header(HTTPRequest *request, char *key, char *value) {
+int httprequest_replace_header(HTTPRequest *request, char *key, char *value)
+{
+    unsigned char *old = NULL;
+    HTTPHeader *hdr = NULL;
     
-    HTTPHeader *thisheader = NULL, *prev = NULL;
-    
-    if( (request == NULL) || (key == NULL) || (value == NULL) )
-	goto error; /* PEBKaC */
-
-	
-    thisheader = request->baseheader;
-
-    if(thisheader == NULL) {
-
-	thisheader = gw_malloc(sizeof(HTTPHeader));
-		
-	thisheader->key = gw_strdup(key);
-		
-	thisheader->value = gw_strdup(value);
-		
-	thisheader->next = NULL;
-	request->baseheader = thisheader;
-
-	return 1;
-
+    if(request == NULL || key == NULL || value == NULL){
+	error(0, "httprequest_replace_header: Bad input.");
+	return -1;
     }
+	
+    hdr = request->baseheader;
 
-/* Let's just hope that nobody has created a circular loop... */
-    for(;;) {
+    while(hdr != NULL ){
 
-	if(thisheader == NULL) {
-	    thisheader = header_create(key, value);
-	    thisheader->next = NULL;
-	    prev->next = thisheader;
+	if(!(strcasecmp(hdr->key, key))){
+	    /* strcasecmp return 0 for match */
+	    old = hdr->value;
+	    hdr->value = gw_strdup(value);
+	    gw_free(old);
+	    return 0;
+       	}
 
-	    return 1;
-
-	} /* if */
-
-	if (0 == strcasecmp(thisheader->key, key)) {
-		char *old = thisheader->value;
-		thisheader->value = gw_strdup(value);
-		gw_free(old);
-		return 1;
-	}
-
-	prev = thisheader;
-	thisheader = prev->next;
-
-    } /* for */
-
-    return 1;
-
-error:
-    error(errno, "httprequest_replace_header: failed");
-    return -1;
+	hdr = hdr->next;
+    }
+    
+    hdr = header_create(key, value);
+    assert(hdr!=NULL);
+    return 0;
 }
 
 

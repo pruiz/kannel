@@ -1,5 +1,9 @@
 2000-03-21 Sanna Seppanen <sanna@wapit.com>
 
+	* gwlib/http.c: Rewrote httprequest_replace_header().
+
+2000-03-21 Sanna Seppanen <sanna@wapit.com>
+
 	* gwlib/http.c: Corrected some debug sentences. Harvest of code
 	review: the return type of header_dump() changed to void. 
 	rewrited httprequest_add_header(). 
