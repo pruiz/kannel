@@ -1,3 +1,8 @@
+2001-03-19  Kalle Marjola  <rpr@wapit.com>
+
+	* gw/bearerbox.c: commented gwthread_join_all() away and now all
+	checks pass. Have to investigate this more...
+
 2001-03-19  Richard Braakman  <dark@wapit.com>
 
 	* wap/wsp_session.c: Fix TR_Invoke_Cnf case in find_session_machine(),

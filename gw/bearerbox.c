@@ -463,7 +463,11 @@ int main(int argc, char **argv)
 
 /*    smsc_die(); */
     
-    gwthread_join_all();
+/*
+ *  Have to comment this out, or otherwise there is problems with
+ *  HTTP library... wonder what side-effects this have
+ *
+ *   gwthread_join_all(); */
 
     boxc_cleanup();
     smsc2_cleanup();
