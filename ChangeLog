@@ -1,3 +1,10 @@
+2004-01-22  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/smsc/smsc_http.c: bugfix of brunet MT interface. The new UUIDs have
+      broke the TransactionID syntax. Brunet expects 32 bytes hex value and
+      the parsed UUID Octstr representation contained dashes that have to be
+      removed.
+    * test/test_uuid.c: added simple testing app.
+
 2004-01-20  Alexander Malysh  <a.malysh@centrium.de>
     * configure.in, configure: applied mysql-configure-rewrite.patch that
       does:

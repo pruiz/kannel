@@ -1,7 +1,7 @@
 /* ==================================================================== 
  * The Kannel Software License, Version 1.0 
  * 
- * Copyright (c) 2001-2003 Kannel Group  
+ * Copyright (c) 2001-2004 Kannel Group  
  * Copyright (c) 1998-2001 WapIT Ltd.   
  * All rights reserved. 
  * 
@@ -526,9 +526,12 @@ static void brunet_send_sms(SMSCConn *conn, Msg *sms)
 
     /* 
      * Construct TransactionId.
+     * Beware that brunet needs an "clean" octstr representation, 
+     * without the dashes in the string. So remove them.
      */
     uuid_unparse(sms->sms.id, id);
     tid = octstr_create(id);
+    octstr_replace(tid, octstr_imm("-"), octstr_imm(""));
 
     /* format the URL for call */
     url = octstr_format("%S?"
