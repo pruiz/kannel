@@ -14,7 +14,7 @@
  *
  * In addition, rfcs 1521 and 2045 are referred.
  *
- * By  Aarno Syvänen for Wapit Ltd and for Wiral Ltd.
+ * By  Aarno SyvŠnen for Wapit Ltd, Wiral Ltd and Global Networks Inc.
  */
 
 #include <time.h>
@@ -310,6 +310,7 @@ static long parse_appid_header(Octstr **assigned_code);
 static Octstr *escape_fragment(Octstr *fragment);
 static int coriented_deliverable(long code);
 static int is_phone_number(long type_of_address);
+static void replace_octstr_char(Octstr *os1, Octstr *os2, long *pos);
 
 /*****************************************************************************
  *
@@ -506,27 +507,32 @@ static int ip_allowed_by_ppg(Octstr *ip)
         return 1;
     }
 
-    if (octstr_compare(ppg_deny_ip, octstr_imm("*.*.*.*")) == 0) {
-        panic(0, "Your ppg core configuration deny all ips, exiting");
-        return 0;
-    }
+    if (ppg_deny_ip)
+        if (octstr_compare(ppg_deny_ip, octstr_imm("*.*.*.*")) == 0) {
+            panic(0, "Your ppg core configuration deny all ips, exiting");
+            return 0;
+        }
 
-    if (octstr_compare(ppg_allow_ip, octstr_imm("*.*.*.*")) == 0) {
-        warning(0, "Your ppg core configuration allow all ips");
-        return 1;
-    }
+    if (ppg_allow_ip)
+        if (octstr_compare(ppg_allow_ip, octstr_imm("*.*.*.*")) == 0) {
+            warning(0, "Your ppg core configuration allow all ips");
+            return 1;
+        }
 
-    if (wap_push_ppg_pushuser_search_ip_from_wildcarded_list(ppg_deny_ip, ip, 
-	    octstr_imm(";"), octstr_imm("."))) {
-        error(0, "ip found from denied list");
-        return 0;
-    }
+    if (ppg_deny_ip)
+        if (wap_push_ppg_pushuser_search_ip_from_wildcarded_list(ppg_deny_ip, ip, 
+	        octstr_imm(";"), octstr_imm("."))) {
+            error(0, "ip found from denied list");
+            return 0;
+        }
 
-    if (wap_push_ppg_pushuser_search_ip_from_wildcarded_list(ppg_allow_ip, ip, 
-	    octstr_imm(";"), octstr_imm("."))) {
-        debug("wap.push.ppg.pushuser", 0, "PPG: ip found from allowed list");
-        return 1;
-    }
+    if (ppg_allow_ip)
+        if (wap_push_ppg_pushuser_search_ip_from_wildcarded_list(ppg_allow_ip, ip, 
+	        octstr_imm(";"), octstr_imm("."))) {
+            debug("wap.push.ppg.pushuser", 0, "PPG: ip_allowed_by_ppg: ip found"
+                  " from allowed list");
+            return 1;
+        }
 
     warning(0, "did not found ip from any of core lists, deny it");
     return 0;
@@ -603,7 +609,7 @@ static void http_read_thread(void *arg)
         client = http_accept_request(ppg_port, &ip, &url, &push_headers, 
                                      &mime_content, &cgivars);
         if (client == NULL) 
-	    break;
+	        break;
         p = pap_event_create(ip, url, push_headers, mime_content, cgivars,
                              client);
         list_produce(pap_queue, p);
@@ -698,27 +704,27 @@ static void pap_request_thread(void *arg)
         }
 
         if (!trusted_pi && user_configuration) {
-	    if (!wap_push_ppg_pushuser_authenticate(client, cgivars, ip, 
+	        if (!wap_push_ppg_pushuser_authenticate(client, cgivars, ip, 
                                                     push_headers, &username)) {
-	      error(0,  "Request <%s> from <%s>: authorisation failure",
-                    octstr_get_cstr(url), octstr_get_cstr(ip));
-                goto ferror;
+	             error(0,  "Request <%s> from <%s>: authorisation failure",
+                       octstr_get_cstr(url), octstr_get_cstr(ip));
+                 goto ferror;
             }
-	} else {                        /* Jörg, this wont disappear again */
-	    username = octstr_imm("");
-	}
+	    } else {                        /* Jörg, this wont disappear again */
+	        username = octstr_imm("");
+	    }
 
         http_status = HTTP_ACCEPTED;
         info(0, "PPG: Accept request <%s> from <%s>", octstr_get_cstr(url), 
              octstr_get_cstr(ip));
         
         if (octstr_len(mime_content) == 0) {
-	    warning(0, "PPG: No MIME content received, the request"
+	        warning(0, "PPG: No MIME content received, the request"
                     " unacceptable");
             send_bad_message_response(&client, octstr_imm("No MIME content"), 
                                       PAP_BAD_REQUEST, http_status);
             if (client == NULL)
-	        break;
+	            break;
             goto ferror;
         }
 
@@ -728,7 +734,7 @@ static void pap_request_thread(void *arg)
             send_bad_message_response(&client, octstr_imm("No push headers"), 
                                       PAP_BAD_REQUEST, http_status);
             if (client == NULL)
-	        break;
+	            break;
             goto ferror;
         }
         octstr_destroy(ip);
@@ -737,22 +743,22 @@ static void pap_request_thread(void *arg)
         remove_mime_headers(&push_headers);
 
         if (!headers_acceptable(push_headers, &content_header)) {
-	    warning(0,  "PPG: Unparsable push headers, the request"
+	        warning(0,  "PPG: Unparsable push headers, the request"
                     " unacceptable");
             send_bad_message_response(&client, content_header, PAP_BAD_REQUEST,
                                       http_status);
             if (client == NULL)
-	        break;
-	    goto herror;
+	            break;
+	        goto herror;
         }
         
         if (get_mime_boundary(push_headers, content_header, &boundary) == -1) {
-	    warning(0, "PPG: No MIME boundary, the request unacceptable");
+	        warning(0, "PPG: No MIME boundary, the request unacceptable");
             send_bad_message_response(&client, content_header, PAP_BAD_REQUEST,
                                       http_status);
-            if (client == NULL)
-	        break;
-	    goto berror;
+            if (client == NULL) 
+	            break;
+	        goto berror;
         }
 
         gw_assert(mime_content);
@@ -761,30 +767,30 @@ static void pap_request_thread(void *arg)
             send_bad_message_response(&client, mime_content, PAP_BAD_REQUEST,
                                       http_status);
             if (client == NULL)
-	        break;
+	            break;
             warning(0, "PPG: unable to parse mime content, the request"
                     " unacceptable");
             goto clean;
         } else {
-	    debug("wap.push.ppg", 0, "PPG: http_read_thread: pap multipart"
+	        debug("wap.push.ppg", 0, "PPG: http_read_thread: pap multipart"
                   " accepted");
         }
 
         push_len = octstr_len(push_data); 
         http_header_remove_all(push_headers, "Content-Type");
-	http_append_headers(push_headers, content_headers);
+	    http_append_headers(push_headers, content_headers);
         change_header_value(&push_headers, "Content-Length", 
             octstr_get_cstr(plos = octstr_format("%d", push_len)));
         octstr_destroy(plos);
         octstr_destroy(content_header);
-	http_destroy_headers(content_headers);
+	    http_destroy_headers(content_headers);
 
         ppg_event = NULL;
         if ((compiler_status = pap_compile(pap_content, &ppg_event)) == -2) {
-	    send_bad_message_response(&client, pap_content, PAP_BAD_REQUEST,
-                                      http_status);
+	         send_bad_message_response(&client, pap_content, PAP_BAD_REQUEST,
+                                       http_status);
             if (client == NULL)
-	        break;
+	            break;
             warning(0, "PPG: pap control entity erroneous, the request" 
                     " unacceptable");
             goto no_compile;
@@ -792,20 +798,20 @@ static void pap_request_thread(void *arg)
             send_bad_message_response(&client, pap_content, PAP_BAD_REQUEST,
                                       http_status);
             if (client == NULL)
-	        break;
+	            break;
             warning(0, "PPG: non implemented pap feature requested, the"
                     " request unacceptable");
             goto no_compile;
         } else {
-	    if (!dict_put_once(http_clients, 
-		    ppg_event->u.Push_Message.pi_push_id, client)) {
+	        if (!dict_put_once(http_clients, 
+		        ppg_event->u.Push_Message.pi_push_id, client)) {
                 warning(0, "PPG: duplicate push id, the request unacceptable");
-	        tell_fatal_error(&client, ppg_event, url, http_status, 
+	            tell_fatal_error(&client, ppg_event, url, http_status, 
                                  PAP_DUPLICATE_PUSH_ID);
                 if (client == NULL)
-	            break;
+	                break;
                 goto not_acceptable;
-	    } 
+	        } 
 
             dict_put(urls, ppg_event->u.Push_Message.pi_push_id, url); 
  
@@ -813,12 +819,12 @@ static void pap_request_thread(void *arg)
                 if (!trusted_pi && user_configuration && 
                         !wap_push_ppg_pushuser_client_phone_number_acceptable(
                         username, ppg_event->u.Push_Message.address_value)) {
-                tell_fatal_error(&client, ppg_event, url, http_status, 
-                                 PAP_FORBIDDEN);
-                if (client == NULL)
-	            break;
-	        goto not_acceptable;
-	        }   
+                    tell_fatal_error(&client, ppg_event, url, http_status, 
+                                    PAP_FORBIDDEN);
+                    if (client == NULL)
+	                    break;
+	                goto not_acceptable;
+	            }   
             }        
 
             debug("wap.push.ppg", 0, "PPG: http_read_thread: pap control"
@@ -827,8 +833,8 @@ static void pap_request_thread(void *arg)
                 http_header_duplicate(push_headers);
             ppg_event->u.Push_Message.push_data = octstr_duplicate(push_data);
             if (!handle_push_message(&client, ppg_event, http_status)) {
-	        if (client == NULL)
-		    break;
+	            if (client == NULL)
+		            break;
                 goto no_transform;
             }
         }
@@ -973,33 +979,33 @@ static int handle_push_message(HTTPClient **c, WAPEvent *e, int status)
         *c = response_push_message(pm, PAP_DUPLICATE_PUSH_ID, status);
         goto no_start;
     }
-
+    
     if (!message_transformable) {
-	pm = update_push_data_with_attribute(&sm, pm, 
+	    pm = update_push_data_with_attribute(&sm, pm, 
             PAP_TRANSFORMATION_FAILURE, PAP_UNDELIVERABLE1);  
         if (tuple != NULL)   
-	    *c = response_push_message(pm, PAP_TRANSFORMATION_FAILURE, status);
+	        *c = response_push_message(pm, PAP_TRANSFORMATION_FAILURE, status);
         else
-	    *c = response_push_message(pm, PAP_ADDRESS_ERROR, status);
+	        *c = response_push_message(pm, PAP_ADDRESS_ERROR, status);
         goto no_transformation;
     }
     
     dummy = 0;
     pm = update_push_data_with_attribute(&sm, pm, dummy, PAP_PENDING);
-
+    
     bearer_supported = select_bearer_network(&e);
     if (!bearer_supported) {
         pm = update_push_data_with_attribute(&sm, pm, dummy, 
             PAP_UNDELIVERABLE2);
         *c = response_push_message(pm, PAP_REQUIRED_BEARER_NOT_AVAILABLE, status);
-	goto no_start;
+	    goto no_start;
     }
-
+    
     if ((constraints = delivery_time_constraints(e, pm)) == TIME_EXPIRED) {
         pm = update_push_data_with_attribute(&sm, pm, PAP_FORBIDDEN, 
                                              PAP_EXPIRED);
         *c = response_push_message(pm, PAP_FORBIDDEN, status);
-	goto no_start;
+	    goto no_start;
     }
 
 /*
@@ -1012,23 +1018,23 @@ static int handle_push_message(HTTPClient **c, WAPEvent *e, int status)
     info(0, "PPG: handle_push_message: push message accepted for processing");
 
     if (constraints == TIME_TOO_EARLY)
-	goto store_push;
+	    goto store_push;
 
     if (constraints == NO_CONSTRAINTS) {
-	http_header_mark_transformation(pm->push_headers, pm->push_data, type);
+	    http_header_mark_transformation(pm->push_headers, pm->push_data, type);
         if (sm)
             sm = update_session_data_with_headers(sm, pm); 
 
         if (!confirmation_requested(e)) {
             pm = deliver_unit_push(NOT_LAST, pm, sm, session_exists);
             goto unit_push_delivered;
-	} 
+	    } 
 	      
         if (session_exists) {
             deliver_confirmed_push(NOT_LAST, pm, sm);   
         } else { 
             coriented_possible = coriented_deliverable(coded_appid_value); 
-	    http_header_remove_all(e->u.Push_Message.push_headers, 
+	        http_header_remove_all(e->u.Push_Message.push_headers, 
                                    "Content-Type");  
             if (coriented_possible) {
                 create_session(e, pm);
@@ -1281,7 +1287,7 @@ static PPGPushMachine *push_machine_create(WAPEvent *e, WAPAddrTuple *tuple)
 
 /*
  * Contrary to the normal Kannel style, we do not remove from a list here. 
- * That because we now have two different push lists.
+ * That is because we now have two different push lists.
  */
 static void push_machine_destroy(void *p)
 {
@@ -1628,17 +1634,17 @@ static int transform_message(WAPEvent **e, WAPAddrTuple **tuple,
     content.type = http_header_find_first(push_headers, 
         "Content-Transfer-Encoding");
     if (content.type) {
-	octstr_strip_blanks(content.type);
-	debug("wap.push.ppg", 0, "PPG: Content-Transfer-Encoding is \"%s\"",
-	      octstr_get_cstr (content.type));
-	message_deliverable = pap_get_content(&content);
+	    octstr_strip_blanks(content.type);
+	    debug("wap.push.ppg", 0, "PPG: Content-Transfer-Encoding is \"%s\"",
+	          octstr_get_cstr (content.type));
+	    message_deliverable = pap_get_content(&content);
 	
-	if (message_deliverable) {
-	    change_header_value(&push_headers, "Content-Transfer-Encoding", 
+	    if (message_deliverable) {
+	        change_header_value(&push_headers, "Content-Transfer-Encoding", 
                                 "binary");
-	} else {
-	    goto error;
-	}
+	    } else {
+	        goto error;
+	    }
     }
 
     http_header_get_content_type(push_headers, &content.type,
@@ -1650,8 +1656,9 @@ static int transform_message(WAPEvent **e, WAPAddrTuple **tuple,
 
     if (message_deliverable) {
         *type = content.type;        
-    } else
+    } else {
         goto error;
+    }
 
     (**e).u.Push_Message.push_data = content.body;
     octstr_destroy(content.charset);
@@ -1678,21 +1685,21 @@ no_transform:
     return 1;
 }
 
-enum {APPID_CODE_FOR_WMLUA = 0x02};
-
 /*
- * Transform X-WAP-Application headers as per ppg 6.1.2.1. If push application
- * id is wml.ua, add no header (this is default). AbsoluteURI format for X-Wap
- * -Application-Id is defined in push message, 6.2.2.1. 
+ * Transform X-WAP-Application headers as per ppg 6.1.2.1. Note that missing
+ * header means that wml.ua is assumed.
+ * Return coded value (starting with 0), when the id was not wml.ua
+ *        -1, when id was wml.ua (or no application id was present)
+ *        -2, when error
  */
 static long check_x_wap_application_id_header(List **push_headers)
 {
-    Octstr *appid_content,
-           *vos;
+    Octstr *appid_content;
     long coded_value;
+    Octstr *cos;
     
     if (*push_headers == NULL)
-        return -1;
+        return -2;
 
     appid_content = http_header_find_first(*push_headers, 
         "X-WAP-Application-Id");
@@ -1702,19 +1709,24 @@ static long check_x_wap_application_id_header(List **push_headers)
         return -1;
     }
 
-    if ((coded_value = parse_appid_header(&appid_content)) < 0)
-        return -1;
-
-    http_header_remove_all(*push_headers, "X-WAP-Application-Id");
-    vos = octstr_format("%d", APPID_CODE_FOR_WMLUA);
-
-    if (octstr_compare(appid_content, vos) != 0) {
-        http_header_add(*push_headers, "X-WAP-Application-Id", 
-                        octstr_get_cstr(appid_content));
+    if ((coded_value = parse_appid_header(&appid_content)) < 0) {
+        octstr_destroy(appid_content);
+        return -2;
     }
+        
+    if (coded_value == 2) {
+        octstr_destroy(appid_content);
+        http_header_remove_all(*push_headers, "X-WAP-Application-Id");
+        return -1;
+    }
+
+    cos = octstr_format("%ld", coded_value);
+    http_header_remove_all(*push_headers, "X-WAP-Application-Id");
+    http_header_add(*push_headers, "X-WAP-Application-Id", octstr_get_cstr(cos));
     
-    octstr_destroy(vos);
     octstr_destroy(appid_content); 
+    octstr_destroy(cos);
+    
     return coded_value;  
 }
 
@@ -1757,7 +1769,7 @@ static int content_transformable(List *push_headers)
 
 /*
  * Convert push content to compact binary format (this can be wmlc, sic, slc
- * or coc). Current status wml compiled and si compiled, others passed.
+ * or coc). Current status wml, sl and si compiled, others passed.
  */
 static Octstr *convert_wml_to_wmlc(struct content *content)
 {
@@ -1836,10 +1848,10 @@ static int pap_convert_content(struct content *content)
 
     for (i = 0; i < NUM_CONVERTERS; i++) {
         if (octstr_compare(content->type, 
-	        octstr_imm(converters[i].type)) == 0) {
-	    new_body = converters[i].convert(content);
+	            octstr_imm(converters[i].type)) == 0) {
+	        new_body = converters[i].convert(content);
             if (new_body == NULL)
-	        return 0;
+	            return 0;
             octstr_destroy(content->body);
             content->body = new_body;
             octstr_destroy(content->type); 
@@ -1865,7 +1877,7 @@ static int pap_get_content(struct content *content)
         if (octstr_case_compare(content->type, 
 	        octstr_imm(extractors[i].transfer_encoding)) == 0) {
 	    
-	    new_body = extractors[i].extract(content);
+	        new_body = extractors[i].extract(content);
             if (new_body == NULL)
 	        return 0;
             octstr_destroy(content->body);
@@ -1927,6 +1939,9 @@ int select_bearer_network(WAPEvent **e)
 
     bearer_required = (**e).u.Push_Message.bearer_required;
     network_required = (**e).u.Push_Message.network_required;
+    bearer = octstr_imm("Any");
+    network = octstr_imm("Any");
+    
     if (!bearer_required || !network_required)
         return 1;
 
@@ -1937,11 +1952,11 @@ int select_bearer_network(WAPEvent **e)
     
     for (i = 0; i < NUMBER_OF_NETWORKS ; ++i) {
         if (octstr_case_compare(bearer, octstr_imm(bearers[i])) == 0)
-	    break;
+	        break;
     }
     for (j = 0; j < NUMBER_OF_BEARERS ; ++j) {
         if (octstr_case_compare(bearer, octstr_imm(bearers[j])) == 0)
-	    break;
+	        break;
     }
     if (i == NUMBER_OF_NETWORKS || j == NUMBER_OF_BEARERS)
         return 0;
@@ -2120,14 +2135,14 @@ static int store_push_data(PPGPushMachine **pm, PPGSessionMachine *sm,
 
     *pm = push_machine_create(e, tuple);
     
+    if (duplicate_push_id)
+        return !duplicate_push_id;
+    
     if (!cless) {
        list_append(sm->push_machines, *pm);
        debug("wap.push.ppg", 0, "PPG: store_push_data: push machine %ld"
              " appended to push list of sm machine %ld", (*pm)->push_id, 
              sm->session_id);
-       list_append(ppg_machines, sm);
-       debug("wap.push.ppg", 0, "PPG: store_push_data: session machine %ld"
-             " appended to ppg machines list", sm->session_id);
     } else {
        list_append(ppg_unit_pushes, *pm);
        debug("wap.push.ppg", 0, "PPG: store_push_data: push machine %ld"
@@ -2194,7 +2209,7 @@ static void deliver_pending_pushes(PPGSessionMachine *sm, int last)
                  PAP_DELIVERED1);
             remove_push_data(sm, pm, sm == NULL);
         } else {
-	    request_confirmed_push(last, pm, sm);
+	        request_confirmed_push(last, pm, sm);
             ++i;
         }
     }
@@ -2487,11 +2502,11 @@ static int cless_accepted(WAPEvent *e, PPGSessionMachine *sm)
 }
 
 /*
- * Check that we have rigth application id for confirmed push (it is, "push.sia")
+ * Application ids start with 0 and -1 means that default (wml.ua) was used.
  */
 static int coriented_deliverable(long appid_code)
 {
-    return appid_code == 1;
+    return appid_code > -1;
 }
 
 /*
@@ -2599,7 +2614,7 @@ static WAPAddrTuple *set_addr_tuple(Octstr *address, long cliport,
     gw_assert(address);
 
     if (address_type == ADDR_PLMN)
-        cliaddr = octstr_duplicate(global_sender);
+        cliaddr = global_sender;
     else
         cliaddr = octstr_imm("0.0.0.0");
 
@@ -2652,7 +2667,7 @@ static long parse_appid_header(Octstr **appid_content)
         octstr_delete(*appid_content, pos, 
                       octstr_len(octstr_imm(";app-encoding=")));
         octstr_delete(*appid_content, 0, pos);         /* the URI part */
-	return -1;
+	    return -1;
     } 
 
     i = 0;
@@ -2664,8 +2679,9 @@ static long parse_appid_header(Octstr **appid_content)
     }
 
     if (i == NUMBER_OF_WINA_URIS) {
+        octstr_destroy(*appid_content);
         *appid_content = octstr_format("%ld", 2);      /* assigned number */
-        return -1;                                        /* for wml ua */
+        return -1;                                     /* for wml ua */
     }
     
     octstr_delete(*appid_content, 0, pos);             /* again the URI */
@@ -2981,16 +2997,10 @@ static void tell_fatal_error(HTTPClient **c, WAPEvent *e, Octstr *url,
  * Return current c value.
  */
 static void send_to_pi(HTTPClient **c, Octstr *reply_body, int status) {
-    size_t body_len; 
     List *reply_headers;
-    Octstr *bos;          /* a temporary */
 
     reply_headers = http_create_empty_headers();
     http_header_add(reply_headers, "Content-Type", "application/xml");
-    body_len = octstr_len(reply_body);
-    http_header_add(reply_headers, "Content-Length", 
-                    octstr_get_cstr(bos = octstr_format("%d", body_len)));
-    octstr_destroy(bos);
 
     if (*c != NULL)
         http_send_reply(*c, status, reply_headers, reply_body);
@@ -3001,8 +3011,7 @@ static void send_to_pi(HTTPClient **c, Octstr *reply_body, int status) {
 
 /*
  * Escape characters not allowed in the value of an attribute. Pap does not 
- * define escape sequences for message fragments; here we remove dangerous
- * characters.
+ * define escape sequences for message fragments; try common xml ones.
  */
 
 static Octstr *escape_fragment(Octstr *fragment)
@@ -3013,20 +3022,14 @@ static Octstr *escape_fragment(Octstr *fragment)
     i = 0;
     while (i < octstr_len(fragment)) {
         if ((c = octstr_get_char(fragment, i)) == '"') {
-	    octstr_delete(fragment, i, 1);
-            --i;
+            replace_octstr_char(fragment, octstr_imm("&qt"), &i);
         } else if (c == '<') {
-	    octstr_delete(fragment, i, 1);
-            --i; 
+            replace_octstr_char(fragment, octstr_imm("&lt"), &i);
         } else if (c == '>') {
-	    octstr_delete(fragment, i, 1);
-            --i;
+            replace_octstr_char(fragment, octstr_imm("&gt"), &i);
         } else if (c == '&') {
-	    octstr_delete(fragment, i, 1);
-            --i;
+            replace_octstr_char(fragment, octstr_imm("&amp"), &i);
 	    } 
-
-        ++i;
     }
 
     return fragment;
@@ -3037,7 +3040,12 @@ static int is_phone_number(long address_type)
     return address_type == ADDR_PLMN;
 }
 
-
+static void replace_octstr_char(Octstr *os1, Octstr *os2, long *pos)
+{
+    octstr_delete(os1, *pos, 1);
+    octstr_insert(os1, os2, *pos);
+    *pos += octstr_len(os2) - 1;
+}
 
 
 
