@@ -1842,13 +1842,13 @@ static void convert(Octstr *os, struct format *format, const char **fmt,
     case 'X':
 	switch (format->type) {
 	case 'l':
-	    u = va_arg(*args, long);
+	    u = va_arg(*args, unsigned long);
 	    break;
         case 'h':
-            u = (unsigned short) va_arg(*args, int);
+            u = (unsigned short) va_arg(*args, unsigned int);
             break;
         default:
-            u = va_arg(*args, int);
+            u = va_arg(*args, unsigned int);
             break;
         }
         tmpfmt[0] = '%';
