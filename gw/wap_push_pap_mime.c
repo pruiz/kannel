@@ -67,7 +67,8 @@ static int parse_tail(Octstr **multipart, Octstr *part_delimiter,
  * Input: pointer to mime boundary and mime content
  * Output: Pointer to pap control document and push data, if parsable, NULL
  * otherwise. If there is a capabilities document, pointer to this is return-
- * ed, too. If there is none, or , pointer to NULL instead. 
+ * ed, too. If there is none, pointer to NULL instead. Neither prologue nor 
+ * epilogue is returned. 
  * In addition, return 1 if parsing was succesfull, 0 otherwise.
  */
 
@@ -238,11 +239,11 @@ static int parse_body_part (Octstr **multipart, Octstr *boundary,
                        &end_pos) < 0) {
             goto error;
         } else {
-	    octstr_delete(*multipart, close_delimiter_pos, 
-                end_pos - close_delimiter_pos);
+            octstr_delete(*multipart, close_delimiter_pos, 
+                          end_pos - close_delimiter_pos);
             *body_part = octstr_duplicate(*multipart);
             octstr_delete(*multipart, 0, end_pos);
-	    goto last_part;
+	        goto last_part;
         }
     }
 
