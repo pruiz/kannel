@@ -290,14 +290,16 @@ void wap_push_ppg_init(wap_dispatch_func_t *ota_dispatch,
     dispatch_to_appl = appl_dispatch;
 
     user_configuration = read_ppg_config(cfg);
-    http_open_port(ppg_port, ppg_port_ssl);
-    http_clients = dict_create(number_of_pushes, NULL);
-    urls = dict_create(number_of_pushes, NULL);
+    if (user_configuration != USER_CONFIGURATION_NOT_ADDED) {
+        http_open_port(ppg_port, ppg_port_ssl);
+        http_clients = dict_create(number_of_pushes, NULL);
+        urls = dict_create(number_of_pushes, NULL);
 
-    gw_assert(run_status == limbo);
-    run_status = running;
-    gwthread_create(ota_read_thread, NULL);
-    gwthread_create(http_read_thread, NULL);
+        gw_assert(run_status == limbo);
+        run_status = running;
+        gwthread_create(ota_read_thread, NULL);
+        gwthread_create(http_read_thread, NULL);
+    }
 }
 
 void wap_push_ppg_shutdown(void)
@@ -379,11 +381,9 @@ static int read_ppg_config(Cfg *cfg)
      CfgGroup *grp;
      List *list;
 
-     if (cfg == NULL) {
-         warning(0, "PPG: No ppg group, using default values.");
-         ppg_url = octstr_imm("/cgi-bin/wap-push.cgi");
+     if (cfg == NULL)
          return USER_CONFIGURATION_NOT_ADDED;
-     }
+
      grp = cfg_get_single_group(cfg, octstr_imm("ppg"));
      if ((ppg_url = cfg_get(grp, octstr_imm("ppg-url"))) == NULL)
          ppg_url = octstr_imm("/cgi-bin/wap-push.cgi");
