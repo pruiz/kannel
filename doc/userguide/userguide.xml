@@ -3444,6 +3444,19 @@ get-url = "http://%S"
 
      </entry></row>
 
+   <row><entry><literal>exec (c)</literal></entry>
+     <entry>string</entry>
+     <entry valign=bottom>
+        Executes the given shell command as the current UID of the
+		  running smsbox user and returns the output to 
+		  <literal>stdout</literal> as reply.
+		  Escape codes (parameters) are
+        usable here, too. BEWARE: You may harm your system if you use
+		  this sms-service type without serious caution! Make sure anyone
+		  who is allowed to use these kind of services is checked using 
+		  white/black-list mechanisms for security reasons.
+     </entry></row>
+
    <row><entry><literal>accepted-smsc</literal></entry>
      <entry>id-list</entry>
      <entry valign=bottom>
