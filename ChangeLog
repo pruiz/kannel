@@ -1,4 +1,8 @@
 2002-06-25  Stipe Tolj <tolj@wapme-systems.de>
+    * gw/wap_push_ppg.c: allow to start PPG module without SSL enabled HTTP
+      server support.
+
+2002-06-25  Stipe Tolj <tolj@wapme-systems.de>
     * gw/wap_push_ppg.c, gwlib/cfg.def: back to previous revision, due to
       misunderstanding of the 'ppg-ssl-port' directive. This is not a boolean
       like to 'sendsms-port-ssl' et al, but a real port number to open up
