@@ -648,11 +648,13 @@ static WTPMachine *wtp_machine_create_empty(void){
         #include "wtp_machine-decl.h"
 
 	mutex_lock(machines.lock);
+
 	if (machines.list == NULL)
 		machines.first = machine;
 	else
 		machines.list->next = machine;
         machines.list = machine;
+
 	mutex_unlock(machines.lock);
 
         return machine;
@@ -1004,7 +1006,7 @@ static void tell_about_error(int type, WTPEvent *event){
 
            case no_concatenation:
                 free(event);
-                error(0, "WTP: No concatenation supported");
+                error(0, "WTP: No connectionless mode nor concatenation supported");
            break;
      }
 }
