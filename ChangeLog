@@ -1,3 +1,7 @@
+2003-03-29  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/smsc/smsc_emi2.c: fixed a typo for 'wait-ack-expire' handling.
+      Thanks to Angel who reported this.
+
 2003-03-28  Stipe Tolj  <tolj@wapme-systems.de>
     * gwlib/http.c: fixed a bug while HTTP redirecting (BUG#12). Also added
       HTTP response code 307 for redirection. Some source code formating.
