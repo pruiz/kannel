@@ -85,9 +85,11 @@
 
 void gw_regex_destroy(regex_t *preg)
 {
-    gw_assert(preg != NULL);
-
+    if (preg == NULL)
+        return;
+        
     regfree(preg);
+    gw_free(preg);
 }
 
 
@@ -343,7 +345,8 @@ Octstr *gw_regex_subst_pre_real(const regex_t *preg, const Octstr *os, const Oct
     return result;
 }
 
-int gw_regex_matches(const regex_t *preg, const Octstr *os) {
+int gw_regex_matches(const regex_t *preg, const Octstr *os)
+{
     size_t n = 1;
     regmatch_t p[10];
 

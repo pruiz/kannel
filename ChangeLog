@@ -1,4 +1,7 @@
 2004-06-10  Alexander Malysh  <a.malysh@centrium.de> 
+    * gwlib/regex.c: fixed memleak.
+
+2004-06-10  Alexander Malysh  <a.malysh@centrium.de> 
     * gw/dlr_mem.c: fixed race condition.
 
 2004-06-10  Alexander Malysh  <a.malysh@centrium.de> 
