@@ -4,7 +4,6 @@
 
 #include <errno.h>
 #include <unistd.h>
-#include <string.h> /* XXX we should use octstr instead */
 #include <signal.h>
 
 #include "gwlib/gwlib.h"
@@ -1123,6 +1122,7 @@ static Octstr *smsbox_req_handle(URLTranslation *t, Octstr *client_ip,
      */
     msg = msg_create(sms);
     
+    msg->sms.sms_type = mt_push;
     msg->sms.receiver = octstr_duplicate(to);
     msg->sms.sender = octstr_duplicate(newfrom);
     msg->sms.msgdata = text ? octstr_duplicate(text) : octstr_create("");
@@ -1616,6 +1616,7 @@ found:
 
     msg = msg_create(sms);
     
+    msg->sms.sms_type = mt_push;
     msg->sms.udhdata = octstr_create("");
 
     /* UDH including the lenght (UDHL) */
@@ -1812,6 +1813,7 @@ static void signal_handler(int signum) {
     } else if (signum == SIGHUP) {
         warning(0, "SIGHUP received, catching and re-opening logs");
         log_reopen();
+        alog_reopen();
     }
 }
 

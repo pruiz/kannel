@@ -1,3 +1,20 @@
+2001-07-31 Bruno Rodrigues <bruno.rodrigues@litux.org>
+
+	* bearerbox.c, smsbox.c: added alog_reopen to HUP signal handler.
+	* smsbox.c: removed "include <strings.h>" -> not needed anymore;
+	set sms_type to mt_push when receiving messages through http 
+	interface: When I restarted kannel, all messages on store were
+	returned to the default service instead of beeing retransmitted.
+	* smsc_at.c: added some ATI queries to modem; On the while loop
+	to retransmit PDU, added sending AT+CMGS; removed \n from AT:command;
+	Added "Read from modem" debug dump; 
+	* smsc_emi2.c: accept XSER 02 with DCS, but didn't yet convert it 
+	to other fields (flash, encoding, etc); Added wait-ack configuration
+	to define for how long to wait for (N)ACKs (default still 60 secongs).
+	* smsc_emi2.c: added flow-control configuration. If unset or 0, stays
+	in windowed mode (I'll do later the code to define the window value).
+	If 1, uses stop-and-wait flow control. 
+	
 2001-07-28 Bruno Rodrigues <bruno.rodrigues@litux.org>
 
 	* bb_http.c: There were two cgi-bin/status.xml.

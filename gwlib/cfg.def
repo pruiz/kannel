@@ -118,6 +118,8 @@ MULTI_GROUP(smsc,
     OCTSTR(phone)
     OCTSTR(send-url)
     OCTSTR(sender-prefix)
+    OCTSTR(flow-control)
+    OCTSTR(wait-ack)
 )
 
 

@@ -22,6 +22,8 @@
 #include "msg.h"
 #include "emimsg.h"
 
+#define DEFAULTWAITACK 120
+
 typedef struct privdata {
     List	*outgoing_queue;
     long	receiver_thread;
@@ -41,6 +43,8 @@ typedef struct privdata {
     int		sendtype[100];	/* OT of message, undefined if time == 0 */
     Msg		*sendmsg[100]; 	/* Corresponding message for OT == 51 */
     int		keepalive; 	/* Seconds to send a Keepalive Command (OT=31) */
+    int		flowcontrol;	/* 0=Windowing, 1=Stop-and-Wait */
+    int		waitack;	/* Seconds to wait to ack */
 } PrivData;
 
 
@@ -389,7 +393,7 @@ static struct emimsg *msg_to_emimsg(Msg *msg, int trn)
     }
 
     if (msg->sms.validity) {
-	tm = gw_localtime(time(NULL) + msg->sms.validity);
+	tm = gw_localtime(time(NULL) + msg->sms.validity * 60);
 	sprintf(p, "%02d%02d%02d%02d%02d",
 	    tm.tm_mday, tm.tm_mon + 1, tm.tm_year % 100, 
 	    tm.tm_hour, tm.tm_min);
@@ -399,7 +403,7 @@ static struct emimsg *msg_to_emimsg(Msg *msg, int trn)
     if (msg->sms.deferred) {
 	str = octstr_create("1");
 	emimsg->fields[E50_DD] = str;
-	tm = gw_localtime(time(NULL) + msg->sms.deferred);
+	tm = gw_localtime(time(NULL) + msg->sms.deferred * 60);
 	sprintf(p, "%02d%02d%02d%02d%02d",
 	    tm.tm_mday, tm.tm_mon + 1, tm.tm_year % 100, 
 	    tm.tm_hour, tm.tm_min);
@@ -494,14 +498,24 @@ static int handle_operation(SMSCConn *conn, Connection *server,
 		error(0, "Malformed emi XSer field");
 		break;
 	    }
-	    if (type != 1)
+	    if (type != 1 && type != 2)
 		warning(0, "Unsupported EMI XSer field %d", type);
 	    else {
-		tempstr = octstr_copy(xser, 4, len * 2);
-		if (octstr_hex_to_binary(tempstr) == -1)
-		    error(0, "Invalid UDH contents");
-		msg->sms.udhdata = tempstr;
-		msg->sms.flag_udh = 1;
+		if (type == 1) {
+		    tempstr = octstr_copy(xser, 4, len * 2);
+		    if (octstr_hex_to_binary(tempstr) == -1)
+			error(0, "Invalid UDH contents");
+		    msg->sms.udhdata = tempstr;
+		    msg->sms.flag_udh = 1;
+		}
+		if (type == 2) {
+		    int dcs;
+		    tempstr = octstr_copy(xser, 4, 2);
+		    octstr_hex_to_binary(tempstr);
+		    dcs = octstr_get_char(tempstr, 0);
+		    octstr_destroy(tempstr);
+		    /* XXX Separate dcs through other fields */
+		}
 	    }
 	    octstr_delete(xser, 0, 2 * len + 4);
 	}
@@ -609,15 +623,16 @@ static void emi2_send_loop(SMSCConn *conn, Connection *server)
     Octstr	*str;
     Msg		*msg;
     time_t	current_time, check_time, keepalive_time;
+    int write = 1; /* write=1, read=0, for stop-and-wait flow control */
 
-    // Initialize keepalive time counter
+    /* Initialize keepalive time counter */
     if ( privdata->keepalive > 0 )
 	keepalive_time = time(NULL);
 
     check_time = time(NULL);
     while (1) {
 	/* Send keepalive if there's room in the sending window */
-	while (privdata->keepalive > 0 && time(NULL) > keepalive_time + privdata->keepalive &&
+	if (write && privdata->keepalive > 0 && time(NULL) > keepalive_time + privdata->keepalive &&
 	       privdata->unacked < 100 && !privdata->shutdown ) {
 	    while (privdata->sendtime[nexttrn % 100] != 0)
 		nexttrn++; /* pick unused TRN */
@@ -632,10 +647,12 @@ static void emi2_send_loop(SMSCConn *conn, Connection *server)
 	    }
 	    emimsg_destroy(emimsg);
 	    keepalive_time = time(NULL);
+	    write = 0;
 	}
 					    
+
 	/* Send messages if there's room in the sending window */
-	while (privdata->unacked < 100 && !privdata->shutdown &&
+	while ((write || !privdata->flowcontrol) && privdata->unacked < 100 && !privdata->shutdown &&
 	       (msg = list_extract_first(privdata->outgoing_queue)) != NULL) {
 	    while (privdata->sendtime[nexttrn % 100] != 0)
 		nexttrn++; /* pick unused TRN */
@@ -650,8 +667,11 @@ static void emi2_send_loop(SMSCConn *conn, Connection *server)
 		return;
 	    }
 	    emimsg_destroy(emimsg);
+
 	    if ( privdata->keepalive > 0 )
 		keepalive_time = time(NULL);
+
+	    write = 0;
 	}
 
 	/* Read acks/nacks from the server */
@@ -680,6 +700,7 @@ static void emi2_send_loop(SMSCConn *conn, Connection *server)
 		    emimsg->ot != privdata->sendtype[emimsg->trn])
 		    error(0, "Emi2: Got ack, don't remember sending O?");
 		else {
+		    write = 1;
 		    privdata->sendtime[emimsg->trn] = 0;
 		    privdata->unacked--;
 		    if (emimsg->ot == 51) {
@@ -692,13 +713,15 @@ static void emi2_send_loop(SMSCConn *conn, Connection *server)
 						SMSCCONN_FAILED_REJECTED);
 		    }
 		    else if (emimsg->ot == 31)
-			; /* We don't use the data in the reply */
+			;
+			/* We don't use the data in the reply */
 		    else
 			panic(0, "Bug, ACK handler missing for sent packet");
 		}
 	    }
 	    emimsg_destroy(emimsg);
 	}
+
 	if (conn_read_error(server)) {
 	    error(0, "emi2: Error trying to read ACKs from SMSC");
 	    return;
@@ -714,12 +737,12 @@ static void emi2_send_loop(SMSCConn *conn, Connection *server)
 	    check_time = current_time;
 	    for (i = 0; i < 100; i++)
 		if (privdata->sendtime[i]
-		    && privdata->sendtime[i] < current_time - 60) {
+		    && privdata->sendtime[i] < current_time - privdata->waitack) {
 		    privdata->sendtime[i] = 0;
 		    privdata->unacked--;
 		    if (privdata->sendtype[i] == 51) {
-			warning(0, "smsc_emi2: received neither ACK nor NACK "
-				"in 60 seconds, resending message");
+			warning(0, "smsc_emi2: received neither ACK nor NACK for message %d" 
+				"in %d seconds, resending message", i, privdata->waitack);
 			list_produce(privdata->outgoing_queue,
 				     privdata->sendmsg[i]);
 			/* Wake up this same thread to send again
@@ -728,7 +751,7 @@ static void emi2_send_loop(SMSCConn *conn, Connection *server)
 		    }
 		    else if (privdata->sendtype[i] == 31)
 			warning(0, "smsc_emi2: Alert (operation 31) was not "
-				"ACKed within 60 seconds");
+				"ACKed within %d seconds", privdata->waitack);
 		    else
 			panic(0, "Bug, no timeout handler for sent packet");
 		}
@@ -740,12 +763,15 @@ static void emi2_send_loop(SMSCConn *conn, Connection *server)
 	    break;
 
 	/* If the server doesn't ack our messages, wake up to resend them */
-	if (privdata->unacked == 0) 
+	if (!privdata->flowcontrol && list_len(privdata->outgoing_queue))
+	    ;
+	    
+	else if (privdata->unacked == 0) {
 	    if (privdata->keepalive > 0)
 		conn_wait(server, privdata->keepalive + 1);
 	    else
 		conn_wait(server, -1);
-	else 
+	} else 
 	    if (privdata->keepalive > 0 && privdata->keepalive < 40)
 		conn_wait(server, privdata->keepalive + 1);
 	    else
@@ -992,7 +1018,8 @@ int smsc_emi2_create(SMSCConn *conn, CfgGroup *cfg)
 {
     PrivData *privdata;
     Octstr *allow_ip, *deny_ip, *host;
-    long portno, our_port, keepalive; /* has to be long because of cfg_get_integer */
+    long portno, our_port, keepalive, flowcontrol, waitack; 
+    	/* has to be long because of cfg_get_integer */
     int i;
 
     privdata = gw_malloc(sizeof(PrivData));
@@ -1022,6 +1049,24 @@ int smsc_emi2_create(SMSCConn *conn, CfgGroup *cfg)
 	privdata->keepalive = 0;
     else
 	privdata->keepalive = keepalive;
+
+    if (cfg_get_integer(&flowcontrol, cfg, octstr_imm("flow-control")) < 0)
+	privdata->flowcontrol = 0;
+    else
+	privdata->flowcontrol = flowcontrol;
+    if (privdata->flowcontrol < 0 || privdata->flowcontrol > 1) {
+	error(0, "'flow-control' invalid in emi2 configuration.");
+	goto error;
+    }
+
+    if (cfg_get_integer(&waitack, cfg, octstr_imm("wait-ack")) < 0)
+	privdata->waitack = 60;
+    else
+	privdata->waitack = waitack;
+    if (privdata->waitack < 30 ) {
+	error(0, "'wait-ack' invalid in emi2 configuration.");
+	goto error;
+    }
 
     if (privdata->port <= 0 || privdata->port > 65535) {
 	error(0, "'port' missing/invalid in emi2 configuration.");

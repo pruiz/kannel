@@ -1779,6 +1779,27 @@ smsc-password = bar
         to 0 to disable this feature.
      </entry></row>
 
+    <row><entry><literal>wait-ack</literal></entry>
+      <entry><literal>number</literal></entry>
+      <entry valign=bottom>
+        A message is resent if the acknowledge from SMSC takes more than 
+	this time.  Defaults to 60 seconds.
+     </entry></row>
+
+    <row><entry><literal>flow-control</literal></entry>
+      <entry><literal>number</literal></entry>
+      <entry valign=bottom>
+	This SMSC can support two types of flow control. The first type 
+	of flow control is a <literal>top-and-wait</literal> protocol, 
+	when this parameter equals to '1'. During the handling of commands, 
+	no other commands shall be sent before the a response is received. 
+	Any command that is sent before the reception of the response will 
+	be discarded.
+	The second type of flow control is <literal>windowing</literal>,
+	when this parameter is unset or equals '0'. In this case a maximum 
+	of n commands can be sent before a response is received. 
+     </entry></row>
+
    </tbody></tgroup></informaltable>
    
 

@@ -172,6 +172,18 @@ SMSCenter *at_open(char *serialdevice, char *modemtype, char *pin,
         if(send_modem_command(smsc->at_fd, "ATE0", 0) == -1)
                 goto error;
 
+	/* Let's collect some information from modem */
+	if(send_modem_command(smsc->at_fd, "ATI", 0) == -1)
+	    goto error;
+	if(send_modem_command(smsc->at_fd, "ATI1", 0) == -1)
+	    goto error;
+	if(send_modem_command(smsc->at_fd, "ATI2", 0) == -1)
+	    goto error;
+	if(send_modem_command(smsc->at_fd, "ATI3", 0) == -1)
+	    goto error;
+	if(send_modem_command(smsc->at_fd, "ATI4", 0) == -1)
+	    goto error;
+
         /* Check does the modem require a PIN and, if so, send it
          * This is not supported by the Nokia Premicell */
         if(strcmp(smsc->at_modemtype, PREMICELL) != 0) {
@@ -190,6 +202,8 @@ SMSCenter *at_open(char *serialdevice, char *modemtype, char *pin,
         /* Set the modem to PDU mode and autodisplay of new messages */
         if(send_modem_command(smsc->at_fd, "AT+CMGF=0", 0) == -1)
                 goto error;
+
+	sleep(1);
 
         /* The Ericsson GM12 modem requires different new message 
          * indication options from the other modems */ 
@@ -338,6 +352,9 @@ int at_submit_msg(SMSCenter *smsc, Msg *msg) {
                         ret = send_modem_command(smsc->at_fd, command, 0);
                         debug("AT", 0, "send command status: %d", ret);
                         while (ret != 0 && retries > 0) {
+				sprintf(command, "AT+CMGS=%d", strlen(pdu)/2);
+				if(! send_modem_command(smsc->at_fd, command, 1) == 0)
+				    break;
                                sprintf(command, "%s%s%c", sc, pdu, 26);
                                ret = send_modem_command(smsc->at_fd, command, 0);
                                debug("AT", 0, "send command status: %d", ret);
@@ -433,7 +450,7 @@ static int send_modem_command(int fd, char *cmd, int multiline) {
         ostr = octstr_create("");
 
         /* debug */
-        debug("bb.smsc.at", 0, "AT: Command: %s\n", cmd);
+        debug("bb.smsc.at", 0, "AT: Command: %s", cmd);
         
         /* DEBUG !!! - pretend to send but just return success (0)*/
         /* return 0; */
@@ -465,8 +482,8 @@ static int send_modem_command(int fd, char *cmd, int multiline) {
                 ret = octstr_search(ostr, 
                                     octstr_imm("SIM PIN"), 0);
                 if(ret != -1) {
-                        octstr_destroy(ostr);
-                        return -2;
+			ret = -2;
+                        goto error;
                 }
                 if(multiline)
                         ret = octstr_search(ostr, 
@@ -484,22 +501,30 @@ static int send_modem_command(int fd, char *cmd, int multiline) {
                                                     octstr_imm("CMGS"), 0);
                 }
                 if(ret != -1) {
-                        octstr_destroy(ostr);
-                        return 0;
+			ret = 0;
+                        goto error;
                 }
                 ret = octstr_search(ostr, 
                                     octstr_imm("ERROR"), 0);
                 if(ret != -1) {
-                        octstr_destroy(ostr);
-                        return -1;
+			ret = -1;
+			goto error;
                 }
         }
-        octstr_destroy(ostr);
-        return -1;
+	ret = -1;
+	goto error;
         
  error:
+	for (i=0; i< octstr_len(ostr); i++) {
+	    if (octstr_get_char(ostr, i) < 32)
+		octstr_set_char(ostr, i, ' ');
+	}
+	octstr_strip_blanks(ostr);
+
+	debug("AT", 0, "Read from modem: '%s'",octstr_get_cstr(ostr) );
+
         octstr_destroy(ostr);
-        return -1;
+        return ret;
 }
 
 /******************************************************************************
