@@ -32,7 +32,7 @@
  * Retransmission until acknowledgement guarantees reliability of the transaction,
  * if the peer stays up. It is implemented by using retransmissions controlled by
  * timers and counters. There are two kind of timers, retransmission and acknow-
- * ledgement timers. (Actually, there is one timer iniatilised with two intervals.   * But let us keep the language simple). These are used in concert with 
+ * ledgement timers. (Actually, there is one timer iniatilised with two intervals. * But let us keep the language simple). These are used in concert with 
  * corresponding counters, RCR (retransmission counter) and AEC (acknowledgement 
  * expiration counter). AEC counts expired acknowledgement intervals.
  *
@@ -62,7 +62,7 @@
  * it must be teared down. If WSP has been indicated about a transaction, WTP must
  * do TR-Abort.ind.
  *
- * There is two kind of aborts: by the peer, when it send abort, pdu and by the 
+ * There is two kind of aborts: by the peer, when it send abort pdu and by the 
  * wsp, when it does a primitive TR-Abort.req. When WSP does an abort, WTP must 
  * send an abort pdu to the peer; when WTP receives an abort, WSP must be indicat-
  * ed (note, however, the special meaning abort pdu has in tid verification; see 
@@ -96,6 +96,7 @@ ROW(LISTEN,
 
      timer_event = wtp_event_create(TimerTO_A);
      wtp_timer_start(machine->timer, L_A_WITH_USER_ACK, machine, timer_event); 
+     machine->ack_pdu_sent = 0;
     },
     INVOKE_RESP_WAIT)
 
@@ -105,18 +106,21 @@ ROW(LISTEN,
     (wtp_tid_is_valid(event, machine) == fail || 
      wtp_tid_is_valid(event, machine) == no_cached_tid),
     { 
-     machine->tid_ve = 1;
-     wtp_send_ack(machine->tid_ve, machine, event);
+     machine->rid = 0;
+     wtp_send_ack(TID_VERIFICATION, machine, event);
+     machine->rid = 1;
     
      machine->u_ack = event->RcvInvoke.up_flag;
      machine->tcl = event->RcvInvoke.tcl;
      current_primitive = TR_Invoke_Ind;
      machine->invoke_indication = pack_wsp_event(current_primitive, event, machine);
-     debug("wap.wtp", 0, "WTP_STAE: generating invoke indication, tid being invalid");
-     machine->rid = 1;
+     debug("wap.wtp", 0, "WTP_STATE: generating invoke indication, tid being invalid");
     },
     TIDOK_WAIT)
 
+/*
+ * Handling of class 0 messages is stateless.
+ */
 ROW(LISTEN,
     RcvInvoke,
     event->RcvInvoke.tcl == 0,
@@ -155,6 +159,7 @@ ROW(TIDOK_WAIT,
      
      timer_event = wtp_event_create(TimerTO_A);
      wtp_timer_start(machine->timer, L_A_WITH_USER_ACK, machine, timer_event); 
+     machine->ack_pdu_sent = 0;
     },
     INVOKE_RESP_WAIT)
 
@@ -174,8 +179,7 @@ ROW(TIDOK_WAIT,
     RcvInvoke,
     event->RcvInvoke.rid == 1,
     { 
-     machine->tid_ve = 1;
-     wtp_send_ack(machine->tid_ve, machine, event); 
+     wtp_send_ack(TID_VERIFICATION, machine, event); 
     },
     TIDOK_WAIT)
 
@@ -224,15 +228,11 @@ ROW(INVOKE_RESP_WAIT,
     1,
     { 
      wtp_machine_mark_unused(machine);
-     wtp_send_abort(event->TR_Abort_Req.abort_type, event->TR_Abort_Req.abort_reason,
+     wtp_send_abort(USER, event->TR_Abort_Req.abort_reason,
                     machine, event); 
     },
     LISTEN)
 
-/*
- * We must make two copies of the result message: one for sending and another for
- * possible resending.
- */
 ROW(INVOKE_RESP_WAIT,
     TR_Result_Req,
     1,
@@ -242,8 +242,8 @@ ROW(INVOKE_RESP_WAIT,
      wtp_timer_stop(machine->timer);
      timer_event = wtp_event_create(TimerTO_R);
      wtp_timer_start(machine->timer, L_R_WITH_USER_ACK, machine, timer_event);
-     debug("wap.wtp", 0, "WTP: sending results");
      msg_destroy(machine->result);
+     machine->rid = 0;
      machine->result = wtp_send_result(machine, event);
      machine->rid = 1;
     },
@@ -272,7 +272,10 @@ ROW(INVOKE_RESP_WAIT,
 ROW(INVOKE_RESP_WAIT,
     TimerTO_A,
     (machine->tcl == 2 && machine->u_ack == 0),
-    { wtp_send_ack(ACKNOWLEDGEMENT, machine, event);},
+    { 
+     wtp_send_ack(ACKNOWLEDGEMENT, machine, event);
+     machine->u_ack = 1;
+    },
     RESULT_WAIT)
 
 ROW(INVOKE_RESP_WAIT,
@@ -280,7 +283,7 @@ ROW(INVOKE_RESP_WAIT,
     1,
     {
      wtp_machine_mark_unused(machine);
-     wtp_send_abort(PROVIDER, NORESPONSE, machine, event); 
+     wtp_send_abort(PROVIDER, PROTOERR, machine, event); 
      
      current_primitive = TR_Abort_Ind;
      /*wsp_event = pack_wsp_event(current_primitive, event, machine);*/
@@ -301,6 +304,7 @@ ROW(RESULT_WAIT,
      wtp_timer_stop(machine->timer);
      timer_event = wtp_event_create(TimerTO_R);
      wtp_timer_start(machine->timer, L_R_WITH_USER_ACK, machine, timer_event);
+
      msg_destroy(machine->result);
      machine->rid = 0;
      machine->result = wtp_send_result(machine, event);
@@ -337,7 +341,6 @@ ROW(RESULT_WAIT,
     {
      machine->rid = event->RcvInvoke.rid;
      wtp_send_ack(machine->tid_ve, machine, event);
-     machine->ack_pdu_sent = 1;
     },
     RESULT_WAIT)
 
@@ -346,8 +349,7 @@ ROW(RESULT_WAIT,
     1,
     { 
      wtp_machine_mark_unused(machine);
-     wtp_send_abort(event->TR_Abort_Req.abort_type, event->TR_Abort_Req.abort_reason,
-                    machine, event); 
+     wtp_send_abort(USER, event->TR_Abort_Req.abort_reason, machine, event); 
     },
     LISTEN)
 
@@ -397,8 +399,7 @@ ROW(RESULT_RESP_WAIT,
     1,
     { 
      wtp_machine_mark_unused(machine);
-     wtp_send_abort(event->TR_Abort_Req.abort_type, event->TR_Abort_Req.abort_reason,
-                    machine, event); 
+     wtp_send_abort(USER, event->TR_Abort_Req.abort_reason, machine, event); 
     },
     LISTEN)
 
