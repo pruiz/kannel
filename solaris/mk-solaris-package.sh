@@ -1,7 +1,7 @@
 #!/bin/sh
 
 cd ..
-CFLAGS="-Wall -O2" ./configure --prefix=./solaris/kannel --with-malloc=native
+CFLAGS="-Wall -O2 -Xlinker -rpath -Xlinker /usr/local/lib" ./configure --prefix=./solaris/kannel --with-malloc=native
 make 
 make install
 cd solaris
