@@ -53,6 +53,7 @@ SMSCenter *smscenter_construct(void) {
 	smsc->dial_prefix = NULL;
 	smsc->route_prefix = NULL;
 	smsc->alt_charset = 0;
+	smsc->keepalive = 0;
 
 	smsc->mutex = mutex_create();
 
@@ -69,6 +70,18 @@ SMSCenter *smscenter_construct(void) {
 	smsc->cimd_port = -1;
 	smsc->cimd_username = NULL;
 	smsc->cimd_password = NULL;
+
+	/* CIMD 2 */
+	smsc->cimd2_hostname = NULL;
+	smsc->cimd2_port = -1;
+	smsc->cimd2_username = NULL;
+	smsc->cimd2_password = NULL;
+	smsc->cimd2_send_seq = 1;
+	smsc->cimd2_receive_seq = 0;
+	smsc->cimd2_inbuffer = NULL;
+	smsc->cimd2_received = NULL;
+	smsc->cimd2_error = 0;
+	smsc->cimd2_next_ping = 0;
 
 	/* EMI */
 	smsc->emi_phonenum = NULL;
@@ -111,6 +124,13 @@ void smscenter_destruct(SMSCenter *smsc) {
 	gw_free(smsc->cimd_username);
 	gw_free(smsc->cimd_password);
 
+	/* CIMD 2 */
+	octstr_destroy(smsc->cimd2_hostname);
+	octstr_destroy(smsc->cimd2_username);
+	octstr_destroy(smsc->cimd2_password);
+	octstr_destroy(smsc->cimd2_inbuffer);
+	list_destroy(smsc->cimd2_received);
+
 	/* EMI */
 	gw_free(smsc->emi_phonenum);
 	gw_free(smsc->emi_serialdevice);
@@ -149,6 +169,11 @@ int smscenter_submit_msg(SMSCenter *smsc, Msg *msg) {
 
 	case SMSC_TYPE_CIMD:
 		if(cimd_submit_msg(smsc, msg) == -1)
+			goto error;
+		break;
+
+	case SMSC_TYPE_CIMD2:
+		if (cimd2_submit_msg(smsc, msg) == -1)
 			goto error;
 		break;
 
@@ -200,6 +225,12 @@ int smscenter_receive_msg(SMSCenter *smsc, Msg **msg)
 
     case SMSC_TYPE_CIMD:
 	ret = cimd_receive_msg(smsc, msg);
+	if (ret == -1)
+	    goto error;
+	break;
+
+    case SMSC_TYPE_CIMD2:
+	ret = cimd2_receive_msg(smsc, msg);
 	if (ret == -1)
 	    goto error;
 	break;
@@ -258,6 +289,12 @@ int smscenter_pending_smsmessage(SMSCenter *smsc)
 	
     case SMSC_TYPE_CIMD:
 	ret = cimd_pending_smsmessage(smsc);
+	if (ret == -1)
+	    goto error;
+	break;
+
+    case SMSC_TYPE_CIMD2:
+	ret = cimd2_pending_smsmessage(smsc);
 	if (ret == -1)
 	    goto error;
 	break;
@@ -398,8 +435,10 @@ SMSCenter *smsc_open(ConfigGroup *grp)
         char *alt_chars;
         char *smpp_system_id, *smpp_system_type, *smpp_address_range;
 	char *sema_smscnua, *sema_homenua, *sema_report;
+	char *keepalive;
 
         int typeno, portno, backportno, ourportno, receiveportno, iwaitreport;
+	int keepalivetime;
 
 
         type = config_get(grp, "smsc");
@@ -424,6 +463,7 @@ SMSCenter *smsc_open(ConfigGroup *grp)
 	sema_homenua = config_get(grp, "home_nua");
 	sema_report = config_get(grp, "wait_report");
 	iwaitreport = (sema_report != NULL ? atoi(sema_report) : 1);
+	keepalive = config_get(grp, "keepalive");
 	
 	if (backup_port)
 	    warning(0, "Depricated SMSC config variable 'backup-port' used, "
@@ -432,6 +472,7 @@ SMSCenter *smsc_open(ConfigGroup *grp)
 	portno = (port != NULL ? atoi(port) : 0);
 	backportno = (backup_port != NULL ? atoi(backup_port) : 0);
 	receiveportno = (receive_port != NULL ? atoi(receive_port) : 0);
+	keepalivetime = (keepalive != NULL? atoi(keepalive) : 0);
 
 	/* Use either, but prefer receive-port */
 	
@@ -445,6 +486,7 @@ SMSCenter *smsc_open(ConfigGroup *grp)
 
 	if (strcmp(type, "fake") == 0) typeno = SMSC_TYPE_FAKE;
 	else if (strcmp(type, "cimd") == 0) typeno = SMSC_TYPE_CIMD;
+	else if (strcmp(type, "cimd2") == 0) typeno = SMSC_TYPE_CIMD2;
 	else if (strcmp(type, "emi") == 0) typeno = SMSC_TYPE_EMI;
 	else if (strcmp(type, "emi_ip") == 0) typeno = SMSC_TYPE_EMI_IP;
 	else if (strcmp(type, "smpp") == 0) typeno = SMSC_TYPE_SMPP_IP;
@@ -468,6 +510,15 @@ SMSCenter *smsc_open(ConfigGroup *grp)
 		error(0, "Required field missing for CIMD center.");
 	    else
 		smsc = cimd_open(host, portno, username, password);
+	    break;
+
+	case SMSC_TYPE_CIMD2:
+	    if (host == NULL || portno == 0 || username == NULL ||
+		password == NULL)
+		error(0, "Required field missing for CIMD 2 center.");
+	    else
+		smsc = cimd2_open(host, portno, username, password,
+				keepalivetime);
 	    break;
 
 	case SMSC_TYPE_EMI:
@@ -529,6 +580,8 @@ int smsc_reopen(SMSCenter *smsc) {
 	    return fake_reopen(smsc);
 	case SMSC_TYPE_CIMD:
 	    return cimd_reopen(smsc);
+	case SMSC_TYPE_CIMD2:
+	    return cimd2_reopen(smsc);
 	case SMSC_TYPE_EMI_IP:
 	    return emi_reopen_ip(smsc);
 	case SMSC_TYPE_EMI:
@@ -606,6 +659,11 @@ int smsc_close(SMSCenter *smsc)
 
     case SMSC_TYPE_CIMD:
 	if (cimd_close(smsc) == -1)
+	    errors = 1;
+	break;
+
+    case SMSC_TYPE_CIMD2:
+	if (cimd2_close(smsc) == -1)
 	    errors = 1;
 	break;
 
@@ -721,13 +779,13 @@ int smsc_get_message(SMSCenter *smsc, RQueueItem **new)
 			/* OK */
 			msg->msg = newmsg;
 		} else if (ret == 0) { /* "NEVER" happens */
-		    /* XXX note that we leak memory here... but this
-		     *     should never happen */
 		    warning(0, "SMSC: Pending message returned '1', "
 			    "but nothing to receive!");
+		    rqi_delete(msg);
 		    return 0;
 		} else {
 			error(0, "Failed to receive the message, reconnecting...");
+		        rqi_delete(msg);
 			/* reopen the connection etc. invisible to other end */
 		retry:
 			ret = smsc_reopen(smsc);

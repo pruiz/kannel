@@ -24,6 +24,7 @@ enum {
 	SMSC_TYPE_DELETED,
 	SMSC_TYPE_FAKE,
 	SMSC_TYPE_CIMD,
+	SMSC_TYPE_CIMD2,
 	SMSC_TYPE_EMI,
 	SMSC_TYPE_EMI_X31,
 	SMSC_TYPE_EMI_IP,
@@ -61,6 +62,9 @@ struct SMSCenter {
 	/* General IO device */
 	int socket;
 
+	/* Maximum minutes idle time before ping is sent. 0 for no pings. */
+	int keepalive;
+
 	/* TCP/IP */
 	char *hostname;
 	int port;
@@ -84,6 +88,18 @@ struct SMSCenter {
 	char *cimd_password;
 	time_t cimd_last_spoke;
 	int cimd_config_bits;
+
+	/* CIMD 2 */
+	Octstr *cimd2_hostname;
+	int cimd2_port;
+	Octstr *cimd2_username;
+	Octstr *cimd2_password;
+	int cimd2_send_seq;
+	int cimd2_receive_seq;
+	Octstr *cimd2_inbuffer;
+	List *cimd2_received;
+	int cimd2_error;
+	time_t cimd2_next_ping;
 	
 	/* EMI */
 	int emi_fd;
@@ -174,6 +190,16 @@ int cimd_close(SMSCenter *smsc);
 int cimd_pending_smsmessage(SMSCenter *smsc);
 int cimd_submit_msg(SMSCenter *smsc, Msg *msg);
 int cimd_receive_msg(SMSCenter *smsc, Msg **msg);
+
+/*
+ * Interface to Nokia SMS centers using CIMD 2.
+ */
+SMSCenter *cimd2_open(char *hostname, int port, char *username, char *password, int keepalive);
+int cimd2_reopen(SMSCenter *smsc);
+int cimd2_close(SMSCenter *smsc);
+int cimd2_pending_smsmessage(SMSCenter *smsc);
+int cimd2_submit_msg(SMSCenter *smsc, Msg *msg);
+int cimd2_receive_msg(SMSCenter *smsc, Msg **msg);
 
 /*
  * Interface to CMG SMS centers using EMI.

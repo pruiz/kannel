@@ -31,6 +31,7 @@
 #include "list.h"
 #include "gwassert.h"
 #include "counter.h"
+#include "charset.h"
 
 
 #endif

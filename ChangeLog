@@ -1,3 +1,24 @@
+2000-04-26  Richard Braakman  <dark@wapit.com>
+
+	* gw/smsc_cimd2.c: Wrote.  Support for CIMD2 servers.
+
+	* gw/smsc.c: Added CIMD2 hooks to all the multiplexer functions.
+	Added support for "keepalive" option with CIMD2 needs.
+	Fixed memory leak when smscenter_receive_message fails.
+
+	* gw/smsc_p.h: Added SMSC_TYPE_CIMD2, and cimd2 fields to the
+	shared structure.  Added prototypes for cimd2 interface.
+
+	* gw/kannel.conf: Add example configuration group for CIMD2.
+
+	* doc/CodingStyle: Add bb.sms.cimd2 to the list of debug areas.
+
+	* gwlib/charset.c, gwlib/charset.h: Wrote.  Contains functions
+	for converting between ISO-Latin-1 and the GSM default alphabet.
+	Used by CIMD2 code.
+
+	* gwlib/gwlib.h: Include "charset.h" as well.
+
 Wed Apr 26 16:40:41 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* Making relase 0.8.
