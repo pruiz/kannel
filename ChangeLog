@@ -1,5 +1,10 @@
 2000-05-15  Richard Braakman  <dark@wapit.com>
 
+	* gwlib/conn.[ch]: Found some more things to fix while writing
+	drive_wapbox.  Interface is almost stable now.
+
+2000-05-15  Richard Braakman  <dark@wapit.com>
+
 	* test/drive_wapbox.c: A tool to run the wapbox in isolation,
 	for easy profiling.
 
