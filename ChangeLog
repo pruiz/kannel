@@ -1,5 +1,9 @@
 2000-11-10  Lars Wirzenius  <liw@iki.fi>
 
+	* gw/wap-appl.c: Reformatted.
+
+2000-11-10  Lars Wirzenius  <liw@iki.fi>
+
 	* gw/wap-appl.c: Changed thread structure so that there is a
 	static number of thread regardless of how many requests are
 	made. This should make things a bit faster when the load is heavy.
