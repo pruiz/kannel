@@ -1,3 +1,8 @@
+2000-11-01  Yann Muller  <ymuller@3glab.com>
+
+	* gw/smsc_at.c: handles message lengths of 8*n+1 properly.
+	Added comments to encode7bituncompressed().
+
 2000-10-31  Richard Braakman  <dark@wapit.com>
 
 	* gwlib/fdset.c: Handle EINTR.
