@@ -371,7 +371,8 @@ error:
 
 int http_post_real(Octstr *url, List *request_headers, Octstr *request_body,
 				   Octstr **final_url, List **reply_headers, Octstr **reply_body) {
-	int i, ret, len;
+	int i, ret;
+	long len;
 	Octstr *h;
 	char buf[16];
 
@@ -394,7 +395,7 @@ int http_post_real(Octstr *url, List *request_headers, Octstr *request_body,
 	 *  
 	 */
 
-	if (NULL != request_body) {
+	if (request_body != NULL) {
 		len = octstr_len(request_body);	
 	} else {
 		len = 0;
