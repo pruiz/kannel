@@ -117,6 +117,7 @@ void kannel_cfmakeraw (struct termios *tio);
  */
 int gw_isdigit(int);
 int gw_isxdigit(int);
+int gw_isalnum(int);
 
 /*
  * Rounds up the result of a division

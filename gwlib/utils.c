@@ -378,6 +378,10 @@ int gw_isdigit(int c)
     return isdigit(c);
 }
 
+int gw_isalnum(int c)
+{
+    return isalnum(c);
+}
 
 int gw_isxdigit(int c)
 {

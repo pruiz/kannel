@@ -1,3 +1,6 @@
+2003-09-10  Alexander Malysh  <a.malysh@centrium.de>
+    * gwlib/utils.[ch]: added gw_isalnum(int) wrapper for isalnum(int) function.
+
 2003-09-10  Stipe Tolj  <tolj@wapme-systems.de>
     * gwlib/parse.[ch]: added routines parse_get_line() to get the Octstr
       stream up to an EOL and parse_get_seperated_block() to get an next 
