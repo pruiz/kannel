@@ -3248,6 +3248,7 @@ host = 103.102.101.100
 port = 10000
 keepalive = 25
 my-number = 12345
+validityperiod = 30
 </programlisting>
 
 <informaltable frame="none">
@@ -3283,6 +3284,14 @@ my-number = 12345
      <entry><literal>string</literal></entry>
      <entry valign="bottom">
        Any valid SME number acceptable by SMSC. This number is used only in keepalive request. 
+     </entry></row>
+
+   <row><entry><literal>validityperiod</literal></entry>
+     <entry><literal>integer</literal></entry>
+     <entry valign="bottom">
+     	 How long the message will be valid, i.e., how long the SMS
+	 center (the real one, not the phone acting as one for Kannel)
+	 will try to send the message to the recipient. Defined in minutes.
      </entry></row>
 
    </tbody></tgroup></informaltable>
@@ -3942,7 +3951,7 @@ marked as "not tested" because the table is still new.</para>
     <entry>?</entry>
     <entry>?</entry>
     <entry>?</entry>
-    <entry>n</entry>
+    <entry>y</entry>
     <entry>y</entry>
     <entry>?</entry>
     <entry>?</entry>

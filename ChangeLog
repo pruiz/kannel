@@ -1,3 +1,8 @@
+2004-06-15  Alexander Malysh  <a.malysh@centrium.de> 
+    * doc/userguide/userguide.xml, gw/smsc/smsc_oisd.c: added validity support.
+      See #124. Thanks to "Dariusz Markowicz" <dariuszm at tenbit.pl> for
+      provided patch.
+
 2004-06-14  Alexander Malysh  <a.malysh@centrium.de> 
     * configure.in, configure, gw-config.h.in: added check for pthread_rwlock.
       Fixed MySQL detection when no reentrant client libs are installed.

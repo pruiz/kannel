@@ -91,7 +91,8 @@ typedef struct privdata {
     long    port;
     long    keepalive;
     Octstr  *my_number;
-    int no_dlr;
+    long    validityperiod;
+    int     no_dlr;
 
     int     socket;
     unsigned long send_seq;
@@ -476,7 +477,7 @@ static struct packet *packet_create(int operation, unsigned long opref)
 static void packet_set_data_size(struct packet *packet)
 {
     int len;
-    
+
     gw_assert(packet != NULL);
 
     len = octstr_len(packet->data) - 10;
@@ -501,6 +502,7 @@ static struct packet *packet_encode_message(Msg *msg, SMSCConn *conn)
     struct packet *packet;
     PrivData *pdata = conn->data;
     int DCS;
+    int setvalidity = 0;
     int so = 0;
     int udhlen7, udhlen8;
     int msglen7, msglen8;
@@ -542,16 +544,16 @@ static struct packet *packet_encode_message(Msg *msg, SMSCConn *conn)
 
     /* Duplicate msg. behaviour */
     /* 1=reject duplicates, 2=allow duplicates */
-    octstr_append_char(packet->data, (char) 2);
+    octstr_append_char(packet->data, 2);
 
     /* SME ref. no. unused in this protocol implementation, but set */
-    octstr_append_char(packet->data, (char) 0);
-    octstr_append_char(packet->data, (char) 0);
-    octstr_append_char(packet->data, (char) 0);
-    octstr_append_char(packet->data, (char) 0);   
+    octstr_append_char(packet->data, 0);
+    octstr_append_char(packet->data, 0);
+    octstr_append_char(packet->data, 0);
+    octstr_append_char(packet->data, 0);
 
     /* Priority 0=high, 1=normal */
-    octstr_append_char(packet->data, (char) 1);
+    octstr_append_char(packet->data, 1);
     gw_assert(octstr_check_range(msg->sms.sender, 0,
                                  octstr_len(msg->sms.sender), isphonedigit));
 
@@ -561,19 +563,66 @@ static struct packet *packet_encode_message(Msg *msg, SMSCConn *conn)
 
     /* XXX: GSM operator dependent ? */
     /* TON */
-    octstr_append_char(packet->data, (char) 0x42);
+    octstr_append_char(packet->data, 0x42);
 
     /* NPI */
-    octstr_append_char(packet->data, (char) 0x44);
+    octstr_append_char(packet->data, 0x44);
 
     /* Originating address */
     octstr_append(packet->data, msg->sms.sender);
 
     /* Validity period type 0=none, 1=absolute, 2=relative */
-    octstr_append_char(packet->data, (char) 0);
+
+    /*
+     * Validity-Period (TP-VP)
+     * see GSM 03.40 section 9.2.3.12
+     */
+    if ((setvalidity = msg->sms.validity) != SMS_PARAM_UNDEFINED ||
+        (setvalidity = pdata->validityperiod) != SMS_PARAM_UNDEFINED) {
+        /* Validity period type 0=none, 1=absolute, 2=relative */
+        octstr_append_char(packet->data, 2);
+
+        if (setvalidity > 635040)
+            setvalidity = 255;
+        else if (setvalidity >= 50400 && setvalidity <= 635040)
+            setvalidity = (setvalidity - 1) / 7 / 24 / 60 + 192 + 1;
+        else if (setvalidity > 43200 && setvalidity < 50400)
+            setvalidity = 197;
+        else if (setvalidity >= 2880 && setvalidity <= 43200)
+            setvalidity = (setvalidity - 1) / 24 / 60 + 166 + 1;
+        else if (setvalidity > 1440 && setvalidity < 2880)
+            setvalidity = 168;
+        else if (setvalidity >= 750 && setvalidity <= 1440)
+            setvalidity = (setvalidity - 720 - 1) / 30 + 143 + 1;
+        else if (setvalidity > 720 && setvalidity < 750)
+            setvalidity = 144;
+        else if (setvalidity >= 5 && setvalidity <= 720)
+            setvalidity = (setvalidity - 1) / 5 - 1 + 1;
+        else if (setvalidity < 5)
+            setvalidity = 0;
+
+        octstr_append_char(packet->data, setvalidity);
+    } else {
+        /* Validity period type 0=none, 1=absolute, 2=relative */
+        octstr_append_char(packet->data, 0);
+        setvalidity = 0; /* reset */
+    }
+
+    if (setvalidity >= 0 && setvalidity <= 143)
+        debug("bb.smsc.oisd", 0, "OISD[%s]: Validity-Period: %d minutes",
+              octstr_get_cstr(conn->id), (setvalidity + 1)*5);
+    else if (setvalidity >= 144 && setvalidity <= 167)
+        debug("bb.smsc.oisd", 0, "OISD[%s]: Validity-Period: %3.1f hours",
+              octstr_get_cstr(conn->id), ((float)(setvalidity - 143) / 2) + 12);
+    else if (setvalidity >= 168 && setvalidity <= 196)
+        debug("bb.smsc.oisd", 0, "OISD[%s]: Validity-Period: %d days",
+              octstr_get_cstr(conn->id), (setvalidity - 166));
+    else
+        debug("bb.smsc.oisd", 0, "OISD[%s]: Validity-Period: %d weeks",
+              octstr_get_cstr(conn->id), (setvalidity - 192));
 
     /* Data coding scheme */
-    octstr_append_char(packet->data, (char) DCS);
+    octstr_append_char(packet->data, DCS);
 
     /* Explicitly ask not to get status reports.
      * If we do not do this, the server's default might be to
@@ -583,15 +632,15 @@ static struct packet *packet_encode_message(Msg *msg, SMSCConn *conn)
 
     if (!pdata->no_dlr)
         if (DLR_IS_SUCCESS_OR_FAIL(msg->sms.dlr_mask))
-            octstr_append_char(packet->data, (char) 7);
+            octstr_append_char(packet->data, 7);
         else
-            octstr_append_char(packet->data, (char) 0);
-    else if (pdata->no_dlr && DLR_IS_SUCCESS_OR_FAIL(msg->sms.dlr_mask)) 
+            octstr_append_char(packet->data, 0);
+    else if (pdata->no_dlr && DLR_IS_SUCCESS_OR_FAIL(msg->sms.dlr_mask))
         warning(0, "OISD[%s]: dlr request make no sense while no-dlr set to true",
              octstr_get_cstr(conn->id));
 
     /* Protocol id 0=default */
-    octstr_append_char(packet->data, (char) 0);
+    octstr_append_char(packet->data, 0);
 
     if (octstr_len(msg->sms.udhdata))
         so |= 0x02;
@@ -599,7 +648,7 @@ static struct packet *packet_encode_message(Msg *msg, SMSCConn *conn)
         so |= 0x10;
 
     /* Submission options */
-    octstr_append_char(packet->data, (char) so);
+    octstr_append_char(packet->data, so);
 
     udhlen8 = octstr_len(msg->sms.udhdata);
     msglen8 = octstr_len(msg->sms.msgdata);
@@ -634,8 +683,8 @@ static struct packet *packet_encode_message(Msg *msg, SMSCConn *conn)
     octstr_append(packet->data, msgdata);
 
     /* Sub-logical SME number */
-    octstr_append_char(packet->data, (char) 0);
-    octstr_append_char(packet->data, (char) 0);
+    octstr_append_char(packet->data, 0);
+    octstr_append_char(packet->data, 0);
 
     octstr_destroy(udhdata);
     octstr_destroy(msgdata);
@@ -759,10 +808,10 @@ static Msg *oisd_accept_message(struct packet *request, SMSCConn *conn)
 
     /* Destination addr. length */
     dest_len = octstr_get_char(request->data, 10);
-    
+
     /* Destination addr. */
     msg->sms.receiver = octstr_copy(request->data, 11+2, dest_len-2);
-    
+
     /* Originating addr. length */
     origin_len = octstr_get_char(request->data, 11+dest_len+4);
 
@@ -777,13 +826,13 @@ static Msg *oisd_accept_message(struct packet *request, SMSCConn *conn)
         dcs_to_fields(&msg, 0);
     }
 
-    add_info = octstr_get_char(request->data, 11+dest_len+5+origin_len+2);
+    add_info = octstr_get_char(request->data,11+dest_len+5+origin_len+2);
 
     msglen7 = octstr_get_char(request->data, 11+dest_len+5+origin_len+3);
     msglen8 = octstr_get_char(request->data, 11+dest_len+5+origin_len+4);
 
     msg->sms.rpi = add_info & 0x01;
-    
+
     debug("bb.sms.oisd", 0,
           "OISD[%s]: received DCS=%02X, add_info=%d, msglen7=%d, msglen8=%d, rpi=%ld",
           octstr_get_cstr(conn->id),
@@ -877,7 +926,7 @@ static void oisd_handle_request(struct packet *request, SMSCConn *conn)
 }
 
 /* Send a request and wait for the ack.  If the other side responds with
- * an error code, attempt to correct and retry. 
+ * an error code, attempt to correct and retry.
  * If other packets arrive while we wait for the ack, handle them.
  *
  * Return -1 if the SMSC refused the request.  Return -2 for other
@@ -903,7 +952,7 @@ static int oisd_request(struct packet *request, SMSCConn *conn, Octstr **ts)
     if (pdata->socket < 0) {
         warning(0, "OISD[%s]: oisd_request: socket not open.",
                 octstr_get_cstr(conn->id));
-        return -2;        
+        return -2;
     }
 
     packet_set_data_size(request);
@@ -979,7 +1028,7 @@ error:
 
 retry:
     if (++tries < 3) {
-        warning(0, "OISD[%s]: Retransmitting (take %d)", 
+        warning(0, "OISD[%s]: Retransmitting (take %d)",
                 octstr_get_cstr(conn->id),
                 tries);
         goto retransmit;
@@ -1021,7 +1070,7 @@ static int oisd_login(SMSCConn *conn)
                 octstr_get_cstr(conn->id));
         oisd_close_socket(pdata);
     }
-    
+
     pdata->socket = tcpip_connect_to_server(
                         octstr_get_cstr(pdata->host),
                         pdata->port,
@@ -1055,15 +1104,15 @@ static int oisd_send_delivery_request(SMSCConn *conn)
     octstr_append_char(packet->data,
                        (char) (octstr_len(pdata->my_number) + 2));
     /* TON */
-    octstr_append_char(packet->data, (char) 0x42);
+    octstr_append_char(packet->data, 0x42);
     /* NPI */
-    octstr_append_char(packet->data, (char) 0x44);
+    octstr_append_char(packet->data, 0x44);
     /* Originating address */
     octstr_append(packet->data, pdata->my_number);
     /* Receive ready flag */
-    octstr_append_char(packet->data, (char) 1);
+    octstr_append_char(packet->data, 1);
     /* Retrieve order */
-    octstr_append_char(packet->data, (char) 0);
+    octstr_append_char(packet->data, 0);
 
     ret = oisd_request(packet, conn, NULL);
     packet_destroy(packet);
@@ -1079,9 +1128,9 @@ static void oisd_destroy(PrivData *pdata)
 {
     int discarded;
 
-    if (pdata == NULL) 
+    if (pdata == NULL)
         return;
-        
+
     octstr_destroy(pdata->host);
     octstr_destroy(pdata->inbuffer);
     octstr_destroy(pdata->my_number);
@@ -1089,7 +1138,7 @@ static void oisd_destroy(PrivData *pdata)
     discarded = list_len(pdata->received);
     if (discarded > 0)
         warning(0, "OISD[%s]: discarded %d received messages",
-                octstr_get_cstr(pdata->conn->id), 
+                octstr_get_cstr(pdata->conn->id),
                 discarded);
 
     list_destroy(pdata->received, msg_destroy_item);
@@ -1126,7 +1175,7 @@ static int oisd_submit_msg(SMSCConn *conn, Msg *msg)
     }
     octstr_destroy(ts);
     packet_destroy(packet);
-    
+
     if (ret == -1) {
         bb_smscconn_send_failed(conn, msg,
                 SMSCCONN_FAILED_REJECTED, octstr_create("REJECTED"));
@@ -1165,7 +1214,7 @@ static int oisd_receive_msg(SMSCConn *conn, Msg **msg)
          * way. */
         return 0;
     }
-    
+
     ret = read_available(pdata->socket, 0);
     if (ret == 0) {
         if (pdata->keepalive > 0 && pdata->next_ping < time(NULL)) {
@@ -1278,10 +1327,10 @@ static Msg *sms_receive(SMSCConn *conn)
         /* if any smsc_id available, use it */
         newmsg->sms.smsc_id = octstr_duplicate(conn->id);
         return newmsg;
-    } 
+    }
     else if (ret == 0) { /* no message, just retry... */
         return NULL;
-    } 
+    }
     /* error. reconnect. */
     msg_destroy(newmsg);
     mutex_lock(conn->flow_mutex);
@@ -1303,21 +1352,21 @@ static void io_thread (void *arg)
 
     /* remove messages from SMSC until we are killed */
     while (!pdata->quitting) {
-    
+
         list_consume(pdata->stopped); /* block here if suspended/isolated */
-      
+
         /* check that connection is active */
         if (conn->status != SMSCCONN_ACTIVE) {
-            if (oisd_login(conn) != 0) { 
+            if (oisd_login(conn) != 0) {
                 error(0, "OISD[%s]: Couldn't connect to SMSC (retrying in %ld seconds).",
-                      octstr_get_cstr(conn->id), 
+                      octstr_get_cstr(conn->id),
                       conn->reconnect_delay);
                 gwthread_sleep(conn->reconnect_delay);
                 mutex_lock(conn->flow_mutex);
-                conn->status = SMSCCONN_RECONNECTING; 
+                conn->status = SMSCCONN_RECONNECTING;
                 mutex_unlock(conn->flow_mutex);
-                continue; 
-            } 
+                continue;
+            }
             mutex_lock(conn->flow_mutex);
             conn->status = SMSCCONN_ACTIVE;
             conn->connect_time = time(NULL);
@@ -1326,7 +1375,7 @@ static void io_thread (void *arg)
         }
 
         /* receive messages */
-        do { 
+        do {
             msg = sms_receive(conn);
             if (msg) {
                 sleep = 0;
@@ -1335,7 +1384,7 @@ static void io_thread (void *arg)
                 bb_smscconn_receive(conn, msg);
             }
         } while (msg);
- 
+
         /* send messages */
         do {
             msg = list_extract_first(pdata->outgoing_queue);
@@ -1344,7 +1393,7 @@ static void io_thread (void *arg)
                 if (oisd_submit_msg(conn, msg) != 0) break;
             }
         } while (msg);
- 
+
         if (sleep > 0) {
 
             /* note that this implementations means that we sleep even
@@ -1380,9 +1429,9 @@ static int oisd_add_msg_cb (SMSCConn *conn, Msg *sms)
 static int oisd_shutdown_cb (SMSCConn *conn, int finish_sending)
 {
     PrivData *pdata = conn->data;
-    
+
     debug("bb.sms", 0, "Shutting down SMSCConn OISD %s (%s)",
-          octstr_get_cstr(conn->id), 
+          octstr_get_cstr(conn->id),
           finish_sending ? "slow" : "instant");
 
     /* Documentation claims this would have been done by smscconn.c,
@@ -1409,14 +1458,14 @@ static int oisd_shutdown_cb (SMSCConn *conn, int finish_sending)
     }
 
     oisd_close_socket(pdata);
-    oisd_destroy(pdata); 
-     
-    debug("bb.sms", 0, "SMSCConn OISD %s shut down.",  
-          octstr_get_cstr(conn->id)); 
-    conn->status = SMSCCONN_DEAD; 
-    bb_smscconn_killed(); 
+    oisd_destroy(pdata);
+
+    debug("bb.sms", 0, "SMSCConn OISD %s shut down.",
+          octstr_get_cstr(conn->id));
+    conn->status = SMSCCONN_DEAD;
+    bb_smscconn_killed();
     return 0;
-}    
+}
 
 static void oisd_start_cb (SMSCConn *conn)
 {
@@ -1440,9 +1489,9 @@ static void oisd_stop_cb (SMSCConn *conn)
 static long oisd_queued_cb (SMSCConn *conn)
 {
     PrivData *pdata = conn->data;
-    conn->load = (pdata ? (conn->status != SMSCCONN_DEAD ? 
+    conn->load = (pdata ? (conn->status != SMSCCONN_DEAD ?
                   list_len(pdata->outgoing_queue) : 0) : 0);
-    return conn->load; 
+    return conn->load;
 }
 
 int smsc_oisd_create(SMSCConn *conn, CfgGroup *grp)
@@ -1453,7 +1502,7 @@ int smsc_oisd_create(SMSCConn *conn, CfgGroup *grp)
     pdata = gw_malloc(sizeof(PrivData));
     conn->data = pdata;
     pdata->conn = conn;
-   
+
     pdata->no_dlr = 0;
     pdata->quitting = 0;
     pdata->socket = -1;
@@ -1473,9 +1522,11 @@ int smsc_oisd_create(SMSCConn *conn, CfgGroup *grp)
     pdata->my_number = cfg_get(grp, octstr_imm("my-number"));
     if (cfg_get_integer(&(pdata->keepalive), grp, octstr_imm("keepalive")) == -1)
         pdata->keepalive = 0;
+    if (cfg_get_integer(&(pdata->validityperiod), grp, octstr_imm("validityperiod")) == -1)
+        pdata->validityperiod = 0;
 
     cfg_get_bool(&pdata->no_dlr, grp, octstr_imm("no-dlr"));
-    
+
     /* Check that config is OK */
     ok = 1;
     if (pdata->host == NULL) {
@@ -1505,15 +1556,21 @@ int smsc_oisd_create(SMSCConn *conn, CfgGroup *grp)
 
 
     if (pdata->keepalive > 0) {
-        debug("bb.sms.oisd", 0, "OISD[%s]: Keepalive set to %ld seconds", 
+        debug("bb.sms.oisd", 0, "OISD[%s]: Keepalive set to %ld seconds",
               octstr_get_cstr(conn->id),
               pdata->keepalive);
         pdata->next_ping = time(NULL) + pdata->keepalive;
     }
 
+    if (pdata->validityperiod > 0) {
+        debug("bb.sms.oisd", 0, "OISD[%s]: Validity-Period set to %ld",
+              octstr_get_cstr(conn->id),
+              pdata->validityperiod);
+    }
+
     pdata->io_thread = gwthread_create(io_thread, conn);
 
-    if (pdata->io_thread == -1) {  
+    if (pdata->io_thread == -1) {
 
         error(0, "OISD[%s]: Couldn't start I/O thread.",
               octstr_get_cstr(conn->id));
@@ -1521,8 +1578,8 @@ int smsc_oisd_create(SMSCConn *conn, CfgGroup *grp)
         gwthread_wakeup(pdata->io_thread);
         gwthread_join(pdata->io_thread);
         oisd_destroy(pdata);
-        return -1;  
-    } 
+        return -1;
+    }
 
     conn->send_msg = oisd_add_msg_cb;
     conn->shutdown = oisd_shutdown_cb;
