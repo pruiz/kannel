@@ -1,4 +1,8 @@
 2003-04-14  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/smsc/smsc_http.c: added new bruHTP 2.1 version and using account field
+      for cgi var proxying inside the module.
+
+2003-04-14  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/smsc/smpp_pdu.c: removed gw_assert() checking within smpp_pdu_pack() 
       in order not to crash bearerbox. Thanks to <Jason.Pell@Callista.com.au>
       for point this out again.
