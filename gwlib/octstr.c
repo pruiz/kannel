@@ -272,35 +272,46 @@ int octstr_ncompare(Octstr *ostr1, Octstr *ostr2, size_t n) {
 
 int octstr_search_char(Octstr *ostr, char ch) {
     size_t pos = 0;
-    int tmp_int;
+    int tmp_int, asc_ch = -1;
+    Octstr *ch_o;
     
-    while( (tmp_int = octstr_get_char(ostr, pos)) != ch && tmp_int != -1 )
-	pos++;
+    asc_ch = octstr_get_char(octstr_create(&ch), 0);
+   
+    
+    while( (tmp_int = octstr_get_char(ostr, pos)) != asc_ch){
+	   if( tmp_int == -1 ) break;
+	   pos++;
+	   }
+    
     if(tmp_int == -1)
-	return tmp_int;
-    else
-	return 1;
+	return -1; 
+    else if(tmp_int > -1)
+	return pos;
+    
 }
 
 
 
 int octstr_search_str(Octstr *ostr, char *str) {
-    size_t pos_a, pos_b = 0, len = 0; 
-    Octstr *tmp_oct = NULL;
+    size_t pos_a, pos_b = 0, len_c = 0, len_o =0, a=0, b=0; 
+    Octstr *char_to_oct = NULL;
     
-    len = octstr_len( tmp_oct = octstr_create(str) );
+    len_o = octstr_len(ostr);
+    len_c = octstr_len( char_to_oct = octstr_create(str) );
     
-    
-    for(pos_a = 0  ;  pos_a < octstr_len(ostr)  ;  pos_a++)
-	if( octstr_get_char(ostr, pos_a) == octstr_get_char(tmp_oct, pos_b)){
+    for(pos_a = 0  ;  pos_a  < len_o  ;  pos_a++){
+    	if( (a=octstr_get_char(ostr, pos_a)) == (b=octstr_get_char(char_to_oct, pos_b))){
 	    pos_b++;
-	    if( pos_b == octstr_len(tmp_oct) )
-		return (pos_a - len + 1); /* returns the start position of the found substring */
+	    if( pos_b == octstr_len(char_to_oct) )
+		return (pos_a - len_c + 1); /*returns the start position of the found substring */
 	}
-	else
+	else {
+	    if( len_o-(pos_a+1) < len_c )break; /* is it worth to keep looking */
 	    pos_b = 0;
+	}
+    }/* for ends */
     
-    /* for ends */
+    
     /* string wasn't there*/
     return -1;
 }
@@ -308,7 +319,7 @@ int octstr_search_str(Octstr *ostr, char *str) {
 
 
 int octstr_print(FILE *f, Octstr *ostr) {
-	if (fwrite(ostr->data, ostr->len, 1, f) != 1) {
+    if (fwrite(ostr->data, ostr->len, 1, f) != 1) {
 		error(errno, "Couldn't write all of octet string to file.");
 		return -1;
 	}
