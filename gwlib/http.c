@@ -859,12 +859,17 @@ static void handle_transaction(Connection *conn, void *data)
 	    
 	case reading_entity:
 	    ret = entity_read(trans->response, conn);
-	    if (ret < 0)
+	    if (ret < 0) {
 		goto error;
-	    else if (ret == 0)
-		trans->state = transaction_done;
-	    else
+	    } else if (ret == 0 && http_status_class(trans->status)
+                                  == HTTP_STATUS_PROVISIONAL) {
+                    /* This was a provisional reply; get the real one now. */
+                    trans->state = reading_status;
+            } else if (ret == 0) {
+		    trans->state = transaction_done;
+	    } else {
 		return;
+            }
 	    break;
 
 	default:

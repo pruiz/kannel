@@ -1,5 +1,9 @@
 2001-04-26  Richard Braakman  <dark@wapit.com>
 
+	* gwlib/http.c: Handle 100-Continue responses.
+
+2001-04-26  Richard Braakman  <dark@wapit.com>
+
 	* gw/smsc_cimd2.c: Stopped sending "delivery request" when
         logging in.  It is not needed in the normal configuration, and
         it confuses some SMSCs.  Thanks to Antti Valtokari for tracking
