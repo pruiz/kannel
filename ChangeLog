@@ -1,5 +1,13 @@
 2000-11-28  Richard Braakman  <dark@wapit.com>
 
+	* wap/wsp_session.c, wap/wsp_server_session_states.def,
+	wap/wsp_server_method_states.def: Renamed static functions
+	so that they do not start with "wsp_", to avoid confusion.
+	(In the future the client side will have its own versions
+	of these, and names with wsp_ look like they are global.)
+
+2000-11-28  Richard Braakman  <dark@wapit.com>
+
 	* wap/wap_events.def: Added WSP client-side events (not used yet).
 
 	* Renamed "session_id" to "session_handle" for WSP session events

@@ -65,17 +65,14 @@ static void handle_session_event(WSPMachine *machine, WAPEvent *event,
 				 WSP_PDU *pdu);
 static WSPMachine *machine_create(void);
 static void machine_destroy(void *p);
-#if 0
-static void machine_dump(WSPMachine *machine);
-#endif
 
 static void handle_method_event(WSPMachine *session, WSPMethodMachine *machine, WAPEvent *event, WSP_PDU *pdu);
 static void cant_handle_event(WSPMachine *sm, WAPEvent *event);
 static WSPMethodMachine *method_machine_create(WSPMachine *, long);
 static void method_machine_destroy(void *msm);
 
-static char *wsp_state_to_string(WSPState state);
-static long wsp_next_session_id(void);
+static char *state_name(WSPState state);
+static long next_wsp_session_id(void);
 
 static List *make_capabilities_reply(WSPMachine *m);
 static Octstr *make_connectreply_pdu(WSPMachine *m);
@@ -84,21 +81,21 @@ static Octstr *make_resume_reply_pdu(WSPMachine *m, List *headers);
 static int transaction_belongs_to_session(void *session, void *tuple);
 static int find_by_session_id(void *session, void *idp);
 static int same_client(void *sm1, void *sm2);
-static WSPMethodMachine *wsp_find_method_machine(WSPMachine *, long id);
+static WSPMethodMachine *find_method_machine(WSPMachine *, long id);
 
-static List *wsp_unpack_new_headers(WSPMachine *sm, Octstr *hdrs);
+static List *unpack_new_headers(WSPMachine *sm, Octstr *hdrs);
 
-static void wsp_disconnect_other_sessions(WSPMachine *sm);
-static void wsp_send_abort(long reason, long handle);
-static void wsp_indicate_disconnect(WSPMachine *sm, long reason);
-static void wsp_indicate_suspend(WSPMachine *sm, long reason);
-static void wsp_indicate_resume(WSPMachine *sm, WAPAddrTuple *tuple, List *client_headers);
+static void disconnect_other_sessions(WSPMachine *sm);
+static void send_abort(long reason, long handle);
+static void indicate_disconnect(WSPMachine *sm, long reason);
+static void indicate_suspend(WSPMachine *sm, long reason);
+static void indicate_resume(WSPMachine *sm, WAPAddrTuple *tuple, List *client_headers);
 
-static void wsp_release_holding_methods(WSPMachine *sm);
-static void wsp_abort_methods(WSPMachine *sm, long reason);
+static void release_holding_methods(WSPMachine *sm);
+static void abort_methods(WSPMachine *sm, long reason);
 
-static void wsp_method_abort(WSPMethodMachine *msm, long reason);
-static void wsp_indicate_method_abort(WSPMethodMachine *msm, long reason);
+static void method_abort(WSPMethodMachine *msm, long reason);
+static void indicate_method_abort(WSPMethodMachine *msm, long reason);
 
 static void main_thread(void *);
 static int id_belongs_to_session (void *, void *);
@@ -270,7 +267,7 @@ static WSPMachine *find_session_machine(WAPEvent *event, WSP_PDU *pdu) {
 				find_by_session_id);
 		if (sm == NULL) {
 			/* No session; TR-Abort.req(DISCONNECT) */
-			wsp_send_abort(WSP_ABORT_DISCONNECT,
+			send_abort(WSP_ABORT_DISCONNECT,
 				event->u.TR_Invoke_Ind.handle);
 		}
 	/* Fourth test is for a class 1 or 2 TR-Invoke.Ind with no
@@ -282,7 +279,7 @@ static WSPMachine *find_session_machine(WAPEvent *event, WSP_PDU *pdu) {
 				 transaction_belongs_to_session);
 		if (sm == NULL && (event->u.TR_Invoke_Ind.tcl == 1 ||
 				event->u.TR_Invoke_Ind.tcl == 2)) {
-			wsp_send_abort(WSP_ABORT_DISCONNECT,
+			send_abort(WSP_ABORT_DISCONNECT,
 				event->u.TR_Invoke_Ind.handle);
 		}
 	/* Other tests are for events not handled by the state tables;
@@ -314,7 +311,7 @@ static void handle_session_event(WSPMachine *sm, WAPEvent *current_event,
 WSP_PDU *pdu) {
 	debug("wap.wsp", 0, "WSP: machine %p, state %s, event %s",
 		(void *) sm,
-		wsp_state_to_string(sm->state), 
+		state_name(sm->state), 
 		wap_event_name(current_event->type));
 
 	#define STATE_NAME(name)
@@ -354,7 +351,7 @@ static void cant_handle_event(WSPMachine *sm, WAPEvent *event) {
 		warning(0, "WSP: Can't handle TR-Invoke.ind, aborting transaction.");
 		debug("wap.wsp", 0, "WSP: The unhandled event:");
 		wap_event_dump(event);
-		wsp_send_abort(WSP_ABORT_PROTOERR,
+		send_abort(WSP_ABORT_PROTOERR,
 			event->u.TR_Invoke_Ind.handle);
 	/* The sixth is a class 0 TR-Invoke.ind not handled by state tables. */
 	} else if (event->type == TR_Invoke_Ind) {
@@ -373,13 +370,13 @@ static void cant_handle_event(WSPMachine *sm, WAPEvent *event) {
 		/* FIXME We need a better way to get at event values than
 		 * by hardcoding the types. */
 		if (event->type == TR_Result_Cnf) {
-			wsp_send_abort(WSP_ABORT_PROTOERR,
+			send_abort(WSP_ABORT_PROTOERR,
 				event->u.TR_Result_Cnf.handle);
 		}
 		/* Abort(PROTOERR) all method and push transactions */
-		wsp_abort_methods(sm, WSP_ABORT_PROTOERR);
+		abort_methods(sm, WSP_ABORT_PROTOERR);
 		/* S-Disconnect.ind(PROTOERR) */
-		wsp_indicate_disconnect(sm, WSP_ABORT_PROTOERR);
+		indicate_disconnect(sm, WSP_ABORT_PROTOERR);
 	}
 }
 
@@ -417,7 +414,7 @@ static WSPMachine *machine_create(void) {
 }
 
 
-static void wsp_session_destroy_methods(List *machines) {
+static void destroy_methods(List *machines) {
 	if (list_len(machines) > 0) {
 		warning(0, "Destroying WSP session with %ld active methods\n",
 			list_len(machines));
@@ -438,7 +435,7 @@ static void machine_destroy(void *pp) {
 	#define OCTSTR(name) octstr_destroy(p->name);
 	#define HTTPHEADERS(name) http_destroy_headers(p->name);
 	#define ADDRTUPLE(name) wap_addr_tuple_destroy(p->name);
-	#define METHODMACHINES(name) wsp_session_destroy_methods(p->name);
+	#define METHODMACHINES(name) destroy_methods(p->name);
 	#define CAPABILITIES(name) wsp_cap_destroy_list(p->name);
 	#define COOKIES(name) cookies_destroy(p->name);
 	#define MACHINE(fields) fields
@@ -465,7 +462,7 @@ WAPEvent *current_event, WSP_PDU *pdu) {
 	}
 		
 	debug("wap.wsp", 0, "WSP: method %ld, state %s, event %s",
-		msm->transaction_id, wsp_state_to_string(msm->state), 
+		msm->transaction_id, state_name(msm->state), 
 		wap_event_name(current_event->type));
 
 	gw_assert(sm->session_id == msm->session_id);
@@ -542,7 +539,7 @@ static void method_machine_destroy(void *p) {
 }
 
 
-static char *wsp_state_to_string(WSPState state) {
+static char *state_name(WSPState state) {
 	switch (state) {
 	#define STATE_NAME(name) case name: return #name;
 	#define ROW(state, event, cond, stmt, next_state)
@@ -558,7 +555,7 @@ static char *wsp_state_to_string(WSPState state) {
 }
 
 
-static long wsp_next_session_id(void) {
+static long next_wsp_session_id(void) {
 	return counter_increase(session_id_counter);
 }
 
@@ -890,7 +887,7 @@ static int find_by_method_id(void *wspm_ptr, void *id_ptr) {
 }
 
 
-static WSPMethodMachine *wsp_find_method_machine(WSPMachine *sm, long id) {
+static WSPMethodMachine *find_method_machine(WSPMachine *sm, long id) {
 	return list_search(sm->methodmachines, &id, find_by_method_id);
 }
 
@@ -904,7 +901,7 @@ static int same_client(void *a, void *b) {
 }
 
 
-static void wsp_disconnect_other_sessions(WSPMachine *sm) {
+static void disconnect_other_sessions(WSPMachine *sm) {
 	List *old_sessions;
 	WAPEvent *disconnect;
 	WSPMachine *sm2;
@@ -926,7 +923,7 @@ static void wsp_disconnect_other_sessions(WSPMachine *sm) {
 }
 
 
-static List *wsp_unpack_new_headers(WSPMachine *sm, Octstr *hdrs) {
+static List *unpack_new_headers(WSPMachine *sm, Octstr *hdrs) {
 	List *new_headers;
 
 	if (hdrs && octstr_len(hdrs) > 0) {
@@ -939,7 +936,7 @@ static List *wsp_unpack_new_headers(WSPMachine *sm, Octstr *hdrs) {
 	return NULL;
 }
 
-static void wsp_send_abort(long reason, long handle) {
+static void send_abort(long reason, long handle) {
 	WAPEvent *wtp_event;
 
 	wtp_event = wap_event_create(TR_Abort_Req);
@@ -950,7 +947,7 @@ static void wsp_send_abort(long reason, long handle) {
 }
 
 
-static void wsp_indicate_disconnect(WSPMachine *sm, long reason) {
+static void indicate_disconnect(WSPMachine *sm, long reason) {
 	WAPEvent *new_event;
 
 	new_event = wap_event_create(S_Disconnect_Ind);
@@ -964,7 +961,7 @@ static void wsp_indicate_disconnect(WSPMachine *sm, long reason) {
 }
 
 
-static void wsp_indicate_suspend(WSPMachine *sm, long reason) {
+static void indicate_suspend(WSPMachine *sm, long reason) {
 	WAPEvent *new_event;
 
 	new_event = wap_event_create(S_Suspend_Ind);
@@ -974,7 +971,7 @@ static void wsp_indicate_suspend(WSPMachine *sm, long reason) {
 }
 
 
-static void wsp_indicate_resume(WSPMachine *sm,
+static void indicate_resume(WSPMachine *sm,
                                 WAPAddrTuple *tuple, List *headers) {
 	WAPEvent *new_event;
 
@@ -986,7 +983,7 @@ static void wsp_indicate_resume(WSPMachine *sm,
 }
 
 
-static void wsp_method_abort(WSPMethodMachine *msm, long reason) {
+static void method_abort(WSPMethodMachine *msm, long reason) {
 	WAPEvent *wtp_event;
 
 	/* Send TR-Abort.req(reason) */
@@ -1005,7 +1002,7 @@ static void wsp_method_abort(WSPMethodMachine *msm, long reason) {
 }
 
 
-static void wsp_indicate_method_abort(WSPMethodMachine *msm, long reason) {
+static void indicate_method_abort(WSPMethodMachine *msm, long reason) {
 	WAPEvent *new_event;
 
 	/* Send S-MethodAbort.ind(reason) */
@@ -1024,7 +1021,7 @@ static int method_is_holding(void *item, void *pattern) {
 }
 
 
-static void wsp_release_holding_methods(WSPMachine *sm) {
+static void release_holding_methods(WSPMachine *sm) {
 	WAPEvent *release;
 	WSPMethodMachine *msm;
 	List *holding;
@@ -1048,7 +1045,7 @@ static void wsp_release_holding_methods(WSPMachine *sm) {
 }
 
 
-static void wsp_abort_methods(WSPMachine *sm, long reason) {
+static void abort_methods(WSPMachine *sm, long reason) {
 	WAPEvent *ab;
 	WSPMethodMachine *msm;
 	long i, len;

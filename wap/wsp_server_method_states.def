@@ -132,7 +132,7 @@ ROW(HOLDING,
 		/* we don't keep track of N_Methods because it's unlimited */
 
 		/* Tr-Abort.req(abort reason) the method */
-		wsp_method_abort(msm, e->reason);
+		method_abort(msm, e->reason);
 	},
 	NULL_METHOD)
 
@@ -202,10 +202,10 @@ ROW(REQUESTING,
 		/* we don't keep track of N_Methods because it's unlimited */
 
 		/* TR-Abort.req(abort reason) the method */
-		wsp_method_abort(msm, e->reason);
+		method_abort(msm, e->reason);
 
 		/* S-MethodAbort.ind(abort reason) */
-		wsp_indicate_method_abort(msm, e->reason);
+		indicate_method_abort(msm, e->reason);
 	},
 	NULL_METHOD)
 
@@ -244,7 +244,7 @@ ROW(REQUESTING,
 		/* we don't keep track of N_Methods because it's unlimited */
 
 		/* S-MethodAbort.ind(abort reason) */
-		wsp_indicate_method_abort(msm, e->abort_code);
+		indicate_method_abort(msm, e->abort_code);
 	},
 	NULL_METHOD)
 
@@ -282,10 +282,10 @@ ROW(PROCESSING,
 		/* we don't keep track of N_Methods because it's unlimited */
 
 		/* TR-Abort.req(abort reason) the method */
-		wsp_method_abort(msm, e->reason);
+		method_abort(msm, e->reason);
 
 		/* S-MethodAbort.ind(abort reason) */
-		wsp_indicate_method_abort(msm, e->reason);
+		indicate_method_abort(msm, e->reason);
 	},
 	NULL_METHOD)
 
@@ -324,7 +324,7 @@ ROW(PROCESSING,
 		/* we don't keep track of N_Methods because it's unlimited */
 
 		/* S-MethodAbort.ind(abort reason) */
-		wsp_indicate_method_abort(msm, e->abort_code);
+		indicate_method_abort(msm, e->abort_code);
 	},
 	NULL_METHOD)
 
@@ -338,10 +338,10 @@ ROW(REPLYING,
 		/* we don't keep track of N_Methods because it's unlimited */
 
 		/* TR-Abort.req(abort reason) the method */
-		wsp_method_abort(msm, e->reason);
+		method_abort(msm, e->reason);
 
 		/* S-MethodAbort.ind(abort reason) */
-		wsp_indicate_method_abort(msm, e->reason);
+		indicate_method_abort(msm, e->reason);
 	},
 	NULL_METHOD)
 
@@ -399,7 +399,7 @@ ROW(REPLYING,
 		/* we don't keep track of N_Methods because it's unlimited */
 
 		/* S-MethodAbort.ind(abort reason) */
-		wsp_indicate_method_abort(msm, e->abort_code);
+		indicate_method_abort(msm, e->abort_code);
 	},
 	NULL_METHOD)
 
