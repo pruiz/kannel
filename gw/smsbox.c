@@ -84,7 +84,7 @@ static long get_tag(Octstr *body, Octstr *tag, Octstr **value, long pos, int nos
  */
 
 
-/* 
+/*
  * Identify ourself to bearerbox for smsbox-specific routing inside bearerbox.
  * Do this even while no smsbox-id is given to unlock the sender thread in
  * bearerbox.
@@ -138,7 +138,7 @@ static void read_messages_from_bearerbox(void)
 	    total++;
 	    list_produce(smsbox_requests, msg);
 	} else if (msg_type(msg) == ack) {
-	    /* 
+	    /*
 	     * do nothing for now. Later we will handle this
 	     * gracefully...
 	     */
@@ -178,21 +178,21 @@ static int send_message(URLTranslation *trans, Msg *msg)
     unsigned long msg_sequence, msg_count;
     List *list;
     Msg *part;
-    
+
     gw_assert(msg != NULL);
     gw_assert(msg_type(msg) == sms);
-    
+
     if (trans != NULL)
 	max_msgs = urltrans_max_messages(trans);
     else
 	max_msgs = 1;
-    
+
     if (max_msgs == 0) {
 	info(0, "No reply sent, denied.");
 	return 0;
     }
 
-    /* 
+    /*
      * Encode our smsbox-id to the msg structure.
      * This will allow bearerbox to return specific answers to the
      * same smsbox, mainly for DLRs and SMS proxy modes.
@@ -200,14 +200,14 @@ static int send_message(URLTranslation *trans, Msg *msg)
     if (smsbox_id != NULL) {
         msg->sms.boxc_id = octstr_duplicate(smsbox_id);
     }
-    
-    /* 
+
+    /*
      * Empty message? Two alternatives have to be handled:
-     *  a) it's a HTTP sms-service reply: either ignore it or 
-     *     substitute the "empty" warning defined  
+     *  a) it's a HTTP sms-service reply: either ignore it or
+     *     substitute the "empty" warning defined
      *  b) it's a sendsms HTTP interface call: leave the message empty
      *     if at least a UDH is given.
-     * 
+     *
      * XXX this still does not cover the case when the sendsms interface is
      * used with *no* text and udh. What should we do then?!
      */
@@ -241,13 +241,13 @@ static int send_message(URLTranslation *trans, Msg *msg)
     	    	     msg_sequence, max_msgs, sms_max_length);
     msg_count = list_len(list);
 
-    debug("sms", 0, "message length %ld, sending %ld messages", 
+    debug("sms", 0, "message length %ld, sending %ld messages",
           octstr_len(msg->sms.msgdata), msg_count);
 
     while ((part = list_extract_first(list)) != NULL)
 	write_to_bearerbox(part);
     list_destroy(list, NULL);
-    
+
     return msg_count;
 }
 
@@ -277,12 +277,12 @@ struct receiver {
 /*
  * Again no urltranslation when we got an answer to wap push - it can only be dlr.
  */
-static void *remember_receiver(Msg *msg, URLTranslation *trans, int method, 
-                               Octstr *url, List *headers, Octstr *body, 
+static void *remember_receiver(Msg *msg, URLTranslation *trans, int method,
+                               Octstr *url, List *headers, Octstr *body,
                                unsigned int retries)
 {
     struct receiver *receiver;
-    
+
     counter_increase(num_outstanding_requests);
     receiver = gw_malloc(sizeof(*receiver));
 
@@ -291,16 +291,16 @@ static void *remember_receiver(Msg *msg, URLTranslation *trans, int method,
     receiver->msg->sms.sender = octstr_duplicate(msg->sms.sender);
     receiver->msg->sms.receiver = octstr_duplicate(msg->sms.receiver);
     /* ppg_service_name should always be not NULL here */
-    if (trans != NULL && (msg->sms.service == NULL || ppg_service_name == NULL || 
+    if (trans != NULL && (msg->sms.service == NULL || ppg_service_name == NULL ||
         octstr_compare(msg->sms.service, ppg_service_name) != 0)) {
         receiver->msg->sms.service = octstr_duplicate(urltrans_name(trans));
     } else {
         receiver->msg->sms.service = octstr_duplicate(msg->sms.service);
     }
     receiver->msg->sms.smsc_id = octstr_duplicate(msg->sms.smsc_id);
-    receiver->msg->sms.dlr_mask = msg->sms.dlr_mask; 
-   	/* to remember if it's a DLR http get */
-    
+    /* to remember if it's a DLR http get */
+    receiver->msg->sms.sms_type = msg->sms.sms_type;
+
     receiver->trans = trans;
 
     /* remember the HTTP request if we need to queue this */
@@ -315,11 +315,11 @@ static void *remember_receiver(Msg *msg, URLTranslation *trans, int method,
 
 
 static void get_receiver(void *id, Msg **msg, URLTranslation **trans, int *method,
-                         Octstr **url, List **headers, Octstr **body, 
+                         Octstr **url, List **headers, Octstr **body,
                          unsigned long *retries)
 {
     struct receiver *receiver;
-    
+
     receiver = id;
     *msg = receiver->msg;
     *trans = receiver->trans;
@@ -344,7 +344,7 @@ static long outstanding_requests(void)
  */
 
 
-static void strip_prefix_and_suffix(Octstr *html, Octstr *prefix, 
+static void strip_prefix_and_suffix(Octstr *html, Octstr *prefix,
     	    	    	    	    Octstr *suffix)
 {
     long prefix_end, suffix_start;
@@ -366,9 +366,9 @@ static void strip_prefix_and_suffix(Octstr *html, Octstr *prefix,
 static void get_x_kannel_from_headers(List *headers, Octstr **from,
 				      Octstr **to, Octstr **udh,
 				      Octstr **user, Octstr **pass,
-				      Octstr **smsc, int *mclass, int *mwi, 
+				      Octstr **smsc, int *mclass, int *mwi,
 				      int *coding, int *compress, 
-				      int *validity, int *deferred, 
+				      int *validity, int *deferred,
 				      int *dlr_mask, Octstr **dlr_url, 
 				      Octstr **account, int *pid, int *alt_dcs, 
 				      int *rpi, Octstr **auth_code, 
@@ -493,7 +493,7 @@ static long get_tag(Octstr *body, Octstr *tag, Octstr **value, long pos, int nos
 	    *value = octstr_copy(body, start + taglen, end - start - taglen);
 	    if(nostrip == 0) {
 		octstr_strip_blanks(*value);
-		debug("sms", 0, "XMLParsing: tag <%s> value <%s>", octstr_get_cstr(tag), 
+		debug("sms", 0, "XMLParsing: tag <%s> value <%s>", octstr_get_cstr(tag),
 			octstr_get_cstr(*value));
 	    }
 	    return end + taglen + 1;
@@ -515,7 +515,7 @@ static void get_x_kannel_from_xml(int requesttype , Octstr **type, Octstr **body
                                   Octstr **to, Octstr **udh,
                                   Octstr **user, Octstr **pass,
                                   Octstr **smsc, int *mclass, int *mwi,
-                                  int *coding, int *compress, 
+                                  int *coding, int *compress,
                                   int *validity, int *deferred,
                                   int *dlr_mask, Octstr **dlr_url,
                                   Octstr **account, int *pid, int *alt_dcs,
@@ -584,14 +584,14 @@ static void get_x_kannel_from_xml(int requesttype , Octstr **type, Octstr **body
 	*/
 	O_DESTROY(tmp);
     }
-    
+
     /* udh */
     get_tag(*body, octstr_imm("udh"), &tmp, 0, 0);
     if(tmp) {
 	O_DESTROY(*udh);
 	*udh = octstr_duplicate(tmp);
 	if(octstr_hex_to_binary(*udh) == -1)
-	    octstr_url_decode(*udh);	
+	    octstr_url_decode(*udh);
 	O_DESTROY(tmp);
     }
 
@@ -714,12 +714,12 @@ static void get_x_kannel_from_xml(int requesttype , Octstr **type, Octstr **body
 	O_DESTROY(text);
 	text = octstr_duplicate(tmp);
 	if(octstr_hex_to_binary(text) == -1)
-	    octstr_url_decode(text);	
+	    octstr_url_decode(text);
 	O_DESTROY(tmp);
     }
 
     O_DESTROY(*body);
-    if(text) 
+    if(text)
 	*body = text;
     else
 	*body = octstr_create("");
@@ -731,13 +731,13 @@ static void get_x_kannel_from_xml(int requesttype , Octstr **type, Octstr **body
 
 static void fill_message(Msg *msg, URLTranslation *trans,
 			 Octstr *replytext, int octet_stream,
-			 Octstr *from, Octstr *to, Octstr *udh, 
+			 Octstr *from, Octstr *to, Octstr *udh,
 			 int mclass, int mwi, int coding, int compress,
 			 int validity, int deferred,
 			 Octstr *dlr_url, int dlr_mask, int pid, int alt_dcs,
-			 int rpi, Octstr *smsc, Octstr *account, 
+			 int rpi, Octstr *smsc, Octstr *account,
 			 Octstr *charset, Octstr *auth_code, Octstr *hplmn)
-{    
+{
     msg->sms.msgdata = replytext;
     msg->sms.time = time(NULL);
 
@@ -788,52 +788,52 @@ static void fill_message(Msg *msg, URLTranslation *trans,
     }
     if (udh != NULL) {
 	if (urltrans_accept_x_kannel_headers(trans)) {
-	    octstr_destroy(msg->sms.udhdata);	    
+	    octstr_destroy(msg->sms.udhdata);
 	    msg->sms.udhdata = udh;
 	} else {
 	    warning(0, "Tried to set UDH field, denied.");
 	    O_DESTROY(udh);
 	}
     }
-    if (mclass >= 0) {
+    if (mclass != SMS_PARAM_UNDEFINED) {
         if (urltrans_accept_x_kannel_headers(trans))
-	    msg->sms.mclass = mclass;	  
-	else 
+	    msg->sms.mclass = mclass;
+	else
 	    warning(0, "Tried to set MClass field, denied.");
     }
-    if (pid >= 0) {
+    if (pid != SMS_PARAM_UNDEFINED) {
         if (urltrans_accept_x_kannel_headers(trans))
-	    msg->sms.pid = pid;	  
-	else 
+	    msg->sms.pid = pid;
+	else
 	    warning(0, "Tried to set PID field, denied.");
     }
-    if (rpi >= 0) {
+    if (rpi != SMS_PARAM_UNDEFINED) {
         if (urltrans_accept_x_kannel_headers(trans))
-	    msg->sms.rpi = rpi;	  
-	else 
+	    msg->sms.rpi = rpi;
+	else
 	    warning(0, "Tried to set RPI field, denied.");
     }
-    if (alt_dcs >= 0) {
+    if (alt_dcs != SMS_PARAM_UNDEFINED) {
         if (urltrans_accept_x_kannel_headers(trans))
-	    msg->sms.alt_dcs = alt_dcs;	  
-	else 
+	    msg->sms.alt_dcs = alt_dcs;
+	else
 	    warning(0, "Tried to set Alt-DCS field, denied.");
     }
-    if (mwi >= 0) {
+    if (mwi != SMS_PARAM_UNDEFINED) {
         if (urltrans_accept_x_kannel_headers(trans))
-	    msg->sms.mwi = mwi;	  
-	else 
+	    msg->sms.mwi = mwi;
+	else
 	    warning(0, "Tried to set MWI field, denied.");
     }
-    if (coding >= 0) {
+    if (coding != SMS_PARAM_UNDEFINED) {
         if (urltrans_accept_x_kannel_headers(trans))
-	    msg->sms.coding = coding;	  
+	    msg->sms.coding = coding;
 	else
 	    warning(0, "Tried to set Coding field, denied.");
     }
-    if (compress >= 0) {
+    if (compress != SMS_PARAM_UNDEFINED) {
         if (urltrans_accept_x_kannel_headers(trans))
-	    msg->sms.compress = compress;	  
+	    msg->sms.compress = compress;
 	else
 	    warning(0, "Tried to set Compress field, denied.");
     }
@@ -845,14 +845,14 @@ static void fill_message(Msg *msg, URLTranslation *trans,
 	  msg->sms.coding = DC_7BIT;
     }
 
-    if (validity >= 0) {
+    if (validity != SMS_PARAM_UNDEFINED) {
 	if (urltrans_accept_x_kannel_headers(trans))
 	    msg->sms.validity = validity;
 	else
 	    warning(0, "Tried to change validity to '%d', denied.",
 		    validity);
     }
-    if (deferred >= 0) {
+    if (deferred != SMS_PARAM_UNDEFINED) {
 	if (urltrans_accept_x_kannel_headers(trans))
 	    msg->sms.deferred = deferred;
 	else
@@ -860,7 +860,7 @@ static void fill_message(Msg *msg, URLTranslation *trans,
 		    deferred);
     }
 
-    if (dlr_mask >= 0) {
+    if (dlr_mask != SMS_PARAM_UNDEFINED) {
 	if (urltrans_accept_x_kannel_headers(trans)) {
 	    msg->sms.dlr_mask = dlr_mask;
 	} else
@@ -902,7 +902,7 @@ static void fill_message(Msg *msg, URLTranslation *trans,
 
 
 /***********************************************************************
- * Thread to handle failed HTTP requests and retries to deliver the 
+ * Thread to handle failed HTTP requests and retries to deliver the
  * information to the HTTP server. The thread uses the smsbox_http_requests
  * queue that is spooled by url_result_thread in case the HTTP requests
  * fails.
@@ -918,36 +918,36 @@ static void http_queue_thread(void *arg)
     Octstr *req_body;
     unsigned long retries;
     int method;
- 
+
     while ((id = list_consume(smsbox_http_requests)) != NULL) {
-        /* 
+        /*
          * Sleep for a while in order not to block other operting requests.
          * Defaults to 10 sec. if not given via http-queue-delay directive in
          * smsbox group.
          */
-        if (http_queue_delay > 0) 
+        if (http_queue_delay > 0)
             gwthread_sleep(http_queue_delay);
 
-        debug("sms.http",0,"HTTP: Queue contains %ld outstanding requests",  
+        debug("sms.http",0,"HTTP: Queue contains %ld outstanding requests",
               list_len(smsbox_http_requests));
 
-        /* 
-         * Get all required HTTP request data from the queue and reconstruct 
+        /*
+         * Get all required HTTP request data from the queue and reconstruct
          * the id pointer for later lookup in url_result_thread.
          */
         get_receiver(id, &msg, &trans, &method, &req_url, &req_headers, &req_body, &retries);
-        
+
         if (retries < max_http_retries) {
             id = remember_receiver(msg, trans, method, req_url, req_headers, req_body, ++retries);
-        
-            debug("sms.http",0,"HTTP: Retrying request <%s> (%ld/%ld)",  
+
+            debug("sms.http",0,"HTTP: Retrying request <%s> (%ld/%ld)",
                   octstr_get_cstr(req_url), retries, max_http_retries);
 
             /* re-queue this request to the HTTPCaller list */
-            http_start_request(caller, method, req_url, req_headers, req_body, 
+            http_start_request(caller, method, req_url, req_headers, req_body,
                                1, id, NULL);
         }
-        
+
         msg_destroy(msg);
         octstr_destroy(req_url);
         http_destroy_headers(req_headers);
@@ -971,7 +971,7 @@ static void url_result_thread(void *arg)
     int octets;
     unsigned long retries;
     unsigned int queued; /* indicate if processes reply is requeued */
-    
+
     Octstr *reply_body, *charset;
     Octstr *udh, *from, *to, *dlr_url, *account, *smsc, *auth_code, *hplmn;
     int dlr_mask, mclass, mwi, coding, compress, pid, alt_dcs, rpi;
@@ -989,27 +989,28 @@ static void url_result_thread(void *arg)
 	    	    	    	 &reply_body);
         if (id == NULL)
             break;
-    	
+
 	octets = 0;
-        from = to = udh = smsc = dlr_url = 
+        from = to = udh = smsc = dlr_url =
 	    account = auth_code = hplmn = charset = NULL;
-	mclass = mwi = coding = compress = pid = 
+	mclass = mwi = coding = compress = pid =
 	    alt_dcs = rpi = dlr_mask = validity = deferred = -1;
-	
+
         get_receiver(id, &msg, &trans, &method, &req_url, &req_headers, &req_body, &retries);
-     
+
         if (status == HTTP_OK || status == HTTP_ACCEPTED) {
             http_header_get_content_type(reply_headers, &type, &charset);
             if (octstr_case_compare(type, text_html) == 0 ||
                 octstr_case_compare(type, text_wml) == 0) {
-                strip_prefix_and_suffix(reply_body, urltrans_prefix(trans), 
+                if (trans != NULL)
+                    strip_prefix_and_suffix(reply_body, urltrans_prefix(trans),
                                         urltrans_suffix(trans));
                 replytext = html_to_sms(reply_body);
                 octstr_strip_blanks(replytext);
                 get_x_kannel_from_headers(reply_headers, &from, &to, &udh,
-					  NULL, NULL, &smsc, &mclass, &mwi, 
-					  &coding, &compress, &validity, 
-					  &deferred, &dlr_mask, &dlr_url, 
+					  NULL, NULL, &smsc, &mclass, &mwi,
+					  &coding, &compress, &validity,
+					  &deferred, &dlr_mask, &dlr_url,
 					  &account, &pid, &alt_dcs, &rpi,
 					  &auth_code, &hplmn);
             } else if (octstr_case_compare(type, text_plain) == 0) {
@@ -1017,18 +1018,18 @@ static void url_result_thread(void *arg)
                 octstr_destroy(reply_body);
                 reply_body = NULL;
                 get_x_kannel_from_headers(reply_headers, &from, &to, &udh,
-					  NULL, NULL, &smsc, &mclass, &mwi, 
-					  &coding, &compress, &validity, 
-					  &deferred, &dlr_mask, &dlr_url, 
+					  NULL, NULL, &smsc, &mclass, &mwi,
+					  &coding, &compress, &validity,
+					  &deferred, &dlr_mask, &dlr_url,
 					  &account, &pid, &alt_dcs, &rpi,
 					  &auth_code, &hplmn);
             } else if (octstr_case_compare(type, text_xml) == 0) {
                 replytext = octstr_duplicate(reply_body);
-                octstr_destroy(reply_body); 
+                octstr_destroy(reply_body);
                 reply_body = NULL;
-                get_x_kannel_from_xml(mt_reply, &type, &replytext, reply_headers, 
-                        &from, &to, &udh, NULL, NULL, &smsc, &mclass, &mwi, 
-                        &coding, &compress, &validity, &deferred, &dlr_mask, 
+                get_x_kannel_from_xml(mt_reply, &type, &replytext, reply_headers,
+                        &from, &to, &udh, NULL, NULL, &smsc, &mclass, &mwi,
+                        &coding, &compress, &validity, &deferred, &dlr_mask,
                         &dlr_url, &account, &pid, &alt_dcs, &rpi, NULL, &charset,
 			&auth_code, &hplmn);
             } else if (octstr_case_compare(type, octet_stream) == 0) {
@@ -1037,13 +1038,13 @@ static void url_result_thread(void *arg)
                 octets = 1;
                 reply_body = NULL;
                 get_x_kannel_from_headers(reply_headers, &from, &to, &udh,
-					  NULL, NULL, &smsc, &mclass, &mwi, 
-					  &coding, &compress, &validity, 
-					  &deferred, &dlr_mask, &dlr_url, 
+					  NULL, NULL, &smsc, &mclass, &mwi,
+					  &coding, &compress, &validity,
+					  &deferred, &dlr_mask, &dlr_url,
 					  &account, &pid, &alt_dcs, &rpi,
 					  &auth_code, &hplmn);
             } else {
-                replytext = octstr_duplicate(reply_couldnotrepresent); 
+                replytext = octstr_duplicate(reply_couldnotrepresent);
             }
 
             if (charset_processing(charset, replytext, coding) == -1) {
@@ -1059,8 +1060,8 @@ static void url_result_thread(void *arg)
             replytext = octstr_duplicate(reply_couldnotfetch);
 
         fill_message(msg, trans, replytext, octets, from, to, udh, mclass,
-            mwi, coding, compress, validity, deferred, dlr_url, 
-            dlr_mask, pid, alt_dcs, rpi, smsc, account, charset, 
+            mwi, coding, compress, validity, deferred, dlr_url,
+            dlr_mask, pid, alt_dcs, rpi, smsc, account, charset,
             auth_code, hplmn);
 
         if (final_url == NULL)
@@ -1068,12 +1069,12 @@ static void url_result_thread(void *arg)
         if (reply_body == NULL)
             reply_body = octstr_imm("");
 
-        if (!DLR_IS_ENABLED(msg->sms.dlr_mask)) {
+        if (msg->sms.sms_type != report) {
             alog("SMS HTTP-request sender:%s request: '%s' "
                  "url: '%s' reply: %d '%s'",
                  octstr_get_cstr(msg->sms.receiver),
                  (msg->sms.msgdata != NULL) ? octstr_get_cstr(msg->sms.msgdata) : "",
-                 octstr_get_cstr(final_url), status,	
+                 octstr_get_cstr(final_url), status,
                  (status == HTTP_OK) ? "<< successful >>" : octstr_get_cstr(reply_body));
         }
 
@@ -1084,11 +1085,11 @@ requeued:
         octstr_destroy(req_url);
         http_destroy_headers(req_headers);
         octstr_destroy(req_body);
-    
-        if (!DLR_IS_ENABLED(msg->sms.dlr_mask) && !queued) {
+
+        if (msg->sms.sms_type != report && !queued) {
             if (send_message(trans, msg) < 0)
                 error(0, "failed to send message to phone");
-        }	
+        }
         msg_destroy(msg);
     }
 }
@@ -1105,7 +1106,7 @@ requeued:
  * Perform the service requested by the user: translate the request into
  * a pattern, if it is an URL, start its fetch and return 0, otherwise
  * return the string in `*result' and return 1. Return -1 for errors.
- * If we are translating url for ppg dlr, we do not use trans data 
+ * If we are translating url for ppg dlr, we do not use trans data
  * structure defined for sms services. This is indicated by trans = NULL.
  */
 static int obey_request(Octstr **result, URLTranslation *trans, Msg *msg)
@@ -1117,10 +1118,10 @@ static int obey_request(Octstr **result, URLTranslation *trans, Msg *msg)
     char p[22];
     int type;
     FILE *f;
-    
+
     gw_assert(msg != NULL);
     gw_assert(msg_type(msg) == sms);
-    
+
     if (msg->sms.sms_type == report)
 	type = TRANSTYPE_GET_URL;
     else
@@ -1128,18 +1129,18 @@ static int obey_request(Octstr **result, URLTranslation *trans, Msg *msg)
 
     pattern = urltrans_get_pattern(trans, msg);
     gw_assert(pattern != NULL);
-    
+
     switch (type) {
     case TRANSTYPE_TEXT:
-	debug("sms", 0, "formatted text answer: <%s>", 
+	debug("sms", 0, "formatted text answer: <%s>",
 	      octstr_get_cstr(pattern));
 	*result = pattern;
 	alog("SMS request sender:%s request: '%s' fixed answer: '%s'",
 	     octstr_get_cstr(msg->sms.receiver),
 	     octstr_get_cstr(msg->sms.msgdata),
-	     octstr_get_cstr(pattern)); 
+	     octstr_get_cstr(pattern));
 	break;
-    
+
     case TRANSTYPE_FILE:
 	*result = octstr_read_file(octstr_get_cstr(pattern));
 	octstr_destroy(pattern);
@@ -1148,9 +1149,9 @@ static int obey_request(Octstr **result, URLTranslation *trans, Msg *msg)
 	     octstr_get_cstr(msg->sms.msgdata),
 	     octstr_get_cstr(*result));
 	break;
-    
+
     case TRANSTYPE_EXECUTE:
-        debug("sms.exec", 0, "executing sms-service '%s'", 
+        debug("sms.exec", 0, "executing sms-service '%s'",
               octstr_get_cstr(pattern));
         if ((f = popen(octstr_get_cstr(pattern), "r")) != NULL) {
             octstr_destroy(pattern);
@@ -1165,7 +1166,7 @@ static int obey_request(Octstr **result, URLTranslation *trans, Msg *msg)
                   octstr_get_cstr(pattern), errno, strerror(errno));
             *result = NULL;
             octstr_destroy(pattern);
-            goto error;
+            return -1;
         }
         break;
 
@@ -1181,9 +1182,9 @@ static int obey_request(Octstr **result, URLTranslation *trans, Msg *msg)
 			        octstr_get_cstr(msg->sms.receiver));
 	    }
         }
-	
+
 	id = remember_receiver(msg, trans, HTTP_METHOD_GET, pattern, request_headers, NULL, 0);
-	http_start_request(caller, HTTP_METHOD_GET, pattern, request_headers, 
+	http_start_request(caller, HTTP_METHOD_GET, pattern, request_headers,
                        NULL, 1, id, NULL);
 	octstr_destroy(pattern);
 	http_destroy_headers(request_headers);
@@ -1244,73 +1245,73 @@ static int obey_request(Octstr **result, URLTranslation *trans, Msg *msg)
 	    octstr_destroy(os);
 	}
 
-	if(msg->sms.mclass >= 0) {
+	if(msg->sms.mclass != SMS_PARAM_UNDEFINED) {
 	    Octstr *os;
 	    os = octstr_format("%d",msg->sms.mclass);
-	    http_header_add(request_headers, "X-Kannel-MClass", 
+	    http_header_add(request_headers, "X-Kannel-MClass",
 	    	octstr_get_cstr(os));
 	    octstr_destroy(os);
 	}
-	if(msg->sms.pid >= 0) {
+	if(msg->sms.pid != SMS_PARAM_UNDEFINED) {
 	    Octstr *os;
 	    os = octstr_format("%d",msg->sms.pid);
-	    http_header_add(request_headers, "X-Kannel-PID", 
+	    http_header_add(request_headers, "X-Kannel-PID",
 	    	octstr_get_cstr(os));
 	    octstr_destroy(os);
 	}
-	if(msg->sms.rpi >= 0) {
+	if(msg->sms.rpi != SMS_PARAM_UNDEFINED) {
 	    Octstr *os;
 	    os = octstr_format("%d",msg->sms.rpi);
-	    http_header_add(request_headers, "X-Kannel-RPI", 
+	    http_header_add(request_headers, "X-Kannel-RPI",
 	    	octstr_get_cstr(os));
 	    octstr_destroy(os);
 	}
-	if(msg->sms.alt_dcs >= 0) {
+	if(msg->sms.alt_dcs != SMS_PARAM_UNDEFINED) {
 	    Octstr *os;
 	    os = octstr_format("%d",msg->sms.alt_dcs);
-	    http_header_add(request_headers, "X-Kannel-Alt-DCS", 
+	    http_header_add(request_headers, "X-Kannel-Alt-DCS",
 	    	octstr_get_cstr(os));
 	    octstr_destroy(os);
 	}
-	if(msg->sms.mwi >= 0) {
+	if(msg->sms.mwi != SMS_PARAM_UNDEFINED) {
 	    Octstr *os;
 	    os = octstr_format("%d",msg->sms.mwi);
-	    http_header_add(request_headers, "X-Kannel-MWI", 
+	    http_header_add(request_headers, "X-Kannel-MWI",
 	    	octstr_get_cstr(os));
 	    octstr_destroy(os);
 	}
-	if(msg->sms.coding >= 0) {
+	if(msg->sms.coding != SMS_PARAM_UNDEFINED) {
 	    Octstr *os;
 	    os = octstr_format("%d",msg->sms.coding);
-	    http_header_add(request_headers, "X-Kannel-Coding", 
+	    http_header_add(request_headers, "X-Kannel-Coding",
 	    	octstr_get_cstr(os));
 	    octstr_destroy(os);
 	}
-	if(msg->sms.compress >= 0) {
+	if(msg->sms.compress != SMS_PARAM_UNDEFINED) {
 	    Octstr *os;
 	    os = octstr_format("%d",msg->sms.compress);
-	    http_header_add(request_headers, "X-Kannel-Compress", 
+	    http_header_add(request_headers, "X-Kannel-Compress",
 	    	octstr_get_cstr(os));
 	    octstr_destroy(os);
 	}
-	if (msg->sms.validity >= 0) {
+	if (msg->sms.validity != SMS_PARAM_UNDEFINED) {
 	    Octstr *os;
 	    os = octstr_format("%d",msg->sms.validity);
-	    http_header_add(request_headers, "X-Kannel-Validity", 
+	    http_header_add(request_headers, "X-Kannel-Validity",
 	    	octstr_get_cstr(os));
 	    octstr_destroy(os);
 	}
-	if (msg->sms.deferred >= 0) {
+	if (msg->sms.deferred != SMS_PARAM_UNDEFINED) {
 	    Octstr *os;
 	    os = octstr_format("%d",msg->sms.deferred);
-	    http_header_add(request_headers, "X-Kannel-Deferred", 
+	    http_header_add(request_headers, "X-Kannel-Deferred",
 	    	octstr_get_cstr(os));
 	    octstr_destroy(os);
 	}
 	if (octstr_len(msg->sms.service)) {
 	    Octstr *os;
 	    os = octstr_duplicate(msg->sms.service);
-	    http_header_add(request_headers, "X-Kannel-Service", 
+	    http_header_add(request_headers, "X-Kannel-Service",
 	    	octstr_get_cstr(os));
 	    octstr_destroy(os);
 	}
@@ -1318,19 +1319,19 @@ static int obey_request(Octstr **result, URLTranslation *trans, Msg *msg)
 	if (octstr_len(msg->sms.auth_code)) {
 	    Octstr *os;
 	    os = octstr_duplicate(msg->sms.auth_code);
-	    http_header_add(request_headers, "X-Kannel-Auth-Code", 
+	    http_header_add(request_headers, "X-Kannel-Auth-Code",
 	    	octstr_get_cstr(os));
 	    octstr_destroy(os);
 	} */
 	if (octstr_len(msg->sms.hplmn)) {
 	    Octstr *os;
 	    os = octstr_duplicate(msg->sms.hplmn);
-	    http_header_add(request_headers, "X-Kannel-HPLMN", 
+	    http_header_add(request_headers, "X-Kannel-HPLMN",
 	    	octstr_get_cstr(os));
 	    octstr_destroy(os);
 	}
 	id = remember_receiver(msg, trans, HTTP_METHOD_POST, pattern, request_headers, msg->sms.msgdata, 0);
-	http_start_request(caller, HTTP_METHOD_POST, pattern, request_headers, 
+	http_start_request(caller, HTTP_METHOD_POST, pattern, request_headers,
  			           msg->sms.msgdata, 1, id, NULL);
 	octstr_destroy(pattern);
 	http_destroy_headers(request_headers);
@@ -1343,29 +1344,16 @@ static int obey_request(Octstr **result, URLTranslation *trans, Msg *msg)
  * only sometimes - something must be ungry */
 
 #define OCTSTR_APPEND_XML(xml, tag, text)                  \
-	octstr_append(xml, octstr_imm("  "));        \
-	octstr_append(xml, octstr_imm("\t\t<"));        \
-	octstr_append(xml, octstr_imm(tag));            \
-	octstr_append(xml, octstr_imm(">"));            \
-	octstr_append(xml, text);                       \
-	octstr_append(xml, octstr_imm("</"));           \
-	octstr_append(xml, octstr_imm(tag));            \
-	octstr_append(xml, octstr_imm(">\n"));
+        octstr_format_append(xml, "  \t\t<" tag ">%s</" tag ">\n", \
+            (text?octstr_get_cstr(text):""));
 
 #define OCTSTR_APPEND_XML_NUMBER(xml, tag, value)          \
-	octstr_append(xml, octstr_imm("  "));        \
-	octstr_append(xml, octstr_imm("\t\t<"));        \
-	octstr_append(xml, octstr_imm(tag));            \
-	octstr_append(xml, octstr_imm(">"));            \
-	octstr_append_decimal(xml, value);              \
-	octstr_append(xml, octstr_imm("</"));           \
-	octstr_append(xml, octstr_imm(tag));            \
-	octstr_append(xml, octstr_imm(">\n"));
+        octstr_format_append(xml, "  \t\t<" tag ">%ld</" tag ">\n", (long) value);
 
 	request_headers = http_create_empty_headers();
 	http_header_add(request_headers, "User-Agent", GW_NAME "/" GW_VERSION);
         if(msg->sms.coding == DC_UCS2) {
-	    http_header_add(request_headers, "Content-Type", 
+	    http_header_add(request_headers, "Content-Type",
 			    "text/xml; charset=\"ISO-8859-1\""); /* for account and other strings */
 	} else {
 	    Octstr *header;
@@ -1388,10 +1376,10 @@ static int obey_request(Octstr **result, URLTranslation *trans, Msg *msg)
 	xml = octstr_create("");
 	octstr_append(xml, octstr_imm("<?xml version=\"1.0\" encoding=\""));
         if(msg->sms.coding == DC_UCS2 || msg->sms.charset == NULL)
-	    octstr_append(xml, octstr_imm("ISO-8859-1")); 
+	    octstr_append(xml, octstr_imm("ISO-8859-1"));
 	else
 	    octstr_append(xml, msg->sms.charset);
-	octstr_append(xml, octstr_imm("\"?>\n")); 
+	octstr_append(xml, octstr_imm("\"?>\n"));
 
 	/*
 	 * XXX  damn windows that breaks with this :
@@ -1430,28 +1418,30 @@ static int obey_request(Octstr **result, URLTranslation *trans, Msg *msg)
 	}
 
 	/* ud */
-	if(octstr_len(msg->sms.msgdata))
+	if(octstr_len(msg->sms.msgdata)) {
 	    octstr_url_encode(msg->sms.msgdata);
+            OCTSTR_APPEND_XML(xml, "ud", msg->sms.msgdata);
+        }
 
 	/* pid */
-	if(msg->sms.pid >= 0)
+	if(msg->sms.pid != SMS_PARAM_UNDEFINED)
 	    OCTSTR_APPEND_XML_NUMBER(xml, "pid", msg->sms.pid);
 
 	/* rpi */
-	if(msg->sms.rpi >= 0) 
+	if(msg->sms.rpi != SMS_PARAM_UNDEFINED)
 	    OCTSTR_APPEND_XML_NUMBER(xml, "rpi", msg->sms.rpi);
 
 	/* dcs */
 	tmp = octstr_create("");
-	if(msg->sms.coding >= 0)
+	if(msg->sms.coding != SMS_PARAM_UNDEFINED)
 	    OCTSTR_APPEND_XML_NUMBER(tmp, "coding", msg->sms.coding);
-	if(msg->sms.mclass >= 0)
+	if(msg->sms.mclass != SMS_PARAM_UNDEFINED)
 	    OCTSTR_APPEND_XML_NUMBER(tmp, "mclass", msg->sms.mclass);
-	if(msg->sms.alt_dcs >= 0)
+	if(msg->sms.alt_dcs != SMS_PARAM_UNDEFINED)
 	    OCTSTR_APPEND_XML_NUMBER(tmp, "alt-dcs", msg->sms.alt_dcs);
-	if(msg->sms.mwi >= 0)
+	if(msg->sms.mwi != SMS_PARAM_UNDEFINED)
 	    OCTSTR_APPEND_XML_NUMBER(tmp, "mwi", msg->sms.mwi);
-	if(msg->sms.compress >= 0)
+	if(msg->sms.compress != SMS_PARAM_UNDEFINED)
 	    OCTSTR_APPEND_XML_NUMBER(tmp, "compress", msg->sms.compress);
 	if(octstr_len(tmp))
 	    OCTSTR_APPEND_XML(xml, "dcs", tmp)
@@ -1459,17 +1449,17 @@ static int obey_request(Octstr **result, URLTranslation *trans, Msg *msg)
 
 	/* deferred (timing/delay) */
 	tmp = octstr_create("");
-	if(msg->sms.deferred >= 0)
-	    OCTSTR_APPEND_XML_NUMBER(tmp, "delay", msg->sms.coding);
+	if(msg->sms.deferred != SMS_PARAM_UNDEFINED)
+	    OCTSTR_APPEND_XML_NUMBER(tmp, "delay", msg->sms.deferred);
 	if(octstr_len(tmp))
 	    OCTSTR_APPEND_XML(xml, "timing", tmp)
 	octstr_destroy(tmp);
 
 	/* validity (vp/delay) */
 	tmp = octstr_create("");
-	if(msg->sms.deferred >= 0)
-	    OCTSTR_APPEND_XML_NUMBER(tmp, "delay", msg->sms.coding);
-	if(octstr_len(tmp)) 
+	if(msg->sms.validity != SMS_PARAM_UNDEFINED)
+	    OCTSTR_APPEND_XML_NUMBER(tmp, "delay", msg->sms.validity);
+	if(octstr_len(tmp))
 	    OCTSTR_APPEND_XML(xml, "vp", tmp)
 	octstr_destroy(tmp);
 
@@ -1486,10 +1476,10 @@ static int obey_request(Octstr **result, URLTranslation *trans, Msg *msg)
 	/* smsc and auth_code = from/smsc and from/auth-code */
 	if(octstr_len(msg->sms.smsc_id) || octstr_len(msg->sms.auth_code)) {
 	    tmp = octstr_create("");
-	    if(octstr_len(msg->sms.smsc_id)) 
+	    if(octstr_len(msg->sms.smsc_id))
 		OCTSTR_APPEND_XML(tmp, "account", msg->sms.smsc_id);
 	    /* No A(uth-)C(ode) in EMI's MO message
-	    if(octstr_len(msg->sms.auth_code)) 
+	    if(octstr_len(msg->sms.auth_code))
 		OCTSTR_APPEND_XML(tmp, "auth-code", msg->sms.auth_code);
 	    */
 	    if(octstr_len(tmp))
@@ -1530,37 +1520,33 @@ static int obey_request(Octstr **result, URLTranslation *trans, Msg *msg)
 	     octstr_get_cstr(msg->sms.receiver),
 	     octstr_get_cstr(msg->sms.msgdata));
 	octstr_destroy(pattern);
-	goto error;
-    
+	return -1;
+
     default:
 	error(0, "Unknown URL translation type %d", urltrans_type(trans));
 	alog("SMS request sender:%s request: '%s' FAILED unknown translation",
 	     octstr_get_cstr(msg->sms.receiver),
 	     octstr_get_cstr(msg->sms.msgdata));
 	octstr_destroy(pattern);
-	goto error;
+	return -1;
     }
-    
+
     return 1;
-    
-error:
-    return -1;
 }
 
-static void obey_request_thread(void *arg) 
+static void obey_request_thread(void *arg)
 {
-    Msg *msg, *reply_msg;
+    Msg *msg, *mack, *reply_msg;
     Octstr *tmp, *reply;
     URLTranslation *trans;
     Octstr *p;
     int ret, dreport=0;
-    
+
     while ((msg = list_consume(smsbox_requests)) != NULL) {
 	if (msg->sms.sms_type == report)
 	    dreport = 1;
 	else
 	    dreport = 0;
-
 
 	/* Recode to iso-8859-1 the MO message if possible */
 	if (mo_recode && msg->sms.coding == DC_UCS2) {
@@ -1598,36 +1584,36 @@ static void obey_request_thread(void *arg)
 	    octstr_len(msg->sms.receiver) == 0) {
 	    error(0, "smsbox_req_thread: no sender/receiver, dump follows:");
 	    msg_dump(msg, 0);
-	    /* NACK should be returned here if we use such 
-	       things... future implementation! */
-	    msg_destroy(msg);
-	    continue;
-	}
-    
-	/* XXX DAVI: should we reject this ? */
-	if (octstr_compare(msg->sms.sender, msg->sms.receiver) == 0) {
-	    info(0, "NOTE: sender and receiver same number <%s>, ignoring!",
-		 octstr_get_cstr(msg->sms.sender));
+            /*
+             * Send NACK to bearerbox, otherwise message remains in store file.
+             */
+            mack = msg_create(ack);
+            mack->ack.nack = ack_failed;
+            mack->ack.time = msg->sms.time;
+            mack->ack.id = msg->sms.id;
+            write_to_bearerbox(mack);
+
 	    msg_destroy(msg);
 	    continue;
 	}
 
-	/* create reply message to be sent afterwards */
-	reply_msg = msg_create(ack);
-	reply_msg->ack.nack = ack_success;
-	reply_msg->ack.time = msg->sms.time;
-	reply_msg->ack.id = msg->sms.id;
-    
-        /* 
+	/* create ack message to be sent afterwards */
+	mack = msg_create(ack);
+	mack->ack.nack = ack_success;
+	mack->ack.time = msg->sms.time;
+	mack->ack.id = msg->sms.id;
+
+        /*
          * no smsbox services when we are doing ppg dlr - so trans would be
          * NULL in this case.
          */
         if (dreport) {
-            if (msg->sms.service == NULL || ppg_service_name == NULL ||
-                octstr_compare(msg->sms.service, ppg_service_name) != 0) {
-                trans = urltrans_find_service(translations, msg);
-            } else {
+            if (msg->sms.service == NULL || (msg->sms.service != NULL &&
+                 ppg_service_name != NULL &&
+                 octstr_compare(msg->sms.service, ppg_service_name) != 0)) {
                 trans = NULL;
+            } else {
+                trans = urltrans_find_service(translations, msg);
             }
 
 	    info(0, "Starting delivery report <%s> from <%s>",
@@ -1635,20 +1621,17 @@ static void obey_request_thread(void *arg)
 		octstr_get_cstr(msg->sms.sender));
 
 	} else {
-	    trans = urltrans_find(translations, msg->sms.msgdata, 
+	    trans = urltrans_find(translations, msg->sms.msgdata,
 	    	    	      msg->sms.smsc_id, msg->sms.sender, msg->sms.receiver);
 	    if (trans == NULL) {
-		Octstr *t;
 		warning(0, "No translation found for <%s> from <%s> to <%s>",
 		    octstr_get_cstr(msg->sms.msgdata),
 		    octstr_get_cstr(msg->sms.sender),
 		    octstr_get_cstr(msg->sms.receiver));
-		t = msg->sms.sender;
-		msg->sms.sender = msg->sms.receiver;
-		msg->sms.receiver = t;
+                sms_swap(msg);
 		goto error;
 	    }
-    
+
 	    info(0, "Starting to service <%s> from <%s> to <%s>",
 		octstr_get_cstr(msg->sms.msgdata),
 		octstr_get_cstr(msg->sms.sender),
@@ -1656,11 +1639,11 @@ static void obey_request_thread(void *arg)
 
 	    /*
 	     * now, we change the sender (receiver now 'cause we swap them later)
-	     * if faked-sender or similar set. Note that we ignore if the 
+	     * if faked-sender or similar set. Note that we ignore if the
 	     * replacement fails.
 	     */
 	    tmp = octstr_duplicate(msg->sms.sender);
-	    
+
 	    p = urltrans_faked_sender(trans);
 	    if (p != NULL) {
 		octstr_destroy(msg->sms.sender);
@@ -1674,7 +1657,7 @@ static void obey_request_thread(void *arg)
 	    }
 	    octstr_destroy(msg->sms.receiver);
 	    msg->sms.receiver = tmp;
-	    msg->sms.sms_type = mt_reply;
+            msg->sms.sms_type = mt_reply;
 	}
 
 	/* TODO: check if the sender is approved to use this service */
@@ -1686,35 +1669,32 @@ static void obey_request_thread(void *arg)
 	    if (ret == -1) {
     error:
 	        error(0, "request failed");
-	        /* XXX this can be something different, according to 
+	        /* XXX this can be something different, according to
 	           urltranslation */
 	        reply = octstr_duplicate(reply_requestfailed);
 	        trans = NULL;	/* do not use any special translation */
 	    }
-	    /* Sanitize reply */
-	    msg->sms.mclass = msg->sms.mwi = msg->sms.coding = 
-		msg->sms.compress = msg->sms.validity = 
-		msg->sms.deferred = msg->sms.dlr_mask = 
-		msg->sms.pid = msg->sms.rpi = msg->sms.alt_dcs = -1;
-	    O_DESTROY(msg->sms.udhdata);
-	    O_DESTROY(msg->sms.service);
-	    O_DESTROY(msg->sms.charset);
-	    O_DESTROY(msg->sms.auth_code);
-	    O_DESTROY(msg->sms.dlr_url);
-	    O_DESTROY(msg->sms.hplmn);
+            if (!dreport) {
+                /* create reply message */
+                reply_msg = msg_create(sms);
+                reply_msg->sms.sms_type = mt_reply;
+                reply_msg->sms.sender = msg->sms.sender;
+                msg->sms.sender = NULL;
+                reply_msg->sms.receiver = msg->sms.receiver;
+                msg->sms.receiver = NULL;
+                reply_msg->sms.msgdata = reply;
+                reply_msg->sms.time = time(NULL);	/* set current time */
 
-	    octstr_destroy(msg->sms.msgdata);
-	    msg->sms.msgdata = reply;
-	
-	    msg->sms.time = time(NULL);	/* set current time */
-	
-	    if (!dreport) {
-	    if (send_message(trans, msg) < 0)
-		error(0, "request_thread: failed");
-	    }
+                /* send message */
+                if (send_message(trans, reply_msg) < 0)
+                    error(0, "request_thread: failed");
+
+                /* cleanup */
+                msg_destroy(reply_msg);
+            }
 	}
 
-	write_to_bearerbox(reply_msg); /* implicit msg_destroy */
+	write_to_bearerbox(mack); /* implicit msg_destroy */
 
 	msg_destroy(msg);
     }
@@ -1846,7 +1826,7 @@ static Octstr *smsbox_req_handle(URLTranslation *t, Octstr *client_ip,
 				 Octstr *from, Octstr *to, Octstr *text, 
 				 Octstr *charset, Octstr *udh, Octstr *smsc,
 				 int mclass, int mwi, int coding, int compress, 
-				 int validity, int deferred, 
+				 int validity, int deferred,
 				 int *status, int dlr_mask, Octstr *dlr_url, 
 				 Octstr *account, int pid, int alt_dcs, int rpi,
 				 List *receiver, Octstr *auth_code, Octstr *hplmn)
@@ -1951,7 +1931,7 @@ static Octstr *smsbox_req_handle(URLTranslation *t, Octstr *client_ip,
         receiv = list_get(denied, i);
         del = list_delete_matching(allowed, receiv, octstr_item_match);
     }
-    
+
     if (urltrans_faked_sender(t) != NULL) {
 	/* discard previous from */
 	newfrom = octstr_duplicate(urltrans_faked_sender(t));
@@ -2141,7 +2121,7 @@ static Octstr *smsbox_req_handle(URLTranslation *t, Octstr *client_ip,
     failed_id = list_create();
 
     while ((receiv = list_extract_first(allowed)) != NULL) {
-        
+
 	O_DESTROY(msg->sms.receiver);
         msg->sms.receiver = octstr_duplicate(receiv);
 
@@ -2246,7 +2226,7 @@ static URLTranslation *authorise_username(Octstr *username, Octstr *password,
 
     if (username == NULL || password == NULL)
 	return NULL;
-    
+
     if ((t = urltrans_find_username(translations, username))==NULL)
 	return NULL;
 
@@ -2406,7 +2386,7 @@ static Octstr *smsbox_req_sendsms(List *args, Octstr *client_ip, int *status)
 	return octstr_create("Empty receiver number not allowed, rejected");
     }
 
-    return smsbox_req_handle(t, client_ip, from, to, text, charset, udh, 
+    return smsbox_req_handle(t, client_ip, from, to, text, charset, udh,
 			     smsc, mclass, mwi, coding, compress, validity, 
 			     deferred, status, dlr_mask, dlr_url, account,
 			     pid, alt_dcs, rpi, NULL, auth_code, hplmn);
@@ -2441,7 +2421,7 @@ static Octstr *smsbox_sendsms_post(List *headers, Octstr *body,
     tolist = NULL;
     from = to = udh = smsc = account = 
 	dlr_url = charset = auth_code = hplmn = NULL;
-    mclass = mwi = coding = compress = validity = 
+    mclass = mwi = coding = compress = validity =
 	deferred = dlr_mask = pid = alt_dcs = rpi = -1;
  
     http_header_get_content_type(headers, &type, &charset);
@@ -2546,7 +2526,7 @@ error:
  * Answer with a valid XML-RPC response for a successfull request.
  * 
  * function signature: boolean sms.send(struct)
- * 
+ *
  * The <struct> MUST contain at least <member>'s with name 'username',
  * 'password', 'to' and MAY contain additional <member>'s with name
  * 'from', 'account', 'smsc', 'udh', 'dlrmask', 'dlrurl'. All values
@@ -2771,7 +2751,7 @@ send:
 
     info(0, "%s <%s> <%s>", octstr_get_cstr(sendota_url), 
     	 id ? octstr_get_cstr(id) : "<default>", octstr_get_cstr(phonenumber));
-    
+
     ret = send_message(t, msg); 
     msg_destroy(msg);
 
