@@ -45,6 +45,7 @@ typedef unsigned long (*CRYPTO_CALLBACK_PTR)(void);
  * conn_register.
  */
 #define DEFAULT_OUTPUT_BUFFERING 0
+#define SSL_CONN_TIMEOUT         30
 
 struct Connection
 {
@@ -361,6 +362,8 @@ Connection *conn_open_ssl(Octstr *host, int port, Octstr *certkeyfile,
 {
     Connection *ret;
     int SSL_ret;
+    int connected = 0;
+    time_t timeout;
 
     ret = conn_open_tcp(host, port, our_host);
 
@@ -391,26 +394,54 @@ Connection *conn_open_ssl(Octstr *host, int port, Octstr *certkeyfile,
     ERR_clear_error();
 
     /*
-     * make the socket blocking while we do SSL_connect
-     */
-    if (socket_set_blocking(ret->fd, 1) < 0) {
-	goto error;
-    }
-    
-    SSL_ret = SSL_connect(ret->ssl);
-    
-    /*
-     * restore the non-blocking state
+     * make the socket is non-blocking while we do SSL_connect
      */
     if (socket_set_blocking(ret->fd, 0) < 0) {
-	goto error;
+        goto error;
+    }
+
+    /* record current time */
+    timeout = time(NULL);
+
+    while(!connected && (timeout + SSL_CONN_TIMEOUT > time(NULL))) {
+        /* Attempt to connect as long as the timeout hasn't run down */
+        SSL_ret = SSL_connect(ret->ssl);
+        switch(SSL_get_error(ret->ssl,SSL_ret)) {
+            case SSL_ERROR_WANT_READ:
+            case SSL_ERROR_WANT_WRITE:
+                /* non-blocking socket wants more time to read or write */
+                gwthread_sleep(0.01F);
+                continue;
+            default:
+                /* we're connected to the server successfuly */
+                connected++;
+        }
+    }
+
+    if (!connected) {
+        /* connection timed out - this probably means that something is terrible wrong */
+        int SSL_error = SSL_get_error (ret->ssl, SSL_ret);
+        error(0,"SSL connection timeout: OpenSSL error %d: %s",
+                SSL_error, ERR_error_string(SSL_error, NULL));
+        goto error;
     }
     
+    /* 
+     * XXX - restore the non-blocking state
+     * we don't need this since we use non-blocking operations
+     * anyway before doing SSL_connect(), right?!
+     */
+    /*
+    if (socket_set_blocking(ret->fd, 0) < 0) {
+        goto error;
+    }
+    */
+
     if (SSL_ret != 1) {
-	int SSL_error = SSL_get_error (ret->ssl, SSL_ret); 
-	error(0, "SSL connect failed: OpenSSL error %d: %s", 
-	      SSL_error, ERR_error_string(SSL_error, NULL));
-	goto error;
+        int SSL_error = SSL_get_error (ret->ssl, SSL_ret); 
+        error(0, "SSL connect failed: OpenSSL error %d: %s", 
+                  SSL_error, ERR_error_string(SSL_error, NULL));
+        goto error;
     }
     
     return(ret);
