@@ -399,7 +399,7 @@ int at_submit_msg(SMSCenter *smsc, Msg *msg) {
 int at_receive_msg(SMSCenter *smsc, Msg **msg) {
 
         *msg = list_consume(smsc->at_received);
-        if(msg == NULL)
+        if(*msg == NULL)
                 goto error;
                 
         return 1;

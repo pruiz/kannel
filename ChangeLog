@@ -1,4 +1,7 @@
-2002-09-18  Oded Arbel  <odea@m-wise.com>
+2002-09-19  Oded Arbel  <odeda@m-wise.com>
+    * gw/smsc/smsc_at.c: Fixed a bug in at_receive(), reported by Rene Kluwen
+    [Msg-ID: <200209191406.g8JE6L8H017962@ns.nesscis.com>]
+2002-09-18  Oded Arbel  <odeda@m-wise.com>
     * gw/wap_push_ppg.c: Fixed a bug in get_mime_boundary that would cause 
       it to get into an endless loop if the boundary was not ; terminated.
       changed the HTML entity name of a double quote from &qt; to &quot;
