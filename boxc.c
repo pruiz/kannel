@@ -32,7 +32,7 @@ BOXC *boxc_open(int fd)
     if (fd < 0) {
 	nb->fd = fd;
     } else {
-	info(0, "BOXC: Accepting the new client...");
+	debug(0, "BOXC: Accepting a new client...");
 	
 	nb->fd = accept(fd, &client_addr, &client_addr_len);
 	if (nb->fd < 0)

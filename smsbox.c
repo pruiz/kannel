@@ -113,9 +113,20 @@ static char *obey_request(URLTranslation *trans, Msg *sms)
 	debug(0, "formatted text answer: <%s>", pattern);
 	return pattern;
     }
-    if (urltrans_type(trans) == TRANSTYPE_FILE)
-	return strdup("File reading not yet implemented");
-
+    else if (urltrans_type(trans) == TRANSTYPE_FILE) {
+	FILE *f;
+	size_t len;
+	
+	f = fopen(pattern, "r");
+	if (f == NULL) {
+	    error(errno, "Couldn't open file < %s >", pattern);
+	    return NULL;
+	}
+	replytext[0] = '\0';
+	len = fread( replytext, sizeof(char), 1024*10, f);
+	fclose(f);
+	return strdup(replytext);
+    }
     /* URL */
 
     debug(0, "formatted url: <%s>", pattern);
@@ -638,7 +649,7 @@ void main_loop()
     fd_set rf;
     struct timeval to;
 
-    if (http_fd == -1)
+    if (http_fd < 0)
 	http_accept_pending = -1;
     else
 	http_accept_pending = 0;
@@ -674,7 +685,7 @@ void main_loop()
 
 	    ret = octstr_recv(socket_fd, &pack);
 	    if (ret < 0) {
-		error(0, "read line failed!");
+		info(0, "Receive failed, apparently other end was closed/failed");
 		break;
 	    }
 	    ret = pthread_mutex_unlock(&socket_mutex);

@@ -83,8 +83,8 @@ typedef struct bb_s {
     sig_atomic_t	abort_program;	/* 0 nothing, 1 not receiving new, 2 queus
 					 * emptied */
 
-    
     sig_atomic_t	suspended;
+    sig_atomic_t	accept_pending;
 
     int	heartbeat_freq;		/* basic heartbeat writing frequency
 				 * (in seconds) - double this and we kill */
@@ -361,6 +361,7 @@ static void *smscenter_thread(void *arg)
     }
     us->status = BB_STATUS_DEAD;
     smsc_close(us->smsc);
+    us->smsc = NULL;
     return NULL;
 }
 
@@ -423,6 +424,8 @@ static void *wapboxconnection_thread(void *arg)
 
     us = arg;
     us->boxc = boxc_open(bbox->wap_fd);
+    bbox->accept_pending--;
+
     us->status = BB_STATUS_OK;
     
     while(us->boxc != NULL && !bbox->abort_program) {
@@ -438,6 +441,7 @@ static void *wapboxconnection_thread(void *arg)
 	 */
     }
     boxc_close(us->boxc);
+    us->boxc = NULL;
     us->status = BB_STATUS_DEAD;
     return NULL;
 }
@@ -455,6 +459,8 @@ static void *smsboxconnection_thread(void *arg)
     
     us = arg;
     us->boxc = boxc_open(bbox->sms_fd);
+    bbox->accept_pending--;
+
     us->status = BB_STATUS_OK;
     
     while(us->boxc != NULL && bbox->abort_program < 2) {
@@ -517,7 +523,9 @@ static void *smsboxconnection_thread(void *arg)
 	written--;
 	usleep(1000);
     }
+    info(0, "BOXC: Closing and dying...");
     boxc_close(us->boxc);
+    us->boxc = NULL;
     us->status = BB_STATUS_DEAD;
     return NULL;
 }
@@ -605,7 +613,6 @@ static BBThread *create_bbt(int type)
     nt->id = id;
     bbox->threads[index] = nt;
 
-
     bbox->id_max = id;
     return nt;
 }
@@ -662,9 +669,10 @@ static void new_bbt_wapbox()
 {
     BBThread *nt;
     nt = create_bbt(BB_TTYPE_WAP_BOX);
-    if (nt != NULL)
+    if (nt != NULL) {
+	bbox->accept_pending++;
 	(void)start_thread(1, wapboxconnection_thread, nt, 0);
-
+    }
     debug(0, "Created a new WAP BOX thread (id = %d)", nt->id);
 }
 
@@ -676,9 +684,10 @@ static void new_bbt_smsbox()
 {
     BBThread *nt;
     nt = create_bbt(BB_TTYPE_SMS_BOX);
-    if (nt != NULL)
+    if (nt != NULL) {
+	bbox->accept_pending++;
 	(void)start_thread(1, smsboxconnection_thread, nt, 0);
-
+    }
     debug(0, "Created a new SMS BOX thread (id = %d)", nt->id);
 }
 
@@ -695,6 +704,7 @@ static void *http_request_thread(void *arg)
     char answer[10*1024];
     
     client = httpserver_get_request(bbox->http_fd, &client_ip, &path, &args);
+    bbox->accept_pending--;
     if (client == -1) {
 	error(0, "HTTP: Failed to get request from client, killing thread");
 	return NULL;
@@ -717,6 +727,8 @@ static void *http_request_thread(void *arg)
 
 static void http_start_thread()
 {
+    bbox->accept_pending++;
+    
     (void)start_thread(1, http_request_thread, NULL, 0);
 
     debug(0, "Created a new HTTP adminstration thread");
@@ -895,9 +907,8 @@ static void update_queue_watcher()
 	 * kill notification to boxes, too... TODO
 	 */
 	limit = time(NULL);
-	if (rq_last_mod(bbox->request_queue) < limit-3  ||
-	    rq_last_mod(bbox->reply_queue) < limit-2)
-
+	if (req == 0 && rep == 0 && (rq_last_mod(bbox->request_queue) < limit-3  ||
+				     rq_last_mod(bbox->reply_queue) < limit-2))
 	    bbox->abort_program = 2;     	/* time to die... */
     }
     req_ql[index%10] = req;
@@ -1024,8 +1035,8 @@ static void main_program(void)
 	    }
 	}
 
-	if (bbox->abort_program > 0)	/* no new connections if */
-	    continue;			/* we are being tewrminated */
+	if (bbox->accept_pending)
+	    continue;
 	
 	FD_ZERO(&rf);
 	FD_SET(bbox->http_fd, &rf);
