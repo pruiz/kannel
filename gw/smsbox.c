@@ -281,7 +281,7 @@ static void init_smsbox(Config *cfg)
 	    lvl = atoi(p);
 	grp = config_next_group(grp);
     }
-    if (hearbeat_freq == -600)
+    if (heartbeat_freq == -600)
 	panic(0, "Apparently someone is using SAMPLE configuration without "
 		"editing it first - well, hopefully he or she now reads it");
 
