@@ -206,4 +206,8 @@ OctstrList *octstr_split_words(Octstr *ostr);
  */
 void octstr_dump(Octstr *ostr);
 
+int octstr_send(int fd, Octstr *ostr);
+
+int octstr_recv(int fd, Octstr **ostr);
+
 #endif
