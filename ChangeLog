@@ -1,6 +1,7 @@
 2000-05-09  Richard Braakman  <dark@wapit.com>
 
-	* gw/smsc.c: system-type is also required for SMPP configurations.
+	* gw/smsc.c: system-type and address-range are also required
+	for SMPP configurations.
 
 2000-05-09    <Kalle Marjola <rpr@wapit.com>>
 
