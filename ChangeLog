@@ -1,3 +1,9 @@
+2004-06-14  Alexander Malysh  <a.malysh@centrium.de> 
+    * gwlib/gwlib.h: added "gw-rwlock.h".
+    * gw/bb_boxc.c: changed 'boxc' to 'Counter'.
+      Switched 'list_[lock|unlock](smsbox_list)' to rwlock's.
+      Added panic if multiple equal smsbox routes defined.
+
 2004-06-10  Alexander Malysh  <a.malysh@centrium.de> 
     * gwlib/gw-rwlock.[ch]: initial version of the wrapper for
       reader/writer lock. For now only pthread_rw_lock is supported.

@@ -99,16 +99,17 @@ extern long max_incoming_sms_qlength;
 
 static volatile sig_atomic_t smsbox_running;
 static volatile sig_atomic_t wapbox_running;
-static List	*wapbox_list = NULL;
-static List	*smsbox_list = NULL;
+static List	*wapbox_list;
+static List	*smsbox_list;
+static RWLock   *smsbox_list_rwlock;
 
 /* dictionaries for holding the smsbox routing information */
-static Dict *smsbox_by_id = NULL;
-static Dict *smsbox_by_smsc = NULL;
-static Dict *smsbox_by_receiver = NULL;
+static Dict *smsbox_by_id;
+static Dict *smsbox_by_smsc;
+static Dict *smsbox_by_receiver;
 
 static long	smsbox_port;
-static int smsbox_port_ssl = 0;
+static int smsbox_port_ssl;
 static long	wapbox_port;
 static int wapbox_port_ssl = 0;
 
@@ -116,8 +117,7 @@ static Octstr *box_allow_ip;
 static Octstr *box_deny_ip;
 
 
-static long	boxid = 0;
-extern Mutex *boxid_mutex;
+static Counter *boxid;
 
 /* sms_to_smsboxes thread-id */
 static long sms_dequeue_thread;
@@ -448,9 +448,7 @@ static Boxc *boxc_create(int fd, Octstr *ip, int ssl)
     boxc->is_wap = 0;
     boxc->load = 0;
     boxc->conn = conn_wrap_fd(fd, ssl);
-    mutex_lock(boxid_mutex);
-    boxc->id = boxid++;
-    mutex_unlock(boxid_mutex);
+    boxc->id = counter_increase(boxid);
     boxc->client_ip = ip;
     boxc->alive = 1;
     boxc->connect_time = time(NULL);
@@ -554,21 +552,21 @@ static void run_smsbox(void *arg)
      * a race condition for routable smsboxes (otherwise between startup and
      * registration we will forward some messages to smsbox).
      */
-    list_lock(smsbox_list);
+    gw_rwlock_wrlock(smsbox_list_rwlock);
     list_append(smsbox_list, newconn);
-    list_unlock(smsbox_list);
+    gw_rwlock_unlock(smsbox_list_rwlock);
 
     list_add_producer(newconn->outgoing);
     boxc_receiver(newconn);
     list_remove_producer(newconn->outgoing);
 
     /* remove us from smsbox routing list */
-    list_lock(smsbox_list);
+    gw_rwlock_wrlock(smsbox_list_rwlock);
     list_delete_equal(smsbox_list, newconn);
     if (newconn->boxc_id) {
         dict_remove(smsbox_by_id, newconn->boxc_id);
     }
-    list_unlock(smsbox_list);
+    gw_rwlock_unlock(smsbox_list_rwlock);
 
     /*
      * check if we in the shutdown phase and sms dequeueing thread
@@ -902,6 +900,8 @@ static void smsboxc_run(void *arg)
 
     list_destroy(smsbox_list, NULL);
     smsbox_list = NULL;
+    gw_rwlock_destroy(smsbox_list_rwlock);
+    smsbox_list_rwlock = NULL;
 
     /* destroy things related to smsbox routing */
     dict_destroy(smsbox_by_id);
@@ -998,7 +998,9 @@ static void init_smsbox_routes(Cfg *cfg)
                 debug("bb.boxc",0,"Adding smsbox routing to id <%s> for smsc id <%s>",
                       octstr_get_cstr(boxc_id), octstr_get_cstr(item));
 
-                dict_put(smsbox_by_smsc, item, octstr_duplicate(boxc_id));
+                if (!dict_put_once(smsbox_by_smsc, item, octstr_duplicate(boxc_id)))
+                    panic(0, "Routing for smsc-id <%s> already exists!",
+                          octstr_get_cstr(item));
             }
             list_destroy(items, octstr_destroy_item);
             octstr_destroy(smsc_ids);
@@ -1013,7 +1015,9 @@ static void init_smsbox_routes(Cfg *cfg)
                 debug("bb.boxc",0,"Adding smsbox routing to id <%s> for receiver no <%s>",
                       octstr_get_cstr(boxc_id), octstr_get_cstr(item));
             
-                dict_put(smsbox_by_receiver, item, octstr_duplicate(boxc_id));
+                if (!dict_put_once(smsbox_by_receiver, item, octstr_duplicate(boxc_id)))
+                    panic(0, "Routing for receiver no <%s> already exists!",
+                          octstr_get_cstr(item));
             }
             list_destroy(items, octstr_destroy_item);
             octstr_destroy(shortcuts);
@@ -1052,6 +1056,9 @@ int smsbox_start(Cfg *cfg)
         debug("bb", 0, "smsbox connection module is SSL-enabled");
     
     smsbox_list = list_create();	/* have a list of connections */
+    smsbox_list_rwlock = gw_rwlock_create();
+    if (!boxid)
+        boxid = counter_create();
 
     /* the smsbox routing specific inits */
     smsbox_by_id = dict_create(10, NULL);  /* and a hash directory of identified */
@@ -1118,6 +1125,8 @@ int wapbox_start(Cfg *cfg)
     
     wapbox_list = list_create();	/* have a list of connections */
     list_add_producer(outgoing_wdp);
+    if (!boxid)
+        boxid = counter_create();
 
     if (gwthread_create(wdp_to_wapboxes, NULL) == -1)
  	    panic(0, "Failed to start a new thread for wapbox routing");
@@ -1203,7 +1212,7 @@ Octstr *boxc_status(int status_type)
 	       list_unlock(wapbox_list);
         }
         if (smsbox_list) {
-            list_lock(smsbox_list);
+            gw_rwlock_rdlock(smsbox_list_rwlock);
 	    for(i=0; i < list_len(smsbox_list); i++) {
 	        bi = list_get(smsbox_list, i);
 	        if (bi->alive == 0)
@@ -1238,7 +1247,7 @@ Octstr *boxc_status(int status_type)
                     lb);
 	       boxes++;
 	    }
-	    list_unlock(smsbox_list);
+	    gw_rwlock_unlock(smsbox_list_rwlock);
     }
     if (boxes == 0 && status_type != BBSTATUS_XML) {
 	    octstr_destroy(tmp);
@@ -1277,6 +1286,8 @@ void boxc_cleanup(void)
     octstr_destroy(box_deny_ip);
     box_allow_ip = NULL;
     box_deny_ip = NULL;
+    counter_destroy(boxid);
+    boxid = NULL;
 }
 
 
@@ -1305,9 +1316,9 @@ int route_incoming_to_boxc(Msg *msg)
      * We have a specific route to pass this msg to smsbox-id 
      * Lookup the connection in the dictionary.
      */
-    list_lock(smsbox_list);
+    gw_rwlock_rdlock(smsbox_list_rwlock);
     if (list_len(smsbox_list) == 0) {
-        list_unlock(smsbox_list);
+        gw_rwlock_unlock(smsbox_list_rwlock);
     	warning(0, "smsbox_list empty!");
         if (max_incoming_sms_qlength < 0 || max_incoming_sms_qlength > list_len(incoming_sms)) {
             list_produce(incoming_sms, msg);
@@ -1317,7 +1328,7 @@ int route_incoming_to_boxc(Msg *msg)
              return -1;
     }
 
-    if (msg->sms.boxc_id != NULL) {
+    if (octstr_len(msg->sms.boxc_id) > 0) {
         
         bc = dict_get(smsbox_by_id, msg->sms.boxc_id);
         if (bc == NULL) {
@@ -1343,16 +1354,16 @@ int route_incoming_to_boxc(Msg *msg)
     if (bc != NULL) {
         if (max_incoming_sms_qlength < 0 || max_incoming_sms_qlength > list_len(bc->incoming)) {
             list_produce(bc->incoming, msg);
-            list_unlock(smsbox_list);
+            gw_rwlock_unlock(smsbox_list_rwlock);
             return 1; /* we are done */
         }
         else {
-            list_unlock(smsbox_list);
+            gw_rwlock_unlock(smsbox_list_rwlock);
             return -1;
         }
     }
-    else if (s != NULL || r != NULL || msg->sms.boxc_id != NULL) {
-        list_unlock(smsbox_list);
+    else if (s != NULL || r != NULL || octstr_len(msg->sms.boxc_id) > 0) {
+        gw_rwlock_unlock(smsbox_list_rwlock);
         /*
          * we have routing defined, but no smsbox connected at the moment.
          * put msg into global incoming queue and wait until smsbox with
@@ -1401,7 +1412,7 @@ int route_incoming_to_boxc(Msg *msg)
         list_produce(best->incoming, msg);
     }
 
-    list_unlock(smsbox_list);
+    gw_rwlock_unlock(smsbox_list_rwlock);
 
     if (best == NULL && full_found == 0) {
 	warning(0, "smsbox_list empty!");
@@ -1468,13 +1479,13 @@ static void sms_to_smsboxes(void *arg)
         }
     }
 
-    list_lock(smsbox_list);
+    gw_rwlock_rdlock(smsbox_list_rwlock);
     len = list_len(smsbox_list);
     for (i=0; i < len; i++) {
         boxc = list_get(smsbox_list, i);
         list_remove_producer(boxc->incoming);
     }
-    list_unlock(smsbox_list);
+    gw_rwlock_unlock(smsbox_list_rwlock);
 
     list_remove_producer(flow_threads);
 }

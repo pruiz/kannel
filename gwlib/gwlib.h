@@ -101,6 +101,7 @@
 #include "xmlrpc.h"
 #include "md5.h"
 #include "gw_uuid.h"
+#include "gw-rwlock.h"
 
 void gwlib_assert_init(void);
 void gwlib_init(void);
