@@ -1,0 +1,102 @@
+/*
+ * RADIUS Attributes as defined by RFC2865, page 23 and RFC2866
+ */
+
+#ifndef ATTRIBUTES
+#error Macro ATTRIBUTES not defined.
+#endif
+
+#ifndef ATTR
+#error Macro ATTR not defined.
+#endif
+
+#ifndef UNASSIGNED
+#error Macro UNASSIGNED not defined.
+#endif
+
+/* define the length of the undistinguised octets length */
+#define UMAX   128
+
+/* define type mappings for attribute types */
+
+#define ATTR_INT(attr, string) \
+    ATTR(attr, t_int, string, 4, 4)
+#define ATTR_IPADDR(attr, string) \
+    ATTR(attr, t_ipaddr, string, 4, 4)
+#define ATTR_STR(attr, string, min, max) \
+    ATTR(attr, t_string, string, min, max)
+
+/* 
+ * defines the Attribute type, (see RFC2865, page 25 and on) 
+ * syntax: ATTR(<attribute>, <value-type>, <description string>, <min len>, <max len>)
+ */
+
+ATTRIBUTES(
+ATTR_STR(1, "User-Name", 1, 64)
+ATTR_STR(2, "User-Password", 16, UMAX)
+ATTR_STR(3, "CHAP-Password", 16, 16)
+ATTR_IPADDR(4, "NAS-IP-Address")
+ATTR_INT(5, "NAS-Port")
+ATTR_INT(6, "Service-Type")
+ATTR_INT(7, "Framed-Protocol")
+ATTR_IPADDR(8, "Framed-IP-Address")
+ATTR_IPADDR(9, "Framed-IP-Netmask")
+ATTR_INT(10, "Framed-Routing")
+ATTR_STR(11, "Filter-Id", 1, UMAX)
+ATTR_INT(12, "Framed-MTU")
+ATTR_INT(13, "Framed-Compression")
+ATTR_IPADDR(14, "Login-IP-Host")
+ATTR_INT(15, "Login-Service")
+ATTR_INT(16, "Login-TCP-Port")
+UNASSIGNED(17)
+ATTR_STR(18, "Reply-Message", 1, UMAX)
+ATTR_STR(19, "Callback-Number", 1, UMAX)
+ATTR_STR(20, "Callback-Id", 1, UMAX)
+UNASSIGNED(21)
+ATTR_STR(22, "Framed-Route", 1, UMAX)
+ATTR_IPADDR(23, "Framed-IPX-Network")
+ATTR_STR(24, "State", 1, UMAX)
+ATTR_STR(25, "Class", 1, UMAX)
+ATTR_STR(26, "Vendor-Specific", 5, 256)
+ATTR_INT(27, "Session-Timeout")
+ATTR_INT(28, "Idle-Timeout")
+ATTR_INT(29, "Termination-Action")
+ATTR_STR(30, "Called-Station-Id", 1, UMAX)
+ATTR_STR(31, "Calling-Station-Id", 1, UMAX)
+ATTR_STR(32, "NAS-Identifier", 1, UMAX)
+ATTR_STR(33, "Proxy-State", 1, UMAX)
+ATTR_STR(34, "Login-LAT-Service", 1, UMAX)
+ATTR_STR(35, "Login-LAT-Node", 1, UMAX)
+ATTR_STR(36, "Login-LAT-Group", 32, 32)
+ATTR_INT(37, "Framed-AppleTalk-Link")
+ATTR_INT(38, "Framed-AppleTalk-Network")
+ATTR_STR(39, "Framed-AppleTalk-Zone", 1, UMAX)
+
+/* accounting types (RFC2866, page 10) */
+ATTR_INT(40, "Acct-Status-Type")
+ATTR_INT(41, "Acct-Delay-Time")
+ATTR_INT(42, "Acct-Input-Octets")
+ATTR_INT(43, "Acct-Output-Octets")
+ATTR_STR(44, "Acct-Session-Id", 1, UMAX)
+ATTR_INT(45, "Acct-Authentic")
+ATTR_INT(46, "Acct-Session-Time")
+ATTR_INT(47, "Acct-Input-Packets")
+ATTR_INT(48, "Acct-Output-Packets")
+ATTR_INT(49, "Acct-Terminate-Cause")
+ATTR_STR(50, "Acct-Multi-Session-Id", 1, UMAX)
+ATTR_INT(51, "Acct-Link-Count")
+
+ATTR_STR(60, "CHAP-Challenge", 5, UMAX)
+ATTR_INT(61, "NAS-Port-Type")
+ATTR_INT(62, "Port-Limit")
+ATTR_STR(63, "Login-LAT-Port", 1, UMAX)
+)
+
+#undef UMAX
+#undef ATTR_INT
+#undef ATTR_IPADDR
+#undef ATTR_STR
+#undef ATTR
+#undef UNASSIGNED
+#undef ATTRIBUTES
+

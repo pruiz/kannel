@@ -1,0 +1,71 @@
+/*
+ * radius_pdu.def - definitions of RADIUS Accounting PDU structure
+ *
+ * We implement a RADIUS accounting proxy to overcome the gap in the WAP
+ * stack that no MSISDN numbers are transported. Basically this is needed
+ * to map client IPs of the remote WAP/MMS clients to their MSISDN for various
+ * purposes. Ie. for WAP application a special HTTP header is added to identify
+ * the WAP client via it's MSISDN and to allow personalization of mobile content.
+ * For Kannel's MMSC we need mapping of client IP to MSISDN numbers to replace
+ * MMS "From:" header to the originator MSISDN.
+ *
+ * References:
+ *   RFC2865 "Remote Authentication Dial In User Service (RADIUS)"
+ *   RFC2866 "RADIUS Accounting"
+ *
+ * Stipe Tolj <tolj@wapme-systems.de>
+ */
+
+#ifndef PDU
+#error Macro PDU not defined.
+#endif
+
+#ifndef INTEGER
+#error Macro INTEGER not defined.
+#endif
+
+#ifndef OCTETS
+#error Macro OCTETS not defined.
+#endif
+
+
+/*
+ * All RADIUS PDUs have a common header consisting of 20 octets:
+ *
+ *   Code: 1 octet (identifies PDU type)
+ *   Identifier: 1 octet (sort of sequence number)
+ *   Length: 2 octets (full length of the PDU)
+ *   Authenticator: 16 octets containing the MD5 hash 
+ *
+ * (see RFC2866, page 5)
+ */
+#ifdef HEADER
+#error Macro HEADER was already defined.
+#endif
+#define HEADER	\
+    INTEGER(code, 1) \
+    INTEGER(identifier, 1) \
+    INTEGER(length, 2) \
+    OCTETS(authenticator, 16)
+
+/*
+ * Note: Remember that we only add attibutes that interest us for our RADIUS 
+ * accounting proxy. If you need more, then add them to the corresponding PDUs.
+ */
+
+PDU(Accounting_Request,
+    0x04,
+    HEADER
+)
+
+PDU(Accounting_Response,
+    0x05,
+    HEADER
+)
+
+
+#undef PDU
+#undef INTEGER
+#undef OCTETS
+#undef HEADER
+
