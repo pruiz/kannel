@@ -21,6 +21,8 @@
 #include "smsc.h"
 #include "smsc_p.h"
 #include "wapitlib.h"
+#include "sms_msg.h"
+#include "smsc_p.h"
 
 
 /* do the handshake baby */
@@ -159,9 +161,58 @@ int fake_receive_smsmessage(SMSCenter *smsc, SMSMessage **msg) {
 }
 
 int fake_submit_msg(SMSCenter *smsc, Msg *msg) {
-	return -1;
+	if(msg_type(msg)==plain_sms) {
+		if (octstr_write_to_socket(smsc->socket, msg->plain_sms.sender) == -1 ||
+		    write_to_socket(smsc->socket, " ") == -1 ||
+		    octstr_write_to_socket(smsc->socket, msg->plain_sms.receiver) == -1 ||
+		    write_to_socket(smsc->socket, " ") == -1 ||
+		    octstr_write_to_socket(smsc->socket, msg->plain_sms.text) == -1 ||
+		    write_to_socket(smsc->socket, "\n") == -1)
+			return -1;
+	}	
+	return 0;
 }
 
 int fake_receive_msg(SMSCenter *smsc, Msg **msg) {
-	return -1;
+	char *newline, *p, *sender, *receiver, *text;
+	int ret;
+
+	for (;;) {
+		newline = memchr(smsc->buffer, '\n', smsc->buflen);
+		if (newline != NULL)
+			break;
+		ret = smscenter_read_into_buffer(smsc);
+		if (ret <= 0)
+			return ret;
+	}
+	
+	*newline = '\0';
+	if (newline > smsc->buffer && newline[-1] == '\r')
+		newline[-1] = '\0';
+
+	sender = smsc->buffer;
+	p = strchr(sender, ' ');
+	if (p == NULL)
+		receiver = text = "";
+	else {
+		*p++ = '\0';
+		receiver = p;
+		p = strchr(receiver, ' ');
+		if (p == NULL)
+			text = "";
+		else {
+			*p++ = '\0';
+			text = p;
+		}
+	}
+
+	*msg = msg_create(plain_sms);
+	if (*msg == NULL) return -1;
+
+	(*msg)->plain_sms.sender = octstr_create(sender);
+	(*msg)->plain_sms.receiver = octstr_create(receiver);
+	(*msg)->plain_sms.text = octstr_create(text);
+
+	smscenter_remove_from_buffer(smsc, newline - smsc->buffer + 1);
+	return 1;
 }
