@@ -51,6 +51,19 @@ static void set_rid(Msg *msg, long rid);
  */ 
 static long message_rid(Msg *msg);
 
+/*
+ * WTP defines SendTID and RcvTID.  We should use SendTID in all PDUs
+ * we send.  The RcvTID is the one we got from the initial Invoke and
+ * is the one we expect on all future PDUs for this machine.  
+ * SendTID is always RcvTID xor 0x8000.
+ * 
+ * Note that when we are the Initiator, for example with WSP PUSH,
+ * we must still store the RcvTID in machine->tid, to be consistent
+ * with the current code.  So we'll choose the SendTID and then calculate
+ * the RcvTID.
+ */
+static unsigned short send_tid(WTPMachine *machine);
+
 /*****************************************************************************
  *
  * EXTERNAL FUNCTIONS:
@@ -67,12 +80,14 @@ Msg *wtp_send_result(WTPMachine *machine, WAPEvent *event){
      Msg *msg, *dup;
      WTP_PDU *pdu;
      
+     gw_assert(event->type == TR_Result_Req);
      pdu = wtp_pdu_create(Result);
      pdu->u.Result.con = 0;
      pdu->u.Result.gtr = 1;
      pdu->u.Result.ttr = 1;
      pdu->u.Result.rid = 0;
-     pdu->u.Result.tid = event->TR_Result_Req.tid;
+     gw_assert(event->TR_Result_Req.tid == machine->tid);
+     pdu->u.Result.tid = send_tid(machine);
      pdu->u.Result.user_data = 
      	octstr_duplicate(event->TR_Result_Req.user_data);
 
@@ -112,10 +127,12 @@ void wtp_send_abort(long abort_type, long abort_reason, WTPMachine *machine,
      Msg *msg = NULL;
      WTP_PDU *pdu;
 
+     gw_assert(event->type == TR_Abort_Req);
      pdu = wtp_pdu_create(Abort);
      pdu->u.Abort.con = 0;
      pdu->u.Abort.abort_type = abort_type;
-     pdu->u.Abort.tid = event->TR_Abort_Req.tid;
+     gw_assert(event->TR_Abort_Req.tid == machine->tid);
+     pdu->u.Abort.tid = send_tid(machine);
      pdu->u.Abort.abort_reason = abort_reason;
 
      msg = msg_create(wdp_datagram);
@@ -141,7 +158,7 @@ void wtp_do_not_start(long abort_type, long abort_reason, Address *address, int 
 
      pdu = wtp_pdu_create(Abort);
      pdu->u.Abort.con = 0;
-     pdu->u.Abort.tid = tid;
+     pdu->u.Abort.tid = tid ^ 0x8000;
      pdu->u.Abort.abort_type = abort_type;
      pdu->u.Abort.abort_reason = abort_reason;
 
@@ -164,7 +181,7 @@ void wtp_send_ack(long ack_type, WTPMachine *machine, WAPEvent *event){
      pdu->u.Ack.con = 0;
      pdu->u.Ack.tidverify = ack_type;
      pdu->u.Ack.rid = machine->rid;
-     pdu->u.Ack.tid = machine->tid;
+     pdu->u.Ack.tid = send_tid(machine);
 
      msg = msg_create(wdp_datagram);
      add_datagram_address(msg, machine);
@@ -188,7 +205,7 @@ void wtp_send_group_ack(Address *address, int tid, int retransmission_status,
      pdu->u.Ack.con = 1;
      pdu->u.Ack.tidverify = 0;
      pdu->u.Ack.rid = retransmission_status;
-     pdu->u.Ack.tid = tid;
+     pdu->u.Ack.tid = tid ^ 0x8000;
      wtp_pdu_append_tpi(pdu, PACKET_SEQUENCE_NUMBER,
      		octstr_create_from_data(&packet_sequence_number, 1));
 
@@ -215,7 +232,7 @@ void wtp_send_negative_ack(Address *address, int tid, int retransmission_status,
      pdu = wtp_pdu_create(Negative_ack);
      pdu->u.Negative_ack.con = 0;
      pdu->u.Negative_ack.rid = retransmission_status;
-     pdu->u.Negative_ack.tid = tid;
+     pdu->u.Negative_ack.tid = tid ^ 0x8000;
      pdu->u.Negative_ack.nmissing = segments_missing;
      /* XXX: Convert missing_segments to an octstr of packet sequence numbers */
      pdu->u.Negative_ack.missing = NULL;
@@ -296,6 +313,11 @@ static void set_rid(Msg *msg, long rid){
 static long message_rid(Msg *msg){
 
        return octstr_get_bits(msg->wdp_datagram.user_data, 7, 1);
+}
+
+static unsigned short send_tid(WTPMachine *machine){
+
+       return machine->tid ^ 0x8000;
 }
 
 /****************************************************************************/

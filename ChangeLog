@@ -1,5 +1,10 @@
 2000-06-07  Richard Braakman  <dark@wapit.com>
 
+	* gw/wtp_send.c: Invert the MSB of the received tid when sending,
+	to comply with WTP 8.8.1.  This fixes a bug introduced two days ago.
+
+2000-06-07  Richard Braakman  <dark@wapit.com>
+
 	* gw/wtp.c: Also destroy the event queue at shutdown.
 
 2000-06-07  Richard Braakman  <dark@wapit.com>
