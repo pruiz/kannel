@@ -4,6 +4,7 @@
  * Lars Wirzenius
  */
  
+/* XXX getpeername */
 /* XXX re-implement socket pools, with idle connection killing to 
     	save sockets */
 /* XXX implement http_abort */

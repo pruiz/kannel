@@ -193,22 +193,24 @@ check: all
 install: all
 	$(INSTALL) -d $(bindir)
 	for prog in $(binprogs); do \
-		$(INSTALL) $$prog $(bindir)/`basename $$prog`$(suffix); \
+		$(INSTALL) $$prog \
+		    $(DESTDIR)$(bindir)/`basename $$prog`$(suffix); \
 	done
 	$(INSTALL) -d $(sbindir)
 	for prog in $(sbinprogs); do \
-		$(INSTALL) $$prog $(sbindir)/`basename $$prog`$(suffix); \
+		$(INSTALL) $$prog \
+		    $(DESTDIR)$(sbindir)/`basename $$prog`$(suffix); \
 	done
-	$(INSTALL) -d $(mandir)/man1
-	$(INSTALL) $(man1pages) $(mandir)/man1
-	$(INSTALL) -d $(mandir)/man8
-	$(INSTALL) $(man8pages) $(mandir)/man8
+	$(INSTALL) -d $(DESTDIR)$(mandir)/man1
+	$(INSTALL) $(man1pages) $(DESTDIR)$(mandir)/man1
+	$(INSTALL) -d $(DESTDIR)$(mandir)/man8
+	$(INSTALL) $(man8pages) $(DESTDIR)$(mandir)/man8
 
 install-docs:
-	$(INSTALL) -d $(docdir)/userguide
-	$(INSTALL) doc/userguide/userguide.ps $(docdir)/userguide
-	$(INSTALL) doc/userguide/userguide.html $(docdir)/userguide
-	$(INSTALL) doc/userguide/*.png $(docdir)/userguide
+	$(INSTALL) -d $(DESTDIR)$(docdir)/userguide
+	$(INSTALL) doc/userguide/userguide.ps $(DESTDIR)$(docdir)/userguide
+	$(INSTALL) doc/userguide/userguide.html $(DESTDIR)$(docdir)/userguide
+	$(INSTALL) doc/userguide/*.png $(DESTDIR)$(docdir)/userguide
 
 clean:
 	rm -f core $(progs) $(testprogs) $(checkprogs) $(objs) $(docs) *.a

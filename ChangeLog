@@ -1,3 +1,7 @@
+2000-11-13  Lars Wirzenius  <liw@iki.fi>
+
+	* Makefile.in: Use $(DESTDIR) in the install targets.
+
 2000-11-13  Richard Braakman  <dark@wapi.com>
 
 	* configure.in, config.h, gwlib/gwassert.h: Use NO_GWASSERT
