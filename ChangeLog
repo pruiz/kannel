@@ -3,6 +3,10 @@
 	* gw/timers.c: In TimerHeap struct, rename "heap" field to "tab".
 	There's something confusing about heap->heap[index].
 
+	* gw/timers.c: Simplified main loop in the timer thread.
+	Made it process all elapsed timers before releasing its lock
+	-- should be faster if a bunch of timers elapse at once.
+
 2000-09-20  Richard Braakman  <dark@wapit.com>
 
 	* gw/wsp_headers.c: Try to skip over unknown code pages more

@@ -447,8 +447,7 @@ static int heap_adjust(TimerHeap *heap, long index)
 }
 
 /*
- * This timer has elapsed.  Do the housekeeping.  The timer has already
- * been deleted from its heap.  We have its set locked.
+ * This timer has elapsed.  Do the housekeeping.  We have its set locked.
  */
 static void elapse_timer(Timer *timer)
 {
@@ -471,7 +470,6 @@ static void elapse_timer(Timer *timer)
 static void watch_timers(void *arg)
 {
     Timerset *set;
-    Timer *top;
     long top_time;
     long now;
 
@@ -480,26 +478,26 @@ static void watch_timers(void *arg)
     while (!set->stopping) {
         lock(set);
 
-        /* Are there any timers to watch? */
+	now = time(NULL);
+
+	while (set->heap->len > 0 && set->heap->tab[0]->elapses <= now) {
+	    elapse_timer(set->heap->tab[0]);
+	    heap_delete(set->heap, 0);
+	}
+
+	/*
+	 * Now sleep until the next timer elapses.  If there isn't one,
+	 * then just sleep very long.  We will get woken up if the
+	 * top of the heap changes before we wake.
+	 */
+
         if (set->heap->len == 0) {
             unlock(set);
-            gwthread_sleep(1000000.0);   /* Sleep very long */
-            continue;
-        }
-
-        /* Does the top timer elapse? */
-        top = set->heap->tab[0];
-        top_time = top->elapses;
-        now = time(NULL);
-        if (top_time <= now) {
-            heap_delete(set->heap, 0);
-            elapse_timer(top);
-            unlock(set);
-            continue;
-        }
-
-        /* Sleep until the top timer elapses (or we get woken up) */
-        unlock(set);
-        gwthread_sleep(top_time - now);
+            gwthread_sleep(1000000.0);
+        } else {
+	    top_time = set->heap->tab[0]->elapses;
+	    unlock(set);
+	    gwthread_sleep(top_time - now);
+	}
     }
 }
