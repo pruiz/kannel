@@ -1,5 +1,9 @@
 2001-01-23  Lars Wirzenius  <liw@iki.fi>
 
+	* doc/arch/arch.xml: Fixed references to figures.
+
+2001-01-23  Lars Wirzenius  <liw@iki.fi>
+
 	* gw/bb_boxc.c, gw/bb_smscconn.c, gw/bb_udp.c, gw/bearerbox.[ch],
 	gw/smsc.[ch], gw/smsc_emi.c, gw/smsc_fake2.c, gw/smsc_p.h,
 	gw/smsc_wrapper.c, gw/smscconn.[ch], gw/smscconn_p.h: Converted

@@ -6,7 +6,7 @@
 
 <bookinfo>
 	<title>Kannel Architecture and Design</title>
-	<subtitle>$Revision: 1.11 $</subtitle>
+	<subtitle>$Revision: 1.12 $</subtitle>
 	<author>
 	<firstname>Lars</firstname>
 	<surname>Wirzenius</surname>
@@ -429,7 +429,7 @@
 
 	<figure>
 	<title>WAP architecture</title>
-	<graphic fileref="wap-arch"></graphic>
+	<graphic fileref="wap-arch#FIGTYPE#"></graphic>
 	</figure>
 	
 	<para>WAP defines a protocol semantically equivalent to HTTP,
@@ -576,7 +576,7 @@
 
 	<figure id="wap-session">
 	<title>A representative WAP session</title>
-	<graphic fileref="wap-session"></graphic>
+	<graphic fileref="wap-session#FIGTYPE#"></graphic>
 	</figure>
 
 	<para>The behavior of each end of the WAP connection is defined by
@@ -813,7 +813,7 @@
 	
 	<figure>
 	<title>External interfaces of Kannel</title>
-	<graphic fileref="external-interfaces"></graphic>
+	<graphic fileref="external-interfaces#FIGTYPE#"></graphic>
 	</figure>
 	
 	<para>There are several vendors of SMS centers and most of them
@@ -943,7 +943,7 @@
 	
 	<figure>
 	<title>Boxes of Kannel</title>
-	<graphic fileref="kannel-boxes"></graphic>
+	<graphic fileref="kannel-boxes#FIGTYPE#"></graphic>
 	</figure>
 	
 	<para>There can be only one bearerbox, but any number of smsboxes
@@ -1089,7 +1089,7 @@
 
 	<figure id="fig.bearerbox.arch">
 	<title>Bearerbox architecture</title>
-	<graphic fileref="bearerbox-arch"></graphic>
+	<graphic fileref="bearerbox-arch#FIGTYPE#"></graphic>
 	</figure>
 
 </sect1>
@@ -1159,7 +1159,7 @@
 
 	<figure>
 	<title>Wapbox thread structure</title>
-	<graphic fileref="wapbox-threads"></graphic>
+	<graphic fileref="wapbox-threads#FIGTYPE#"></graphic>
 	</figure>
 	
 	<para>All communication between threads is via message queues.
