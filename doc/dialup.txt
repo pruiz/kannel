@@ -97,7 +97,7 @@ connection type continuous
 connection security off
 bearer data
 dial up number <your modem>
-ip address 192.9.200.200 (or whatever)
+ip address 192.9.200.100 (or whatever)
 auth type normal
 data call type analogue
 data call speed 9600
