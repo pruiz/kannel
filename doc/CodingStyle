@@ -57,7 +57,13 @@ Log messages
 	The logging functions in wapitlib.h shall be used, not printf.
 
 	Note that panic must never be used after the gateway has been
-	started.
+	started, except when an error really, really, REALLY cannot
+	be handled and recovered from. For example, if memory allocations
+	fail, there is little or nothing useful the gateway can do and
+	therefore _for_the_gateway_ it is OK to panic. (This is not a
+	general rule of software engineering, but it does apply to us.)
+	You almost certainly want to discuss things on the devel list
+	before adding a call to panic.
 	
 	Log messages shall consist of complete sentences: start with
 	an upper case letter and end in a period (or other suitable

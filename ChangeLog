@@ -1,4 +1,8 @@
-2000-03-23    <Kalle Marjola <rpr@wapit.com>>
+Tue Mar 21 16:46:04 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* doc/CodingStyle: Modified the description of using panic.
+
+2000-03-23    <Kalle Marjola <rpr@wapit.com>
 
 	* gwlib/log.c|h: added negation to -D (debug place) command line
 	option, which is used with starting '-'
