@@ -725,21 +725,31 @@ static int encode7bituncompressed(Octstr *input, unsigned char *encoded) {
 
 	len = octstr_len(input);
 
+    /* prevoctet is set to the first character and we'll start the loop
+     * at the following char. */
 	prevoctet = octstr_get_char(input ,0);
 	for(i=1; i<octstr_len(input); i++) {
+    	/* a byte is encoded with what is left of the previous character
+    	 * and filled with as much as possible of the current one. */
 		tmpenc = prevoctet + ((octstr_get_char(input,i) & ermask[c]) << r);
 		encoded[pos] = numtext((tmpenc & 240) >> 4); pos++;
 		encoded[pos] = numtext(tmpenc & 15); pos++;
 		c = (c>6)? 1 : c+1;
 		r = (r<2)? 7 : r-1;
-		
+
+		/* prevoctet becomes the part of the current octet that hasn't
+		 * been copied to 'encoded' or the next char if the current has
+		 * been completely copied already. */
 		prevoctet = (octstr_get_char(input,i) & elmask[r]) >> (c-1);
 		if(r == 7) {
 			i++;
 			prevoctet = octstr_get_char(input, i);
 		}
 	}
-	if(r != 7) {
+	/* if the length of the message is a multiple of 8 then we
+	 * are finished. Otherwise prevoctet still contains part of a 
+	 * character so we add it. */
+	if((len/8)*8 != len) {
 		encoded[pos] = numtext((prevoctet & 240) >> 4); pos++;
 		encoded[pos] = numtext(prevoctet & 15); pos++;
 	}
