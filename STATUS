@@ -1,5 +1,5 @@
 KANNEL 1.x STATUS: 
-  Last modified at [$Id: STATUS,v 1.5 2002-02-20 01:26:39 stolj Exp $]
+  Last modified at [$Id: STATUS,v 1.6 2002-02-20 11:02:06 stolj Exp $]
 
 Release:
 
@@ -16,10 +16,6 @@ RELEASE NON-SHOWSTOPPERS BUT WOULD BE REAL NICE TO WRAP THESE UP:
     Status: Stipe: workaround see <3C55D821.B930320C@wapme-systems.de>
     
 Available Patches:
-
-    * changing list_search() in gw/smsc_at2.c:at2_init_device()
-    Posted by: "Nektarios K. Papadopoulos" <npapadop@inaccessnetworks.com>
-    Message-ID: <3C72B61A.1BC22DD7@inaccessnetworks.com>
 
     * fixing timestamp issue in smsc_at2.c
     Posted by: "Oded Arbel" <oded@m-wise.com>
