@@ -382,8 +382,14 @@ static struct emimsg *msg_to_emimsg(Msg *msg, int trn, PrivData *privdata)
  
     emimsg->fields[E50_OADC] = str;
 
-    if(msg->sms.pid != 0) {
-	emimsg->fields[E50_RPID] = octstr_format("%04d", msg->sms.pid);
+    /* set protocoll id */
+    if (msg->sms.pid != 0) {
+        emimsg->fields[E50_RPID] = octstr_format("%04d", msg->sms.pid);
+    }
+
+    /* set reply path indicator */
+    if (msg->sms.rpi != 0) {
+        emimsg->fields[E50_RPI] = octstr_create("1");
     }
 
     str = octstr_duplicate(msg->sms.receiver);

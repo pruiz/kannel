@@ -13,11 +13,6 @@
 
 
 enum {
-    SMPP_ESM_CLASS_UDH_INDICATOR = 0x43,
-};
-
-
-enum {
     #define INTEGER(name, octets)
     #define NULTERMINATED(name, max_octets)
     #define OCTETS(name, field_giving_octets)
@@ -63,6 +58,19 @@ struct SMPP_PDU {
 #define GSM_ADDR_NPI_PRIVATE          0x00000009
 #define GSM_ADDR_NPI_ERMES            0x0000000A /* ETSI DE/PS 3 01-3 */
 #define GSM_ADDR_NPI_EXTENSION        0x0000000F /* Reserved */
+
+/******************************************************************************
+ * esm_class parameters
+ */
+#define ESM_CLASS_DEFAULT_SMSC_MODE        0x00000000
+#define ESM_CLASS_DATAGRAM_MODE            0x00000001
+#define ESM_CLASS_FORWARD_MODE             0x00000002
+#define ESM_CLASS_STORE_AND_FORWARD_MODE   0x00000003
+#define ESM_CLASS_DELIVERY_ACK             0x00000008
+#define ESM_CLASS_USER_ACK                 0x00000010
+#define ESM_CLASS_UDH_INDICATOR            0x00000040
+#define ESM_CLASS_RPI                      0x00000080
+#define ESM_CLASS_UDH_AND_RPI              0x000000C0
 
 
 SMPP_PDU *smpp_pdu_create(unsigned long type, unsigned long seq_no);

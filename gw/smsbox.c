@@ -238,6 +238,7 @@ static void *remember_receiver(Msg *msg, URLTranslation *trans, Octstr *url,
     receiver->msg->sms.mclass = 0;
     receiver->msg->sms.alt_dcs = 0;
     receiver->msg->sms.pid = 0;
+    receiver->msg->sms.rpi = 0;
     receiver->msg->sms.mwi = 0;
     receiver->msg->sms.coding = 0;
     receiver->msg->sms.compress = 0;
@@ -316,7 +317,7 @@ static void get_x_kannel_from_headers(List *headers, Octstr **from,
 				      int *coding, int *compress, 
 				      int *validity, int *deferred, 
 				      int *dlr_mask, Octstr **dlr_url, 
-				      Octstr **account, int *pid, int *alt_dcs)
+				      Octstr **account, int *pid, int *alt_dcs, int *rpi)
 {
     Octstr *name, *val;
     long l;
@@ -324,7 +325,7 @@ static void get_x_kannel_from_headers(List *headers, Octstr **from,
     *dlr_mask = 0;
     *dlr_url = NULL;
     *mclass = *mwi = *coding = *compress = *validity = 
-	*deferred = *pid = *alt_dcs = 0;
+	*deferred = *pid = *alt_dcs = *rpi = 0;
     for(l=0; l<list_len(headers); l++) {
 	http_header_get(headers, l, &name, &val);
 
@@ -401,6 +402,9 @@ static void get_x_kannel_from_headers(List *headers, Octstr **from,
 	else if (octstr_case_compare(name, octstr_imm("X-Kannel-DLR-Mask")) == 0) {
     	    sscanf(octstr_get_cstr(val),"%d", dlr_mask);
 	}
+	else if (octstr_case_compare(name, octstr_imm("X-Kannel-RPI")) == 0) {
+    	    sscanf(octstr_get_cstr(val),"%d", rpi);
+	}
 	octstr_destroy(name);
 	octstr_destroy(val);
     }
@@ -456,7 +460,7 @@ static void get_x_kannel_from_xml(int requesttype , Octstr **type, Octstr **body
                                   int *validity, int *deferred,
                                   int *dlr_mask, Octstr **dlr_url,
                                   Octstr **account, int *pid, int *alt_dcs,
-                                  List **tolist)
+                                  int *rpi, List **tolist)
 {                                    
 
 /*
@@ -499,7 +503,7 @@ static void get_x_kannel_from_xml(int requesttype , Octstr **type, Octstr **body
     *dlr_mask = 0;
     *dlr_url = NULL;
     *mclass = *mwi = *coding = *compress = *validity = 
-	*deferred = *pid = *alt_dcs = 0;
+	*deferred = *pid = *alt_dcs = *rpi = 0;
 
     debug("sms", 0, "XMLParsing: XML: <%s>", octstr_get_cstr(*body));
 
@@ -567,6 +571,14 @@ static void get_x_kannel_from_xml(int requesttype , Octstr **type, Octstr **body
     if(tmp) {
 	if(octstr_parse_long(&tmplong, tmp, 0, 10) != -1)
 	    *pid = tmplong;
+	O_DESTROY(tmp);
+    }
+
+    /* rpi */
+    get_tag(*body, octstr_imm("rpi"), &tmp, 0, 0);
+    if(tmp) {
+	if(octstr_parse_long(&tmplong, tmp, 0, 10) != -1)
+	    *rpi = tmplong;
 	O_DESTROY(tmp);
     }
 
@@ -671,7 +683,7 @@ static void fill_message(Msg *msg, URLTranslation *trans,
 			 int mclass, int mwi, int coding, int compress,
 			 int validity, int deferred,
 			 Octstr *dlr_url, int dlr_mask, int pid, int alt_dcs,
-			 Octstr *smsc)
+             int rpi, Octstr *smsc)
 {    
     msg->sms.msgdata = replytext;
     msg->sms.time = time(NULL);
@@ -738,6 +750,12 @@ static void fill_message(Msg *msg, URLTranslation *trans,
 	    msg->sms.pid = pid;	  
 	else 
 	    warning(0, "Tried to set PID field, denied.");
+    }
+    if (rpi) {
+        if (urltrans_accept_x_kannel_headers(trans))
+	    msg->sms.rpi = rpi;	  
+	else 
+	    warning(0, "Tried to set RPI field, denied.");
     }
     if (alt_dcs) {
         if (urltrans_accept_x_kannel_headers(trans))
@@ -863,7 +881,7 @@ static void url_result_thread(void *arg)
     Octstr *smsc;
     int dlr_mask;
     int octets;
-    int mclass, mwi, coding, compress, pid, alt_dcs;
+    int mclass, mwi, coding, compress, pid, alt_dcs, rpi;
     int validity, deferred;
     unsigned long retries;
     unsigned int queued; /* indicate if processes reply is requeued */
@@ -886,7 +904,7 @@ static void url_result_thread(void *arg)
         get_receiver(id, &msg, &trans, &req_url, &req_headers, &req_body, &retries);
      
         from = to = udh = smsc = NULL;
-        octets = mclass = mwi = coding = compress = pid = alt_dcs = 0;
+        octets = mclass = mwi = coding = compress = pid = alt_dcs = rpi = 0;
         validity = deferred = 0;
         account = NULL;
 	
@@ -902,7 +920,7 @@ static void url_result_thread(void *arg)
 					  NULL, NULL, &smsc, &mclass, &mwi, 
 					  &coding, &compress, &validity, 
 					  &deferred, &dlr_mask, &dlr_url, 
-					  &account, &pid, &alt_dcs);
+					  &account, &pid, &alt_dcs, &rpi);
             } else if (octstr_case_compare(type, text_plain) == 0) {
                 replytext = octstr_duplicate(reply_body);
                 octstr_destroy(reply_body);
@@ -912,7 +930,7 @@ static void url_result_thread(void *arg)
 					  NULL, NULL, &smsc, &mclass, &mwi, 
 					  &coding, &compress, &validity, 
 					  &deferred, &dlr_mask, &dlr_url, 
-					  &account, &pid, &alt_dcs);
+					  &account, &pid, &alt_dcs, &rpi);
             } else if (octstr_case_compare(type, text_xml) == 0) {
                 replytext = octstr_duplicate(reply_body);
                 octstr_destroy(reply_body); 
@@ -920,7 +938,7 @@ static void url_result_thread(void *arg)
                 get_x_kannel_from_xml(mt_reply, &type, &replytext, reply_headers, 
                         &from, &to, &udh, NULL, NULL, &smsc, &mclass, &mwi, 
                         &coding, &compress, &validity, &deferred, &dlr_mask, 
-                        &dlr_url, &account, &pid, &alt_dcs, NULL);
+                        &dlr_url, &account, &pid, &alt_dcs, &rpi, NULL);
             } else if (octstr_case_compare(type, octet_stream) == 0) {
                 replytext = octstr_duplicate(reply_body);
                 octstr_destroy(reply_body);
@@ -930,7 +948,7 @@ static void url_result_thread(void *arg)
 					  NULL, NULL, &smsc, &mclass, &mwi, 
 					  &coding, &compress, &validity, 
 					  &deferred, &dlr_mask, &dlr_url, 
-					  &account, &pid, &alt_dcs);
+					  &account, &pid, &alt_dcs, &rpi);
             } else {
                 replytext = octstr_duplicate(reply_couldnotrepresent); 
             }
@@ -950,7 +968,7 @@ static void url_result_thread(void *arg)
 
         fill_message(msg, trans, replytext, octets, from, to, udh, mclass,
             mwi, coding, compress, validity, deferred, dlr_url, 
-           dlr_mask, pid, alt_dcs, smsc);
+           dlr_mask, pid, alt_dcs, rpi, smsc);
 
         if (final_url == NULL)
             final_url = octstr_imm("");
@@ -1126,6 +1144,13 @@ static int obey_request(Octstr **result, URLTranslation *trans, Msg *msg)
 	    	octstr_get_cstr(os));
 	    octstr_destroy(os);
 	}
+	if(msg->sms.rpi) {
+	    Octstr *os;
+	    os = octstr_format("%d",msg->sms.rpi);
+	    http_header_add(request_headers, "X-Kannel-RPI", 
+	    	octstr_get_cstr(os));
+	    octstr_destroy(os);
+	}
 	if(msg->sms.alt_dcs) {
 	    Octstr *os;
 	    os = octstr_format("%d",msg->sms.alt_dcs);
@@ -1254,6 +1279,11 @@ static int obey_request(Octstr **result, URLTranslation *trans, Msg *msg)
 	/* pid */
 	if(msg->sms.pid != 0) {
 	    OCTSTR_APPEND_XML_NUMBER(xml, "pid", msg->sms.pid);
+	}
+
+	/* rpi */
+	if(msg->sms.rpi != 0) {
+	    OCTSTR_APPEND_XML_NUMBER(xml, "rpi", msg->sms.rpi);
 	}
 
 	/* dcs */
@@ -1620,7 +1650,7 @@ static Octstr *smsbox_req_handle(URLTranslation *t, Octstr *client_ip,
 				 int mclass, int mwi, int coding, int compress, 
 				 int validity, int deferred, 
 				 int *status, int dlr_mask, Octstr *dlr_url, 
-				 Octstr *account, int pid, int alt_dcs,
+				 Octstr *account, int pid, int alt_dcs, int rpi,
 				 List *receiver)
 {				     
     Msg *msg = NULL;
@@ -1767,6 +1797,12 @@ static Octstr *smsbox_req_handle(URLTranslation *t, Octstr *client_ip,
 	goto fielderror;
     }
     msg->sms.pid = pid;
+
+    if ( rpi < 0 || rpi > 1 ) {
+	returnerror = octstr_create("RPI field misformed, rejected");
+	goto fielderror;
+    }
+    msg->sms.rpi = rpi;
     
     if ( alt_dcs < 0 || alt_dcs > 2 ) {
 	returnerror = octstr_create("Alt-DCS field misformed, rejected");
@@ -2022,7 +2058,7 @@ static Octstr *smsbox_req_sendsms(List *args, Octstr *client_ip, int *status)
     Octstr *account = NULL;
     int	dlr_mask = 0;
     Octstr *dlr_mask_string;
-    int mclass, mwi, coding, compress, validity, deferred, pid, alt_dcs;
+    int mclass, mwi, coding, compress, validity, deferred, pid, alt_dcs, rpi;
    
     /* check the username and password */
     t = authorise_user(args, client_ip);
@@ -2065,6 +2101,11 @@ static Octstr *smsbox_req_sendsms(List *args, Octstr *client_ip, int *status)
     tmp_string = http_cgi_variable(args, "pid");
     if(tmp_string != NULL)
         sscanf(octstr_get_cstr(tmp_string),"%d", &pid);
+
+    tmp_string = NULL;
+    tmp_string = http_cgi_variable(args, "rpi");
+    if(tmp_string != NULL)
+        sscanf(octstr_get_cstr(tmp_string),"%d", &rpi);
 
     tmp_string = NULL;
     tmp_string = http_cgi_variable(args, "alt-dcs");
@@ -2116,7 +2157,7 @@ static Octstr *smsbox_req_sendsms(List *args, Octstr *client_ip, int *status)
     return smsbox_req_handle(t, client_ip, from, to, text, charset, udh, 
 			     smsc, mclass, mwi, coding, compress, validity, 
 			     deferred, status, dlr_mask, dlr_url, account,
-			     pid, alt_dcs, NULL);
+			     pid, alt_dcs, rpi, NULL);
     
 }
 
@@ -2136,7 +2177,7 @@ static Octstr *smsbox_sendsms_post(List *headers, Octstr *body,
     Octstr *account;
     List *tolist;
     int dlr_mask = 0;
-    int mclass, mwi, coding, compress, validity, deferred, pid, alt_dcs;
+    int mclass, mwi, coding, compress, validity, deferred, pid, alt_dcs, rpi;
  
     from = to = user = pass = udh = smsc = dlr_url = account = NULL;
     tolist = NULL;
@@ -2150,12 +2191,12 @@ static Octstr *smsbox_sendsms_post(List *headers, Octstr *body,
 	get_x_kannel_from_xml(mt_push, &type, &body, headers, &from, &to, &udh,
 		       	&user, &pass, &smsc, &mclass, &mwi, &coding,
 		       	&compress, &validity, &deferred, &dlr_mask, &dlr_url, 
-			&account, &pid, &alt_dcs, &tolist);
+			&account, &pid, &alt_dcs, &rpi, &tolist);
     } else {
 	get_x_kannel_from_headers(headers, &from, &to, &udh,
 			      &user, &pass, &smsc, &mclass, &mwi, &coding,
 			      &compress, &validity, &deferred, 
-			      &dlr_mask, &dlr_url, &account, &pid, &alt_dcs);
+			      &dlr_mask, &dlr_url, &account, &pid, &alt_dcs, &rpi);
     }
 
     /* check the username and password */
@@ -2195,7 +2236,7 @@ static Octstr *smsbox_sendsms_post(List *headers, Octstr *body,
 	    ret = smsbox_req_handle(t, client_ip, from, to, body, charset,
 				    udh, smsc, mclass, mwi, coding, compress, 
 				    validity, deferred, status, dlr_mask, 
-				    dlr_url, account, pid, alt_dcs, tolist);
+				    dlr_url, account, pid, alt_dcs, rpi, tolist);
 
 	octstr_destroy(type);
 	octstr_destroy(charset);

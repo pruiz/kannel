@@ -325,13 +325,28 @@ static SMPP_PDU *msg_to_pdu(SMPP *smpp, Msg *msg)
     pdu->u.submit_sm.data_coding = fields_to_dcs(msg, (msg->sms.alt_dcs ? 
         2 - msg->sms.alt_dcs : smpp->alt_dcs));
 
+    /* set protocoll id */
     if(msg->sms.pid) 
         pdu->u.submit_sm.protocol_id = msg->sms.pid; 
- 
+
+    /*
+     * set the esm_class field
+     * default is store and forward, plus udh and rpi if requested
+     */
+    pdu->u.submit_sm.esm_class = ESM_CLASS_STORE_AND_FORWARD_MODE;
+    if (octstr_len(msg->sms.udhdata)) 
+        pdu->u.submit_sm.esm_class = pdu->u.submit_sm.esm_class &
+            ESM_CLASS_UDH_INDICATOR;
+    if (msg->sms.rpi) 
+        pdu->u.submit_sm.esm_class = pdu->u.submit_sm.esm_class &
+            ESM_CLASS_RPI;
+
+    /*
+     * set data segments
+     */
     if (octstr_len(msg->sms.udhdata)) { 
         pdu->u.submit_sm.short_message = 
 	       octstr_format("%S%S", msg->sms.udhdata, msg->sms.msgdata); 
-        pdu->u.submit_sm.esm_class = SMPP_ESM_CLASS_UDH_INDICATOR; 
     } else { 
         pdu->u.submit_sm.short_message = octstr_duplicate(msg->sms.msgdata); 
         if (pdu->u.submit_sm.data_coding == 0 ) /* no reencoding for unicode! */ 
