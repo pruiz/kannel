@@ -1,4 +1,13 @@
 2003-10-08  Stipe Tolj  <tolj@wapme-systems.de>
+    * utils/foobar-config.sh: added generic foobar-config shell script 
+      generator script to generate gw-config which may be used by 3rd
+      party configure processes to determine Kannel's gwlib dependencies.
+    * Makefile.in: added gw-config rule to create our gwlib dependency
+      description shell script. This shell script goes into $bindir when
+      installing. Install gwlib headers and libgwlib.a itself to the 
+      installation directory to allow 3rd party software to use it.
+
+2003-10-08  Stipe Tolj  <tolj@wapme-systems.de>
     Kannel's gwlib as 3rd party library harmonization commit. This will resolve
     the global config.h issue, which breaks in case we use gwlib code in
     other GNU autoconf generated projects. Therefore we move to gw-config.h
