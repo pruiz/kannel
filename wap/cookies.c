@@ -125,7 +125,7 @@ int get_cookies (List *headers, const WSPMachine *sm)
 		return 0;
 	}
 
-	for (pos = 0; pos < list_len (headers); pos++) {
+	for (pos = 0; pos < list_len(headers); pos++) {
 		header = list_get(headers, pos);
 		/* debug ("wap.wsp.http", 0, "get_cookies: Examining header (%s)", octstr_get_cstr (header)); */
 		if (strncasecmp ("set-cookie", octstr_get_cstr (header),10) == 0) {		
@@ -176,7 +176,7 @@ int set_cookies(List *headers, WSPMachine *sm)
 	expire_cookies(sm->cookies);
 
 	/* Walk through the cookie cache, adding the cookie to the request headers */
-	if (list_len (sm->cookies) > 0) {
+	if (list_len(sm->cookies) > 0) {
 		debug("wap.wsp.http", 0, "set_cookies: Cookies in cache");
 
 		for (pos = 0; pos < list_len(sm->cookies); pos++) {
@@ -433,7 +433,7 @@ static void expire_cookies(List *cookies)
 
 	time(&now);
 
-	if (list_len (cookies) > 0) {
+	if (list_len(cookies) > 0) {
 		debug("wap.wsp.http", 0, "expire_cookies: Cookies in cache");
 		for (pos = 0; pos < list_len(cookies); pos++) {
 			value = list_get(cookies, pos);

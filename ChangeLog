@@ -1,4 +1,7 @@
 2004-03-11 Stipe Tolj  <tolj@wapme-systems.de> 
+    * wap/cookies.c: source beauty, no logic change.
+
+2004-03-11 Stipe Tolj  <tolj@wapme-systems.de> 
     * wap/wsp_server_method_states.def: fixing bug where WSP 1.2 is simply 
       assumed while entering the WSP header packing, instead of using the
       "detected" WSP Encoding-Version that is available in the state 
