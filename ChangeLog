@@ -1,3 +1,26 @@
+2003-10-08  Stipe Tolj  <tolj@wapme-systems.de>
+    Kannel's gwlib as 3rd party library harmonization commit. This will resolve
+    the global config.h issue, which breaks in case we use gwlib code in
+    other GNU autoconf generated projects. Therefore we move to gw-config.h
+    for our specific config header file. In addition all name conflicts
+    should be resolved. We use GW_VERSION instead of VERSION which is more
+    common to non-dependent source projects.
+    * [gw-]config.h.in: removed config.h.in and added gw-config.h.in. Changed
+      #undef VERSION to #undef GW_VERSION to avoid naming clashes.
+    * configure[.in]: move from config.h to gw-config.h and add GW_VERSION to
+      the substitution rules. VERSION is keept, because it is needed to set
+      the same env variable in Makefile.
+    * Makefile.in, gwlib/gwlib.h, gwlib/list.h, gwlib/socket.h, gwlib/thread.h,
+      utils/attgetopt.c, wmlscript/wsint.h: moved or changed inclusion from 
+      config.h to gw-config.h
+    * gw/bearerbox.c, gw/shared.c, gw/smsbox.c, gw/wap-appl.c, gw/wap-error.c,
+      gw/wap_push_ppg.c, gw/wapbox.c, gw/smsc/smsc_soap.c, gwlib/http.c,
+      utils/start-stop-daemon.c: changed usage of version #define VERSION to 
+      #define GW_VERSION defined within gw-config.h
+    * gw/mime_decompiler.c, gw/wml_compiler.c, gw/smsc/smsc_emi_x25.c, 
+      wmlscript/wmlsc.c, : removed duplicate #include "config.h". We include
+      our specific config header gw-config.h within gwlib/gwlib.h anyway.
+
 2003-10-07  Stipe Tolj  <tolj@wapme-systems.de>
     * wap/wsp_unit.c: fixing DOS attack bug is datagram unpacking failed.
       This fixes BUG#33. Thanks again to Vjachelsav.
