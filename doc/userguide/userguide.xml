@@ -5167,6 +5167,7 @@ field-service = service
 field-url = url
 field-mask = mask
 field-status = status
+field-boxc-id = boxc
 </programlisting>
 
 	</para>
@@ -5203,6 +5204,7 @@ field-service = service
 field-url = url
 field-mask = mask
 field-status = status
+field-boxc-id = boxc
 </programlisting>
 
 	</para>
@@ -5294,6 +5296,17 @@ field-status = status
      <entry valign=bottom>
         The table field that is used to reflect the status of the DLR
 		  for a specific message.
+     </entry></row>
+
+   <row><entry><literal>field-boxc-id (m)</literal></entry>
+     <entry>string</entry>
+     <entry valign=bottom>
+        The table field that is used to store the smsbox connection id
+		  that has passed the message for delivery. This is required in 
+		  cases you want to garantee that DLR messages are routed back to
+		  the same smsbox conn instance. This is done via the smsbox routing.
+		  If you don't use smsbox routing simply add this field to your
+		  database table and keep it empty.
      </entry></row>
 
   </tbody>
