@@ -367,7 +367,7 @@ static struct area *record_allocation(unsigned char *p, size_t size,
 
 static void remove_allocation(struct area *area)
 {
-    change_total_size(-area->area_size);
+    change_total_size(-1*area->area_size);
     num_allocations--;
     if (area == &allocated[num_allocations])
         return;
