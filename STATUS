@@ -1,5 +1,5 @@
 KANNEL 1.x STATUS: 
-  Last modified at [$Id: STATUS,v 1.11 2002-03-22 11:57:57 stolj Exp $]
+  Last modified at [$Id: STATUS,v 1.12 2002-03-22 16:16:17 stolj Exp $]
 
 Release:
 
@@ -29,6 +29,11 @@ RELEASE NON-SHOWSTOPPERS BUT WOULD BE REAL NICE TO WRAP THESE UP:
     Status: Aarno will add it
     
 Available Patches:
+
+    * DLR handling logic change 
+    Posted by: Oded Arbel <oded@m-wise.com>
+    Message-ID: <2CFC21DAF860CC49AF57333C4459DD4B166E85@exchange.m-wise.com>
+    Status: 
 
     * Weighted round-robin SMS load balancer
     Posted by: Choong Hong Cheng <chc79@yahoo.com>
