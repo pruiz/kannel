@@ -342,3 +342,67 @@ Octstr *smpp_pdu_read_data(Connection *conn, long len)
     os = conn_read_fixed(conn, len - 4);    /* `len' includes itself. */
     return os;
 }
+
+
+/*
+ * Return error string for given error code
+ * NOTE: If you add new error strings here please use
+ *       error strings from SMPP spec. and please keep
+ *       error codes in switch statement sorted by error
+ *       code ID.
+ */
+const char *smpp_error_to_string(enum SMPP_ERROR_MESSAGES error)
+{
+    switch (error) {
+        case SMPP_ESME_ROK:
+	    return "OK";
+        case SMPP_ESME_RINVMSGLEN:
+	    return "Message Length is invalid";
+        case SMPP_ESME_RINVCMDLEN:
+	    return "Command Length is invalid";
+        case SMPP_ESME_RINVCMDID:
+	    return "Invalid Command ID";
+        case SMPP_ESME_RINVBNDSTS:
+	    return "Incorrect BIND Status for given command";
+        case SMPP_ESME_RALYNBD:
+	    return "ESME Already in Bound State";
+        case SMPP_ESME_RINVREGDLVFLG:
+	    return "Invalid Registered Delivery Flag";
+        case SMPP_ESME_RSYSERR:
+	    return "System Error";
+        case SMPP_ESME_RINVSRCADR:
+	    return "Invalid Source Address";
+        case SMPP_ESME_RINVDSTADR:
+	    return "Invalid Dest Address";
+        case SMPP_ESME_RBINDFAIL:
+	    return "Bind Failed";
+        case SMPP_ESME_RINVPASWD:
+	    return "Invalid Password";
+        case SMPP_ESME_RINVSYSID:
+	    return "Invalid System ID";
+        case SMPP_ESME_RMSGQFUL:
+	    return "Message Queue Full";
+        case SMPP_ESME_RINVESMCLASS:
+	    return "Invalid esm_class field data";
+        case SMPP_ESME_RINVSRCTON:
+	    return "Invalid Source Address TON"; 
+        case SMPP_ESME_RTHROTTLED:
+	    return "Throttling error";
+        case SMPP_ESME_RINVSCHED:
+	    return "Invalid Scheduled Delivery Time";
+        case SMPP_ESME_RINVEXPIRY:
+	    return "Invalid message validity period";
+        case SMPP_ESME_RX_T_APPN:
+	    return "ESME Receiver Temporary App Error Code";
+        case SMPP_ESME_RX_P_APPN:
+	    return "ESME Receiver Permanent App Error Code";
+        case SMPP_ESME_RX_R_APPN:
+	    return "ESME Receiver Reject Message Error Code";
+        case SMPP_ESME_ROPTPARNOTALLWD:
+	    return "Optional Parameter not allowed";
+	case SMPP_ESME_RUNKNOWNERR:
+	    return "Unknown Error";
+	default:
+	    return "Unknown/Reserved";
+    }
+}

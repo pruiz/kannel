@@ -86,6 +86,36 @@ struct SMPP_PDU {
 #define ESM_CLASS_DELIVER_INTERM_DEL_NOTIFICATION 0x00000020
 
 
+/*
+ * Some SMPP error messages we come across
+ */
+enum SMPP_ERROR_MESSAGES {
+    SMPP_ESME_ROK = 0x00000000,
+    SMPP_ESME_RINVMSGLEN = 0x00000001,
+    SMPP_ESME_RINVCMDLEN = 0x00000002,
+    SMPP_ESME_RINVCMDID = 0x00000003,
+    SMPP_ESME_RINVBNDSTS = 0x00000004,
+    SMPP_ESME_RALYNBD = 0x00000005,
+    SMPP_ESME_RINVREGDLVFLG = 0x00000007,
+    SMPP_ESME_RSYSERR = 0x00000008,
+    SMPP_ESME_RINVSRCADR = 0x0000000A,
+    SMPP_ESME_RINVDSTADR = 0x0000000B,
+    SMPP_ESME_RBINDFAIL = 0x0000000D,
+    SMPP_ESME_RINVPASWD = 0x0000000E,
+    SMPP_ESME_RINVSYSID = 0x0000000F,
+    SMPP_ESME_RMSGQFUL   = 0x00000014,
+    SMPP_ESME_RINVESMCLASS = 0x00000043,
+    SMPP_ESME_RINVSRCTON = 0x00000048,
+    SMPP_ESME_RTHROTTLED = 0x00000058,
+    SMPP_ESME_RINVSCHED = 0x00000061,
+    SMPP_ESME_RINVEXPIRY = 0x00000062,
+    SMPP_ESME_RX_T_APPN = 0x00000064,
+    SMPP_ESME_RX_P_APPN = 0x00000065,
+    SMPP_ESME_RX_R_APPN = 0x00000066,
+    SMPP_ESME_ROPTPARNOTALLWD = 0x000000C1,
+    SMPP_ESME_RUNKNOWNERR = 0x000000FF
+};
+
 SMPP_PDU *smpp_pdu_create(unsigned long type, unsigned long seq_no);
 void smpp_pdu_destroy(SMPP_PDU *pdu);
 int smpp_pdu_is_valid(SMPP_PDU *pdu); /* XXX */
@@ -96,5 +126,9 @@ void smpp_pdu_dump(SMPP_PDU *pdu);
 long smpp_pdu_read_len(Connection *conn);
 Octstr *smpp_pdu_read_data(Connection *conn, long len);
 
+/*
+ * Return error string for given error code
+ */
+const char *smpp_error_to_string(enum SMPP_ERROR_MESSAGES error);
 
 #endif

@@ -1,3 +1,8 @@
+2003-04-24  Alexander Malysh  <a.malysh@centrium.de>
+    * gw/smsc/smpp_pdu.[ch],gw/smsc/smsc_smpp.c: Moved SMPP error codes
+      enum to smpp_pdu.h. Added additional error codes. Added new function
+      smpp_error_to_string(...), so if error occurs we can log fully error
+      string and we have no need to looking in SMPP spec.
 2003-04-22  Stipe Tolj  <tolj@wapme-systems.de>
     * gwlib/gwlib.h: added md5 header inclusion.
     * gwlib/md5.[ch]: added MD5 message digest algorithm. This may be used in

@@ -56,20 +56,6 @@ static void dump_pdu(const char *msg, Octstr *id, SMPP_PDU *pdu)
 #define SMPP_THROTTLING_SLEEP_TIME  15
 
 
-/*
- * Some SMPP error messages we come across
- */
-
-enum {
-    SMPP_ESME_RINVPASWD   = 0x0000000E,
-    SMPP_ESME_RINVSYSID   = 0x0000000F,
-    SMPP_ESME_RMSGQFUL    = 0x00000014,
-    SMPP_ESME_RTHROTTLED  = 0x00000058,
-    SMPP_ESME_RX_T_APPN   = 0x00000064,
-    SMPP_ESME_RUNKNOWNERR = 0x000000FF
-} SMPP_ERROR_MESSAGES;
- 
- 
 /*********************************************************************** 
  * Implementation of the actual SMPP protocol: reading and writing 
  * PDUs in the correct order. 
