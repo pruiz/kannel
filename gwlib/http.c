@@ -358,7 +358,7 @@ int http_get_u(char *urltext, char **type, char **data, size_t *size,  HTTPHeade
     /* ..the user defined headers */
     for(;;){
 	if(header == NULL)break;
-	httprequest_add_header(request, header->key, header->value);
+	httprequest_replace_header(request, header->key, header->value);
 	header = header->next;
     }
     
@@ -443,7 +443,7 @@ int http_get_u(char *urltext, char **type, char **data, size_t *size,  HTTPHeade
 	     /* ..the user defined headers */
 	     for(;;){
 		 if(header == NULL)break;
-		 httprequest_add_header(request, header->key, header->value);
+		 httprequest_replace_header(request, header->key, header->value);
 		 header = header->next;
 	     }
 	     
@@ -558,7 +558,7 @@ int http_post(char *urltext, char **type, char **data, size_t *size,  HTTPHeader
 
     for(;;){
 	if(header == NULL)break;
-	httprequest_add_header(request, header->key, header->value);
+	httprequest_replace_header(request, header->key, header->value);
 	header = header->next;
     }
     
@@ -618,7 +618,7 @@ int http_post(char *urltext, char **type, char **data, size_t *size,  HTTPHeader
 	    /*   ..the user defined headers */
 	    for(;;){
 		if(header == NULL)break;
-		httprequest_add_header(request, header->key, header->value);
+		httprequest_replace_header(request, header->key, header->value);
 		header = header->next;
 	    }
 	    
@@ -1327,6 +1327,67 @@ int httprequest_add_header(HTTPRequest *request, char *key, char *value) {
 	    return 1;
 
 	} /* if */
+
+	prev = thisheader;
+	thisheader = prev->next;
+
+    } /* for */
+
+    return 1;
+
+error:
+    error(errno, "httprequest_add_header: failed");
+    return -1;
+}
+
+/*****************************************************************************
+ * Add a HTTPHeader to the linked list HTTPRequst structure.
+ * If a header with the same key already exists, its value is overwritten.
+ * Otherwise, this is identical to httprequest_add_header().
+ */
+int httprequest_replace_header(HTTPRequest *request, char *key, char *value) {
+    
+    HTTPHeader *thisheader = NULL, *prev = NULL;
+    
+    if( (request == NULL) || (key == NULL) || (value == NULL) )
+	goto error; /* PEBKaC */
+
+	
+    thisheader = request->baseheader;
+
+    if(thisheader == NULL) {
+
+	thisheader = gw_malloc(sizeof(HTTPHeader));
+		
+	thisheader->key = gw_strdup(key);
+		
+	thisheader->value = gw_strdup(value);
+		
+	thisheader->next = NULL;
+	request->baseheader = thisheader;
+
+	return 1;
+
+    }
+
+/* Let's just hope that nobody has created a circular loop... */
+    for(;;) {
+
+	if(thisheader == NULL) {
+	    thisheader = header_create(key, value);
+	    thisheader->next = NULL;
+	    prev->next = thisheader;
+
+	    return 1;
+
+	} /* if */
+
+	if (0 == strcasecmp(thisheader->key, key)) {
+		char *old = thisheader->value;
+		thisheader->value = gw_strdup(value);
+		gw_free(old);
+		return 1;
+	}
 
 	prev = thisheader;
 	thisheader = prev->next;

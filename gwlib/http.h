@@ -328,6 +328,7 @@ int httprequest_destroy(HTTPRequest *request);
  */
 
 int httprequest_add_header(HTTPRequest *request, char *key, char *value);
+int httprequest_replace_header(HTTPRequest *request, char *key, char *value);
 int httprequest_remove_header(HTTPRequest *request, char *key);
 char* httprequest_get_header_value(HTTPRequest *request, char *key);
 

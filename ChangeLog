@@ -1,3 +1,10 @@
+Tue Mar  7 16:40:49 CET 2000	Patrick Schaaf	<bof@bof.de>
+
+	* gwlib/http.{c,h}: Added httprequest_replace_header() function,
+	use it to overwrite (instead of duplicate) existing user defined
+	headers. This gets rid of the duplicate User-Agent: header, which
+	convinces some sites to send wml instead of html.
+
 2000-03-07    <rpr@rpr.wapit.com>
 
 	* gw/kannel.*conf: fixed hearbeat as heartbeat
