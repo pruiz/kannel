@@ -123,9 +123,9 @@ figs = $(figsrcs:.fig=.png)  $(figsrcs:.fig=.ps)
 .xml.ps:
 	sed "s/#FIGTYPE#/.ps/" $< > $*.tmp
 	jade -o $*.tex -t tex -d $(TEX_DSL) $*.tmp
-	jadetex $*.tex >/dev/null
-	jadetex $*.tex >/dev/null
-	jadetex $*.tex >/dev/null
+	cd `dirname $<` && jadetex $*.tex >/dev/null
+	cd `dirname $<` && jadetex $*.tex >/dev/null
+	cd `dirname $<` && jadetex $*.tex >/dev/null
 	dvips -q -o $@ $*.dvi
 	rm -f $*.dvi $*.tex $*.aux $*.log $*.tmp
 
