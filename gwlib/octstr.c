@@ -487,7 +487,9 @@ int octstr_search_char_from(Octstr *ostr, int ch, long pos) {
 	gw_assert(ch >= 0);
 	gw_assert(ch <= UCHAR_MAX);
 	gw_assert(pos >= 0);
-	gw_assert(pos < ostr->len);
+
+	if (pos >= ostr->len)
+		return -1;
 
 	p = memchr(ostr->data + pos, ch, ostr->len - pos);
 	if (!p)

@@ -1,5 +1,11 @@
 2000-04-10  Richard Braakman  <dark@wapit.com>
 
+	* gwlib/octstr.c: In octstr_search_char_from, don't assert that
+	pos <= ostr->len.  Just return -1 in that case.  This preserves
+	the old behaviour, and makes the function easier to use.
+
+2000-04-10  Richard Braakman  <dark@wapit.com>
+
 	* gw/wsp_http.c: Made convert_to_self call octstr_duplicate rather
 	than returning its argument directly.  Its caller expects to be
 	able to free the argument.
