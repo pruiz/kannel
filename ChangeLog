@@ -1,3 +1,8 @@
+2002-10-17  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/smsc/smsc_smpp.c: fixed a type in DLR error handling. 
+      Thanks to Alexander Malysh <a.malysh@centrium.de> for spotting this.
+      [Msg-ID: <200210161940.36328.a.malysh@centrium.de>]
+
 2002-10-16  Stipe Tolj  <tolj@wapme-systems.de>
     * test/test_octstr_immutable.c: minor change to make dumping of arguments
       possible to.
