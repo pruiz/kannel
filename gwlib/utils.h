@@ -10,6 +10,7 @@
 #include <stddef.h>
 #include <stdio.h>
 #include "octstr.h"
+#include <termios.h>
 
 /*
  * Octet and MultibyteInteger (variable length) functions
@@ -109,4 +110,6 @@ long decode_network_long(unsigned char *data);
  */
 void encode_network_long(unsigned char *data, unsigned long value);
 
+/* kannel implementation of cfmakeraw*/
+void kannel_cfmakeraw (struct termios *tio);
 #endif
