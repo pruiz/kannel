@@ -46,27 +46,54 @@ void set_charset(Octstr *document, Octstr *charset)
     Octstr *encoding = NULL, *text = NULL, *temp = NULL;
 
     if (octstr_len(charset) == 0)
-	return;
+        return;
 
     encoding = octstr_create(" encoding");
     enc = octstr_search(document, encoding, 0);
     gt = octstr_search_char(document, '>', 0);
 
     if (enc < 0 || enc > gt) {
-	gt ++;
-	text = octstr_copy(document, gt, octstr_len(document) - gt);
-	if (charset_to_utf8(text, &temp, charset) >= 0) {
-	    octstr_delete(document, gt, octstr_len(document) - gt);
-	    octstr_append_data(document, octstr_get_cstr(temp), 
-			       octstr_len(temp));
-	}
+        gt++;
+        text = octstr_copy(document, gt, octstr_len(document) - gt);
+        if (charset_to_utf8(text, &temp, charset) >= 0) {
+            octstr_delete(document, gt, octstr_len(document) - gt);
+            octstr_append_data(document, octstr_get_cstr(temp), 
+                               octstr_len(temp));
+        }
 
-	octstr_destroy(temp);
-	octstr_destroy(text);
+        octstr_destroy(temp);
+        octstr_destroy(text);
     }
 
     octstr_destroy(encoding);
 }
+
+
+/*
+ * find_charset_encoding -- parses for a encoding argument within
+ * the xml preabmle, ie. <?xml verion="xxx" encoding="ISO-8859-1"?> 
+ */
+
+Octstr *find_charset_encoding(Octstr *document)
+{
+    long gt = 0, enc = 0;
+    Octstr *encoding = NULL, *temp = NULL;
+
+    enc = octstr_search(document, octstr_imm(" encoding="), 0);
+    gt = octstr_search(document, octstr_imm("?>"), 0);
+
+    /* in case there is no encoding argument, assume always UTF-8 */
+    if (enc < 0 || enc + 10 > gt)
+        return NULL;
+
+	temp = octstr_copy(document, enc + 10, gt - (enc + 10));
+    octstr_strip_blanks(temp);
+    encoding = octstr_copy(temp, 1, octstr_len(temp) - 2);
+    octstr_destroy(temp);
+
+    return encoding;
+}
+
 
 /*
  * only_blanks - checks if a text node contains only white space, when it can 

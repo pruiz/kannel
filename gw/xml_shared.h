@@ -42,6 +42,12 @@ struct simple_binary_t {
 void set_charset(Octstr *document, Octstr *charset);
 
 /*
+ * find_charset_encoding -- parses for a encoding argument within
+ * the xml preabmle, ie. <?xml verion="xxx" encoding="ISO-8859-1"?> 
+ */
+Octstr *find_charset_encoding(Octstr *document);
+
+/*
  * element_check_content - a helper function for checking if an element has 
  * content or attributes. Returns status bit for attributes (0x80) and another
  * for content (0x40) added into one octet.
