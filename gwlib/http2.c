@@ -76,7 +76,8 @@ static int socket_write(HTTPSocket *p, Octstr *os);
  * Other operations.
  */
 static int parse_url(Octstr *url, Octstr **host, long *port, Octstr **path);
-static Octstr *build_request(Octstr *host, Octstr *path, List *headers);
+static Octstr *build_request(Octstr *path_or_url, Octstr *host, long port, 
+	List *headers);
 static int parse_status(Octstr *statusline);
 static HTTPSocket *send_request(Octstr *url, List *request_headers);
 static int read_status(HTTPSocket *p);
@@ -803,9 +804,11 @@ static int parse_url(Octstr *url, Octstr **host, long *port, Octstr **path) {
  * Add Host: and Content-Length: headers (and others that may be necessary).
  * Return the request as an Octstr.
  */
-static Octstr *build_request(Octstr *path_or_url, Octstr *host, List *headers) {
+static Octstr *build_request(Octstr *path_or_url, Octstr *host, long port,
+List *headers) {
 /* XXX headers missing */
 	Octstr *request;
+	char buf[1024];
 	int i;
 
 	request = octstr_create_empty();
@@ -813,6 +816,10 @@ static Octstr *build_request(Octstr *path_or_url, Octstr *host, List *headers) {
 	octstr_append_cstr(request, octstr_get_cstr(path_or_url));
 	octstr_append_cstr(request, " HTTP/1.1\r\nHost: ");
 	octstr_append_cstr(request, octstr_get_cstr(host));
+	if (port != HTTP_PORT) {
+		sprintf(buf, ":%ld", port);
+		octstr_append_cstr(request, buf);
+	}
 	octstr_append_cstr(request, "\r\nContent-Length: 0\r\n");
 	for (i = 0; headers != NULL && i < list_len(headers); ++i) {
 		octstr_append(request, list_get(headers, i));
@@ -878,16 +885,18 @@ static HTTPSocket *send_request(Octstr *url, List *request_headers) {
 
 	mutex_lock(proxy_mutex);
 	if (proxy_used_for_host(host)) {
-		request = build_request(url, host, request_headers);
+		request = build_request(url, host, port, request_headers);
 		p = pool_allocate(proxy_hostname, proxy_port);
 	} else {
-		request = build_request(path, host, request_headers);
+		request = build_request(path, host, port, request_headers);
 		p = pool_allocate(host, port);
 	}
 	mutex_unlock(proxy_mutex);
 	if (p == NULL)
 		goto error;
 	
+debug("", 0, "http2 request:");
+octstr_dump(request, 0);
 	if (socket_write(p, request) == -1)
 		goto error;
 
