@@ -1,4 +1,8 @@
 2003-07-21  Bruno Rodrigues  <bruno.rodrigues@litux.org>
+    * contrib/web/sendsms.php: removed hardcoded -way in the past- date from 
+      Wap PUSH SI
+
+2003-07-21  Bruno Rodrigues  <bruno.rodrigues@litux.org>
     * configure{,.in}: enabled wap cookies by default
 
 2003-07-20  Bruno Rodrigues  <bruno.rodrigues@litux.org>

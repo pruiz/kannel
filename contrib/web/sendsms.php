@@ -236,8 +236,8 @@
 	$fields['text'] .= "%0b" . "%03" . $fields['url'] . "%00";	# href=$url
 	$fields['text'] .= "%11" . "%03" . rand(1,9)."@vodafone.pt" . "%00";	# si-id=
 	$fields['text'] .= "%08"; # action="signal-high"
-	$fields['text'] .= "%0A" . "%C3%07%20%01%10%21%20%02%23"; # created=
-	$fields['text'] .= "%10" . "%C3%04%20%02%06%30"; # valid=
+	#$fields['text'] .= "%0A" . "%C3%07%20%01%10%21%20%02%23"; # created=
+	#$fields['text'] .= "%10" . "%C3%04%20%02%06%30"; # valid=
         $fields['text'] .= "%01"; # end indication params 
 	$fields['text'] .= "%03" . urlencode($fields['name']). "%00";
       $fields['text'] .= "%01"; # </indication>
