@@ -413,7 +413,7 @@ static void kannel_receive_sms(SMSCConn *conn, HTTPClient *client,
  * Brunet - A german aggregator (mainly doing T-Mobil D1 connections)
  *
  *  o bruHTT v1.3L (for MO traffic) 
- *  o bruHTP v1.8L (for MT traffic)
+ *  o bruHTP v2.1  (for MT traffic)
  *
  * Stipe Tolj <tolj@wapme-systems.de>
  */
@@ -445,9 +445,17 @@ static void brunet_send_sms(SMSCConn *conn, Msg *sms)
         octstr_format_append(url, "&XSer=%E", sms->sms.udhdata);
     }
 
+    /* 
+     * We use &account=<foobar> from sendsms interface to encode any additionaly
+     * proxied parameters, ie. billing information.
+     */
+    if (octstr_len(sms->sms.account)) {
+        octstr_format_append(url, "&%E", sms->sms.account);
+    }
+
     headers = list_create();
-    debug("smsc.http.brunet", 0, "HTTP[%s]: Sending request",
-          octstr_get_cstr(conn->id));
+    debug("smsc.http.brunet", 0, "HTTP[%s]: Sending request <%s>",
+          octstr_get_cstr(conn->id), octstr_get_cstr(url));
 
     /* 
      * Brunet requires an SSL-enabled HTTP client call, this is handled
