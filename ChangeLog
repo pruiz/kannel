@@ -1,3 +1,8 @@
+2001-05-09  Uoti Urpala  <uau@wapit.com>
+
+	* gw/smsbox.c: Return meaningful HTTP status codes when replying
+	to requests to sendsms-port.
+
 2001-05-08  Uoti Urpala  <uau@wapit.com>
 
 	* gwlib/conn.c: Added missing unlock_out(conn) to conn_flush().

@@ -938,7 +938,8 @@ static int pam_authorise_user(List *list)
 
 static Octstr *smsbox_req_handle(URLTranslation *t, Octstr *client_ip,
 				 Octstr *from, Octstr *to, Octstr *text,
-				 int binary, Octstr *udh, Octstr *smsc)
+				 int binary, Octstr *udh, Octstr *smsc,
+				 int *status)
 {				     
     Msg *msg = NULL;
     Octstr *newfrom;
@@ -950,12 +951,14 @@ static Octstr *smsbox_req_handle(URLTranslation *t, Octstr *client_ip,
      */
     if (udh != NULL) {
 	if (octstr_len(udh) != (octstr_get_char(udh, 0) + 1))
+	    *status = 400;
 	    return octstr_create("UDH field misformed, rejected");
     }
     
     if (strspn(octstr_get_cstr(to), sendsms_number_chars) < octstr_len(to)) {
 	info(0,"Illegal characters in 'to' string ('%s') vs '%s'",
 	     octstr_get_cstr(to), sendsms_number_chars);
+	*status = 400;
 	return octstr_create("Garbage 'to' field, rejected.");
     }
     
@@ -967,6 +970,7 @@ static Octstr *smsbox_req_handle(URLTranslation *t, Octstr *client_ip,
     } else if (global_sender != NULL) {
 	newfrom = octstr_duplicate(global_sender);
     } else {
+	*status = 400;
 	return octstr_create("Sender missing and no global set, rejected");
     }
     
@@ -1031,11 +1035,13 @@ static Octstr *smsbox_req_handle(URLTranslation *t, Octstr *client_ip,
 	 udh == NULL ? octstr_get_cstr(text) : "<< UDH >>");
 
     octstr_destroy(newfrom);
+    *status = 202;
     return octstr_create("Sent.");
     
 error:
     error(0, "sendsms_request: failed");
     octstr_destroy(from);
+    *status = 500;
     return octstr_create("Sending failed.");
 }
 
@@ -1113,7 +1119,7 @@ static URLTranslation *authorise_user(List *list, Octstr *client_ip)
  * Create and send an SMS message from an HTTP request.
  * Args: args contains the CGI parameters
  */
-static Octstr *smsbox_req_sendsms(List *args, Octstr *client_ip)
+static Octstr *smsbox_req_sendsms(List *args, Octstr *client_ip, int *status)
 {
     URLTranslation *t = NULL;
     Octstr *from, *to;
@@ -1123,6 +1129,7 @@ static Octstr *smsbox_req_sendsms(List *args, Octstr *client_ip)
     /* check the username and password */
     t = authorise_user(args, client_ip);
     if (t == NULL) {
+	*status = 403;
 	return octstr_create("Authorization failed for sendsms");
     }
     
@@ -1135,6 +1142,7 @@ static Octstr *smsbox_req_sendsms(List *args, Octstr *client_ip)
     
     if (to == NULL || (text == NULL && udh == NULL)) {
 	error(0, "/sendsms got wrong args");
+	*status = 400;
 	return octstr_create("Wrong sendsms args, rejected");
     }
 
@@ -1150,7 +1158,7 @@ static Octstr *smsbox_req_sendsms(List *args, Octstr *client_ip)
      */
 
     return smsbox_req_handle(t, client_ip, from, to, text, binary,
-			     udh, smsc);
+			     udh, smsc, status);
     
 }
 
@@ -1159,7 +1167,8 @@ static Octstr *smsbox_req_sendsms(List *args, Octstr *client_ip)
  * Create and send an SMS message from an HTTP request.
  * Args: args contains the CGI parameters
  */
-static Octstr *smsbox_sendsms_post(List *headers, Octstr *body, Octstr *client_ip)
+static Octstr *smsbox_sendsms_post(List *headers, Octstr *body,
+				   Octstr *client_ip, int *status)
 {
     URLTranslation *t = NULL;
     Octstr *from, *to, *user, *pass, *udh, *smsc;
@@ -1176,11 +1185,13 @@ static Octstr *smsbox_sendsms_post(List *headers, Octstr *body, Octstr *client_i
     
     /* check the username and password */
     t = authorise_username(user, pass, client_ip);
-    if (t == NULL)
+    if (t == NULL) {
+	*status = 403;
 	ret = octstr_create("Authorization failed for sendsms");
-
+    }
     else if (to == NULL) {
 	error(0, "/sendsms got insufficient headers");
+	*status = 400;
 	ret = octstr_create("Insufficient headers, rejected");
     } else {
 	/* XXX here we should take into account content-type of body
@@ -1196,11 +1207,12 @@ static Octstr *smsbox_sendsms_post(List *headers, Octstr *body, Octstr *client_i
 	else {
 	    error(0, "/sendsms got weird content type %s",
 		  octstr_get_cstr(type));
+	    *status = 415;
 	    ret = octstr_create("Unsupported content-type, rejected");
 	}
 	if (ret == NULL)
 	    ret = smsbox_req_handle(t, client_ip, from, to, body,
-				    binary, udh, smsc);
+				    binary, udh, smsc, status);
 
 	octstr_destroy(type);
 	octstr_destroy(charset);
@@ -1244,7 +1256,7 @@ static Octstr *smsbox_sendsms_post(List *headers, Octstr *body, Octstr *client_i
  * 
  * This will be changed later to use an XML compiler.
  */
-static Octstr *smsbox_req_sendota(List *list, Octstr *client_ip)
+static Octstr *smsbox_req_sendota(List *list, Octstr *client_ip, int *status)
 {
     Octstr *url, *desc, *ipaddr, *phonenum, *username, *passwd, *id, *from;
     char *speed;
@@ -1273,12 +1285,15 @@ static Octstr *smsbox_req_sendota(List *list, Octstr *client_ip)
 
     /* check the username and password */
     t = authorise_user(list, client_ip);
-    if (t == NULL)
+    if (t == NULL) {
+	*status = 403;
 	return octstr_create("Authorization failed for sendota");
+    }
     
     phonenumber = http_cgi_variable(list, "phonenumber");
     if (phonenumber == NULL) {
 	error(0, "/cgi-bin/sendota needs a valid phone number.");
+	*status = 400;
 	return octstr_create("Wrong sendota args.");
     }
 
@@ -1290,6 +1305,7 @@ static Octstr *smsbox_req_sendota(List *list, Octstr *client_ip)
     } else if (global_sender != NULL) {
 	from = octstr_duplicate(global_sender);
     } else {
+	*status = 400;
 	return octstr_create("Sender missing and no global set, rejected");
     }
 
@@ -1312,6 +1328,7 @@ static Octstr *smsbox_req_sendota(List *list, Octstr *client_ip)
     else
 	error(0, "/cgi-bin/sendota can't find any otaconfig group.");
     octstr_destroy(from);
+    *status = 400;
     return octstr_create("Missing otaconfig group.");
 
 found:
@@ -1483,9 +1500,11 @@ found:
 
     if (ret == -1) {
 	error(0, "sendota_request: failed");
+	*status = 500;
 	return octstr_create("Sending failed.");
     }
 
+    *status = 202;
     return octstr_create("Sent.");
 }
 
@@ -1495,6 +1514,7 @@ static void sendsms_thread(void *arg)
     HTTPClient *client;
     Octstr *ip, *url, *body, *answer;
     List *hdrs, *args, *reply_hdrs;
+    int status;
 
     reply_hdrs = http_create_empty_headers();
     http_header_add(reply_hdrs, "Content-type", "text/html");
@@ -1514,15 +1534,18 @@ static void sendsms_thread(void *arg)
 	    || octstr_str_compare(url, "/sendsms") == 0)
 	{
 	    if (body == NULL)
-		answer = smsbox_req_sendsms(args, ip);
+		answer = smsbox_req_sendsms(args, ip, &status);
 	    else
-		answer = smsbox_sendsms_post(hdrs, body, ip);
+		answer = smsbox_sendsms_post(hdrs, body, ip, &status);
 	}
 	else if (octstr_str_compare(url, "/cgi-bin/sendota") == 0)
-	    answer = smsbox_req_sendota(args, ip);
-	else
+	    answer = smsbox_req_sendota(args, ip, &status);
+	else {
 	    answer = octstr_create("Unknown request.\n");
-        debug("sms.http", 0, "Answer: <%s>", octstr_get_cstr(answer));
+	    status = 404;
+	}
+        debug("sms.http", 0, "Status: %d Answer: <%s>", status,
+	      octstr_get_cstr(answer));
 
 	octstr_destroy(ip);
 	octstr_destroy(url);
@@ -1530,7 +1553,7 @@ static void sendsms_thread(void *arg)
 	octstr_destroy(body);
 	http_destroy_cgiargs(args);
 	
-	http_send_reply(client, HTTP_OK, reply_hdrs, answer);
+	http_send_reply(client, status, reply_hdrs, answer);
 
 	octstr_destroy(answer);
     }
