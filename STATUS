@@ -1,5 +1,5 @@
 KANNEL 1.x STATUS: 
-  Last modified at [$Id: STATUS,v 1.9 2002-03-08 17:39:18 davi Exp $]
+  Last modified at [$Id: STATUS,v 1.10 2002-03-22 11:20:59 stolj Exp $]
 
 Release:
 
@@ -29,11 +29,6 @@ RELEASE NON-SHOWSTOPPERS BUT WOULD BE REAL NICE TO WRAP THESE UP:
     Status: Aarno will add it
     
 Available Patches:
-
-    * fixing timestamp issue in smsc_at2.c
-    Posted by: "Oded Arbel" <oded@m-wise.com>
-    Message-ID: <2CFC21DAF860CC49AF57333C4459DD4B166D43@exchange.m-wise.com>
-    Status:
 
     * smsc_smpp.c source and destination TON
     Posted by: Alex Judd <ajudd@jantar.kgbinternet.com
