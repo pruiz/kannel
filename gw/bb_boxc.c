@@ -782,7 +782,7 @@ int wapbox_start(Cfg *cfg)
 
 Octstr *boxc_status(int status_type)
 {
-    char tmp[1024], buf[256];
+    Octstr *tmp;
     char *lb, *ws;
     int i, boxes, para = 0;
     time_t orig, t;
@@ -809,7 +809,7 @@ Octstr *boxc_status(int status_type)
     if (status_type == BBSTATUS_HTML || status_type == BBSTATUS_WML)
 	para = 1;
     
-    sprintf(tmp, "%sBox connections:%s", para ? "<p>" : "", lb);
+    tmp = octstr_format("%sBox connections:%s", para ? "<p>" : "", lb);
     boxes = 0;
     
     if (wapbox_list) {
@@ -819,10 +819,10 @@ Octstr *boxc_status(int status_type)
 	    if (bi->alive == 0)
 		continue;
 	    t = orig - bi->connect_time;
-	    sprintf(buf, "%swapbox %s (on-line %ldd %ldh %ldm %lds)%s",
-		    ws, octstr_get_cstr(bi->client_ip),
-		    t/3600/24, t/3600%24, t/60%60, t%60, lb);
-	    strcat(tmp, buf);
+	    octstr_format_append(tmp,
+		    "%swapbox %s (on-line %ldd %ldh %ldm %lds)%s",
+				 ws, octstr_get_cstr(bi->client_ip),
+				 t/3600/24, t/3600%24, t/60%60, t%60, lb);
 	    boxes++;
 	}
 	list_unlock(wapbox_list);
@@ -834,20 +834,21 @@ Octstr *boxc_status(int status_type)
 	    if (bi->alive == 0)
 		continue;
 	    t = orig - bi->connect_time;
-	    sprintf(buf, "%ssmsbox %s (on-line %ldd %ldh %ldm %lds)%s",
+	    octstr_format_append(tmp, "%ssmsbox %s (on-line %ldd %ldh %ldm %lds)%s",
 		    ws, octstr_get_cstr(bi->client_ip),
 		    t/3600/24, t/3600%24, t/60%60, t%60, lb);
-	    strcat(tmp, buf);
 	    boxes++;
 	}
 	list_unlock(smsbox_list);
     }
-    if (boxes == 0)
-	sprintf(tmp, "%sNo boxes connected", para ? "<p>" : "");
+    if (boxes == 0) {
+	octstr_destroy(tmp);
+	tmp = octstr_format("%sNo boxes connected", para ? "<p>" : "");
+    }
     if (para)
-	strcat(tmp, "</p>");
-    strcat(tmp, "\n\n");
-    return octstr_create(tmp);
+	octstr_append_cstr(tmp, "</p>");
+    octstr_append_cstr(tmp, "\n\n");
+    return tmp;
 }
 
 

@@ -388,7 +388,8 @@ void smsc2_cleanup(void)
 
 Octstr *smsc2_status(int status_type)
 {
-    char tmp[512], tmp2[256], tmp3[64];
+    Octstr *tmp;
+    char tmp3[64];
     char *lb;
     int i, para = 0;
     SMSCConn *conn;
@@ -401,11 +402,10 @@ Octstr *smsc2_status(int status_type)
 	para = 1;
 
     if (!smsc_running) {
-	sprintf(tmp, "%sNo SMSC connections%s\n\n", para ? "<p>" : "",
-		para ? "</p>" : "");
-	return octstr_create(tmp);
+	return octstr_format("%sNo SMSC connections%s\n\n", para ? "<p>" : "",
+			     para ? "</p>" : "");
     }
-    sprintf(tmp, "%sSMSC connections:%s", para ? "<p>" : "", lb);
+    tmp = octstr_format("%sSMSC connections:%s", para ? "<p>" : "", lb);
     
     for(i=0; i < list_len(smsc_list); i++) {
         conn = list_get(smsc_list, i);
@@ -416,10 +416,12 @@ Octstr *smsc2_status(int status_type)
 	    continue;
 
 	if (status_type == BBSTATUS_HTML)
-	    strcat(tmp, "&nbsp;&nbsp;&nbsp;&nbsp;");
+	    octstr_append_cstr(tmp, "&nbsp;&nbsp;&nbsp;&nbsp;");
 	else if (status_type == BBSTATUS_TEXT)
-	    strcat(tmp, "    ");
-        strcat(tmp, octstr_get_cstr(smscconn_name(conn)));
+	    octstr_append_cstr(tmp, "    ");
+
+        octstr_append(tmp, smscconn_name(conn));
+
 	switch(info.status) {
 	case SMSCCONN_ACTIVE:
 	    sprintf(tmp3, "online %lds", info.online);
@@ -431,16 +433,15 @@ Octstr *smsc2_status(int status_type)
 	    sprintf(tmp3, "connecting");
 	}
 	
-	sprintf(tmp2, " (%s, rcvd %ld, sent %ld, failed %ld, "
-	    	      "queued %ld msgs)%s", tmp3,
-		      info.received, info.sent, info.failed, info.queued, 
-		      lb);
-	strcat(tmp, tmp2);
+	octstr_format_append(tmp, " (%s, rcvd %ld, sent %ld, failed %ld, "
+			     "queued %ld msgs)%s", tmp3,
+			     info.received, info.sent, info.failed,
+			     info.queued, lb);
     }
     if (para)
-	strcat(tmp, "</p>");
-    strcat(tmp, "\n\n");
-    return octstr_create(tmp);
+	octstr_append_cstr(tmp, "</p>");
+    octstr_append_cstr(tmp, "\n\n");
+    return tmp;
 }
 
 

@@ -1,3 +1,8 @@
+2001-05-16  Kalle Marjola  <rpr@wapit.com>
+
+	* gw/bb_smscconn.c, gw/bb_boxc.c: now that we have octstr_format, 
+	fixed buffer overflow problems pointed out by Alexei Pashkovsky
+
 2001-05-16  Uoti Urpala  <uau@wapit.com>
 
 	* gw/bb_boxc.c: In boxc_sender(), flush outgoing data before
