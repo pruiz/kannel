@@ -1,3 +1,7 @@
+2001-03-15  Uoti Urpala  <uau@wapit.com>
+
+	* test/test_smsc.c: Fixed a memory allocation bug.
+
 2001-03-15  Tuomas Luttinen  <tuo@wapit.com>
 
 	* test/wml_tester.c: I refined the command line arguments a bit. Now 

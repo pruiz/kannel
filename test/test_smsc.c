@@ -558,6 +558,7 @@ static void httpd_emu(void *arg)
     	http_destroy_cgiargs(cgivars);
     }
     eq_remove_producer(eq);
+    gw_free(p);
 }
 
 
@@ -589,7 +590,6 @@ static void httpd_emu_create(EventQueue *eq)
     	panic(0, "Can't start the HTTP server emulator thread.");
     semaphore_down(arg->sema);
     semaphore_destroy(arg->sema);
-    gw_free(arg);
 }
 
 
