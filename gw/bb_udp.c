@@ -268,29 +268,38 @@ int udp_start(Cfg *cfg)
 {
     Octstr *interface_name;
     CfgGroup *grp;
+    int allow_wtls;
     
     if (udp_running) return -1;
-
     
     debug("bb.udp", 0, "starting UDP sender/receiver module");
 
     grp = cfg_get_single_group(cfg, octstr_imm("core"));
     interface_name = cfg_get(grp, octstr_imm("wdp-interface-name"));
     if (interface_name == NULL) {
-	error(0, "Missing wdp-interface-name variable, cannot start UDP");
-	return -1;
+        error(0, "Missing wdp-interface-name variable, cannot start UDP");
+        return -1;
     }
-    
+
     allow_ip = cfg_get(grp, octstr_imm("udp-allow-ip"));
     deny_ip = cfg_get(grp, octstr_imm("udp-deny-ip"));
-    
+
+    /*  we'll activate WTLS as soon as we have a 'wtls' config group */
+    grp = cfg_get_single_group(cfg, octstr_imm("wtls"));
+    allow_wtls = grp != NULL ? 1 : 0;
+
     udpc_list = list_create();	/* have a list of running systems */
 
     add_service(9200, octstr_get_cstr(interface_name));	   /* wsp 	*/
     add_service(9201, octstr_get_cstr(interface_name));	   /* wsp/wtp	*/
 #ifdef HAVE_WTLS_OPENSSL
-    add_service(9202, octstr_get_cstr(interface_name));    /* wsp/wtls	*/
-    add_service(9203, octstr_get_cstr(interface_name));    /* wsp/wtp/wtls */
+    if (allow_wtls) {
+        add_service(9202, octstr_get_cstr(interface_name));    /* wsp/wtls	*/
+        add_service(9203, octstr_get_cstr(interface_name));    /* wsp/wtp/wtls */
+    }
+#else
+    if (allow_wtls)
+    	error(0, "These is a 'wtls' group in configuration, but no WTLS support compiled in!");
 #endif
     /* add_service(9204, octstr_get_cstr(interface_name));  * vcard	*/
     /* add_service(9205, octstr_get_cstr(interface_name));  * vcal	*/
