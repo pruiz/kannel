@@ -1,3 +1,9 @@
+2003-03-21  Stipe Tolj  <tolj@wapme-systems.de>
+    * gwlib/log.c: fixed a possible bug, when a logging file is opened twice.
+      Now we search for the filename in the open table and simply pass the 
+      file descriptor of that already opened log file to the new logger.
+      Thanks to Alexander for this patch.
+
 2003-03-20  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/wap_push_ppg[_pushuser].c: fixed BUG#8. Reported by Bas A. Schulte.
 
