@@ -1,5 +1,9 @@
 2000-08-31  Lars Wirzenius  <liw@iki.fi>
 
+	* gwlib/list.c: list_len is now protected by locks.
+
+2000-08-31  Lars Wirzenius  <liw@iki.fi>
+
 	* test/test_list.c: Removed.
 	
 	* checks/check_list.c: Wrote.
