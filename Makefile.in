@@ -111,7 +111,7 @@ sbinsrcs = \
 	$(STARTSTOPDAEMONSRC)
 progsrcs = $(binsrcs) $(sbinsrcs)
 progobjs = $(progsrcs:.c=.o)
-progs = $(progsrcs:.c=)
+progs = $(progsrcs:.c=@EXE_EXT@)
 binprogs = $(binsrcs:.c=)
 sbinprogs = $(sbinsrcs:.c=)
 
@@ -129,11 +129,11 @@ wmlscriptobjs = $(wmlscriptsrcs:.c=.o) $(wmlscriptsrcs:.y=.o)
 
 testsrcs = $(wildcard test/*.c)
 testobjs = $(testsrcs:.c=.o)
-testprogs = $(testsrcs:.c=)
+testprogs = $(testsrcs:.c=@EXE_EXT@)
 
 checksrcs = $(wildcard checks/*.c)
 checkobjs = $(checksrcs:.c=.o)
-checkprogs = $(checksrcs:.c=)
+checkprogs = $(checksrcs:.c=@EXE_EXT@)
 checks = $(checkprogs) $(wildcard checks/*.sh)
 
 benchformats = \
@@ -296,10 +296,10 @@ opcodes:
 		> $(srcdir)/wmlscript/wsopcodes.h
 
 $(progs): $(libs) $(progobjs)
-	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $@.o $(libs) $(LIBS)
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(@:@EXE_EXT@=).o $(libs) $(LIBS)
 
 $(testprogs): $(testobjs) $(libs)
-	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $@.o $(libs) $(LIBS)
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(@:@EXE_EXT@=).o $(libs) $(LIBS)
 
 $(checkprogs): $(checkobjs) $(libs)
-	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $@.o $(libs) $(LIBS)
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(@:@EXE_EXT@=).o $(libs) $(LIBS)
