@@ -1,5 +1,9 @@
 2000-03-21 Sanna Seppanen <sanna@wapit.com>
 
+        * gwlib/http.c: Rewrote httprequest_get_header_value().
+
+2000-03-21 Sanna Seppanen <sanna@wapit.com>
+
 	* gwlib/http.c: Rewrote httprequest_remove_header().
 
 

@@ -1244,17 +1244,6 @@ close_socket:
     
 error:
     warning(0, "httprequest_execute: failed");
-    
-#if 0 /* XXX these cause segfaults in some situations, no idea why.
-         we'll fix this later, causing a memory leak is just a workaround.
-	 --liw */
-    
-    /* XXX Added gw_free() -functions to appropriate places. Hope it helped :)
-       -sanna- */
-    gw_free(datasend);
-    gw_free(datareceive);
-#endif
-    
     return NULL;   
 }
 
@@ -1272,9 +1261,7 @@ int httprequest_add_header(HTTPRequest *request, char *key, char *value) {
 	error(errno, "httprequest_add_header: Bad input.");
 	return -1;
     }
-	
     hdr = request->baseheader;
-
     while(hdr != NULL)
 	hdr = hdr->next;
 
@@ -1296,11 +1283,8 @@ int httprequest_replace_header(HTTPRequest *request, char *key, char *value)
 	error(0, "httprequest_replace_header: Bad input.");
 	return -1;
     }
-	
     hdr = request->baseheader;
-
     while(hdr != NULL ){
-
 	if(!(strcasecmp(hdr->key, key))){
 	    /* strcasecmp return 0 for match */
 	    old = hdr->value;
@@ -1308,10 +1292,8 @@ int httprequest_replace_header(HTTPRequest *request, char *key, char *value)
 	    gw_free(old);
 	    return 0;
        	}
-
 	hdr = hdr->next;
     }
-    
     hdr = header_create(key, value);
     assert(hdr!=NULL);
     return 0;
@@ -1370,12 +1352,9 @@ int header_pack(HTTPHeader *hdr)
     char buf[1024];
     
     while(hdr != NULL) {
-
 	/* find identical headers and merge them */
-	
 	for(prev = hdr, ptr = hdr->next; ptr != NULL; ptr = ptr->next) {
 	    if (strcasecmp(hdr->key, ptr->key)==0) {
-
 		sprintf(buf, "%s, %s", hdr->value, ptr->value);
 		gw_free(hdr->value);
 		hdr->value = gw_strdup(buf);
@@ -1428,31 +1407,24 @@ int httprequest_remove_header(HTTPRequest *request, char *key) {
 
 
 /*
- * This value must not be meddled with.
+ * httprequets_get_header_value - find the given header and return the value.
+ * If header doesn't exist or function fails return NULL.
  */
 char* httprequest_get_header_value(HTTPRequest *request, char *key) {
 
-    HTTPHeader *thisheader = NULL;
+    HTTPHeader *hdr = NULL;
 
-    if( (request==NULL) || (key==NULL) )
-	goto error; /* PEBKaC */
-
-    thisheader = request->baseheader;
-
-    /* people who create circular loops don't deserve a paddle... */
-    for(;;) {
-	if(thisheader == NULL) /* end of chain */
-	    return NULL;
-			
-	if(strcasecmp(thisheader->key, key) == 0)
-	    return thisheader->value;
-
-	thisheader = thisheader->next;
+    if(request==NULL || key==NULL){
+	error(0, "httprequest_get_header_value: Bad input.");
+	return NULL;
     }
-	
-
-error:
-    debug("gwlib.http", errno, "httprequest_get_header_value: failed");
+    hdr = request->baseheader;
+    while(hdr!=NULL){
+	if(!(strcasecmp(hdr->key, key)))
+	    /* strcasecmp return 0 for match */
+	    return hdr->value;
+	hdr = hdr->next;
+    }
     return NULL;
 }
 
