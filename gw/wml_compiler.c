@@ -469,6 +469,13 @@ int parse_document(xmlDocPtr document)
 {
   int ret = 0;
 
+  if (document == NULL)
+    {
+      error(0, "WML compiler: Parsing failed, no parsed document.");
+      error(0, "Most probably an error in the document source.");
+      return -1;
+    }
+
   /* 
    * A bad hack, WBXML version is assumed to be 1.1, charset is assumed 
    * to be ISO-8859-1!
