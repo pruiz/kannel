@@ -1,4 +1,11 @@
+Tue May  9 20:01:45 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* configure.in: Make it allow random junk before the version
+	number in the output of xml-config. Based on patch from
+	Gus <angus@z-y-g-o.com>.
+
 000-05-09  Derry Hamilton <rasilon@tardis.ed.ac.uk>
+
         * gwlib/socket.c: Changed the calls to info to calls to error
 	when something has gone wrong.
 	* gwlib/list.c: Added gw_asserts to some of the list functions.
