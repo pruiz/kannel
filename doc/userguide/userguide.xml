@@ -549,6 +549,68 @@
 	
 	<screen><userinput>rpm -e kannel</userinput></screen>
 	</para>
+
+	<para>After you have installed Kannel from the RPM packages you
+	should now be able to run the Kannel init.d script that will
+	start Kannel as a WAP gateway. Run the script as root.</para>
+
+	<screen>
+	<userinput>/etc/rc.d/init.d/kannel start</userinput>
+	</screen>
+
+	<para>To stop the gateway just run the same script with the
+	stop parameter.</para>
+
+	<screen>
+	<userinput>/etc/rc.d/init.d/kannel stop</userinput>
+	</screen>
+	
+	<para>If Kannel is already running and you just want to quickly
+	stop and start the gateway,e.g.to set a new configuration option,
+	run the script with the restart parameter.</para>
+
+	<screen>
+	<userinput>/etc/rc.d/init.d/kannel restart</userinput>
+	</screen>
+	
+	<para>If you want Kannel to run as a daemon, you need to add a
+	symbolic link to the Kannel script from the runlevel you want
+	Kannel to run in. E.g. to run Kannel in runlevel 5 add symbolic
+	links to /etc/rc.d/rc5.d/.</para>
+	
+	<screen>
+	<userinput>cd /etc/rc.d/rc5.d/</userinput>
+	</screen>
+	
+	<screen>
+	<userinput>ln -s ../init.d/kannel S91kannel</userinput>
+	</screen>
+
+	<screen>
+	<userinput>ln -s ../init.d/kannel K91kannel</userinput>
+	</screen>
+
+	<para>To run Kannel as a SMS gateway you need to edit the
+	configuration file which is at /etc/kannel/kannel.conf.
+	In the same directory there is an example file called
+	smskannel.conf. It has some basic examples of the
+	configuration groups needed to run Kannel as a SMS gateway. For
+	more detailed information please read the section "SMS gateway
+	configuration" later in this same document.</para>
+
+	<para>The logging is disabled by default and you can enable
+	it from the kannel.conf file. Just add the log-file option
+	to the group of which box you want to log.</para>  
+	
+	<para>The documentation will be installed at 
+	/usr/share/doc/kannel-VERSION/ or /usr/doc/kannel-VERSION/
+	depending on if you used the RedHat 7.x or 6.x package.</para>
+
+	<para>In the Kannel documentation directory there is a html
+	file called control.html. It is an example file that shows
+	how to use the Kannel http administration interface. It
+	also has a template for sending SMS messages.</para>
+
 </sect2>
 
 </sect1>

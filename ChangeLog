@@ -1,3 +1,7 @@
+2001-02-20  Peter Grönholm  <peter@wapit.com>
+
+	* userguide: Updated section "Installing Kannel from RPM packages"
+
 2001-02-20  Richard Braakman  <dark@wapit.com>
 
 	* userguide: Explained more about syslog-level.
