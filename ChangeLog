@@ -1,4 +1,8 @@
 2004-01-05  Alexander Malysh  <a.malysh@centrium.de>
+    * gwlib/gw_uuid.c: trivial change, don't define _SVID_SOURCE if it's already
+      defined.
+
+2004-01-05  Alexander Malysh  <a.malysh@centrium.de>
     * configure, configure.in, gw-config.h.in, gwlib/counter.c: added pthread_spinlock support.
       Here some benchmarks (factor 6 faster):
 	Counter benchmark (loop 10000000 with counter_[in|de]crease):

@@ -13,7 +13,9 @@
  * Force inclusion of SVID stuff since we need it if we're compiling in
  * gcc-wall wall mode
  */
+#ifndef _SVID_SOURCE
 #define _SVID_SOURCE
+#endif
 
 #include "gw-config.h"
 
