@@ -1,3 +1,9 @@
+2000-05-29    Kalle Marjola <rpr@wapit.com>
+	
+	* gw/bb_boxc.c: fixed possible problem in box shutdown and added
+	multiple wapbox routing. It is, however, not done according to
+	load levels, just random distribution. Load balancing later.
+
 2000-05-29  Richard Braakman  <dark@wapit.com>
 
 	* test/fakewap.c: Use gwthread_join_all to wait for client threads

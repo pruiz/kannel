@@ -321,7 +321,9 @@ static void run_wapbox(void *arg)
     /* cleanup after receiver has exited */
     
     list_remove_producer(newconn->outgoing);
+    list_lock(wapbox_list);
     list_delete_equal(wapbox_list, newconn);
+    list_unlock(wapbox_list);
 
     while (list_producer_count(newlist) > 0)
 	list_remove_producer(newlist);
@@ -381,6 +383,7 @@ static Boxc *route_msg(List *route_info, Msg *msg)
 {
     AddrPar *ap;
     Boxc *conn;
+    int i;
     
     ap = list_search(route_info, msg, cmp_route);
     if (ap == NULL) {
@@ -395,10 +398,14 @@ route:
 	if (list_wait_until_nonempty(wapbox_list)==-1)
 	    return NULL;
 
-	/* XXX this SHOULD according to load levels! *
-	 * (and be thread-safe, which is NOT right now) */
+	/* XXX this SHOULD according to load levels! */
+	
+	list_lock(wapbox_list);
+	i = rand() % list_len(wapbox_list);
 
-	conn = list_get(wapbox_list, 0);
+	conn = list_get(wapbox_list, i);
+	list_unlock(wapbox_list);
+
 	if (conn == NULL) {
 	    warning(0, "wapbox_list empty!");
 	    return NULL;
@@ -432,6 +439,7 @@ static void wdp_to_wapboxes(void *arg)
     AddrPar *ap;
     Boxc *conn;
     Msg *msg;
+    int i;
 
     debug("bb.thread", 0, "START: wdp_to_wapboxes router");
     list_add_producer(flow_threads);
@@ -461,10 +469,13 @@ static void wdp_to_wapboxes(void *arg)
 
     gw_assert(list_len(route_info) == 0);
     list_destroy(route_info);
-    while((conn = list_extract_first(wapbox_list)) != NULL) {
+    list_lock(wapbox_list);
+    for(i=0; i < list_len(wapbox_list); i++) {
+	conn = list_get(wapbox_list, i);
 	list_remove_producer(conn->incoming);
 	conn->alive = 0;
     }
+    list_unlock(wapbox_list);
 
     debug("bb.thread", 0, "EXIT: wdp_to_wapboxes router");
     list_remove_producer(flow_threads);
