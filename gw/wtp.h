@@ -7,6 +7,7 @@
 
 typedef struct WTPMachine WTPMachine;
 typedef struct WTPEvent WTPEvent;
+typedef struct WSPEvent WSPEvent;
 
 #include <errno.h>
 #include <netinet/in.h>
@@ -17,6 +18,12 @@ typedef struct WTPEvent WTPEvent;
 #include "wtp_timer.h" 
 
 #define NUMBER_OF_ABORT_REASONS 8
+/*
+ *For now, timers are defined. They will depend on bearer information fetched
+ *from address.
+ */
+
+#define L_A_WITH_USER_ACK 10
 
 enum event_name {
      #define EVENT(name, field) name,
@@ -55,12 +62,7 @@ void wtp_event_dump(WTPEvent *event);
 WTPEvent *wtp_unpack_wdp_datagram(Msg *msg);
 
 
-/*
- * Create and initialize a WTPMachine structure. Return a pointer to it,
- * or NULL if there was a problem. Add the structure to a global list of
- * all WTPMachine structures (see wtp_machine_find).
- */
-WTPMachine *wtp_machine_create(void);
+WTPMachine *create_or_find_wtp_machine(Msg *msg, WTPEvent *event);
 
 
 /*
@@ -84,20 +86,15 @@ void wtp_machine_destroy(WTPMachine *machine);
  */
 void wtp_machine_dump(WTPMachine  *machine);
 
-/*
- * Find the WTPMachine from the global list of WTPMachine structures that
- * corresponds to the five-tuple of source and destination addresses and
- * ports and the transaction identifier. Return a pointer to the machine,
- * or NULL if not found.
- */
-WTPMachine *wtp_machine_find(Octstr *source_address, long source_port,
-	Octstr *destination_address, long destination_port, long tid);
-
 
 /*
  * Feed an event to a WTP state machine. Handle all errors yourself,
- * don't report them to the caller.
+ * don't report them to the caller. Generate a pointer to WSP event, if an 
+ * indication or a confirmation is required.
  */
-void wtp_handle_event(WTPMachine *machine, WTPEvent *event);
+WSPEvent *wtp_handle_event(WTPMachine *machine, WTPEvent *event);
 
 #endif
+
+
+

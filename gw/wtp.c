@@ -19,11 +19,11 @@ struct WTPMachine
         #define OCTSTR(name) Octstr *name
         #define QUEUE(name) /* XXX event queue to be implemented later */
 	#define TIMER(name) WTPTimer *name
-#if HAVE_THREADS
+/*#if HAVE_THREADS
         #define MUTEX(name) pthread_mutex_t name
-#else
+#else*/
         #define MUTEX(name) int name
-#endif
+/*#endif*/
         #define NEXT(name) struct WTPMachine *name
         #define MACHINE(field) field
         #include "wtp_machine-decl.h"
@@ -39,14 +39,79 @@ struct WTPEvent {
     #include "wtp_events-decl.h" 
 };
 
+enum wsp_event {
+
+      #define WSP_EVENT(name, field) name,
+      #include "wsp_events-decl.h"
+};
+
+typedef enum wsp_event wsp_event;
+
+struct WSPEvent {
+       enum wsp_event name;
+
+       #define INTEGER(name) long name
+       #define OCTSTR(name) Octstr *name
+       #define MACHINE(name) WTPMachine *name
+       #define WSP_EVENT(name, field) struct name field name;
+       #include "wsp_events-decl.h"
+};
+
+enum states{
+
+    #define ROW(state, event, condition, action, next_state) state,
+    #include "wtp_state-decl.h"
+};
+
 static WTPMachine *list = NULL;
 
 /*****************************************************************************
  *
  *Prototypes of internal functions:
+ *
+ *Give an event a readable name.
  */
 
-char *name_event(enum event_name name);
+static char *name_event(int name);
+
+/*
+ * Create and initialize a WTPMachine structure. Return a pointer to it,
+ * or NULL if there was a problem. Add the structure to a global list of
+ * all WTPMachine structures (see wtp_machine_find).
+ */
+WTPMachine *wtp_machine_create(void);
+
+/*
+ * Find the WTPMachine from the global list of WTPMachine structures that
+ * corresponds to the five-tuple of source and destination addresses and
+ * ports and the transaction identifier. Return a pointer to the machine,
+ * or NULL if not found.
+ */
+WTPMachine *wtp_machine_find(Octstr *source_address, long source_port,
+	Octstr *destination_address, long destination_port, long tid);
+
+/*
+ *Attach a WTP machine five-tuple (addresses, ports and tid) which are used to
+ *identify it.
+ */
+WTPMachine *name_machine(WTPMachine *machine, Octstr *source_address, 
+           long source_port, Octstr *destination_address, 
+           long destination_port, long tid);
+
+WSPEvent *wsp_event_create(enum wsp_event type);
+
+void wsp_event_destroy(WSPEvent *event);
+
+void wsp_event_dump(WSPEvent *event);
+
+/*
+ *Packs a wsp event. Fetches flags and user data from a wtp event. Address 
+ *five-tuple and tid are fields of the wtp machine.
+ */
+WSPEvent *pack_wsp_event(wsp_event wsp_name, WTPEvent *wtp_event, 
+         WTPMachine *machine);
+
+int wtp_tid_is_valid(int tid);
 
 /******************************************************************************
  *
@@ -97,78 +162,14 @@ void wtp_event_destroy(WTPEvent *event) {
 }
 
 void wtp_event_dump(WTPEvent *event) {
+
   	debug(0, "Event %p:", (void *) event); 
 	debug(0, " type = %s", name_event(event->type));
-	#define INTEGER(name) debug(0, "Integer field %s,%ld:",#name,p->name); 
+	#define INTEGER(name) debug(0, "Integer field %s,%ld:",#name,p->name) 
 	#define OCTSTR(name)  debug(0, "Octstr field %s:",#name);\
                               octstr_dump(p->name)
-	#define EVENT(type, stmt) { struct type *p = &event->type; stmt } 
+	#define EVENT(type, field) { struct type *p = &event->type; field } 
 	#include "wtp_events-decl.h"
-}
-
-WTPMachine *wtp_machine_create(void){
-
-        WTPMachine *machine;
-        int dummy, ret;
-
-        machine=malloc(sizeof(WTPMachine));
-        if (machine == NULL)
-           goto error;
-        
-        #define INTEGER(name) machine->name=0
-        #define OCTSTR(name) machine->name=octstr_create_empty();\
-                             if (machine->name == NULL)\
-                                goto error
-        #define QUEUE(name) /*Queue will be implemented later*/
-#if HAVE_THREADS
-        #define MUTEX(name) dummy=pthread_mutex_init(&machine->name, NULL)
-#else
-        #define MUTEX(name) machine->name=0
-#endif                
-        #define TIMER(name) machine->name=wtp_timer_create();\
-                            if (machine->name == NULL)\
-                               goto error
-        #define NEXT(name) machine->name=NULL
-        #define MACHINE(field) field
-        #include "wtp_machine-decl.h"
-
-        machine->in_use=1;
-
-        ret=pthread_mutex_lock(&list->mutex);
-        machine->next=list;
-        list=machine;
-/*
- *List was not empty
- */
-        if (ret != EINVAL)
-           ret=pthread_mutex_unlock(&list->mutex);
-
-        return machine;
-/*
- *Message Abort(CAPTEMPEXCEEDED), to be added later. 
- *Thou shalt not leak memory... Note, that a macro could be called many times.
- *So it is possible one call to succeed and another to fail. 
- */
- error:  if (machine != NULL) {
-            #define INTEGER(name)
-            #define OCTSTR(name) if (machine->name != NULL)\
-                                    octstr_destroy(machine->name)
-            #define QUEUE(name)  /*to be implemented later*/
-#if HAVE_THREADS
-            #define MUTEX(name)  ret=pthread_mutex_lock(&machine->name);\
-                                 ret=pthread_mutex_destroy(&machine->name)
-#else
-            #define MUTEX(name)
-#endif
-            #define TIMER(name) if (machine->name != NULL)\
-                                   wtp_timer_destroy(machine->name)
-            #define NEXT(name)
-            #define MACHINE(field) field
-            #include "wtp_machine-decl.h"
-        }
-        free(machine);
-        error(errno, "Out of memory");
-        return NULL;
 }
 
 /*
@@ -177,34 +178,34 @@ WTPMachine *wtp_machine_create(void){
 void wtp_machine_mark_unused(WTPMachine *machine){
 
         WTPMachine *temp;
-        int ret;
+        /*int ret;*/
 
-        ret=pthread_mutex_lock(&list->mutex);
+/*      ret=pthread_mutex_lock(&list->mutex);
         if (ret == EINVAL){
-           error(errno, "Mutex not iniatilized. (List probably empty.)");
+           info(errno, "Mutex not iniatilized. (List probably empty.)");
            return;
-        }
+	}*/
 
         temp=list;
-        ret=pthread_mutex_lock(&temp->next->mutex);
+        /*ret=pthread_mutex_lock(&temp->next->mutex);*/
 
         while (temp != NULL && temp->next != machine){
-            ret=pthread_mutex_unlock(&temp->mutex);
+	    /*ret=pthread_mutex_unlock(&temp->mutex);*/
             temp=temp->next;
-            if (temp != NULL)
-               ret=pthread_mutex_lock(&temp->next->mutex);
+            /*if (temp != NULL)
+	         ret=pthread_mutex_lock(&temp->next->mutex);*/
         }
 
         if (temp == NULL){
-            if (ret != EINVAL)
-               ret=pthread_mutex_unlock(&temp->mutex);
+	    /*if (ret != EINVAL)
+	         ret=pthread_mutex_unlock(&temp->mutex);*/
             debug(0, "Machine unknown");
             return;
 	}
        
         temp->in_use=0;
-        if (ret != EINVAL)
-           ret=pthread_mutex_unlock(&temp->mutex);
+        /*if (ret != EINVAL)
+	     ret=pthread_mutex_unlock(&temp->mutex);*/
         return;
 }
 
@@ -214,37 +215,37 @@ void wtp_machine_mark_unused(WTPMachine *machine){
 void wtp_machine_destroy(WTPMachine *machine){
 
         WTPMachine *temp;
-        int ret, d_ret;
+/*      int ret, d_ret;*/
 
-        ret=pthread_mutex_lock(&list->mutex);
+/*      ret=pthread_mutex_lock(&list->mutex);
         if (ret == EINVAL){
            error(errno, "Empty list (mutex not iniatilized)");
            return;
         }
         ret=pthread_mutex_lock(&list->next->mutex);
-
+*/
         if (list == machine) {
            list=machine->next;         
-           if (ret != EINVAL)
+/*      if (ret != EINVAL)
               ret=pthread_mutex_unlock(&list->next->mutex);
-           ret=pthread_mutex_unlock(&list->mutex);
+	      ret=pthread_mutex_unlock(&list->mutex);*/
 
         } else {
           temp=list;
 
           while (temp != NULL && temp->next != machine){ 
-                ret=pthread_mutex_unlock(&temp->mutex);
+	        /*ret=pthread_mutex_unlock(&temp->mutex);*/
                 temp=temp->next;
-                if (temp != 0)
-                    ret=pthread_mutex_lock(&temp->next->mutex);
+/*              if (temp != NULL)
+		   ret=pthread_mutex_lock(&temp->next->mutex);*/
           }
 
           if (temp == NULL){
               
-              if (ret != EINVAL)
+/*            if (ret != EINVAL)
                   ret=pthread_mutex_unlock(&temp->next->mutex);
-              ret=pthread_mutex_unlock(&temp->mutex);
-              debug(0, "Machine unknown");
+	      ret=pthread_mutex_unlock(&temp->mutex);*/
+              info(0, "Machine unknown");
               return;
 	  }
           temp->next=machine->next;
@@ -254,19 +255,19 @@ void wtp_machine_destroy(WTPMachine *machine){
         #define OCTSTR(name) octstr_destroy(temp->name)
         #define TIMER(name) wtp_timer_destroy(temp->name)
         #define QUEUE(name) /*queue to be implemented later*/
-#if HAVE_THREADS
+/*#if HAVE_THREADS
         #define MUTEX(name) d_ret=pthread_mutex_destroy(&temp->name)
-#else
+#else*/
         #define MUTEX(name)
-#endif
+/*#endif*/
         #define NEXT(name)
         #define MACHINE(field) field
         #include "wtp_machine-decl.h"
 
         free(temp);
-        if (ret != EINVAL)
+/*      if (ret != EINVAL)
            ret=pthread_mutex_unlock(&machine->next->mutex);
-        ret=pthread_mutex_unlock(&machine->mutex);
+	ret=pthread_mutex_unlock(&machine->mutex);*/
         
         return;
 }
@@ -277,69 +278,63 @@ void wtp_machine_destroy(WTPMachine *machine){
  */
 void wtp_machine_dump(WTPMachine  *machine){
 
-        int ret;
+        /*int ret;*/
 
-        debug(0, "Machine %p:", (void *) machine); 
-	#define INTEGER(name) debug(0, "Integer field #name %ld:",machine->name)
-	#define OCTSTR(name)  debug(0, "Octstr field #name :");\
-                              octstr_dump(machine->name)
-        #define TIMER(name)   debug(0, "Machine timer %p:", (void *) \
+        if (machine != NULL){
+
+           debug(0, "Machine %p:", (void *) machine); 
+	   #define INTEGER(name) \
+           debug(0, "Integer field %s,%ld:", #name, machine->name)
+	   #define OCTSTR(name)  debug(0, "Octstr field %s :", #name);\
+                                 octstr_dump(machine->name)
+           #define TIMER(name)   debug(0, "Machine timer %p:", (void *) \
                               machine->name)
-        #define QUEUE(name)   /*to be implemented later*/
-#if HAVE_THREADS
-        #define MUTEX(name)   ret=pthread_mutex_trylock(&machine->name);\
-                              if (ret == EBUSY)\
-                                  debug(0, "Machine locked");\
-                              else {\
-                                  debug(0, "Machine unlocked");\
-                                  ret=pthread_mutex_unlock(&machine->name);\
-                              }
-#else
-        #define MUTEX(name)
-#endif
-        #define NEXT(name)
-	#define MACHINE(field) field
-	#include "wtp_machine-decl.h"
+           #define QUEUE(name)   /*to be implemented later*/
+/*#if HAVE_THREADS
+           #define MUTEX(name)   ret=pthread_mutex_trylock(&machine->name);\
+                                 if (ret == EBUSY)\
+                                    debug(0, "Machine locked");\
+                                 else {\
+                                    debug(0, "Machine unlocked");\
+                                    ret=pthread_mutex_unlock(&machine->name);\
+                                 }
+#else*/
+           #define MUTEX(name)
+/*#endif*/
+           #define NEXT(name)
+	   #define MACHINE(field) field
+	   #include "wtp_machine-decl.h"
+	}
 }
 
-WTPMachine *wtp_machine_find(Octstr *source_address, long source_port,
-	   Octstr *destination_address, long destination_port, long tid){
 
-           WTPMachine *temp;
-           int ret;
+WTPMachine *create_or_find_wtp_machine(Msg *msg, WTPEvent *event){
 
-/*
- *We are interested only machines in use, it is, having in_use-flag 1.
- */
-           ret=pthread_mutex_lock(&list->mutex);
-           if (ret == EINVAL){
-             error(errno, "Empty list (mutex not iniatilized)");
-           return NULL;
+           WTPMachine *machine;
+
+           machine=wtp_machine_find(msg->wdp_datagram.source_address,
+                                    msg->wdp_datagram.source_port, 
+                                    msg->wdp_datagram.destination_address,
+                                    msg->wdp_datagram.destination_port,
+                                    event->RcvInvoke.tid);
+           if (machine == NULL){
+	      machine=wtp_machine_create();
+
+              if (machine == NULL)
+                 return NULL;
+              else {
+                 machine=name_machine(machine, 
+                                    msg->wdp_datagram.source_address,
+                                    msg->wdp_datagram.source_port, 
+                                    msg->wdp_datagram.destination_address,
+                                    msg->wdp_datagram.destination_port,
+                                    event->RcvInvoke.tid);
+                 debug(0, "machine named");
+                 wtp_machine_dump(machine);
+              }
            }
-           
-           temp=list;
 
-           while (temp != NULL){
-   
-                if ((temp->source_address != source_address &&
-                   temp->source_port != source_port &&
-                   temp->destination_address != destination_address &&
-                   temp->destination_port != destination_port &&
-		   temp->tid != tid) || temp->in_use == 0){
-
-                   pthread_mutex_unlock(&temp->mutex);
-                   temp=temp->next;
-                   pthread_mutex_lock(&temp->mutex);
-
-                } else {
-                   pthread_mutex_unlock(&temp->mutex);
-                   debug(0, "Machine %p found", (void *) temp);
-                   return temp;
-               }              
-           }
-           pthread_mutex_unlock(&temp->mutex);
-           debug(0, "Machine %p not found", (void *) temp);
-           return temp;
+           return machine;
 }
 
 /*
@@ -368,7 +363,8 @@ WTPEvent *wtp_unpack_wdp_datagram(Msg *msg){
 
 /*
  *Every message type uses the second and the third octets for tid. Bytes are 
- *already in host order. Not that the iniator 
+ *already in host order. Not that the iniator turns the first bit off, do we
+ *have a genuine tid.
  */
          first_tid=octstr_get_char(msg->wdp_datagram.user_data,1);
          last_tid=octstr_get_char(msg->wdp_datagram.user_data,2);
@@ -540,7 +536,7 @@ illegal_header:
          error(errno, "Illegal header structure");
          return NULL;
 /*
- *TBD: Another error message. Or panic?
+ *TBD: Another error message. 
  */
 no_datagram:   
          free(event);
@@ -548,21 +544,312 @@ no_datagram:
          return NULL;
 }
 
+/*
+ * Feed an event to a WTP state machine. Handle all errors yourself,
+ * don't report them to the caller. Note: { is generated by the macro call.
+ */
+WSPEvent *wtp_handle_event(WTPMachine *machine, WTPEvent *event){
+
+     int current_state;
+     int current_event;
+     enum wsp_event current_primitive;
+     WSPEvent *wsp_event=NULL;
+     WTPTimer *timer=NULL;
+
+     timer=wtp_timer_create();
+     if (timer == NULL)
+        goto error;
+     current_state=LISTEN;
+     #define ROW(state, event, condition, action, next_state)\
+             if (current_state == state && current_event == (event) &&\
+                (condition)){\
+                action\
+                current_state=next_state;\
+             } else 
+     #include "wtp_state-decl.h"
+             {debug(0, "Out of synch error");
+             return wsp_event;}
+/*
+ *Send Abort(CAPTEMPEXCEEDED)
+ */
+error:
+     debug(0, "Out of memory");
+     if (timer != NULL)
+        wtp_timer_destroy(timer);
+     return NULL;
+}
+
 /*****************************************************************************
  *
  *INTERNAL FUNCTIONS:
  */
-char *name_event(enum event_name type){
+static char *name_event(int s){
 
-       switch (type){
+       switch (s){
               #define EVENT(type, field) case type: return #type;
               #include "wtp_events-decl.h"
               default:
-                      return "unknown name";
+                      return "unknown event";
        }
  }
 
+
+WTPMachine *wtp_machine_find(Octstr *source_address, long source_port,
+	   Octstr *destination_address, long destination_port, long tid){
+
+           WTPMachine *temp;
+           /*int ret;*/
+
+/*
+ *We are interested only machines in use, it is, having in_use-flag 1.
+ */
+/*         ret=pthread_mutex_lock(&list->mutex);
+           if (ret == EINVAL){
+               error(errno, "Empty list (mutex not iniatilized)");
+           return NULL;
+           }
+*/
+           if (list == NULL)
+              return NULL;
+           
+           temp=list;
+
+           while (temp != NULL){
+   
+                if ((temp->source_address != source_address &&
+                   temp->source_port != source_port &&
+                   temp->destination_address != destination_address &&
+                   temp->destination_port != destination_port &&
+		   temp->tid != tid) || temp->in_use == 0){
+
+		  /*pthread_mutex_unlock(&temp->mutex);*/
+                   temp=temp->next;
+		   /* pthread_mutex_lock(&temp->mutex);*/
+
+                } else {
+		  /*pthread_mutex_unlock(&temp->mutex);*/
+                   debug(0, "Machine %p found", (void *) temp);
+                   return temp;
+               }              
+           }
+           /*pthread_mutex_unlock(&temp->mutex);*/
+           debug(0, "Machine %p not found", (void *) temp);
+           return temp;
+}
+
+WTPMachine *wtp_machine_create(void){
+
+        WTPMachine *machine;
+        /*int dummy, ret;*/
+
+        machine=malloc(sizeof(WTPMachine));
+        if (machine == NULL)
+           goto error;
+        
+        #define INTEGER(name) machine->name=0
+        #define OCTSTR(name) machine->name=octstr_create_empty();\
+                             if (machine->name == NULL)\
+                                goto error
+        #define QUEUE(name) /*Queue will be implemented later*/
+/*#if HAVE_THREADS
+        #define MUTEX(name) dummy=pthread_mutex_init(&machine->name, NULL)
+#else*/
+        #define MUTEX(name) machine->name=0
+/*#endif*/                
+        #define TIMER(name) machine->name=wtp_timer_create();\
+                            if (machine->name == NULL)\
+                               goto error
+        #define NEXT(name) machine->name=NULL
+        #define MACHINE(field) field
+        #include "wtp_machine-decl.h"
+
+        machine->in_use=1;
+
+        /*ret=pthread_mutex_lock(&list->mutex);*/
+        machine->next=list;
+        list=machine;
+/*
+ *List was not empty
+ */
+/*        if (ret != EINVAL)
+	     ret=pthread_mutex_unlock(&list->mutex);*/
+
+        return machine;
+/*
+ *Message Abort(CAPTEMPEXCEEDED), to be added later. 
+ *Thou shalt not leak memory... Note, that a macro could be called many times.
+ *So it is possible one call to succeed and another to fail. 
+ */
+ error:  if (machine != NULL) {
+            #define INTEGER(name)
+            #define OCTSTR(name) if (machine->name != NULL)\
+                                    octstr_destroy(machine->name)
+            #define QUEUE(name)  /*to be implemented later*/
+/*#if HAVE_THREADS
+            #define MUTEX(name)  ret=pthread_mutex_lock(&machine->name);\
+                                 ret=pthread_mutex_destroy(&machine->name)
+#else*/
+            #define MUTEX(name)
+/*#endif*/
+            #define TIMER(name) if (machine->name != NULL)\
+                                   wtp_timer_destroy(machine->name)
+            #define NEXT(name)
+            #define MACHINE(field) field
+            #include "wtp_machine-decl.h"
+        }
+        free(machine);
+        error(errno, "Out of memory");
+        return NULL;
+}
+
+/*
+ *Attach a WTP machine five-tuple (addresses, ports and tid) which are used to
+ *identify it.
+ */
+WTPMachine *name_machine(WTPMachine *machine, Octstr *source_address, 
+           long source_port, Octstr *destination_address, 
+           long destination_port, long tid){
+
+           machine->source_address=source_address;
+           machine->source_port=source_port;
+           machine->source_address=destination_address;
+           machine->destination_port=destination_port;
+           machine->tid=tid;
+
+           return machine;
+} 
+
+
+WSPEvent *wsp_event_create(enum wsp_event type) {
+	WSPEvent *event;
+	
+	event = malloc(sizeof(WSPEvent));
+	if (event == NULL)
+		goto error;
+
+	event->name = type;
+	
+	#define INTEGER(name) p->name=0
+	#define OCTSTR(name) p->name=octstr_create_empty();\
+                             if (p->name == NULL)\
+                                goto error
+        #define MACHINE(name) p->name=wtp_machine_create();\
+                             if (p->name == NULL)\
+                                goto error
+	#define WSP_EVENT(type, field) {struct type *p = &event->type; field } 
+	#include "wsp_events-decl.h"
+        return event;
+/*
+ *TBD: Send Abort(CAPTEMPEXCEEDED)
+ */
+error:
+        #define INTEGER(name) 
+        #define OCTSTR(name) if (p->name != NULL)\
+                                octstr_destroy(p->name)
+        #define MACHINE(name) if (p->name != NULL)\
+                                 wtp_machine_destroy(p->name)
+        #define WSP_EVENT(type, field) { struct type *p = &event->type; field }
+        #include "wsp_events-decl.h"
+        free(event);
+	error(errno, "Out of memory.");
+	return NULL;
+}
+
+
+void wsp_event_destroy(WSPEvent *event){
+
+        #define INTEGER(name)
+        #define OCTSTR(name) octstr_destroy(p->name)
+        #define MACHINE(name) wtp_machine_destroy(p->name)
+        #define WSP_EVENT(type, field)\
+                { struct type *p = &event->type; field}
+        #include "wsp_events-decl.h" 
+
+       free(event);
+}
+
+
+void wsp_event_dump(WSPEvent *event){
+
+        debug(0, "WSP event %p:", (void *) event);
+        debug(0, "type = %s", name_event(event->name));
+        #define INTEGER(name) debug(0, "Integer field %s,%ld:", #name, p->name)
+        #define OCTSTR(name) debug(0, "Octstr field %s:", #name);\
+                             octstr_dump(p->name)
+        #define MACHINE(name) debug(0, "Machine %p", (void *) p->name);\
+                              wtp_machine_dump(p->name)
+        #define WSP_EVENT(type, field) \
+                              { struct type *p=&event->type; field }
+        #include "wsp_events-decl.h"
+}
+
+
+/*
+ *Packs a wsp event. Fetches flags and user data from a wtp event. Address 
+ *five-tuple and tid are fields of the wtp machine.
+ */
+WSPEvent *pack_wsp_event(wsp_event wsp_name, WTPEvent *wtp_event, 
+         WTPMachine *machine){
+
+         WSPEvent *event=wsp_event_create(wsp_name);
+/*
+ *Abort(CAPTEMPEXCEEDED)
+ */
+         if (event == NULL){
+            debug(0, "Out of memory");
+            free(event);
+            return NULL;
+         }
+         
+         switch (wsp_name){
+                
+	        case TRInvokeIndication:
+                     event->TRInvokeIndication.ack_type=
+                            wtp_event->RcvInvoke.up_flag;
+                     event->TRInvokeIndication.user_data=
+                            wtp_event->RcvInvoke.user_data;
+                     event->TRInvokeIndication.tcl=wtp_event->RcvInvoke.tcl;
+                     event->TRInvokeIndication.machine=machine;
+                break;
+                
+	        case TRInvokeConfirmation:
+                     event->TRInvokeConfirmation.exit_info=
+                            wtp_event->RcvInvoke.exit_info;
+                     event->TRInvokeConfirmation.exit_info_present=
+                            wtp_event->RcvInvoke.exit_info_present;
+                     event->TRInvokeConfirmation.machine=machine;
+                break;
+
+	        case TRAbortIndication:
+                     event->TRAbortIndication.abort_code=
+                            wtp_event->RcvAbort.abort_reason;
+                     event->TRAbortIndication.machine=machine;
+                break;
+         }
+       
+         return event;
+} 
+
+int wtp_tid_is_valid(int tid){
+
+    return 1;
+}
+
 /*****************************************************************************/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
