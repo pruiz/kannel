@@ -24,6 +24,7 @@
 #include "gwthread.h"
 #include "gwmem.h"
 #include "socket.h"
+#include "cfg.h"
 #include "conffile.h"
 #include "date.h"
 #include "http.h"

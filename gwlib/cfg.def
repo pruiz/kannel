@@ -1,0 +1,164 @@
+/*
+ * cfg.def - definition of configuration groups and variables
+ *
+ * Lars Wirzenius
+ */
+
+
+#ifndef OCTSTR
+#error OCTSTR not defined.
+#endif
+
+#ifndef SINGLE_GROUP
+#error SINGLE_GROUP not defined.
+#endif
+
+#ifndef MULTI_GROUP
+#error MULTI_GROUP not defined.
+#endif
+
+
+SINGLE_GROUP(core,
+    OCTSTR(admin-port)
+    OCTSTR(admin-password)
+    OCTSTR(status-password)
+    OCTSTR(admin-deny-ip)
+    OCTSTR(admin-allow-ip)
+    OCTSTR(smsbox-port)
+    OCTSTR(wapbox-port)
+    OCTSTR(box-deny-ip)
+    OCTSTR(box-allow-ip)
+    OCTSTR(wdp-interface-name)
+    OCTSTR(log-file)
+    OCTSTR(log-level)
+    OCTSTR(access-log)
+    OCTSTR(unified-prefix)
+    OCTSTR(white-list)
+    OCTSTR(black-list)
+    OCTSTR(http-proxy-host)
+    OCTSTR(http-proxy-port)
+    OCTSTR(http-proxy-exceptions)
+    OCTSTR(http-proxy-username)
+    OCTSTR(http-proxy-password)
+)
+
+
+SINGLE_GROUP(wapbox,
+    OCTSTR(bearerbox-host)
+    OCTSTR(timer-freq)
+    OCTSTR(map-url)
+    OCTSTR(map-url-max)
+    OCTSTR(map-url-0)
+    OCTSTR(map-url-1)
+    OCTSTR(map-url-2)
+    OCTSTR(map-url-3)
+    OCTSTR(map-url-4)
+    OCTSTR(map-url-5)
+    OCTSTR(map-url-6)
+    OCTSTR(map-url-7)
+    OCTSTR(map-url-8)
+    OCTSTR(map-url-9)
+    OCTSTR(device-home)
+    OCTSTR(log-file)
+    OCTSTR(log-level)
+    OCTSTR(syslog-level)
+)
+
+
+SINGLE_GROUP(smsbox,
+    OCTSTR(bearerbox-host)
+    OCTSTR(sendsms-port)
+    OCTSTR(sendsms-chars)
+    OCTSTR(global-sender)
+    OCTSTR(log-file)
+    OCTSTR(log-level)
+    OCTSTR(access-log)
+)
+
+
+MULTI_GROUP(smsc,
+    OCTSTR(smsc)
+    OCTSTR(smsc-id)
+    OCTSTR(denied-smsc-id)
+    OCTSTR(allowed-smsc-id)
+    OCTSTR(preferred-smsc-id)
+    OCTSTR(denied-prefix)
+    OCTSTR(preferred-prefix)
+    OCTSTR(alt-charset)
+    OCTSTR(host)
+    OCTSTR(port)
+    OCTSTR(smsc-username)
+    OCTSTR(smsc-password)
+    OCTSTR(keepalive)
+    OCTSTR(modemtype)
+    OCTSTR(device)
+    OCTSTR(our-port)
+    OCTSTR(receive-port)
+    OCTSTR(connect-allow-ip)
+    OCTSTR(system-id)
+    OCTSTR(system-type)
+    OCTSTR(address-range)
+    OCTSTR(smsc_nua)
+    OCTSTR(home_nua)
+    OCTSTR(wait_report)
+    OCTSTR(ois-debug-level)
+    OCTSTR(modem-type)
+    OCTSTR(pin)
+)
+
+
+MULTI_GROUP(sms-service,
+    OCTSTR(keyword)
+    OCTSTR(aliases)    
+    OCTSTR(url)
+    OCTSTR(file)
+    OCTSTR(text)
+    OCTSTR(accepted-smsc)
+    OCTSTR(faked-sender)
+    OCTSTR(max-messages)
+    OCTSTR(concatenation)
+    OCTSTR(split-chars)
+    OCTSTR(split-suffix)
+    OCTSTR(omit-empty)
+    OCTSTR(header)
+    OCTSTR(footer)
+    OCTSTR(prefix)
+    OCTSTR(suffix)
+)
+
+
+MULTI_GROUP(sendsms-user,
+    OCTSTR(username)
+    OCTSTR(password)
+    OCTSTR(user-deny-ip)
+    OCTSTR(user-allow-ip)
+    OCTSTR(forced-smsc)
+    OCTSTR(default-smsc)
+    OCTSTR(faked-sender)
+    OCTSTR(max-messages)
+    OCTSTR(concatenation)
+    OCTSTR(split-chars)
+    OCTSTR(split-suffix)
+    OCTSTR(omit-empty)
+    OCTSTR(header)
+    OCTSTR(footer)
+)
+
+
+MULTI_GROUP(otaconfig,
+    OCTSTR(ota-id)
+    OCTSTR(location)
+    OCTSTR(service)
+    OCTSTR(ipaddress)
+    OCTSTR(phonenumber)
+    OCTSTR(bearer)
+    OCTSTR(pppsecurity)
+    OCTSTR(authentication)
+    OCTSTR(login)
+    OCTSTR(secret)
+)
+
+
+#undef OCTSTR
+#undef SINGLE_GROUP
+#undef MULTI_GROUP
