@@ -1,3 +1,7 @@
+2000-09-29  Richard Braakman  <dark@wapit.com>
+
+	* doc/*: Ran spelling checker over most documents.
+
 2000-09-29  Kalle Marjola  <rpr@wapit.com>
 
         * doc/userguide/userguide.xml: updating, moved all data from
