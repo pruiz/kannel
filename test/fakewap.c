@@ -164,7 +164,6 @@ static unsigned short get_tid() {
     static unsigned short tid = 0;
     tid += tid_addition;
     tid %= (unsigned short)pow(2,15);
-    debug(0, "FAKEWAP: get_tid: tid is %d", tid);
     return tid;
 }
 
