@@ -296,7 +296,7 @@ static void kannel_syslog(char *format, va_list args, int level)
 	} while (0)
 
 
-void panic(int e, const char *fmt, ...) 
+void gw_panic(int e, const char *fmt, ...) 
 {
     FUNCTION_GUTS(GW_PANIC, "");
     exit(EXIT_FAILURE);

@@ -695,3 +695,12 @@ int gwthread_dumpsigmask(void) {
     }
     return 0;
 }
+
+/* DARVIN alias MacOS X doesnt have pthread_sigmask in its pthreads implementation */
+
+#if defined(DARVIN)
+pthread_sigmask()
+{
+}
+#endif
+

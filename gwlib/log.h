@@ -26,7 +26,9 @@ enum output_level {
  * So, this function is called when there is no other choice than to exit
  * immediately, with given reason
  */
-void panic(int, const char *, ...) PRINTFLIKE ;
+#define	panic	gw_panic
+
+void gw_panic(int, const char *, ...) PRINTFLIKE ;
 
 /* Print a normal error message. Used when something which should be
  * investigated and possibly fixed, happens. The error might be fatal, too,

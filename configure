@@ -694,7 +694,12 @@ echo "$ac_t""$host" 1>&6
 
 
 EXE_EXT=""
+LIBTOOL="ar rc "
 case "$host" in
+  *powerpc-apple-darwin5.5.2*)
+    CFLAGS="$CFLAGS -DDARVIN=1"
+    LIBTOOL="libtool -static -o "
+    ;;
   *-sun-solaris*) 
     CFLAGS="$CFLAGS -DSunOS=1"
     ;;
@@ -3838,6 +3843,7 @@ s%@FFLAGS@%$FFLAGS%g
 s%@DEFS@%$DEFS%g
 s%@LDFLAGS@%$LDFLAGS%g
 s%@LIBS@%$LIBS%g
+s%@LIBTOOL@%$LIBTOOL%g
 s%@exec_prefix@%$exec_prefix%g
 s%@prefix@%$prefix%g
 s%@program_transform_name@%$program_transform_name%g

@@ -124,8 +124,8 @@ libobjs = $(libsrcs:.c=.o) $(LIBOBJS)
 wapsrcs = $(wildcard wap/*.c)
 wapobjs = $(wapsrcs:.c=.o)
 
-wmlscriptsrcs = $(wildcard wmlscript/*.[cy])
-wmlscriptobjs = $(wmlscriptsrcs:.c=.o) $(wmlscriptsrcs:.y=.o)
+wmlscriptsrcs = $(wildcard wmlscript/*.c)
+wmlscriptobjs = $(wmlscriptsrcs:.c=.o)
 
 testsrcs = $(wildcard test/*.c)
 testobjs = $(testsrcs:.c=.o)
@@ -281,19 +281,19 @@ depend .depend: wmlscript/wsgram.h config.h
 include .depend
 
 libgw.a: $(gwobjs)
-	ar rc libgw.a $(gwobjs)
+	@LIBTOOL@ libgw.a $(gwobjs)
 	$(RANLIB) libgw.a
 
 libgwlib.a: $(libobjs)
-	ar rc libgwlib.a $(libobjs)
+	@LIBTOOL@  libgwlib.a $(libobjs)
 	$(RANLIB) libgwlib.a
 
 libwmlscript.a: $(wmlscriptobjs)
-	ar rc libwmlscript.a $(wmlscriptobjs)
+	@LIBTOOL@ libwmlscript.a $(wmlscriptobjs)
 	$(RANLIB) libwmlscript.a
 
 libwap.a: $(wapobjs)
-	ar rc libwap.a $(wapobjs)
+	@LIBTOOL@ libwap.a $(wapobjs)
 	$(RANLIB) libwap.a
 
 wmlscript/wsgram.h: wmlscript/wsgram.c

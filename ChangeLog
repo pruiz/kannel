@@ -1,3 +1,10 @@
+2002-07-09 Andreas Fink <andreas@fink.org>
+    * changed dlr.c and STATUS to not contain any ^M at end of line
+      Makefile.in and configure to properly deal with MacOS X (darvin) 
+      panic replaced with gw_panic, done as a #define now (MacOS X has panic already defined)
+      gwlib/gwthread-pthread.c: added empty pthread_sigmask() if its MacOS X.
+      added file README.MACOSX
+
 2002-07-08 Harrie Hazewinkel <harrie@mod-snmp.com>
     * Making the init phase and the initialization of the smsbox, wapbox
       and bearerbox equal in approach.
