@@ -1,70 +1,20 @@
-NEWS about Kannel: Open Source WAP and SMS Gateway version 0.10.2
+NEWS about Kannel: Open Source WAP and SMS Gateway version 0.11
 
-This is a STABLE version. We will maintain it and make bugfix
-releases until the next stable version, which will be numbered 0.12.
-Please do try it out and report problems to devel@kannel.org (the 
-development mailing list) or bugs@kannel.org (the bug tracking system).
+This is a DEVELOPMENT version. It should be usable for experimentation
+and testing, and is a release candidate for 0.12. Please do try it out
+and report problems to devel@kannel.org (the development mailing list)
+or bugs@kannel.org (the bug tracking system).
 
-Changes since version 0.10.1:
+Changes since version 0.10.2:
 
-* Various bugfixes and memory leak fixes in wml compiler, sms-service 
-  urltranslations and phone-as-smsc
- 
-
-Change summary from version 0.8:
-
-* New HTTP implementation
-
-* Wapbox mostly rewritten.  New version is closer to the standard,
-  less buggy, and will be easier to improve further.
-
-* All boxes now share a single configuration file, with a new format.
-
-* New bearerbox, which is easier to expand and edit
-
-* Connectionless mode for WAP browsing
-
-* Phone-as-SMSC support, Nokia PremiCell, Siemens M20, Wavecom
-
-* CIMD2 SMS center protocol. UDH works.
-
-* WML compiler has support for 8-bit character sets that are not ISO 8859-1.
-
-* WML compiler now uses the string table to compress its output, to generate
-  smaller pages that fit in more phones.
-
-* New test utility drive_wapbox, to test wapbox in isolation.
-
-* New test utility test_cimd2, which emulates a CIMD2 server.
-
-* WML decompiler provided by Vanteon, useful for testing WML compiler.
-
-* contrib directory added. Now has a Perl script to convert HTML to WML.
-
-* New gwlib wrapper for threads, both to encapsulate them for portability
-  and to provide a "wakeup" feature whereby threads that are blocked or
-  sleeping can be woken by other threads.  Will be used to improve the
-  shutdown sequence in all boxes, and the suspend feature in the bearerbox.
-
-* Improved portability to Solaris and FreeBSD.
-
-* Experimental HTTP POST and cookies, under POST_SUPPORT and COOKIE_SUPPORT
-
-* Bug fixes:
-
-	* pthread errno handling.
-	* WTP layer correctly sets retransmission flag.
-	* fakewap: fixed tid handling.
-	* wsp: corrected capability parsing
-	* wsp: no more Tid-invoke problems
-	* fixes to SMPP and EMI code
+  * WSP layer decodes all HTTP headers sent by the phone.
+  * Various bugs and memory leaks fixed.
+  * Better support for UDH SMS.
+  * Support for POST is no longer optional.
 
 * Known problems:
 
 	* wapbox shutdown sometimes gets stuck and requires kill -9.
-	* HTTP library might get locked up for several minutes in certain 
-	  environments
-	* cimd2 cannot survive reconnect
 
 * Known limitations:
 
