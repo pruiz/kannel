@@ -123,13 +123,14 @@ static Counter *catenated_sms_counter;
 /*
  * Send a message to the bearerbox for delivery to a phone. Use
  * configuration from `trans' to format the message before sending.
- * Return 0 for success, -1 for failure.  Does not destroy the msg.
+ * Return >= 0 for success & count of splitted sms messages, 
+ * -1 for failure.  Does not destroy the msg.
  */
 static int send_message(URLTranslation *trans, Msg *msg)
 {
     int max_msgs;
     Octstr *header, *footer, *suffix, *split_chars;
-    int catenate, msg_sequence;
+    int catenate, msg_sequence, msg_count;
     List *list;
     Msg *part;
     
@@ -176,13 +177,16 @@ static int send_message(URLTranslation *trans, Msg *msg)
 
     list = sms_split(msg, header, footer, suffix, split_chars, catenate,
     	    	     msg_sequence, max_msgs, sms_max_length);
+    msg_count = list_len(list);
+
     debug("sms", 0, "message length %ld, sending %ld messages", 
-          octstr_len(msg->sms.msgdata), list_len(list));
+          octstr_len(msg->sms.msgdata), msg_count);
+
     while ((part = list_extract_first(list)) != NULL)
 	write_to_bearerbox(part);
     list_destroy(list, NULL);
     
-    return 0;
+    return msg_count;
 }
 
 
@@ -1547,6 +1551,7 @@ static Octstr *smsbox_req_handle(URLTranslation *t, Octstr *client_ip,
         
         msg->sms.receiver = octstr_duplicate(receiv);
         msg->sms.time = time(NULL);
+        /* send the message and return number of splits */
         ret = send_message(t, msg);
 
         if (ret == -1) {
@@ -1590,6 +1595,14 @@ static Octstr *smsbox_req_handle(URLTranslation *t, Octstr *client_ip,
         }
     }               
     list_destroy(denied, octstr_destroy_item);  
+
+    /*
+     * Append number of splits to returned body. 
+     * This may be used by the calling client.
+     */
+    if (ret > 1) 
+        octstr_format_append(returnerror, " Message splits: %d", ret);
+
     return returnerror;
     
 
