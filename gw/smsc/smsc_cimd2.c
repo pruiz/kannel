@@ -69,7 +69,7 @@ typedef struct privdata {
 
 
 /* Microseconds before giving up on a request */
-#define RESPONSE_TIMEOUT (10 * 1000000)
+#define RESPONSE_TIMEOUT (60 * 1000000)
 
 /* Textual names for the operation codes defined by the CIMD 2 spec. */
 /* If you make changes here, also change the operation table. */
@@ -1436,6 +1436,9 @@ static struct packet *packet_encode_message(Msg *msg, Octstr *sender_prefix, SMS
 static void packet_set_send_sequence(struct packet *packet, PrivData *pdata)
 {
     gw_assert(pdata != NULL);
+    /* LOGIN packets always have sequence number 001 */
+    if (packet->operation == LOGIN)
+        pdata->send_seq = 1;
     /* Send sequence numbers are always odd, receiving are always even */
     gw_assert(pdata->send_seq % 2 == 1);
 
@@ -1535,7 +1538,7 @@ static Msg *cimd2_accept_message(struct packet *request, SMSCConn *conn)
     text = packet_get_sms_parm(request, P_USER_DATA);
     if (text != NULL) {
         convert_cimd2_to_gsm(text,conn);
-        /*charset = charset_gsm;  This overrides what we got from the DCS */
+        charset_gsm_to_latin1(text);
     } else {
         /*
          * FIXME: If DCS indicates GSM charset, and we get it in binary,
@@ -1551,23 +1554,27 @@ static Msg *cimd2_accept_message(struct packet *request, SMSCConn *conn)
      * lack them.  If they should not be discarded, then the code
      * handling sms messages should be reviewed.  -- RB */
     if (!destination || octstr_len(destination) == 0) {
-        info(0, "CIMD2: Got SMS without receiver, discarding.");
+        info(0, "CIMD2[%s]: Got SMS without receiver, discarding.",
+              octstr_get_cstr(conn->id));
         goto error;
     }
     if (!origin || octstr_len(origin) == 0) {
-        info(0, "CIMD2: Got SMS without sender, discarding.");
+        info(0, "CIMD2[%s]: Got SMS without sender, discarding.",
+              octstr_get_cstr(conn->id));
         goto error;
     }
 
-    if ((!text || octstr_len(text) == 0) && (!UDH || octstr_len(UDH) == 0)) {
-        info(0, "CIMD2: Got empty SMS, ignoring.");
+    if (!text && (!UDH || octstr_len(UDH) == 0)) {
+        info(0, "CIMD2[%s]: Got empty SMS, ignoring.",
+              octstr_get_cstr(conn->id));
         goto error;
     }
-
+    
     message = msg_create(sms);
     if (! dcs_to_fields(&message, DCS)) {
 	/* XXX Should reject this message ? */
-	debug("CIMD2", 0, "Invalid DCS");
+        debug("bb.sms.cimd2", 0, "CIMD2[%s]: Invalid DCS",
+              octstr_get_cstr(conn->id));
 	dcs_to_fields(&message, 0);
     }
     time(&message->sms.time);
@@ -1594,18 +1601,26 @@ static void cimd2_handle_request(struct packet *request, SMSCConn *conn)
     PrivData *pdata = conn->data;
     Msg *message = NULL;
 
-    /* TODO: Check if the sequence number of this request is what we
-     * expected. */
+    if ((request->seq == 254 && pdata->receive_seq == 0) ||
+            request->seq == pdata->receive_seq - 2) {
+        warning(0, "CIMD2[%s]: request had same sequence number as previous.",
+                octstr_get_cstr(conn->id));
+    }
+    else {
+        pdata->receive_seq = request->seq + 2;
+        if (pdata->receive_seq > 254)
+            pdata->receive_seq = 0;
 
-    if (request->operation == DELIVER_STATUS_REPORT) {
-        message = cimd2_accept_delivery_report_message(request, conn);
-        if (message)
-            list_append(pdata->received, message);
-     }
-     else if (request->operation == DELIVER_MESSAGE) {
-         message = cimd2_accept_message(request,conn);
-         if (message)
-             list_append(pdata->received, message);
+        if (request->operation == DELIVER_STATUS_REPORT) {
+            message = cimd2_accept_delivery_report_message(request, conn);
+            if (message)
+                list_append(pdata->received, message);
+        }
+        else if (request->operation == DELIVER_MESSAGE) {
+            message = cimd2_accept_message(request,conn);
+            if (message)
+                list_append(pdata->received, message);
+        }
     }
 
     cimd2_send_response(request, pdata);
@@ -1637,10 +1652,6 @@ static int cimd2_request(struct packet *request, SMSCConn *conn, Octstr **ts)
     gw_assert(request != NULL);
     gw_assert(operation_can_send(request->operation));
 
-    debug("bb.sms.cimd2", 0, "CIMD2[%s]: sending <%s>",
-          octstr_get_cstr(conn->id),
-          octstr_get_cstr(request->data));
-
     if (pdata->socket < 0) {
         warning(0, "CIMD2[%s]: cimd2_request: socket not open.",
                 octstr_get_cstr(conn->id));
@@ -1650,6 +1661,10 @@ static int cimd2_request(struct packet *request, SMSCConn *conn, Octstr **ts)
 retransmit:
     packet_set_send_sequence(request, pdata);
     packet_set_checksum(request);
+
+    debug("bb.sms.cimd2", 0, "CIMD2[%s]: sending <%s>",
+          octstr_get_cstr(conn->id),
+          octstr_get_cstr(request->data));
 
     ret = octstr_write_to_socket(pdata->socket, request->data);
     if (ret < 0)
@@ -1669,7 +1684,7 @@ next_reply:
         octstr_dump(reply->data, 0);
         /* Correct sequence number if server says it was wrong,
          * but only if server's number is sane. */
-        if (reply->seq != request->seq && (reply->seq % 1) == 1) {
+        if (reply->seq != request->seq && (reply->seq % 2) == 1) {
             warning(0, "CIMD2[%s]: correcting sequence number from %ld to %ld.",
                     octstr_get_cstr(conn->id),
                     (long) pdata->send_seq, 
@@ -1867,7 +1882,7 @@ static int cimd2_submit_msg(SMSCConn *conn, Msg *msg)
 {
     PrivData *pdata = conn->data;
     struct packet *packet;
-    Octstr *ts;
+    Octstr *ts = NULL;
     int ret;
 
     gw_assert(pdata != NULL);
