@@ -6364,7 +6364,8 @@ the Kannel configuration, or 'Authorization failed' is returned.
 <title>Setting up Push Proxy Gateway</title>
       <para>This chapter explains how to set up a push proxy gateway (PPG). 
        An example configuration file are given. A working push proxy gateway
-      is described. </para>
+      is described. Routing wap pushes to a certain smsc and asking for
+      <emphasis>SMS level</emphasis> delivery reports are described.</para>
 <sect1>
 <title>Configuring ppg core group, for push initiator (PI) interface</title>
      <para>PPG configuration group defines gateway's service interface.
@@ -6483,7 +6484,22 @@ trusted-pi = false
         		 If no SMSC ID is given with the wappush HTTP request (see below), use
              this one as default route for all push messages.
      			 </entry></row>
-
+             <row><entry><literal>default-dlr</literal></entry>
+             <entry><emphasis>string</emphasis></entry>
+             <entry valign="bottom">
+             If no dlr url is given with the wappush HTTP request (see below), use
+             this one as default route for all push messages.
+             </entry></row>
+             <row><entry><literal>ppg-smsbox-id</literal></entry>
+             <entry><emphasis>string</emphasis></entry>
+             <entry valign="bottom">
+             All ppg delivery reports are handled by this smsbox..
+             </entry></row>
+             <row><entry><literal>service-name</literal></entry>
+             <entry><emphasis>string</emphasis></entry>
+             <entry valign="bottom">
+             This is sms service name used by smsbox for wap push..
+             </entry></row>
              </tbody>
              </tgroup>
      </table>
@@ -6588,7 +6604,17 @@ allow-ip = 62.254.217.163
      			 <entry valign="bottom">
         		 Allow only routing to a defined SMSC ID for this specific push user.
      			 </entry></row>
-
+             <row><entry><literal>dlr-url</literal></entry>
+             <entry><emphasis>string</emphasis></entry>
+             <entry valign="bottom">
+             If no dlr  is given with the wappush HTTP request (see below), use
+             this one as default route for this specific push user.
+             </entry></row>
+             <row><entry><literal>smsbox-id</literal></entry>
+             <entry><emphasis>string</emphasis></entry>
+             <entry valign="bottom">
+             Smsbox handling delivery reports fro this user.
+             </entry></row>
              </tbody>
              </tgroup>
       </table>
@@ -6644,11 +6670,12 @@ no-sender = true
 no-coding = true
 send-url = http://host:port/path
 </programlisting>
-     <para>To set up smsbox. This group will eventually disappear, use here
-     only necessary configuration variables.</para>
+     <para>To set up smsbox. This is used for ppg delivery reports,
+     see later.</para>
 <programlisting>
 group = smsbox
 bearerbox-host = localhost
+smsbox-id = dlrbox
 </programlisting>
       <para>Kannel sources contain a sample push configuration file 
       <literal>gw/pushkannel.conf</literal>.</para>
@@ -6706,6 +6733,120 @@ bearerbox-host = localhost
 &#60;/pap&#62;
 </programlisting>
        </para>
+</sect1>
+     
+<sect1>
+<title>Requesting SMS level delivery reports for WAP pushes</title>
+       <para>Push content is a normal binary SM, so you can ask delivery 
+       reports for them. These are useful for testing purposes (did the
+       phone get the content at all, or did it just reject it.) Another
+       use is create fallback services for phones not supporting displaying
+       a specific push content. (MMS one being perhaps currently most
+       obvious.) Generally speaking, this service is very similar to 
+       smsbox one. See chapter Delivery Reports for details.</para>
+
+       <para> For ppg sms delivery reports you will need a fully working 
+       smsbox. Add configuration variable <literal>smsbox-id<\literal> to
+       <literal>smsbox<\literal> group (it is necessary, because there
+       is no MT from any smsbox corresponding the delivery report 
+       bearerbox is receiving):<\para>
+
+<programlisting>
+       group = smsbox
+       smsbox-id = dlrbox
+       bearerbox-host = localhost
+       log-file = "/var/log/kannel/smsbox-core.log"
+       log-level = 0
+       access-log = "/var/log/kannel/smsbox-access.log"
+<\programlisting>
+
+       <para> Start smsbox normal way after updating the configuration
+       file. <\para>
+
+       <para> You must add to PPG configuration file two less obvious
+       variables: <literal>ppg-smsbox-id<\literal> and <literal>
+       service-name<\literal>. <literal>Ppg-smsbox-id<\literal> 
+       defines smsbox through which you want to route delivery reports,
+       <literal>service-name<\literal> makes possible for smsbox to
+       handle wap pushes as a separate sms service.<\para>
+
+       <para>Setting <literal>ppg-smsbox-id<\literal> will route all
+       ppg messages through same smsbox. You can route delivery 
+       reports of separate user through separate smsboxes, by using
+       configuration variable <literal>smsbox-id<\literal> in group
+       wap push user. Or you can use cgi variable <literal>smsbox-id
+      <\literal>. This means routing every message separately. <\para>
+
+       <para> You can supply dlr url and dlr mask as cgi variable, or
+       as a configuration variable in ppg user or ppg core group. (This
+       is order of precedence, too.) First one is valid for only one
+       message, second for a specific user, and third for every ppg
+       user. <\para>
+
+       <para> So following is a minimum ppg core group for sms delivery
+       reports:<\para>
+
+<programlisting>
+group = ppg
+ppg-url = /wappush
+ppg-port = 8080
+concurrent-pushes = 100
+trusted-pi = true
+users = 1024
+service-name = ppg
+ppg-smsbox-id = dlrbox
+<\programlisting>
+
+       <para>This you can use with following http post request (one
+       asking for all possible delivery reports):<\para>
+
+<screen><userinput>
+       http://193.53.0.56:8080/phplib/kannelgw.php?user=*deleted*&amp;
+       pass=*deleted*=to=%2B358408676001&amp;text=3D%02%06%17%AE%96localhost
+       %3A8080%00%AF%80%8D%CF%B4%80%02%05j%00E%C6%0C%03wap.iobox.fi%00%11%03
+       1%40wiral.com%00%07%0A%C3%07%19%99%06%25%15%23%15%10%C3%04+%02%060%01
+       %03Want+to+test+a+fetch%3F%00%01%01&amp;udh=%06%05%04%0B%84%23%F0&amp;
+       dlrmask=31&amp;dlrurl=http%3A%2F%2F193.53.0.56%2Fnotification-dlr%3F
+       smsc-id=%i%26status=%d%26answer=%A%26to=%P%26from=%p%26ts=%t
+<\userinput><\screen>
+
+       <para>Note that you can use all sms service escapes in dlrur, see
+       Parameters (Escape Codes) for details.<\para>
+
+       <para> If you want to set dlr url for a spesific user, you must set
+       configuration variable <literal>dlr-url<\literal>in <literal>
+       wap-push-user<\literal>, if for entire ppg, <literal>default-dlr-url
+       <\literal> in group <literal>ppg<\literal>. Value must naturally match
+       with one used in group smsc.<\para>
+</sect1>
+
+<sect1>
+<title>Routing WAP pushes to a specific smsc</title>
+       <para> This chapter explains how to route wap push to a spesific
+       smsc. </para>
+
+       <para> Smsc routing for wap pushes is similar to sms pushes. So,
+       firstly you must define configuration variable <literal>smsc-id
+       <\literal> in smsc group (or groups) in question. Say you used
+       value <literal>link0<\literal>. So you can issue a request:<\para>
+
+<screen><userinput>
+       http://193.53.0.56:8080/phplib/kannelgw.php?user=*deleted*&amp;
+       pass=*deleted*=to=%2B358408676001&amp;text=3D%02%06%17%AE%96localhost
+       %3A8080%00%AF%80%8D%CF%B4%80%02%05j%00E%C6%0C%03wap.iobox.fi%00%11%03
+       1%40wiral.com%00%07%0A%C3%07%19%99%06%25%15%23%15%10%C3%04+%02%060%01
+       %03Want+to+test+a+fetch%3F%00%01%01&amp;udh=%06%05%04%0B%84%23%F0&amp;
+       smsc=link0
+<\userinput><\screen>
+
+      <para> You can use configuration variables to route all messages of a
+      specific user or all ppg messages. Set <literal>default-smsc<\literal>
+      in group wap-push-user or in group ppg.<\para>
+
+      <para>Again precedence of various methods of setting the smsc is 
+      cgi variable, then configuration variable in group wap push user and
+      then in group ppg.<\para>
+
 </sect1>
      
 </chapter>
@@ -7249,6 +7390,35 @@ test/fakesmsc -m 1 "100 500 udh %0eudh+stuff+here main+message"
              <entry valign="bottom">
              Use <emphasis>number</emphasis> threads instead of default
              <literal>1</literal>.
+             </entry></row>
+             <row><entry><literal>-s</literal></entry>
+             <entry><emphasis>string</emphasis></entry>
+             <entry valign="bottom">
+             Use <literal>string<\literal> as a X-WAP-Application-Id
+             header (You must supply whole header).
+             </entry></row>
+             <row><entry><literal>-B</literal></entry>
+             <entry><emphasis>boolean</emphasis></entry>
+             <entry valign="bottom">
+             If set, accept binary content. Default is off.
+             <literal>1</literal>.
+             </entry></row>
+             <row><entry><literal>-d</literal></entry>
+             <entry><emphasis>enumerated string</emphasis></entry>
+             <entry valign="bottom">
+             Set delimiter to be used. Acceptable values are crlf anf
+             lf. Default is <literal>crlf<\literal>.
+             </entry></row>
+             <row><entry><literal>-p</literal></entry>
+             <entry><emphasis>boolean</emphasis></entry>
+             <entry valign="bottom">
+             If set, add an preamble (hardcoded one). Default
+             is off.
+             </entry></row>
+             <row><entry><literal>-E</literal></entry>
+             <entry><emphasis>boolean</emphasis></entry>
+             <entry valign="bottom">
+             if set, add an epilogue (hardcoded). Default is off.
              </entry></row>
              </tbody>
              </tgroup>
