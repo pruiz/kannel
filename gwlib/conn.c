@@ -254,9 +254,9 @@ void conn_set_output_buffering(Connection *conn, unsigned int size) {
 }
 
 int conn_wait(Connection *conn, double seconds) {
-	struct pollfd pollinfo;
-	int milliseconds;
+	int events;
 	int ret;
+	int fd;
 
 	lock(conn);
 
@@ -281,34 +281,34 @@ int conn_wait(Connection *conn, double seconds) {
 	 * to wait even though there is no data to write and we're at
 	 * end of file, then poll for new data anyway because the callr
 	 * apparently doesn't trust eof. */
-	pollinfo.events = 0;
+	events = 0;
 	if (unlocked_outbuf_len(conn) > 0)
-		pollinfo.events |= POLLOUT;
-	if (!conn->read_eof || pollinfo.events == 0)
-		pollinfo.events |= POLLIN;
-	pollinfo.fd = conn->fd;
+		events |= POLLOUT;
+	if (!conn->read_eof || events == 0)
+		events |= POLLIN;
+
+	fd = conn->fd;
 
 	/* Don't keep the connection locked while we wait */
 	unlock(conn);
 
-	milliseconds = seconds * 1000;
-	ret = poll(&pollinfo, 1, milliseconds);
+	ret = gwthread_pollfd(fd, events, seconds);
 	if (ret < 0) {
 		if (errno == EINTR)
 			return 0;
-		error(errno, "conn_wait: poll failed on fd %d:", pollinfo.fd);
+		error(0, "conn_wait: poll failed on fd %d:", fd);
 		return -1;
 	}
 
 	if (ret == 0)
 		return 1;
 
-	if (pollinfo.revents & POLLNVAL) {
-		error(0, "conn_wait: fd %d not open.", pollinfo.fd);
+	if (ret & POLLNVAL) {
+		error(0, "conn_wait: fd %d not open.", fd);
 		return -1;
 	}
 
-	if (pollinfo.revents & (POLLERR | POLLHUP)) {
+	if (ret & (POLLERR | POLLHUP)) {
 		/* Call unlocked_read to report the specific error,
 		 * and handle the results of the error.  We can't be
 		 * certain that the error still exists, because we
@@ -319,19 +319,19 @@ int conn_wait(Connection *conn, double seconds) {
 		return -1;
 	}
 
-	if (pollinfo.revents & (POLLOUT | POLLIN)) {
+	if (ret & (POLLOUT | POLLIN)) {
 		lock(conn);
 
 		/* If POLLOUT is on, then we must have wanted
 		 * to write something. */
-		if (pollinfo.revents & POLLOUT)
+		if (ret & POLLOUT)
 			unlocked_write(conn);
 
-		/* Since we always select for reading, we must always
+		/* Since we normally select for reading, we must
 		 * try to read here.  Otherwise, if the caller loops
 		 * around conn_wait without making conn_read* calls
 		 * in between, we will keep polling this same data. */
-		if (pollinfo.revents & POLLIN)
+		if (ret & POLLIN)
 			unlocked_read(conn);
 
 		unlock(conn);

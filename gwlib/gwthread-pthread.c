@@ -245,10 +245,11 @@ static void *new_thread(void *arg) {
 	lock();
 	debug("gwlib.gwthread", 0, "Thread %ld (%s) terminates.",
 		p->ti->number, p->ti->name);
+	/* Must free p before signaling our exit, otherwise there is
+	 * a race with gw_check_leaks at shutdown. */
+	gw_free(p);
 	delete_threadinfo();
 	unlock();
-
-	gw_free(p);
 
 	return NULL;
 }

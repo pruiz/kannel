@@ -1,5 +1,13 @@
 2000-05-29  Richard Braakman  <dark@wapit.com>
 
+	* gwlib/gwthread-pthread.c: In new_thread, free its argument a bit
+	earlier, to avoid a race with gw_check_leaks.  (This caused seemingly
+	random memory leak reports).
+
+	* gwlib/conn.c: Use gwthread_pollfd instead of calling poll directly.
+
+2000-05-29  Richard Braakman  <dark@wapit.com>
+
 	* gwlib/gwthread-pthread.c: Made gwthread_create fail gracefully
 	if there are more active threads than the module can handle, rather
 	than panicking.
