@@ -1,5 +1,11 @@
 2000-12-07  Lars Wirzenius  <liw@iki.fi>
 
+	* contrib/{fortune.cgi,ping.cgi,sendsms,smstomail.cgi}: Added
+	some sample services that can be used with Kannel. They're
+	unlikely to be useful in real life, but might be amusing to test.
+
+2000-12-07  Lars Wirzenius  <liw@iki.fi>
+
 	* gw/smskannel.conf: Removed the "www" example service, since
 	people seem not to remove it from production installations.
 	They should, since it's potentially a security problem.
