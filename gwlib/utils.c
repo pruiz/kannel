@@ -274,9 +274,9 @@ void encode_network_long(unsigned char *data, unsigned long value) {
         data[3] = value & 0xff;
 }
 
-#if !HAVE_CFMAKERAW
-/* Something that does the same as GNU cfmakeraw if it doesn't 
- * exist on the target system */
+/* Something that does the same as GNU cfmakeraw. We don't use cfmakeraw
+   so that we always know what it does, and also to reduce configure.in
+   complexity. */
 
 void kannel_cfmakeraw (struct termios *tio){
     /* Block until a charactor is available, but it only needs to be one*/
@@ -310,7 +310,6 @@ void kannel_cfmakeraw (struct termios *tio){
     /* Enable Implementation defined stuff on the output stream*/
     tio->c_oflag      &= ~OPOST;
 }
-#endif
 
 Octstr *rfc2068_date_format(unsigned long unixtime) {
 	struct tm tm;

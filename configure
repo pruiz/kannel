@@ -1686,7 +1686,7 @@ fi
 
 
 
-for ac_func in gettimeofday select socket strdup cfmakeraw getopt_long
+for ac_func in gettimeofday select socket strdup getopt_long
 do
 echo $ac_n "checking for $ac_func""... $ac_c" 1>&6
 echo "configure:1693: checking for $ac_func" >&5

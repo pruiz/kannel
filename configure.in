@@ -69,7 +69,7 @@ dnl Checks for typedefs, structures, and compiler characteristics.
 
 dnl Checks for library functions.
 
-AC_CHECK_FUNCS(gettimeofday select socket strdup cfmakeraw getopt_long)
+AC_CHECK_FUNCS(gettimeofday select socket strdup getopt_long)
 AC_CHECK_FUNC(getopt, , LIBOBJS="$LIBOBJS utils/attgetopt.o")
 AC_SUBST(LIBOBJS)
 

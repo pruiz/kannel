@@ -19,15 +19,8 @@
 
 /* Symbolic levels for output levels. */
 enum output_level {
-	DEBUG, INFO, WARNING, ERROR, PANIC, LOG
+	DEBUG, INFO, WARNING, ERROR, PANIC
 };
-
-/* Print an 'always printed' (forced) message (LOG:)
- * This log level is meant for messages that are _always_ printed. They
- * are not errors, warnings or similar things but data that always should
- * be printed. Like billing information.
- */
-void forced(int, const char *, ...) PRINTFLIKE ;
 
 /* Print a panicky error message and terminate the program with a failure.
  * So, this function is called when there is no other choice than to exit

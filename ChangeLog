@@ -1,5 +1,10 @@
 2000-09-14  Lars Wirzenius  <liw@iki.fi>
 
+	* gwlib/log.[ch]: Removed the `forced' log level, since it is
+	pointless and unused.
+
+2000-09-14  Lars Wirzenius  <liw@iki.fi>
+
 	* config.h.in, configure, configure.in, gwlib/utils.[ch]: Always
 	use kannel_cfmakeraw, instead of the libc one. This simplifies
 	configuration, and lets us not have to worry about having another

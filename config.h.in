@@ -30,9 +30,6 @@
 /* WMLScript debugging. */
 #undef WS_DEBUG
 
-/* Define if you have the cfmakeraw function.  */
-#undef HAVE_CFMAKERAW
-
 /* Define if you have the gettimeofday function.  */
 #undef HAVE_GETTIMEOFDAY
 
@@ -71,9 +68,6 @@
 
 /* Define if you have the xml library (-lxml).  */
 #undef HAVE_LIBXML
-
-/* Define if you have version 1.8.6 of libxml.  */
-#undef HAVE_LIBXML_1_8_6
 
 /* Define if you have the z library (-lz).  */
 #undef HAVE_LIBZ

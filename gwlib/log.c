@@ -206,8 +206,6 @@ static void kannel_syslog(char *format, va_list args,int level){
 	    	translog = LOG_ERR;
 	    case PANIC:
 	    	translog = LOG_ALERT;
-	    case LOG:
-	    	translog = LOG_NOTICE;
 	    default:
 		translog = LOG_INFO;
 	}
@@ -243,10 +241,6 @@ static void kannel_syslog(char *format, va_list args,int level){
 			} \
 		} \
 	} while (0)
-
-void forced(int e, const char *fmt, ...) {
-	FUNCTION_GUTS(LOG, "");
-}
 
 
 void panic(int e, const char *fmt, ...) {
