@@ -1,3 +1,7 @@
+2002-07-08  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/smsc_smpp.c: fixing an obvious bug and compiler warning due to 
+      typo in smsc_smpp_create().
+
 2002-07-05 Aarno Syvänen <aarno@global-networks.ch>
     * TODO: Added file for larger projects. Now it is about making WAP 1.2.1 
       gateway and PPG to support working with MMS centers.
