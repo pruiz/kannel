@@ -1,3 +1,7 @@
+2003-11-26  Stipe Tolj  <tolj@wapme-systems.de>
+    * gwlib/cfg.def: added 'access-log-time' and 'access-log-clean' directives
+      to smsbox and wapbox groups. Thanks to Alex Kinch for reporting this.
+
 2003-11-24  Stipe Tolj  <tolj@wapme-systems.de>
     * doc/userguide/userguide.xml: added new config directives 'access-log-clean'
       and 'access-log-format'.
