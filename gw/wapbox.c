@@ -87,7 +87,6 @@ static Msg *msg_receive(int s) {
 	Msg *msg;
 	
 	while (run_status == running && !read_available(s)) {
-		debug(0, "msg_receive: Nothing to read, sleeping...");
 		usleep(1000*1000);
 	}
 	if (run_status != running)
