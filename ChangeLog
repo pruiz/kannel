@@ -1,3 +1,6 @@
+2002-06-12  Stipe Tolj <tolj@wapme-systems.de>
+    * gw/smsbox.c: fixing inline comments to fit CodingStyle rules
+
 2002-06-11  Bruno Rodrigues  <bruno.rodrigues@litux.org>
     * aclocal.m4: fix date function, for days lesser than 10
     * configure.in: defaults to native malloc but still with assertions
