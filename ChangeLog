@@ -1,3 +1,8 @@
+2001-10-24  Stipe Tolj  <tolj@wapme-systems.de>
+ 
+    * gw/connc.c: fixed a typo in void
+      use_global_client_certkey_file(Octstr *certkeyfile)
+      
 2001-10-24 Aarno Syvänen <aarno@wiral.com>
 
     * gw/wap_push_ppg.c: A bugfix. And another: do not send password/username
