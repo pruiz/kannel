@@ -14,9 +14,16 @@
 
 #include "log.h"  /* for panic() */
 
-/* If NDEBUG is defined, assert does nothing. */
+/* The normal assert() does nothing if NDEBUG is defined.  We honor both
+ * NDEBUG and our own NO_GWASSERT.  If NDEBUG is defined, we always turn
+ * on NO_GWASSERT, so that user code does not have to check for them
+ * separately. */
 
-#ifdef NDEBUG
+#if defined(NDEBUG) && !defined(NO_GWASSERT)
+#define NO_GWASSERT
+#endif
+
+#ifdef NO_GWASSERT
 #define gw_assert(expr) ((void) 0)
 #define gw_assert_place(expr, file, lineno, func) ((void) 0)
 #else

@@ -1,3 +1,12 @@
+2000-11-13  Richard Braakman  <dark@wapi.com>
+
+	* configure.in, config.h, gwlib/gwassert.h: Use NO_GWASSERT
+	instead of NDEBUG.  Have gwassert.h define NO_GWASSERT if
+	NDEBUG is defined.
+
+	* gw/smsc_cimd2.c, gwlib/conn.c, gwlib/gwlib.h, gwlib/octstr.c:
+	Use NO_GWASSERT instead of NDEBUG.
+
 2000-11-10  Lars Wirzenius  <liw@iki.fi>
 
 	* gwlib/http.c: Implemented persistent connections on the

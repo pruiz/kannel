@@ -78,7 +78,7 @@ static int immutables_init = 0;
 
 static void seems_valid_real(Octstr *ostr, const char *filename, long lineno,
                              const char *function);
-#ifdef NDEBUG
+#ifdef NO_GWASSERT
 #define seems_valid(ostr)
 #else
 #define seems_valid(ostr) \

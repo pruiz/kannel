@@ -225,13 +225,13 @@ AC_ARG_ENABLE(assertions,
   if test "$enableval" = "no"
   then
     echo disabling assertion checking
-    AC_DEFINE(NDEBUG)
+    AC_DEFINE(NO_GWASSERT)
   fi
 ], [
   if test "$assertiondefault" = "no"
   then
     echo disabling assertion checking
-    AC_DEFINE(NDEBUG)
+    AC_DEFINE(NO_GWASSERT)
   fi
 ])
 

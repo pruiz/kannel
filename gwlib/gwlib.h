@@ -44,7 +44,7 @@ void gwlib_assert_init(void);
 void gwlib_init(void);
 void gwlib_shutdown(void);
 
-#ifdef NDEBUG
+#ifdef NO_GWASSERT
 #define gwlib_assert_init() ((void) 0)
 #endif
 

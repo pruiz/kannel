@@ -34,7 +34,7 @@ struct Connection {
 	Mutex *inlock;
 	Mutex *outlock;
 	volatile sig_atomic_t claimed;
-#ifndef NDEBUG
+#ifndef NO_GWASSERT
 	long claiming_thread;
 #endif
 
@@ -321,7 +321,7 @@ void conn_claim(Connection *conn) {
 	if (conn->claimed)
 		panic(0, "Connection is being claimed twice!");
 	conn->claimed = 1;
-#ifndef NDEBUG
+#ifndef NO_GWASSERT
 	conn->claiming_thread = gwthread_self();
 #endif
 }

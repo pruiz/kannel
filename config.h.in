@@ -104,6 +104,6 @@
 #undef HAVE_SECURITY_PAM_APPL_H
 
 /* Define if you want to turn off assertion checking */
-#undef NDEBUG
+#undef NO_GWASSERT
 
 #endif

@@ -164,7 +164,7 @@ static const int parm_index(int parmno)
     return -1;
 }
 
-#ifndef NDEBUG
+#ifndef NO_GWASSERT
 /* Return the type of this parameter id.  Return -1 if the id is unknown. */
 static const int parm_type(int parmno)
 {
@@ -199,7 +199,7 @@ static const char *parm_name(int parmno)
     return parameters[i].name;
 }
 
-#ifndef NDEBUG
+#ifndef NO_GWASSERT
 /* Return 1 if the value for this (Integer) parameter is in range.
  * Return 0 otherwise.  Return -1 if the parameter was not found.  */
 static const int parm_in_range(int parmno, long value)

@@ -2354,7 +2354,7 @@ if test "${enable_assertions+set}" = set; then
   then
     echo disabling assertion checking
     cat >> confdefs.h <<\EOF
-#define NDEBUG 1
+#define NO_GWASSERT 1
 EOF
 
   fi
@@ -2365,7 +2365,7 @@ else
   then
     echo disabling assertion checking
     cat >> confdefs.h <<\EOF
-#define NDEBUG 1
+#define NO_GWASSERT 1
 EOF
 
   fi
