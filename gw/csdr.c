@@ -265,6 +265,10 @@ int csdr_is_to_us(CSDRouter *router, Msg *msg) {
     if (router == NULL || msg == NULL) goto error;
     if (msg_type(msg) != wdp_datagram) goto error;
 
+    debug(0, "<%s %d> vs <%s %d>", router->ip, router->port,
+	  octstr_get_cstr(msg->wdp_datagram.source_address),
+	  (int)msg->wdp_datagram.source_port);
+
     if (router->port != msg->wdp_datagram.source_port ||
 	(strcmp(router->ip,
 		octstr_get_cstr(msg->wdp_datagram.source_address)) != 0))
