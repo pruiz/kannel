@@ -605,6 +605,7 @@ int main(int argc, char **argv)
     while ((opt = getopt(argc, argv, "Fhvc:g:p:P:m:i:t:V:T:t:nsd:")) != EOF) {
 	switch (opt) {
 	case 'g':
+	    octstr_destroy(hostname);
 	    hostname = octstr_create(optarg);
 	    break;
 

@@ -1,3 +1,18 @@
+2000-08-18  Richard Braakman  <dark@wapit.com>
+
+	* gw/wap-appl.c: Make sure content.url and content.body have valid
+	values even if request method is not supported.
+
+	* gw/wsp_pdu.c, gw/wtp_pdu.c: Make sure REST fields are always
+	filled, even if packet contains bad length info.  This fixes a
+	crashing bug discovered by OUSPG.
+
+	* test/fakewap.c: Fix small memory leak.
+
+	* test/udpfeed.c: New test program, reads a bunch of files and
+	sends each in a single UDP packet.  Useful for feeding OUSPG's
+	test set to Kannel.
+
 2000-08-22 Aarno Syvänen <syvanen@wapit.com>
 
 	* gw/wml_compiler.c: Fixed some memory leaks

@@ -244,7 +244,7 @@ WTP_PDU *wtp_pdu_unpack(Octstr *data) {
 		gw_assert(bitpos % 8 == 0); \
 		if (bitpos / 8 != octstr_len(data)) { \
 			warning(0, "Bad length for " #name " PDU, " \
-				" expected %ld", bitpos / 8); \
+				"expected %ld", bitpos / 8); \
 		} \
 		if (!(is_valid)) { \
 			warning(0, #name " PDU failed %s", #is_valid); \
@@ -273,6 +273,8 @@ WTP_PDU *wtp_pdu_unpack(Octstr *data) {
 		p->field = octstr_copy(data, bitpos / 8, \
 				octstr_len(data) - bitpos / 8); \
 		bitpos = octstr_len(data) * 8; \
+	} else { \
+		p->field = octstr_create_empty(); \
 	}
 #define TYPE(bits, value) bitpos += (bits);
 #define RESERVED(bits) bitpos += (bits);

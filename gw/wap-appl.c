@@ -299,8 +299,8 @@ static void fetch_thread(void *arg) {
 	WAPAddrTuple *addr_tuple;
 	long session_id;
 	struct content content;
-	int method;				/* This is the type of request, normally a get or a post */
-	Octstr *request_body;	/* This is the request body. */
+	int method;		/* type of request, normally a get or a post */
+	Octstr *request_body;
 	
 	event = arg;
 	if (event->type == S_MethodInvoke_Ind) {
@@ -375,6 +375,9 @@ static void fetch_thread(void *arg) {
 
 	default:
 		error(0, "WSP: Method not supported: %d.", method);
+		content.url = octstr_duplicate(url);
+		content.body = octstr_create_empty();
+		resp_headers = NULL;
 		ret = 501;
 
 	}
@@ -427,6 +430,9 @@ static void fetch_thread(void *arg) {
 		octstr_destroy(content.type);
 		content.type = octstr_create("text/plain");
 	}
+
+	if (content.body == NULL)
+		content.body = octstr_create_empty();
 
 	if (event->type == S_MethodInvoke_Ind) {
 		WAPEvent *e = wap_event_create(S_MethodResult_Req);
