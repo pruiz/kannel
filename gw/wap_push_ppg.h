@@ -21,17 +21,17 @@ typedef struct PPGPushMachine PPGPushMachine;
  * Message state
  */
 enum {
-    UNDELIVERABLE,         /* general message status */
-    UNDELIVERABLE1,        /* transformation failure */
-    UNDELIVERABLE2,        /* no bearer support */
-    PENDING,
-    EXPIRED,
-    DELIVERED,             /* general message status */
-    DELIVERED1,            /* for unconfirmed push, PPG internal */
-    DELIVERED2,            /* for confirmed push, PPG internal  */
-    ABORTED,
-    TIMEOUT,
-    CANCELLED
+    PAP_UNDELIVERABLE,         /* general message status */
+    PAP_UNDELIVERABLE1,        /* transformation failure */
+    PAP_UNDELIVERABLE2,        /* no bearer support */
+    PAP_PENDING,
+    PAP_EXPIRED,
+    PAP_DELIVERED,             /* general message status */
+    PAP_DELIVERED1,            /* for unconfirmed push, PPG internal */
+    PAP_DELIVERED2,            /* for confirmed push, PPG internal  */
+    PAP_ABORTED,
+    PAP_TIMEOUT,
+    PAP_CANCELLED
 };
 
 /*
@@ -39,14 +39,14 @@ enum {
  * 9.13 and 9.14. 
  */
 enum {
-    ACCEPTED_FOR_PROCESSING = 1001,
-    BAD_REQUEST = 2000, 
-    FORBIDDEN = 2001,
-    ADDRESS_ERROR = 2002,
-    CAPABILITIES_MISMATCH = 2005,
-    DUPLICATE_PUSH_ID = 2007,
-    TRANSFORMATION_FAILURE = 3006,
-    REQUIRED_BEARER_NOT_AVAIBLE = 3010,
+    PAP_ACCEPTED_FOR_PROCESSING = 1001,
+    PAP_BAD_REQUEST = 2000, 
+    PAP_FORBIDDEN = 2001,
+    PAP_ADDRESS_ERROR = 2002,
+    PAP_CAPABILITIES_MISMATCH = 2005,
+    PAP_DUPLICATE_PUSH_ID = 2007,
+    PAP_TRANSFORMATION_FAILURE = 3006,
+    PAP_REQUIRED_BEARER_NOT_AVAILABLE = 3010,
     PAP_ABORT_USERPND = 5028
 };
 
@@ -60,7 +60,7 @@ enum {
 
 /*
  * Enumerations used by PAP message fields, see Push Access Protocol, Chapter
- * 9.
+ * 9. Default values are the first ones (ones having value 0)
  *
  * Simple answer to question is something required or not
  */
@@ -73,19 +73,19 @@ enum {
  * Priority
  */
 enum {
-    HIGH,
-    MEDIUM,
-    LOW
+    PAP_MEDIUM,
+    PAP_HIGH,
+    PAP_LOW
 };
 
 /*
  * Delivery method
  */
 enum {
-    CONFIRMED,
-    PREFERCONFIRMED,
-    UNCONFIRMED,
-    NOT_SPECIFIED
+    PAP_NOT_SPECIFIED,
+    PAP_PREFERCONFIRMED,
+    PAP_UNCONFIRMED,
+    PAP_CONFIRMED
 };
 
 /*

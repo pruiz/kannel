@@ -584,18 +584,19 @@ WAPEVENT(Po_PushAbort_Ind, "Po-PushAbort.ind",
  * group of capabilities. We should use list of address_values  for multiple 
  * addresses (optional) and Lists of push headers, push data and capabilities 
  * for multipart (non-nested mandatory). 
+ * Note, too, that we do not yet support multiple addresses.
  * Optional fields, if PAP control message originally does not contain one, 
- * should be set NULL.
+ * should be set NULL, and mandatory fields non-NULL.
  */
 
 WAPEVENT(Push_Message, "push-message",
          OCTSTR(pi_push_id)
-         OPTIONAL_OCTSTR(deliver_before_timestamp)/* using PAP format */
-         OPTIONAL_OCTSTR(deliver_after_timestamp) /* ditto */
-         OPTIONAL_OCTSTR(source_referance)
+         OPTIONAL_OCTSTR(deliver_before_timestamp)   /* using PAP format */
+         OPTIONAL_OCTSTR(deliver_after_timestamp)    /* ditto */
+         OPTIONAL_OCTSTR(source_reference)
          OPTIONAL_OCTSTR(ppg_notify_requested_to)
          INTEGER(progress_notes_requested)
-         OCTSTR(address_value)                    /* as unparsed PAP */
+         OCTSTR(address_value)                       /* as parsed PAP */
          INTEGER(priority)
          INTEGER(delivery_method)
          OPTIONAL_OCTSTR(network)
@@ -624,7 +625,7 @@ WAPEVENT(Push_Response, "push-response",
  * 9.3.1.PPG main module sends these separately to PAP. 
  */
 WAPEVENT(Progress_Note, "progress-note",
-         OCTSTR(stage)
+         INTEGER(stage)
          OPTIONAL_OCTSTR(note)
          OPTIONAL_OCTSTR(time)
 )

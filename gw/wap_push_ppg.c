@@ -135,7 +135,7 @@ static int check_capabilities(List *requested, List *assumed);
 static int transform_message(WAPEvent **e, WAPAddrTuple **tuple, 
                              int connected, Octstr **type);
 static void check_x_wap_application_id_header(List **push_headers);
-static int convert_content(struct content *content);
+static int pap_convert_content(struct content *content);
 static int select_bearer_network(WAPEvent *e);
 static int delivery_time_constraints(WAPEvent *e, PPGPushMachine *pm);
 static void deliver_confirmed_push(long last, PPGPushMachine *pm, 
@@ -179,38 +179,6 @@ static WAPAddrTuple *addr_tuple_change_cliport(WAPAddrTuple *tuple, long port);
 static Octstr *convert_wml_to_wmlc(struct content *content);
 static void initialize_time_item_array(long time_data[], struct tm now);
 static int date_item_compare(Octstr *before, long time_data, long pos);
-
-/*
- * Parsing functions
- */
-static long accept_escaped(Octstr **address, long pos);
-static long accept_safe(Octstr **address, long pos);
-static long rest_unescaped(Octstr **address, long pos);
-static int create_peek_window(Octstr **address, long *pos);
-static int issafe(Octstr **address, long pos);
-static long drop_character(Octstr **address, long pos);
-static Octstr *prepend_char(Octstr *address, unsigned char c);
-static long handle_two_terminators(Octstr **adress, long pos, 
-    unsigned char comma, unsigned char point, unsigned char c, 
-    long fragment_parsed, long fragment_length);
-static long parse_ipv6_fragment(Octstr **address, long pos);
-static long parse_ipv4_fragment(Octstr **address, long pos);
-static long parse_type(Octstr **address, Octstr **type_value, long pos);
-static long parse_ext_qualifiers(Octstr **address, long pos, Octstr *type);
-static long parse_global_phone_number(Octstr **address, long pos);
-static long parse_ipv4(Octstr **address, long pos);
-static long parse_ipv6(Octstr **address, long pos);
-static long parse_escaped_value(Octstr **address, long pos);
-static long parse_client_specifier(Octstr **address, long pos);
-static long parse_constant(const char *field_name, Octstr **address, long pos);
-static long parse_wappush_client_address(Octstr **address, long pos);
-static long parse_ppg_specifier(Octstr **address, long pos);
-static long parse_client_address(Octstr **cliaddr);
-static int wina_bearer_identifier(Octstr *type_value);
-static int qualifiers(Octstr *address, long pos, Octstr *type);
-static long parse_qualifier_keyword(Octstr **address, long pos);
-static long parse_qualifier_value(Octstr **address, long pos);
-static long parse_dom_fragment(Octstr **address, long pos);
 static void parse_appid_header(Octstr **assigned_code);
 
 /*****************************************************************************
@@ -350,34 +318,35 @@ static void handle_ppg_event(WAPEvent *e)
 
         if ((pm = store_push_data(sm, e, tuple, cless)) == NULL) {
             warning(0, "PPG: we had a duplicate push id");
-            response_push_message(pm, DUPLICATE_PUSH_ID);
+            response_push_message(pm, PAP_DUPLICATE_PUSH_ID);
             goto no_start;
         }
 
         if (!message_transformable) {
 	    pm = update_push_data_with_attribute(&sm, pm, 
-                 TRANSFORMATION_FAILURE, UNDELIVERABLE1);  
+                 PAP_TRANSFORMATION_FAILURE, PAP_UNDELIVERABLE1);  
             if (tuple != NULL)   
-	        response_push_message(pm, TRANSFORMATION_FAILURE);
+	        response_push_message(pm, PAP_TRANSFORMATION_FAILURE);
             else
-	        response_push_message(pm, ADDRESS_ERROR);
+	        response_push_message(pm, PAP_ADDRESS_ERROR);
             goto no_start;
         }
 
         dummy = 0;
-        pm = update_push_data_with_attribute(&sm, pm, dummy, PENDING);
+        pm = update_push_data_with_attribute(&sm, pm, dummy, PAP_PENDING);
 
         bearer_supported = select_bearer_network(e);
         if (!bearer_supported) {
             pm = update_push_data_with_attribute(&sm, pm, dummy, 
-                 UNDELIVERABLE2);
-            response_push_message(pm, REQUIRED_BEARER_NOT_AVAIBLE);
+                 PAP_UNDELIVERABLE2);
+            response_push_message(pm, PAP_REQUIRED_BEARER_NOT_AVAILABLE);
 	    goto no_start;
         }
      
         if ((constraints = delivery_time_constraints(e, pm)) == TIME_EXPIRED) {
-            pm = update_push_data_with_attribute(&sm, pm, FORBIDDEN, EXPIRED);
-            response_push_message(pm, FORBIDDEN);
+            pm = update_push_data_with_attribute(&sm, pm, PAP_FORBIDDEN, 
+                                                 PAP_EXPIRED);
+            response_push_message(pm, PAP_FORBIDDEN);
 	    goto no_start;
         }
 /*
@@ -385,7 +354,7 @@ static void handle_ppg_event(WAPEvent *e)
  * data. We response PI here, so that "accepted for processing" means "no 
  * error messages to come".
  */
-        response_push_message(pm, ACCEPTED_FOR_PROCESSING);
+        response_push_message(pm, PAP_ACCEPTED_FOR_PROCESSING);
         info(0, "PPG: push message accepted for processing");
 
         if (constraints == TIME_TOO_EARLY)
@@ -485,7 +454,8 @@ no_start:
 
         sm = wap_push_ppg_have_push_session_for_sid(sid);
         pm = find_ppg_push_machine_using_pid(sm, pid);
-        pm = update_push_data_with_attribute(&sm, pm, CONFIRMED, DELIVERED2);
+        pm = update_push_data_with_attribute(&sm, pm, PAP_CONFIRMED, 
+                                             PAP_DELIVERED2);
         wap_event_destroy(e);
     break;
 
@@ -503,7 +473,7 @@ no_start:
         push_machine_assert(pm);
         reason = e->u.Po_PushAbort_Ind.reason;
         reason = ota_abort_to_pap(reason);
-        pm = update_push_data_with_attribute(&sm, pm, reason, ABORTED);
+        pm = update_push_data_with_attribute(&sm, pm, reason, PAP_ABORTED);
         remove_session_data(sm);
         wap_event_destroy(e);
     break;
@@ -521,7 +491,7 @@ no_start:
 
 /*
  * We do not set session id here: it is told to us by wsp.
- * FIXME: Preferconfirmed value is hard coded to NOT_SPECIFIED
+ * FIXME: Preferconfirmed value is hard coded to PAP_NOT_SPECIFIED
  */
 static PPGSessionMachine *session_machine_create(WAPAddrTuple *tuple, 
                                                  WAPEvent *e)
@@ -544,7 +514,7 @@ static PPGSessionMachine *session_machine_create(WAPAddrTuple *tuple,
     m->addr_tuple = wap_addr_tuple_duplicate(tuple);
     m->assumed_capabilities = 
         wsp_cap_duplicate_list(e->u.Push_Message.pi_capabilities);
-    m->preferconfirmed_value = NOT_SPECIFIED;    
+    m->preferconfirmed_value = PAP_NOT_SPECIFIED;    
 
     list_append(ppg_machines, m);
     debug("wap.push.ppg", 0, "PPG: Created PPGSessionMachine %ld",
@@ -946,8 +916,10 @@ static void push_machine_assert(PPGPushMachine *pm)
 /*
  * Message transformations performed by PPG are defined in PPG, 6.1.2.1. We 
  * do not do any (optional) header conversions to the binary format here, 
- * these are responsibility of our OTA module (gw/wap_push_ota.c). FIXME: Re-
- * move all headers which default values are known to the client. 
+ * these are responsibility of our OTA module (gw/wap_push_ota.c). Neither do
+ * we parse client address out from pap client address field, this is done by
+ * PAP module (gw/wap_push_pap_compiler.c).
+ * FIXME: Remove all headers which default values are known to the client. 
  *
  * Return message, either transformed or not (if there is no-transform cache 
  * directive or wml code is erroneous) separately the transformed gw address 
@@ -965,7 +937,8 @@ static int transform_message(WAPEvent **e, WAPAddrTuple **tuple,
          servport;
 
     gw_assert((**e).type == Push_Message);
-    gw_assert((**e).u.Push_Message.push_headers);
+    if ((**e).u.Push_Message.push_headers == NULL)
+        goto herror;
 
     cliaddr = (**e).u.Push_Message.address_value;
     push_headers = (**e).u.Push_Message.push_headers;
@@ -980,10 +953,7 @@ static int transform_message(WAPEvent **e, WAPAddrTuple **tuple,
         servport = CONNECTIONLESS_SERVPORT;
     }
 
-    if ((*tuple = set_addr_tuple(cliaddr, cliport, servport)) == NULL) {
-        warning(0, "PPG: push client address unpossible to understand");
-        goto error;
-    }
+    *tuple = set_addr_tuple(cliaddr, cliport, servport);
     if (!content_transformable(push_headers)) 
         goto no_transform;
     content.body = (**e).u.Push_Message.push_data; 
@@ -992,7 +962,7 @@ static int transform_message(WAPEvent **e, WAPAddrTuple **tuple,
 
     http_header_get_content_type(push_headers, &content.type,
                                  &content.charset);   
-    message_deliverable = convert_content(&content);
+    message_deliverable = pap_convert_content(&content);
 
     if (message_deliverable) {
         *type = content.type;        
@@ -1005,14 +975,20 @@ static int transform_message(WAPEvent **e, WAPAddrTuple **tuple,
     debug("wap.push.ppg", 0, "PPG: push message content and headers valid");
     return 1;
 
+herror:
+    warning(0, "PPG: transform_message: no push headers, cannot accept push");
+    return 0;
+
 error:
-    warning(0, "PPG: push content erroneous, cannot accept it");
+    warning(0, "PPG: transform_message: push content erroneous, cannot accept"
+            " it");
     octstr_destroy(content.type);
     octstr_destroy(content.charset);
     return 0;
 
 no_transform:
-    info(0, "PPG: non transformable push content, not compiling");
+    info(0, "PPG: transform_message: non transformable push content, not"
+         " compiling");
     octstr_destroy(content.type);
     octstr_destroy(content.charset);
     return 1;
@@ -1108,7 +1084,7 @@ static struct {
 
 #define NUM_CONVERTERS ((long) (sizeof(converters) / sizeof(converters[0])))
 
-static int convert_content(struct content *content)
+static int pap_convert_content(struct content *content)
 {
     long i;
     Octstr *new_body;
@@ -1238,23 +1214,25 @@ struct description_t {
 typedef struct description_t description_t;
 
 static description_t pap_desc[] = {
-    { ACCEPTED_FOR_PROCESSING, "The request has been accepted for processing"},
-    { BAD_REQUEST, "Not understood due to malformed syntax"},
-    { FORBIDDEN, "Request was refused"},
-    { ADDRESS_ERROR, "The client specified not recognised"},
-    { CAPABILITIES_MISMATCH, "Capabilities assumed by PI were not acceptable"
-                              " for the client specified"},
-    { DUPLICATE_PUSH_ID, "Push id supplied was not unique"},
-    { TRANSFORMATION_FAILURE, "PPG was unable to perform a transformation on"
-                              " the message"},
-    { REQUIRED_BEARER_NOT_AVAIBLE, "Required bearer not avaible"},
-    { WSP_ABORT_USERREQ, "User requested abort"},
-    { WSP_ABORT_USERRFS, "User refused push message. Do not try again"},
+    { PAP_ACCEPTED_FOR_PROCESSING, "The request has been accepted for"
+                                   " processing"},
+    { PAP_BAD_REQUEST, "Not understood due to malformed syntax"},
+    { PAP_FORBIDDEN, "Request was refused"},
+    { PAP_ADDRESS_ERROR, "The client specified not recognised"},
+    { PAP_CAPABILITIES_MISMATCH, "Capabilities assumed by PI were not"
+                                 "  acceptable for the client specified"},
+    { PAP_DUPLICATE_PUSH_ID, "Push id supplied was not unique"},
+    { PAP_TRANSFORMATION_FAILURE, "PPG was unable to perform a transformation"
+                                  " of the message"},
+    { PAP_REQUIRED_BEARER_NOT_AVAILABLE, "Required bearer not available"},
+    { WSP_ABORT_USERREQ, "Wsp requested abort"},
+    { WSP_ABORT_USERRFS, "Wsp refused push message. Do not try again"},
     { WSP_ABORT_USERPND, "Push message cannot be delivered to intended"
-                         "destination"},
-    { WSP_ABORT_USERDCR, "Push message discarded due to resource shortage"},
+                         " destination by the wsp"},
+    { WSP_ABORT_USERDCR, "Push message discarded due to resource shortage in"
+                         " wsp"},
     { WSP_ABORT_USERDCU, "Content type of the push message cannot be"
-                         " processed"}
+                         " processed by the wsp"}
 };
 
 static size_t desc_tab_size = sizeof(pap_desc) / sizeof(pap_desc[0]);
@@ -1364,7 +1342,8 @@ static PPGPushMachine *deliver_unit_push(long last, PPGPushMachine *pm,
     else
         request_push(last, pm);
 
-    pm = update_push_data_with_attribute(&sm, pm, UNCONFIRMED, DELIVERED1);
+    pm = update_push_data_with_attribute(&sm, pm, PAP_UNCONFIRMED, 
+                                         PAP_DELIVERED1);
     info(0, "PPG: unconfirmed push delivered to OTA");
 
     return pm;
@@ -1386,10 +1365,10 @@ static void deliver_pending_pushes(PPGSessionMachine *sm, int last)
         pm = list_get(sm->push_machines, i);
         push_machine_assert(pm);
 
-        if (pm->delivery_method == UNCONFIRMED) {
+        if (pm->delivery_method == PAP_UNCONFIRMED) {
             request_push(last, pm); 
-            pm = update_push_data_with_attribute(&sm, pm, UNCONFIRMED, 
-                 DELIVERED1);
+            pm = update_push_data_with_attribute(&sm, pm, PAP_UNCONFIRMED, 
+                 PAP_DELIVERED1);
             remove_push_data(sm, pm, sm == NULL);
         } else {
 	    request_confirmed_push(last, pm, sm);
@@ -1413,13 +1392,13 @@ static PPGPushMachine *abort_delivery(PPGSessionMachine *sm)
     i = 0;
     pm = NULL;
     reason = PAP_ABORT_USERPND;
-    code = CAPABILITIES_MISMATCH;
+    code = PAP_CAPABILITIES_MISMATCH;
     
     while (list_len(sm->push_machines) > 0) {
         pm = list_get(sm->push_machines, i);
         push_machine_assert(pm);
 
-        pm = update_push_data_with_attribute(&sm, pm, reason, ABORTED);
+        pm = update_push_data_with_attribute(&sm, pm, reason, PAP_ABORTED);
         response_push_message(pm, code);
 
         remove_push_data(sm, pm, sm == NULL);
@@ -1510,7 +1489,7 @@ static int confirmation_requested(WAPEvent *e)
 {
     gw_assert(e->type = Push_Message);
 
-    return e->u.Push_Message.delivery_method == CONFIRMED;
+    return e->u.Push_Message.delivery_method == PAP_CONFIRMED;
 }
 
 static int push_has_pid(void *a, void *b)
@@ -1585,44 +1564,44 @@ static PPGPushMachine *update_push_data_with_attribute(PPGSessionMachine **sm,
     push_machine_assert(qm);
    
     switch (status) {
-    case UNDELIVERABLE1:
-         qm->message_state = UNDELIVERABLE;
-         qm->code = BAD_REQUEST;
+    case PAP_UNDELIVERABLE1:
+         qm->message_state = PAP_UNDELIVERABLE;
+         qm->code = PAP_BAD_REQUEST;
     break;
 
-    case UNDELIVERABLE2:
+    case PAP_UNDELIVERABLE2:
         qm->code = reason;
-        qm->message_state = UNDELIVERABLE;
+        qm->message_state = PAP_UNDELIVERABLE;
         qm->desc = describe_code(reason);
     break;
 
-    case ABORTED:
+    case PAP_ABORTED:
         qm->message_state = status;
         qm->code = ota_abort_to_pap(reason);
         qm->event_time = set_time();
         qm->desc = describe_code(reason);
     break;
 
-    case DELIVERED1:
-        qm->message_state = DELIVERED;
-        qm->delivery_method = UNCONFIRMED;
+    case PAP_DELIVERED1:
+        qm->message_state = PAP_DELIVERED;
+        qm->delivery_method = PAP_UNCONFIRMED;
         qm->event_time = set_time();
     break;
 
-    case DELIVERED2:
-        qm->message_state = DELIVERED;
-        qm->delivery_method = CONFIRMED;
+    case PAP_DELIVERED2:
+        qm->message_state = PAP_DELIVERED;
+        qm->delivery_method = PAP_CONFIRMED;
         qm->event_time = set_time();
     break;
 
-    case EXPIRED:
-        qm->message_state = EXPIRED;
+    case PAP_EXPIRED:
+        qm->message_state = PAP_EXPIRED;
         qm->event_time = set_time();
         qm->desc = describe_code(reason);
     break;
 
-    case PENDING:
-        qm->message_state = PENDING;
+    case PAP_PENDING:
+        qm->message_state = PAP_PENDING;
     break;
 
     default:
@@ -1685,7 +1664,7 @@ static long ota_abort_to_pap(long reason)
 static int cless_accepted(WAPEvent *e, PPGSessionMachine *sm)
 {
     gw_assert(e->type == Push_Message);
-    return e->u.Push_Message.delivery_method == UNCONFIRMED && sm == NULL;
+    return e->u.Push_Message.delivery_method == PAP_UNCONFIRMED && sm == NULL;
 }
 
 /*
@@ -1775,586 +1754,6 @@ static int deliver_after_test_cleared(Octstr *after, struct tm now)
     return 0;
 }
 
-static long accept_escaped(Octstr **address, long pos)
-{
-    Octstr *temp;
-    long i;
-    unsigned char c;
-
-    pos = drop_character(address, pos);
-    temp = octstr_create("");
-
-    for (i = 2; i > 0; i--) {
-        c = octstr_get_char(*address, pos + i);
-        temp = prepend_char(temp, c);
-        pos = drop_character(address, pos + i);
-        if (pos > 0)
-	  --pos;
-    }
-
-    if (octstr_hex_to_binary(temp) < 0) {
-        octstr_destroy(temp);
-        return -2;
-    }
-
-    octstr_insert(*address, temp, pos + 2);   /* To the end of the window */
-
-    octstr_destroy(temp);
-    return pos + 1;                           /* The position preceding the 
-                                                 inserted character */
-              
-}
-
-static long accept_safe(Octstr **address, long pos)
-{
-    unsigned char c;
-
-    c = octstr_get_char(*address, pos);
-    if ((isalnum(c) || c == '+' || c == '-' || c == '.' || c == '_') && 
-            pos >= 0)
-	--pos;
-    else if (c == '=')
-        return -1;
-    else
-        return -2;
-
-    return pos;
-}
-
-static long rest_unescaped(Octstr **address, long pos)
-{
-    long i,
-         ret;
-
-    for (i = 2; i > 0; i--) {
-         if ((ret = accept_safe(address, pos)) == -2)
-	     return -2;
-         else if (ret == -1)
-	     return pos;
-    }
-
-    return pos;
-}
-
-/*
- * Return -1, it was impossible to create the window because of there is no
- * more enough characters left and 0 if OK.
- */
-static int create_peek_window(Octstr **address, long *pos)
-{
-    long i;
-    unsigned char c;
-
-    i = 0;
-    c = '=';
-    while (i < 2 && (c = octstr_get_char(*address, *pos)) != '=') {
-        if (*pos > 0)
-            --*pos;
-        ++i;
-    }
-
-    if (c == '=')
-        return 0;
-
-    return 1;
-}
-
-static int issafe(Octstr **address, long pos){
-    
-    if (octstr_get_char(*address, pos) == '%')
-        return 0;
-    else
-        return 1;
-}
-
-static long drop_character(Octstr **address, long pos)
-{
-    if (pos >= 0) {
-        octstr_delete(*address, pos, 1);
-        if (pos > 0)
-            --pos;
-    }
-
-    return pos;
-}
-
-/*
- * Point ends the string, comma separates string fragments.
- */
-static long handle_two_terminators (Octstr **address, long pos, 
-    unsigned char comma, unsigned char point, unsigned char c, 
-    long fragment_parsed, long fragment_length)
-{
-    if (fragment_parsed == fragment_length && c != comma && c != point)
-        return -2;
-
-    if (c == point) 
-        octstr_delete(*address, pos, 1);
-
-    --pos;
-
-    return pos;
-}
-
-static Octstr *prepend_char(Octstr *os, unsigned char c)
-{
-    Octstr *tmp;
-
-    tmp = octstr_format("%c", c);
-    octstr_insert(os, tmp, 0);
-    octstr_destroy(tmp);
-    return os;
-}
-
-static long parse_dom_fragment(Octstr **address, long pos)
-{
-    unsigned char c;
-
-    if (pos >= 0) { 
-        if (isalnum(octstr_get_char(*address, pos))) {
-	    pos = drop_character(address, pos);
-        } else
-	    return -2;
-    }
-
-    while ((c = octstr_get_char(*address, pos)) != '@' && 
-               octstr_get_char(*address, pos) != '.' && pos >= 0)  {
-        if (isalnum(c) || c == '-') {
-	    pos = drop_character(address, pos);
-        } else
-	    return -2;
-    } 
-
-    return pos;
-}
-
-/*
- * Ext qualifiers contain /, ipv4 address contains . , ipv6 address contains :.
- * phone number contains + and escaped-value contain no specific tokens. They 
- * are for future extansions, but we must parse them.
- */
-static int qualifiers(Octstr *address, long pos, Octstr *type)
-{
-    unsigned char term,
-         c;
-    long i;
-
-    i = pos;
-    c = '+';
-
-    if (octstr_compare(type, octstr_imm("PLMN")) == 0)
-        term = '+';
-    else if (octstr_compare(type, octstr_imm("IPv4")) == 0)
-        term = '.';
-    else if (octstr_compare(type, octstr_imm("IPv6")) == 0)
-        term = ':';
-    else
-        term = 'N';
-
-    if (term != 'N')
-        while ((c = octstr_get_char(address, i)) != term) {
-            if (c == '/')
-                return 1;
-            --i;
-    }
-
-    if (term == 'N') {
-        while (i != 0) {
-            if (c == '/')
-                return 1;
-            --i;
-        }
-    } 
-
-    return 0;
-}
-
-static long parse_qualifier_value(Octstr **address, long pos)
-{
-    unsigned char c;
-
-    while ((c = octstr_get_char(*address, pos)) != '=' && pos >= 0) {
-        if (c < 0x20 || (c > 0x2e && c < 0x30) || (c > 0x3c && c < 0x3e) ||
-            c > 0x7e)
-            return -2;
-
-        pos = drop_character(address, pos);
-    }
-
-    pos = drop_character(address, pos);
-  
-    return pos;
-}
-
-static long parse_qualifier_keyword(Octstr **address, long pos)
-{
-    unsigned char c;  
-
-    while ((c = octstr_get_char(*address, pos)) != '/') {
-        if (isalnum(c) || c == '-') {
-	    pos = drop_character(address, pos);
-        } else
-	    return -2;
-    }
-
-    pos = drop_character(address, pos);       
-
-    return pos;
-}
-
-/*
- * WINA web page does not include address type identifiers. Following ones are
- * from WDP, Appendix C.
- */
-
-static char *bearer_address[] = {
-    "GSM_MSISDN",
-    "ANSI_136_MSISDN",
-    "IS_637_MSISDN",
-    "iDEN_MSISDN",
-    "FLEX_MSISDN",
-    "PHS_MSISDN",
-    "GSM_Service_Code",
-    "TETRA_ITSI",
-    "TETRA_MSISDN",
-    "ReFLEX_MSIDDN",
-    "MAN",
-};
-
-static size_t bearer_address_size = sizeof(bearer_address) / 
-                                    sizeof(bearer_address[0]);
-
-static int wina_bearer_identifier(Octstr *type_value)
-{
-    long i;
-
-    i = 0;
-    while (i < bearer_address_size) {
-        if (octstr_compare(type_value, octstr_imm(bearer_address[i])) == 0)
-	    return 1;
-        ++i;
-    }
-
-    return 0;
-}
-
-static long parse_type(Octstr **address, Octstr **type_value, long pos) 
-{
-    unsigned char c;
-
-    while ((c = octstr_get_char(*address, pos)) != '=' && pos >= 0) {   
-        *type_value = prepend_char(*type_value, c);
-        pos = drop_character(address, pos);
-    } 
-
-    if (pos < 0)
-        return -2;
-
-    return pos;
-}
-
-static long parse_ext_qualifiers(Octstr **address, long pos, Octstr *type)
-{
-    while (qualifiers(*address, pos, type)) {
-        if ((pos = parse_qualifier_value(address, pos)) < 0)
-            return pos;
-
-        if ((pos = parse_qualifier_keyword(address, pos)) < 0)
-            return pos;
-    }
-
-    return pos;
-}
-
-static long parse_global_phone_number(Octstr **address, long pos)
-{
-    unsigned char c;
-
-    while ((c = octstr_get_char(*address, pos)) != '+' && pos >= 0) {
-        if (!isdigit(c) && c != '-' && c != '.')
-             return -2;
-        else
-	     --pos;
-    }
-
-    if (pos > 0)
-        --pos;
-
-    pos = drop_character(address, pos);
-
-    return pos;
-}
-
-static long parse_ipv4_fragment(Octstr **address, long pos) 
-{
-    long i;
-    unsigned char c;
-
-    i = 0;
-    c = '=';
-
-    if (isdigit(octstr_get_char(*address, pos)) && pos >= 0) {
-        --pos;
-        ++i;
-    } else {
-        return -2;
-    }
-    
-    while (i <= 3 && ((c = octstr_get_char(*address, pos)) != '.' &&  c != '=')
-            && pos >= 0) {
-        if (isdigit(c)) {
-	    --pos;
-            ++i;
-        } else {
-	    return -2;
-        }
-    }
-
-    pos = handle_two_terminators(address, pos, '.', '=', c, i, 3);
-
-    return pos;
-}
-
-static long parse_ipv4(Octstr **address, long pos)
-{
-    long i;
-
-    if ((pos = parse_ipv4_fragment(address, pos)) < 0) 
-        return -2;
-
-    i = 1;
-
-    while (i <= 3 && octstr_get_char(*address, pos) != '=' && pos >= 0) {
-        pos = parse_ipv4_fragment(address, pos);
-        ++i;
-    }
-
-    return pos;
-}
-
-static long parse_ipv6_fragment(Octstr **address, long pos) {
-    long i;
-    unsigned char c;
-
-    i = 0;
-
-    if (isxdigit(octstr_get_char(*address, pos)) && pos >= 0) {
-        --pos;
-        ++i;
-    } else {
-        return -2;
-    }
-
-    c = '=';
-
-    while (i <= 4 && ((c = octstr_get_char(*address, pos)) != ':' && c != '=')
-            && pos >= 0) {
-        if (isxdigit(c)) {
-	    --pos;
-            ++i;
-        } else {
-	    return -2;
-        }
-    }
-
-    pos = handle_two_terminators(address, pos, ':', '=', c, i, 4);
-
-    return pos;
-}
-
-static long parse_ipv6(Octstr **address, long pos) 
-{
-    long i;
-
-    if ((pos = parse_ipv6_fragment(address, pos)) < 0)
-        return -2;
-
-    i = 1;
-
-    while (i <= 7 && pos >= 0) {
-        pos = parse_ipv6_fragment(address, pos);
-        ++i;
-    }
-
-    return pos;
-}
-
-/*
- * Note that we parse backwards. First we create a window of three characters
- * (representing a possible escaped character). If the first character of the 
- * window is not escape, we handle the last character and move the window one
- * character backwards; if it is, we handle escaped sequence and create a new
- * window. If we cannot create a window, rest of characters are unescaped.
- */
-static long parse_escaped_value(Octstr **address, long pos) 
-{
-    int ret;
-
-    if (create_peek_window(address, &pos) == 0)
-         if ((pos = rest_unescaped(address, pos)) == -2)
-             return -2;
-
-    while (octstr_get_char(*address, pos) != '=' && pos >= 0) {
-        if ((ret = issafe(address, pos)) == 1) {
-	    pos = accept_safe(address, pos);
-
-        } else if (ret == 0) {
-	    if ((pos = accept_escaped(address, pos)) < 0)
-                return -2;  
-            if (create_peek_window(address, &pos) == 0)
-                if ((pos = rest_unescaped(address, pos)) == -2)
-                    return -2;
-        }
-    }
-
-    pos = drop_character(address, pos);
-
-    return pos;
-}
-
-static long parse_client_specifier(Octstr **address, long pos)
-{
-    Octstr *type_value;
-
-    type_value = octstr_create("");
-
-    if ((pos = parse_type(address, &type_value, pos)) < 0) {
-        goto parse_error;
-    }
-
-    pos = drop_character(address, pos);
-
-    if ((pos = parse_constant("/TYPE", address, pos)) < 0) {
-        goto parse_error;
-    }
-
-    if (octstr_compare(type_value, octstr_imm("USER")) == 0)
-        goto not_implemented;
-
-    if ((pos = parse_ext_qualifiers(address, pos, type_value)) < 0)
-        goto parse_error;
-
-    if (octstr_compare(type_value, octstr_imm("PLMN")) == 0) {
-        pos = parse_global_phone_number(address, pos);
-    }
-
-    else if (octstr_compare(type_value, octstr_imm("IPv4")) == 0) {
-        pos = parse_ipv4(address, pos);
-    }
-
-    else if (octstr_compare(type_value, octstr_imm("IPv6")) == 0) {
-        pos = parse_ipv6(address, pos);
-    }
-
-    else if (wina_bearer_identifier(type_value)) {
-        pos = parse_escaped_value(address, pos); 
-    }    
-
-    else
-        goto parse_error; 
-
-    octstr_destroy(type_value);
-    return pos;
-
-not_implemented:
-    octstr_destroy(type_value);
-    return -1;
-
-parse_error:
-    octstr_destroy(type_value);
-    return -2;
-}
-
-static long parse_constant(const char *field_name, Octstr **address, long pos)
-{
-    long i;    
-    size_t size;
-
-    size = strlen(field_name);
-    i = 0;
-    
-    while (octstr_get_char(*address, pos - i)  == field_name[size-1 - i] && 
-            i <  size) {
-        ++i;
-    }
-
-    while (octstr_get_char(*address, pos) != field_name[0] && pos >= 0) {
-        pos = drop_character(address, pos);
-    }
-
-    pos = drop_character(address, pos);    
-
-    if (pos < 0 || i != size) {
-        return -2;
-    }
-
-    return pos;
-}
-
-static long parse_wappush_client_address(Octstr **address, long pos)
-{
-    if ((pos = parse_client_specifier(address, pos)) < 0) {
-        return pos;
-    }
-
-    pos = parse_constant("WAPPUSH", address, pos);
-    
-    return pos;
-}
-
-/*
- * We are not interested of ppg specifier, but we must check its format.
- */
-static long parse_ppg_specifier(Octstr **address, long pos)
-{
-    if (pos >= 0) {
-        pos = parse_dom_fragment(address, pos);
-    }
-
-    while (octstr_get_char(*address, pos) != '@' && pos >= 0) {
-        if (octstr_get_char(*address, pos) == '.') {
-	    octstr_delete(*address, pos, 1);
-            --pos;
-        } else
-	    return -2;
-
-        pos = parse_dom_fragment(address, pos);
-    } 
-
-    pos = drop_character(address, pos);
-
-    if (octstr_get_char(*address, pos) == '/' && pos >= 0) {
-        octstr_delete(*address, pos, 1);
-        if (pos > 0)
-            --pos;
-    }
-
-    if (pos < 0)
-       return -2;
-
-    return pos;
-}
-
-static long parse_client_address(Octstr **address)
-{
-    long pos;
-
-    pos = octstr_len(*address) - 1;
-/*
- * Delete first separator, if there is one. This will help our parsing later.
- */
-    if (octstr_get_char(*address, 0) == '/')
-        octstr_delete(*address, 0, 1);
-
-    if ((pos = parse_ppg_specifier(address, pos)) < 0) {
-        return -2;
-    }
-
-    pos = parse_wappush_client_address(address, pos);
-    
-    return pos;
-}
-
 /*
  * We exchange here server and client addresses and ports, because our WDP,
  * written for pull, exchange them, too. Similarly server address INADDR_ANY is
@@ -2363,19 +1762,13 @@ static long parse_client_address(Octstr **address)
 static WAPAddrTuple *set_addr_tuple(Octstr *address, long cliport, 
                                     long servport)
 {
-    Octstr *cliaddr,
-           *servaddr;
-    int ret;
+    Octstr *cliaddr;
     WAPAddrTuple *tuple;
     
     gw_assert(address);
 
-    if ((ret = parse_client_address(&address)) < 0)
-        return NULL;
-
-    servaddr = address;
     cliaddr = octstr_imm("0.0.0.0");
-    tuple = wap_addr_tuple_create(servaddr, cliport, cliaddr, servport);
+    tuple = wap_addr_tuple_create(address, cliport, cliaddr, servport);
 
     return tuple;
 }
@@ -2386,7 +1779,6 @@ static WAPAddrTuple *set_addr_tuple(Octstr *address, long cliport,
  * Otherwise (regardless of it being an URI or assigned code) we simply pass 
  * it forward.
  */
-#define NUMBER_OF_WINA_URIS 4
 
 static char *wina_uri[] =
 {   "*",
@@ -2394,6 +1786,8 @@ static char *wina_uri[] =
     "wml.ua",
     "push.mms"
 };
+
+#define NUMBER_OF_WINA_URIS sizeof(wina_uri)/sizeof(wina_uri[0])
 
 static void parse_appid_header(Octstr **appid_content)
 {
@@ -2441,6 +1835,12 @@ static WAPAddrTuple *addr_tuple_change_cliport(WAPAddrTuple *tuple, long port)
 
     return dubble;
 }
+
+
+
+
+
+
 
 
 
