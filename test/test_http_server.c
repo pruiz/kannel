@@ -14,8 +14,8 @@
 
 #define MAX_THREADS 1024
 
-Octstr *whitelist,
-       *blacklist;
+Octstr *whitelist, *blacklist;
+Octstr *reply_text = NULL;
 
 int verbose, run, port;
 int ssl = 0;   /* indicate if SSL-enabled server should be used */
@@ -54,7 +54,7 @@ static void client_thread(void *arg)
         }
     
         if (arg == NULL) {
-            reply_body = octstr_create("Sent.");
+            reply_body = octstr_duplicate(reply_text);
             reply_type = octstr_create("Content-Type: text/plain; "
                                        "charset=\"UTF-8\"");
         } else {
@@ -151,8 +151,41 @@ static void client_thread(void *arg)
 }
 
 static void help(void) {
-    info(0, "Usage: test_http_server [-v loglevel][-l logfile][-f file][-h][-q]"
-            "[-p port][-s][-c ssl_cert][-k ssl_key][-w white_list][b blacklist]\n");
+    info(0, "Usage: test_http_server [options...]");
+    info(0, "where options are:");
+    info(0, "-v number");
+    info(0, "    set log level for stderr logging");
+    info(0, "-l logfile");
+    info(0, "    log all output to a file");
+    info(0, "-f file");
+    info(0, "    use a specific file content for the response body");
+    info(0, "-r reply_text");
+    info(0, "    defines which static text to use for replies");
+    info(0, "-h");
+    info(0, "    provides this usage help information");
+    info(0, "-q");
+    info(0, "    don't be too verbose with output");
+    info(0, "-p port");
+    info(0, "    bind server to a specific port");
+    info(0, "-s");
+    info(0, "    be an SSL-enabled server");
+    info(0, "-c ssl_cert");
+    info(0, "    file of the SSL certificate to use");
+    info(0, "-k ssl_key");
+    info(0, "    file of the SSL private key to use");
+    info(0, "-w white_list");
+    info(0, "    file that is used for whitelist");
+    info(0, "-b black_list");
+    info(0, "    file that is used for blacklist");
+    info(0, "specific URIs with special functions are:");
+    info(0, "  /quite - shutdown the HTTP server");
+    info(0, "  /whitelist - provides the -w whitelist as response");
+    info(0, "  /blacklist - provides the -b blacklist as response");
+    info(0, "  /save - save a HTTP POST request body to a file /tmp/body.<pid>.<n>");
+    info(0, "    where <pid> is the process id and <n> is the received request number");
+    info(0, "  /redirect/ - respond with HTTP 302 and the location /redirect/<pid>");
+    info(0, "    where <pid> is the process id. if a cgivar loop=<something> is given");
+    info(0, "    then HTTP reponses will end up in a loop.");
 }
 
 static void sigterm(int signo) {
@@ -195,7 +228,9 @@ int main(int argc, char **argv) {
     white_asked = 0;
     black_asked = 0;
 
-    while ((opt = getopt(argc, argv, "hqv:p:t:f:l:sc:k:b:w:")) != EOF) {
+    reply_text = octstr_create("Sent.");
+
+    while ((opt = getopt(argc, argv, "hqv:p:t:f:l:sc:k:b:w:r:")) != EOF) {
 	switch (opt) {
 	case 'v':
 	    log_set_output_level(atoi(optarg));
@@ -261,6 +296,11 @@ int main(int argc, char **argv) {
             blacklist_name = "";
         black_asked = 1;
 	break;
+
+	case 'r':
+	    octstr_destroy(reply_text);
+        reply_text = octstr_create(optarg);
+        break;
 
 	case '?':
 	default:
