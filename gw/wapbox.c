@@ -77,7 +77,7 @@ int main(int argc, char **argv) {
 	if (argc > 1)
 		read_config(argv[1]);
 	else
-		read_config("wapbox.conf");
+		read_config("wapbox.wapconf");
 
 	bbsocket = connect_to_bearer_box();
 	for (;;) {

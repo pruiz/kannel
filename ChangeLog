@@ -1,3 +1,7 @@
+Wed Nov 24 12:30:46 1999  Lars Wirzenius  <liw@wapit.com>
+
+	* gw/wapbox.c: wapbox.conf renamed to wapbox.wapconf.
+
 1999-11-23 Aarno Syvänen <syvanen@wapit.com>
 
 	* header files: fixed few bugs in files wtp_machine-decl.h and 
