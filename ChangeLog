@@ -1,3 +1,20 @@
+2000-03-20  Tuomas Luttinen  <tuo@wapit.com>
+
+	* gw/wml_compiler.h: Minor code review fixes. The third argument of 
+	wml_compile (Octstr **scripts) were deleted.
+
+	* gw/wml_compiler.c: Lots of little code review fixes, yet more to 
+	come. Added a patch to remove a bug in the variable handling. 
+	Functions text_strip_blank and text_shrink_blank moved into the 
+	octstr.[ch].
+
+	* gw/wsp_http.c: Changed to use wml_compile with two arguments.
+
+	* gwlib/octstr.[ch]: octstr_strip_blank and octstr_shrink_blank
+	moved from wml_compiler.c.
+
+	* test/wml_tester.c: Changed to use wml_compile with two arguments.
+
 2000-03-20    <Kalle Marjola <rpr@wapit.com>>
 
 	* gwlib/http.c: fixed bug in header_pack pointed out by Paul
@@ -96,7 +113,7 @@ Fri Mar 17 10:55:37 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* README: Added notes of smsc_interface.def
 
-2000-03-10  Tuomas Luttinen  <tuo@tuo.wapit.fi>
+2000-03-10  Tuomas Luttinen  <tuo@wapit.com>
 
 	* gw/wml_compiler.c (parse_octet_string): bug fix with parsing
 	$-characters. Tried to allocate a huge block and wapbox went down
@@ -186,7 +203,7 @@ Wed Mar  8 16:53:24 2000  Lars Wirzenius  <liw@wapit.com>
 	not cause problems with 8-bit characters on platforms where the
 	char type is signed.
 
-2000-03-08  Tuomas Luttinen  <tuo@tuo.wapit.fi>
+2000-03-08  Tuomas Luttinen  <tuo@wapit.com>
 
 	* gw/wml_compiler.c: Bug fix: no more squares (ie tabulator
 	characters) in the compiler output.
@@ -209,7 +226,7 @@ Tue Mar  7 16:40:49 CET 2000	Patrick Schaaf	<bof@bof.de>
 	headers. This gets rid of the duplicate User-Agent: header, which
 	convinces some sites to send wml instead of html.
 
-2000-03-07  Tuomas Luttinen  <tuo@tuo.wapit.fi>
+2000-03-07  Tuomas Luttinen  <tuo@wapit.com>
 
 	* gw/wml_compiler.c (text_shrink_blank): A little bug fix. The first
 	white space character in a row of them is now converted into a space,
@@ -297,7 +314,7 @@ Thu Mar  2 12:36:22 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* wmlscript/wsgram.y: Fixed empty statements.
 
-2000-02-28  Tuomas Luttinen  <tuo@tuo.wapit.fi>
+2000-02-28  Tuomas Luttinen  <tuo@wapit.com>
 
 	* gwlib/octstr.c&h: octstr_create(char *)->octstr_create(const char *)
 	* gw/wml_compiler.c: Bug fixes: entities are now supported, no more
@@ -323,7 +340,7 @@ Sat Feb 26 11:29:10 CET 2000	Patrick Schaaf	<bof@bof.de>
 
 	* gwlib/http.c: modified http_post.c. Sending entity length.
 
-2000-02-25  Tuomas Luttinen  <tuo@tuo.wapit.fi>
+2000-02-25  Tuomas Luttinen  <tuo@wapit.com>
 
 	* gw/wml_compiler.c : Now first version of the new compiler with
 	variable support. The WML document is first stripped from extra
@@ -352,7 +369,7 @@ Sat Feb 26 11:29:10 CET 2000	Patrick Schaaf	<bof@bof.de>
 	* gw/smsbox.c: changed default configuration file to be as
 	'smsbox.smsconf'
 
-2000-02-21  Tuomas Luttinen  <tuo@tuo.wapit.fi>
+2000-02-21  Tuomas Luttinen  <tuo@wapit.com>
 
 	* gw/wml_compiler.c: Some more bug fixes.
 	(parse_document): Check added for an empty document (== null pointer).
@@ -380,7 +397,7 @@ Mon Feb 21 15:20:39 2000  Lars Wirzenius  <liw@wapit.com>
 	causes warning message. smsc_emi.c still uses 'backup-port' name,
 	but life is hard.
 
-2000-02-21  Tuomas Luttinen  <tuo@tuo.wapit.fi>
+2000-02-21  Tuomas Luttinen  <tuo@wapit.com>
 
 	* gwlib/octstr.c: octstr_ncompare doens't anymore check whether
 	ostr1 is bigger or smaller than ostr2. It should not anyway.
@@ -413,7 +430,7 @@ Fri Feb 18 16:40:44 2000  Lars Wirzenius  <liw@wapit.com>
 	* gw/wsp_http.c: Remove temporary files. Oops.
 
 
-2000-02-18  Tuomas Luttinen  <tuo@tuo.wapit.fi>
+2000-02-18  Tuomas Luttinen  <tuo@wapit.com>
 
 	* gw/wml_compiler.c (parse_text): Empty strings are no more coded.
 	* gw/wml_compiler.c (parse_attribute): Fixed bug with the coded_length.
@@ -430,7 +447,7 @@ Thu Feb 17 20:27:54 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* test/wml_tester.c: Fixed so that it always has a main function.
 
-2000-02-17  Tuomas Luttinen  <tuo@tuo.wapit.fi>
+2000-02-17  Tuomas Luttinen  <tuo@wapit.com>
 
 	* gwlib/octstr.h&c: argument changed from char * to const char * on
 	functions octstr_create_tolower and octstr_create_from_data.
@@ -452,7 +469,7 @@ Thu Feb 17 17:35:11 2000  Lars Wirzenius  <liw@wapit.com>
 	* gw/bearerbox.c, gw/bb.h: added max thread BB_DEFAULT.. value,
 	instead of hardcoded number
 
-2000-02-17  Tuomas Luttinen  <tuo@tuo.wapit.fi>
+2000-02-17  Tuomas Luttinen  <tuo@wapit.com>
 
 	* gw/wml_compiler.c (parse_document): Standard headers now :
 	WBXML version 1.1, WML 1.1 Public ID, Charset=ISO-8859-1,
@@ -518,7 +535,7 @@ Tue Feb 15 14:14:11 2000  Lars Wirzenius  <liw@wapit.com>
 	Also changed all calls to debug, to make things compile. The place
 	is "xxx" everywhere for now, will start changing that next.
 
-2000-02-15  Tuomas Luttinen  <tuo@tuo.wapit.fi>
+2000-02-15  Tuomas Luttinen  <tuo@wapit.com>
 
 	* gw/wml_compiler.c (parse_attribute): A little more stable compiler;
 	doesn't crash when founds an empty attribute text value.
@@ -527,7 +544,7 @@ Tue Feb 15 11:16:18 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* gw/wml_compiler.c: #include "config.h".
 
-2000-02-15  Tuomas Luttinen  <tuo@tuo.wapit.fi>
+2000-02-15  Tuomas Luttinen  <tuo@wapit.com>
 
 	* gw/wml_compiler.c (wml_compile): A little bug fix. (**wml_scripts
 	now exists, so caller won't try to delete unexistent octet string.)
@@ -546,7 +563,7 @@ Mon Feb 14 16:56:14 2000  Lars Wirzenius  <liw@wapit.com>
 	* gwlib/octstr.c: Added "return -1" at end, since something had
 	to be returned and it wasn't returning anything at the moment.
 
-2000-02-14  Tuomas Luttinen  <tuo@tuo.wapit.fi>
+2000-02-14  Tuomas Luttinen  <tuo@wapit.com>
 
 	* gw/wml_compiler.c: At the moment does not accept variables at all.
 
@@ -597,7 +614,7 @@ Thu Feb  3 18:40:38 2000  Lars Wirzenius  <liw@wapit.com>
 	feeded to the state machine. Some redundant code added, perhaps, but
 	this is simpler than changing all wtp_send_abort calls.
 
-2000-02-02  Tuomas Luttinen  <tuo@tuo.wapit.fi>
+2000-02-02  Tuomas Luttinen  <tuo@wapit.com>
 
 	* gw/wml_compiler.c (parse_attribute): Little bug fix: end tag added
 	to attribute lists.
@@ -611,7 +628,7 @@ Thu Feb  3 18:40:38 2000  Lars Wirzenius  <liw@wapit.com>
        * gw/smsc.c, gw/smsc_cimd.c, gw/smsc_emi.c, gw/wml.c, utils/OTAbitmap.c,
          utils/wbmp.c: all bzero functions changed to memset.
 
-2000-02-02  Tuomas Luttinen  <tuo@tuo.wapit.fi>
+2000-02-02  Tuomas Luttinen  <tuo@wapit.com>
 
 	* gw/wml_compiler.c : Basic functions in order, can be used
 	with basic WML pages without variables.
@@ -651,7 +668,7 @@ Wed Feb  2 13:52:14 2000  Lars Wirzenius  <liw@wapit.com>
 	* gw/wapbox.c: fixed race condition when starting empty_queue_thread.
 	BTW, that function seems to burn CPU like hell.
 
-2000-01-28  Tuomas Luttinen  <tuo@tuo.wapit.fi>
+2000-01-28  Tuomas Luttinen  <tuo@wapit.com>
 
 	* gw/wml_compiler.c : Some little fixes.
 	* test/wml_tester.c : Some bug fixes, no more core dump, not
@@ -707,7 +724,7 @@ Thu Jan 27 20:09:23 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* gw/wapbox.c: Call wtp_init and wsp_init at startup.
 
-2000-01-27  Tuomas Luttinen  <tuo@tuo.wapit.fi>
+2000-01-27  Tuomas Luttinen  <tuo@wapit.com>
 
 	* gw/wml_compiler.c : some little bug fixes
 

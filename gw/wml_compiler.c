@@ -1,3 +1,15 @@
+/*
+ * wml_compiler.c - compiling WML to WML binary
+ *
+ * This is an implemention for WML compiler for compiling the WML text 
+ * format to WML binary format, which is used for transmitting the 
+ * decks to the mobile terminal to decrease the use of the bandwidth.
+ *
+ *
+ * Tuomas Luttinen for WapIT Ltd.
+ */
+
+
 #include "config.h"
 
 /* XXX The #ifdef HAVE_LIBXML is a stupid hack to make this not break things
@@ -7,7 +19,22 @@ until libxml is installed everywhere we do development. --liw */
 int wml_compiler_not_implemented = 1;
 #else
 
+
 #include <assert.h>
+#include <time.h>
+#include <ctype.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <string.h>
+
+#include <gnome-xml/xmlmemory.h>
+#include <gnome-xml/parser.h>
+#include <gnome-xml/tree.h>
+#include <gnome-xml/debugXML.h>
+
+#include "gwlib/gwlib.h"
 #include "wml_compiler.h"
 
 /***********************************************************************
@@ -269,51 +296,34 @@ int wml_state_tag_code_page;
  */
 
 
-int parse_document(xmlDocPtr document);
+static int parse_document(xmlDocPtr document);
 
-int parse_node(xmlNodePtr node);
-int parse_element(xmlNodePtr node);
-int parse_attribute(xmlAttrPtr attr);
-int parse_text(xmlNodePtr node);
-int parse_octet_string(Octstr *ostr);
+static int parse_node(xmlNodePtr node);
+static int parse_element(xmlNodePtr node);
+static int parse_attribute(xmlAttrPtr attr);
+static int parse_text(xmlNodePtr node);
+static int parse_octet_string(Octstr *ostr);
 
-int parse_end(void);
+static int parse_end(void);
 
 
-unsigned char element_check_content(xmlNodePtr node);
+static unsigned char element_check_content(xmlNodePtr node);
 
 /*
  * Variable functions. These functions are used to find and parse variables.
  */
 
-int parse_variable(Octstr *text, int start, Octstr **output);
-Octstr *get_variable(Octstr *text, int start);
-var_esc_t check_variable_syntax(Octstr *variable);
+static int parse_variable(Octstr *text, int start, Octstr **output);
+static Octstr *get_variable(Octstr *text, int start);
+static var_esc_t check_variable_syntax(Octstr *variable);
 
-
-/* Functions to get rid of extra white space. */
-
-void text_strip_blank(Octstr *text);
-void text_shrink_blank(Octstr *text);
 
 /* Output into the wbxml_string. */
 
-int output_char(char byte);
-int output_octet_string(Octstr *ostr);
-int output_plain_octet_string(Octstr *ostr);
-Octstr *output_variable(Octstr *variable, var_esc_t escaped);
-
-/*
-void parse_cdata(xmlNodePtr node);
-void parse_entity_ref(xmlNodePtr node);
-void parse_entity(xmlNodePtr node);
-void parse_pi(xmlNodePtr node);
-void parse_comment(xmlNodePtr node);
-void parse_document_type(xmlNodePtr node);
-void parse_document_frag(xmlNodePtr node);
-void parse_notation(xmlNodePtr node);
-void parse_html(xmlNodePtr node);
-*/
+static int output_char(char byte);
+static int output_octet_string(Octstr *ostr);
+static int output_plain_octet_string(Octstr *ostr);
+static Octstr *output_variable(Octstr *variable, var_esc_t escaped);
 
 
 
@@ -323,8 +333,7 @@ void parse_html(xmlNodePtr node);
  */
 
 int wml_compile(Octstr *wml_text,
-		Octstr **wml_binary,
-		Octstr **wml_scripts)
+		Octstr **wml_binary)
 {
   int i, ret = 0;
   size_t size;
@@ -332,7 +341,7 @@ int wml_compile(Octstr *wml_text,
 
   /* Remove the extra space from start and the end of the WML Document. */
 
-  text_strip_blank(wml_text);
+  octstr_strip_blank(wml_text);
 
   /* Check the WML-code for \0-characters. */
 
@@ -344,14 +353,15 @@ int wml_compile(Octstr *wml_text,
       if (wml_c_text[i] == '\0')
 	{
 	  error(0, 
-		"WML compiler: Compiling error in WML text.\n\\0 character found in the middle of the buffer.");
+		"WML compiler: Compiling error in WML text. "
+		"\\0 character found in the middle of the buffer.");
 	  return -1;
 	}
     }
 
   /* 
    * An empty octet string for the binary output is created, the wml source
-   * is parsed into a parsing tree and the tree is then parsed into binary.
+   * is parsed into a parsing tree and the tree is then compiled into binary.
    */
 
   wbxml_string = octstr_create_empty();
@@ -359,7 +369,6 @@ int wml_compile(Octstr *wml_text,
   ret = parse_document(xmlParseMemory(wml_c_text, size+1));
 
   *wml_binary = octstr_duplicate(wbxml_string);
-  *wml_scripts = octstr_create_empty();
 
   return ret;
 }
@@ -381,7 +390,7 @@ int wml_compile(Octstr *wml_text,
  * next child of the node one level upwards.
  */
 
-int parse_node(xmlNodePtr node)
+static int parse_node(xmlNodePtr node)
 {
   int status = 0;
 
@@ -393,43 +402,9 @@ int parse_node(xmlNodePtr node)
   case XML_TEXT_NODE:
     status = parse_text(node);
     break;
-    /* ignored at this state of development 
-  case XML_DOCUMENT_NODE:
-    debug("wap.wml", 0, "WML compiler: Parsing document node.");
-    status = parse_document(node);
-    break;
-  case XML_ATTRIBUTE_NODE:
-    debug("wap.wml", 0, "WML compiler: Parsing attribute node.");
-    status = parse_attribute(node);
-    break;
-  case XML_CDATA_SECTION_NODE:
-    parse_cdata(node);
-    break;
-  case XML_ENTITY_REF_NODE:
-    parse_entity_ref(node);
-    break;
-  case XML_ENTITY_NODE:
-    parse_entity(node);
-    break;
-  case XML_PI_NODE:
-    parse_pi(node);
-    break;
-  case XML_COMMENT_NODE:
-    * status = parse_comment(node);
-       Comments are ignored. *
-    break;
-  case XML_DOCUMENT_TYPE_NODE:
-    parse_document_type(node);
-    break;
-  case XML_DOCUMENT_FRAG_NODE:
-    parse_document_frag(node);
-    break;
-  case XML_NOTATION_NODE:
-    parse_notation(node);
-    break;
-  case XML_HTML_DOCUMENT_NODE:
-    parse_html(node);
-    break; */
+    /*
+     * 
+     */
   default:
     break;
   }
@@ -476,7 +451,7 @@ int parse_node(xmlNodePtr node)
  * character set values into start of the wbxml_string.
  */
 
-int parse_document(xmlDocPtr document)
+static int parse_document(xmlDocPtr document)
 {
   int ret = 0;
 
@@ -524,7 +499,7 @@ int parse_document(xmlDocPtr document)
  * and -1 for an error.
  */
 
-int parse_element(xmlNodePtr node)
+static int parse_element(xmlNodePtr node)
 {
   int i, add_end_tag = 0;
   unsigned char wbxml_hex, status_bits;
@@ -590,7 +565,7 @@ int parse_element(xmlNodePtr node)
  * (0x80) and another for content (0x40) added into one octet.
  */
 
-unsigned char element_check_content(xmlNodePtr node)
+static unsigned char element_check_content(xmlNodePtr node)
 {
   unsigned char status_bits = 0x00;
 
@@ -613,7 +588,7 @@ unsigned char element_check_content(xmlNodePtr node)
  */
 
 
-int parse_attribute(xmlAttrPtr attr)
+static int parse_attribute(xmlAttrPtr attr)
 {
   int i, j, status = 0, coded_length = 0;
   unsigned char wbxml_hex = 0x00;
@@ -714,7 +689,7 @@ int parse_attribute(xmlAttrPtr attr)
  * parse_end - adds end tag to an element. Returns 0 success, -1 for error.
  */
 
-int parse_end(void)
+static int parse_end(void)
 {
   return output_char(END);
 }
@@ -726,7 +701,7 @@ int parse_end(void)
  * This function parses a text node. 
  */
 
-int parse_text(xmlNodePtr node)
+static int parse_text(xmlNodePtr node)
 {
   int ret;
   /*  var_allow_t var_allowed = NOT_CHECKED; */
@@ -734,8 +709,8 @@ int parse_text(xmlNodePtr node)
 
   temp = octstr_create(node->content);
 
-  text_shrink_blank(temp);
-  text_strip_blank(temp);
+  octstr_shrink_blank(temp);
+  octstr_strip_blank(temp);
 
   if (octstr_len(temp) == 0)
     ret = 0;
@@ -761,7 +736,7 @@ int parse_text(xmlNodePtr node)
  * Parsed variable is returned as an octet string in Octstr **output.
  */
 
-int parse_variable(Octstr *text, int start, Octstr **output)
+static int parse_variable(Octstr *text, int start, Octstr **output)
 {
   var_esc_t esc;
   int ret;
@@ -799,7 +774,7 @@ int parse_variable(Octstr *text, int start, Octstr **output)
  * int start.
  */
 
-Octstr *get_variable(Octstr *text, int start)
+static Octstr *get_variable(Octstr *text, int start)
 {
   Octstr *var = NULL;
   size_t end;
@@ -820,8 +795,8 @@ Octstr *get_variable(Octstr *text, int start)
       end = octstr_search_char_from(text, ')', start);
       if (end == -1)
 	error(0, "WML compiler: braces opened, but not closed for a variable.");
-      else if (end - start == 1)
-	error(0, "WML compiler: empty braces wihtout variable.");
+      else if (end - start == 0)
+	error(0, "WML compiler: empty braces without variable.");
       else
 	var = octstr_copy(text, start, end - start);
     }
@@ -846,7 +821,7 @@ Octstr *get_variable(Octstr *text, int start)
  * escepe mode it has. Octstr *variable contains the variable string.
  */
 
-var_esc_t check_variable_syntax(Octstr *variable)
+static var_esc_t check_variable_syntax(Octstr *variable)
 {
   Octstr *escaped, *noesc, *unesc, *escape;
   char *buf;
@@ -922,7 +897,7 @@ var_esc_t check_variable_syntax(Octstr *variable)
  * is checked for variables. Returns 0 for success, -1 for error.
  */
 
-int parse_octet_string(Octstr *ostr)
+static int parse_octet_string(Octstr *ostr)
 {
   Octstr *output, *temp1, *temp2 = NULL, *var;
   int var_len;
@@ -1011,21 +986,11 @@ int parse_octet_string(Octstr *ostr)
 
 
 /*
-int parse_pi(xmlNodePtr node)
-{
-  output_char(PI);
-
-  return 1;
-}
-*/
-
-
-/*
  * output_char - output a character into wbxml_string.
  * Returns 0 for success, -1 for error.
  */
 
-int output_char(char byte)
+static int output_char(char byte)
 {
   Octstr *temp;
 
@@ -1045,7 +1010,7 @@ int output_char(char byte)
  * inline string. Returns 0 for success, -1 for an error.
  */
 
-int output_octet_string(Octstr *ostr)
+static int output_octet_string(Octstr *ostr)
 {
   if (output_char(STR_I) == 0)
     if (output_plain_octet_string(ostr) == 0)
@@ -1062,7 +1027,7 @@ int output_octet_string(Octstr *ostr)
  * Returns 0 for success, -1 for an error.
  */
 
-int output_plain_octet_string(Octstr *ostr)
+static int output_plain_octet_string(Octstr *ostr)
 {
   Octstr *temp;
   if ((temp = octstr_cat(wbxml_string, ostr)) == NULL)
@@ -1081,7 +1046,7 @@ int output_plain_octet_string(Octstr *ostr)
  * that is returned to the caller. Return NULL for an error.
  */
 
-Octstr *output_variable(Octstr *variable, var_esc_t escaped)
+static Octstr *output_variable(Octstr *variable, var_esc_t escaped)
 {
   char ch;
   char cha[2];
@@ -1118,71 +1083,6 @@ Octstr *output_variable(Octstr *variable, var_esc_t escaped)
     error(0, "WML compiler: could not output variable name.");
 
   return ret;
-}
-
-
-
-/*
- * text_strip_blank - strips white space from start and end of a octet
- * string.
- */
-
-void text_strip_blank(Octstr *text)
-{
-  int start = 0, end, len = 0;
-
-  /* Remove white space from the beginning of the text */
-  while (isspace(octstr_get_char(text, start)))
-    start ++;
-
-  if(start > 0)
-    octstr_delete(text, 0, start);
-
-  /* and from the end. */
-
-  if ((len = octstr_len(text)) > 0)
-    {
-      end = len = len - 1;
-
-      while (isspace(octstr_get_char(text, end)))
-	end--;
-
-      octstr_delete(text, end + 1, len - end);
-    }
-
-  return;
-}
-
-
-/*
- * text_shrink_blank - shrinks following white space characters into one 
- * white space.
- */
-
-void text_shrink_blank(Octstr *text)
-{
-  int i, j, end;
-
-  end = octstr_len(text);
-
-  /* Shrink white spaces to one  */
-  for(i = 0; i < end; i++)
-    {
-      if(isspace(octstr_get_char(text, i)))
-	{
-	  /* Change the remaining space into single space. */
-	  if(octstr_get_char(text, i) != ' ')
-	    octstr_set_char(text, i, ' ');
-
-	  j = i = i + 1;
-	  while (isspace(octstr_get_char(text, j)))
-	    j ++;
-	  if (j - i > 1)
-	    octstr_delete(text, i, j - i);
-	}
-    }
-
-  return;
 }
 
 
