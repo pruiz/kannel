@@ -111,15 +111,17 @@ static void format(char *buf, const char *fmt)
 
 void alog(const char *fmt, ...)
 {
-    char buf[FORMAT_SIZE];
+    char *buf;
     va_list args;
 
     if (file == NULL)
 	return;
 
+    buf = gw_malloc(FORMAT_SIZE + 1);
     format(buf, fmt);
     va_start(args, fmt);
     vfprintf(file, buf, args);
     fflush(file);
     va_end(args);
+    gw_free(buf);
 }

@@ -164,7 +164,7 @@ void log_open(char *filename, int level)
 }
 
 
-#define FORMAT_SIZE (10*1024)
+#define FORMAT_SIZE (1024)
 static void format(char *buf, int level, const char *place, int e, 
 		   const char *fmt)
 {
