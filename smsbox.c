@@ -125,6 +125,9 @@ static char *obey_request(URLTranslation *trans, Msg *sms)
 	replytext[0] = '\0';
 	len = fread( replytext, sizeof(char), 1024*10, f);
 	fclose(f);
+	replytext[len] = '\0';
+
+	debug(0, "pattern '%s' replytext '%s'", pattern, replytext);
 	return strdup(replytext);
     }
     /* URL */

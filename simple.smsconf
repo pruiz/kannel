@@ -28,6 +28,12 @@ split-suffix = "+"
 keyword = nop
 text = "You asked nothing and I did it!"
 
+keyword = echo
+text = "Echo to %p (%a)"
+
+keyword = motd
+file = "/etc/motd"
+
 keyword = default
 text = "No service defined"
 

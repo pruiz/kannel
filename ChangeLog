@@ -1,3 +1,13 @@
+1999-11-15    <rpr@rpr.wapit.com>
+
+	* smsbox.smsconf, simple.smsconf: renamed previous smsbox.conf as
+	.smsconf so that they are distinguished from bearerbox
+	configuration
+
+	* smsbox.c: fixing 'file' urltransh-requests. Still some bugs
+
+	* bearerbox.c: WAP-packets are sent onward.. routing still missing
+
 Mon Nov 15 12:04:37 1999  Lars Wirzenius  <liw@wapit.com>
 
 	* wapbox.c, wapbox.conf: Wrote. This is the main module of

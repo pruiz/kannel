@@ -10,7 +10,8 @@
 #	the machine that runs the bearer box. Name or IP
 #
 # bearerbox-port = (port number)
-#	bearerbox port number for SMS BOX connections
+#	bearerbox port number for SMS BOX connections (set in bearerbox
+#	 configuration file)
 #
 # sendsms-port = (port number)
 #	number to accept send-sms queries
@@ -18,14 +19,14 @@
 #	if not set or 0 or less, no HTTP sendsms supported
 #
 # sms-length = (number)
-#	maximum length of one SMS message. Defaults to 160
+#	maximum length of one SMS message. Defaults to 160 characters
 #
 # pid-file = (file path)
 #       the file in which the pid number of the bearer box is written
 #       if not set, no such a file is written (default = not set)
 #
 # log-file = (file name)
-#	file for logging. This is in _addition_ to possible command
+#	file for logging. This is in addition to possible command
 #	line options (-F). If not set, do not use additional log-file
 #
 # log-level = (verbosity level)
@@ -33,7 +34,9 @@
 #
 # global-sender = (phone number)
 #	faked phone number for sender. Overrun by service faked-sender,
-#	and does not work with all SMS Centers
+#	and does not work with all SMS Centers. For send-sms HTTP requests,
+#	the priority for sender number setting is: 1. faked-sender
+#	2. from-field in send-sms request 3. global-sender
 #
 # Those not present use default values, which are following ones:
 # (read from file bb.h, check that, too)
@@ -57,21 +60,53 @@ log-level = 0
 #
 # aliases = (list) 
 #	possible aliases for the service. Each entry is separated by ';',
-#	like "mail;m;mial;posti;post;p"
+#	like "mail;m;mial;posti;post;p". Not case sensitive.
 #
 # url = (url)
-#	requested URL.
+#	requested URL. The url can include list of parameters, which are
+#	parsed before the url is fetched. Parameters are:
+#	
+#                %s      next word from the SMS message, starting with
+#                        the second one (i.e., the first word, the
+#                        keyword, is not included); problematic characters
+#                        for URLs are encoded (e.g., '+' becomes '%2B')
+#                
+#                %S      same as %s, but '*' is converted to '~' (useful
+#                        when user enters a URL) and URL encoding isn't done
+#                        (all others do URL encode)
+#
+#                %r      words not yet used by %s; e.g., if the message
+#                        is "FOO BAR FOOBAR BAZ", and the has been one %s,
+#                        %r will mean "FOOBAR BAZ"
+#                
+#                %a      all words of the SMS message, including the first
+#                        one
+#                
+#                %t      the time the message was sent, formatted as
+#                        "YYYY-MM-DD HH:MM", e.g., "1999-09-21 14:18"
+#                
+#                %p      the phone number of the sender of the SMS message
+#                
+#                %P      the phone number of the receiver of the SMS message
+#                
+#                %q      like %p, but a leading `00' is replaced with `+'
+#
+#                %Q      like %P, but a leading `00' is replaced with `+'
+#                
 #
 # file = (file-name)
-#	file read from local disc. Only if not url set.
+#	file read from local disc. Only if not url set. All escape codes
+#	in url-fetch are supported here also.
 #
 # text = (text)
-#	predefined text answer. Only if not url or file set.
+#	predefined text answer. Only if not url or file set. Escape codes are
+#	usable here, too.
 #
 # prefix = (prefix)
 # suffix = (suffix) 
 #	stuff in answer that is cut away, only things between prefix
-#	and suffix is left
+#	and suffix is left. In-casesensitive. Matches for the first prefix
+#	and then for first suffix.
 #--
 # username = (name)
 #	instead of service definitions, send sms users can be added. This
@@ -83,10 +118,12 @@ log-level = 0
 #
 #--
 # faked-sender = (phone number)
-#	this number is set as sender. Some SMSCs ignore this
+#	this number is set as sender. Some SMSCs ignore this. This option
+#	overrides all other Gateway sender setting methods.
 #
 # max-messages = (number)
-#	the total maximum of SMSes in reply. Default is 1
+#	the total maximum of SMSes in reply. Default is 1. If the max-messages
+#	is set to 0, no reply is sent, except for error messages.
 #
 # split-chars = (character-list)
 #	allowed characters to split the message split into several messages.
@@ -94,11 +131,16 @@ log-level = 0
 #       included in the previous part
 #
 # split-suffix = (string)
-#	if split, this string is appended to each message except the last one
+#	if the message is split into several ones, this string is appended to 
+#	each message except the last one
 #
 # omit-empty = (number)
 #	if set to other than '0', 'no data' messages are not sent to receiver
+#	in a case of empty reply from the service provider.
 #	
+#
+# Sample services and user:
+#
 username = foo
 password = bar
 
