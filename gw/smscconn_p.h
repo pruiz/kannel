@@ -133,6 +133,12 @@ struct smscconn {
 
     int throughput;     /* message thoughput per sec. to be delivered to SMSC */
 
+    /* Stores rerouting information for this specific smsc-id */
+    int reroute;                /* simply turn MO into MT and process internally */
+    Dict *reroute_by_receiver;  /* reroute receiver numbers to specific smsc-ids */
+    Octstr *reroute_to_smsc;    /* define a smsc-id to reroute to */
+
+
     /* XXX: move rest global data from Smsc here
      */
 
