@@ -1,5 +1,5 @@
 KANNEL 1.x STATUS: 
-  Last modified at [$Id: STATUS,v 1.30 2003-01-06 00:27:32 stolj Exp $]
+  Last modified at [$Id: STATUS,v 1.31 2003-02-05 23:26:37 stolj Exp $]
 
 Release:
 
@@ -103,6 +103,11 @@ Available Patches:
     Message-ID: <FMEKKCFKIGBADHGIJKPJGENPCKAA.afradejas@mediafusion.es>
     Updated: <FMEKKCFKIGBADHGIJKPJAEFECPAA.afradejas@mediafusion.es>
     Status: Stipe -1 (conceptual clash to global-sender?!)
+
+    * CIMD2: rewrite to smscconn style 
+    Posted by: Kalle Marjola <kalle.marjola@netikos.fi>
+    Message-ID: <Pine.LNX.4.44.0209241539470.32671-200000@mail.netikos.fi>
+    Status: Stipe: requested another diff -u patch against current cvs from Kalle.
 
 Open issues:
 
