@@ -234,7 +234,7 @@ static SMPP_PDU *msg_to_pdu(SMPP *smpp, Msg *msg)
 { 
     SMPP_PDU *pdu; 
     char buffer[16];
-    Octstr *relation_UTC_time;
+    Octstr *relation_UTC_time = NULL;
     struct tm gmtime, localtime, tm;
     int gwqdiff;
 
@@ -352,7 +352,8 @@ static SMPP_PDU *msg_to_pdu(SMPP *smpp, Msg *msg)
     if (msg->sms.dlr_mask & (DLR_SUCCESS|DLR_FAIL)) 
         pdu->u.submit_sm.registered_delivery = 1;  
 
-    octstr_destroy(relation_UTC_time);
+    if (relation_UTC_time != NULL)
+        octstr_destroy(relation_UTC_time);
 
     return pdu; 
 } 
