@@ -1,3 +1,9 @@
+2000-02-17  Tuomas Luttinen  <tuo@tuo.wapit.fi>
+
+	* gw/wml_compiler.c (parse_document): Standard headers now :
+	WBXML version 1.1, WML 1.1 Public ID, Charset=ISO-8859-1,
+	String table length=0.
+
 2000-02-17 Aarno Syvänen <syvanen@wapit.com>
 
 	* wtp_tid.c : Fixed a bug in the function tid_cached. Tid_in_window 

@@ -381,15 +381,15 @@ int parse_node(xmlNodePtr node)
     status = parse_element(node);
     break;
   case XML_TEXT_NODE:
-    parse_text(node);
+    status = parse_text(node);
     break;
     /* ignored at this state of development 
   case XML_DOCUMENT_NODE:
-    debug("wap.wml", 0, "WML compiler: Parsing document node.");
+    debug(0, "WML compiler: Parsing document node.");
     status = parse_document(node);
     break;
   case XML_ATTRIBUTE_NODE:
-    debug("wap.wml", 0, "WML compiler: Parsing attribute node.");
+    debug(0, "WML compiler: Parsing attribute node.");
     status = parse_attribute(node);
     break;
   case XML_CDATA_SECTION_NODE:
@@ -431,11 +431,13 @@ int parse_node(xmlNodePtr node)
   switch (status) {
   case 0:
     if (node->childs != NULL)
-      parse_node(node->childs);
+      if (parse_node(node->childs) == -1)
+	return -1;
     break;
   case 1:
     if (node->childs != NULL)
-      parse_node(node->childs);
+      if (parse_node(node->childs) == -1)
+	return -1;
     if (parse_end() != 0) 
       {
 	error(0, "WML compiler: adding end tag failed.");
@@ -451,7 +453,8 @@ int parse_node(xmlNodePtr node)
   }
 
   if (node->next != NULL)
-    parse_node(node->next);
+    if (parse_node(node->next) ==-1)
+      return -1;
 
   return 0;
 }
@@ -468,13 +471,18 @@ int parse_document(xmlDocPtr document)
   int ret = 0;
 
   /* 
-   * A bad hack, WBXML version is assumed to be 1.2, charset is assumed 
-   * to be UTF-8!
+   * A bad hack, WBXML version is assumed to be 1.1, charset is assumed 
+   * to be ISO-8859-1!
    */
-  if (output_char(0x02) == 0)
+  if (output_char(0x01) == 0) /* WBXML Version number 1.1 */
    {
-     if (output_char(0x08) == 0)
-       ret = output_char(0x6A);
+     if (output_char(0x04) == 0) /* WML 1.1 Public ID */
+       {
+	 if (output_char(0x04) == 0) /* Charset=ISO-8859-1 */
+	   ret = output_char(0x00);  /* String table length=0 */
+	 else
+	   error(0, "WML compiler: could not output string table length.");	   
+       }
      else
     error(0, "WML compiler: could not output WML public ID.");       
    }
