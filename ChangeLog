@@ -1,4 +1,7 @@
 2002-05-20  Stipe Tolj <tolj@wapme-systems.de>
+    * gwlib/conn.c: fixing a compiler warning
+
+2002-05-20  Stipe Tolj <tolj@wapme-systems.de>
     * gwlib/xmlrpc.h, test/drive_smpp.conf: typo fixes
 
 2002-05-20  Stipe Tolj <tolj@wapme-systems.de>
