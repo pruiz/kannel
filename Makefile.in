@@ -118,7 +118,7 @@ figs = $(figsrcs:.fig=.png)  $(figsrcs:.fig=.ps)
 .xml.html:
 	cd `dirname $<`
 	sed "s/#FIGTYPE#/.png/" $< > $*.tmp
-	jade -V nochunks -t sgml -d $HTML_DSL $*.tmp > $@
+	jade -V nochunks -t sgml -d $(HTML_DSL) $*.tmp > $@
 	rm -f $*.tmp
 
 .xml.ps:
