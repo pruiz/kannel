@@ -64,6 +64,9 @@ int wml_compiler_not_implemented = 1;
 
 #define STR_END     0x00
 
+#define CHILDS_BIT  0x40
+#define ATTR_BIT    0x80
+
 
 /***********************************************************************
  * Declarations of data types. 
@@ -335,7 +338,7 @@ static Octstr *output_variable(Octstr *variable, var_esc_t escaped);
 int wml_compile(Octstr *wml_text,
 		Octstr **wml_binary)
 {
-  int i, ret = 0;
+  int ret = 0;
   size_t size;
   char *wml_c_text;
 
@@ -348,15 +351,12 @@ int wml_compile(Octstr *wml_text,
   size = octstr_len(wml_text);
   wml_c_text = octstr_get_cstr(wml_text);
 
-  for (i = 0; i < size; i++)
-    {
-      if (wml_c_text[i] == '\0')
-	{
-	  error(0, 
-		"WML compiler: Compiling error in WML text. "
-		"\\0 character found in the middle of the buffer.");
-	  return -1;
-	}
+  if (octstr_search_char(wml_text, '\0') != -1)
+    {    
+      error(0, 
+	    "WML compiler: Compiling error in WML text. "
+	    "\\0 character found in the middle of the WML source.");
+      return -1;
     }
 
   /* 
@@ -366,7 +366,7 @@ int wml_compile(Octstr *wml_text,
 
   wbxml_string = octstr_create_empty();
 
-  ret = parse_document(xmlParseMemory(wml_c_text, size+1));
+  ret = parse_document(xmlParseMemory(wml_c_text, size));
 
   *wml_binary = octstr_duplicate(wbxml_string);
 
@@ -387,7 +387,7 @@ int wml_compile(Octstr *wml_text,
  * Function checks the type of the node, calls for the right parse 
  * function for the type, then calls itself for the first child of
  * the current node if there's one and after that calls itself for the 
- * next child of the node one level upwards.
+ * next child on the list.
  */
 
 static int parse_node(xmlNodePtr node)
@@ -402,10 +402,16 @@ static int parse_node(xmlNodePtr node)
   case XML_TEXT_NODE:
     status = parse_text(node);
     break;
+  case XML_COMMENT_NODE:
+    /* Comments are ignored. */
+    break;
     /*
-     * 
+     * XML has also many other node types, these are not needed with 
+     * WML. Therefore they are assumed to be an error.
      */
   default:
+    error(0, "WML compiler: Unknown XML node in the WML source.");
+    return -1;
     break;
   }
 
@@ -438,7 +444,7 @@ static int parse_node(xmlNodePtr node)
   }
 
   if (node->next != NULL)
-    if (parse_node(node->next) ==-1)
+    if (parse_node(node->next) == -1)
       return -1;
 
   return 0;
@@ -457,8 +463,8 @@ static int parse_document(xmlDocPtr document)
 
   if (document == NULL)
     {
-      error(0, "WML compiler: Parsing failed, no parsed document.");
-      error(0, "Most probably an error in the document source.");
+      error(0, "WML compiler: XML parsing failed, no parsed document.");
+      error(0, "Most probably an error in the WML source.");
       return -1;
     }
 
@@ -517,7 +523,7 @@ static int parse_element(xmlNodePtr node)
 	  wbxml_hex = wml_elements[i].token;
 	  if ((status_bits = element_check_content(node)) > 0)
 	    {
-	      wbxml_hex = wbxml_hex + status_bits;
+	      wbxml_hex = wbxml_hex | status_bits;
 	      /* If this node has children, the end tag must be added after 
 		 them. */
 	      if ((status_bits & 0x40) == 0x40)
@@ -570,10 +576,10 @@ static unsigned char element_check_content(xmlNodePtr node)
   unsigned char status_bits = 0x00;
 
   if (node->childs != NULL)
-    status_bits = 0x40;
+    status_bits = CHILDS_BIT;
 
   if (node->properties != NULL)
-    status_bits = status_bits + 0x80;
+    status_bits = status_bits | ATTR_BIT;
 
   return status_bits;
 }
@@ -778,7 +784,7 @@ static Octstr *get_variable(Octstr *text, int start)
 {
   Octstr *var = NULL;
   size_t end;
-  char ch;
+  int ch;
 
   assert(text != NULL);
   assert(start >= 0 && start <= octstr_len(text));
