@@ -1,3 +1,10 @@
+Thu Jan 27 13:47:34 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* gw/msg.c, gw/wtp.h, gwlib/socket.h: Added includes for
+	<sys/types.h>, which is required for <netinet/in.h> on some
+	platforms (Linux makes it harder to write this portably, 
+	since it works with or without it).
+
 Thu Jan 27 13:43:12 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* gw/wsp.c: Don't set client address to NULL, just set client

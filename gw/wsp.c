@@ -262,7 +262,6 @@ void wsp_handle_event(WSPMachine *sm, WSPEvent *current_event) {
 
 			wtp_handle_event(current_event->TRInvokeIndication.machine,
 					 abort);
-			sm->client_address = NULL;
 			sm->client_port = -1;
 		} else {
 			error(0, "WSP: Can't handle event.");
@@ -761,7 +760,7 @@ static long new_server_transaction_id(void) {
 
 static int transaction_belongs_to_session(WTPMachine *wtp, WSPMachine *session)
 {
-	return 
+	return
 	  octstr_compare(wtp->source_address, session->client_address) == 0 &&
 	  wtp->source_port == session->client_port &&
 	  octstr_compare(wtp->destination_address, session->server_address) == 0 && 

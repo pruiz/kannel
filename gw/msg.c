@@ -10,6 +10,7 @@
 #include <assert.h>
 #include <errno.h>
 #include <stdlib.h>
+#include <sys/types.h>
 #include <netinet/in.h>
 
 #include "msg.h"

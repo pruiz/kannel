@@ -11,6 +11,7 @@ typedef struct Address Address;
 typedef struct WTPSegment WTPSegment;
 
 #include <errno.h>
+#include <sys/types.h>
 #include <netinet/in.h>
 #include <stdlib.h>
 
