@@ -415,7 +415,7 @@ static int deconvert_content(struct content *content)
     octstr_dump(content->body, 0);
     for (i = 0; i < NUM_DECONVERTERS; i++) {
         if (octstr_str_compare(content->type, deconverters[i].type) == 0) {
-            debug("wap.deconvert",0,"WSP deconvert: Tring to deconvert from <%s> to <%s>", 
+            debug("wap.deconvert",0,"WSP: Deconverting from <%s> to <%s>", 
                   octstr_get_cstr(content->type), 
             deconverters[i].result_type);
             new_body = deconverters[i].deconvert(content);
@@ -425,14 +425,13 @@ static int deconvert_content(struct content *content)
                 octstr_destroy(content->type);
                 content->body = new_body;
                 content->type = octstr_create(deconverters[i].result_type);
-                debug("wap.deconvert",0,"WSP deconvert: Success, content-type is "
-                      "now <%s>, size %ld->%ld", 
-                deconverters[i].result_type, s, octstr_len(new_body));
-                debug("wap.deconvert",0,"WSP deconvert: Deconverted to:"); 
+                debug("wap.convert",0,"WSP: Content-type is "
+                      "now <%s>, size %ld bytes (before: %ld bytes), content body is:", 
+                deconverters[i].result_type, octstr_len(new_body), s);
                 octstr_dump(new_body, 0);
                 return 1;
             }
-            debug("wap.deconvert",0,"WSP deconvert: Failed!");
+            debug("wap.deconvert",0,"WSP: Content convertion failed!");
             failed = 1;
         }
     }
