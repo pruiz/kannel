@@ -37,6 +37,7 @@
 #ifdef ENABLE_COOKIES
 #include "wap/cookies.h"
 #endif
+#include "radius/radius_acct.h"
 #include "wap-error.h"
 
 /*
@@ -398,7 +399,7 @@ static void add_accept_headers(List *headers)
 static void add_network_info(List *headers, WAPAddrTuple *addr_tuple) 
 {
     if (octstr_len(addr_tuple->remote->address) > 0) {
-	http_header_add(headers, "X_Network_Info", 
+	http_header_add(headers, "X-WAP-Network-Client-IP", 
 			octstr_get_cstr(addr_tuple->remote->address));
     }
 }
@@ -456,6 +457,19 @@ static void add_x_wap_tod(List *headers)
     
     http_header_add(headers, "X-WAP.TOD", octstr_get_cstr(gateway_time));
 		    octstr_destroy(gateway_time);
+}
+
+
+static void add_msisdn(List *headers, WAPAddrTuple *addr_tuple) 
+{
+    Octstr *msisdn = NULL;
+
+    /* We do not accept NULL values to be added to the HTTP header */
+    if ((msisdn = radius_acct_get_msisdn(addr_tuple->remote->address)) != NULL) {
+        http_header_add(headers, "X-WAP-Network-Client-MSISDN", octstr_get_cstr(msisdn));
+    }
+
+    octstr_destroy(msisdn);
 }
 
 
@@ -825,6 +839,7 @@ static void start_fetch(WAPEvent *event)
     
     add_kannel_version(actual_headers);
     add_session_id(actual_headers, session_id);
+    add_msisdn(actual_headers, addr_tuple);
     
     http_header_pack(actual_headers);
     

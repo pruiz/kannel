@@ -21,12 +21,12 @@
 #include "gw/msg.h"
 #include "bb.h"
 #include "sms.h"
-
 #ifdef HAVE_WTLS_OPENSSL
 #include <openssl/x509.h>
 #include "wap/wtls.h"
 #include "gwlib/pki.h"
 #endif
+#include "radius/radius_acct.h"
 
 enum {
     CONNECTIONLESS_PORT = 9200,
@@ -221,6 +221,15 @@ static Cfg *init_wapbox(Cfg *cfg)
             panic(0, "No 'privatekey-file' in wtls group");
     }
 #endif
+
+    /*
+     * Check if we have a 'radius-acct' proxy group and start the
+     * corresponding thread for the proxy.
+     */
+    grp = cfg_get_single_group(cfg, octstr_imm("radius-acct"));
+    if (grp) {
+        radius_acct_init(grp);
+    }
 
     /*
      * We pass ppg configuration groups to the ppg module.
@@ -573,6 +582,7 @@ int main(int argc, char **argv)
     wsp_unit_shutdown();
     wsp_session_shutdown();
     wap_appl_shutdown();
+    radius_acct_shutdown();
 
     if (cfg) {
         wap_push_ota_shutdown();
