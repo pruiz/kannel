@@ -104,6 +104,14 @@ typedef struct Connection Connection;
  * down the polling process.  This may be good or bad. */
 typedef void conn_callback_t(Connection *conn, void *data);
 
+/*
+ * If conn_register was called for this connection, a callback data destroyer
+ * function will be called if conn_unregister, conn_destroy or conn_register
+ * (with different data) called for this connection.
+ * This function is responsible to destroy callback data.
+ */   
+typedef void conn_callback_data_destroyer_t(void *data);
+
 #ifdef HAVE_LIBSSL
 /* Open an SSL connection to the given host and port.  Same behavior
  * as conn_open_tcp() below. 'certkeyfile' specifies a PEM-encoded
@@ -198,10 +206,14 @@ void conn_set_output_buffering(Connection *conn, unsigned int size);
  * than calling conn_unregister first.
  * NOTE: Using conn_register will always mean that the Connection will be
  * used by more than one thread, so don't also call conn_claim. */
-int conn_register(Connection *conn, FDSet *fdset,
-                  conn_callback_t callback, void *data);
+#define conn_register(conn, fdset, callback, data) \
+    conn_register_real(conn, fdset, callback, data, NULL)
+int conn_register_real(Connection *conn, FDSet *fdset,
+    conn_callback_t callback, void *data, conn_callback_data_destroyer_t destroyer);
 
-/* Remove the current registration. */
+/*
+ * Remove the current registration and call data destroyer if not NULL.
+ */ 
 void conn_unregister(Connection *conn);
 
 /* Block the thread until one of the following is true:

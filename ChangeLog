@@ -1,4 +1,13 @@
 2004-12-23  Alexander Malysh <amalysh at kannel.org>
+    * gwlib/conn.[ch]: added 'conn_register_real' that takes callback data
+      and data-destroyer function pointer. When conn_destroy/conn_unregister
+      called and Connection has data_destroyer fn-pointer that will be called
+      in order to destroy callback data. When conn_register on already
+      registered data called that if old-data != new-data then data-destroyer
+      function called in order to destroy previous callback data.
+      Additionaly some locking fixes.
+
+2004-12-23  Alexander Malysh <amalysh at kannel.org>
     * contrib/kannel-monitor/index.php: applied patch that should fix
       a bug when dead bearerbox causes monitor to freeze.
       Thanks to Agastiya S. Mohammad <egi at sinaptix.com>.
