@@ -2496,7 +2496,7 @@ of specific bugs that seem to show up often.</para>
   
    <row>
     <entry>N</entry>
-    <entry>driver claims to have this feature but it doesn't work<entry>
+    <entry>driver claims to have this feature but it doesn't work</entry>
    </row>
 
    <row>
@@ -2509,6 +2509,7 @@ of specific bugs that seem to show up often.</para>
  </tgroup>
 </informaltable>
 
+</sect3>
 </sect2>
 
 
