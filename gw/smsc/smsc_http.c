@@ -116,7 +116,10 @@ static void httpsmsc_receiver(void *arg)
     HTTPClient *client;
     Octstr *ip, *url, *body;
     List *headers, *cgivars;
-   
+
+    ip = url = body = NULL;
+    headers = cgivars = NULL;
+
     /* Make sure we log into our own log-file if defined */
     log_thread_to(conn->log_idx);
  
@@ -581,13 +584,6 @@ static void brunet_receive_sms(SMSCConn *conn, HTTPClient *client,
     http_send_reply(client, HTTP_OK, reply_headers, retmsg);
 
     octstr_destroy(retmsg);
-    octstr_destroy(user);
-    octstr_destroy(from);
-    octstr_destroy(to);
-    octstr_destroy(text);
-    octstr_destroy(udh);
-    octstr_destroy(date);
-    octstr_destroy(type);
     http_destroy_headers(reply_headers);
 }
 
@@ -785,13 +781,6 @@ static void xidris_receive_sms(SMSCConn *conn, HTTPClient *client,
     http_send_reply(client, status, reply_headers, retmsg);
 
     octstr_destroy(retmsg);
-    octstr_destroy(user);
-    octstr_destroy(user);
-    octstr_destroy(from);
-    octstr_destroy(to);
-    octstr_destroy(text);
-    octstr_destroy(account);
-
     http_destroy_headers(reply_headers);
 }
 
