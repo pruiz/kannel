@@ -1,3 +1,11 @@
+2003-09-25  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/shared.[ch]: implemented <foobar>_real() functions to have boxc 
+      connections handled directly if desired by an box. This does not
+      change current behaviour and gives more flexibility for other boxes.
+    * gwlib/parse.c: fixed pasing issues in parse_get_line() and 
+      parse_get_seperated_block()
+    * gwlib/mime.c: fixed CRLF handling for headers and boundary seperators.
+
 2003-09-15  Stipe Tolj  <tolj@wapme-systems.de>
     * wap/wsp_headers.[ch]: relabeled strip_parameters() and 
       pack_integeer_value() to have "wsp_" prefix. for cleaner prototypes.
