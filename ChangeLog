@@ -1,4 +1,10 @@
 2002-01-15  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/urltrans.c: fixed a bug while sending an empty SMS message
+      and servicing it with the default sms-service and using the
+      %k escape code. Reported by Angel Fradejas <afradejas@mediafusion.es>.
+      [Msg-ID: <FMEKKCFKIGBADHGIJKPJIEABCLAA.afradejas@mediafusion.es>]
+      
+2002-01-15  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/smsbox.c: fixed a bug regarding MWI messages reported by
       Bernino Lind <lind@catpipe.net> 
       [Msg-ID: <OPEOKAFGKKMPLPGLEINCAEKICFAA.lind@catpipe.net>]
