@@ -1,3 +1,11 @@
+1999-11-25    <rpr@rpr.wapit.com>
+
+	* gwlib/gwlib.h: added general gwlib header, which includes all
+	parts of gwlib
+
+	* */*.c: modified most of the modules to use new gwlib.h. Old ones
+	still work
+
 Thu Nov 25 15:49:13 1999  Lars Wirzenius  <liw@iki.fi>
 
 	* gw/smsc_p.h: Added a missing include for signal.h to get the

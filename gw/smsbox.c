@@ -57,10 +57,9 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#include "wapitlib.h"
-#include "config.h"
+#include "gwlib.h"
 #include "urltrans.h"
-#include "http.h"
+
 #include "html.h"
 #include "cgi.h"
 #include "msg.h"

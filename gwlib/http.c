@@ -18,8 +18,7 @@
 #include <netinet/tcp.h>
 #include <sys/param.h>
 
-#include "http.h"
-#include "wapitlib.h"
+#include "gwlib.h"
 
 
 /*****************************************************************************

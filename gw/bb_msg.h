@@ -12,8 +12,7 @@
 
 #include <sys/time.h>
 
-#include "wapitlib.h"
-#include "octstr.h"
+#include "gwlib.h"
 #include "msg.h"
 
 typedef struct r_queue_item RQueueItem;

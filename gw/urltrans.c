@@ -11,8 +11,7 @@
 #include <string.h>
 
 #include "urltrans.h"
-#include "octstr.h"
-#include "wapitlib.h"
+#include "gwlib.h"
 
 
 /***********************************************************************

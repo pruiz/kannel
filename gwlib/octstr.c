@@ -17,8 +17,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 
-#include "octstr.h"
-#include "wapitlib.h"
+#include "gwlib.h"
 
 
 /***********************************************************************

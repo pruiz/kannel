@@ -10,15 +10,13 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
-#include "http.h"
+#include "gwlib.h"
 #include "html.h"
 #include "cgi.h"
 #include "msg.h"
 
 #include "smsbox_req.h"
 #include "urltrans.h"
-#include "wapitlib.h"
-#include "octstr.h"
 
 /*
  * this module handles the request handling - that is, finding

@@ -17,11 +17,9 @@
 #include <unistd.h>
 #include <sys/time.h>
 
-#include "wapitlib.h"
+#include "gwlib.h"
 #include "smsc.h"
-#include "sms_msg.h"
 #include "smsc_p.h"
-#include "config.h"
 #include "bb_msg.h"
 
 /*

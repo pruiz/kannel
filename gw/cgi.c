@@ -8,7 +8,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include "wapitlib.h"
+#include "gwlib.h"
 #include "cgi.h"
 
 

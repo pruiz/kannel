@@ -16,7 +16,7 @@
 
 #include "smsc.h"
 #include "smsc_p.h"
-#include "wapitlib.h"
+#include "gwlib.h"
 #include "alt_charsets.h"
 
 /******************************************************************************

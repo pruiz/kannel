@@ -42,7 +42,7 @@ sent in random order.";
 
 #include <sys/param.h>
 
-#include "wapitlib.h"
+#include "gwlib.h"
 
 
 /* Write a line to a socket. Also write the terminating newline (i.e., the

@@ -16,7 +16,7 @@
 #include <time.h>
 
 #include "wtp_timer.h"
-#include "wapitlib.h"
+#include "gwlib.h"
 
 
 struct WTPTimer {

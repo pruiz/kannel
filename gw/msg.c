@@ -13,8 +13,7 @@
 #include <netinet/in.h>
 
 #include "msg.h"
-#include "octstr.h"
-#include "wapitlib.h"
+#include "gwlib.h"
 
 /**********************************************************************
  * Prototypes for private functions.

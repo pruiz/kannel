@@ -20,7 +20,7 @@
 #include <netdb.h>
 #include <netinet/tcp.h>
 
-#include "wapitlib.h"
+#include "gwlib.h"
 
 
 

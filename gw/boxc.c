@@ -15,11 +15,9 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 
-#include "wapitlib.h"
-#include "http.h"
+#include "gwlib.h"
 #include "boxc.h"
 #include "bb_msg.h"
-#include "octstr.h"
 #include "msg.h"
 #include "smsbox_req.h"
 

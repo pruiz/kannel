@@ -1,8 +1,7 @@
 #ifndef _CSDR_H
 #define _CSDR_H
 
-#include "wapitlib.h"
-#include "config.h"
+#include "gwlib.h"
 #include "bb_msg.h"
 
 typedef struct csdrouter {

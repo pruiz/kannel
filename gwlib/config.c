@@ -10,8 +10,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "config.h"
-#include "wapitlib.h"
+#include "gwlib.h"
 
 
 static ConfigVar *find_var(ConfigGroup *grp, char *name);

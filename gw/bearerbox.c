@@ -45,18 +45,19 @@
 #include <string.h>
 #include <signal.h>
 
-#include "wapitlib.h"
-#include "config.h"
-#include "http.h"
+#include "gwlib.h"
+
 #include "cgi.h"
 #include "urltrans.h"
-#include "smsbox_req.h"
-#include "bb_msg.h"
+
+#include "bb.h"
 #include "msg.h"
+#include "bb_msg.h"
+
 #include "smsc.h"
 #include "csdr.h"
 #include "boxc.h"
-#include "bb.h"
+#include "smsbox_req.h"
 
 /* bearer box thread types */
 enum {
@@ -1475,8 +1476,8 @@ static void print_queues(char *buffer)
     
     mutex_lock(&bbox->mutex);
 
-    sprintf(buffer,"Request queue length %d, oldest %ds old; mean %.1f, through %d messages\n"
-	    "Reply queue length %d; oldest %ds old; mean %.1f, through %d messages",
+    sprintf(buffer,"Request queue length %d, oldest %ds old; mean %.1f, total %d messages\n"
+	    "Reply queue length %d; oldest %ds old; mean %.1f, total %d messages",
 	    rq, (int)(now-trq), bbox->mean_req_ql, totq, 
 	    rp, (int)(now-trp), bbox->mean_rep_ql, totp);
 	    

@@ -10,7 +10,7 @@
 #include <unistd.h>
 #include <sys/time.h>
 
-#include "wapitlib.h"
+#include "gwlib.h"
 #include "sms_msg.h"
 
 

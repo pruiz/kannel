@@ -9,10 +9,8 @@
 
 #include <stdlib.h>
 
-#include "wapitlib.h"
-#include "octstr.h"
+#include "gwlib.h"
 #include "msg.h"
-#include "config.h"
 #include "wtp.h"
 
 static char *bearerbox_host = NULL;

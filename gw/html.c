@@ -10,7 +10,7 @@
 #include <string.h>
 
 #include "html.h"
-#include "wapitlib.h"
+#include "gwlib.h"
 
 #define SMS_MAX 161
 
