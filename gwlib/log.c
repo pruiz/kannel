@@ -375,6 +375,7 @@ static void format(char *buf, int level, const char *place, int e,
     time_t t;
     struct tm tm;
     char *p, prefix[1024];
+    long tid, pid;
     
     p = prefix;
 
@@ -392,8 +393,9 @@ static void format(char *buf, int level, const char *place, int e,
         p = strchr(p, '\0');
     }
 
-    sprintf(p, "[%ld] ", gwthread_self());
-
+    gwthread_self_ids(&tid, &pid);
+    sprintf(p, "[%ld] [%ld] ", pid, tid);
+    
     p = strchr(p, '\0');
     if (level < 0 || level >= tab_size)
 	sprintf(p, "UNKNOWN: ");

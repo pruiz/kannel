@@ -1,3 +1,9 @@
+2004-01-27 Stipe Tolj  <tolj@wapme-systems.de>
+    * gwlib/gwthread[-pthread].[ch], gwlib/log.c: added pid output
+      to default log-file format. 
+    * test/test_wakeup.c: added getpid() calls to show whic OS process id
+      we get for a thread.
+
 2004-01-26 Aarno Syv\132nen <aarno@gni.ch>
     Committed bugfixes by Paul Bagyenda.
     * gwlib/date.c: Bugfix in function making ISO dates

@@ -89,6 +89,7 @@ struct threadinfo
      * to register.  This is safe because the thread table is always
      * locked when a thread accesses this field. */
     List *joiners;
+    pid_t pid;
 };
 
 struct new_thread_args
@@ -173,6 +174,7 @@ static long fill_threadinfo(pthread_t id, const char *name,
     ti->self = id;
     ti->name = name;
     ti->func = func;
+    ti->pid = -1;
 
     if (pipe(pipefds) < 0) {
         panic(errno, "cannot allocate wakeup pipe for new thread");
@@ -337,6 +339,10 @@ static void *new_thread(void *arg)
         panic(ret, "gwthread-pthread: pthread_setspecific failed");
     }
 
+    p->ti->pid = getpid();
+    debug("gwlib.gwthread", 0, "Thread %ld (%s) maps to pid %ld.",
+          p->ti->number, p->ti->name, (long) p->ti->pid);
+
     (p->func)(p->arg);
 
     lock();
@@ -408,6 +414,7 @@ static void restore_user_signals(sigset_t *old_set)
         panic(ret, "gwthread-pthread: Couldn't restore signal set.");
     }
 }
+
 
 static long spawn_thread(gwthread_func_t *func, const char *name, void *arg)
 {
@@ -598,10 +605,34 @@ long gwthread_self(void)
 {
     struct threadinfo *threadinfo;
     threadinfo = pthread_getspecific(tsd_key);
-    if (threadinfo)
+    if (threadinfo) 
         return threadinfo->number;
     else
         return -1;
+}
+
+/* Return the thread pid of this thread. */
+long gwthread_self_pid(void)
+{
+    struct threadinfo *threadinfo;
+    threadinfo = pthread_getspecific(tsd_key);
+    if (threadinfo && threadinfo->pid != -1) 
+        return (long) threadinfo->pid;
+    else
+        return (long) getpid();
+}
+
+void gwthread_self_ids(long **tid, long **pid)
+{
+    struct threadinfo *threadinfo;
+    threadinfo = pthread_getspecific(tsd_key);
+    if (threadinfo) {
+        *tid = threadinfo->number;
+        *pid = (threadinfo->pid != -1) ? threadinfo->pid : getpid();
+    } else {
+        *tid = -1;
+        *pid = getpid();
+    }
 }
 
 void gwthread_wakeup(long thread)

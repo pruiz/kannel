@@ -59,13 +59,22 @@
 #include "gwlib/gwlib.h"
 
 static void thread1(void *arg) {
+    pid_t pid;
+
 	debug("test", 0, "Sleeping");
+    pid = getpid();
+    debug("test", 0, "Thread pid %ld", (long)pid);
+
 	gwthread_sleep(600);
 	debug("test", 0, "Woke up");
 }
 
 int main(void) {
+    pid_t pid;
+
 	gwlib_init();
+    pid = getpid();
+    debug("test", 0, "Parent pid %ld", (long)pid);
 	gwthread_create(thread1, NULL);
 	sleep(1);
 	gwthread_wakeup_all();
