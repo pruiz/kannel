@@ -1,3 +1,8 @@
+Thu Jan 27 13:40:44 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* configure.in, configure, README: Added check for zlib and
+	documented it in README.
+
 Wed Jan 26 23:03:30 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* gw/wsp.c: Mark WSPMachine unused in case of unhandled event.
