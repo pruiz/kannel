@@ -358,7 +358,7 @@ static void kannel_receive_sms(SMSCConn *conn, HTTPClient *client,
 	msg->sms.coding = coding;
 	msg->sms.validity = validity;
 	msg->sms.deferred = deferred;
-        msg->sms.account = account;
+    msg->sms.account = octstr_duplicate(account);
 	ret = bb_smscconn_receive(conn, msg);
 	if (ret == -1)
 	    retmsg = octstr_create("Not accepted");
