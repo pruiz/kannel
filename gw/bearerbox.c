@@ -1133,7 +1133,7 @@ static void *http_request_thread(void *arg)
     char *path = NULL, *args = NULL, *client_ip = NULL;
     char answerbuf[10*1024];
     char *answer = answerbuf;
-    CGIArg *arglist;
+    CGIArg *arglist = NULL;
     
     client = httpserver_get_request(bbox->http_fd, &client_ip, &path, &args);
     bbox->accept_pending--;
@@ -1156,7 +1156,10 @@ static void *http_request_thread(void *arg)
 		"Gateway is running",
 		buf, buf2);
     } else {
-	arglist = cgiarg_decode_to_list(args);
+
+	if(args!=NULL) 
+		arglist = cgiarg_decode_to_list(args);
+
 	answer = http_admin_command(path, arglist);
 	
 	cgiarg_destroy_list(arglist);
