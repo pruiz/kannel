@@ -71,6 +71,14 @@ SINGLE_GROUP(wapbox,
     OCTSTR(privatekey-password)
 )
 
+SINGLE_GROUP(ppg,
+    OCTSTR(ppg-url)
+    OCTSTR(ppg-port)
+    OCTSTR(trusted-pi)
+    OCTSTR(concurrent-pushes)
+    OCTSTR(ppg-username)
+    OCTSTR(ppg-password)
+)
 
 SINGLE_GROUP(smsbox,
     OCTSTR(bearerbox-host)

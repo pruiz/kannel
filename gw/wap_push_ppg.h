@@ -10,6 +10,7 @@
 #include "wap/wap_events.h"
 #include "wap/wap.h"
 #include "wap/wap_addr.h"
+#include "gwlib/gwlib.h"
 
 typedef struct PPGSessionMachine PPGSessionMachine;
 typedef struct PPGPushMachine PPGPushMachine;
@@ -124,7 +125,7 @@ struct PPGPushMachine {
 };
 
 void wap_push_ppg_init(wap_dispatch_func_t *ota_dispatch,
-                       wap_dispatch_func_t *appl_dispatch);
+                       wap_dispatch_func_t *appl_dispatch, Cfg *cfg);
 void wap_push_ppg_shutdown(void);
 void wap_push_ppg_dispatch_event(WAPEvent *e);
 

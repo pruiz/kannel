@@ -14,14 +14,13 @@
  *
  * In addition, rfcs 1521 and 2045 are referred.
  *
- * By Aarno Syvänen for Wapit Ltd and for Wiral Ltd.
+ * By  Aarno Syvänen for Wapit Ltd and for Wiral Ltd.
  */
 
 #include <time.h>
 #include <ctype.h>
 
 #include "wap_push_ppg.h"
-#include "gwlib/gwlib.h"
 #include "wap/wap_events.h"
 #include "wap/wsp_caps.h"
 #include "wml_compiler.h"
@@ -38,8 +37,9 @@ enum {
     NO_CONSTRAINTS = 2
 };
 
-#define HTTP_PORT 8080
-#define NUMBER_OF_PUSHES 100
+#define DEFAULT_HTTP_PORT 8080
+#define DEFAULT_NUMBER_OF_PUSHES 100
+#define DEFAULT_PPG_URL "cgi-bin/wap-push.cgi"
 
 /*****************************************************************************
  *
@@ -99,6 +99,17 @@ struct content {
 
 static wap_dispatch_func_t *dispatch_to_ota;
 static wap_dispatch_func_t *dispatch_to_appl;
+
+/*
+ * Configurable variables, with some default values
+ */
+
+static Octstr *ppg_url = NULL;
+static long ppg_port = DEFAULT_HTTP_PORT;
+static long number_of_pushes = DEFAULT_NUMBER_OF_PUSHES;
+static int trusted_pi = 1;
+static Octstr *ppg_username = NULL;
+static Octstr *ppg_password = NULL;
 
 /*****************************************************************************
  *
@@ -201,8 +212,8 @@ static void send_bad_message_response(HTTPClient *c, Octstr *body_fragment,
 static void send_push_response(WAPEvent *e, int status);
 static void send_to_pi(HTTPClient *c, Octstr *reply_body, int status);
 static int parse_cgivars(List *cgivars, Octstr **username, Octstr **password);
-static void tell_duplicate_push_id(HTTPClient *c, WAPEvent *e, Octstr *url, 
-                                   int status);
+static void tell_fatal_error(HTTPClient *c, WAPEvent *e, Octstr *url, 
+                             int status, int code);
 
 /*
  * Various utility functions
@@ -226,6 +237,7 @@ static int date_item_compare(Octstr *before, long time_data, long pos);
 static void parse_appid_header(Octstr **assigned_code);
 static Octstr *escape_fragment(Octstr *fragment);
 static int sms_requested(PPGPushMachine *pm);
+static void read_config(Cfg *cfg);
 
 /*****************************************************************************
  *
@@ -233,7 +245,7 @@ static int sms_requested(PPGPushMachine *pm);
  */
 
 void wap_push_ppg_init(wap_dispatch_func_t *ota_dispatch, 
-                       wap_dispatch_func_t *appl_dispatch)
+                       wap_dispatch_func_t *appl_dispatch, Cfg *cfg)
 {
     ppg_queue = list_create();
     list_add_producer(ppg_queue);
@@ -244,9 +256,10 @@ void wap_push_ppg_init(wap_dispatch_func_t *ota_dispatch,
     dispatch_to_ota = ota_dispatch;
     dispatch_to_appl = appl_dispatch;
 
-    http_open_port(HTTP_PORT);
-    http_clients = dict_create(NUMBER_OF_PUSHES, NULL);
-    urls = dict_create(NUMBER_OF_PUSHES, octstr_destroy_item);
+    read_config(cfg);
+    http_open_port(ppg_port);
+    http_clients = dict_create(number_of_pushes, NULL);
+    urls = dict_create(number_of_pushes, octstr_destroy_item);
 
     gw_assert(run_status == limbo);
     run_status = running;
@@ -259,6 +272,10 @@ void wap_push_ppg_shutdown(void)
      gw_assert(run_status == running);
      run_status = terminating;
      list_remove_producer(ppg_queue);
+
+     octstr_destroy(ppg_url);
+     octstr_destroy(ppg_password);
+     octstr_destroy(ppg_username);
 
      http_close_all_ports();
      dict_destroy(http_clients);
@@ -321,6 +338,30 @@ PPGSessionMachine *wap_push_ppg_have_push_session_for_sid(long sid)
  * INTERNAL FUNCTIONS
  */
 
+static void read_config(Cfg *cfg)
+{
+     CfgGroup *grp;
+
+     if (cfg == NULL) {
+         warning(0, "PPG: No ppg group, using default values.");
+         ppg_url = octstr_imm("/cgi-bin/wap-push.cgi");
+         return;
+     }
+     grp = cfg_get_single_group(cfg, octstr_imm("ppg"));
+     if ((ppg_url = cfg_get(grp, octstr_imm("ppg-url"))) == NULL)
+         ppg_url = octstr_imm("/cgi-bin/wap-push.cgi");
+     cfg_get_integer(&ppg_port, grp, octstr_imm("ppg-port"));
+     cfg_get_integer(&number_of_pushes, grp, octstr_imm("concurrent-pushes"));
+     cfg_get_bool(&trusted_pi, grp, octstr_imm("trusted-pi"));
+     ppg_password = cfg_get(grp, octstr_imm("ppg-password"));
+     ppg_username = cfg_get(grp, octstr_imm("ppg-username"));
+     if (!trusted_pi && (ppg_password == NULL || ppg_username == NULL))
+         panic(0, "a try to configure a secure ppg without a username and/or"
+               "  a password");
+    
+     cfg_destroy(cfg); 
+}
+
 static void ota_read_thread(void *arg)
 {
     WAPEvent *e;
@@ -331,8 +372,13 @@ static void ota_read_thread(void *arg)
 }
 
 /*
- * Store HTTPClient data structure corresponding a given push id, so that we 
- * can send responses to the rigth address.
+ * Conforming with usual Kannel style, we close a client when authorisation 
+ * fails.
+ * We store HTTPClient data structure corresponding a given push id, so that 
+ * we can send responses to the rigth address.
+ * Pap chapter 14.4.1 states that we must return http status 202 after we have 
+ * accepted PAP message, even if it is unparsable. So only the non-existing 
+ * service and authorisation failures are handled at HTTP level. 
  */
 
 static void http_read_thread(void *arg)
@@ -360,20 +406,16 @@ static void http_read_thread(void *arg)
                                           ders */
          *cgivars;
     HTTPClient *client;
-    long port;
     
-    port = HTTP_PORT;
-    http_status = 202;                /* Pap chapter 14.4.1 states that we 
-                                         must return this status after we 
-                                         accepted PAP message, even if it is
-                                         unparsable */  
+    http_status = 202;                
+  
     while (run_status == running) {
-        client = http_accept_request(port, &ip, &url, &push_headers, 
+        client = http_accept_request(ppg_port, &ip, &url, &push_headers, 
                                      &mime_content, &cgivars);
         if (client == NULL) 
 	    break;
 
-        if (octstr_compare(url, octstr_imm("/cgi-bin/wap-push.cgi")) != 0) {
+        if (octstr_compare(url, ppg_url) != 0) {
 	    http_status = 404;
             error(0,  "Request <%s> from <%s>: service not found", 
                   octstr_get_cstr(url), octstr_get_cstr(ip));
@@ -382,7 +424,18 @@ static void http_read_thread(void *arg)
             goto ferror;
         }
 
-        parse_cgivars(cgivars, &username, &password);
+        if (!trusted_pi) {
+	    if (!parse_cgivars(cgivars, &username, &password)) {
+                error(0,  "Request <%s> from <%s>: authorisation failure," 
+                      "closing the client", octstr_get_cstr(url), 
+                      octstr_get_cstr(ip));
+                http_close_client(client);
+                goto ferror;
+            }
+	} else {
+	    username = ppg_username;
+	    password = ppg_password;
+        }
 
         info(0, "PPG: Accept request <%s> from <%s>", octstr_get_cstr(url), 
              octstr_get_cstr(ip));
@@ -446,15 +499,16 @@ static void http_read_thread(void *arg)
             send_bad_message_response(client, pap_content, PAP_BAD_REQUEST,
                                       http_status);
             warning(0, "PPG: non implemented pap feature requested, the"
-                    " the request unacceptable");
+                    " request unacceptable");
             goto no_compile;
         } else {
 	    if (!dict_put_once(http_clients, 
 		    ppg_event->u.Push_Message.pi_push_id, client)) {
                 warning(0, "PPG: duplicate push id, the request unacceptable");
-	        tell_duplicate_push_id(client, ppg_event, url, http_status);
+	        tell_fatal_error(client, ppg_event, url, http_status, 
+                                 PAP_DUPLICATE_PUSH_ID);
                 goto no_compile;
-		} 
+	    } 
 
             dict_put(urls, ppg_event->u.Push_Message.pi_push_id, url); 
             debug("wap.push.ppg", 0, "PPG: http_read_thread: pap control"
@@ -2417,11 +2471,10 @@ static void send_push_response(WAPEvent *e, int status)
 
 /*
  * Ppg notifies pi about duplicate push id by sending a push response document
- * to it. Note that we never put a duplicate push id and the corresponding url
- * to a dict.
+ * to it. Note that we never put the push id to the dict in this case.
  */
-static void tell_duplicate_push_id(HTTPClient *c, WAPEvent *e, Octstr *url, 
-                                   int status)
+static void tell_fatal_error(HTTPClient *c, WAPEvent *e, Octstr *url, 
+                             int status, int code)
 {
     Octstr *reply_body;
 
@@ -2453,19 +2506,20 @@ static void tell_duplicate_push_id(HTTPClient *c, WAPEvent *e, Octstr *url,
     octstr_format_append(reply_body, "%s", ">"
 	     "</push-response>"
              "<response-result code =\"");
-    octstr_format_append(reply_body, "%d", PAP_DUPLICATE_PUSH_ID);
+    octstr_format_append(reply_body, "%d", code);
     octstr_format_append(reply_body, "%s", "\"");
 
     octstr_format_append(reply_body, "%s", " desc=\"");
     octstr_format_append(reply_body, "%S", 
-        describe_code(PAP_DUPLICATE_PUSH_ID));
+        describe_code(code));
     octstr_format_append(reply_body, "\"");
 
     octstr_format_append(reply_body, "%s", ">"
               "</response-result>"
          "</pap>");
 
-    debug("wap.push.ppg", 0, "PPG: tell_duplicate_push_id: telling pi");
+    debug("wap.push.ppg", 0, "PPG: tell_fatal_error: %s", 
+          octstr_get_cstr(describe_code(code)));
     send_to_pi(c, reply_body, status);
 
     octstr_destroy(url);
@@ -2525,13 +2579,23 @@ static Octstr *escape_fragment(Octstr *fragment)
     return fragment;
 }
 
+/*
+ * Return 1 when we found password and username, 0 otherwise.
+ */
 static int parse_cgivars(List *cgivars, Octstr **username, Octstr **password)
 {
     *username = http_cgi_variable(cgivars, "username");
     *password = http_cgi_variable(cgivars, "password");
 
+    if (*username == NULL || *password == NULL)
+        return 0;
+
     return 1;
 }
+
+
+
+
 
 
 

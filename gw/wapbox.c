@@ -47,7 +47,7 @@ RSA* private_key = NULL;
 X509* x509_cert = NULL;
 #endif
 
-static void read_config(Octstr *filename) 
+static Cfg *read_config(Octstr *filename) 
 {
     CfgGroup *grp;
     Octstr *s;
@@ -80,7 +80,7 @@ static void read_config(Octstr *filename)
 	panic(0, "No 'wapbox-port' in core group");
     
     http_proxy_host = cfg_get(grp, octstr_imm("http-proxy-host"));
-    http_proxy_port = -1;
+    http_proxy_port =  -1;
     cfg_get_integer(&http_proxy_port, grp, octstr_imm("http-proxy-port"));
     http_proxy_username = cfg_get(grp, octstr_imm("http-proxy-username"));
     http_proxy_password = cfg_get(grp, octstr_imm("http-proxy-password"));
@@ -98,7 +98,7 @@ static void read_config(Octstr *filename)
 
     
     /*
-     * And the rest of the info comes from the wapbox group.
+     * And the rest of the pull info comes from the wapbox group.
      */
 
     grp = cfg_get_single_group(cfg, octstr_imm("wapbox"));
@@ -183,8 +183,17 @@ static void read_config(Octstr *filename)
 	octstr_destroy(name);
     }
     wsp_http_map_url_config_info();	/* debugging aid */
-    
-    cfg_destroy(cfg);
+
+/*
+ * We pass ppg configuration group to the ppg module.
+ */   
+    grp = cfg_get_single_group(cfg, octstr_imm("ppg"));
+    if (grp == NULL) {
+        cfg_destroy(cfg);
+        return NULL;
+    }
+
+    return cfg;
 }
 
 
@@ -363,6 +372,7 @@ int main(int argc, char **argv)
     int cf_index;
     Msg *msg;
     Octstr *filename;
+    Cfg *cfg;
     
     gwlib_init();
     cf_index = get_and_set_debugs(argc, argv, NULL);
@@ -371,7 +381,7 @@ int main(int argc, char **argv)
 	filename = octstr_create(argv[cf_index]);
     else
 	filename = octstr_create("kannel.conf");
-    read_config(filename);
+    cfg = read_config(filename);
     octstr_destroy(filename);
     
     report_versions("wapbox");
@@ -401,7 +411,7 @@ int main(int argc, char **argv)
 #endif
     
     wap_push_ota_init(&wsp_session_dispatch_event, &wsp_unit_dispatch_event);
-    wap_push_ppg_init(&wap_push_ota_dispatch_event, &wap_appl_dispatch);
+    wap_push_ppg_init(&wap_push_ota_dispatch_event, &wap_appl_dispatch, cfg);
 		
     wml_init();
     

@@ -4436,10 +4436,64 @@ otaid=myconfig&amp;username=foo&amp;password=bar&amp;phonenumber=0123456
       example configuration file are given. A working push proxy gateway
       is described. </para>
 <sect1>
-<title>Configuring wapbox ppg group</title>
-     <para>This will be written when we have a ppg group. Essentially, this
-     will contain instructions how to configure a separate, meaning one not 
-     working with a trusted push initiator, push proxy gateway.</para>
+<title>Configuring ppg group</title>
+     <para>Ppg configuration group defines gateway's service interface.
+     Configuring a ppg working with a trusted pi is easiest. Actually,
+     you need no ppg configuration at all: in this case a ppg with default 
+     values will be set up. Do not rely on this, default values may change.
+     For ppg configuration variables, see table 7.1.
+     </para>
+
+     <para>An example is probably usefull here.</para>
+     <screen><userinput>
+group = ppg
+ppg-url = /cgi-bin/wap-push.cgi
+ppg-port = 8080
+concurrent-pushes = 100
+trusted-pi = true
+     </userinput></screen>
+
+     <table frame=none>
+     <title>PPG group configuration variables</title>
+             <tgroup cols=3><thead><row>
+             <entry>Variable</entry>
+             <entry>Value</entry>
+             <entry>Description</entry>
+             </row></thead>
+             <tbody>
+             <row><entry><literal>group</literal></entry>
+             <entry><emphasis>ppg</emphasis></entry>
+             <entry valign=bottom>
+             Mandatory value. Defines the group in question.
+             </entry></row>
+             <row><entry><literal>ppg-port</literal></entry>
+             <entry><emphasis>number</emphasis></entry>
+             <entry valign=bottom>
+             The port ppg is listening at. Default 8080.
+             </entry></row>
+             <row><entry><literal>ppg-url</literal></entry>
+             <entry><emphasis>url</emphasis></entry>
+             <entry valign=bottom>
+             Url locating ppg services. Default <literal>
+             /cgi-bin/wap-push.cgi</literal>.
+             </entry></row>
+             <row><entry><literal>concurrent-pushes</literal></entry>
+             <entry><emphasis>number</emphasis></entry>
+             <entry valign=bottom>
+             Number of concurrent pushes expected. Note that ppg <emphasis>
+             does</emphasis> work even value is too low; it will only be 
+             slower. Default 100.
+             </entry></row>
+             <row><entry><literal>trusted-pi</literal></entry>
+             <entry><emphasis>boolean</emphasis></entry>
+             <entry valign=bottom>
+             If true, pi does authentication for ppg. Obviously, both of them
+             must reside inside same firewall. Default true.
+             </entry></row>
+             </tbody>
+     </table>
+
+     <para>Configuration for a secure pi will be added later.</para>
 </sect1>
 <sect1>
 <title>Finishing ppg configuration</title>
@@ -4816,33 +4870,35 @@ test/fakesmsc -m 1 "100 500 udh %0eudh+stuff+here main+message"
        both are short and easily editable. </para>
 
        <para>To set up a test environment, you must first configure a push
-       proxy gateway. This explained in Chapter "Setting up push proxy 
-       gateway". Then issue following commands, in Kannel's root directory and
-       in separate windows:
+       proxy gateway (setting flag trusted-pi true makes testing easier). 
+       This explained in Chapter "Setting up push proxy gateway". Then issue 
+       following commands, in Kannel's root directory and in separate windows:
        <screen><userinput>
        gw/bearerbox [conffile]
        gw/wapbox [conffile]
        </userinput></screen>
-       You can use more complicated wapbox and bearerbox options, if you
-       want, but they do not change the way PPG works </para>
+       Of course you can use more complicated wapbox and bearerbox command
+       line options, if necessary.</para>
 
        <para>To run a http smsc,  start http server simulation:
        <screen><userinput>
        test/test_http_server -p port
        </userinput></screen>
        You can, of course, select the port at will. Remember, though, that
-       PPG listens at port 8080. Other <literal>test_http_server</literal>
-        options are irrelevant here.</para>
+       PPG listens at the port defined in the ppg configuration file. Other 
+       <literal>test_http_server</literal> options are irrelevant here.</para>
 
        <para>Lastly, start making push requests, for instance with <literal>
        test_ppg</literal>. Its first argument is a URL specifying location of
        push services. Other arguments are two file names, first one push 
        content and second one pap control document. (For command line options,
-        see Table C.1.). For example:</para>
+       see Table C.1.). For example (you can simplify push url by setting
+       a ppg configuration variable, see "Setting up push proxy gateway"):
+       </para>
        <screen><userinput>
-       test/test_ppg -q http://name:port/cgi-bin/wap-push.cgi?username=foo'&'
-       password=bar
+       test/test_ppg -q http://name:port [content_file] [control_file]
        </userinput></screen>
+   
        <table frame=none>
              <title>Test_ppg's command line options</title>
              <tgroup cols=3><thead><row>
