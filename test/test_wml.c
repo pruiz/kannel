@@ -19,16 +19,15 @@ int main(int argc, char *argv[])
 	int fd;
 	char tmpbuff[100*1024];
 	char *wml;
-
-#if 0
-/* Strings for testing purposes */
-
-/*	char data[] = "<wml><card><p>Hello World</p></card></wml>";*/
-	char data[] = "<wml><card><p type=\"accept\"></p></wml>";
-#endif
+	int output_binary;
 
 	if (argc < 2)
 		panic(0, "WML file not given on command line.");
+	if (argc == 2)
+		output_binary = 1;
+	else
+		output_binary = 0;
+
 		
 	fd = open(argv[1], O_RDONLY);
 	memset(tmpbuff, 0, sizeof(tmpbuff));		
@@ -43,14 +42,16 @@ int main(int argc, char *argv[])
 	if (wmlc_data == NULL)
 		return 0;
 
-#if 0
-	while(i<wmlc_data->wml_length)
-	{	printf("%02x\t",wmlc_data->wbxml[i]);			/** print the result **/
-		i++;}
-	printf("\n(%d) bytes\n",wmlc_data->wml_length);			/** how many bytes **/
-#else
-	fwrite(wmlc_data->wbxml, wmlc_data->wml_length, 1, stdout);
-#endif
+	if (output_binary)
+		fwrite(wmlc_data->wbxml, wmlc_data->wml_length, 1, stdout);
+	else {
+		Octstr *os;
+		
+		os = octstr_create_from_data(wmlc_data->wbxml, 
+					     wmlc_data->wml_length);
+		octstr_dump(os);
+		octstr_pretty_print(stdout, os);
+	}
 
 	gw_free (wmlc_data);
 	

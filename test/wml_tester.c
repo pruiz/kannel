@@ -1,10 +1,9 @@
 /* XXX The #ifdef HAVE_LIBXML is a stupid hack to make this not break things
 until libxml is installed everywhere we do development. --liw */
 
-#ifndef HAVE_LIBXML
-int wml_compiler_not_implemented = 1;
-#else
+#include "config.h"
 
+#if HAVE_LIBXML
 
 /* FOR TESTING */ 
 
@@ -18,7 +17,6 @@ int main(int argc, char **argv)
   Octstr *wml_scripts = NULL;
 
   int ret;
-  int i = 0;
 
   /* You can give an wml text file as an argument './wap_compile main.wml' */
   if (argc > 1) 
@@ -64,4 +62,8 @@ int main(int argc, char **argv)
   return ret;
 }
 
+#else
+int main(void) {
+	panic(0, "HAVE_LIBXML not available, can't do anything.");
+}
 #endif

@@ -1,3 +1,14 @@
+Thu Feb 17 20:27:54 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* Makefile.in: Removed superfluous libtest.a, which was causing
+	trouble with some compilations, making test/wml_compiler pick up
+	a random main function.
+	
+	* test/test_wml.c: Output with octstr_dump and octstr_pretty_print
+	instead of binary if several arguments on command line.
+	
+	* test/wml_tester.c: Fixed so that it always has a main function.
+
 2000-02-17  Tuomas Luttinen  <tuo@tuo.wapit.fi>
 
 	* gwlib/octstr.h&c: argument changed from char * to const char * on 

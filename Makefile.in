@@ -212,12 +212,8 @@ make-op-table: $(srcdir)/wmlscript/make-op-table.in
 opcodes:
 	./make-op-table $(srcdir)/wmlscript/wsasm.h > $(srcdir)/wmlscript/wsopcodes.h
 
-libtest.a: $(testobjs)
-	ar rc libtest.a $(testobjs)
-	$(RANLIB) libtest.a
-
 $(progs): $(libs) $(progobjs)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $@.o $(libs) $(LIBS)
 
-$(testprogs): libtest.a $(libs)
-	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $@.o libtest.a $(libs) $(LIBS)
+$(testprogs): $(testobjs) $(libs)
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $@.o $(libs) $(LIBS)

@@ -244,7 +244,7 @@ static Octstr *convert_wml_to_wmlc_old(Octstr *wml, char *url) {
 	size_t n;
 	Octstr *wmlc;
 	
-	debug("wap.wsp.http", 0, "WSP: Compiling WML");
+	debug("wap.wsp.http", 0, "WSP: Compiling WML using Peter's compiler");
 
 	tmpnam(name);
 	f = fopen(name, "w");
@@ -255,8 +255,11 @@ static Octstr *convert_wml_to_wmlc_old(Octstr *wml, char *url) {
 	fclose(f);
 	
 	test_wml = getenv("TEST_WML");
-	if (test_wml == NULL)
-		test_wml = "./test_wml";
+	if (test_wml == NULL) {
+		error(0, "TEST_WML not specified.");
+		return NULL;
+	}
+
 	sprintf(cmd, "%s %s", test_wml, name);
 	debug("wap.wsp.http", 0, "WSP: WML cmd: <%s>", cmd);
 	f = popen(cmd, "r");
@@ -280,18 +283,21 @@ error:
 
 
 static Octstr *convert_wml_to_wmlc_new(Octstr *wml, char *url) {
-#if 0
+#if 1
 	Octstr *wmlc, *wmlscripts;
 	int ret;
 	
-	debug("wap.wsp.http", 0, "WSP: Calling wml_compile.");
+	debug("wap.wsp.http", 0, "WSP: Compiling WML using Tuomas's compiler.");
 	ret = wml_compile(wml, &wmlc, &wmlscripts);
 	debug("wap.wsp.http", 0, "WSP: wml_compile returned %d", ret);
 	octstr_destroy(wmlscripts);
 	if (ret == 0)
-{ octstr_dump(wmlc);
+{
+debug("wap.wsp.http", 0, "WSP: WML compilation successful, output:");
+octstr_dump(wmlc);
 		return wmlc;
 }
+	warning(0, "WSP: WML compilation failed.");
 	return NULL;
 #else
 	return NULL;
