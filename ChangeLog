@@ -1,3 +1,9 @@
+2000-1-28 Aarno Syvänen <syvanen@wapit.com>
+
+        * wtp.c: Important trivial change: error message "no concatenation 
+	supported" changed to "no connectionless mode nor concatenation 
+	supported"
+
 Fri Jan 28 17:13:47 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* Making release 0.5.
@@ -50,9 +56,17 @@ Thu Jan 27 20:09:23 2000  Lars Wirzenius  <liw@wapit.com>
 
 2000-1-27 Aarno Syvänen <syvanen@wapit.com>
 
-	* wtp_state-decl.h: Added a row receiving RcvInvoke when the state is
+	* wtp_state-decl.h: Added rows receiving RcvInvoke when the state is
 	RESULT_RESP_WAIT. In this case, we simulate a timer: we resend MAX_RCR
 	times and then abort the transaction.
+
+	* wtp_machine-decl.h: Attribute result, for result message, added.
+
+	* wtp.c: Constructors, destructors and debugging functions for 
+	wtp machine rewritten with the previous attribute added.
+
+	* wtp_send.c|h: function wtp_resend_result added. Function send_result
+	now returns the sended message.
 
 Thu Jan 27 17:34:53 2000  Lars Wirzenius  <liw@wapit.com>
 
