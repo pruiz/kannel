@@ -178,7 +178,7 @@ WSP_PDU *wsp_pdu_unpack(Octstr *data) {
 #undef PDU
 	default:
 		warning(0, "WSP PDU with unknown type %d", pdu->type);
-		wsp_pdu_destroy(pdu);
+		gw_free(pdu);
 		return NULL;
 	}
 

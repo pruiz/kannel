@@ -1,5 +1,11 @@
 2000-06-19  Kalle Marjola  <rpr@wapit.com>
 
+	* gw/wsp-session.c, gw/wsp_pdu.c: inserted patch from Joergz
+	Pommnitz, now Kannel hopefully works better with Motorola
+	Timeport.
+
+2000-06-19  Kalle Marjola  <rpr@wapit.com>
+
 	* gwlib/http.c: parse_url() modified to change start of the url
 	tolower() so that comprasion to http:// succeeds even with
 	HTTP://

@@ -160,7 +160,8 @@ static void main_thread(void *arg) {
 			pdu = wsp_pdu_unpack(e->u.TR_Invoke_Ind.user_data);
 			if (pdu == NULL) {
 				warning(0, "WSP: Broken PDU ignored.");
-				return;
+				wap_event_destroy(e);
+				continue;
 			}
 			break;
 	
