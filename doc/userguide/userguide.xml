@@ -2509,7 +2509,7 @@ port = 10000
       <para>The fakesmsc configuration group accepts all common 'smsc' 
       configuration group variables, like <literal>smsc-id</literal>,
       <literal>preferred-smsc-id</literal> or
-      <literal>smsc-id</literal>, which can be used to test out
+      <literal>denied-smsc-id</literal>, which can be used to test out
       routing systems and diverted services, before setting up real
       SMS center connections.</para>
 
