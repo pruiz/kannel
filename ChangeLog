@@ -1,3 +1,9 @@
+2000-05-17  Aarno Syvänen <syvanen@wapit.com>
+
+	* wtp_state-decl.h: Two bugfixes: rid to 0, when the result is sended
+	first time (thanks to Oliver Lau), conditions checking whether u/p-flag
+	is up corrected.
+
 2000-05-16    <Kalle Marjola <rpr@wapit.com>>
 
 	* gwlib/list.c|h: added function list_producer_count
