@@ -423,7 +423,7 @@ int  at2_write_line(PrivAT2data *privdata, char* line)
     int s=0;
     Octstr *linestr = NULL;
     
-    linestr = octstr_format("%s\r");
+    linestr = octstr_format("%s\r",line);
     
     debug("bb.smsc.at2", 0, "AT2[%s]: --> %s^M", octstr_get_cstr(privdata->device), line);
     
