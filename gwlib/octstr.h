@@ -203,8 +203,22 @@ void octstr_insert(Octstr *ostr1, Octstr *ostr2, size_t pos);
  * Insert characters from C array into an octet string. `pos' 
  * gives the position in `ostr' where `data' should be inserted. `len'
  * gives the number of characters in `data'.
+ * If the given `pos' is greater than the length of the input octet string,
+ * it is set to that length, resulting in an append.
  */
 void octstr_insert_data(Octstr *ostr, size_t pos, char *data, size_t len);
+
+
+/*
+ * Append characters from C array at the tail of an octet string.
+ */
+void octstr_append_data(Octstr *ostr, char *data, size_t len);
+
+
+/*
+ * Append a normal C string at the tail of an octet string.
+ */
+void octstr_append_cstr(Octstr *ostr, char *cstr);
 
 
 /*

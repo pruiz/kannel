@@ -36,11 +36,23 @@ static enum {
 	aborting_with_prejudice,
 } run_status = initializing;
 
+/* NOTE: the following variable belongs to a hack, and will go away
+ * when the configuration parsing is reworked. Right now config_get()
+ * returns the last appearance of a given configuration variable, only.
+ * We want to be able to configure several URL mappings at once.
+ * To do so, you write a line "map-url-max = somenumber" in the config
+ * file, and then write "map-url-0 = ...", "map-url-1 = ...", etc.
+ * The mappings will be added in numerical sequence, which is a feature
+ * to keep when reworking the configuration parsing, because the mapping
+ * operation is order-sensitive
+ */
+static int map_url_max = 9;
 
 static void read_config(char *filename) {
 	Config *cfg;
 	ConfigGroup *grp;
 	char *s;
+	int i;
 
 	cfg = config_create(filename);
 	if (config_read(cfg) == -1)
@@ -63,14 +75,19 @@ static void read_config(char *filename) {
 		if ((s = config_get(grp, "test-heartbeat-thread")) != NULL)
 		        test_heartbeat_thread = atoi(s);
 #endif
+		/* configure URL mappings */
+		if ((s = config_get(grp, "map-url-max")) != NULL)
+			map_url_max = atoi(s);
 		if ((s = config_get(grp, "device-home")) != NULL)
 			wsp_http_map_url_config_device_home(s);
-		/* This would be really nice, if config_get would return
-		 * all map-url lines in seperate calls; right now only
-		 * the last map-url line in the configuration file survives.
-		 */
 		if ((s = config_get(grp, "map-url")) != NULL)
 			wsp_http_map_url_config(s);
+		for (i=0; i<=map_url_max; i++) {
+			char buf[32];
+			sprintf(buf, "map-url-%d", i);
+			if ((s = config_get(grp, buf)) != NULL)
+				wsp_http_map_url_config(s);
+		}
 		grp = config_next_group(grp);
 	}
 	if (heartbeat_freq == -600)

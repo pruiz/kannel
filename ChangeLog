@@ -1,3 +1,10 @@
+Sun Mar  5 12:53:14 CET 2000	Patrick Schaaf	<bof@bof.de>
+
+	* gw/wapbox.c, gw/wsp_http.c, gwlib/octstr.*: more or less
+	completed URL mapping functionality; see gw/kannel.wapconf
+	for a short description of the facilities. The device-home
+	setting for Motorola Timeport should work correctly now.
+
 Sun Mar  5 10:55:00 CET 2000	Patrick Schaaf	<bof@bof.de>
 
 	* gw/wsp_http.c: change #if 1 to #if HAVE_LIBXML, to really not

@@ -33,14 +33,36 @@
 #	temporary: log lots of output to test new heartbeat thread construct.
 #	default: 0
 #
-# device-home = "http://some.where/else"
+# map-url = "http://from.here/ http://some.where/"
+#	adds a single mapping for the left side URL to the given destination.
+#	If you append an asterisk `*' to the left side URL, it is prefix
+#	matched against the incoming URL. Whenever that prefix matches,
+#	the URL will be replaced completely by the right side. If you
+#	additionally append an asterisk to the right side URL, the part
+#	of the incoming URL coming after the prefix, will be appended
+#	to the right side URL. Thus, for a line:
+#		map-url = "http://source/* http://destination/*"
+#	and an incoming URL of "http://source/some/path", the result
+#	will be "http://destination/some/path"
+#
+# map-url-max = <number>
+#	if you need more than one mapping, set this to the highest number
+#	mapping you need. The default gives you 10 mappings, numbered
+#	from 0 to 9.
+#	default: 9
+#
+# map-url-0 = "http://from.here/ http://some.where/"
+#	adds a mapping for the left side URL to the given destination URL.
+#	Repeat these lines, with 0 replaced by a number up to map-url-max,
+#	if you need several mappings.
+#
+# device-home = "http://some.where/"
 #	adds a mapping for the URL DEVICE:home (as sent by Phone.com browsers)
 #	to the given destination URL. There is no default mapping.
-#
-# map-url = "http://from.here/ http://some.where/"
-#	adds a mapping for the left side URL to the given destination URL.
-#	Right now you can only configure one mapping in addition to the
-#	mapping using the device-home command.
+#	NOTE: the mapping is added with both asterisks, as described above
+#	for the "map-url" setting. Thus, the above example line is
+#	equivalent to writing
+#		map-url = "DEVICE:home* http://some.where/*"
 #
 # Those not present use default values, which are following ones:
 # (read from file bb.h, check that, too)
@@ -55,3 +77,7 @@ hearbeat-freq = -600
 log-level = 0
 # device-home = "http://some.where/"
 # map-url = "http://kannel http://some.where.else/index.wml"
+# map-url-max = 19
+# map-url-0 = "http://foo http://some.server"
+# map-url-1 = "http://bar http://some.other.server"
+# map-url-2 = ...

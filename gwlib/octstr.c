@@ -419,6 +419,9 @@ void octstr_insert_data(Octstr *ostr, size_t pos, char *data, size_t len) {
 	size_t needed;
 	char *p;
 	
+	if (ostr->len < pos) {	/* make things a bit more robust */
+		pos = ostr->len;
+	}
 	needed = ostr->len + len + 1;
 	if (ostr->size < needed) {
 		p = gw_realloc(ostr->data, needed);
@@ -426,10 +429,22 @@ void octstr_insert_data(Octstr *ostr, size_t pos, char *data, size_t len) {
 		ostr->data = p;
 	}
 	
-	memmove(ostr->data + pos + len, ostr->data + pos, ostr->len - pos);
+	if (ostr->len > pos) {	/* only if neccessary */
+		memmove(ostr->data+pos+len, ostr->data+pos, ostr->len - pos);
+	}
 	memcpy(ostr->data + pos, data, len);
 	ostr->len += len;
 	ostr->data[ostr->len] = '\0';
+}
+
+
+void octstr_append_data(Octstr *ostr, char *data, size_t len) {
+	octstr_insert_data(ostr, ostr->len, data, len);
+}
+
+
+void octstr_append_cstr(Octstr *ostr, char *cstr) {
+	octstr_insert_data(ostr, ostr->len, cstr, strlen(cstr));
 }
 
 
