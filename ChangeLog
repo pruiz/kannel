@@ -1,4 +1,8 @@
 2002-03-24  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/bb_http.c, gw/bearerbox.c, gw/dlr.[ch], doc/userguide/userguide.xml: 
+      added '/flush-dlr' HTTP administration command to flush the DLR queue
+ 
+2002-03-24  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/bearerbox.c, gw/dlr.[ch]: added DLR information to the status page
 
 2002-03-24  Stipe Tolj  <tolj@wapme-systems.de>
