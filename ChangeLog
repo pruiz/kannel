@@ -1,4 +1,8 @@
 2002-01-28 Andreas Fink <andreas@fink.org>
+    *gwlib/thread.c/h: some debugging code for Mutex problems.
+     seems to fix a problem on solaris for no obvious reasons
+
+2002-01-28 Andreas Fink <andreas@fink.org>
     * gw/smsc_smpp.c: fixed SMPP for unicode sending
     * gwlib/conn.c: reported better where mutex fails
 

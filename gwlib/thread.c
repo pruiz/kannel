@@ -58,7 +58,7 @@ void mutex_destroy(Mutex *mutex)
 }
 
 
-void mutex_lock(Mutex *mutex)
+void mutex_lock_real(Mutex *mutex, char *file, int line)
 {
     int ret;
 
@@ -75,9 +75,9 @@ void mutex_lock(Mutex *mutex)
     ret = pthread_mutex_lock(&mutex->mutex);
 #endif
     if (ret != 0)
-        panic(ret, "mutex_lock: Mutex failure!");
+        panic(ret, "mutex_lock: Mutex failure! called from %s at line %d",file,line);
     if (mutex->owner == gwthread_self())
-        panic(0, "mutex_lock: Managed to lock the mutex twice!");
+        panic(0, "mutex_lock: Managed to lock the mutex twice! called from %s at line %d",file,line);
     mutex->owner = gwthread_self();
 }
 

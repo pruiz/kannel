@@ -72,7 +72,10 @@ void mutex_destroy(Mutex *mutex);
 
 /* lock given mutex. PANIC if fails (non-initialized mutex or other
  * coding error) */ 
-void mutex_lock(Mutex *mutex);
+#define        mutex_lock(m) \
+       mutex_lock_real(m,__FILE__,__LINE__)
+
+void mutex_lock_real(Mutex *mutex,char *file, int line);
 
 #define        mutex_unlock(m) \
        mutex_unlock_real(m,__FILE__,__LINE__)
