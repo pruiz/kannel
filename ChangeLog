@@ -1,3 +1,9 @@
+Thu Mar  9 19:17:43 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* gw/bearerbox.c: Commented out an assert that seems to be too much.
+	
+	* gw/smsbox.c: Added a missing mutex_lock to main_loop.
+
 Thu Mar  9 17:48:33 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* Makefile.in: Moved -D_REENTRANT to before @CFLAGS@ so that someone

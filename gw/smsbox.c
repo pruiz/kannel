@@ -344,6 +344,7 @@ void main_loop()
 	http_accept_pending = 0;
     
     start = t = time(NULL);
+    mutex_lock(socket_mutex);
     while(!abort_program) {
 
 	if (time(NULL)-t > heartbeat_freq) {

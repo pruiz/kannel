@@ -537,8 +537,10 @@ static void normalize_numbers(RQueueItem *msg, SMSCenter *from)
     int sr, rr;
 
     assert(msg != NULL);
+#if 0
     assert(from != NULL);
-    
+#endif
+
     sr = rr = 0;
     if (from != NULL) {
 	p = smsc_dial_prefix(from);
