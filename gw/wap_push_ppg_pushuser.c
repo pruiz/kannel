@@ -682,7 +682,7 @@ static void challenge(HTTPClient *c, List *push_headers)
     octstr_format_append(realm, "%s", "\"/cgi-bin/wap-push.cgi\"");
     reply_headers = http_create_empty_headers();
     http_header_add(reply_headers, "WWW-Authenticate", octstr_get_cstr(realm));
-    http_status = 401;
+    http_status = HTTP_UNAUTHORIZED;
     challenge = octstr_imm("You must show your credentials.\n");
     http_header_add(reply_headers, "Content-Length", 
                     octstr_get_cstr(cos = octstr_format("%ld", 
@@ -706,7 +706,7 @@ static void reply(HTTPClient *c, List *push_headers)
     List *reply_headers;
 
     reply_headers = http_create_empty_headers();
-    http_status = 403;
+    http_status = HTTP_FORBIDDEN;
     denied = octstr_imm("You are not allowed to use this service. Do not retry.\n");
     http_header_add(reply_headers, "Content-Length", 
                     octstr_get_cstr(dos = octstr_format("%ld", octstr_len(denied))));
