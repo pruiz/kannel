@@ -22,6 +22,12 @@ typedef int socklen_t;
    Caller should treat this as read-only. Caller MUST NOT destroy it. */
 Octstr *get_official_name(void);
 
+/* Return an official IP number for the host. Caller should treat this 
+   as read-only. Caller MUST NOT destroy it. Note that there can be
+   multiple official IP numbers for the host.
+   */
+Octstr *get_official_ip(void);
+
 /* Open a server socket. Return -1 for error, >= 0 socket number for OK.*/
 int make_server_socket(int port);
 

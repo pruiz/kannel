@@ -31,9 +31,13 @@ Octstr *version_report_string(const char *boxname)
     uname(&u);
     return octstr_format("Kannel %s version `%s'.\n"
     	    	    	 "System %s, release %s, version %s, machine %s.\n"
+			 "Hostname %s, IP %s.\n"
 			 "Libxml version %s.\n",
-			 boxname, VERSION, u.sysname, u.release, u.version, 
-			 u.machine, LIBXML_VERSION_STRING);
+			 boxname, VERSION,
+			 u.sysname, u.release, u.version, u.machine,
+			 octstr_get_cstr(get_official_name()),
+			 octstr_get_cstr(get_official_ip()),
+			 LIBXML_VERSION_STRING);
 }
 
 

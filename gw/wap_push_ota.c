@@ -15,7 +15,6 @@
  * By Aarno Syvänen for Wapit Ltd
  */
 
-#include <sys/utsname.h>
 #include <errno.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
@@ -147,10 +146,9 @@ void wap_push_ota_dispatch_event(WAPEvent *e)
 void wap_push_ota_bb_address_set(Octstr *in)
 {
     gw_assert(in);
-    in = name(in);
 
     mutex_lock(bearerbox->mutex);
-    bearerbox->address = octstr_duplicate(in);
+    bearerbox->address = name(in);
     mutex_unlock(bearerbox->mutex);
 
     octstr_destroy(in);
@@ -547,37 +545,10 @@ static Octstr *pack_server_address(void)
  */ 
 static Octstr *name(Octstr *in)
 {
-    struct hostent hostinfo;
-    struct utsname bb_name;
-    char *str;
-    
-    str = gw_malloc(INET_ADDRSTRLEN);
-    
-    if (octstr_str_compare(in, "localhost") != 0) {
-       return in;
-    }
-
-    if (uname(&bb_name) < 0) {
-        error(0, "do not know the name of the localhost");
-        return NULL;
-    }
-    
-    if (gw_gethostbyname(&hostinfo, bb_name.nodename) == -1) {
-        error(errno, "gethostbyname failed in Push OTA module, when trying"
-              "to resolve localhost");
-        return NULL;
-    }
-
-    if (inet_ntop(hostinfo.h_addrtype, *hostinfo.h_addr_list, str, 
-                  INET_ADDRSTRLEN) == NULL) {
-        error(errno, "conversion to dotted decimal form failed in Push OTA");
-        return NULL;
-    }
-
-    in = octstr_create(str);
-    gw_free(str);
-    
-    return in;
+    if (octstr_compare(in, octstr_create_immutable("localhost")) != 0)
+	return octstr_duplicate(in);
+    else
+	return octstr_duplicate(get_official_ip());
 }
 
 static BearerboxAddress *bearerbox_address_create(void) 

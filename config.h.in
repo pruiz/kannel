@@ -107,4 +107,7 @@
 /* Define if you want to turn off assertion checking */
 #undef NO_GWASSERT
 
+/* Define if you have <syslog.h>.  */
+#undef HAVE_SYSLOG_H
+
 #endif

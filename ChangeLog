@@ -1,3 +1,21 @@
+2001-01-17  Lars Wirzenius  <liw@iki.fi>
+
+	* configure.in, configure, config.h.in: check for syslog.h.
+	
+	* gwlib/log.c: Use the result from configure (HAVE_SYSLOG_H) to
+	exclude the syslog stuff from compilation on platforms on which
+	it is not available, such as Windows when not using Cygwin.
+	
+    	* gwlib/socket.[ch]: Wrote get_official_ip, so that other modules
+	don't have to do it themselves.
+
+    	* gw/wap_push_ota.c: Rewrote the static name() function. The old
+	code was buggy (had a memory leak) and called non-portable functions
+	(inet_ntop, uname). The new one uses get_official_ip.
+
+	* gw/shared.c: Use get_official_name and get_official_ip to
+	report the host, in addition to what uname() returns.
+
 2001-01-17  Uoti Urpala  <uau@wapit.com>
 
 	* gw/smsc_fake2.c: Added missing #include, minor fixes.

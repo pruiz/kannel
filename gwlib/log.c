@@ -9,7 +9,29 @@
 #include <time.h>
 #include <stdarg.h>
 #include <string.h>
+
+#if HAVE_SYSLOG_H
 #include <syslog.h>
+#else
+
+/*
+ * If we don't have syslog.h, then we'll use the following dummy definitions
+ * to avoid writing #if HAVE_SYSLOG_H everywhere.
+ */
+
+enum {
+    LOG_PID, LOG_DAEMON, LOG_DEBUG, LOG_INFO, LOG_WARNING, LOG_ERR, LOG_ALERT
+};
+
+static void openlog(const char *ident, int option, int facility)
+{
+}
+
+static void syslog(int translog, const char *buf)
+{
+}
+
+#endif
 
 #include "gwlib.h"
 
