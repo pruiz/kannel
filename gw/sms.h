@@ -65,4 +65,14 @@ int fields_to_dcs(Msg *msg, int mode);
  */
 int dcs_to_fields(Msg **msg, int mode);
 
+
+/*
+ * Compute length of the message data in Msg after it will be converted 
+ * to the proper coding. 
+ * If coding is 7 bit, then sms_msgdata_len will return the number of 
+ * septets this message will convert to, taking into account GSM 03.38
+ * escape sequences of special chars, which would count as two septets.
+ */
+int sms_msgdata_len(Msg *msg);
+
 #endif
