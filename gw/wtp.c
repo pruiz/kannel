@@ -162,8 +162,6 @@ List *wtp_unpack_wdp_datagram(Msg *msg){
            while (octstr_len(data) != 0){
 
 	         if (octstr_get_bits(data, 0, 1) == 0){
-		    debug("wap.wtp", 0, "Data octsrt ha sa following value");
-		    octstr_dump(data, 0);
 	            pdu_len = octstr_get_char(data, 0);
                     octstr_delete(data, 0, 1);
 
@@ -693,7 +691,7 @@ static int deduce_tid(Octstr *user_data){
 
 static int concatenated_message(Octstr *user_data){
 
-       return octstr_get_char(user_data, 0) == '0';
+       return octstr_get_char(user_data, 0) == 0x00;
 }
 
 static size_t cat_chars(long  data1, long data2){
