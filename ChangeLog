@@ -1,4 +1,12 @@
 2004-01-20  Alexander Malysh  <a.malysh@centrium.de>
+    * configure.in, configure: applied mysql-configure-rewrite.patch that
+      does:
+	1) remove code duplication
+	2) bug-fix for CFLAGS/LIBS
+	3) adds using of reentrant counterpart of libmysqlclient
+      Msg-Id: <200401191528.57104.a.malysh@centrium.de>.
+
+2004-01-20  Alexander Malysh  <a.malysh@centrium.de>
     * gw/shared.c: added more info to 'version_report_string'.
       Compiler,Build time, Mysql build with version, running with.
 
