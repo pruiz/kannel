@@ -4181,6 +4181,63 @@ concatenation = 1
 
   </para>
 
+ <table frame=none>
+  <title>OTA Bookmark Group Variables</title>
+  <tgroup cols=3>
+  <thead>
+   <row>
+     <entry>Variable</entry>
+     <entry>Value</entry>
+     <entry>Description</entry>
+   </row>
+  </thead>
+  <tbody>
+   <row><entry><literal>group</literal></entry>
+     <entry><literal>ota-bookmark</literal></entry>
+     <entry valign=bottom>
+       This is a mandatory variable
+     </entry></row>
+
+   <row><entry><literal>ota-id</literal></entry>
+     <entry><literal>string</literal></entry>
+     <entry valign=bottom>
+	     An optional name or id for the ota-bookmark. Any string is
+        acceptable, but semicolon ';' may cause problems, so avoid
+        it and any other special non-alphabet characters. 
+     </entry></row>
+
+   <row><entry><literal>url</literal></entry>
+     <entry><literal>URL</literal></entry>
+     <entry valign=bottom>
+       The address of the HTTP server for your WAP services, i.e. 
+		 <literal>http://wap.company.com</literal>
+     </entry></row>
+
+   <row><entry><literal>name</literal></entry>
+     <entry><literal>string</literal></entry>
+     <entry valign=bottom>
+       Description of the service
+     </entry></row>
+
+  </tbody>
+  </tgroup>
+ </table>
+
+  <para>A sample 'ota-bookmark' group:
+
+<programlisting>
+group = ota-bookmark
+ota-id = wap-link
+url = "http://wap.company.com"
+service = "Our company's WAP site"
+</programlisting>
+
+And a 'sendsms-user' to use with it, with the same conditions as for the
+'ota-setting' group.
+
+  </para>
+
+
 </sect2>
 
 <sect2>
