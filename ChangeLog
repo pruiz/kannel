@@ -1,4 +1,7 @@
 2003-08-01  Stipe Tolj  <tolj@wapme-systems.de>
+    * gwlib/http.c, gw/wap-[maps|appl].c: fixed some compiler warnings.
+
+2003-08-01  Stipe Tolj  <tolj@wapme-systems.de>
     * gwlib/http.[ch]: rewrote parse_url() to parse the URL into an 
       HTTPURLParse struct that holds all relevant components of an URL, ie.
       scheme, hostname, port, etc. Added therefore http_urlparse_create() and
