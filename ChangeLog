@@ -1,3 +1,8 @@
+2001-02-15  Tuomas Luttinen  <tuo@wapit.com>
+
+	* gw/wml_compiler.c (set_charset): bug reported by Aymerick Jéhanne
+	fixed so no more 2*encoding in the XML-header.
+
 2001-02-15  Richard Braakman  <dark@wapit.com>
 
 	* gw/smsc_at.c: Corrected timestamp calculation.  mktime()

@@ -1519,12 +1519,14 @@ static void set_charset(Octstr *document, Octstr* charset)
     if (octstr_len(charset) == 0)
 	return;
 
-    encoding = octstr_create(" encoding=\"");
+    encoding = octstr_create(" encoding");
     enc = octstr_search(document, encoding, 0);
     gt = octstr_search_char(document, '>', 0);
 
     if (enc < 0 || enc > gt) {
 	gt --;
+	octstr_append_char(encoding, '=');
+	octstr_append_char(encoding, '"');
 	octstr_insert(document, encoding, gt);
 	gt = gt + octstr_len(encoding);
 	octstr_append_char(charset, '"');
