@@ -1,3 +1,12 @@
+Thu Mar 23 19:37:03 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* gw/wml_compiler.[ch]: Removed kludge to not use the new WML
+	compiler when libxml is not installed while compiling. The new
+	WML compiler is becoming required by this change - if you don't
+	have libxml already, install it, or you lose.
+	
+	* gw/wsp_http.c: Don't use the old compiler at all.
+
 Thu Mar 23 19:22:18 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* README: Changed requirement for libxml to at least 1.8.6,

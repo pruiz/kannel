@@ -18,8 +18,10 @@ static void  dev_null(const char *data, size_t len, void *context);
 static int encode_content_type(const char *type);
 
 static Octstr *convert_to_self(Octstr *stuff, char *url);
+#if 0
 static Octstr *convert_wml_to_wmlc_old(Octstr *wml, char *url);
-static Octstr *convert_wml_to_wmlc_new(Octstr *wml, char *url);
+#endif
+static Octstr *convert_wml_to_wmlc(Octstr *wml, char *url);
 static Octstr *convert_wmlscript_to_wmlscriptc(Octstr *wmlscript, char *url);
 
 /* The following code implements the map-url mechanism */
@@ -213,10 +215,12 @@ void *wsp_http_thread(void *arg) {
 	} converters[] = {
 		{ "text/vnd.wap.wml",
 		  "application/vnd.wap.wmlc",
-		  convert_wml_to_wmlc_new },
+		  convert_wml_to_wmlc },
+#if 0
 		{ "text/vnd.wap.wml",
 		  "application/vnd.wap.wmlc",
 		  convert_wml_to_wmlc_old },
+#endif
 		{ "application/vnd.wap.wmlc",
 		  "application/vnd.wap.wmlc",
 		  convert_to_self },
@@ -411,6 +415,10 @@ static Octstr *convert_to_self(Octstr *stuff, char *url) {
 }
 
 
+#if 0
+/* XXX This is commented out, because the old compiler is now officially
+   unsupported. I keep the code here so we can un-unsupport it easily in
+   case of emergencies. --liw */
 static Octstr *convert_wml_to_wmlc_old(Octstr *wml, char *url) {
 	char name[10*1024];
 	char cmd[20*1024];
@@ -466,35 +474,31 @@ error:
 	panic(e, "Couldn't write temp file for WML compilation.");
 	return NULL;
 }
+#endif
 
 
-static Octstr *convert_wml_to_wmlc_new(Octstr *wml, char *url) {
-#if HAVE_LIBXML
+static Octstr *convert_wml_to_wmlc(Octstr *wml, char *url) {
 	Octstr *wmlc;
 	int ret;
+#if 0
 	static Mutex *kludge = NULL;
 	
 	/* XXX This initializion code isn't thread safe, but ignore. */
 	if (kludge == NULL)
 		kludge = mutex_create();
-
-	debug("wap.wsp.http", 0, "WSP: Compiling WML using Tuomas's compiler.");
 	mutex_lock(kludge);
+#endif
+
+	debug("wap.wsp.http", 0, "WSP: Compiling WML.");
 	ret = wml_compile(wml, &wmlc);
+#if 0
 	mutex_unlock(kludge);
+#endif
 	debug("wap.wsp.http", 0, "WSP: wml_compile returned %d", ret);
 	if (ret == 0)
-{
-debug("wap.wsp.http", 0, "WSP: WML compilation successful, output:");
-octstr_dump(wmlc);
 		return wmlc;
-}
 	warning(0, "WSP: WML compilation failed.");
 	return NULL;
-#else
-	debug("wap.wsp.http", 0, "WSP: Tuomas's compiler NOT used.");
-	return NULL;
-#endif
 }
 
 

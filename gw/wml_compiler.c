@@ -12,12 +12,6 @@
 
 #include "config.h"
 
-/* XXX The #ifdef HAVE_LIBXML is a stupid hack to make this not break things
-until libxml is installed everywhere we do development. --liw */
-
-#ifndef HAVE_LIBXML
-int wml_compiler_not_implemented = 1;
-#else
 
 
 #include <assert.h>
@@ -1099,6 +1093,3 @@ static Octstr *output_variable(Octstr *variable, var_esc_t escaped,
 
   return ret;
 }
-
-
-#endif
