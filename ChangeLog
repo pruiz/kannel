@@ -1,3 +1,9 @@
+2002-05-01  Bruno Rodrigues  <bruno.rodrigues@litux.org>
+    * configure.in: added --enable-mysql besides --with-mysql; added 
+      date to VERSION, read from CVS/Entries instead of newest file in .;
+      fixed openssl command detection
+    * gw/smsc_smpp.c: added PID and DCS/* MO support 
+
 2002-04-30 Aarno Syvänen <aarno@wiral.com>
     * wap/wsp_server_session_machine.def: Fixed a compiler warning
 

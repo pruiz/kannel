@@ -199,6 +199,8 @@ static Msg *pdu_to_msg(SMPP_PDU *pdu)
     msg->sms.msgdata = pdu->u.deliver_sm.short_message;
     pdu->u.deliver_sm.short_message = NULL;
     charset_gsm_to_latin1(msg->sms.msgdata);
+    msg->sms.pid = pdu->u.deliver_sm.protocol_id;
+    dcs_to_fields(&msg, pdu->u.deliver_sm.data_coding);
 
     return msg;
 }
@@ -276,6 +278,8 @@ static SMPP_PDU *msg_to_pdu(SMPP *smpp, Msg *msg)
     }
 
     pdu->u.submit_sm.data_coding = fields_to_dcs(msg, 0);
+    if(msg->sms.pid)
+	pdu->u.submit_sm.protocol_id = msg->sms.pid;
 
     if (octstr_len(msg->sms.udhdata)) {
         pdu->u.submit_sm.short_message =
