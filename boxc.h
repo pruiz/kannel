@@ -50,7 +50,7 @@ int boxc_send_message(BOXC *boxc, RQueueItem *msg, RQueue *reply_queue);
  * return 0 if no message received, 1 if message received,
  * -1 on error/heartbeat timeout
  */
-int boxc_get_message(BOXC *boxc, RQueue *reply_queue);
+int boxc_get_message(BOXC *boxc, RQueueItem **msg);
 
 
 #endif

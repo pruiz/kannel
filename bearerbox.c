@@ -50,8 +50,6 @@ typedef struct bb_t {
     CSDRouter *csdr;   	/* if CSD Router thread */
     BOXC *boxc;		/* if SMS/WAP box */
 
-    char *route_str;	/* route string - if the receiver matches.. */
-    
     time_t heartbeat;	/* last update of our status */
 
     ConfigGroup *grp;	/* configuration */
@@ -118,7 +116,6 @@ static void print_threads(char *buffer);
 static int route_msg(BBThread *bbt, RQueueItem *msg)
 {
     BBThread *thr;
-    char *p, *s;
     int i, ret, backup = -1;
 
     if (msg->source > -1)	/* if we have already routed message */
@@ -151,16 +148,15 @@ static int route_msg(BBThread *bbt, RQueueItem *msg)
 		(thr->status == BB_STATUS_OK ||
 		 thr->status == BB_STATUS_CREATED)) {
 
-		s = thr->route_str;
+		if (thr->type == BB_TTYPE_SMSC)
+		    ret = smsc_receiver(thr->smsc, msg->receiver);
+		else
+		    ret = 0;
 		
-		for(; p != NULL; p = strstr(s, msg->receiver)) {
-		    if (p == thr->route_str || *(p-1) == ':') {
-			msg->destination = thr->id;
-			break;
-		    }
-		    s = p+1;
-		}
-		if (strstr(thr->route_str, "default") != NULL)
+		if (ret == 1) {
+		    msg->destination = thr->id;
+		    break;
+		} else if (ret == 2)
 		    backup = thr->id;
 	    }
 	}
@@ -235,14 +231,16 @@ static void *smscenter_thread(void *arg)
     RQueueItem	*msg;
     time_t	our_time, last_time;
     int 	ret;
+    int		wait;
     
     us = arg;
     us->status = BB_STATUS_OK;
     last_time = time(NULL);
 
-    info(0, "smscenter thread..");
+    info(0, "smscenter thread [%d/%s]..", us->id, smsc_name(us->smsc));
     
     while(!bbox->abort_program) {
+	wait = 1;
 	if (us->status == BB_STATUS_KILLED) break;
 	HEARTBEAT_UPDATE(our_time, last_time, us);
 
@@ -254,18 +252,19 @@ static void *smscenter_thread(void *arg)
 	    
 	    rq_push_msg(bbox->request_queue, msg);
 	    info(0, "Got message [%d] from %s", msg->id, smsc_name(us->smsc));
-	    continue;	/* is this necessary? */
+	    wait = 0;
 	}
 
 	/* check for any messages to us in reply-queue
 	 */
+
 	msg = rq_pull_msg(bbox->reply_queue, us->id);
 	if (msg) {
 	    ret = smsc_send_message(us->smsc, msg, bbox->request_queue);
-
-	    continue;
+	    wait = 0;
 	}
-	usleep(1000);
+	if (wait)
+	    usleep(1000);
     }
     us->status = BB_STATUS_DEAD;
     return NULL;
@@ -374,12 +373,13 @@ static void *smsboxconnection_thread(void *arg)
 	/* read socket, adding any new messages to reply-queue */
 	/* if socket is closed, set us to die-mode */
 
-	ret = boxc_get_message(us->boxc, bbox->reply_queue);
+	ret = boxc_get_message(us->boxc, &msg);
 	if (ret < 0) {
 	    error(0, "SMS BOX %d get message failed, killing", us->id);
 	    break;
 	} else if (ret > 0) {
-	    info(0, "Got a message (ignoring)!");
+	    route_msg(us, msg);
+	    rq_push_msg(bbox->reply_queue, msg);
 	    continue;
 	}	    
 	/* check for any messages to us in request-queue,
@@ -478,7 +478,6 @@ static BBThread *create_bbt(int type)
     nt->smsc = NULL;
     nt->csdr = NULL;
     nt->boxc = NULL;
-    nt->route_str = NULL;
 
     id = find_bbt_id();
     index = find_bbt_index();
@@ -492,6 +491,7 @@ static BBThread *create_bbt(int type)
     return nt;
 }
 
+
 /*
  * delete thread structure and data associated
  */
@@ -500,10 +500,8 @@ static void del_bbt(BBThread *thr)
     smsc_close(thr->smsc);
     csdr_close(thr->csdr);
     boxc_close(thr->boxc);
-    free(thr->route_str);
     free(thr);
 }
-
 
 
 /*
@@ -695,7 +693,8 @@ static void check_heartbeats(void)
 		warning(0, "Thread %d (id %d) type %d has stopped beating!",
 			i, thr->id, thr->type);
 
-		/* TODO: Kill it, reroute packets, send NACKa, whatever */
+		bbox->threads[i] = NULL;
+		del_bbt(thr);
 	    }
 	}
     }

@@ -123,7 +123,7 @@ int rq_push_msg_ack(RQueue *queue, RQueueItem *msg)
 	if (ptr->msg_type != R_MSG_TYPE_ACK &&
 	    ptr->msg_type != R_MSG_TYPE_NACK)
 
-	    return prev;
+	    break;
 	prev = ptr;
 	ptr = ptr->next;
     }

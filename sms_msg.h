@@ -43,6 +43,7 @@ typedef struct {
 	int has_udh;
 	int is_binary;
 	time_t time;
+        int id;		/* new: used by the SMS BOX */
 } SMSMessage;
 
 

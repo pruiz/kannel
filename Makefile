@@ -58,7 +58,7 @@ all: progs
 progs: $(progs)
 
 SMSC = smsc.o smsc_smpp.o smsc_emi.o smsc_fake.o smsc_cimd.o
-BBOBJS = $(SMSC) boxc.o csdr.o bb_msg.o bearerbox.o
+BBOBJS = $(SMSC) boxc.o csdr.o bb_msg.o sms_msg.o bearerbox.o
 
 
 #doc: dummy
@@ -71,8 +71,8 @@ fakesmsc: fakesmsc.o libgw.a
 bearerbox: $(BBOBJS) libgw.a
 	$(CC) $(CFLAGS) $(LDFLAGS) -o bearerbox $(BBOBJS) libgw.a $(LIBS)
 
-smsbox: smsbox.o libgw.a
-	$(CC) $(CFLAGS) $(LDFLAGS) -o smsbox smsbox.o libgw.a $(LIBS)
+smsbox: smsbox.o sms_msg.o libgw.a
+	$(CC) $(CFLAGS) $(LDFLAGS) -o smsbox smsbox.o sms_msg.o libgw.a $(LIBS)
 
 libgw.a: $(libobjs)
 	ar rc libgw.a $(libobjs)
@@ -88,6 +88,7 @@ html.o: html.h wapitlib.h
 http.o: http.h wapitlib.h
 octstr.o: octstr.h wapitlib.h
 smsc.o: smsc.h sms_msg.h smsc_p.h
+sms_msg.h: octstr.h
 smsc_fake.o: smsc.h sms_msg.h smsc_p.h wapitlib.h
 smsc_smsc.o: smsc.h sms_msg.h smsc_p.h wapitlib.h
 smsc_emi.o: smsc.h sms_msg.h smsc_p.h wapitlib.h

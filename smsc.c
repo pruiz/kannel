@@ -19,6 +19,7 @@
 
 #include "wapitlib.h"
 #include "smsc.h"
+#include "sms_msg.h"
 #include "smsc_p.h"
 #include "config.h"
 #include "bb_msg.h"
@@ -36,101 +37,6 @@ static int smscenter_unlock(SMSCenter *smsc);
  * TODO: WAP WDP functions!
  */
 
-
-/*--------------------------------------------------------------------
- * SMS message functions
- */
-
-
-SMSMessage *smsmessage_construct(char *sender, char *receiver, Octstr *text) {
-	SMSMessage *sms;
-	
-	if (text == NULL) {
-		error(0, "smsmessage_construct: text is NULL");
-		return NULL;
-	}
-
-	sms = malloc(sizeof(SMSMessage));
-	if (sms == NULL)
-		goto error;
-
-	sms->sender = strdup(sender);
-	sms->receiver = strdup(receiver);
-	if (sms->sender == NULL || sms->receiver == NULL)
-		goto error;
-	
-	sms->text = text;
-	sms->has_udh = 0;
-	sms->is_binary = 0;
-	sms->time = (time_t) 0;
-	return sms;
-
-error:
-	error(errno, "strdup failed");
-	smsmessage_destruct(sms);
-	return NULL;
-}
-
-
-int smsmessage_add_udh(SMSMessage *sms, int id, Octstr *data) {
-	Octstr *temp, *temp2;
-	char buf[2];
-	unsigned char len;
-
-	temp = NULL;
-	temp2 = NULL;
-
-	/* Prepend the length byte for the total length of the headers,
-	   if the message doesn't already have one. */
-	if (!sms->has_udh) {
-		temp = octstr_create_from_data("\0", 1);
-		if (temp == NULL)
-			goto error;
-		if (octstr_insert(sms->text, temp, 0) == -1)
-			goto error;
-		sms->has_udh = 1;
-		octstr_destroy(temp);
-	}
-	
-	buf[0] = id;
-	buf[1] = (unsigned char) octstr_len(data);
-	temp = octstr_create_from_data(buf, 2);
-	if (temp == NULL)
-		goto error;
-	debug(0, "temp:");
-	octstr_dump(temp);
-	debug(0, "data:");
-	octstr_dump(data);
-	temp2 = octstr_cat(temp, data);
-	debug(0, "temp2:");
-	octstr_dump(temp2);
-	if (temp2 == NULL)
-		goto error;
-	len = octstr_get_char(sms->text, 0);
-	if (octstr_insert(sms->text, temp2, 1 + len) == -1)
-		goto error;
-	octstr_set_char(sms->text, 0, len + octstr_len(temp2));
-	
-	octstr_destroy(temp);
-	octstr_destroy(temp2);
-	return 0;
-
-error:
-	error(errno, "Out of memory");
-	octstr_destroy(temp);
-	octstr_destroy(temp2);
-	return -1;
-}
-
-
-
-void smsmessage_destruct(SMSMessage *sms) {
-	if(sms != NULL) {
-		free(sms->sender);
-		free(sms->receiver);
-		free(sms);
-	}
-}
 
 /*--------------------------------------------------------------------
  * smscenter functions
@@ -673,6 +579,11 @@ SMSCenter *smsc_open(ConfigGroup *grp) {
 	    sprintf(smsc->dial_prefix, "%.*s",
 		    (int) sizeof(smsc->dial_prefix), dial_prefix);
 
+	    if (route_prefix == NULL)
+		route_prefix = "";
+	    sprintf(smsc->route_prefix, "%.*s",
+		    (int) sizeof(smsc->route_prefix), route_prefix);
+
 	    info(0, "Opened a new SMSC type %d", typeno);
 	}
 	
@@ -702,6 +613,11 @@ int smsc_reopen(SMSCenter *smsc) {
 
 char *smsc_name(SMSCenter *smsc) {
 	return smsc->name;
+}
+
+
+int smsc_receiver(SMSCenter *smsc, char *number) {
+    return 2;		/* default */
 }
 
 
@@ -762,17 +678,20 @@ int smsc_send_message(SMSCenter *smsc, RQueueItem *msg, RQueue *request_queue)
     int ret;
     
     if (msg->msg_class == R_MSG_CLASS_WAP) {
-	error(0, "WAP messages not yet supported, tough");
+	error(0, "SMSC:WAP messages not yet supported, tough");
 	return -1;
     }	
 
     if (msg->msg_type == R_MSG_TYPE_ACK) {
-	debug(0, "Read ACK [%d] from queue, ignoring.", msg->id);
+	debug(0, "SMSC:Read ACK [%d] from queue, ignoring.", msg->id);
 	ret = 0;
     } else if (msg->msg_type == R_MSG_TYPE_NACK) {
-	debug(0, "Read NACK [%d] from queue, ignoring.", msg->id);
+	debug(0, "SMSC:Read NACK [%d] from queue, ignoring.", msg->id);
 	ret = 0;
     }  else if (msg->msg_type == R_MSG_TYPE_MT) {
+
+	info(0, "Send SMS Message [%d] to SMSC", msg->id);
+	
 	sms_msg = smsmessage_construct(msg->sender, msg->receiver, msg->msg);
     
 	ret = smscenter_submit_smsmessage(smsc, sms_msg);
@@ -788,7 +707,7 @@ int smsc_send_message(SMSCenter *smsc, RQueueItem *msg, RQueue *request_queue)
 	return ret;
     }
     else {
-	error(0, "Unknown message type '%d' to be sent by SMSC, ignored",
+	error(0, "SMSC:Unknown message type '%d' to be sent by SMSC, ignored",
 	      msg->msg_type);
 	ret = -1;
     }
@@ -803,7 +722,9 @@ RQueueItem *smsc_get_message(SMSCenter *smsc)
 {
     SMSMessage *sms_msg;
     RQueueItem *msg;
+    char *p;
     int ret;
+    
 
     if (smscenter_pending_smsmessage(smsc) == 1) {
 
@@ -818,8 +739,13 @@ RQueueItem *smsc_get_message(SMSCenter *smsc)
 	msg = rqi_new(R_MSG_CLASS_SMS, R_MSG_TYPE_MO);
 
 	/* normalization where? */
-	strcpy(msg->sender, sms_msg->sender);
-	strcpy(msg->receiver, sms_msg->receiver);
+
+	normalize_number(smsc->dial_prefix, sms_msg->sender, &p);
+	strcpy(msg->sender, p);
+	free(p);
+	normalize_number(smsc->dial_prefix, sms_msg->receiver, &p);
+	strcpy(msg->receiver, p);
+	free(p);
 	msg->msg = octstr_copy(sms_msg->text, 0, 160);
 	
 	msg->client_data = sms_msg;	/* keep the data for ACK/NACK */

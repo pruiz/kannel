@@ -46,6 +46,9 @@ struct SMSCenter {
 	/* Dialing prefix. */
 	char dial_prefix[DIAL_PREFIX_MAX_LEN];
 
+	/* Routing prefix. */
+	char route_prefix[DIAL_PREFIX_MAX_LEN];
+
 	/* Alternative charset */
         int alt_charset;
 
