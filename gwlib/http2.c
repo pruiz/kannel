@@ -70,6 +70,7 @@ static int read_headers(HTTPSocket *p, List **headers);
 static int read_body(HTTPSocket *p, List *headers, Octstr **body);
 static int read_chunked_body(HTTPSocket *p, Octstr **body, List *headers);
 static int read_raw_body(HTTPSocket *p, Octstr **body, long bytes);
+static List *parse_cgivars(Octstr *url);
 
 
 void http2_init(void) {
@@ -248,6 +249,8 @@ Octstr **body, List **cgivars) {
 	    octstr_str_compare(line, "HTTP/1.1") != 0)
 		goto error;
 
+	*cgivars = parse_cgivars(*url);
+
 	if (read_headers(socket, headers) == -1)
 		goto error;
 
@@ -261,6 +264,11 @@ error:
 		while ((line = list_extract_first(*headers)) != NULL)
 			octstr_destroy(line);
 		list_destroy(*headers);
+	}
+	if (*cgivars != NULL) {
+		while ((line = list_extract_first(*cgivars)) != NULL)
+			octstr_destroy(line);
+		list_destroy(*cgivars);
 	}
 	return -1;
 }
@@ -1064,4 +1072,51 @@ static int read_raw_body(HTTPSocket *p, Octstr **body, long bytes) {
 		return -1;
 	}
 	return 0;
+}
+
+
+
+/*
+ * Parse CGI variables from the path given in a GET. Return a list
+ * of HTTPCGIvar pointers. Modify the url so that the variables are
+ * removed.
+ */
+static List *parse_cgivars(Octstr *url) {
+	HTTPCGIVar *v;
+	List *list;
+	int query, et, equals;
+	Octstr *arg, *args;
+
+	query = octstr_search_char(url, '?');
+	if (query == -1)
+		return list_create();
+	
+	args = octstr_copy(url, query + 1, octstr_len(url));
+	octstr_truncate(url, query);
+	
+	list = list_create();
+
+	while (octstr_len(args) > 0) {
+		et = octstr_search_char(args, '&');
+		if (et == -1)
+			et = octstr_len(args);
+		arg = octstr_copy(args, 0, et);
+		octstr_delete(args, 0, et + 1);
+
+		equals = octstr_search_char(arg, '=');
+		if (equals == -1)
+			equals = octstr_len(arg);
+
+		v = gw_malloc(sizeof(HTTPCGIVar));
+		v->name = octstr_copy(arg, 0, equals);
+		v->value = octstr_copy(arg, equals + 1, octstr_len(arg));
+		octstr_url_decode(v->name);
+		octstr_url_decode(v->value);
+
+		octstr_destroy(arg);
+		
+		list_append(list, v);
+	}
+	
+	return list;
 }

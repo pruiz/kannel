@@ -132,7 +132,6 @@ enum {
 };
 
 
-#if LIW_TODO
 /*
  * A structure describing a CGI-BIN argument/variable.
  */
@@ -140,7 +139,6 @@ typedef struct {
 	Octstr *name;
 	Octstr *value;
 } HTTPCGIVar;
-#endif
 
 
 /*

@@ -1,3 +1,7 @@
+Sat Apr 22 23:35:27 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* gwlib/http2.[ch]: Implemented GET CGI argument parsing.
+
 Sat Apr 22 22:55:05 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* gwlib/http2.[ch]: Moved PoolSocket's out of .c into .h and
