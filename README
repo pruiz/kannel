@@ -60,6 +60,14 @@ Compiling and installing the gateway
 		CFLAGS='-pthread' ./configure
 	
 	The above, for instance, seems to be required on FreeBSD.
+	
+	If you want to develop Kannel, you probably want to add CFLAGS
+	that make your compiler use warning messages. For example, for
+	GCC:
+	
+		CFLAGS='-Wall -O2 -g' ./configure
+		
+	(you may even want to use -ansi -pedantic; we don't, at least yet).
 
 For developers only: autoconf, configure, config.status, and Makefile
 
