@@ -1,3 +1,12 @@
+2000-03-27 Aarno Syvänen <syvanen@wapit.com>
+
+	* wtp*: Added some comments. Made code review changes. Added code for
+	timers (This is however, still commented out. It must be tested with
+	a new version of fakewap.). Corrected some of memory leaks pointed out
+	by Paul Keogh.
+
+	* wtp.c: Added lock for the global wtp transaction identifier.
+
 2000-03-27    <Kalle Marjola <rpr@wapit.com>>
 
 	* gw/bearerbox.c: changed 'http-port' into 'http-admin-port', to
