@@ -12,6 +12,11 @@ dnl Gateway version number.
 
 AC_DEFINE_UNQUOTED(VERSION, "`head -1 VERSION`")
 
+dnl Target installation directory for documentation
+
+AC_SUBST(docdir)
+docdir='${prefix}/doc/kannel'
+
 dnl Checks for programs.
 
 AC_PROG_CC

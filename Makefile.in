@@ -23,6 +23,7 @@ localstatedir = @localstatedir@
 libdir = @libdir@
 infodir = @infodir@
 mandir = @mandir@
+docdir = @docdir@
 includedir = @includedir@
 oldincludedir = /usr/include
 
@@ -142,9 +143,14 @@ docs: figs $(docs)
 figs: $(figs)
 
 install: all
-	$(INSTALL) $(progs) $(bindir)
+	for prog in $(progs); do $(INSTALL) $$prog $(bindir)/$$prog$(suffix)
 # The following is a temporary kludge until we get a new WML compiler.
 	$(INSTALL) test/test_wml $(bindir)
+
+install-docs:
+	rm -rf $(docdir)
+	mkdir $(docdir)
+	cp -r $(docs) $(docsrcs) $(figs) $(figsrcs) $(docdir)
 
 clean:
 	rm -f core $(progs) $(testprogs) $(objs) $(docs) *.a

@@ -18,14 +18,6 @@
 
 #include <sys/socket.h>
 
-# define NI_MAXHOST      1025
-# define NI_MAXSERV      32
-
-# define NI_NUMERICHOST	1	/* Don't try to look up hostname.  */
-# define NI_NUMERICSERV 2	/* Don't convert port number to name.  */
-# define NI_NOFQDN	4	/* Only return nodename portion.  */
-# define NI_NAMEREQD	8	/* Don't return numeric addresses.  */
-# define NI_DGRAM	16	/* Look up UDP service rather than TCP.  */
 
 /* Translate a socket address to a location and service name.  */
 extern int getnameinfo (__const struct sockaddr *__sa,
@@ -35,5 +27,34 @@ extern int getnameinfo (__const struct sockaddr *__sa,
 			int __flags);
 
 #endif
+
+#ifndef NI_MAXHOST
+# define NI_MAXHOST      1025
+#endif
+
+#if NI_MAXSERV
+# define NI_MAXSERV      32
+#endif
+
+#if NI_NUMERICHOST
+# define NI_NUMERICHOST	1	/* Don't try to look up hostname.  */
+#endif
+
+#if NI_NUMERICSERV
+# define NI_NUMERICSERV 2	/* Don't convert port number to name.  */
+#endif
+
+#if NI_NOFQDN
+# define NI_NOFQDN	4	/* Only return nodename portion.  */
+#endif
+
+#if NI_NAMEREQD
+# define NI_NAMEREQD	8	/* Don't return numeric addresses.  */
+#endif
+
+#if NI_DGRAM
+# define NI_DGRAM	16	/* Look up UDP service rather than TCP.  */
+#endif
+
 
 #endif

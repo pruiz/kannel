@@ -1,3 +1,11 @@
+Mon Jan 17 11:33:22 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* Makefile.in, configure.in, configure: Added support docdir and
+	"make install-docs".
+
+	* gwlib/getnameinfo.h: Define NI_ macros unless they're already
+	defined.
+
 2000-01-14    <rpr@rpr.wapit.com>
 
 	* gw/*box.c: Added SIGPIPE as ignored signal 
