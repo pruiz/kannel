@@ -23,11 +23,11 @@
 #define gw_assert(expr) \
 	((void) ((expr) ? 0 : \
 		  (panic(0, "%s:%ld: %s: Assertion `%s' failed.", \
-			__FILE__, (long) __LINE__, __FUNCTION__, #expr), 0)))
+			__FILE__, (long) __LINE__, __func__, #expr), 0)))
 #define gw_assert_place(expr, file, lineno, func) \
 	((void) ((expr) ? 0 : \
 		  (panic(0, "%s:%ld: %s: Assertion `%s' failed. " \
 		           "(Called from %s:%ld:%s.)", \
-			      __FILE__, (long) __LINE__, __FUNCTION__, \
+			      __FILE__, (long) __LINE__, __func__, \
 			      #expr, (file), (long) (lineno), (func)), 0)))
 #endif

@@ -15,6 +15,22 @@
 /* Define if you have the ANSI C header files.  */
 #undef STDC_HEADERS
 
+/* Define if your compiler supports the __func__ magic symbol. This is
+   part of C99. */
+#undef HAVE___FUNC__
+
+/* Define if your compiler supports the __FUNCTION__ magic symbol. */
+#undef HAVE___FUNCTION__
+
+/* Make sure __func__ does something useful. */
+#if defined(HAVE___FUNC__)
+    /* Nothing to do. Life is so wonderful. */
+#elif defined(HAVE___FUNCTION__)
+    #define __func__ __FUNCTION__
+#else
+    #define __func__ "unknown"
+#endif
+
 /* Define if you have getopt.h. */
 #undef HAVE_GETOPT_H
 

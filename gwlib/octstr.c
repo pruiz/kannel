@@ -82,7 +82,7 @@ static void seems_valid_real(Octstr *ostr, const char *filename, long lineno,
 #define seems_valid(ostr)
 #else
 #define seems_valid(ostr) \
-    (seems_valid_real(ostr, __FILE__, __LINE__, __FUNCTION__))
+    (seems_valid_real(ostr, __FILE__, __LINE__, __func__))
 #endif
 
 

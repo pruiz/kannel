@@ -110,6 +110,11 @@ Error handling
 	problem, since it becomes more clear which parts of the system
 	were involved in the operation that failed.
 	
+	If you want to incorporate the name of the function in the
+	output, use __func__, not __FUNCTION__. The former is part of
+	the language starting with the 1999 version, and config.h takes
+	care of defining it somehow for older compilers.
+	
 Memory allocation
 
 	Never use malloc, calloc, realloc, or free. Use gw_malloc,

@@ -64,6 +64,11 @@ AC_CHECK_HEADER(sys/strsun.h, CFLAGS="$CFLAGS -DSunOS=1")
 
 dnl Checks for typedefs, structures, and compiler characteristics.
 
+AC_TRY_COMPILE(, [char *func = __FUNCTION__;], 
+    	       AC_DEFINE(HAVE___FUNCTION__))
+AC_TRY_COMPILE(, [char *func = __func__;], 
+    	       AC_DEFINE(HAVE___FUNC__))
+
 dnl Checks for library functions.
 
 AC_CHECK_FUNCS(gettimeofday select socket strdup getopt_long)

@@ -64,17 +64,17 @@ void *gw_check_claim_area(void *p,
 #define gw_init_mem() (gw_check_init_mem())
 #define gw_check_leaks() (gw_check_check_leaks())
 #define gw_malloc(size) \
-	(gw_check_malloc(size, __FILE__, __LINE__, __FUNCTION__))
+	(gw_check_malloc(size, __FILE__, __LINE__, __func__))
 #define gw_realloc(ptr, size) \
-	(gw_check_realloc(ptr, size, __FILE__, __LINE__, __FUNCTION__))
+	(gw_check_realloc(ptr, size, __FILE__, __LINE__, __func__))
 #define gw_free(ptr) \
-	(gw_check_free(ptr, __FILE__, __LINE__, __FUNCTION__))
+	(gw_check_free(ptr, __FILE__, __LINE__, __func__))
 #define gw_strdup(str) \
-	(gw_check_strdup(str, __FILE__, __LINE__, __FUNCTION__))
+	(gw_check_strdup(str, __FILE__, __LINE__, __func__))
 #define gw_assert_allocated(ptr, file, line, function) \
 	(gw_assert_place(gw_check_is_allocated(ptr), file, line, function))
 #define gw_claim_area(ptr) \
-	(gw_check_claim_area(ptr, __FILE__, __LINE__, __FUNCTION__))
+	(gw_check_claim_area(ptr, __FILE__, __LINE__, __func__))
 
 #else
 
