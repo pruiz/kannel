@@ -1,3 +1,9 @@
+2000-04-14  Richard Braakman  <dark@wapit.com>
+
+	* gwlib/thread.c: Got rid of some #ifdefs by assuming HAVE_PTHREAD_H.
+
+	* test/list.c: Fixed one more pthread_t == long assumption.
+
 Thu Apr 13 21:01:20 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* gwlib/thread.h: Removed obsolete definitions for pthread_t etc

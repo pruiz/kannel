@@ -70,11 +70,12 @@ static Item *new_item(long producer, long num, long index) {
 
 static void *producer(void *arg) {
 	List *list;
-	long i, id, index;
+	long i, index;
+	pthread_t id;
 
 	list = arg;
 
-	id = (long) pthread_self();
+	id = pthread_self();
 	index = producer_index_start(id);
 	info(0, "producer starts at %ld", index);
 	list_add_producer(list);

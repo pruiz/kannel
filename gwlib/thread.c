@@ -24,10 +24,8 @@ pthread_t start_thread(int detached, Threadfunc *func, void *arg, size_t size)
 {
 	void *copy;
 	pthread_t id;
-#if HAVE_PTHREAD_H
 	pthread_attr_t attr;
 	int ret;
-#endif
 	
 	if (size == 0)
 		copy = arg;
@@ -36,7 +34,6 @@ pthread_t start_thread(int detached, Threadfunc *func, void *arg, size_t size)
 		memcpy(copy, arg, size);
 	}
 	
-#if HAVE_PTHREAD_H
 	pthread_attr_init(&attr);
 	if (detached)
 		pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
@@ -52,10 +49,6 @@ pthread_t start_thread(int detached, Threadfunc *func, void *arg, size_t size)
 		error(errno, "pthread_create failed");
 		goto error;
 	}
-#else
-	id = 0;
-	func(copy);
-#endif
 
 	return id;
 
