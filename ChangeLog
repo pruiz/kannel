@@ -1,3 +1,10 @@
+2001-03-27  Tuomas Luttinen  <tuo@wapit.com>
+
+	* configure.in: Replaced the earlier way to detect xml2-config with 
+	patch provided by Craig Emery that is shorter and as effective. Both 
+	were tested with different libxml versions, also with both xml-config 
+	and xml2-config.
+
 2001-03-27  Richard Braakman  <dark@xs4all.nl>
 
 	* gw/smsbox.c: Fix bad memory management of faked_sender string.
