@@ -1,4 +1,10 @@
 2003-06-19  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/dlr*.[ch], gw/smsc_[soap|smpp|oisd|emi2|cimd2|cgw|at2].c,
+      gw/bearerbox.c: Alexander's major DLR rewrite to support callbacks 
+      for the various storage types.
+      [Msg-ID: <200306192033.01855.a.malysh@centrium.de>]
+
+2003-06-19  Stipe Tolj  <tolj@wapme-systems.de>
     * gwlib/gwthread.h, gwlib/gwthread-pthread.c: bouncing back to previous
       revision. Doing the required mapping inside log.c itself via #define.
     * gwlib/log.c: fixed Michael's reported bug for the logging functions.
