@@ -587,15 +587,16 @@ Octstr *smsc2_status(int status_type)
             octstr_append(tmp, smscconn_name(conn));
 
 	switch(info.status) {
-	case SMSCCONN_ACTIVE:
-	    sprintf(tmp3, "online %lds", info.online);
-	    break;
-	case SMSCCONN_DISCONNECTED:
-	    sprintf(tmp3, "disconnected");
-	    break;
-	default:
-	    sprintf(tmp3, "connecting");
-	}
+        case SMSCCONN_ACTIVE:
+        case SMSCCONN_ACTIVE_RECV:
+            sprintf(tmp3, "online %lds", info.online);
+            break;
+        case SMSCCONN_DISCONNECTED:
+            sprintf(tmp3, "disconnected");
+            break;
+        default:
+            sprintf(tmp3, "connecting");
+    }
 	
         if (status_type == BBSTATUS_XML)
 	    octstr_format_append(tmp, "<status>%s</status>\n\t\t<received>%ld</received>"

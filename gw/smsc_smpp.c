@@ -774,7 +774,7 @@ static void handle_pdu(SMPP *smpp, Connection *conn, SMPP_PDU *pdu,
                       octstr_get_cstr(smpp->conn->id),
                       pdu->u.bind_transmitter_resp.command_status); 
             } else { 
-                smpp->conn->status = SMSCCONN_ACTIVE; 
+                smpp->conn->status = SMSCCONN_ACTIVE_RECV; 
                 smpp->conn->connect_time = time(NULL); 
             } 
             break; 

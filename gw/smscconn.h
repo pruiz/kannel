@@ -121,6 +121,7 @@ typedef struct smsc_state {
 enum {
     SMSCCONN_CONNECTING,
     SMSCCONN_ACTIVE,
+    SMSCCONN_ACTIVE_RECV,
     SMSCCONN_RECONNECTING,
     SMSCCONN_DISCONNECTED,
     SMSCCONN_DEAD	/* ready to be cleaned */
