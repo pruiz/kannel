@@ -1,4 +1,9 @@
-2002-05-16  Stipe Tolj <tolj@wapme-systems.de>
+2002-05-17  Stipe Tolj <tolj@wapme-systems.de>
+    * doc/userguide/userguide.xml, gw/smsbox.c: added 'to' GET variable to
+      sendota request. The old parameter 'phonenumber' is yet still supported
+      but must be removed for the upcoming next stable release.
+
+2002-05-17  Stipe Tolj <tolj@wapme-systems.de>
     * gw/bb_boxc.c: fixed a misbehaviour in accept_boxc() which didn't close
       new socket descriptors if the remote IP is banned. Thanks to Paul.
       [Msg-ID: <F88041028581AE4AB60F630CD4E801B50F90A8@ocasey.anam.com>]
