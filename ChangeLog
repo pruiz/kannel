@@ -1,4 +1,9 @@
 2004-04-19  Alexander Malysh  <a.malysh@centrium.de> 
+    * gw/smsc/smsc_smpp.c: added 'message_payload' handling.
+      Added enhanced DLR parsing and handling of DLR's optional
+      parameters.
+
+2004-04-19  Alexander Malysh  <a.malysh@centrium.de> 
     * gw/smsbox.c, gwlib/xmlrpc.[ch], gwlib/cfg.def, gwlib/octstr.[ch],
       test/test_xmlrpc.c: applied patch from bug #120.
       Thanks to Robert Galach <robert.galach@my.tenbit.pl>.

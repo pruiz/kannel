@@ -416,26 +416,38 @@ static Msg *pdu_to_msg(SMPP *smpp, SMPP_PDU *pdu, long *reason)
         msg->sms.rpi = 1;
 
     /*
+     * Check for message_payload if version > 0x33 and sm_length == 0
+     * Note: SMPP spec. v3.4. doesn't allow to send both: message_payload & short_message!
+     */
+    if (smpp->version > 0x33 && pdu->u.deliver_sm.sm_length == 0 && pdu->u.deliver_sm.message_payload) {
+        msg->sms.msgdata = pdu->u.deliver_sm.message_payload;
+        pdu->u.deliver_sm.message_payload = NULL;
+    }
+    else {
+        msg->sms.msgdata = pdu->u.deliver_sm.short_message;
+        pdu->u.deliver_sm.short_message = NULL;
+    }
+
+    /*
      * Encode udh if udhi set
      * for reference see GSM03.40, section 9.2.3.24
      */
     if (pdu->u.deliver_sm.esm_class & ESM_CLASS_SUBMIT_UDH_INDICATOR) {
         int udhl;
-        udhl = octstr_get_char(pdu->u.deliver_sm.short_message, 0) + 1;
+        udhl = octstr_get_char(msg->sms.msgdata, 0) + 1;
         debug("bb.sms.smpp",0,"SMPP[%s]: UDH length read as %d", 
               octstr_get_cstr(smpp->conn->id), udhl);
-        if (udhl > octstr_len(pdu->u.deliver_sm.short_message)) {
+        if (udhl > octstr_len(msg->sms.msgdata)) {
             error(0, "SMPP[%s]: Mallformed UDH length indicator 0x%03x while message length "
-                     "0x%03x. Discarding MO message.", octstr_get_cstr(smpp->conn->id),
-                     udhl, (unsigned int)octstr_len(pdu->u.deliver_sm.short_message));
+                     "0x%03lx. Discarding MO message.", octstr_get_cstr(smpp->conn->id),
+                     udhl, octstr_len(msg->sms.msgdata));
             *reason = SMPP_ESME_RINVESMCLASS;
             goto error;
         }
-        msg->sms.udhdata = octstr_copy(pdu->u.deliver_sm.short_message, 0, udhl);
-        octstr_delete(pdu->u.deliver_sm.short_message, 0, udhl);
+        msg->sms.udhdata = octstr_copy(msg->sms.msgdata, 0, udhl);
+        octstr_delete(msg->sms.msgdata, 0, udhl);
     }
-    msg->sms.msgdata = pdu->u.deliver_sm.short_message;
-    pdu->u.deliver_sm.short_message = NULL;
+
     dcs_to_fields(&msg, pdu->u.deliver_sm.data_coding);
 
     /* handle default data coding */
@@ -507,6 +519,8 @@ static long smpp_status_to_smscconn_failure_reason(long status)
     switch(status) {
         case SMPP_ESME_RMSGQFUL:
         case SMPP_ESME_RTHROTTLED:
+        case SMPP_ESME_RX_T_APPN:
+        case SMPP_ESME_RSYSERR:
             return SMSCCONN_FAILED_TEMPORARILY;
             break;
 
@@ -926,6 +940,163 @@ static Connection *open_receiver(SMPP *smpp)
 }
 
 
+static Msg *handle_dlr(SMPP *smpp, SMPP_PDU *pdu)
+{
+    Msg *dlrmsg = NULL;
+    Octstr *respstr = NULL, *msgid = NULL;
+    int dlrstat = -1;
+    
+    /* first check for SMPP v3.4 and above */
+    if (smpp->version > 0x33 && pdu->u.deliver_sm.receipted_message_id) {
+        msgid = pdu->u.deliver_sm.receipted_message_id;
+        pdu->u.deliver_sm.receipted_message_id = NULL;
+        switch(pdu->u.deliver_sm.message_state) {
+        case 1: /* ENROUTE */
+        case 6: /* ACCEPTED */
+            dlrstat = DLR_BUFFERED;
+            break;
+        case 2: /* DELIVERED */
+            dlrstat = DLR_SUCCESS;
+            break;
+        case 3: /* EXPIRED */
+        case 4: /* DELETED */
+        case 5: /* UNDELIVERABLE */
+        case 7: /* UNKNOWN */
+        case 8: /* REJECTED */
+            dlrstat = DLR_FAIL;
+            break;
+        default:
+            warning(0, "SMPP[%s]: Got DLR with unknown 'message_state' (%ld).",
+                octstr_get_cstr(smpp->conn->id), pdu->u.deliver_sm.message_state);
+            dlrstat = DLR_FAIL;
+            break;
+        }
+    }
+
+    /* check for SMPP v.3.4. and message_payload */
+    if (smpp->version > 0x33 && pdu->u.deliver_sm.sm_length == 0)
+        respstr = pdu->u.deliver_sm.message_payload;
+    else
+        respstr = pdu->u.deliver_sm.short_message;
+        
+    /* still no msgid ? */
+    if (!msgid && respstr) {
+        long curr = 0, vpos = 0;
+        Octstr *stat = NULL;
+        char id_cstr[65], stat_cstr[16], sub_d_cstr[13], done_d_cstr[13];
+        int sub, dlrvrd, ret;
+    
+        /* get server message id */
+        /* first try sscanf way if thus failed then old way */
+        ret = sscanf(octstr_get_cstr(respstr),
+                    "id:%64[^s] sub:%d dlvrd:%d submit date:%12[0-9] done date:%12[0-9] stat:%10[^t^e]",
+                    id_cstr, &sub, &dlrvrd, sub_d_cstr, done_d_cstr, stat_cstr);
+        if (ret == 6) {
+            msgid = octstr_create(id_cstr);
+            octstr_strip_blanks(msgid);
+            stat = octstr_create(stat_cstr);
+            octstr_strip_blanks(stat);
+        }
+        else {
+            debug("bb.sms.smpp", 0, "SMPP[%s]: Couldnot parse DLR string sscanf way,"
+                "fallback to old way. Please report!", octstr_get_cstr(smpp->conn->id));
+        
+            if ((curr = octstr_search(respstr, octstr_imm("id:"), 0)) != -1) {
+                vpos = octstr_search_char(respstr, ' ', curr);
+                if ((vpos-curr >0) && (vpos != -1))
+                    msgid = octstr_copy(respstr, curr+3, vpos-curr-3);
+            } else {
+                msgid = NULL;
+            }
+
+            /* get err & status code */
+            if ((curr = octstr_search(respstr, octstr_imm("stat:"), 0)) != -1) {
+                vpos = octstr_search_char(respstr, ' ', curr);
+                if ((vpos-curr >0) && (vpos != -1))
+                    stat = octstr_copy(respstr, curr+5, vpos-curr-5);
+            } else {
+                stat = NULL;
+            }
+        }
+        
+        /*
+         * we get the following status:
+         * DELIVRD, ACCEPTD, EXPIRED, DELETED, UNDELIV, UNKNOWN, REJECTD
+         *
+         * Note: some buggy SMSC's send us immediately delivery notifications although
+         *          we doesn't requested these.
+         */
+        
+        if (stat != NULL && octstr_compare(stat, octstr_imm("DELIVRD")) == 0)
+            dlrstat = DLR_SUCCESS;
+        else if (stat != NULL && (octstr_compare(stat, octstr_imm("ACCEPTD")) == 0 ||
+                        octstr_compare(stat, octstr_imm("ACKED")) == 0 ||
+                        octstr_compare(stat, octstr_imm("BUFFRED")) == 0 ||
+                        octstr_compare(stat, octstr_imm("ENROUTE")) == 0))
+            dlrstat = DLR_BUFFERED;
+        else
+            dlrstat = DLR_FAIL;
+                
+        if (stat != NULL)
+            octstr_destroy(stat);
+    }
+    
+    if (msgid != NULL) {
+        Octstr *tmp;
+
+        /*
+            * Obey which SMPP msg_id type this SMSC is using, where we
+            * have the following semantics for the variable smpp_msg_id:
+            *
+            * bit 1: type for submit_sm_resp, bit 2: type for deliver_sm
+            *
+            * if bit is set value is hex otherwise dec
+            *
+            * 0x00 deliver_sm dec, submit_sm_resp dec
+            * 0x01 deliver_sm dec, submit_sm_resp hex
+            * 0x02 deliver_sm hex, submit_sm_resp dec
+            * 0x03 deliver_sm hex, submit_sm_resp hex
+            *
+            * Default behaviour is SMPP spec compliant, which means
+            * msg_ids should be C strings and hence non modified.
+            */
+        if (smpp->smpp_msg_id_type == -1) {
+            /* the default, C string */
+            tmp = octstr_duplicate(msgid);
+        } else {
+            if (smpp->smpp_msg_id_type & 0x02) {
+                tmp = octstr_format("%ld", strtol(octstr_get_cstr(msgid), NULL, 16));
+            } else {
+                tmp = octstr_format("%ld", strtol(octstr_get_cstr(msgid), NULL, 10));
+            }
+        }
+
+        dlrmsg = dlr_find(smpp->conn->id,
+            tmp, /* smsc message id */
+            pdu->u.deliver_sm.destination_addr, /* destination */
+            dlrstat);
+
+        octstr_destroy(tmp);
+        octstr_destroy(msgid);
+    }
+    
+    if (dlrmsg != NULL) {
+        /*
+         * we found the delivery report in our storage, so recode the
+         * message structure.
+         * The DLR trigger URL is indicated by msg->sms.dlr_url.
+         */
+        dlrmsg->sms.msgdata = octstr_duplicate(respstr);
+        dlrmsg->sms.sms_type = report_mo;
+    } else {
+        error(0,"SMPP[%s]: got DLR but could not find message or was not interested in it",
+                octstr_get_cstr(smpp->conn->id));
+    }
+                
+    return dlrmsg;
+}
+
+
 static void handle_pdu(SMPP *smpp, Connection *conn, SMPP_PDU *pdu,
     	    	       long *pending_submits)
 {
@@ -965,105 +1136,17 @@ static void handle_pdu(SMPP *smpp, Connection *conn, SMPP_PDU *pdu,
 	     *       spec. conforme)
 	     */
             if ((pdu->u.deliver_sm.esm_class & ~0xC3) == 0x04) {
-                Octstr *respstr;
-                Octstr *msgid = NULL;
-                Octstr *stat = NULL;
-                int dlrstat;
-                long curr = 0, vpos = 0;
 
                 debug("bb.sms.smpp",0,"SMPP[%s] handle_pdu, got DLR",
                       octstr_get_cstr(smpp->conn->id));
 
-                respstr = pdu->u.deliver_sm.short_message;
-
-                /* get server message id */
-                if ((curr = octstr_search(respstr, octstr_imm("id:"), 0)) != -1) {
-                    vpos = octstr_search_char(respstr, ' ', curr);
-                    if ((vpos-curr >0) && (vpos != -1))
-                        msgid = octstr_copy(respstr, curr+3, vpos-curr-3);
-                } else {
-                    msgid = NULL;
-                }
-
-                /* get err & status code */
-                if ((curr = octstr_search(respstr, octstr_imm("stat:"), 0)) != -1) {
-                    vpos = octstr_search_char(respstr, ' ', curr);
-                    if ((vpos-curr >0) && (vpos != -1))
-                        stat = octstr_copy(respstr, curr+5, vpos-curr-5);
-                } else {
-                    stat = NULL;
-                }
-
-                /*
-                 * we get the following status:
-                 * DELIVRD, ACCEPTD, EXPIRED, DELETED, UNDELIV, UNKNOWN, REJECTD
-                 *
-                 * Note: some buggy SMSC's send us immediately delivery notifications although
-                 *          we doesn't requested these.
-                 */
-
-                if (stat != NULL && octstr_compare(stat, octstr_imm("DELIVRD")) == 0)
-                    dlrstat = DLR_SUCCESS;
-                else if (stat != NULL && (octstr_compare(stat, octstr_imm("ACKED")) == 0 ||
-                             octstr_compare(stat, octstr_imm("ENROUTE")) == 0 ||
-                             octstr_compare(stat, octstr_imm("ACCEPTD")) == 0 ||
-                             octstr_compare(stat, octstr_imm("BUFFRED")) == 0))
-                    dlrstat = DLR_BUFFERED;
-                else
-                    dlrstat = DLR_FAIL;
-
-                if (msgid != NULL) {
-                    Octstr *tmp;
-
-                    /*
-                     * Obey which SMPP msg_id type this SMSC is using, where we
-                     * have the following semantics for the variable smpp_msg_id:
-                     *
-                     * bit 1: type for submit_sm_resp, bit 2: type for deliver_sm
-                     *
-                     * if bit is set value is hex otherwise dec
-                     *
-                     * 0x00 deliver_sm dec, submit_sm_resp dec
-                     * 0x01 deliver_sm dec, submit_sm_resp hex
-                     * 0x02 deliver_sm hex, submit_sm_resp dec
-                     * 0x03 deliver_sm hex, submit_sm_resp hex
-                     *
-                     * Default behaviour is SMPP spec compliant, which means
-                     * msg_ids should be C strings and hence non modified.
-                     */
-                    if (smpp->smpp_msg_id_type == -1) {
-                        /* the default, C string */
-                        tmp = octstr_duplicate(msgid);
-                    } else {
-                        if (smpp->smpp_msg_id_type & 0x02) {
-                            tmp = octstr_format("%ld", strtol(octstr_get_cstr(msgid), NULL, 16));
-                        } else {
-                            tmp = octstr_format("%ld", strtol(octstr_get_cstr(msgid), NULL, 10));
-                        }
-                    }
-
-                    dlrmsg = dlr_find(smpp->conn->id,
-                                      tmp, /* smsc message id */
-                                      pdu->u.deliver_sm.destination_addr, /* destination */
-                                      dlrstat);
-                    octstr_destroy(tmp);
-                }
-                if (dlrmsg != NULL) {
-                    /*
-                     * we found the delivery report in our storage, so recode the
-                     * message structure.
-                     * The DLR trigger URL is indicated by msg->sms.dlr_url.
-                     */
-                    dlrmsg->sms.msgdata = octstr_duplicate(respstr);
-
-                    reason = bb_smscconn_receive(smpp->conn, dlrmsg);
-                } else {
-                    error(0,"SMPP[%s]: got DLR but could not find message or was not interested in it",
-                          octstr_get_cstr(smpp->conn->id));
-                     reason = SMSCCONN_SUCCESS;
-                }
+                dlrmsg = handle_dlr(smpp, pdu);
                 resp = smpp_pdu_create(deliver_sm_resp,
                             pdu->u.deliver_sm.sequence_number);
+                if (dlrmsg != NULL)
+                    reason = bb_smscconn_receive(smpp->conn, dlrmsg);
+                else
+                    reason = SMSCCONN_SUCCESS;
                 switch(reason) {
                     case SMSCCONN_SUCCESS:
                         resp->u.deliver_sm_resp.command_status = SMPP_ESME_ROK;
@@ -1075,11 +1158,6 @@ static void handle_pdu(SMPP *smpp, Connection *conn, SMPP_PDU *pdu,
                         resp->u.deliver_sm_resp.command_status = SMPP_ESME_RX_T_APPN;
                         break;
                 }
-
-                if (msgid != NULL)
-                    octstr_destroy(msgid);
-                if (stat != NULL)
-                    octstr_destroy(stat);
 
             } else /* MO-SMS */
             {
