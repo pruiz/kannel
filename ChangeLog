@@ -1,3 +1,7 @@
+2002-06-02  Stipe Tolj <tolj@wapme-systems.de>
+    * wap/wsp_strings.def: added required MIME types for the content type 
+      assignment table 40. Thanks to Paul for indicating this.
+
 2002-05-30  Stipe Tolj <tolj@wapme-systems.de>
     * aclocal.m4, configure[.in]: fixed Bruno's date extraction using 'cut'
       and defined it as external function in aclocal.m4.
