@@ -1,4 +1,11 @@
 2002-01-29  Stipe Tolj  <tolj@wapme-systems.de>
+    * STATUS: added file to hold any relevant information about
+      open issues, release showstoppers and patches that have been
+      proposed and have to be reviewed. Any CVS commiter may grap
+      open issues and work on this, please update status information
+      as frequently as possible to hold this file up to date.
+
+2002-01-29  Stipe Tolj  <tolj@wapme-systems.de>
     * gwlib/conn.c, gwlib/thread.[ch]: revised Andreas changes
       for the debugging code of mutexes to be more gwlib/gwassert.h
       style. This should help in reading the logs more cleanly.
