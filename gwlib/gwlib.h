@@ -18,7 +18,7 @@
 #include "log.h"
 #include "thread.h"
 #include "socket.h"
-#include "config.h"
+#include "conffile.h"
 #include "http.h"
 #include "octstr.h"
 

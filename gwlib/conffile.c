@@ -1,5 +1,5 @@
 /*
- * config.c - configuration file handling
+ * conffile.c - configuration file handling
  *
  * Lars Wirzenius for WapIT Ltd.
  */

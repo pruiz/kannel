@@ -19,10 +19,20 @@
 #include <sys/param.h>
 #include <sys/ioctl.h>
 
+#include <config.h>
+
 #include "smsc.h"
 #include "smsc_p.h"
 #include "gwlib.h"
 #include "alt_charsets.h"
+
+#if !HAVE_CFMAKERAW
+/* XXX this is misplaced, and only a stub.
+ * bof@bof.de Thu Dec 30 00:32:27 CET 1999
+ */
+static void cfmakeraw(struct termios *tio)
+{}
+#endif
 
 /******************************************************************************
 * Static functions

@@ -18,6 +18,8 @@
 #include <netinet/tcp.h>
 #include <sys/param.h>
 
+#include <config.h>
+
 #include "gwlib.h"
 
 

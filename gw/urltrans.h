@@ -24,7 +24,7 @@
 #ifndef URLTRANS_H
 #define URLTRANS_H
 
-#include "config.h"
+#include "conffile.h"
 #include "msg.h"
 
 /*

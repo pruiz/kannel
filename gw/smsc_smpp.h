@@ -1,6 +1,7 @@
 #ifndef SMSC_SMPP_H
 #define SMSC_SMPP_H
 
+#include "gwstdint.h"
 #include "octstr.h"
 #include "smsc.h"
 #include "sms_msg.h"

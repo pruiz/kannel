@@ -1,3 +1,8 @@
+Thu Dec 30 16:57:50 1999  Lars Wirzenius  <liw@wapit.com>
+
+	* Applied patch from bof@bof.de for autoconf support. Renamed
+	LICENSE to COPYING, and various other similar minor changes.
+
 1999-12-30    <rpr@rpr.wapit.com>
 
 	* gwlib/socket.c: added that missing reuseaddr to
@@ -7,6 +12,15 @@
 	should work as it did earlier
 
 	* gw/smsc_emi.c: some little fixes to udh messages
+
+1999-12-30    <bof@bof.de>
+
+	* more autoconf: compiles on libc5 and libc6 Linux,
+	  and Solaris 2.6 with gcc. See README.autoconf
+
+1999-12-29    <bof@bof.de>
+
+	* converted to use automake/autoconf: ./configure && make
 
 Wed Dec 29 22:06:22 1999  Lars Wirzenius  <liw@wapit.com>
 

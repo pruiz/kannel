@@ -1,5 +1,5 @@
 /*
- * config.h - configuration file handling
+ * conffile.h - configuration file handling
 
 This file supports configuration files that consist of groups of
 variables.  For example, a configuration file for SMS services might

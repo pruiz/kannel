@@ -15,6 +15,8 @@
 #include <netinet/tcp.h>
 #include <arpa/inet.h>
 
+#include <config.h>
+
 #include "gwlib.h"
 
 int gw_getnameinfo(struct sockaddr_in *addr, char** hostname, int* port) {
@@ -37,6 +39,54 @@ error:
 	return -1;
 
 }
+
+
+#if !HAVE_INET_ATON || !HAVE_GETNAMEINFO
+#include <arpa/inet.h>
+#endif
+
+#if !HAVE_INET_ATON
+
+int inet_aton(char *name, struct in_addr *ap)
+{
+	struct in_addr res;
+	res.s_addr = inet_addr(name);
+	if (res.s_addr == 0xffffffff) return 0;
+	if (ap) *ap = res;
+	return 1;
+}
+
+#endif
+
+#if !HAVE_GETNAMEINFO
+
+int getnameinfo (__const struct sockaddr *__sa,
+		socklen_t __salen,
+		char *__host, size_t __hostlen,
+		char *__serv, size_t __servlen,
+		int __flags)
+{
+	struct sockaddr_in *sin;
+
+	if (0 != (__flags & ~(NI_NUMERICHOST|NI_NUMERICSERV)))
+		panic(__flags, "fake getnameinfo() only implements NI_NUMERICHOST and NI_NUMERICSERV flags\n");
+
+	sin = (struct sockaddr_in *) __sa;
+	if (!sin || __salen != sizeof(*sin))
+		panic(0, "fake getnameinfo(): bad __sa/__salen (%p/%d)\n", __sa, __salen);
+	if (sin->sin_family != AF_INET)
+		panic(0, "fake getnameinfo() only supports AF_INET\n");
+
+	if (0 != __host) {
+		snprintf(__host, __hostlen, "%s", inet_ntoa(sin->sin_addr));
+	}
+	if (0 != __serv) {
+		snprintf(__serv, __servlen, "%i", ntohs(sin->sin_port));
+	}
+	return 0;	/* XXX */
+}
+
+#endif
 
 
 int make_server_socket(int port) {

@@ -15,6 +15,8 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 
+#include <config.h>
+
 #include "gwlib.h"
 #include "boxc.h"
 #include "bb_msg.h"
@@ -46,23 +48,9 @@ BOXC *boxc_open(int fd, char *allow_ip, char *deny_ip)
 	    goto error;
 
 	memset(accept_ip, 0, sizeof(accept_ip));
-
-/*
- * XXX This is just temporary, the compatibility clause is
- * moving to wapitlib.c.
- */
-#if defined(NI_NUMERICHOST)
         getnameinfo((struct sockaddr *)&client_addr, client_addr_len,
 		    accept_ip, sizeof(accept_ip), 
 		    NULL, 0, NI_NUMERICHOST);
-#else
-	{
-		char *ptr = NULL;
-		ptr = inet_ntoa(client_addr.sin_addr);
-		if(ptr==NULL) goto error;
-		strncpy(accept_ip, ptr, sizeof(accept_ip));
-	}
-#endif
 
 	ret = 0;
 	if (allow_ip != NULL)

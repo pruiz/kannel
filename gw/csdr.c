@@ -20,7 +20,10 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 
-#include "config.h"
+#include <config.h>
+
+#include "gwlib.h"
+#include "conffile.h"
 #include "bb_msg.h"
 #include "csdr.h"
 
@@ -176,24 +179,10 @@ RQueueItem *csdr_get_message(CSDRouter *router)
 		goto error;
 	}
 
-/*
- * XXX This is just temporary, the compatibility clause is
- * moving to wapitlib.c.
- */
-#if defined(NI_NUMERICHOST)
 	getnameinfo((struct sockaddr*)&cliaddr, clilen, 
 		client_ip, sizeof(client_ip), 
 		client_port, sizeof(client_port), 
 		NI_NUMERICHOST | NI_NUMERICSERV);
-#else
-	{
-		char *ptr = NULL;
-		ptr = inet_ntoa(cliaddr.sin_addr);
-		if(ptr==NULL) goto error;
-		strncpy(client_ip, ptr, sizeof(client_ip));
-		sprintf(client_port, "%i", ntohs(cliaddr.sin_port));
-	}
-#endif
 
 	item = rqi_new(R_MSG_CLASS_WAP, R_MSG_TYPE_MO);
 	if(item==NULL) goto error;
