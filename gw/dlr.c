@@ -358,6 +358,7 @@ Msg *dlr_find(const Octstr *smsc, const Octstr *ts, const Octstr *dst, int typ)
         }
     }
 
+    /* destroy struct dlr_entry */
     dlr_entry_destroy(dlr);
 
     return msg;

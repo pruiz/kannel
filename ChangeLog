@@ -1,4 +1,7 @@
 2003-07-16  Alexander Malysh  <a.malysh@centrium.de>
+    * gw/dlr_mem.c: memory leak.
+
+2003-07-16  Alexander Malysh  <a.malysh@centrium.de>
     * gwlib/conn.c: SSL_set_fd(...) can fail, so check return code and
       handle error gracefully.
 

@@ -108,6 +108,7 @@ static void dlr_mem_remove(const Octstr *smsc, const Octstr *ts, const Octstr *d
 
         if (dlr_mem_entry_match(dlr, smsc, ts, dst) == 0) {
             list_delete(dlr_waiting_list, i, 1);
+            dlr_entry_destroy(dlr);
             break;
         }
     }
