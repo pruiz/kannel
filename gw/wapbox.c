@@ -10,7 +10,7 @@
 #include <time.h>
 #include <unistd.h>
 #include <signal.h>
-#ifdef SunOS
+#ifdef HAVE_GETLOADAVG
 #include <sys/loadavg.h>
 #endif
 
@@ -197,13 +197,13 @@ static void *send_heartbeat_thread(void *arg) {
 	list_add_producer(queue);
 	while (run_status == running) {
 	
-		#ifdef SunOS
+		#ifdef HAVE_GETLOADAVG
 		double loadavg[3]={0};
 		#endif
 	
 		Msg *msg = msg_create(heartbeat);
 		
-		#ifdef SunOS
+		#ifdef HAVE_GETLOADAVG
 		if(getloadavg(loadavg,3)==-1){
 			info(0,"getloadavg failed!\n");
 		}else{
