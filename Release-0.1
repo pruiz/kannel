@@ -1,0 +1,47 @@
+(WAP/SMS) Gateway version 0.1
+
+Improvements to SMSGateway release 0.6:
+
+ * New architecture, load balance between several hosts
+
+ * Logfile can be set in configuration file
+
+ * Global normalization prefixes
+
+ * Routing separated from incoming (you can now rout messages
+   according to other rules than number normalization)
+
+ * HTTP-access IP-logging
+
+ * Improved SMS-services:
+
+	* Fixed text answers (file read upcoming)
+
+	* Split-suffix for answers divided into several SMSes
+
+	* Multiple username/password pairs for sendsms, with
+	  configurable max-messages, split-chars, split-suffix and
+	  faked-sender for each
+
+	* Service aliases
+
+ * Improved efficiency and several bug fixes
+
+ * Queue system to prevent any kind of service failure due flooding
+
+Note that many of these systems are at 'alpha' state and are not very 
+well tested out. SMSGateway 0.6 is much more stable system currently.
+
+
+Upcoming features:
+
+ * WAP UDP support
+
+ * WAP SMS support (version 0.2?)
+
+
+Missing from current version that were in SMSGateway 0.6:
+
+ * SMS or HTTP 'stop' and 'start' adminstration commands
+ 
+ 

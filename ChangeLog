@@ -1,5 +1,8 @@
 1999-11-12    <rpr@rpr.wapit.com>
 
+	* Release-0.1: added file to list modifications to SMSGateway 0.6
+	This is updated as the gateway is improved.	
+
 	* octstr.c, octstr.h: added function octstr_replace, so that
 	unnecessary destroy/create can be avoided
 
