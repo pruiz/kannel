@@ -1,3 +1,7 @@
+2000-10-02	Paul Keogh <paul.keogh@anam.com>
+
+	* gw/cookies.c: Updated comment and fixed bug in get_cookies()
+
 2000-10-02  Kalle Marjola  <rpr@wapit.com>
 
 	* gw/smsbox_req.c: fixed possible crash (panic) with malformed
