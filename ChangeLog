@@ -1,3 +1,14 @@
+Tue Jun  6 15:11:14 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* wap-events-def.h, gw/wsp.c, gw/wtp.c: Some events are generated
+	by WTP immediately before it kills the WTPMachine. We used to
+	fetch the address information for those WTP transactions from the
+	WTPMachine after the machine had been killed. This was a bug. I
+	changed the relevant events to supply the necessary information
+	in the event, so that the WTPMachine is no longer needed.
+	
+	* : 
+
 Tue Jun  6 12:28:48 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* gw/wap-appl.c, gw/wap-events-def.h, gw/wap-events.c,
