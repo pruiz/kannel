@@ -1,3 +1,4 @@
+
 <?xml version="1.0" encoding="ISO-8859-1"?>
 
 <!--
@@ -1259,6 +1260,18 @@ admin-password = f00bar
 		  internal, mysql. By default this is set to 'internal'.
      </entry></row>
 
+     <row><entry><literal>maximum-queue-length</literal></entry>
+     <entry>number of messages</entry>
+     <entry valign=bottom>
+        Set maximum size of incoming message queue. After number of messages
+        has hit this value, Kannel began to discard them.
+        This variable has no effect, if length of the outgoing message queue is
+        zero. Value 0 means giving strict priority to outgoing messages. -1, 
+        default, means that the queue of infinite length is accepted. (This 
+        works with any normal input, use this variable only when Kannel message
+        queues grow very long.
+     </entry></row>
+
   </tbody>
   </tgroup>
  </table>
@@ -1437,10 +1450,14 @@ white-list = "http://localhost/whitelist.txt"
    from external message providers, which means SMS Centers and UDP
    ports. It still processes any messages in the system and can
    accept new messages from sendsms interface in smsbox.
-
      </para></listitem>
-     <listitem><para>
 
+     <listitem><para>
+   Full. Gateway does not accept any messages from SMS centers, because 
+   <literal>maximum-queue-length</literal> is achieved.
+     </para></listitem>
+
+     <listitem><para>
    Shutdown. When the gateway is brought down, it does not accept any
    new messages from SMS centers and UDP ports, but processes all
    systems already in the system. As soon as any queues are emptied,
@@ -5193,21 +5210,22 @@ http://smsbox.host.name:13013/cgi-bin/sendota?
 otaid=myconfig&amp;username=foo&amp;password=bar&amp;phonenumber=0123456
 </userinput></screen>
 
-       URL containing XML document looks like this: 
+       URL containing XML document looks like this (you must URL encode it before sending
+       it over HTTP): 
 
 <screen><userinput>
 http://smsbox.host.name:13013/cgi-bin/sendota?
-username=foo&amp;password=bar&amp;phonenumber=0123456&amp;text=myXMLdocument&amp;
+username=foo&amp;password=bar&amp;phonenumber=0123456&amp;text=MyURLEncodedXMLdocument&amp;
 type=settings
 </userinput></screen>
        
        You can send either settings or bookmark, set cgi variable type accordingly. 
-       Default for this variable is settings.
+       Default for this variable is settings. 
        </para>
 
        <para>
        Here is an example XML document (this one contains CSD settings for logging
-       in to a mobile service):
+       in to a mobile service; note that you must store DTD locally):
 
 <screen><userinput>
 &#60;?xml version="1.0"?&#62;
@@ -5250,9 +5268,9 @@ type=settings
 &#60;/CHARACTERISTIC-LIST&#62;
 </userinput></screen>
 
-       Document type definition (DTD) for these documents is not publicly available,
-       you must supply it as a file. Kannel gw directory contains an example, 
-       <literal>settings.dtd</literal>.
+       Document type definition (DTD) for these documents is not available ,
+       from Internet, you must supply it as a file. Kannel gw directory contains 
+       an example, <literal>settings.dtd</literal>.
 
        </para>
 
@@ -5296,7 +5314,7 @@ type=settings
 
    <row><entry><literal>text</literal></entry>
    <entry valign=bottom>
-       The XML document, containing either settings or bookmarks.
+       An URL enecoded XML document, containing either settings or bookmarks.
    </entry></row>
 
    <row><entry><literal>type</literal></entry>
@@ -5364,14 +5382,13 @@ type=settings
      necessary, but does make configuring simpler: IPs here are always denied,
      even when they are mentioned in the allowed IPs list.</para>
 
-     <para>Please note that there are no <emphasis>cgi script</emphasis> called 
-     <literal>/cgi-bin/wap-push.cgi</literal>. Ppg-url is a simple stamp, used for 
-     routing requests to the right service. You can change this stamp by setting
-     <literal>push-url</literal> configuration variable.
+     <para>Ppg-url is a simple stamp, used for routing requests to the right 
+     service. You can change this stamp by setting <literal>push-url</literal> 
+     configuration variable.
      </para>
      <screen><userinput>
 group = ppg
-ppg-url = /cgi-bin/wap-push.cgi
+ppg-url = /wappush
 ppg-port = 8080
 concurrent-pushes = 100
 users = 1024
@@ -5397,17 +5414,35 @@ trusted-pi = false
              <entry valign=bottom>
              The port PPG is listening at. Default 8080.
              </entry></row>
-             <row><entry><literal>ppg-port-ssl (o)</literal></entry>
-             <entry><emphasis>bool</emphasis></entry>
+             <row><entry><literal>ppg-ssl-port (o)</literal></entry>
+             <entry><emphasis>number</emphasis></entry>
              <entry valign=bottom>
-             If set to true, the PPG is using a SSL-enabled HTTP
-				 server on the ppg-port. Defaults to "no".
-			    </entry></row>
+             Mandatory value for PPG HTTPS support. The port at which PPG listens
+             for HTTPS requests. There are no defaults; you must set the value 
+             separately.
+             </entry></row>
+             <row><entry><literal>ssl-server-cert-file</literal></entry>
+             <entry><emphasis>string</emphasis></entry>
+             <entry valign=bottom>
+             Mandatory value for PPG HTTPS support. The file containing server's ssl
+             certificate.
+             </entry></row>
+             <row><entry><literal>ssl-server-key-file</literal></entry>
+             <entry><emphasis>string</emphasis></entry>
+             <entry valign=bottom>
+             Mandatory value for PPG HTTPS support. The file containing server's ssl
+             private key.
+             </entry></row>
              <row><entry><literal>ppg-url</literal></entry>
              <entry><emphasis>url</emphasis></entry>
              <entry valign=bottom>
-             URL locating PPG services. Default <literal>
-             /cgi-bin/wap-push.cgi</literal>.
+             URL locating PPG services. Default <literal>/wappush
+             </literal>.
+             </entry></row>
+             <row><entry><literal>global-sender</literal></entry>
+             <entry><emphasis>string</emphasis></entry>
+             <entry valign=bottom>
+             Sender phone number required by some protocols.
              </entry></row>
              <row><entry><literal>concurrent-pushes</literal></entry>
              <entry><emphasis>number</emphasis></entry>
@@ -5732,7 +5767,26 @@ group = smsbox
 ...
 sendsms-port-ssl = true
 </userinput></screen>
-	</sect1>	
+	</sect1>
+
+        <sect1>
+        <title>Using SSL server support for PPG HTTPS interface</title>
+        <para>
+        If you want use PAP over HTTPS, (it is, a https scheme) add following 
+        directives to the ppg core group:
+<screen><userinput>
+group = ppg
+...
+ppg-ssl-port = 8090
+ssl-server-cert-file = "/home/aarno/kannelcvs/gateway/gw/cert1.pem"
+ssl-server-key-file = "/home/aarno/kannelcvs/gateway/gw/key1.pem"
+</userinput></screen>
+        </para>
+        <para>
+        PPG uses a separate port for HTTPS traffic, so so you must define it. This
+        means that you can use both HTTP and HTTPS, when needed.
+        </para>
+        </sect1>
 							  
 </chapter>
 
@@ -6235,7 +6289,109 @@ test/fakesmsc -m 1 "100 500 udh %0eudh+stuff+here main+message"
        type of your push message. SI works with all Toolkits, wml only
        with some older versions. </para>
 </sect1>
-</appendix>
+
+ <sect1>
+ <title>Testing PAP protocol over HTTPS </title>
+        <para>
+        When testing HTTPS connection to PPG, you probably want use test_ppg's
+        configuration file, because number of required parameters is quite 
+        high. Here is a example test_ppg configuration file:
+        </para>
+ 
+<screen><userinput>
+ group = test-ppg
+ retries = 2
+ pi-ssl = yes
+ ssl-client-certkey-file = /home/aarno/kannelcvs/gateway/gw/certkey.pem
+ 
+ group = configuration
+ push-url = https://localhost:8900/wappush
+ pap-file = /home/aarno/test/ipnoqos.txt
+ content-file = /home/aarno/test/si.txt
+ username = foo
+ password = bar
+ </userinput></screen>
+ 
+        <para>
+        With a configuration file, you can do a push by typing:
+        </para>
+ 
+<screen><userinput>
+ test/test_ppg -q [configuration_file]
+</userinput></screen>
+ 
+        <table frame=none>
+              <title>Test_ppg's configuration file directives</title>
+              <tgroup cols=3><thead><row>
+              <entry>Directive</entry>
+              <entry>Value</entry>
+              <entry>Description</entry>
+              </row></thead>
+              <tbody>
+              <row><entry><literal>group</literal></entry>
+              <entry><emphasis>test_ppg</emphasis></entry>
+              <entry valign=bottom>
+              Mandatory parameter. Start of test_ppg's core group.
+              </entry></row>
+              <row><entry><literal>retries</literal></entry>
+              <entry><emphasis>number</emphasis></entry>
+              <entry valign=bottom>
+              The client tries to log in to PPG <emphasis>number</emphasis> times
+              before discarding the push request. Default is 2.
+              </entry></row>
+              <row><entry><literal>pi-ssl</literal></entry>
+              <entry><emphasis>boolean</emphasis></entry>
+              <entry valign=bottom>
+              Mandatory parameter for HTTPS connection. Does the client use HTTPS
+              connection. Default is no.
+              </entry></row>
+              <row><entry><literal>ssl-client-certkey-file</literal></entry>
+              <entry><emphasis>filename</emphasis></entry>
+              <entry valign=bottom>
+               Mandatory parameter for HTTPS connection. File containing the client's 
+               ssl certificate and private key. 
+              </entry></row>
+               <row><entry><literal>ssl-trusted-ca-file</literal></entry>
+              <entry>filename</entry>
+              <entry valign=bottom>
+              Mandatory paramenter for HTTPS connection.This file contains the 
+              certificates test_ppg is willing to trust. If this directive is not set, 
+              certificates are not validated and HTTPS would not be tested.
+	      </entry></row>
+              <row><entry><literal>group</literal></entry>
+              <entry><emphasis>configuration</emphasis></entry>
+              <entry valign=bottom>
+              Mandatory parameter. Start of test_ppg's test group.
+              </entry></row>
+              <row><entry><literal>push-url</literal></entry>
+              <entry><emphasis>url</emphasis></entry>
+              <entry valign=bottom>
+              Mandatory value. URL locating PPG's services.
+              </entry></row>
+              <row><entry><literal>pap-file</literal></entry>
+              <entry><emphasis>filename</emphasis></entry>
+              <entry valign=bottom>
+              Mandatory value. File containing pap request's control document.
+              </entry></row>
+              <row><entry><literal>content-file</literal></entry>
+              <entry><emphasis>filename</emphasis></entry>
+              <entry valign=bottom>
+              Mandatory value. File containing pap request's content document.
+              </entry></row>
+              <row><entry><literal>username</literal></entry>
+              <entry><emphasis>string</emphasis></entry>
+              <entry valign=bottom>
+              Mandatory value. PPG service user's username.
+              </entry></row>
+              <row><entry><literal>password</literal></entry>
+              <entry><emphasis>string</emphasis></entry>
+              <entry valign=bottom>
+              Mandatory value. PPG service user's password.
+              </entry></row>
+              </tbody>
+              </tgroup>
+        </table>
+ </sect1>
 
 <appendix>
 <title>Setting up a dial-up line</title>
