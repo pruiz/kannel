@@ -278,11 +278,11 @@ Numhash *numhash_create(char *seek_url)
     http_destroy_headers(reply_headers);
     
     if (octstr_str_compare(type, "text/plain") != 0) {
-	octstr_destroy(type);
-	octstr_destroy(reply_body);
-	error(0, "Strange content type <%s> for numhash, operatiomn fails",
-	      octstr_get_cstr(type));
-	return NULL;
+        octstr_destroy(reply_body);
+        error(0, "Strange content type <%s> for numhash - expecting 'text/plain'"
+                 ", operatiom fails", octstr_get_cstr(type));
+        octstr_destroy(type);
+        return NULL;
     }
     octstr_destroy(type);
     
