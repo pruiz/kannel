@@ -1,3 +1,8 @@
+2001-08-01  Tuomas Luttinen  <Tuomas.Luttinen@reach-u.com>
+
+	* gwlib/charset.h: Updated the comments about the supported character 
+	sets.
+
 2001-07-31 Bruno Rodrigues <bruno.rodrigues@litux.org>
 
 	* bearerbox.c, smsbox.c: added alog_reopen to HUP signal handler.
