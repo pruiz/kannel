@@ -716,7 +716,7 @@ static void fill_message(Msg *msg, URLTranslation *trans,
 			 int mclass, int mwi, int coding, int compress,
 			 int validity, int deferred,
 			 Octstr *dlr_url, int dlr_mask, int pid, int alt_dcs,
-             int rpi, Octstr *smsc)
+             int rpi, Octstr *smsc, Octstr *account)
 {    
     msg->sms.msgdata = replytext;
     msg->sms.time = time(NULL);
@@ -843,6 +843,16 @@ static void fill_message(Msg *msg, URLTranslation *trans,
 	} else
 	    warning(0, "Tried to change dlr_mask to '%d', denied.",
 		    dlr_mask);
+    }
+
+    if (account) {
+        if (urltrans_accept_x_kannel_headers(trans)) {
+            msg->sms.account = account;
+        } else {
+            warning(0, "Tried to change account to '%s', denied.",
+                    octstr_get_cstr(account));
+            octstr_destroy(account);
+        }
     }
 }
 
@@ -1008,7 +1018,7 @@ static void url_result_thread(void *arg)
 
         fill_message(msg, trans, replytext, octets, from, to, udh, mclass,
             mwi, coding, compress, validity, deferred, dlr_url, 
-           dlr_mask, pid, alt_dcs, rpi, smsc);
+           dlr_mask, pid, alt_dcs, rpi, smsc, account);
 
         if (final_url == NULL)
             final_url = octstr_imm("");
