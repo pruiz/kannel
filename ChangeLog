@@ -1,5 +1,9 @@
 2000-06-29  Richard Braakman  <dark@wapit.com>
 
+	* gw/wsp-session.c: Fixed memory leak in new capability code.
+
+2000-06-29  Richard Braakman  <dark@wapit.com>
+
 	* gw/wap-appl.c: Applied fix suggested by Lim YoungLan, to make
 	sure S-MethodInvoke.res is sent before any S-MethodResult, even
 	if fetch_thread() is very fast.

@@ -802,6 +802,7 @@ static void strip_default_capabilities(List *caps, List *req) {
 		count = wsp_cap_count(req, cap->id, cap->name);
 		if (count == 0 && is_default_cap(cap)) {
 			list_delete(caps, i, 1);
+			wsp_cap_destroy(cap);
 		} else {
 			i++;
 		}
