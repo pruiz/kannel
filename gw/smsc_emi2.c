@@ -773,7 +773,8 @@ static int emi2_do_send (SMSCConn *conn, Connection *server)
     }
     
     /* Send messages if there's room in the sending window */
-    while ((msg = list_extract_first(PRIVDATA(conn)->outgoing_queue)) != NULL) {
+    while (emi2_can_send (conn) &&
+	   (msg = list_extract_first(PRIVDATA(conn)->outgoing_queue)) != NULL) {
 	int nexttrn = emi2_next_trn (conn);
 
 	if (PRIVDATA(conn)->throughput)
@@ -1055,14 +1056,12 @@ static void emi2_send_loop(SMSCConn *conn, Connection **server)
 	    return;
 	    
 	case EMI2_SENDREQ:
-	    if (emi2_can_send (conn)) {
-		if (*server == NULL) {
-		    return; /* reopen the connection */
-		}
-		
-		if (emi2_do_send (conn, *server) < 0) {
-		    return; /* reopen the connection */
-		}
+	    if (*server == NULL) {
+		return; /* reopen the connection */
+	    }
+	    
+	    if (emi2_do_send (conn, *server) < 0) {
+		return; /* reopen the connection */
 	    }
 	    break;
 	    

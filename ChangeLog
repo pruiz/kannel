@@ -1,3 +1,7 @@
+2001-12-13 Jörg Pommnitz <jpo@condat.de>
+    * gw/smsc_emi2.c: fix bug that could cause SMSC flooding under
+      heavy load.
+
 2001-12-12 Jörg Pommnitz <jpo@condat.de>
     * gw/smsbox.c: fix charset handling for sendsms POST requests
       and use octstr_case_compare when comparing Content-Types
