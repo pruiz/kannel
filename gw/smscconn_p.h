@@ -23,7 +23,9 @@
     b) MUST warn about any configuration group variables it does
        not support    (XXX)
     c) MUST set up send_msg dynamic function to handle messages
-       to-be-sent. This function MAY NOT block.
+       to-be-sent. This function MAY NOT block. This function MAY
+       NOT destroy or alter the supplied message, but instead copy
+       it if need to be stored
     d) CAN set up private shutdown function, which MAY NOT block
     e) SHOULD set private function to return number of queued messages
        to-be-sent inside the driver
@@ -44,11 +46,13 @@
        create a new Msg from it and call bb_smscconn_received
 
     c) When SMSC Connection has sent a message to SMSC, it MUST call
-       callback function bb_smscconn_sent
+       callback function bb_smscconn_sent. The msg-parameter must be
+       identical to msg supplied with smscconn_send, but it can be
+       a duplicate of it
 
     d) When SMSC Connection has failed to send a message to SMSC, it
        MUST call callback function bb_smscconn_send_failed with appropriate
-       reason
+       reason. The message supplied as with bb_smscconn_send
 
  3) SMSC Connection MUST fill up SMSCConn structure as needed to, and is
     responsible for any concurrency timings. SMSCConn->status MAY NOT be
@@ -119,17 +123,18 @@ struct smscconn {
      * called, and released after execution returns from them */
     
     /* pointer to function called when smscconn_shutdown called.
-       Note that this function is not needed always. */
+     * Note that this function is not needed always. */
     int (*shutdown) (SMSCConn *conn, int finish_sending);
 
     /* pointer to function called when a new message is needed to be sent.
-       MAY NOT block */
+     * MAY NOT block. Connection MAY NOT use msg directly after it has
+     * returned from this function, but must instead duplicate it if need to.
+     */
     int (*send_msg) (SMSCConn *conn, Msg *msg);
 
     /* pointer to function which returns current number of queued
      * messages to-be-sent. The function CAN also set load factor directly
-     * to SMSCConn structure (above)
-     */
+     * to SMSCConn structure (above) */
     long (*queued) (SMSCConn *conn);
 
     /* pointers to functions called when connection started/stopped

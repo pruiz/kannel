@@ -1,5 +1,10 @@
 2001-01-12  Kalle Marjola  <rpr@wapit.com>
 
+	* gw/smscconn.h, gw/smscconn_p.h, gw/bb_smscconn_cb.h: updated API
+	description
+	
+2001-01-12  Kalle Marjola  <rpr@wapit.com>
+
 	* gw/smsc_wrapper.c: fixed deadlock in message sending
 
 	* gw/smsc_wrapper.c: modified reconnect so that it does not cause

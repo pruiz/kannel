@@ -93,7 +93,8 @@ int smscconn_usable(SMSCConn *conn, Msg *msg);
 
 /* Call SMSC specific function to handle sending of 'msg'
  * Returns immediately, with 0 if successful and -1 if failed.
- * In any case the caller is responsible for 'msg' after that.
+ * In any case the caller is still responsible for 'msg' after this
+ * call
  * Note that return value does NOT mean that message has been send
  * or send has failed, but SMSC Connection calls appropriate callback
  * function later

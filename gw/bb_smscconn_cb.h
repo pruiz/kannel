@@ -45,8 +45,8 @@ enum {
 
 /* called when a new message 'sms' received. Callback handles
  * 'sms' and MAY NOT be used by caller again. Return 0 if all went
- * fine, and -1 if bearerbox does NOT accept the 'sms', in which case the
- * caller MUST take care of it */
+ * fine, and -1 if bearerbox does NOT accept the 'sms' (black/white
+ * -listed) */
 int bb_smscconn_receive(SMSCConn *conn, Msg *sms);
 
 
