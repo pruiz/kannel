@@ -1,3 +1,12 @@
+2000-12-04  Lars Wirzenius  <liw@iki.fi>
+
+	* README: Moved information from doc/platforms/FAQ.solaris to
+	README, because the goal is to reduce the number of places one
+	has to look for documentation, not increase it. Whoever put the
+	file in CVS didn't even document it in the ChangeLog.
+	
+	* doc/platforms/FAQ.solaris: Removed.
+
 2000-12-01  Richard Braakman  <dark@wapit.com>
 
 	* gw/heartbeat.c: Fix busy-loop in heartbeat thread.
