@@ -1,3 +1,7 @@
+2004-10-21 Alexander Malysh <amalysh at kannel.org>
+    * gw/smsc/smsc_smpp.c: fixed bug #129 (Incorrect handling of
+      GSM_ADDR_TON_ALPHANUMERIC for destination address).
+
 2004-10-13  Kalle Marjola  <kmarjola@enpocket.com>
     * test/test_ppg.c: Added support for X-WAP-Initiator-URI, use -I
       option.

@@ -400,7 +400,7 @@ static Msg *pdu_to_msg(SMPP *smpp, SMPP_PDU *pdu, long *reason)
     }
 
     /* now check dest addr range */
-    if (!octstr_check_range(pdu->u.deliver_sm.destination_addr, 1, 256, gw_isdigit)) {
+    if (ton != GSM_ADDR_TON_ALPHANUMERIC && !octstr_check_range(pdu->u.deliver_sm.destination_addr, 1, 256, gw_isdigit)) {
         *reason = SMPP_ESME_RINVDSTADR;
         goto error;
     }
