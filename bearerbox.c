@@ -422,6 +422,7 @@ static void *wapboxconnection_thread(void *arg)
     BBThread	*us;
     RQueueItem	*msg;
     time_t	our_time, last_time;
+    int 	ret;
 
     us = arg;
     us->boxc = boxc_open(bbox->wap_fd);
@@ -442,7 +443,7 @@ static void *wapboxconnection_thread(void *arg)
 	    msg = rq_pull_msg_class(bbox->request_queue, R_MSG_CLASS_WAP);
 
 	if (msg) {
-	    warning(0, "WAPC: wap-message read from queue and discarded"); 
+	    warning(0, "WAPBOXC: wap-message read from queue and discarded"); 
 	    /* ret = boxc_send_message(us->boxc, msg, bbox->reply_queue); */
 	    rqi_delete(msg);		/* delete it, for now */
 	    continue;
@@ -451,7 +452,17 @@ static void *wapboxconnection_thread(void *arg)
 	/* read socket, adding any new messages to reply-queue */
 	/* if socket is closed, set us to die-mode */
 
+	ret = boxc_get_message(us->boxc, &msg);
+	if (ret < 0) {
+	    error(0, "WAPBOXC: [%d] get message failed, killing", us->id);
+	    break;
+	} else if (ret > 0) {
+	    /* route_msg(us, msg); */
+	    rq_push_msg(bbox->reply_queue, msg);
+	    continue;
+	}
     }
+    info(0, "WAPBOXC: Closing and dying...");
     boxc_close(us->boxc);
     us->boxc = NULL;
     us->status = BB_STATUS_DEAD;
@@ -484,7 +495,7 @@ static void *smsboxconnection_thread(void *arg)
         our_time = time(NULL);
 	if ((our_time) - (last_time) > bbox->heartbeat_freq) {
 	    if (us->boxc->box_heartbeat < last_time) {
-		warning(0, "BOXC: Other end has stopped beating");
+		warning(0, "SMSBOXC: Other end has stopped beating");
 		break;
 	    }
 	    update_heartbeat(us);
@@ -511,7 +522,7 @@ static void *smsboxconnection_thread(void *arg)
 	    if (msg) {
 		ret = boxc_send_message(us->boxc, msg, bbox->reply_queue);
 		if (ret < 0) {
-		    error(0, "SMS BOX %d send message failed, killing", us->id);
+		    error(0, "SMSBOXC: [%d] send message failed, killing", us->id);
 		    break;
 		}
 		written++;
@@ -523,7 +534,7 @@ static void *smsboxconnection_thread(void *arg)
 
 	ret = boxc_get_message(us->boxc, &msg);
 	if (ret < 0) {
-	    error(0, "BOXC: [%d] get message failed, killing", us->id);
+	    error(0, "SMSBOXC: [%d] get message failed, killing", us->id);
 	    break;
 	} else if (ret > 0) {
 	    normalize_numbers(msg, NULL);
@@ -535,7 +546,7 @@ static void *smsboxconnection_thread(void *arg)
 	written--;
 	usleep(1000);
     }
-    info(0, "BOXC: Closing and dying...");
+    info(0, "SMSBOXC: Closing and dying...");
     boxc_close(us->boxc);
     us->boxc = NULL;
     us->status = BB_STATUS_DEAD;

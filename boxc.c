@@ -83,8 +83,11 @@ int boxc_send_message(BOXC *boxc, RQueueItem *msg, RQueue *reply_queue)
 
 	    octstr_send(boxc->fd, pack);
 	    octstr_destroy(pack);
-	    
-	    debug(0, "BOXC:write < %s >", octstr_get_cstr(msg->msg->plain_sms.text));
+
+	    if (msg->msg_class == R_MSG_CLASS_SMS)
+		debug(0, "BOXC:write < %s >", octstr_get_cstr(msg->msg->plain_sms.text));
+	    else
+		debug(0, "BOXC:write < WAP >");		
 	    ack = 1;
 	}
     }
@@ -151,6 +154,16 @@ int boxc_get_message(BOXC *boxc, RQueueItem **rmsg)
 		}
 		msg->msg = pmsg;
 		debug(0, "BOXC: Read < %s >", octstr_get_cstr(pmsg->plain_sms.text));
+	    }
+	    else if (msg_type(pmsg) == wdp_datagram) {
+		
+		msg = rqi_new(R_MSG_CLASS_WAP, R_MSG_TYPE_MT);
+		if (msg == NULL) {
+		    error(0, "Failed to create new message, killing thread");
+		    return -1;
+		}
+		msg->msg = pmsg;
+		debug(0, "BOXC: Read < WAP >");
 	    }
 	}
 	else 
