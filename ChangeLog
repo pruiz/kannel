@@ -1,3 +1,14 @@
+2002-04-22  Stipe Tolj <tolj@wapme-systems.de>
+    * doc/userguide/userguide.xml: added 'smart-errors' section
+    * gw/wap-appl.c, wap/wsp.h, wap/wsp_server_session_machine.def,
+      wap/wsp_session.c: added HTTP Referer header and smart WSP
+      error messaging
+    * gw/wapbox.c, gwlib/cfg.def: added 'smart-errors' directive for 
+      smart WSP error messages via returned WML decks
+    * gw/wap-error.[ch]: added files to handle the smart errors
+    * wap/cookies.h: find_session_machine_by_id() is now declared 
+      in wap/wsp.h
+
 2002-04-19  Stipe Tolj <tolj@wapme-systems.de>
     * doc/userguide/userguide.xml: added 'force-sar' section
     * gw/wap-appl.c: some source reformating
