@@ -1,3 +1,7 @@
+2003-12-04  Alexander Malysh  <a.malysh@centrium.de>
+    * gw/smsc/smsc_smpp.c: fixed bug that source-autodetect was 'false' if
+      not defined in the config although userguide mentioned 'true'.
+
 2003-12-03  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/smsc/smsc_emi.c: added OP/31 handling for the sake of EMI/UCP 
       implementations that use this construct as server-side initiated 

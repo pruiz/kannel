@@ -1741,7 +1741,8 @@ int smsc_smpp_create(SMSCConn *conn, CfgGroup *grp)
         dest_addr_npi = -1; 
 
     /* if source addr autodetection should be used set this to 1 */
-    cfg_get_bool(&autodetect_addr, grp, octstr_imm("source-addr-autodetect")); 
+    if (cfg_get_bool(&autodetect_addr, grp, octstr_imm("source-addr-autodetect")) == -1)
+        autodetect_addr = 1; /* default is autodetect if no option defined */
 
     /* check for any specified interface version */
     if (cfg_get_integer(&version, grp, octstr_imm("interface-version")) == -1)
