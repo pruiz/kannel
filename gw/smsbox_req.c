@@ -25,12 +25,22 @@
  *
  */
 
+/* Defines */
+
+#define MAX8BITLENGTH	140
+#define MAX7BITLENGTH	160
+
+#define CONCAT_IEI	0
+#define CONCAT_IEL	6
+
 /* Global variables */
 
 static URLTranslationList *translations = NULL;
-static int sms_max_length = -1;		/* not initialized */
+static int sms_max_length = -1;		/* not initialized - never modify after 
+                                         * smsbox_req_init! */
 static char *global_sender = NULL;
 static int (*sender) (Msg *msg) = NULL;
+static Config 	*cfg = NULL;
 
 static volatile sig_atomic_t req_threads = 0;
 
@@ -38,6 +48,19 @@ static volatile sig_atomic_t req_threads = 0;
 /*-------------------------------------------------------------------*
  * STATIC FUNCTIONS
  */
+
+/* Rounds up the result of a division */
+static int roundup_div(int a, int b)
+{
+	int t;
+	
+	t = a / b;
+	if(t * b != a)
+		t += 1;
+
+	return t;
+}
+
 
 /* Perform the service requested by the user: translate the request into
  * a pattern, if it is an URL, fetch it, and return a string, which must
@@ -146,11 +169,10 @@ error:
  */
 static int do_sending(Msg *msg)
 {
-    if (sms_max_length < 0) return -1;
-
     if (sender(msg) < 0)
 	goto error;
 
+    debug("smsbox_req", 1, "message sent\n");
     /* sender does the freeing (or uses msg as it sees fit) */
 
     return 0;
@@ -163,146 +185,211 @@ error:
 
 /*
  * Take a Msg structure and send it as a MT SMS message.
- * Works only with plain sms messages, discards UDH
- *
  * Return -1 on failure, 0 if Ok.
+ * Parameters: msg: message to send, maxmsgs: limit to the number of parts the
+ *     message can be split into, h: header, hl: header length, f: footer,
+ *     fl: footer length.
  */
-static int do_split_send(Msg *msg, int maxmsgs, URLTranslation *trans,
+static int do_split_send(Msg *msg, int maxmsgs, int maxdatalength, URLTranslation *trans,
 			 char *h, int hl, char *f, int fl)
 {
-    Msg *split;
+	Msg *split;
 
-    char *p, *suf, *sc;
-    int slen = 0;
-    int size, total_len, loc;
+	char *p, *suf, *sc;
+	int suflen = 0;
+	int size, total_len, pos;
 
-    gw_assert(trans != NULL);
-    
-    suf = urltrans_split_suffix(trans);
-    if (suf != NULL) slen = strlen(suf);
-    sc = urltrans_split_chars(trans);
+	int concat;
+	int msglen, msgcount, msgseq = 1;
+	static unsigned char msgref = 0;
 
-    total_len = octstr_len(msg->smart_sms.msgdata);
-    
-    for(loc = 0, p = octstr_get_cstr(msg->smart_sms.msgdata);
-	maxmsgs > 0 && loc < total_len;
-	maxmsgs--)
-    {
-	if (total_len-loc < sms_max_length-fl-hl) { 	/* message ends */
-	    slen = 0;
-	    suf = sc = NULL;
-	    size = total_len - loc;
-	} else if (maxmsgs == 1) {			/* last part */
-	    slen = 0;
-	    suf = sc = NULL;
-	    size = sms_max_length -hl -fl;
-	} else						/* other parts */
-	    size = sms_max_length - slen -hl -fl;
-
-	/*
-	 * if we use split chars, find the first from starting from
-	 * the end of sms message and return partion _before_ that
-	 */
-	if (sc) {
-	    size = str_reverse_seek(p+loc, size-1, sc) + 1;
-
-	    /* do not accept a bit too small fractions... */
-	    if (size < sms_max_length/2)
-		size = sms_max_length - slen -hl -fl;
+	gw_assert(msg != NULL);
+	gw_assert(trans != NULL);
+	gw_assert(maxmsgs > 1);
+	gw_assert(hl >= 0);
+	gw_assert(fl >= 0);
+	
+	concat = urltrans_concatenation(trans);
+	/* The concatenation adds some information in the UDH so the maximum length
+	 * of the data goes down */
+	if(concat) {
+		if(msg->smart_sms.flag_8bit) {
+			maxdatalength -= CONCAT_IEL;
+		} else {
+			/* in 7bit mode it is easier to remove the length of the UDH and
+			 * calculate it again */
+			maxdatalength += roundup_div(octstr_len(msg->smart_sms.udhdata)*8, 7) + 1;
+			maxdatalength -= roundup_div(
+			    (CONCAT_IEL + octstr_len(msg->smart_sms.udhdata)) * 8, 7);
+		}
 	}
-	split = msg_duplicate(msg);
 	
-	if (h != NULL) {	/* add header and message */
-	    octstr_replace(split->smart_sms.msgdata, h, hl);
-	    octstr_insert_data(split->smart_sms.msgdata, hl, p+loc, size);    
-	} else			/* just the message */
-	    octstr_replace(split->smart_sms.msgdata, p+loc, size);
-	
-	if (suf != NULL)
-	    octstr_insert_data(split->smart_sms.msgdata, size, suf, slen);
-	
-	if (f != NULL)	/* add footer */
-	    octstr_insert_data(split->smart_sms.msgdata, size+hl, f, fl);
-
-	if (do_sending(split) < 0) {
-	    msg_destroy(msg);
-	    return -1;
+	suf = urltrans_split_suffix(trans);
+	if (suf != NULL) {
+		suflen = strlen(suf);
 	}
-	loc += size;
-    }
-    msg_destroy(msg);	/* we must delete at as it is supposed to be deleted */
-    return 0;
+	sc = urltrans_split_chars(trans);
+
+	total_len = octstr_len(msg->smart_sms.msgdata) + octstr_len(msg->smart_sms.udhdata);
+
+	/* number of messages that will be needed 
+	 * The value is rounded up */
+	msgcount = roundup_div(total_len, maxdatalength);
+
+	/* Go through the full message and send it in parts. The maximum number
+	 * of messages is respected even if the message has not been completely sent. */
+	p = octstr_get_cstr(msg->smart_sms.msgdata);
+	for(pos = 0; maxmsgs > 0 && pos < total_len; maxmsgs--)
+	{
+		if (total_len-pos < maxdatalength-fl-hl) { 	/* message ends */
+			suflen = 0;
+			suf = NULL;
+			sc = NULL;	/* no split char on end of message! */
+			size = total_len - pos;
+		} else if (maxmsgs == 1) {			/* last part */
+			suflen = 0;
+			suf = NULL;
+			sc = NULL;	/* no split char on end of message! */
+			size = maxdatalength -hl -fl;
+		} else {					/* other parts */
+			size = maxdatalength - suflen -hl -fl;
+		}
+
+		/* Split chars are used to avoid cutting a word in the middle.
+		 * The split will occur at the last occurence of the split char
+		 * in the message part. */
+		if (sc) {
+			size = str_reverse_seek(p+pos, size-1, sc) + 1;
+
+			/* Do not split if the resulting message is too small
+			 * (if the last word is very long). */
+			if (size < sms_max_length/2)
+				size = maxdatalength - suflen -hl -fl;
+		}
+
+		/* Make a copy of the message then replace the data  with the 
+		 * part that we are going to send in this SMS. This is easier
+		 * than creating a new message with almost the same content. */
+		split = msg_duplicate(msg);
+		if(split==NULL)
+			goto error;
+	
+		if (h != NULL) {	/* add header and message */
+			octstr_replace(split->smart_sms.msgdata, h, hl);
+			octstr_insert_data(split->smart_sms.msgdata, hl, p+pos, size);    
+		} else			/* just the message */
+			octstr_replace(split->smart_sms.msgdata, p+pos, size);
+	
+		if (suf != NULL)
+			octstr_insert_data(split->smart_sms.msgdata, size+hl, suf, suflen);
+		
+		if (f != NULL)	/* add footer */
+			octstr_insert_data(split->smart_sms.msgdata, size+hl+suflen, f, fl);
+
+		/* for concatenated messages add the UDH Element */
+		if(concat == 1)
+		{
+			/* Add the UDH with the concatenation information */
+			octstr_append_char(split->smart_sms.udhdata, CONCAT_IEI); /* IEI */
+			octstr_append_char(split->smart_sms.udhdata, 3); /* IEI Length = 3 octets */
+			octstr_append_char(split->smart_sms.udhdata, msgref); /* ref */
+			octstr_append_char(split->smart_sms.udhdata, msgcount); /* total nbr of msg */
+			octstr_append_char(split->smart_sms.udhdata, msgseq); /* msg sequence */
+			split->smart_sms.flag_udh = 1;
+		}
+		
+		if (do_sending(split) < 0) {
+			msg_destroy(msg);
+			return -1;
+		}
+		pos += size;
+
+		msgseq++; /* sequence number for the next message */
+	}
+	msg_destroy(msg); /* we must delete it as it is supposed to be deleted */
+
+	/* Increment the message reference. It is an unsigned value so it will wrap. */
+	msgref++;
+	
+	return 0;
+
+error:
+	msg_destroy(msg); /* we must delete it as it is supposed to be deleted */
+	return -1;
 }
 
 
 
 /*
- * send UDH message (or messages) according to data in *msg
+ * send message (or messages) according to data in *msg
  */
-static int send_udh_sms(URLTranslation *trans, Msg *msg, int max_msgs)
+static int send_sms(URLTranslation *trans, Msg *msg, int max_msgs)
 {
-    /*
-     * TODO XXX
-     * maybe we should truncate the message herein
-     *
-     * this is NOT the right way to do it, but hopefully this is
-     * enough for right now
-     */
-    
-    octstr_truncate(msg->smart_sms.msgdata, sms_max_length);
-    octstr_truncate(msg->smart_sms.udhdata, sms_max_length);
-    
-    /*
-     * TODO XXX : UDH split send?
-     */
-    
-    return do_sending(msg);
-}
+	int hl=0, fl=0;
+	char *h, *f;
+	int maxdatalength;
 
+	h = urltrans_header(trans);
+	f = urltrans_footer(trans);
 
-/*
- * send SMS without UDH, with all those fancy bits and parts
- */
-static int send_plain_sms(URLTranslation *trans, Msg *msg, int max_msgs)
-{    
-    int hl, fl;
-    char *h, *f;
+	if (h != NULL) hl = strlen(h); else hl = 0;
+	if (f != NULL) fl = strlen(f); else fl = 0;
 
-    h = urltrans_header(trans);
-    f = urltrans_footer(trans);
+	/* maximum length of the data in the SMS */
+	maxdatalength = sms_max_length;
+	if(maxdatalength < 0) {
+		/* If the maximum length of the SMS data hasn't been set in the 
+		 * config file, set it to the maximum length depending on the 
+		 * 7bit or 8bit settings. */ 
+		maxdatalength = (msg->smart_sms.flag_8bit != 0) ? MAX8BITLENGTH : MAX7BITLENGTH;
+	}
+	if(maxdatalength == 0) {	/* Don't send a message is maxdatalength is 0 ! */
+		return -1;
+	}
 
-    if (h != NULL) hl = strlen(h); else hl = 0;
-    if (f != NULL) fl = strlen(f); else fl = 0;
+	if(msg->smart_sms.flag_8bit) {		/* 8 bit */
+		if(maxdatalength > MAX8BITLENGTH) {
+			maxdatalength = MAX8BITLENGTH;
+		}
+		if(msg->smart_sms.flag_udh) {
+    			maxdatalength -= octstr_len(msg->smart_sms.udhdata);
+    		}
+    	} else {				/* 7 bit */
+		if(maxdatalength > MAX7BITLENGTH) {
+			maxdatalength = MAX7BITLENGTH;
+		}
+		if(msg->smart_sms.flag_udh) {
+			/* the length is in 7bit characters! +1 for the length of the UDH. */
+    			maxdatalength -= roundup_div(octstr_len(msg->smart_sms.udhdata)*8, 7) + 1;
+    		}
+    	}
+    	
+	if (octstr_len(msg->smart_sms.msgdata) <= (maxdatalength - fl - hl)
+	    || max_msgs == 1) { 
 
-    if (octstr_len(msg->smart_sms.msgdata) <= (sms_max_length - fl - hl)
-	|| max_msgs == 1) {
+		if (h != NULL)	/* if header set */
+			octstr_insert_data(msg->smart_sms.msgdata, 0, h, hl);
+		
+		/* truncate if the message is too long (this only happens if
+	 	 *  max_msgs == 1) */
 
-	if (h != NULL)	/* if header set */
-	    octstr_insert_data(msg->smart_sms.msgdata, 0, h, hl);
-	/*
-	 * truncate if the message is too long one (this only happens if
-	 *  max_msgs == 1)
-	 */
-
-	if (octstr_len(msg->smart_sms.msgdata)+fl > sms_max_length)
-	    octstr_truncate(msg->smart_sms.msgdata, sms_max_length - fl);
+		if (octstr_len(msg->smart_sms.msgdata)+fl > sms_max_length)
+			octstr_truncate(msg->smart_sms.msgdata, sms_max_length - fl);
 	    
-	if (f != NULL)	/* if footer set */
-	    octstr_insert_data(msg->smart_sms.msgdata,
-				   octstr_len(msg->smart_sms.msgdata), f, fl);
+		if (f != NULL)	/* if footer set */
+			octstr_insert_data(msg->smart_sms.msgdata,
+		                   octstr_len(msg->smart_sms.msgdata), f, fl);
 
-	return do_sending(msg);
+		return do_sending(msg);
 
-    } else {
-	/*
-	 * we have a message that is longer than what fits in one
-	 * SMS message and we are allowed to split it
-	 */
-
-	return do_split_send(msg, max_msgs, trans, h, hl, f, fl);
-    }
+	} else {
+		/*
+	 	* we have a message that is longer than what fits in one
+	 	* SMS message and we are allowed to split it
+	 	*/
+		return do_split_send(msg, max_msgs, maxdatalength, trans, h, hl, f, fl);
+	}
 }
-
 
 
 /*
@@ -311,48 +398,73 @@ static int send_plain_sms(URLTranslation *trans, Msg *msg, int max_msgs)
  */
 static int send_message(URLTranslation *trans, Msg *msg)
 {
-    int max_msgs;
-    static char *empty = "<Empty reply from service provider>";
+	int max_msgs;
+	static char *empty = "<Empty reply from service provider>";
 
-    max_msgs = urltrans_max_messages(trans);
+	gw_assert(trans != NULL);
+	gw_assert(msg != NULL);
+	
+	max_msgs = urltrans_max_messages(trans);
 
-    if(msg_type(msg) != smart_sms) {
-	error(0, "Weird messagetype for send_message!");
-	msg_destroy(msg);
-	return -1;
-    }
+	if(msg_type(msg) != smart_sms) {
+		error(0, "Weird message type for send_message!");
+		msg_destroy(msg);
+		return -1;
+    	}
 
-    if (max_msgs == 0) {
-	info(0, "No reply sent, denied.");
-	msg_destroy(msg);
-	return 0;
-    }
-
-    if(msg->smart_sms.flag_udh)
-	return send_udh_sms(trans, msg, 1);
-    
-    if (octstr_len(msg->smart_sms.msgdata)==0) {
-	if (urltrans_omit_empty(trans) != 0) {
-	    max_msgs = 0;
-	} else { 
-	    octstr_replace(msg->smart_sms.msgdata, empty, strlen(empty));
+	if (max_msgs == 0) {
+		info(0, "No reply sent, denied.");
+		msg_destroy(msg);
+		return 0;
 	}
-    }
-    return send_plain_sms(trans, msg, max_msgs);
+
+	if((msg->smart_sms.flag_udh == 0) 
+	   && (octstr_len(msg->smart_sms.msgdata)==0)) {
+		if (urltrans_omit_empty(trans) != 0) {
+			max_msgs = 0;
+		} else { 
+			octstr_replace(msg->smart_sms.msgdata, empty, 
+				       strlen(empty));
+		}
+	}
+    
+    return send_sms(trans, msg, max_msgs);
 }
 
-
+/*
+ * Check for matching username and password for requests.
+ * Return an URLTranslation if successful NULL otherwise.
+ */
+static URLTranslation *authorise_user(List *list) {
+	URLTranslation *t = NULL;
+	Octstr *val, *user = NULL;
+	
+	if ((user = http_cgi_variable(list, "username")) == NULL)
+		t = urltrans_find_username(translations, "default");
+	else 
+		t = urltrans_find_username(translations, octstr_get_cstr(user));
+    
+	if ((val = http_cgi_variable(list, "password")) == NULL ||
+	    strcmp(octstr_get_cstr(val), urltrans_password(t)) != 0)
+	{
+		/* if the password is not correct, reset the translation. */
+		t = NULL;
+	}
+	return t;
+}
 
 /*----------------------------------------------------------------*
  * PUBLIC FUNCTIONS
  */
 
 int smsbox_req_init(URLTranslationList *transls,
+		    Config *config,
 		    int sms_max,
 		    char *global,
 		    int (*send) (Msg *msg))
 {
 	translations = transls;
+	cfg = config;
 	sms_max_length = sms_max;
 	sender = send;
 	if (global != NULL) {
@@ -450,7 +562,10 @@ error:
 
 }
 
-
+/*****************************************************************************
+ * Creates and sends an SMS message from an HTTP request
+ * Args: list contains the CGI parameters
+ */
 char *smsbox_req_sendsms(List *list)
 {
 	Msg *msg = NULL;
@@ -459,16 +574,10 @@ char *smsbox_req_sendsms(List *list)
 	Octstr *text = NULL, *udh = NULL;
 	int ret;
 
-	if ((user = http_cgi_variable(list, "username")) == NULL)
-	    t = urltrans_find_username(translations, "default");
-	else 
-	    t = urltrans_find_username(translations, octstr_get_cstr(user));
-    
-	if (t == NULL || 
-	    (val = http_cgi_variable(list, "password")) == NULL ||
-	    strcmp(octstr_get_cstr(val), urltrans_password(t)) != 0)
-	{
-	    return "Authorization failed";
+	/* check the username and password */
+	t = authorise_user(list);
+	if (t == NULL) {
+		return "Authorization failed";
 	}
 
 	udh = http_cgi_variable(list, "udh");
@@ -482,15 +591,15 @@ char *smsbox_req_sendsms(List *list)
 	}
 
 	if (urltrans_faked_sender(t) != NULL) {
-	    from = octstr_create(urltrans_faked_sender(t));
+		from = octstr_create(urltrans_faked_sender(t));
 	} else if ((from = http_cgi_variable(list, "from")) != NULL &&
 		   octstr_len(from) > 0) 
 	{
-	    from = octstr_duplicate(from);
+		from = octstr_duplicate(from);
 	} else if (global_sender != NULL) {
-	    from = octstr_create(global_sender);
+		from = octstr_create(global_sender);
 	} else {
-	    return "Sender missing and no global set";
+		return "Sender missing and no global set";
 	}
 	info(0, "/cgi-bin/sendsms <%s:%s> <%s> <%s>",
 	     user ? octstr_get_cstr(user) : "default",
@@ -519,19 +628,14 @@ char *smsbox_req_sendsms(List *list)
 	/* send_message frees the 'msg' */
 	ret = send_message(t, msg);
 
-    if (ret == -1)
-	goto error;
+	if (ret == -1)
+		goto error;
 
-    return "Sent.";
+	return "Sent.";
     
 error:
-    error(0, "sendsms_request: failed");
-    octstr_destroy(from);
-    return "Sending failed.";
+	error(0, "sendsms_request: failed");
+	octstr_destroy(from);
+	return "Sending failed.";
 }
-
-
-
-
-
 
