@@ -743,7 +743,7 @@ WSPEvent *wsp_event_create(enum wsp_event type) {
  *TBD: Send Abort(CAPTEMPEXCEEDED)
  */
 error:
-        #define INTEGER(name) 
+        #define INTEGER(name) p->name=0
         #define OCTSTR(name) if (p->name != NULL)\
                                 octstr_destroy(p->name)
         #define MACHINE(name) if (p->name != NULL)\
@@ -758,7 +758,11 @@ error:
 
 void wsp_event_destroy(WSPEvent *event){
 
-        #define INTEGER(name)
+/*
+ *Note: We must use p everywhere, including events having only integer fields,
+ *otherwise we get a compiler warning.
+ */
+        #define INTEGER(name) p->name=0
         #define OCTSTR(name) octstr_destroy(p->name)
         #define MACHINE(name) wtp_machine_destroy(p->name)
         #define WSP_EVENT(type, field)\
@@ -824,6 +828,9 @@ WSPEvent *pack_wsp_event(wsp_event wsp_name, WTPEvent *wtp_event,
                      event->TRAbortIndication.abort_code=
                             wtp_event->RcvAbort.abort_reason;
                      event->TRAbortIndication.machine=machine;
+                break;
+                
+	        default:
                 break;
          }
        

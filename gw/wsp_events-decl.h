@@ -28,6 +28,25 @@ WSP_EVENT(TRAbortIndication,
           MACHINE(machine);
           })
 
+WSP_EVENT(TRInvokeResponse,
+          {
+          OCTSTR(exit_info);
+          INTEGER(exit_info_present);
+          INTEGER(tid);
+          })
+
+WSP_EVENT(TRResultRequire,
+          {
+          OCTSTR(user_data);
+          INTEGER(tid);
+          })
+
+WSP_EVENT(TRAbortRequire,
+          {
+          INTEGER(abort_code);
+          INTEGER(tid);
+          })
+
 #undef WSP_EVENT
 #undef OCTSTR
 #undef INTEGER
