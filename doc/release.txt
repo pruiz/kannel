@@ -24,12 +24,13 @@ problem, fix it, and re-start from beginning:
 
 	* Commit the changes to ChangeLog and VERSION.
 
-	* Mark the version to be released with a tag. If the version number
-	  would be X.Y, then the tag would be "version_X_Y".
+	* Mark the version to be released with a tag and branch. If the 
+      version number would be X.Y, then the tag would be "version_X_Y_Z".
+      If it's a stable release, tag would be "stable_X_Y_Z"
 	  
-	  	* "cvs tag version_X_Y" the first time.
+	  	* "cvs tag -b version_X_Y_Z" the first time.
 		
-		* "cvs tag -F version_X_Y" when iterating after fixing
+		* "cvs tag -F version_X_Y_Z" when iterating after fixing
 		  problems in a release candidate.
 
 	* Make VERSION say "cvs" as version number so that people using
