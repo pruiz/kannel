@@ -290,6 +290,7 @@ int main(int argc, char **argv) {
 	WTPEvent *wtp_event = NULL;
         WTPMachine *wtp_machine = NULL;
 
+	gw_init_mem();
 	cf_index = get_and_set_debugs(argc, argv, NULL);
 	
 	if (argc > cf_index)

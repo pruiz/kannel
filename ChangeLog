@@ -1,3 +1,11 @@
+Thu Mar 30 04:47:25 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* gwlib/gwmem.c: Added some code to keep track of memory allocations
+	and to check that frees free freeable memory.
+	
+	* lotsafiles: Added a gw_init_mem call to the beginning of each
+	(relevant) main function.
+
 Thu Mar 30 03:10:21 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* gw/wsp.c: Made use of Counters.

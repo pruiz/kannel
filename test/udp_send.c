@@ -24,6 +24,8 @@ int main(int argc, char *argv[]) {
 	socklen_t clilen;
 	int fd;
 
+	gw_init_mem();
+
 	if(argc < 3) {
 		printf("usage: udp_send hostname port data\n");
 		exit(1);

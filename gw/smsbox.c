@@ -431,6 +431,7 @@ int main(int argc, char **argv)
     int cf_index;
     URLTranslationList *translations;
 
+    gw_init_mem();
     cf_index = get_and_set_debugs(argc, argv, NULL);
 
 

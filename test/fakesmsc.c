@@ -87,6 +87,7 @@ int main(int argc, char **argv) {
 	if (argc < 5)
 		panic(0, "%s", usage);
 
+	gw_init_mem();
 	time(&start_time);
 
 	port = atoi(argv[1]);

@@ -12,6 +12,8 @@ int main(void) {
 	Msg *msg;
 	Octstr *os;
 	
+	gw_init_mem();
+
 	s = make_server_socket(13002);
 	if (s == -1)
 		panic(0, "no server socket");

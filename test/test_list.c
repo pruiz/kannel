@@ -302,6 +302,7 @@ static void main_for_extract(void) {
 
 
 int main(void) {
+	gw_init_mem();
 	main_for_list_add_and_delete();
 	main_for_extract();
 	main_for_producer_and_consumer();

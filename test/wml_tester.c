@@ -10,6 +10,8 @@ int main(int argc, char **argv)
   int ret;
   int file = 0;
 
+  gw_init_mem();
+
   /* You can give an wml text file as an argument './wap_compile main.wml' */
   if (argc > 2)
     {

@@ -21,6 +21,8 @@ void *gw_realloc(void *ptr, size_t size);
 void  gw_free(void *ptr);
 char *gw_strdup(const char *str);
 
+void gw_init_mem(void);
+void gw_check_leaks(void);
 
 
 #endif

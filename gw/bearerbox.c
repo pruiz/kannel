@@ -2117,6 +2117,7 @@ int main(int argc, char **argv)
     int cf_index;
     Config *cfg;
         
+    gw_init_mem();
     start_time = time(NULL);
     warning(0, "Gateway bearer box version %s starting", VERSION);
 

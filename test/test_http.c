@@ -13,6 +13,7 @@ int main(int argc, char **argv) {
 	char *type, *data;
 	size_t size;
 	
+	gw_init_mem();
 	for (i = 1; i < argc; ++i) {
 		ret = http_get(argv[i], &type, &data, &size);
 		if (ret != 0)
