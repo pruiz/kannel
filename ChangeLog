@@ -1,3 +1,18 @@
+2002-01-03  Stipe Tolj  <tolj@wapme-systems.de>
+    * aclocal.m4: added file for autoconf macros. Included 
+      AC_CHECK_VERSION macro which is capable of comparing 
+      installed and required version strings for software
+      dependencies, libxml2 in our case.
+    * configure.in: changed the way libxml2 version is checked.
+      We not use AC_CHECK_VERSION from the aclocal.m4 file.
+      This obsoletes the changequote() calls which are not 
+      supported for autoconf 2.5x, hence we are now 2.52 
+      compatible. Rearranged --with-ssl and --enable-ssl to 
+      ensure the right lib and header include paths are displayed.
+      Minor additional changes.
+    * configure: the resulting outout of configure.in produced
+      by autoconf 2.13. (autoconf 2.52 also works)
+
 2001-12-31  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/smsbox.c: changed hardcoded HTTP return status values to
       use HTTP_* enum defines instead. Added config directive to
