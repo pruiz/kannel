@@ -1,5 +1,15 @@
 2001-04-18  Kalle Marjola  <rpr@wapit.com>
 
+	* gw/bb_store.c: updated writing to file a bit. Still problem if
+	messages arrive faster than store_cleanup works, needs to modify
+	to use hash at some point
+
+	* gw/bb_smscconn.c: changed so that when shutting down, ignores
+	messages that cannot be routed. So if you have not enabled
+	SMS-store, some messages can be lost.
+	
+2001-04-18  Kalle Marjola  <rpr@wapit.com>
+
 	* doc/userguide/userguide.xml: fixed some typos 
 
 2001-04-17  Uoti Urpala  <uau@wapit.com>

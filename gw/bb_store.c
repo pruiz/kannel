@@ -139,6 +139,8 @@ static void store_cleanup(void *arg)
     Msg *ack;
     List *match;
     time_t last, now;
+    long len;
+    int cleanup = 0;
 
     list_add_producer(flow_threads);
     last = time(NULL);
@@ -158,14 +160,19 @@ static void store_cleanup(void *arg)
 		    list_len(match));
 	list_destroy(match, msg_destroy_item);
 
+	len = list_len(ack_store);
+	if (len > 100)
+	    cleanup = 1;
 	now = time(NULL);
 	/*
-	 * write store to file up to each 5. second, providing
+	 * write store to file up to each 10. second, providing
 	 * that something happened, of course
 	 */
-	if (now - last > 5) {
+	if (now - last > 10 || (len == 0 && cleanup)) {
 	    store_dump();
 	    last = now;
+	    if (len == 0)
+		cleanup = 0;
 	}
     }
     store_dump();

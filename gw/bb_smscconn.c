@@ -147,7 +147,6 @@ int bb_smscconn_receive(SMSCConn *conn, Msg *sms)
     char *uf;
 
     /* do some queue control *
-       
      * if (list_len(incoming_sms) > 200) {
      *	msg_destroy(sms);
      *	return -1;
@@ -222,7 +221,7 @@ static void sms_router(void *arg)
 		debug("bb.sms", 0, "sms_router: time to sleep"); 
 		gwthread_sleep(600.0);	/* hopefully someone wakes us up */
 		debug("bb.sms", 0, "sms_router: list_len = %ld",
-		      list_len(outgoing_sms)); 
+		      list_len(outgoing_sms));
 	    }
 	    startmsg = list_consume(outgoing_sms);
 	    newmsg = NULL;
@@ -527,10 +526,13 @@ int smsc2_rout(Msg *msg)
     else if (best_ok)
 	ret = smscconn_send(best_ok, msg);
     else if (bad_found) {
-	list_produce(outgoing_sms, msg);
+	if (bb_status != BB_SHUTDOWN)
+	    list_produce(outgoing_sms, msg);
 	return 0;
     }
     else {
+	if (bb_status == BB_SHUTDOWN)
+	    return 0;
 	warning(0, "Cannot find SMSCConn for message to <%s>, rejected.",
 		octstr_get_cstr(msg->sms.receiver));
 	return -1;
