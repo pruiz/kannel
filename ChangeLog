@@ -1,3 +1,8 @@
+1999-11-19    <rpr@rpr.wapit.com>
+
+	* gw/smsbox_req.c, gw/smsbox_re.h, gw/smsbox.c: Did some bugfixing
+	and updated header file comments (documentation) 
+
 Fri Nov 19 11:13:17 1999  Lars Wirzenius  <liw@wapit.com>
 
 	* gw/msg.c: msg_pack and msg_unpack handle NULL octstr-fields.

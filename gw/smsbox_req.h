@@ -17,12 +17,14 @@
  * 'translations' are already depacked URLTranslations
  * 'sms_max_length' is max length of one message (160 normally)
  * 'global-sender' is backup sender number. String is strdupped
+ *
  * 'sender' is function pointer to function that does the actual sending,
  *     that is either uses a socket (to bearer box) or appends into reply
  *     queue (bearerbox thread smsbox). The sender function must free the
- *     message unless it stores it. Return 0 on success, and -1 on failure
+ *     message unless it stores it - however, it is now its responsibility.
+ *     Sender function must return 0 on success, and -1 on failure
  *
- * Return -1 on error, 0 if Ok.
+ * Return -1 on error (couldn't strdup global_sender), 0 if Ok.
  */
 
 int smsbox_req_init(URLTranslationList *translations,
@@ -37,7 +39,7 @@ int smsbox_req_count(void);
 
 
 /*
- * handle one MO request. Arg is Msg *smg, and is void so that this can be
+ * handle one MO request. Arg is Msg *msg, and is void so that this can be
  * run directly with 'start_thread'
  */
 void *smsbox_req_thread(void *arg);
@@ -47,7 +49,7 @@ void *smsbox_req_thread(void *arg);
  * handle sendsms request. Note that this does NOT start a new thread, but
  * instead must be called from appropriate HTTP-thread
  *
- * Returns 'asnwer' string
+ * Returns 'answer' string (which shall NOT be freed by the caller)
  */
 char *smsbox_req_sendsms(CGIArg *list);
 

@@ -90,8 +90,13 @@ static sig_atomic_t 	http_accept_pending = 0;
 static sig_atomic_t 	abort_program = 0;
 
 
-
-
+/*
+ * function to do the actual sending; called from smsbox_req via
+ * pointer we give during initialization
+ *
+ * MUST DO: free (or otherwise get rid of) pmsg, and
+ * return 0 if OK, -1 if failed
+ */
 int socket_sender(Msg *pmsg)
 {
     Octstr *pack;
