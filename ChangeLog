@@ -1,3 +1,7 @@
+2001-04-11  Richard Braakman  <dark@wapit.com>
+
+        * gw/urltrans.c: Slight simplification of strip_keyword().
+
 2001-04-11  Kalle Marjola  <rpr@wapit.com>
 
 	* README: changed smsc interface guidelines to point to

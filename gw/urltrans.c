@@ -215,25 +215,26 @@ URLTranslation *urltrans_find_username(URLTranslationList *trans,
     return NULL;
 }
 
+/*
+ * Remove the first word and the whitespace that follows it from
+ * the start of the message data.
+ */
 static void strip_keyword(Msg *request)
 {          
     int ch;
-    long loc;
-    Octstr *os;
+    long pos;
 
-    loc = 0;
-    for(;(ch = octstr_get_char(request->sms.msgdata, loc)) != '\0';loc++)
-       if (isspace(ch))
-           break;
+    pos = 0;
 
-    for(;(ch = octstr_get_char(request->sms.msgdata, loc)) != '\0';loc++)
-       if (!isspace(ch))
-           break;
+    for (; (ch = octstr_get_char(request->sms.msgdata, pos)) != '\0'; pos++)
+        if (isspace(ch))
+            break;
 
-    os = octstr_copy(request->sms.msgdata, loc,
-                    octstr_len(request->sms.msgdata));
-    octstr_destroy(request->sms.msgdata);
-    request->sms.msgdata = os;
+    for (; (ch = octstr_get_char(request->sms.msgdata, pos)) != '\0'; pos++)
+        if (!isspace(ch))
+            break;
+
+    octstr_delete(request->sms.msgdata, 0, pos);
 }
 
 
