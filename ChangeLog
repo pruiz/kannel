@@ -1,3 +1,12 @@
+Sat Feb 26 11:29:10 CET 2000	Patrick Schaaf	<bof@bof.de>
+
+	* gw/wsp.c, gw/wsp_http.c: hacked to start working with
+	Motorola Timeport / Phone.com browser. Negotiated client SDU of 3
+	is changed to 1350, and DEVICE:home URL is rewritten to something
+	else (set DEVICE_HOME_OUT define at top of wsp_http.c to change
+	destination to something sensible). Needs work to make the stuff
+	configurable.
+
 2000-02-25  Tuomas Luttinen  <tuo@tuo.wapit.fi>
 
 	* gw/wml_compiler.c : Now first version of the new compiler with 

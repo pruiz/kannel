@@ -352,6 +352,11 @@ static void unpack_caps(Octstr *caps, WSPMachine *m)
 			  "than our max %d", uiv, WSP_MAX_CLIENT_SDU);
 		} else if (!(m->set_caps & WSP_CSDU_SET)) {
 		    debug("wap.wsp", 0, "Client SDU size negotiated to %lu", uiv);
+		    /* Motorola Timeport / Phone.com hack */
+		    if (uiv == 3) {
+		    	uiv = 1350;
+		        debug("wap.wsp", 0, "Client SDU size forced to %lu", uiv);
+		    }
 		    m->client_SDU_size = uiv;
 		    m->set_caps |= WSP_CSDU_SET;
 		}

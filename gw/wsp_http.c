@@ -5,6 +5,9 @@
  * Capabilities/headers by Kalle Marjola <rpr@wapit.com>
  */
 
+#define DEVICE_HOME_IN	"DEVICE:home"
+#define DEVICE_HOME_OUT	"http://localhost/"
+
 #include <assert.h>
 #include <string.h>
 
@@ -82,6 +85,14 @@ void *wsp_http_thread(void *arg) {
 
 	url = octstr_get_cstr(event->SMethodInvokeResult.url);
 	debug("wap.wsp.http", 0, "WSP: url is <%s>", url);
+	if (0 == strcmp(url, DEVICE_HOME_IN)) {
+		octstr_destroy(event->SMethodInvokeResult.url);
+		event->SMethodInvokeResult.url =
+		octstr_create_from_data(DEVICE_HOME_OUT,
+					sizeof(DEVICE_HOME_OUT) - 1);
+		url = octstr_get_cstr(event->SMethodInvokeResult.url);
+		debug("wap.wsp.http", 0, "WSP: url changed to <%s>", url);
+	}
 
 	body = NULL;
 
