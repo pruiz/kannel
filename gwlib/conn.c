@@ -1293,7 +1293,7 @@ void openssl_shutdown_locks(void)
     /* remove call-back from the locks */
     CRYPTO_set_locking_callback(NULL);
 
-    for (c = 0; c <maxlocks; c++) 
+    for (c = 0; c < maxlocks; c++) 
         mutex_destroy(ssl_static_locks[c]);
 
     ssl_static_locks = NULL;
