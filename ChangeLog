@@ -1,3 +1,6 @@
+2003-07-31  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/wap-appl.c, gw/wml_compiler.c: minor code cosmetics
+
 2003-07-28  Stipe Tolj  <tolj@wapme-systems.de>
     * test/test_http_server.c: fixed memory leak and made shutdown process
       now multi-thread safe via gwthread_join_all().
