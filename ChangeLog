@@ -1,3 +1,14 @@
+2002-07-04 Aarno Syvänen <aarno@global-networks.ch>
+
+    * "Test_http_server reads black and white lists from files" patch:
+    * test/test_http_server.c: Doing this
+    * checks/check_ppg.sh: Use lists when starting http server responsible for distributing these
+    * test/whitelist.txt, test/blacklist.txt: Added required files.
+    * test/smstestppg.txt: Changed MSISDN.
+    * gw/pushkannel.conf: Changed send-url.
+    * checks/check_fakewap.sh: Killing only bearerbox.
+    * test/iptestppg.txt: Changed ip.
+
 2002-07-03  Stipe Tolj  <tolj@wapme-systems.de>
     * test/*testppg.txt: fixed the "make check" failure report for ppg
       module due to not-whitelisted receiver MSISDN.
