@@ -24,8 +24,7 @@
  * provider name. If needed, a specific header can also be added.
  *
  * Read file doc/CodingStyle to keep the code as it is elsewhere. Old
- * smsc codes are not the best place to look at sample code. And do NOT
- * use sms_msg.h, it is depricated, just use Msg and smart_sms
+ * smsc codes are not the best place to look at sample code.
  *
  */
 

@@ -4,7 +4,6 @@
 #include "gwlib.h"
 #include "octstr.h"
 #include "smsc.h"
-#include "sms_msg.h"
 #include "smsc_p.h"
 
 #define SM_RESULT_SUCCESS 0

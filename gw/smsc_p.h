@@ -16,7 +16,6 @@
 #include <time.h>
 
 #include "smsc.h"
-#include "sms_msg.h"
 
 /*
  * List of SMS center types that we support.

@@ -4,7 +4,6 @@
 #include "gwstdint.h"
 #include "octstr.h"
 #include "smsc.h"
-#include "sms_msg.h"
 #include "smsc_p.h"
 
 /******************************************************************************
@@ -130,8 +129,6 @@ typedef struct smpp_pdu {
 	int fd;	
 
 	void *message_body;
-
-	SMSMessage *smsmsg;
 
 	struct smpp_pdu *left, *right;
 

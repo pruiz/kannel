@@ -580,7 +580,6 @@ static int pdu_free(smpp_pdu *pdu) {
 
 	if(pdu == NULL) return 0;
 
-	smsmessage_destruct(pdu->smsmsg);
 	gw_free(pdu->message_body);
 	gw_free(pdu);
 
