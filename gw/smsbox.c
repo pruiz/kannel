@@ -1097,7 +1097,7 @@ static void url_result_thread(void *arg)
         if (reply_body == NULL)
             reply_body = octstr_imm("");
 
-        if (msg->sms.sms_type != report) {
+        if (msg->sms.sms_type != report_mo) {
             alog("SMS HTTP-request sender:%s request: '%s' "
                  "url: '%s' reply: %d '%s'",
                  octstr_get_cstr(msg->sms.receiver),
@@ -1114,7 +1114,7 @@ requeued:
         http_destroy_headers(req_headers);
         octstr_destroy(req_body);
 
-        if (msg->sms.sms_type != report && !queued) {
+        if (msg->sms.sms_type != report_mo && !queued) {
             if (send_message(trans, msg) < 0)
                 error(0, "failed to send message to phone");
         }
@@ -1150,7 +1150,7 @@ static int obey_request(Octstr **result, URLTranslation *trans, Msg *msg)
     gw_assert(msg != NULL);
     gw_assert(msg_type(msg) == sms);
 
-    if (msg->sms.sms_type == report)
+    if (msg->sms.sms_type == report_mo)
 	type = TRANSTYPE_GET_URL;
     else
 	type = urltrans_type(trans);
@@ -1553,7 +1553,7 @@ static void obey_request_thread(void *arg)
     int ret, dreport=0;
 
     while ((msg = list_consume(smsbox_requests)) != NULL) {
-	if (msg->sms.sms_type == report)
+	if (msg->sms.sms_type == report_mo)
 	    dreport = 1;
 	else
 	    dreport = 0;

@@ -95,7 +95,8 @@ enum {
     mo = 0,
     mt_reply = 1,
     mt_push = 2,
-    report = 3
+    report_mo = 3,
+    report_mt = 4
 };
 
 /* admin commands */

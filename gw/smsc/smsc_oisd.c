@@ -1278,7 +1278,7 @@ static Msg *oisd_submit_failed(SMSCenter *smsc, Msg* msg, Octstr* ts)
     dlr_msg = msg_create(sms);
     dlr_msg->sms.service = octstr_duplicate(msg->sms.service);
     dlr_msg->sms.dlr_mask = DLR_FAIL;
-    dlr_msg->sms.sms_type = report;
+    dlr_msg->sms.sms_type = report_mo;
     dlr_msg->sms.smsc_id = octstr_create(smsc->name);
     dlr_msg->sms.sender = octstr_duplicate(msg->sms.sender);
     dlr_msg->sms.receiver = octstr_duplicate(msg->sms.receiver);

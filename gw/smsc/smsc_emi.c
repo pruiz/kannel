@@ -866,7 +866,6 @@ static int handle_operation(SMSCConn *conn, Connection *server,
 	    else
 		msg->sms.msgdata = octstr_duplicate(emimsg->fields[E50_AMSG]);
 	    octstr_hex_to_binary(msg->sms.msgdata);
-	    msg->sms.sms_type = report;
 	    bb_smscconn_receive(conn, msg);
 	}
 	reply = emimsg_create_reply(53, emimsg->trn, 1, privdata->name);

@@ -276,7 +276,6 @@ static void main_connection_loop(SMSCConn *conn, Connection *client)
                                       msg->sms.receiver, /* destination */
                                       dlrstat);
                     if (dlrmsg != NULL) {
-                        dlrmsg->sms.sms_type = report;
                         bb_smscconn_receive(conn, dlrmsg);
                     } else {
                         error(0,"smsc_fale: got DLR but could not find message or was not interested in it");

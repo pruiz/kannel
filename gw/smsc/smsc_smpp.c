@@ -1055,7 +1055,6 @@ static void handle_pdu(SMPP *smpp, Connection *conn, SMPP_PDU *pdu,
                      * The DLR trigger URL is indicated by msg->sms.dlr_url.
                      */
                     dlrmsg->sms.msgdata = octstr_duplicate(respstr);
-                    dlrmsg->sms.sms_type = report;
 
                     reason = bb_smscconn_receive(smpp->conn, dlrmsg);
                 } else {

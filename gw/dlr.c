@@ -391,7 +391,7 @@ Msg *dlr_find(const Octstr *smsc, const Octstr *ts, const Octstr *dst, int typ)
     if ((typ & dlr->mask) > 0) {
         /* its an entry we are interested in */
         msg = msg_create(sms);
-        msg->sms.sms_type = report;
+        msg->sms.sms_type = report_mo;
         msg->sms.dlr_mask = typ;
         O_SET(msg->sms.service, dlr->service);
         O_SET(msg->sms.smsc_id, dlr->smsc);
@@ -468,7 +468,7 @@ Msg* create_dlr_from_msg(const Octstr *smsc, const Msg *msg, const Octstr *reply
 
     dlrmsg->sms.service = octstr_duplicate(msg->sms.service);
     dlrmsg->sms.dlr_mask = stat;
-    dlrmsg->sms.sms_type = report;
+    dlrmsg->sms.sms_type = report_mo;
     dlrmsg->sms.smsc_id = octstr_duplicate(smsc ? smsc : msg->sms.smsc_id);
     dlrmsg->sms.sender = octstr_duplicate(msg->sms.sender);
     dlrmsg->sms.receiver = octstr_duplicate(msg->sms.receiver);

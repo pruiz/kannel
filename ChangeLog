@@ -1,4 +1,12 @@
 2004-01-20  Alexander Malysh  <a.malysh@centrium.de>
+    * gw/bb_smscconn.c, gw/bb_store.c, gw/dlr.c, gw/msg.h,
+    * gw/smsbox.c, gw/urltrans.c, gw/smsc/smsc_emi.c, gw/smsc/smsc_fake.c,
+    * gw/smsc/smsc_oisd.c, gw/smsc/smsc_smpp.c: applied add-report-mt.patch
+      that change 'report' to 'report_mo' and adds 'report_mt' sms type 
+      (similar to 'mo','mt_reply','mt_push').
+      Msg-Id: <200401151859.02886.a.malysh@centrium.de>.
+
+2004-01-20  Alexander Malysh  <a.malysh@centrium.de>
     * gw/bearerbox.c, gw/smsbox.c, gwlib/utils.c, doc/userguide/userguide.xml:
       applied parachute-daemon.patch that adds some usefull command line parameters 
       for all boxes:

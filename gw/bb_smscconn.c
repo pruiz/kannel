@@ -270,7 +270,7 @@ long bb_smscconn_receive(SMSCConn *conn, Msg *sms)
 	return SMSCCONN_FAILED_REJECTED;
     }
 
-    if (sms->sms.sms_type != report)
+    if (sms->sms.sms_type != report_mo)
 	sms->sms.sms_type = mo;
 
     /* write to store (if enabled) */
@@ -294,7 +294,7 @@ long bb_smscconn_receive(SMSCConn *conn, Msg *sms)
          */
         if (route_incoming_to_boxc(copy) == -1) {
             warning(0, "incoming messages queue too long, dropping a message.");
-            if (sms->sms.sms_type == report)
+            if (sms->sms.sms_type == report_mo)
                 bb_alog_sms(conn, sms, "DROPPED Received DLR");
             else
                 bb_alog_sms(conn, sms, "DROPPED Received SMS");
@@ -313,7 +313,7 @@ long bb_smscconn_receive(SMSCConn *conn, Msg *sms)
         }
     }
 
-    if (sms->sms.sms_type != report)
+    if (sms->sms.sms_type != report_mo)
 	bb_alog_sms(conn, sms, "Receive SMS");
     else
 	bb_alog_sms(conn, sms, "DLR SMS");

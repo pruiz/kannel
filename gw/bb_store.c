@@ -444,7 +444,7 @@ int store_load(void)
 	    continue;
 
 	if (msg_type(msg) == sms) {
-	    if (msg->sms.sms_type == report) {
+	    if (msg->sms.sms_type == report_mo) {
 		octstr_destroy(pack);
                 msg_destroy(msg);
 		continue;

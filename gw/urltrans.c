@@ -365,7 +365,7 @@ Octstr *urltrans_get_pattern(URLTranslation *t, Msg *request)
 
     url = reply = NULL;
     
-    if (request->sms.sms_type != report && t->type == TRANSTYPE_SENDSMS)
+    if (request->sms.sms_type != report_mo && t->type == TRANSTYPE_SENDSMS)
         return octstr_create("");
 
     if (request->sms.msgdata) {
@@ -379,7 +379,7 @@ Octstr *urltrans_get_pattern(URLTranslation *t, Msg *request)
     result = octstr_create("");
 
     /* check if this is a delivery report message or not */
-    if (request->sms.sms_type != report) {
+    if (request->sms.sms_type != report_mo) {
         pattern = t->pattern;
     } else {
 
