@@ -274,6 +274,7 @@ static struct emimsg *msg_to_emimsg(Msg *msg, int trn)
     	/* either alphanum or international */
     	if (!octstr_check_range(str, 1, 256, gw_isdigit)) {
 	    /* alphanumeric sender address with + in front*/
+	    charset_latin1_to_gsm(str);
 	    octstr_truncate(str, 11); /* max length of alphanumeric OaDC */
 	    emimsg->fields[E50_OTOA] = octstr_create("5039");
 	    pack_7bit(str);
@@ -288,6 +289,7 @@ static struct emimsg *msg_to_emimsg(Msg *msg, int trn)
     else {
 	if (!octstr_check_range(str, 0, 256, gw_isdigit)) {
 	    /* alphanumeric sender address */
+            charset_latin1_to_gsm(str);
 	    octstr_truncate(str, 11); /* max length of alphanumeric OaDC */
 	    emimsg->fields[E50_OTOA] = octstr_create("5039");
 	    pack_7bit(str);
