@@ -1,4 +1,9 @@
 2003-01-01  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/bb_store.c: fixed a if statement clause. Thanks to Alexander.
+    * gw/smsc/smsc_smpp.c: applied Nisan's generick_nack changes.
+      [Msg-ID: <5.1.0.14.0.20021211132822.00ab3da0@amagoblin.ialien.co.za>]
+
+2003-01-01  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/smsc/smsc_smpp.c: Added Alexander's patch to support clean suspend
       mode for the SMPP module.
       [Msg-ID: <200212111207.23455.a.malysh@centrium.de>]
