@@ -137,14 +137,13 @@ static void main_thread(void *arg) {
 	while (run_status == running && (ind = list_consume(queue)) != NULL) {
 		switch (ind->type) {
 		case S_MethodInvoke_Ind:
-			gwthread_create(fetch_thread, ind);
-
 			res = wap_event_create(S_MethodInvoke_Res);
 			res->u.S_MethodInvoke_Res.server_transaction_id =
 				ind->u.S_MethodInvoke_Ind.server_transaction_id;
 			res->u.S_MethodInvoke_Res.session_id =
 				ind->u.S_MethodInvoke_Ind.session_id;
 			wsp_session_dispatch_event(res);
+			gwthread_create(fetch_thread, ind);
 			break;
 
 		case S_Unit_MethodInvoke_Ind:

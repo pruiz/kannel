@@ -1,3 +1,9 @@
+2000-06-29  Richard Braakman  <dark@wapit.com>
+
+	* gw/wap-appl.c: Applied fix suggested by Lim YoungLan, to make
+	sure S-MethodInvoke.res is sent before any S-MethodResult, even
+	if fetch_thread() is very fast.
+
 2000-06-28  Richard Braakman  <dark@wapit.com>
 
 	* wmlscript/wsstdlib.c: Applied Joerg Pommnitz's patch to support 
