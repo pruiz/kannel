@@ -23,7 +23,9 @@
 #include "wmlscript/ws.h"
 #include "wsp.h"
 #include "wml_compiler.h"
-
+#ifdef COOKIE_SUPPORT
+#include "cookies.h"
+#endif
 
 /*
  * Give the status the module:
@@ -286,7 +288,11 @@ static void add_session_id(List *headers, long session_id) {
 
 static void fetch_thread(void *arg) {
 	int status;
+#ifdef POST_SUPPORT
+	int ret=500;
+#else
 	int ret;
+#endif
 	WAPEvent *event;
 	long client_SDU_size;
 	Octstr *url, *os;
@@ -297,6 +303,13 @@ static void fetch_thread(void *arg) {
 	WAPAddrTuple *addr_tuple;
 	long session_id;
 	struct content content;
+
+#ifdef POST_SUPPORT
+	
+	int method;				/* This is the type of request, normally a get or a post */
+	Octstr *request_body;	/* This is the request body. */
+
+#endif	/* POST_SUPPORT */
 	
 	event = arg;
 	if (event->type == S_MethodInvoke_Ind) {
@@ -309,6 +322,14 @@ static void fetch_thread(void *arg) {
 		addr_tuple = p->addr_tuple;
 		session_id = p->session_id;
 		client_SDU_size = p->client_SDU_size;
+
+#ifdef POST_SUPPORT
+
+		request_body = octstr_duplicate(p->body);
+		method = p->method;
+
+#endif	/* POST_SUPPORT */
+
 	} else {
 		struct S_Unit_MethodInvoke_Ind *p;
 		
@@ -319,6 +340,14 @@ static void fetch_thread(void *arg) {
 		addr_tuple = p->addr_tuple;
 		session_id = -1;
 		client_SDU_size = 1024*1024; /* XXX */
+
+#ifdef POST_SUPPORT
+
+		request_body = octstr_duplicate(p->request_body);
+		method = p->method;
+
+#endif	/* POST_SUPPORT */
+
 	}
 
 	wsp_http_map_url(&url);
@@ -333,13 +362,52 @@ static void fetch_thread(void *arg) {
 	add_accept_headers(actual_headers);
 	add_charset_headers(actual_headers);
 	add_network_info(actual_headers, addr_tuple);
+
+#ifdef COOKIE_SUPPORT
+	if (session_id != -1)
+		if (set_cookies (actual_headers, find_session_machine_by_id(session_id)) == -1)
+				error(0, "WSP: Failed to add cookies");
+#endif
+		
 	add_kannel_version(actual_headers);
 	add_session_id(actual_headers, session_id);
 
 	http_header_pack(actual_headers);
 
+#ifdef POST_SUPPORT
+
+	switch (method) {
+
+	case 0x40 :			/* Get request */
+
+		ret = http_get_real(url, actual_headers, 
+		     &content.url, &resp_headers, &content.body);
+		break;
+
+	case 0x60 :			/* Post request		*/
+
+		ret = http_post_real(url, actual_headers, request_body,
+		     &content.url, &resp_headers, &content.body);
+		break;
+
+	case 0x41 :			/* Options	*/
+	case 0x42 :			/* Head		*/
+	case 0x43 :			/* Delete	*/
+	case 0x44 :			/* Trace	*/
+	case 0x61 :			/* Put		*/
+
+	default:
+		error(0, "WSP: Method not supported: %d.", method);
+		ret = 501;
+
+	}
+
+#else	/* POST_SUPPORT */
+
 	ret = http_get_real(url, actual_headers, 
 			     &content.url, &resp_headers, &content.body);
+
+#endif	/* POST_SUPPORT */
 
 	if (ret != HTTP_OK) {
 		error(0, "WSP: http_get_real failed (%d), oops.", ret);
@@ -353,6 +421,13 @@ static void fetch_thread(void *arg) {
 			octstr_get_cstr(url), octstr_get_cstr(content.type),
 			octstr_get_cstr(content.charset));
 		status = 200; /* OK */
+
+
+#ifdef COOKIE_SUPPORT
+		if (session_id != -1)
+			if (get_cookies (resp_headers, find_session_machine_by_id(session_id)) == -1)
+				error(0, "WSP: Failed to extract cookies");
+#endif		
 		
 		if (convert_content(&content) < 0) {
 			status = 500; /* XXX */
@@ -415,6 +490,17 @@ static void fetch_thread(void *arg) {
 	octstr_destroy(content.url); /* body and type were re-used above */
 	octstr_destroy(content.charset);
 	octstr_destroy(url);
+
+#ifdef POST_SUPPORT
+
+	/* 
+	 * Destroy the memory that was deep copied earlier. 
+	 */
+	octstr_destroy(request_body);
+
+#endif	/* POST_SUPPORT */
+
+
 }
 
 
@@ -671,4 +757,3 @@ static void wsp_http_map_url(Octstr **osp)
 		oldstr, octstr_get_cstr(*osp));
 	octstr_destroy(old);
 }
-
