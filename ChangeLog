@@ -1,4 +1,9 @@
 2003-03-20  Stipe Tolj  <tolj@wapme-systems.de>
+    * doc/userguide/userguide.xml: added 'reconnect-delay' to the higher
+      smsc group abstraction documentation and deleted 'retry' from emi2
+      and at2.
+
+2003-03-20  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/wap_push_ppg.c: fixed malformed xml reponses for the PAP document.
       Thanks to "Bas A. Schulte" <bschulte@zeelandnet.nl> for this patch.
       [Msg-ID: <98D28678-5A1E-11D7-8DAC-000393059670@zeelandnet.nl>]
