@@ -152,7 +152,7 @@ int httpserver_get_request(int socket, char **client_ip, char **path, char **arg
 	
 	/* advance to start of data- cut off the whitespaces */
 	eol = strstr(growingbuff, "\r\n\r\n");
-	while(isspace((char)*eol))
+	while(isspace((int)*eol))
 	    eol++;
 	
 	newbuff = gw_malloc(i+1);
