@@ -1261,8 +1261,8 @@ RSA *tmp_rsa_callback(SSL *ssl, int export, int key_len)
 }
 
 Mutex **ssl_static_locks = NULL;
-Mutex **ssl_server_static_locks = NULL;
 
+/* the call-back function for the openssl crypto thread locking */
 void openssl_locking_function(int mode, int n, const char *file, int line) 
 {
     if (mode & CRYPTO_LOCK)
@@ -1271,26 +1271,38 @@ void openssl_locking_function(int mode, int n, const char *file, int line)
         mutex_unlock(ssl_static_locks[n-1]);
 }
 
-void openssl_server_locking_function(int mode, int n, const char *file, int line) 
-{
-    if (mode & CRYPTO_LOCK)
-        mutex_lock(ssl_server_static_locks[n-1]);
-    else
-        mutex_unlock(ssl_server_static_locks[n-1]);
-}
-
-void conn_init_ssl(void)
+void openssl_init_locks(void)
 {
     int c, maxlocks = CRYPTO_num_locks();
 
     gw_assert(ssl_static_locks == NULL);
+
     ssl_static_locks = gw_malloc(sizeof(Mutex *) * maxlocks);
-    for (c=0;c<maxlocks;c++) 
+    for (c = 0; c < maxlocks; c++) 
         ssl_static_locks[c] = mutex_create();
 
+    /* after the mutexes have been created, apply the call-back to it */
     CRYPTO_set_locking_callback(openssl_locking_function);
     CRYPTO_set_id_callback((CRYPTO_CALLBACK_PTR)gwthread_self);
+}
 
+void openssl_shutdown_locks(void)
+{
+    int c, maxlocks = CRYPTO_num_locks();
+
+    /* remove call-back from the locks */
+    CRYPTO_set_locking_callback(NULL);
+
+    for (c = 0; c <maxlocks; c++) 
+        mutex_destroy(ssl_static_locks[c]);
+
+    ssl_static_locks = NULL;
+
+    gw_free(ssl_static_locks);
+}
+ 
+void conn_init_ssl(void)
+{
     SSL_library_init();
     SSL_load_error_strings();
     global_ssl_context = SSL_CTX_new(SSLv23_method());
@@ -1298,16 +1310,6 @@ void conn_init_ssl(void)
 
 void server_ssl_init(void) 
 {
-    int c, maxlocks = CRYPTO_num_locks();
-    
-    gw_assert(ssl_server_static_locks == NULL);
-    ssl_server_static_locks = gw_malloc(sizeof(Mutex *) * maxlocks);
-    for (c=0;c<maxlocks;c++) 
-         ssl_server_static_locks[c] = mutex_create();
-
-    CRYPTO_set_locking_callback(openssl_server_locking_function);
-    CRYPTO_set_id_callback((CRYPTO_CALLBACK_PTR)gwthread_self);
-
     SSLeay_add_ssl_algorithms();
     SSL_load_error_strings();
     global_server_ssl_context = SSL_CTX_new(SSLv23_server_method());
@@ -1318,37 +1320,20 @@ void server_ssl_init(void)
 
 void conn_shutdown_ssl(void)
 {
-    int c, maxlocks = CRYPTO_num_locks();
-
     if (global_ssl_context)
         SSL_CTX_free(global_ssl_context);
-
-    for (c=0;c<maxlocks;c++) 
-        mutex_destroy(ssl_static_locks[c]);
     
-    ERR_free_strings ();
+    ERR_free_strings();
     EVP_cleanup();
-
-    ssl_static_locks = NULL;
-
-    gw_free(ssl_static_locks);
 }
 
 void server_shutdown_ssl(void)
 {
-    int c, maxlocks = CRYPTO_num_locks();
+    if (global_server_ssl_context)
+        SSL_CTX_free(global_server_ssl_context);
 
-    SSL_CTX_free(global_server_ssl_context);
-
-    for (c=0;c<maxlocks;c++) 
-        mutex_destroy(ssl_server_static_locks[c]);
-    
-    ERR_free_strings ();
+    ERR_free_strings();
     EVP_cleanup();
-
-    ssl_server_static_locks = NULL;
-
-    gw_free(ssl_server_static_locks);
 }
 
 void use_global_client_certkey_file(Octstr *certkeyfile)

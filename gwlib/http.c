@@ -2810,6 +2810,7 @@ void http_init(void)
     gw_assert(run_status == limbo);
 
 #ifdef HAVE_LIBSSL
+    openssl_init_locks();
     conn_init_ssl();
 #endif /* HAVE_LIBSSL */
     proxy_init();
@@ -2838,6 +2839,7 @@ void http_shutdown(void)
     server_shutdown();
     proxy_shutdown();
 #ifdef HAVE_LIBSSL
+    openssl_shutdown_locks();
     conn_shutdown_ssl();
     server_shutdown_ssl();
 #endif /* HAVE_LIBSSL */

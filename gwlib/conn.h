@@ -227,6 +227,12 @@ X509 *get_peer_certificate(Connection *conn);
  */
 void openssl_locking_function(int mode, int n, const char *file, int line);
 
+/* These are called to initialize and shutdown the OpenSSL mutex locks.
+ * They should be called before the _init_ssl, _shutdown_ssl functions.
+ */
+void openssl_init_locks(void);
+void openssl_shutdown_locks(void);
+ 
 /* These must be called if SSL is used. Currently http.c calls 
  * conn_init_ssl and server_init_ssl from http_init and 
  * conn_shutdown_ssl and server_shutdown_ssl from http_shutdown. 
