@@ -135,6 +135,17 @@ checkobjs = $(checksrcs:.c=.o)
 checkprogs = $(checksrcs:.c=)
 checks = $(checkprogs) $(shell echo checks/*.sh)
 
+benchformats = \
+    benchmarks/report.pdf \
+    benchmarks/report.ps \
+    benchmarks/report.html
+benchscripts = benchmarks/run-benchmarks $(shell echo benchmarks/*.sh)
+benchoutputs = \
+    $(benchformats) \
+    $(shell echo benchmarks/*.ps) \
+    $(shell echo benchmarks/*.png) \
+    $(shell echo benchmarks/*.xml)
+
 srcs = $(shell echo */*.c)
 objs = $(srcs:.c=.o)
 
@@ -197,6 +208,11 @@ figs: $(figs)
 check: all
 	utils/run-checks $(checks)
 
+bench: all $(benchformats)
+benchmarks/report.xml: dummy
+	benchmarks/run-benchmarks benchmarks/*.sh
+dummy:
+
 install: all
 	$(INSTALL) -d $(bindir)
 	for prog in $(binprogs); do \
@@ -222,6 +238,7 @@ install-docs:
 clean:
 	rm -f */*.o *.a core $(progs) $(testprogs) $(checkprogs) $(docs)
 	rm -f $(figs) $(docs)
+	rm -f $(benchoutputs)
 
 distclean: clean
 	rm -f Makefile config.h config.cache config.log config.status .depend

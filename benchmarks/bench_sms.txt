@@ -1,0 +1,12 @@
+<sect1>
+<title>SMS SMPP benchmark</title>
+
+<para>This benchmark sends #TIMES# SMS requests using the SMPP protocol.
+Each SMS request results in one HTTP request, and one SMS response message.
+
+<figure>
+<title>SMPP requests per second during benchmark</title>
+<graphic fileref="bench_sms&figtype;"></graphic>
+</figure>
+
+</sect1>

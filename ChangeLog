@@ -1,3 +1,22 @@
+2001-03-01  Lars Wirzenius  <liw@iki.fi>
+
+	* Implemented the beginnings of a framework for automated
+	benchmarks.
+	
+	* Makefile.in: "make bench" now runs the automated benchmark.
+    	"make clean" removes the cruft.
+	
+	* benchmarks/.cvsignore, benchmarks/bench_http.sh,
+	benchmarks/bench_http.txt, benchmarks/bench_sms.sh,
+	benchmarks/bench_sms.conf, benchmarks/bench_sms.txt,
+	benchmarks/report-begin.txt, benchmarks/report-end.txt,
+	benchmarks/run-benchmarks: Wrote.
+	
+    	* test/test_smsc.c, test/timestamp.c: Wrote.
+
+	* test/test_http_server.c: Added option -l for setting logfile
+	name.
+
 2001-03-01  Kalle Marjola  <rpr@wapit.com>
 
 	* gw/bb_boxc.c, gw/shared.c: Fix, modified so that error in read

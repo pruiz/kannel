@@ -80,6 +80,7 @@ int main(int argc, char **argv) {
     int opt, port, use_threads;
     struct sigaction act;
     char *filename;
+    Octstr *log_filename;
     Octstr *file_contents;
 
     gwlib_init();
@@ -92,8 +93,9 @@ int main(int argc, char **argv) {
     port = 8080;
     use_threads = 0;
     filename = NULL;
+    log_filename = NULL;
 
-    while ((opt = getopt(argc, argv, "hv:p:tf:")) != EOF) {
+    while ((opt = getopt(argc, argv, "hv:p:tf:l:")) != EOF) {
 	switch (opt) {
 	case 'v':
 	    log_set_output_level(atoi(optarg));
@@ -115,12 +117,22 @@ int main(int argc, char **argv) {
 	    filename = optarg;
 	    break;
 
+	case 'l':
+	    octstr_destroy(log_filename);
+	    log_filename = octstr_create(optarg);
+	    break;
+
 	case '?':
 	default:
 	    error(0, "Invalid option %c", opt);
 	    help();
 	    panic(0, "Stopping.");
 	}
+    }
+
+    if (log_filename != NULL) {
+    	log_open(octstr_get_cstr(log_filename), GW_DEBUG);
+	octstr_destroy(log_filename);
     }
 
     if (filename == NULL)

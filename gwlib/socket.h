@@ -120,4 +120,14 @@ void socket_shutdown(void);
 Octstr *gw_netaddr_to_octstr(int af, void* src);
 
 
+/*
+ * Do an accept() system call for the given file descriptor. Return -1
+ * for error (from accept or gwthread_poll, or gwthread_poll was 
+ * interrupted by gwthread_wakeup) or the new file descriptor for success. 
+ * Return IP number (as formatted by host_ip) via *client_addr.
+ */
+int gw_accept(int fd, Octstr **client_addr);
+
+
+
 #endif

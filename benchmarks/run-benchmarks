@@ -1,0 +1,25 @@
+#!/bin/sh
+
+BEGIN=benchmarks/report-begin.txt
+END=benchmarks/report-end.txt
+OUT=benchmarks/report.xml
+
+rm -f $OUT
+
+sed "s/#DATE#/`date +%Y-%m-%d`/g" < $BEGIN |
+sed "s/#UNAME#/`uname -a`/g" > $OUT
+
+for bench in "$@"
+do
+    echo -n "Running benchmark $bench..."
+    if $bench >> $OUT
+    then
+    	echo " OK."
+    else
+    	echo " FAILURE!"
+	exit 1
+    fi
+done
+
+
+cat < $END >>$OUT
