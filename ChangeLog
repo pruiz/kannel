@@ -1,4 +1,9 @@
 2002-09-05  Stipe Tolj  <tolj@wapme-systems.de>
+    * gwlib/utils.[ch], gw/urltrans.c, gw/smscconn.c: moved the identical 
+      routine does_prefix_match() from urltrans.c and smsccon.c to the 
+      higher abtraction layer to utils.c and made it publically available.
+
+2002-09-05  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/dlr.c: fixed a bug caused by a typo
     * gwlib/http.c, gwlib/parse.c: fixed minor compiler warnings
 
