@@ -1,4 +1,9 @@
 2002-03-22  Stipe Tolj  <tolj@wapme-systems.de>
+    * gwlib/cfg.def, gw/smsc_smpp.c: added manual NPI and TON defining support
+      via configuration directives, patch by Alex Judd <ajudd@skywire.co.uk>
+      [Msg-ID: <Pine.LNX.4.44.0203210918030.7205-101000@samsara.kgbinternet.com>]
+
+2002-03-22  Stipe Tolj  <tolj@wapme-systems.de>
     * doc/modems.conf, doc/userguide/userguide.xml, gw/smsc_at2.c,
       gwlib/cfg.def: added SIM buffering pool patch, 
       contributed by Oded Arbel <oded@m-wise.com>, forwarded by Andrea
