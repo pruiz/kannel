@@ -39,6 +39,7 @@ struct wsp_pdu {
 };
 typedef struct wsp_pdu WSP_PDU;
 
+WSP_PDU *wsp_pdu_create(int type);
 WSP_PDU *wsp_pdu_unpack(Octstr *data);
 Octstr *wsp_pdu_pack(WSP_PDU *pdu);
 void wsp_pdu_dump(WSP_PDU *pdu, int level);

@@ -10,6 +10,7 @@
 
 #include "gwlib/gwlib.h"
 #include "wsp.h"
+#include "wsp_pdu.h"
 #include "wsp_headers.h"
 
 /* WAP standard defined values for capabilities */
@@ -72,22 +73,18 @@ static List *session_machines = NULL;
 static Counter *session_id_counter = NULL;
 
 
-static void handle_event(WSPMachine *machine, WAPEvent *event);
+static void handle_event(WSPMachine *machine, WAPEvent *event, WSP_PDU *pdu);
 static WSPMachine *machine_create(void);
 static void machine_mark_unused(WSPMachine *p);
 static void machine_destroy(WSPMachine *p);
 #if 0
 static void machine_dump(WSPMachine *machine);
 #endif
-static int deduce_pdu_type(Octstr *pdu, int connectionless);
 
-static int unpack_connect_pdu(WSPMachine *m, Octstr *user_data);
-static int unpack_get_pdu(Octstr **url, List **headers, Octstr *pdu);
-static int unpack_post_pdu(Octstr **url, Octstr **headers, Octstr *pdu);
+static void unpack_caps(Octstr *caps, WSPMachine *m);
 
 static int unpack_uint8(unsigned long *u, Octstr *os, int *off);
 static int unpack_uintvar(unsigned long *u, Octstr *os, int *off);
-static int unpack_octstr(Octstr **ret, int len, Octstr *os, int *off);
 
 static char *wsp_state_to_string(WSPState state);
 static long wsp_next_session_id(void);
@@ -107,7 +104,7 @@ static int transaction_belongs_to_session(void *session, void *wtp);
 static int same_client(void *sm1, void *sm2);
 
 static void main_thread(void *);
-static WSPMachine *find_machine(WAPEvent *event);
+static WSPMachine *find_machine(WAPEvent *event, WSP_PDU *pdu);
 
 
 
@@ -155,20 +152,37 @@ void wsp_dispatch_event(WAPEvent *event) {
 static void main_thread(void *arg) {
 	WAPEvent *e;
 	WSPMachine *sm;
+	WSP_PDU *pdu;
 	
 	while (run_status == running && (e = list_consume(queue)) != NULL) {
 		wap_event_assert(e);
-		sm = find_machine(e);
+		switch (e->type) {
+		case TR_Invoke_Ind:
+			pdu = wsp_pdu_unpack(e->TR_Invoke_Ind.user_data);
+			if (pdu == NULL) {
+				warning(0, "WSP: Broken PDU ignored.");
+				return;
+			}
+			break;
+	
+		default:
+			pdu = NULL;
+			break;
+		}
+	
+		sm = find_machine(e, pdu);
 		debug("wap.wsp", 0, "WSP: Got event %p, for %p",
 			(void *) e, (void *) sm);
 		if (sm != NULL)
-			handle_event(sm, e);
+			handle_event(sm, e, pdu);
+		
+		wsp_pdu_destroy(pdu);
 	}
 }
 
 
 
-static WSPMachine *find_machine(WAPEvent *event) {
+static WSPMachine *find_machine(WAPEvent *event, WSP_PDU *pdu) {
 	WSPMachine *sm;
 	WTPMachine *wtp_sm;
 	
@@ -219,7 +233,7 @@ static WSPMachine *find_machine(WAPEvent *event) {
 	/* XXX this should probably be moved to a condition function --liw */
 	if (event->type == TR_Invoke_Ind &&
 	    event->TR_Invoke_Ind.tcl == 2 &&
-	    deduce_pdu_type(event->TR_Invoke_Ind.user_data, 0) == Connect_PDU) {
+	    pdu->type == Connect) {
 		/* Client wants to start new session. Igore existing
 		   machines. */
 		sm = NULL;
@@ -328,21 +342,8 @@ static void machine_dump(WSPMachine *machine) {
 #endif
 
 
-static int deduce_pdu_type(Octstr *pdu, int connectionless) {
-	int off;
-	unsigned long o;
-
-	if (connectionless)
-		off = 1;
-	else
-		off = 0;
-	if (unpack_uint8(&o, pdu, &off) == -1)
-		o = Bad_PDU;
-	return o;
-}
-
-
-static void handle_event(WSPMachine *sm, WAPEvent *current_event) {
+static void handle_event(WSPMachine *sm, WAPEvent *current_event, WSP_PDU *pdu)
+{
 	debug("wap.wsp", 0, "WSP: machine %p, state %s, event %s",
 		(void *) sm,
 		wsp_state_to_string(sm->state), 
@@ -508,128 +509,6 @@ static void unpack_caps(Octstr *caps, WSPMachine *m)
 }
 
 
-static int unpack_connect_pdu(WSPMachine *m, Octstr *user_data) {
-	int off;
-	unsigned long version, caps_len, headers_len;
-	Octstr *caps, *headers;
-
-	off = 1;	/* ignore PDU type */
-	if (unpack_uint8(&version, user_data, &off) == -1 ||
-	    unpack_uintvar(&caps_len, user_data, &off) == -1 ||
-	    unpack_uintvar(&headers_len, user_data, &off) == -1 ||
-	    unpack_octstr(&caps, caps_len, user_data, &off) == -1 ||
-	    unpack_octstr(&headers, headers_len, user_data, &off) == -1)
-		return -1;
-
-#if 0
-	debug("wap.wsp", 0, "Unpacked Connect PDU: version=%lu, caps_len=%lu, hdrs_len=%lu",
-	      version, caps_len, headers_len);
-#endif
-	if (caps_len > 0) {
-	    unpack_caps(caps, m);
-	}
-	if (headers_len > 0) {
-	    List *hdrs;
-	    
-	    hdrs = unpack_headers(headers);
-
-	    /* pack them for more compact form */
-	    http2_header_pack(hdrs);
-
-	    m->http_headers = hdrs;
-	}
-
-        octstr_destroy(caps);
-	octstr_destroy(headers);
-	return 0;
-}
-
-
-static int unpack_get_pdu(Octstr **url, List **headers, Octstr *pdu) {
-	unsigned long url_len;
-	int off;
-	Octstr *h;
-
-	off = 1; /* Offset 0 has type octet. */
-	if (unpack_uintvar(&url_len, pdu, &off) == -1 ||
-	    unpack_octstr(url, url_len, pdu, &off) == -1)
-		return -1;
-	if (off < octstr_len(pdu)) {
-		h = octstr_copy(pdu, off, octstr_len(pdu) - off);
-		*headers = unpack_headers(h);
-		octstr_destroy(h);
-	} else
-		*headers = NULL;
-	return 0;
-}
-
-
-static int unpack_post_pdu(Octstr **url, Octstr **headers, Octstr *pdu) {
-	unsigned long url_len;
-	unsigned long param_len;
-	Octstr 		*param;
-	Octstr 		*head;
-	int off;
-
-	off = 1; /* Offset 0 has type octet. */
-	/* 
-		0x60 : Post
-		u8	: URL len
-		u8 	: Header Len
-		URL	:
-		Vars	:
-
-	*/
-	if (unpack_uintvar(&url_len, pdu, &off) == -1)
-	{
-		return -1;
-	}
-	 if( unpack_uintvar(&param_len,pdu,&off) == -1)
-	{
-		return -1;
-	}
-	if(  unpack_octstr(url, url_len, pdu, &off) == -1)
-	{
-		return -1;
-	}
-	debug("wap.wsp", 0, "WSP: Post PDU had URL <%s>", octstr_get_cstr(*url));
-
-	if(unpack_octstr(&head,param_len,pdu,&off)==-1)
-	{
-		return -1;
-	}
-	debug("wap.wsp", 0, "WSP: Got headers. <%d> Total len <%d> offset",(int)octstr_len(pdu),off);
-
-	if(unpack_octstr(&param,octstr_len(pdu)-off,pdu,&off)==-1)
-	{
-		return -1;
-	}
-
-/*
-	if (off < octstr_len(pdu))
-		error(0, "unpack_post_pdu: Post PDU has headers, ignored them");
-*/
-		
-	*headers = NULL;
-
-	debug("wap.wsp", 0, "WSP: Post PDU had data <%s>", octstr_get_cstr(param));
-
-	octstr_destroy(head);
-	/* Now we concatenante the two thingies */
-	head=octstr_create("?");
-	octstr_insert(*url,head,url_len);	
-	octstr_insert(*url,param,octstr_len(*url));	
-	octstr_destroy(param);
-	octstr_destroy(head);
-/*
-	octstr_set_char	(*url,url_len,'?');
-*/	
-	debug("wap.wsp", 0, "WSP: Final URL is  <%s>", octstr_get_cstr(*url));
-	debug("wap.wsp", 0, "WSP: URL unpacked");
-	return 0;
-}
-
-
 static int unpack_uint8(unsigned long *u, Octstr *os, int *off) {
 	if (*off >= octstr_len(os)) {
 		error(0, "WSP: Trying to unpack uint8 past PDU");
@@ -657,17 +536,6 @@ static int unpack_uintvar(unsigned long *u, Octstr *os, int *off) {
 }
 
 
-static int unpack_octstr(Octstr **ret, int len, Octstr *os, int *off) {
-	if (*off + len > octstr_len(os)) {
-		error(0, "WSP: Trying to unpack string past PDU");
-		return -1;
-	}
-	*ret = octstr_copy(os, *off, len);
-	*off += len;
-	return 0;
-}
-
-
 static char *wsp_state_to_string(WSPState state) {
 	switch (state) {
 	#define STATE_NAME(name) case name: return #name;
@@ -681,6 +549,7 @@ static char *wsp_state_to_string(WSPState state) {
 
 /* XXX this function is not thread safe. --liw 
  *     it is nowadays? --rpr */
+/* Yes. --liw */
 static long wsp_next_session_id(void) {
 	return counter_increase(session_id_counter);
 }

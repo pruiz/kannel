@@ -9,6 +9,40 @@
 #include "gwlib/gwlib.h"
 #include "wsp_pdu.h"
 
+WSP_PDU *wsp_pdu_create(int type) {
+	WSP_PDU *pdu;
+	
+	pdu = gw_malloc(sizeof(*pdu));
+	pdu->type = type;
+
+	switch (pdu->type) {
+#define PDU(name, docstring, fields, is_valid) \
+	case name: {\
+	struct name *p; p = &pdu->u.name; \
+	fields \
+	} break;
+#define UINT(field, docstring, bits) p->field = 0;
+#define UINTVAR(field, docstring) p->field = 0;
+#define OCTSTR(field, docstring, lengthfield) p->field = NULL;
+#define REST(field, docstring) p->field = NULL;
+#define TYPE(bits, value)
+#define RESERVED(bits)
+#include "wsp_pdu.def"
+#undef RESERVED
+#undef TYPE
+#undef REST
+#undef OCTSTR
+#undef UINTVAR
+#undef UINT
+#undef PDU
+	default:
+		panic(0, "Internal error: Unknown PDU type %d", pdu->type);
+		break;
+	}
+
+	return pdu;
+}
+
 void wsp_pdu_destroy(WSP_PDU *pdu) {
 	if (pdu == NULL)
 		return;
@@ -34,7 +68,7 @@ void wsp_pdu_destroy(WSP_PDU *pdu) {
 #undef UINT
 #undef PDU
 	default:
-		warning(0, "Cannot destroy unknown WSP PDU type %d", pdu->type);
+		panic(0, "Cannot destroy unknown WSP PDU type %d", pdu->type);
 		break;
 	}
 

@@ -1,3 +1,14 @@
+Sun Jun  4 02:36:10 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* gw/wsp_pdu.[ch]: Added function wsp_pdu_create, which creates
+	an (empty) PDU of the desired type. Made the warning about an
+	unknown PDU type in wsp_pdu_destroy be a panic instead.
+
+	* gw/wsp.c, gw/wsp_state-decl.h: Converted to use wsp_pdu.[ch]
+	for unpacking. We have issues with packing: at least some fields
+	need to be packed in a special way, and this needs to be handled
+	in a clean way.
+
 Sun Jun  4 01:03:55 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* gwlib/protected.[ch]: Added wrapper for gethostbyname.
