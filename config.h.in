@@ -160,5 +160,10 @@
 
 /* Define not to include the SMS gateway parts */
 #undef NO_SMS
+
+/* Define for varios gethostbyname_r functions */
+#undef HAVE_FUNC_GETHOSTBYNAME_R_6
+#undef HAVE_FUNC_GETHOSTBYNAME_R_5
+#undef HAVE_FUNC_GETHOSTBYNAME_R_3
                      
 #endif

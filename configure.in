@@ -111,6 +111,14 @@ AC_CHECK_FUNCS(gettimeofday select socket strdup getopt_long localtime_r gmtime_
 AC_CHECK_FUNC(getopt, , LIBOBJS="$LIBOBJS utils/attgetopt.o")
 AC_SUBST(LIBOBJS)
 
+dnl check if we have reentrant gethostbyname and wich
+AC_FUNC_WHICH_GETHOSTBYNAME_R
+
+if test "$ac_cv_func_which_gethostname_r" = "no" ; then
+    dnl no gethostbyname_r found try to find gethostbyname
+    AC_CHECK_FUNC(gethostbyname)
+fi
+
 dnl Extra feature checks
 
 dnl GW_HAVE_TYPE_FROM(HDRNAME, TYPE, HAVENAME, DESCRIPTION)

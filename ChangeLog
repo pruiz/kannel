@@ -1,4 +1,10 @@
 2003-09-26  Alexander Malysh  <a.malysh@centrium.de>
+    * aclocal.m4, config.h.in, configure, configure.in, gwlib/protected.[ch], gwlib/socket.c:
+      Added using of reentrant gethostbyname_r(..) functions. If none is found then needed values
+      will be copied into supplied buffer. Otherwise we have segfault, because gethostbyname(...)
+      uses static buffers which will be overwritten by next call.
+
+2003-09-26  Alexander Malysh  <a.malysh@centrium.de>
     * gw/dlr_mysql.c, gw/dlr_oracle.c, gw/dlr_sdb.c: fixed bug, that smsc-id was
       not copied to dlr message.
       Thanks to: Adi Prasaja <adi@imt.co.id> for pointing this.

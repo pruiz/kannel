@@ -40,6 +40,7 @@ int make_server_socket(int port, const char *interface_name )
     int s;
     int reuse;
     struct hostent hostinfo;
+    char *buff = NULL;
 
     s = socket(PF_INET, SOCK_STREAM, 0);
     if (s == -1) {
@@ -53,7 +54,7 @@ int make_server_socket(int port, const char *interface_name )
     if (interface_name == NULL || strcmp(interface_name, "*") == 0)
         addr.sin_addr.s_addr = htonl(INADDR_ANY);
     else {
-        if (gw_gethostbyname(&hostinfo, interface_name) == -1) {
+        if (gw_gethostbyname(&hostinfo, interface_name, &buff) == -1) {
             error(errno, "gethostbyname failed");
             goto error;
         }
@@ -77,11 +78,14 @@ int make_server_socket(int port, const char *interface_name )
         goto error;
     }
 
+    gw_free(buff);
+
     return s;
 
 error:
     if (s >= 0)
         (void) close(s);
+    gw_free(buff);
     return -1;
 }
 
@@ -100,6 +104,9 @@ int tcpip_connect_to_server_with_port(char *hostname, int port, int our_port, co
     struct hostent hostinfo;
     struct hostent o_hostinfo;
     int s;
+    char *buff, *buff1;
+
+    buff = buff1 = NULL;
 
     s = socket(PF_INET, SOCK_STREAM, 0);
     if (s == -1) {
@@ -107,7 +114,7 @@ int tcpip_connect_to_server_with_port(char *hostname, int port, int our_port, co
         goto error;
     }
 
-    if (gw_gethostbyname(&hostinfo, hostname) == -1) {
+    if (gw_gethostbyname(&hostinfo, hostname, &buff) == -1) {
         error(errno, "gethostbyname failed");
         goto error;
     }
@@ -126,7 +133,7 @@ int tcpip_connect_to_server_with_port(char *hostname, int port, int our_port, co
 	if (interface_name == NULL || strcmp(interface_name, "*") == 0)
 	    o_addr.sin_addr.s_addr = htonl(INADDR_ANY);
 	else {
-	    if (gw_gethostbyname(&o_hostinfo, interface_name) == -1) {
+	    if (gw_gethostbyname(&o_hostinfo, interface_name, &buff1) == -1) {
 		error(errno, "gethostbyname failed");
 		goto error;
 	    }
@@ -150,6 +157,8 @@ int tcpip_connect_to_server_with_port(char *hostname, int port, int our_port, co
         goto error;
     }
 
+    gw_free(buff);
+    gw_free(buff1);
     return s;
 
 error:
@@ -157,6 +166,8 @@ error:
           hostname, port);
     if (s >= 0)
         close(s);
+    gw_free(buff);
+    gw_free(buff1);
     return -1;
 }
 
@@ -173,41 +184,43 @@ int tcpip_connect_nb_to_server_with_port(char *hostname, int port, int our_port,
   struct hostent o_hostinfo;
   int s;
   int flags,rc;
+  char *buff, *buff1;
 
   *done = 1;
-  
+  buff = buff1 = NULL;
+
   s = socket(PF_INET, SOCK_STREAM, 0);
   if (s == -1) {
     error(errno, "Couldn't create new socket.");
     goto error;
   }
-  
-  if (gw_gethostbyname(&hostinfo, hostname) == -1) {
+
+  if (gw_gethostbyname(&hostinfo, hostname, &buff) == -1) {
     error(errno, "gethostbyname failed");
     goto error;
   }
-  
+
   addr = empty_sockaddr_in;
   addr.sin_family = AF_INET;
   addr.sin_port = htons(port);
   addr.sin_addr = *(struct in_addr *) hostinfo.h_addr;
-  
+
   if (our_port > 0 || (interface_name != NULL && strcmp(interface_name, "*") != 0)) {
     int reuse;
-    
+
     o_addr = empty_sockaddr_in;
     o_addr.sin_family = AF_INET;
     o_addr.sin_port = htons(our_port);
     if (interface_name == NULL || strcmp(interface_name, "*") == 0)
       o_addr.sin_addr.s_addr = htonl(INADDR_ANY);
     else {
-      if (gw_gethostbyname(&o_hostinfo, interface_name) == -1) {
+      if (gw_gethostbyname(&o_hostinfo, interface_name, &buff1) == -1) {
 	error(errno, "gethostbyname failed");
 	goto error;
       }
       o_addr.sin_addr = *(struct in_addr *) o_hostinfo.h_addr;
     }
-    
+
     reuse = 1;
     if (setsockopt(s, SOL_SOCKET, SO_REUSEADDR, (char *) &reuse,
 		   sizeof(reuse)) == -1) {
@@ -236,13 +249,18 @@ int tcpip_connect_nb_to_server_with_port(char *hostname, int port, int our_port,
     *done = 0;
   }
 
+  gw_free(buff);
+  gw_free(buff1);
+
   return s;
-  
+
  error:
   error(0, "error connecting to server `%s' at port `%d'",
 	hostname, port);
   if (s >= 0)
     close(s);
+  gw_free(buff);
+  gw_free(buff1);
   return -1;
 }
 
@@ -373,6 +391,7 @@ int udp_bind(int port, const char *interface_name)
     int s;
     struct sockaddr_in sa;
     struct hostent hostinfo;
+    char *buff = NULL;
 
     s = socket(PF_INET, SOCK_DGRAM, 0);
     if (s == -1) {
@@ -386,8 +405,9 @@ int udp_bind(int port, const char *interface_name)
     if (strcmp(interface_name, "*") == 0)
         sa.sin_addr.s_addr = htonl(INADDR_ANY);
     else {
-        if (gw_gethostbyname(&hostinfo, interface_name) == -1) {
+        if (gw_gethostbyname(&hostinfo, interface_name, &buff) == -1) {
             error(errno, "gethostbyname failed");
+            gw_free(buff);
             return -1;
         }
         sa.sin_addr = *(struct in_addr *) hostinfo.h_addr;
@@ -399,6 +419,8 @@ int udp_bind(int port, const char *interface_name)
         return -1;
     }
 
+    gw_free(buff);
+
     return s;
 }
 
@@ -407,6 +429,8 @@ Octstr *udp_create_address(Octstr *host_or_ip, int port)
 {
     struct sockaddr_in sa;
     struct hostent h;
+    char *buff = NULL;
+    Octstr *ret;
 
     sa = empty_sockaddr_in;
     sa.sin_family = AF_INET;
@@ -415,15 +439,19 @@ Octstr *udp_create_address(Octstr *host_or_ip, int port)
     if (strcmp(octstr_get_cstr(host_or_ip), "*") == 0) {
         sa.sin_addr.s_addr = INADDR_ANY;
     } else {
-        if (gw_gethostbyname(&h, octstr_get_cstr(host_or_ip)) == -1) {
+        if (gw_gethostbyname(&h, octstr_get_cstr(host_or_ip), &buff) == -1) {
             error(0, "Couldn't find the IP number of `%s'",
                   octstr_get_cstr(host_or_ip));
+            gw_free(buff);
             return NULL;
         }
-        sa.sin_addr = *(struct in_addr *) h.h_addr_list[0];
+        sa.sin_addr = *(struct in_addr *) h.h_addr;
     }
 
-    return octstr_create_from_data((char *) &sa, sizeof(sa));
+    ret = octstr_create_from_data((char *) &sa, sizeof(sa));
+    gw_free(buff);
+
+    return ret;
 }
 
 
@@ -514,11 +542,12 @@ static void setup_official_name(void)
 {
     struct utsname u;
     struct hostent h;
+    char *buff = NULL;
 
     gw_assert(official_name == NULL);
     if (uname(&u) == -1)
         panic(0, "uname failed - can't happen, unless " GW_NAME " is buggy.");
-    if (gw_gethostbyname(&h, u.nodename) == -1) {
+    if (gw_gethostbyname(&h, u.nodename, &buff) == -1) {
         error(0, "Can't find out official hostname for this host, "
               "using `%s' instead.", u.nodename);
         official_name = octstr_create(u.nodename);
@@ -527,6 +556,7 @@ static void setup_official_name(void)
         official_name = octstr_create(h.h_name);
         official_ip = gw_netaddr_to_octstr(AF_INET, h.h_addr);
     }
+    gw_free(buff);
 }
 
 

@@ -20,7 +20,7 @@ void gwlib_protected_shutdown(void);
 struct tm gw_localtime(time_t t);
 struct tm gw_gmtime(time_t t);
 int gw_rand(void);
-int gw_gethostbyname(struct hostent *ret, const char *name);
+int gw_gethostbyname(struct hostent *ret, const char *name, char **buff);
 
 /*
  * Make it harder to use these by mistake.
