@@ -5,7 +5,6 @@
 #ifndef WTP_H
 #define WTP_H
 
-typedef struct WTPTimer WTPTimer;
 typedef struct WTPMachine WTPMachine;
 typedef struct WTPEvent WTPEvent;
 
@@ -16,6 +15,7 @@ typedef struct WTPEvent WTPEvent;
 #include "gwlib.h"
 #include "msg.h" 
 #include "wsp.h" 
+#include "wtp_timer.h" 
 
 #define NUMBER_OF_ABORT_REASONS 8
 /*
@@ -39,14 +39,6 @@ enum states {
 
 typedef enum states states;
 
-struct WTPTimer {
-	struct WTPTimer *next;
-	long start_time;
-	long interval;
-	WTPMachine *machine;
-	WTPEvent *event;
-};
-
 
 struct WTPMachine {
         #define INTEGER(name) long name
@@ -54,11 +46,7 @@ struct WTPMachine {
         #define OCTSTR(name) Octstr *name
         #define QUEUE(name) /* XXX event queue to be implemented later */
 	#define TIMER(name) WTPTimer *name
-/*#if HAVE_THREADS
         #define MUTEX(name) pthread_mutex_t name
-#else*/
-        #define MUTEX(name) long name
-/*#endif*/
         #define NEXT(name) struct WTPMachine *name
         #define MACHINE(field) field
         #include "wtp_machine-decl.h"
@@ -107,7 +95,9 @@ void wtp_event_dump(WTPEvent *event);
 WTPEvent *wtp_unpack_wdp_datagram(Msg *msg);
 
 
-WTPMachine *create_or_find_wtp_machine(Msg *msg, WTPEvent *event);
+WTPMachine *wtp_machine_create(Octstr *srcaddr, long srcport, 
+				Octstr *destaddr, long destport);
+WTPMachine *wtp_machine_find_or_create(Msg *msg, WTPEvent *event);
 
 
 /*
@@ -136,16 +126,10 @@ void wtp_machine_dump(WTPMachine  *machine);
  * Feed an event to a WTP state machine. Handle all errors yourself,
  * and report them to the caller. Generate a pointer to WSP event, if an 
  * indication or a confirmation is required.
- *
- *Returns: WSPEvent, if succeeded and an indication or a confirmation is 
- *          generated
- *          NULL, if succeeded and no indication or confirmation is generated
- *          NULL, if failed (this information is superflous, but required by
- *          the function call syntax.)
  */
-WSPEvent *wtp_handle_event(WTPMachine *machine, WTPEvent *event);
+void wtp_handle_event(WTPMachine *machine, WTPEvent *event);
+
+
+long wtp_tid_next(void);
 
 #endif
-
-
-

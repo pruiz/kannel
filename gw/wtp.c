@@ -20,16 +20,11 @@ static WTPMachine *list = NULL;
  *Give events and the state a readable name.
  */
 
+static WTPMachine *wtp_machine_create_empty(void);
+
 static char *name_event(int name);
 
 static char *name_state(int name);
-
-/*
- * Create and initialize a WTPMachine structure. Return a pointer to it,
- * or NULL if there was a problem. Add the structure to a global list of
- * all WTPMachine structures (see wtp_machine_find).
- */
-WTPMachine *wtp_machine_create(void);
 
 /*
  * Find the WTPMachine from the global list of WTPMachine structures that
@@ -37,31 +32,25 @@ WTPMachine *wtp_machine_create(void);
  * ports and the transaction identifier. Return a pointer to the machine,
  * or NULL if not found.
  */
-WTPMachine *wtp_machine_find(Octstr *source_address, long source_port,
+static WTPMachine *wtp_machine_find(Octstr *source_address, long source_port,
 	Octstr *destination_address, long destination_port, long tid);
 
 /*
  *Attach a WTP machine five-tuple (addresses, ports and tid) which are used to
  *identify it.
  */
-WTPMachine *name_machine(WTPMachine *machine, Octstr *source_address, 
+static WTPMachine *name_machine(WTPMachine *machine, Octstr *source_address, 
            long source_port, Octstr *destination_address, 
            long destination_port, long tid);
-
-WSPEvent *wsp_event_create(WSPEventType type);
-
-void wsp_event_destroy(WSPEvent *event);
-
-void wsp_event_dump(WSPEvent *event);
 
 /*
  *Packs a wsp event. Fetches flags and user data from a wtp event. Address 
  *five-tuple and tid are fields of the wtp machine.
  */
-WSPEvent *pack_wsp_event(WSPEventType wsp_name, WTPEvent *wtp_event, 
+static WSPEvent *pack_wsp_event(WSPEventType wsp_name, WTPEvent *wtp_event, 
          WTPMachine *machine);
 
-int wtp_tid_is_valid(WTPEvent *event);
+static int wtp_tid_is_valid(WTPEvent *event);
 
 /******************************************************************************
  *
@@ -260,7 +249,7 @@ void wtp_machine_dump(WTPMachine  *machine){
 }
 
 
-WTPMachine *create_or_find_wtp_machine(Msg *msg, WTPEvent *event){
+WTPMachine *wtp_machine_find_or_create(Msg *msg, WTPEvent *event){
 
            WTPMachine *machine;
 
@@ -270,7 +259,7 @@ WTPMachine *create_or_find_wtp_machine(Msg *msg, WTPEvent *event){
                                     msg->wdp_datagram.destination_port,
                                     event->RcvInvoke.tid);
            if (machine == NULL){
-	      machine=wtp_machine_create();
+	      machine=wtp_machine_create_empty();
 
               if (machine == NULL)
                  return NULL;
@@ -611,7 +600,7 @@ WTPMachine *wtp_machine_find(Octstr *source_address, long source_port,
            return temp;
 }
 
-WTPMachine *wtp_machine_create(void){
+static WTPMachine *wtp_machine_create_empty(void){
 
         WTPMachine *machine;
         /*int dummy, ret;*/
@@ -626,11 +615,7 @@ WTPMachine *wtp_machine_create(void){
                              if (machine->name == NULL)\
                                 goto error
         #define QUEUE(name) /*Queue will be implemented later*/
-/*#if HAVE_THREADS
-        #define MUTEX(name) dummy=pthread_mutex_init(&machine->name, NULL)
-#else*/
-        #define MUTEX(name) machine->name=0
-/*#endif*/                
+        #define MUTEX(name) pthread_mutex_init(&machine->name, NULL)
         #define TIMER(name) machine->name=wtp_timer_create();\
                             if (machine->name == NULL)\
                                goto error
@@ -683,7 +668,7 @@ WTPMachine *wtp_machine_create(void){
  *Attach a WTP machine five-tuple (addresses, ports and tid) which are used to
  *identify it.
  */
-WTPMachine *name_machine(WTPMachine *machine, Octstr *source_address, 
+static WTPMachine *name_machine(WTPMachine *machine, Octstr *source_address, 
            long source_port, Octstr *destination_address, 
            long destination_port, long tid){
 
@@ -701,7 +686,7 @@ WTPMachine *name_machine(WTPMachine *machine, Octstr *source_address,
  *Packs a wsp event. Fetches flags and user data from a wtp event. Address 
  *five-tuple and tid are fields of the wtp machine.
  */
-WSPEvent *pack_wsp_event(WSPEventType wsp_name, WTPEvent *wtp_event, 
+static WSPEvent *pack_wsp_event(WSPEventType wsp_name, WTPEvent *wtp_event, 
          WTPMachine *machine){
 
          WSPEvent *event=wsp_event_create(wsp_name);
@@ -751,27 +736,3 @@ int wtp_tid_is_valid(WTPEvent *event){
 }
 
 /*****************************************************************************/
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

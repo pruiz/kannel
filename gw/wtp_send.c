@@ -12,7 +12,7 @@
  *PROTOTYPES OF INTERNAL FUNCTIONS
  */
 
-Msg *pack_result(WTPMachine *machine, WTPEvent *event);
+static Msg *pack_result(WTPMachine *machine, WTPEvent *event);
 
 /*****************************************************************************
  *
@@ -54,7 +54,7 @@ error:
  * errors by itself.
  */
 
-Msg *pack_result(WTPMachine *machine, WTPEvent *event){
+static Msg *pack_result(WTPMachine *machine, WTPEvent *event){
 
     Msg *msg;
     int octet,
@@ -122,12 +122,3 @@ error:
     return NULL;
 }
 /******************************************************************************/
-
-
-
-
-
-
-
-
-

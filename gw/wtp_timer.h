@@ -24,11 +24,18 @@
 #ifndef WTP_TIMER_H
 #define WTP_TIMER_H
 
+typedef struct WTPTimer WTPTimer;
+
 #include "wtp.h"
 
-/*
- * The timer itself is defined in wtp.h.
- */
+struct WTPTimer {
+	struct WTPTimer *next;
+	long start_time;
+	long interval;
+	WTPMachine *machine;
+	WTPEvent *event;
+};
+
 
 /*
  * Create and initialize a WTPTimer object.
