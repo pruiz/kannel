@@ -281,7 +281,7 @@ WAPEVENT(S_MethodResult_Res, "S-MethodResult.res",
 WAPEVENT(S_MethodAbort_Req, "S-MethodAbort.req",
 	INTEGER(transaction_id)
 
-	INTEGER(session_hande)
+	INTEGER(session_handle)
 	)
 
 WAPEVENT(S_MethodAbort_Ind, "S-MethodAbort.ind",
