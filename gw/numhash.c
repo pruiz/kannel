@@ -261,7 +261,7 @@ Numhash *numhash_create(char *seek_url)
 
     url = octstr_create(seek_url);
     request_headers = list_create();
-    status = http_get_real(url, request_headers, &final_url,
+    status = http_get_real(HTTP_METHOD_GET, url, request_headers, &final_url,
 			    &reply_headers, &reply_body);
     octstr_destroy(url);
     octstr_destroy(final_url);

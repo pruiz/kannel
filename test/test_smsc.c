@@ -645,8 +645,8 @@ static void kill_kannel(void)
     	    	    	admin_port, admin_password);
     req_headers = http_create_empty_headers();
     http_header_add(req_headers, "Content-Type", "text/plain");
-    ret = http_get_real(url, req_headers, &final_url, &reply_headers, 
-    	    	    	&reply_body);
+    ret = http_get_real(HTTP_METHOD_GET, url, req_headers, &final_url, 
+                        &reply_headers, &reply_body);
     if (ret != -1) {
     	octstr_destroy(final_url);
 	http_destroy_headers(reply_headers);
