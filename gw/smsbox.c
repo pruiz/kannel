@@ -696,7 +696,8 @@ static int obey_request(Octstr **result, URLTranslation *trans, Msg *msg)
 	break;
     
     case TRANSTYPE_GET_URL:
-	request_headers = list_create();
+	request_headers = http_create_empty_headers();
+	http_header_add(request_headers, "User-Agent", "Kannel " VERSION);	
 	id = remember_receiver(msg, trans);
 	http_start_request(caller, pattern, request_headers, NULL, 1, id,
  			   NULL);
@@ -706,7 +707,8 @@ static int obey_request(Octstr **result, URLTranslation *trans, Msg *msg)
 	return 0;
 
     case TRANSTYPE_POST_URL:
-	request_headers = list_create();
+	request_headers = http_create_empty_headers();
+	http_header_add(request_headers, "User-Agent", "Kannel " VERSION);
 	id = remember_receiver(msg, trans);
 	if (msg->sms.flag_8bit)
 	    http_header_add(request_headers, "Content-Type",
