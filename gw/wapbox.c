@@ -35,7 +35,7 @@ enum {
     WTLS_CONNECTION_ORIENTED_PORT = 9203
 };
 
-enum {MAX_SMS_OCTETS = 140};
+enum { MAX_SMS_OCTETS = 140 };
 
 static Octstr *bearerbox_host;
 static long bearerbox_port = BB_DEFAULT_WAPBOX_PORT;
@@ -341,7 +341,7 @@ static Msg *pack_sms_datagram(WAPEvent *dgram)
     msg->sms.smsc_id = NULL;
     msg->sms.sms_type = mt_push;
     msg->sms.mwi = MWI_UNDEF;
-    msg->sms.coding = DC_UCS2;
+    msg->sms.coding = DC_8BIT;
     msg->sms.mclass = MC_UNDEF;
     msg->sms.validity = 0;
     msg->sms.deferred = 0;
@@ -384,6 +384,8 @@ static void dispatch_datagram(WAPEvent *dgram)
 	    msg = pack_ip_datagram(dgram);
             write_to_bearerbox(msg);
         } else {
+	    debug("wap", 0, "sending a message");
+            octstr_dump(msg->sms.msgdata, 0);
 	    msg = pack_sms_datagram(dgram);
             msg_sequence = counter_increase(sequence_counter) & 0xff;
             msg_len = octstr_len(msg->sms.msgdata);
