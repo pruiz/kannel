@@ -416,6 +416,7 @@ SINGLE_GROUP(dlr-db,
     OCTSTR(field-url)
     OCTSTR(field-mask)
     OCTSTR(field-status)
+    OCTSTR(field-boxc-id)
 )
 
 
