@@ -1,3 +1,14 @@
+2000-05-29  Tuomas Luttinen  <tuo@wapit.com>
+
+	* gw/wml_compiler.c: #ifdefs added to supprt libxml2. Does compile, 
+	but does not work with it, yet. WapIT -> Wapit
+
+	* gw/wml_definitions.h: WapIT -> Wapit
+
+	* gw/wml_compiler.h: WapIT -> Wapit
+
+	* configure.in: libxml2 added.
+
 2000-05-29  Richard Braakman  <dark@wapit.com>
 
 	* gw/smsc.c: Made bearerbox not crash if "smsc" field is missing

@@ -5,7 +5,7 @@
  * element and attribute tokens for the code page 1.
  *
  *
- * Tuomas Luttinen for WapIT Ltd.
+ * Tuomas Luttinen for Wapit Ltd.
  */
 
 

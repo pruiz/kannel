@@ -7,7 +7,7 @@
  *
  * See comments below for explanations on individual functions.
  *
- * Tuomas Luttinen for WapIT Ltd.
+ * Tuomas Luttinen for Wapit Ltd.
  */
 
 

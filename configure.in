@@ -42,6 +42,7 @@ AC_CHECK_LIB(xml, xmlDocGetRootElement, ,
 case `xml-config --version` in 
 *1.8.6[)] AC_DEFINE(HAVE_LIBXML_1_8_6) [;;] 
 *1.8.7[)] [;;] 
+*2.0.0[)] [;;] 
 *[)] echo "Libxml is too old. You need at least 1.8.6." [;] exit 1 [;;] 
 esac
 

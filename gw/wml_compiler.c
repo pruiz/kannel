@@ -6,7 +6,7 @@
  * decks to the mobile terminal to decrease the use of the bandwidth.
  *
  *
- * Tuomas Luttinen for WapIT Ltd.
+ * Tuomas Luttinen for Wapit Ltd.
  */
 
 
@@ -20,13 +20,25 @@
 #include <fcntl.h>
 #include <string.h>
 
-#include <gnome-xml/xmlmemory.h>
+
+#if defined(LIBXML_VERSION) && LIBXML_VERSION >= 20000
+
+#include <libxml/parser.h>
+#include <libxml/tree.h>
+#include <libxml/debugXML.h>
+
+#else
+
 #include <gnome-xml/parser.h>
 #include <gnome-xml/tree.h>
 #include <gnome-xml/debugXML.h>
 
+#endif
+
+
 #include "gwlib/gwlib.h"
 #include "wml_compiler.h"
+
 
 /***********************************************************************
  * Declarations of data types. 
@@ -251,6 +263,22 @@ static int parse_node(xmlNodePtr node, wml_binary_t **wbxml)
    */
   switch (status) {
   case 0:
+
+#if defined(LIBXML_VERSION) && LIBXML_VERSION >= 20000
+
+    if (node->children != NULL)
+      if (parse_node(node->children, wbxml) == -1)
+	return -1;
+    break;
+  case 1:
+    if (node->children != NULL)
+      if (parse_node(node->children, wbxml) == -1)
+	return -1;
+    parse_end(wbxml);
+    break;
+
+#else
+
     if (node->childs != NULL)
       if (parse_node(node->childs, wbxml) == -1)
 	return -1;
@@ -261,6 +289,9 @@ static int parse_node(xmlNodePtr node, wml_binary_t **wbxml)
 	return -1;
     parse_end(wbxml);
     break;
+
+#endif
+
   case -1: /* Something went wrong in the parsing. */
     return -1;
   default:
@@ -390,7 +421,16 @@ static unsigned char element_check_content(xmlNodePtr node)
 {
   unsigned char status_bits = 0x00;
 
+#if defined(LIBXML_VERSION) && LIBXML_VERSION >= 20000
+
+  if (node->children != NULL)
+
+#else 
+
   if (node->childs != NULL)
+
+#endif
+
     status_bits = CHILD_BIT;
 
   if (node->properties != NULL)
