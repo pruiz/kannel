@@ -19,8 +19,6 @@ typedef int socklen_t;
 
 #include "gwstr.h"
 
-int gw_getnameinfo(struct sockaddr_in *addr, char** hostname, int* port);
-
 /* Open a server socket. Return -1 for error, >= 0 socket number for OK.*/
 int make_server_socket(int port);
 

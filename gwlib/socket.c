@@ -19,28 +19,6 @@
 
 #include "gwlib.h"
 
-int gw_getnameinfo(struct sockaddr_in *addr, char** hostname, int* port) {
-
-	char *ptr = NULL;
-
-	if(addr==NULL) goto error;
-
-	ptr = inet_ntoa(addr->sin_addr);
-	if(ptr==NULL) goto error;
-
-	*hostname = strdup(ptr);
-	if(*hostname==NULL) goto error;
-
-	*port = ntohs(addr->sin_port);
-	
-	return 0;
-
-error:
-	return -1;
-
-}
-
-
 #if !HAVE_INET_ATON || !HAVE_GETNAMEINFO
 #include <arpa/inet.h>
 #endif

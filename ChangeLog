@@ -1,3 +1,9 @@
+Thu Dec 30 17:51:28 1999  Patrick Schaaf  <bof@bof.de>
+
+	* gw/boxc.c, gwlib/http.c, gwlib/socket.{c,h}: reverted
+	introduction of gw_getnameinfo() in favour of getnameinfo,
+	which is now "emulated" properly.
+
 Thu Dec 30 18:47:19 1999  Lars Wirzenius  <liw@wapit.com>
 
 	* gw/wsp.c: WML page is now fetched from the URL specifed in the

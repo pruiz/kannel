@@ -29,7 +29,7 @@ BOXC *boxc_open(int fd, char *allow_ip, char *deny_ip)
     struct sockaddr_in client_addr;
     socklen_t client_addr_len;
     BOXC *nb;
-    char accept_ip[32];
+    char accept_ip[NI_MAXHOST];
     int ret;
 
     nb = malloc(sizeof(BOXC));
