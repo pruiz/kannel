@@ -1,3 +1,7 @@
+2002-10-15  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/smsc/smsc_smasi.c: added enquire_link feature to pass a newline
+      throught this connection to keep the TCP session up.
+      
 2002-09-23 Oded Arbel <odeda@m-wise.com>
     * gwlib/octstr.c: Fixed bug in octstr_insert_char(), patch by 
       Rene Kluwen <rene.kluwen@chimit.nl>
