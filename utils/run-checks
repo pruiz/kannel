@@ -1,0 +1,24 @@
+#!/bin/sh
+#
+# This script runs all the checks given in the command line. See the
+# README for more info.
+#
+
+rm -f check.log
+for prog in "$@"
+do
+	echo -n "Check: $prog..."
+	if $prog 2>> check.log
+	then
+		echo " OK."
+	else
+		echo " FAILURE!"
+	fi
+done
+
+if test -s check.log
+then
+	echo At least one check failed, see \`check.log\'.
+else
+	echo All checks OK.; rm -f check.output.foo
+fi

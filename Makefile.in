@@ -1,9 +1,6 @@
 #
-# Makefile.in for WapIT WAP and SMS Gateway.
+# Makefile.in for Kannel, the Open Source WAP and SMS Gateway.
 #
-# Lars Wirzenius <liw@wapit.com>
-#
-
 
 SHELL = @SHELL@
 
@@ -124,12 +121,17 @@ testsrcs = $(shell echo test/*.c)
 testobjs = $(testsrcs:.c=.o)
 testprogs = $(testsrcs:.c=)
 
+checksrcs = $(shell echo checks/*.c)
+checkobjs = $(checksrcs:.c=.o)
+checkprogs = $(checksrcs:.c=)
+checks = $(checkprogs) $(shell echo checks/*.sh)
+
 srcs = $(shell echo */*.c)
 objs = $(srcs:.c=.o)
 
 libs = libgw.a libwmlscript.a libgwlib.a
 
-srcdirs = gw gwlib test utils wmlscript
+srcdirs = gw gwlib test utils wmlscript checks
 
 docsrcs = $(shell grep -l '<!DOCTYPE ' doc/*/*.xml)
 docs = $(docsrcs:.xml=.html) $(docsrcs:.xml=.ps)
@@ -170,12 +172,15 @@ figs = $(figsrcs:.fig=.png)  $(figsrcs:.fig=.ps)
 .c.o:
 	$(CC) $(CFLAGS) -o $@ -c $<
 
-all: progs tests $(DOCSTARGET)
+all: progs tests $(checkprogs) $(DOCSTARGET)
 progs: $(progs)
 tests: $(testprogs)
 docs: figs $(docs)
 no-docs:
 figs: $(figs)
+
+check: all
+	utils/run-checks $(checks)
 
 install: all
 	$(INSTALL) -d $(bindir)
@@ -188,7 +193,7 @@ install-docs:
 	cp -r $(docs) $(docsrcs) $(figs) $(figsrcs) $(docdir)
 
 clean:
-	rm -f core $(progs) $(testprogs) $(objs) $(docs) *.a
+	rm -f core $(progs) $(testprogs) $(checkprogs) $(objs) $(docs) *.a
 	rm -f $(figs) $(docs)
 
 distclean: clean
@@ -227,4 +232,7 @@ $(progs): $(libs) $(progobjs)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $@.o $(libs) $(LIBS)
 
 $(testprogs): $(testobjs) $(libs)
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $@.o $(libs) $(LIBS)
+
+$(checkprogs): $(checkobjs) $(libs)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $@.o $(libs) $(LIBS)

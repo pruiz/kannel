@@ -113,6 +113,39 @@ For developers only: adding new SMS Center protocol support
 	In practise that means that new smsc protocols will not need 
 	pending_message anymore, as things are handled in 2 threads.
 
+For developers only: "make check"
+
+	The Kannel Makefile contains a target called "check", which
+	is used to run a series of automatic, non-interactive tests on
+	various subsystems. 
+	
+	Each test program MUST stored in the `checks' subdirectory. Each
+	test MUST be written either as a C program named `check_*.c'
+	or a Bourne shell script named `check_*.sh'. The C programs are
+	compiled by the Makefile, the shell scripts MUST be executable.
+
+	The test programs MUST output nothing to stdout, and MUST use a
+	zero exit code to indicate that the test was successful, and a
+	non-zero exit code to indicate a failure of the test. This way,
+	if one runs "make -s check", one can easily see which tests are
+	run and which tests work.
+	
+	The test programs MUST output error messages to stderr and they
+	MUST mention which test program and which subtest failed. In
+	case of failure, they may leave log files or other auxiliary
+	files, and these MUST be listed in the error messages to stderr,
+	so that the user has a reasonable way to diagnose the error.
+	The Makefile captures the stderr output to `check.log'.
+
+	The tests SHOULD take a reasonable time, preferably less than
+	fifteen seconds each. This way, one can run "make -s check"
+	before each commit. If there is a need to run longer tests,
+	then the tests need to be divided into fast and slow ones.
+	
+	These tests are meant to test whether subsystems mostly work,
+	stress testing needs to be done separately, and tends to require
+	testing against real applications.
+
 Configuring and running the gateway
 
 	See the user guide in doc/userguide or on the web at
