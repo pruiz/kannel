@@ -273,7 +273,12 @@ static int starter(Cfg *cfg)
     CfgGroup *grp;
     Octstr *log, *val;
     long loglevel;
-    
+#ifdef HAVE_LIBSSL
+    Octstr *ssl_server_cert_file;
+    Octstr *ssl_server_key_file;
+    int ssl_enabled = 0;
+#endif /* HAVE_LIBSSL */
+ 
 	
     grp = cfg_get_single_group(cfg, octstr_imm("core"));
 
@@ -306,6 +311,27 @@ static int starter(Cfg *cfg)
     }
 
     conn_config_ssl (grp);
+
+    /* 
+     * Make sure we have "ssl-server-cert-file" and "ssl-server-key-file" specified
+     * in the core group since we need it to run SSL-enabled internal box 
+     * connections configured via "smsbox-port-ssl = yes" and "wapbox-port-ssl = yes".
+     * Check only these, because for "admin-port-ssl" and "sendsms-port-ssl" for the 
+     * SSL-enabled HTTP servers are probed within gw/bb_http.c:httpadmin_start()
+     */
+#ifdef HAVE_LIBSSL
+    ssl_server_cert_file = cfg_get(grp, octstr_imm("ssl-server-cert-file"));
+    ssl_server_key_file = cfg_get(grp, octstr_imm("ssl-server-key-file"));
+    if (ssl_server_cert_file != NULL && ssl_server_key_file != NULL) {
+       /* we are fine, at least files are specified in the configuration */
+    } else {
+        cfg_get_bool(&ssl_enabled, grp, octstr_imm("smsbox-port-ssl"));
+        cfg_get_bool(&ssl_enabled, grp, octstr_imm("wapbox-port-ssl"));
+        if (ssl_enabled) {
+	       panic(0, "You MUST specify cert and key files within core group for SSL-enabled inter-box connections!");
+        }
+    }
+#endif /* HAVE_LIBSSL */
 	
     /* if all seems to be OK by the first glimpse, real start-up */
     
@@ -600,11 +626,11 @@ Octstr *bb_print_status(int status_type)
     else
 	s = "going down";
 
-    version = version_report_string("");
+    version = version_report_string("bearerbox");
 
     if (status_type == BBSTATUS_HTML) {
 	frmt = "%s</p>\n\n"
-	    " <p>Status: uptime %ldd %ldh %ldm %lds, %s</p>\n\n"
+	    " <p>Status: %s, uptime %ldd %ldh %ldm %lds</p>\n\n"
 	    " <p>WDP: received %ld (%ld queued), sent %ld "
 	    "(%ld queued)</p>\n\n"
 	    " <p>SMS: received %ld (%ld queued), sent %ld "
@@ -612,7 +638,7 @@ Octstr *bb_print_status(int status_type)
 	footer = "<p>";
     } else if (status_type == BBSTATUS_WML) {
 	frmt = "%s</p>\n\n"
-	    "   <p>Status: uptime %ldd %ldh %ldm %lds, %s</p>\n\n"
+	    "   <p>Status: %s, uptime %ldd %ldh %ldm %lds</p>\n\n"
 	    "   <p>WDP: received %ld (%ld queued)<br/>\n"
 	    "      WDP: sent %ld (%ld queued)</p>\n\n"
 	    "   <p>SMS: received %ld (%ld queued)<br/>\n"
@@ -621,14 +647,14 @@ Octstr *bb_print_status(int status_type)
 	footer = "<p>";
     } else if (status_type == BBSTATUS_XML) {
 	frmt = "<version>%s</version>\n"
-	    "<status>uptime %ldd %ldh %ldm %lds, %s</status>\n"
+	    "<status>%s, uptime %ldd %ldh %ldm %lds</status>\n"
 	    "\t<wdp>\n\t\t<received><total>%ld</total><queued>%ld</queued></received>\n\t\t<sent><total>%ld"
 	    "</total><queued>%ld</queued></sent>\n\t</wdp>\n"
 	    "\t<sms>\n\t\t<received><total>%ld</total><queued>%ld</queued></received>\n\t\t<sent><total>%ld"
 	    "</total><queued>%ld</queued></sent>\n\t\t<storesize>%ld</storesize>\n\t</sms>\n";
 	footer = "";
     } else {
-	frmt = "%s\n\nStatus: uptime %ldd %ldh %ldm %lds, %s\n\n"
+	frmt = "%s\n\nStatus: %s, uptime %ldd %ldh %ldm %lds\n\n"
 	    "WDP: received %ld (%ld queued), sent %ld (%ld queued)\n\n"
 	    "SMS: received %ld (%ld queued), sent %ld (%ld queued), "
 	    "store size %ld\n\n";
@@ -637,7 +663,7 @@ Octstr *bb_print_status(int status_type)
     
     sprintf(buf, frmt,
 	    octstr_get_cstr(version),
-	    t/3600/24, t/3600%24, t/60%60, t%60, s,
+	    s, t/3600/24, t/3600%24, t/60%60, t%60,
 	    counter_value(incoming_wdp_counter),
 	    list_len(incoming_wdp) + boxc_incoming_wdp_queue(),
 	    counter_value(outgoing_wdp_counter),
