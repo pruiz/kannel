@@ -217,6 +217,7 @@ Octstr *store_status(int status_type)
         octstr_append_cstr(ret, "[SMS ID] [Sender] [Receiver] [SMSC ID] [UDH] [Message] [Time]\n");
     }
    
+    list_lock(sms_store);
     for (l = 0; l < list_len(sms_store); l++) {
         msg = list_get(sms_store, l);
 
@@ -254,6 +255,7 @@ Octstr *store_status(int status_type)
             octstr_append(ret, str);
         }
     }
+    list_unlock(sms_store);
 
     /* set the type based footer */
     if (status_type == BBSTATUS_HTML) {
