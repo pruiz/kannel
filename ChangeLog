@@ -1,3 +1,8 @@
+2001-01-23  Kalle Marjola  <rpr@wapit.com>
+
+	* gw/bearerbox.c: switched smsbox/smsc startup to avoid hangup
+	with bad luck
+
 2001-01-22  Richard Braakman  <dark@wapit.com>
 
 	* Making release 1.1.

@@ -151,9 +151,9 @@ static int start_smsc(Config *config)
     static int started = 0;
     if (started) return 0;
 
-    smsc2_start(config);
-
     smsbox_start(config);
+
+    smsc2_start(config);
 
     started = 1;
     return 0;
