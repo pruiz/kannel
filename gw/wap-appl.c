@@ -1114,7 +1114,7 @@ static void start_fetch(WAPEvent *event)
     struct request_data *p;
     Octstr *send_msisdn_query, *send_msisdn_header, *send_msisdn_format;
     int accept_cookies;
-    Octstr *msisdn = NULL; /* for compiler please */
+    Octstr *msisdn;
     
     counter_increase(fetches);
     
@@ -1146,6 +1146,7 @@ static void start_fetch(WAPEvent *event)
         method = p->method;
     }
 
+    msisdn = radius_acct_get_msisdn(addr_tuple->remote->address);
     info(0, "Fetching URL <%s> for MSISDN <%s>, IP <%s:%ld>", octstr_get_cstr(url),
          msisdn ? octstr_get_cstr(msisdn) : "", 
          addr_tuple->remote->address ? octstr_get_cstr(addr_tuple->remote->address) : "",
