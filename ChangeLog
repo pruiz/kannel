@@ -1,3 +1,7 @@
+2003-10-15  Alexander Malysh  <a.malysh@centrium.de>
+    * gw/smsc/smsc_at.c: fixed bug #92.
+    * gw/smsc/smsc_at.h: made all functions static.
+
 2003-10-15  Stipe Tolj  <tolj@wapme-systems.de>
     * gwlib/mime.[ch]: abstracted mime_[octstr|http]_to_entity() to use the 
       same base routine for the transcoding. Added mime_http_to_entity().

@@ -1340,6 +1340,8 @@ Msg *at2_pdu_decode_deliver_sm(Octstr *data, PrivAT2data *privdata)
     if (udhi) {
         udhlen = octstr_get_char(pdu, pos);
         pos++;
+        if (udhlen + 1 > len)
+            goto msg_error;
         udh = octstr_copy(pdu, pos, udhlen);
         pos += udhlen;
         len -= udhlen + 1;
