@@ -1887,12 +1887,6 @@ static void init_smsbox(Cfg *cfg)
     Octstr *http_proxy_username = NULL;
     Octstr *http_proxy_password = NULL;
     int ssl = 0;
-#ifdef HAVE_LIBSSL
-    Octstr *ssl_client_certkey_file;
-    Octstr *ssl_server_cert_file;
-    Octstr *ssl_server_key_file;
-#endif /* HAVE_LIBSSL */
-
 
     bb_port = BB_DEFAULT_SMSBOX_PORT;
     bb_host = octstr_create(BB_DEFAULT_HOST);
@@ -1920,29 +1914,9 @@ static void init_smsbox(Cfg *cfg)
     	    	    	    octstr_imm("http-proxy-password"));
     http_proxy_exceptions = cfg_get_list(grp,
     	    	    	    octstr_imm("http-proxy-exceptions"));
-#ifdef HAVE_LIBSSL
-    /*
-     * check if SSL is desired for HTTP servers and then
-     * load SSL client and SSL server public certificates 
-     * and private keys
-     */    
-    ssl_client_certkey_file = cfg_get(grp, octstr_imm("ssl-client-certkey-file"));
-    if (ssl_client_certkey_file != NULL) 
-        use_global_client_certkey_file(ssl_client_certkey_file);
-    ssl_server_cert_file = cfg_get(grp, octstr_imm("ssl-server-cert-file"));
-    ssl_server_key_file = cfg_get(grp, octstr_imm("ssl-server-key-file"));
-    if (ssl_server_cert_file != NULL && ssl_server_key_file != NULL) {
-        use_global_server_certkey_file(ssl_server_cert_file, 
-            ssl_server_key_file);
-    } else if (ssl) {
-	   panic(0, "You MUST specify cert and key files within core group for SSL!");
-    }
- 
-    octstr_destroy(ssl_client_certkey_file);
-    octstr_destroy(ssl_server_cert_file);
-    octstr_destroy(ssl_server_key_file);
-#endif /* HAVE_LIBSSL */
 
+    conn_config_ssl (grp);
+    
     /*
      * get the remaining values from the smsbox group
      */

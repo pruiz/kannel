@@ -304,6 +304,8 @@ static int starter(Cfg *cfg)
 	store_init(log);
 	octstr_destroy(log);
     }
+
+    conn_config_ssl (grp);
 	
     /* if all seems to be OK by the first glimpse, real start-up */
     

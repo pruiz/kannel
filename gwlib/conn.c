@@ -1153,4 +1153,41 @@ void use_global_server_certkey_file(Octstr *certfile, Octstr *keyfile)
     info(0, "Using global server SSL certificate from file %s", octstr_get_cstr(certfile));
     info(0, "Using global server SSL key from file %s", octstr_get_cstr(keyfile));
 }
+
+void
+conn_config_ssl (CfgGroup *grp)
+{
+    Octstr *ssl_client_certkey_file = NULL;
+    Octstr *ssl_server_cert_file    = NULL;
+    Octstr *ssl_server_key_file     = NULL;
+
+    /*
+     * check if SSL is desired for HTTP servers and then
+     * load SSL client and SSL server public certificates 
+     * and private keys
+     */    
+    ssl_client_certkey_file = cfg_get(grp, octstr_imm("ssl-client-certkey-file"));
+    if (ssl_client_certkey_file != NULL) 
+        use_global_client_certkey_file(ssl_client_certkey_file);
+    
+    ssl_server_cert_file = cfg_get(grp, octstr_imm("ssl-server-cert-file"));
+    ssl_server_key_file = cfg_get(grp, octstr_imm("ssl-server-key-file"));
+    
+    if (ssl_server_cert_file != NULL && ssl_server_key_file != NULL) {
+        use_global_server_certkey_file(ssl_server_cert_file, 
+				       ssl_server_key_file);
+    }
+    
+    octstr_destroy(ssl_client_certkey_file);
+    octstr_destroy(ssl_server_cert_file);
+    octstr_destroy(ssl_server_key_file);
+}
+
+#else
+
+void
+conn_config_ssl (CfgGroup *grp)
+{
+    info(0, "SSL not configured, no SSL initialization done.");
+}
 #endif /* HAVE_LIBSSL */

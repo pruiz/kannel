@@ -57,6 +57,13 @@ Connection *conn_open_ssl(Octstr *host, int port, Octstr *certkeyfile,
 		Octstr *our_host);
 #endif /* HAVE_LIBSSL */
 
+/*
+ * get the SSL config parameters from the provided Config group.
+ * For a non-SSL system this is a no-op that does nothing.
+ */
+void conn_config_ssl (CfgGroup *grp);
+
+
 /* Open a TCP/IP connection to the given host and port.  Return the
  * new Connection.  If the connection can not be made, return NULL
  * and log the problem. */

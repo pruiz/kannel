@@ -91,6 +91,9 @@ static Cfg *read_config(Octstr *filename)
 	    	       http_proxy_exceptions, http_proxy_username, 
 		       http_proxy_password);
     }
+
+    conn_config_ssl (grp);
+
     octstr_destroy(http_proxy_host);
     octstr_destroy(http_proxy_username);
     octstr_destroy(http_proxy_password);
