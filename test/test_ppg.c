@@ -26,6 +26,24 @@ static int verbose = 1,
 static Counter *counter = NULL;
 static char **push_data = NULL;
 static char *boundary = NULL;
+static Octstr *content_flag = NULL;
+
+static void add_content_type(Octstr *content_flag, Octstr **wap_content)
+{
+    if (octstr_compare(content_flag, octstr_imm("wml")) == 0)
+        *wap_content = octstr_format("%s", 
+            "Content-Type: text/vnd.wap.wml\r\n");
+    else if (octstr_compare(content_flag, octstr_imm("si")) == 0)
+	*wap_content = octstr_format("%s",
+            "Content-Type: text/vnd.wap.si\r\n");
+    else if (octstr_compare(content_flag, octstr_imm("multipart")) == 0)
+        *wap_content = octstr_format("%s",
+            "Content-Type: multipart/related; boundary=fsahgwruijkfldsa\r\n");
+    else if (octstr_compare(content_flag, octstr_imm("nil")) == 0)
+        *wap_content = octstr_format("%s", "no type at all\r\n"); 
+
+    octstr_destroy(content_flag);
+}
 
 /*
  * Add boundary value to the multipart header.
@@ -90,6 +108,7 @@ static void start_push(HTTPCaller *caller, long i)
     char *content_file,
          *pap_file;
 
+    wap_content = NULL;
     push_headers  = http_create_empty_headers();
     http_header_add(push_headers, "X-WAP-Application-Id", 
                     "http://www.wiral.com:push.ua");
@@ -137,8 +156,7 @@ static void start_push(HTTPCaller *caller, long i)
             octstr_get_cstr(mos = make_multipart_value(boundary)));
         octstr_destroy(mos);
         content_file = push_data[1];
-        wap_content = octstr_format("%s", 
-            "Content-Type: text/vnd.wap.wml\r\n");
+        add_content_type(content_flag, &wap_content);
         if ((wap_file_content = octstr_read_file(content_file)) == NULL)
 	    panic(0, "Stopping");
         octstr_append(wap_content, wap_file_content);
@@ -323,6 +341,10 @@ static void help(void)
     info(0, "Options are:");
     info(0, "-h");
     info(0, "print this info");
+    info(0, "-c content qualifier");
+    info(0, "Define content type of the push content. Wml, multipart, nil"); 
+    info(0, "and si accepted. Wml is default, nil (no content type at all)");
+    info(0, "is used for debugging");
     info(0, "-v number");
     info(0, "    Set log level for stderr logging. Default 0 (debug)");
     info(0, "-q");
@@ -350,7 +372,7 @@ int main(int argc, char **argv)
     gwlib_init();
     num_threads = 1;
 
-    while ((opt = getopt(argc, argv, "Hhv:qr:t:")) != EOF) {
+    while ((opt = getopt(argc, argv, "Hhv:qr:t:c:")) != EOF) {
         switch(opt) {
 	    case 'v':
 	        log_set_output_level(atoi(optarg));
@@ -374,6 +396,20 @@ int main(int argc, char **argv)
 	        use_hardcoded = 1;
 	    break;
 
+	    case 'c':
+	        content_flag = octstr_create(optarg);
+                if (octstr_compare(content_flag, octstr_imm("wml")) != 0 && 
+                    octstr_compare(content_flag, octstr_imm("si")) != 0 &&
+                    octstr_compare(content_flag, octstr_imm("nil")) != 0 &&
+                    octstr_compare(content_flag, 
+                        octstr_imm("multipart")) != 0){
+		    octstr_destroy(content_flag);
+		    error(0, "TEST_PPG: Content type not known");
+		    help();
+                    exit(0);
+                }
+	    break;
+
 	    case 'h':
 	        help();
                 exit(0);
@@ -393,6 +429,9 @@ int main(int argc, char **argv)
     
     push_data = argv + optind;
     num_urls = argc - optind;
+
+    if (content_flag == NULL)
+        content_flag = octstr_imm("wml");
 
     if (push_data[0] == NULL)
         panic(0, "No ppg address specified, stopping");
@@ -423,7 +462,7 @@ int main(int argc, char **argv)
     counter_destroy(counter);
     gwlib_shutdown();
 
-    return 0;
+    return 1;
 }
 
 

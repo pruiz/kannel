@@ -142,8 +142,8 @@ static void deliver_confirmed_push(long last, PPGPushMachine *pm,
                                    PPGSessionMachine *sm);
 static PPGPushMachine *deliver_unit_push(long last, PPGPushMachine *pm,
     PPGSessionMachine *sm, int session_exists);
-static PPGPushMachine *store_push_data(PPGSessionMachine *sm, WAPEvent *e, 
-    WAPAddrTuple *tuple, int cless);
+static int store_push_data(PPGPushMachine **pm, PPGSessionMachine *sm, 
+                           WAPEvent *e, WAPAddrTuple *tuple, int cless);
 static PPGPushMachine *update_push_data_with_attribute(PPGSessionMachine **sm, 
     PPGPushMachine *pm, long reason, long status);
 static void remove_push_data(PPGSessionMachine *sm, PPGPushMachine *pm, 
@@ -177,6 +177,7 @@ static WAPAddrTuple *set_addr_tuple(Octstr *address, long cliport,
                                     long servport);
 static WAPAddrTuple *addr_tuple_change_cliport(WAPAddrTuple *tuple, long port);
 static Octstr *convert_wml_to_wmlc(struct content *content);
+static Octstr *convert_si_to_sic(struct content *content);
 static void initialize_time_item_array(long time_data[], struct tm now);
 static int date_item_compare(Octstr *before, long time_data, long pos);
 static void parse_appid_header(Octstr **assigned_code);
@@ -220,7 +221,7 @@ void wap_push_ppg_shutdown(void)
            list_len(ppg_machines));
      list_destroy(ppg_machines, session_machine_destroy);
 
-     debug("wap_push_ppg", 0, "PPG: %ld unit pushes undone", 
+     debug("wap_push_ppg", 0, "PPG: %ld unit pushes left", 
            list_len(ppg_unit_pushes));
      list_destroy(ppg_unit_pushes, push_machine_destroy);
 }
@@ -300,7 +301,8 @@ static void handle_ppg_event(WAPEvent *e)
     switch (e->type) {
 /*
  * Operations needed when push proxy gateway receives a new push message are 
- * defined in PPG Services, Chapter 6.
+ * defined in PPG Services, Chapter 6. We create machines when error, too, 
+ * because we must then have a reportable message error state.
  */
     case Push_Message:
         debug("wap.push.ppg", 0, "PPG: have a push request from pap");
@@ -316,7 +318,7 @@ static void handle_ppg_event(WAPEvent *e)
             sm = store_session_data(sm, e, tuple, &session_exists); 
         }
 
-        if ((pm = store_push_data(sm, e, tuple, cless)) == NULL) {
+        if (!store_push_data(&pm, sm, e, tuple, cless)) {
             warning(0, "PPG: we had a duplicate push id");
             response_push_message(pm, PAP_DUPLICATE_PUSH_ID);
             goto no_start;
@@ -399,7 +401,6 @@ store_push:
         return;
 
 no_start:
-        octstr_destroy(type);
         wap_addr_tuple_destroy(tuple);
         remove_push_data(sm, pm, cless);
         if (sm)
@@ -843,6 +844,7 @@ static void response_push_message(PPGPushMachine *pm, long code)
     pap_event->u.Push_Response.sender_name = tell_ppg_name();
     pap_event->u.Push_Response.reply_time = set_time();
 
+    debug("wap.push.ppg", 0, "PPG: sending push response to pap");
     dispatch_to_pap(pap_event);
 }
 
@@ -910,8 +912,11 @@ static void push_machine_assert(PPGPushMachine *pm)
 }
 
 /*
- * Message transformations performed by PPG are defined in PPG, 6.1.2.1. We 
- * do not do any (optional) header conversions to the binary format here, 
+ * Message transformations performed by PPG are defined in PPG, 6.1.2.1. PPG,
+ * chapter 6.1.1, states that we MUST reject a push having an erroneous PAP
+ * push message element. So we must validate it even when we do not compile
+ * it.
+ * We do not do any (optional) header conversions to the binary format here, 
  * these are responsibility of our OTA module (gw/wap_push_ota.c). Neither do
  * we parse client address out from pap client address field, this is done by
  * PAP module (gw/wap_push_pap_compiler.c).
@@ -920,7 +925,9 @@ static void push_machine_assert(PPGPushMachine *pm)
  * Return message, either transformed or not (if there is no-transform cache 
  * directive or wml code is erroneous) separately the transformed gw address 
  * tuple and message content type and body. In addition, a flag telling was 
- * the transformation (if any) successfull or not.
+ * the transformation (if any) successfull or not. Error flag is returned when
+ * there is no push headers, there is no Content-Type header or push content
+ * does not compile.
  */
 static int transform_message(WAPEvent **e, WAPAddrTuple **tuple, 
                              int cless_accepted, Octstr **type)
@@ -959,6 +966,8 @@ static int transform_message(WAPEvent **e, WAPAddrTuple **tuple,
     http_header_get_content_type(push_headers, &content.type,
                                  &content.charset);   
     message_deliverable = pap_convert_content(&content);
+    if (content.type == NULL)
+        goto error;
 
     if (message_deliverable) {
         *type = content.type;        
@@ -1056,8 +1065,8 @@ static int content_transformable(List *push_headers)
 }
 
 /*
- * Convert push content to compact binary format (this can be wml, si, sl or 
- * co.
+ * Convert push content to compact binary format (this can be wmlc, sic, slc
+ * or coc). Current status wml compiled, si passed.
  */
 static Octstr *convert_wml_to_wmlc(struct content *content)
 {
@@ -1069,18 +1078,34 @@ static Octstr *convert_wml_to_wmlc(struct content *content)
     return NULL;
 }
 
+static Octstr *convert_si_to_sic(struct content *content)
+{
+    Octstr *sic;
+
+    sic = octstr_duplicate(content->body);
+
+    return sic;
+}
+
 static struct {
     char *type;
     char *result_type;
     Octstr *(*convert) (struct content *);
 } converters[] = {
     { "text/vnd.wap.wml",
-    "application/vnd.wap.wmlc",
-    convert_wml_to_wmlc }
+      "application/vnd.wap.wmlc",
+      convert_wml_to_wmlc },
+    { "text/vnd.wap.si",
+      "text/vnd.wap.si",
+      convert_si_to_sic } 
 };
 
 #define NUM_CONVERTERS ((long) (sizeof(converters) / sizeof(converters[0])))
 
+/*
+ * Compile wap defined contents, accept others without modifications. Push
+ * Message 6.3 states that push content can be any MIME accepted content type.
+ */
 static int pap_convert_content(struct content *content)
 {
     long i;
@@ -1100,7 +1125,7 @@ static int pap_convert_content(struct content *content)
         }
     }
 
-    return 0;
+    return 1;
 }
 
 /*
@@ -1278,44 +1303,44 @@ static void remove_push_data(PPGSessionMachine *sm, PPGPushMachine *pm,
  * If there is no push with a similar push id, store push data. If cless is 
  * true, store it in the list connectionless pushes, otherwise in the push 
  * list of the session machine sm.
- * Return pointer to push data, if no error, pointer  to NULL otherwise. In 
- * addition, return push id for the stored push.
+ * Return a pointer the push machine newly created and a flag telling was the
+ * push id duplicate. Note that we must create a push machine even when an 
+ * error occurred, because this is used for storing the relevant pap error
+ * state and other data for this push. 
  */
-static PPGPushMachine *store_push_data(PPGSessionMachine *sm, WAPEvent *e, 
-                                       WAPAddrTuple *tuple, int cless)
-{
-    PPGPushMachine *pm;  
+static int store_push_data(PPGPushMachine **pm, PPGSessionMachine *sm, 
+                           WAPEvent *e, WAPAddrTuple *tuple, int cless)
+{ 
     Octstr *pi_push_id;  
+    int duplicate_push_id;
     
     gw_assert(e->type == Push_Message);
 
     pi_push_id = e->u.Push_Message.pi_push_id;
 
-    if (!cless) {
-        session_machine_assert(sm);
-        pm = find_ppg_push_machine_using_pi_push_id(sm, pi_push_id);
-    } else
-        pm = find_unit_ppg_push_machine_using_pi_push_id(pi_push_id);
+    duplicate_push_id = 0;
+    if (((!cless) && 
+       (find_ppg_push_machine_using_pi_push_id(sm, pi_push_id) != NULL)) ||
+       ((!cless) && 
+       (find_unit_ppg_push_machine_using_pi_push_id(pi_push_id) != NULL)))
+       duplicate_push_id = 1;
 
-    if (pm == NULL)
-        pm = push_machine_create(e, tuple);
-    else 
-        return NULL;
- 
+    *pm = push_machine_create(e, tuple);
+    
     if (!cless) {
-       list_append(sm->push_machines, pm);
+       list_append(sm->push_machines, *pm);
        debug("wap.push.ppg", 0, "PPG: push machine %ld appended to push list"
-             " of sm machine %ld", pm->push_id, sm->session_id);
+             " of sm machine %ld", (*pm)->push_id, sm->session_id);
        list_append(ppg_machines, sm);
        debug("wap.push.ppg", 0, "PPG: session machine %ld appended to ppg"
              "machines list", sm->session_id);
     } else {
-       list_append(ppg_unit_pushes, pm);
+       list_append(ppg_unit_pushes, *pm);
        debug("wap.push.ppg", 0, "PPG: push machine %ld append to unit push"
-             " list", pm->push_id);
+             " list", (*pm)->push_id);
     }
 
-    return pm;
+    return !duplicate_push_id;
 }
 
 /*
@@ -1364,7 +1389,7 @@ static void deliver_pending_pushes(PPGSessionMachine *sm, int last)
     session_machine_assert(sm);
     gw_assert(list_len(sm->push_machines) > 0);
 
-    for (i = 0; i < list_len(sm->push_machines); i++) {
+    for (i = 0; i < list_len(sm->push_machines); ++i) {
         pm = list_get(sm->push_machines, i);
         push_machine_assert(pm);
 
@@ -1543,7 +1568,7 @@ static PPGPushMachine *find_unit_ppg_push_machine_using_pi_push_id(
     PPGPushMachine *pm;
 
     gw_assert(pi_push_id);
-    pm = list_search(ppg_unit_pushes, &pi_push_id, push_has_pi_push_id);
+    pm = list_search(ppg_unit_pushes, pi_push_id, push_has_pi_push_id);
 
     return pm;
 }
@@ -1661,7 +1686,9 @@ static long ota_abort_to_pap(long reason)
 static int cless_accepted(WAPEvent *e, PPGSessionMachine *sm)
 {
     gw_assert(e->type == Push_Message);
-    return e->u.Push_Message.delivery_method == PAP_UNCONFIRMED && sm == NULL;
+    return (e->u.Push_Message.delivery_method == PAP_UNCONFIRMED ||
+           e->u.Push_Message.delivery_method == PAP_NOT_SPECIFIED) &&
+           (sm == NULL);
 }
 
 /*

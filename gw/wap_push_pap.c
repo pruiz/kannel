@@ -191,6 +191,7 @@ static void http_read_thread(void *arg)
         if (!mime_parse(boundary, mime_content, &pap_content, &push_data, 
                         &content_headers, &rdf_content)) {
             send_bad_message_response(client, mime_content, PAP_BAD_REQUEST);
+            warning(0, "PAP: http_read_thread: unable to parse mime content");
             goto clean;
         } else {
 	    debug("wap.push.pap", 0, "PAP: http_read_thread: pap multipart"
@@ -248,6 +249,7 @@ no_compile:
 
 clean:
         http_destroy_headers(push_headers);
+        http_destroy_headers(content_headers);
         http_destroy_cgiargs(cgivars);
         octstr_destroy(pap_content);
         octstr_destroy(push_data);
