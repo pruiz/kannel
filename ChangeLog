@@ -1,3 +1,8 @@
+2001-10-18 Andreas Fink <andreas@fink.org>
+	* gw/dlr.c: added support for MySQL based delivery reports
+	* gw/smsc_emi2.c: fixed delivery report failure if text
+	contained slashes. They are now replaced with a dot
+
 2001-10-17 Jörg Pommnitz <jpo@condat.de>
 	* doc/userguide/userguide.xml: fix doc to get through Jade.
 

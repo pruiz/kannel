@@ -575,13 +575,19 @@ static int handle_operation(SMSCConn *conn, Connection *server,
 			DLR_FAIL);
 		break;
 	}
-	if(msg != NULL) {           
+	if(msg != NULL) {     
+	    int idx; 
+	    int len;     
 	    Octstr *reply;
 	    reply = octstr_create("");
 	    octstr_append(reply, emimsg->fields[E50_AMSG]);
 	    octstr_hex_to_binary(reply);
+	    /* having a / in the text breaks it so lets replace it with a space */
+	    len = octstr_len(reply);
+	    for(idx=0;idx<len;idx++)
+	    	if(octstr_get_char(reply,idx)=='/')
+	    		octstr_set_char(reply,idx,'.');
 	    octstr_append_char(reply, '/');
-
 	    octstr_insert(msg->sms.msgdata, reply, 0);
 	    bb_smscconn_receive(conn, msg);
 	}

@@ -23,6 +23,47 @@
 #endif
 
 
+/* if we use MySQL for delivery reports, you got 
+to define this stuff for your implementation 
+you got to add -lmysqlclient to the LIBS line in the makefile too
+create the database with this 
+
+CREATE TABLE DLR (
+		smsc varchar(40),
+		ts varchar(40),
+		destination varchar(40),
+		service varchar(40),
+		url varchar(255),
+		mask int(10),
+		status int(10)
+		)
+*/
+/* #define	MYSQL_DLR	1 */
+/* #define	SQL_DEBUG	1 */
+
+#if (MYSQL_DLR)
+
+#include <mysql/mysql.h>
+MYSQL	*connection;
+MYSQL	mysql;
+#define	DB_HOST		"localhost"
+#define	DB_USER		"username"
+#define	DB_PASSWORD	"password"
+#define	DB_PORT		0
+#define	DB_SOCKET	0
+#define	DB_CLIENTFLAG	0
+#define	DB_NAME		"DLR"
+#define	DLR_TABLE	"DLR"
+#define DLR_FIELD_SMSC		"smsc"
+#define	DLR_FIELD_TS		"ts"
+#define	DLR_FIELD_DST		"destination"
+#define	DLR_FIELD_SERVICE	"service"
+#define	DLR_FIELD_URL		"url"
+#define	DLR_FIELD_MASK		"mask"
+#define	DLR_FIELD_STATUS	"status"
+
+#else
+/* we use memory based DLR */
 /* the structure of a delivery report waiting list entry */
 
 typedef struct	dlr_wle
@@ -35,30 +76,45 @@ typedef struct	dlr_wle
    int		mask;
 } dlr_wle;
 
-void dump_dlr(dlr_wle *dlr);
-
 /* this is the global list where all messages being sent out are being kept track of */
 /* this list is looked up once a delivery report comes in */
 
 static	List	*dlr_waiting_list;
-
+void	dump_dlr(dlr_wle *dlr);
 void	dlr_destroy(dlr_wle *dlr);
+
+#endif /* else MYSQL_DLR */
+
+
 
 
 /* at startup initialize the list */
 
 void	dlr_init()
 {
-	dlr_waiting_list = list_create();
+#if (MYSQL_DLR)
+   mysql_init(&mysql);
+   connection = mysql_real_connect(&mysql, DB_HOST,DB_USER,DB_PASSWORD,DB_NAME,DB_PORT,DB_SOCKET,DB_CLIENTFLAG);
+   if(connection == NULL)
+   	error(0,"can not connect to MySQL database for DLR ! Error = %s",mysql_error(&mysql));
+#else
+    dlr_waiting_list = list_create();
+#endif
 }
 
 
 /* at shutdown, destroy the list */
 void	dlr_shutdown()
 {
-	list_destroy(dlr_waiting_list, (list_item_destructor_t *)dlr_destroy);
+#if (MYSQL_DLR)
+    mysql_close(connection);
+#else
+    list_destroy(dlr_waiting_list, (list_item_destructor_t *)dlr_destroy);
+#endif
 }
 
+
+#if !(MYSQL_DLR)
 
 /* internal function to allocate a new dlr_wle entry */
 /* and intialize it to zero */
@@ -91,10 +147,44 @@ void dlr_destroy(dlr_wle *dlr)
 	gw_free(dlr);
 }
 
+#endif
+
 
 /* add a new entry to the list */
 void	dlr_add(char *smsc, char *ts, char *dst, char *service, char *url, int mask)
 {
+#if (MYSQL_DLR)
+
+    Octstr *sql;
+    int	state;
+    
+    info(0,"Adding to DLR list smsc=%s, ts=%s, dst=%s, service=%s, url=%s mask=%d",smsc,ts,dst,service,url,mask);
+    sql = octstr_format("INSERT INTO %s (%s, %s, %s, %s, %s, %s, %s) VALUES ('%s', '%s', '%s', '%s', '%s', '%d', '%d');",
+		DLR_TABLE,
+		DLR_FIELD_SMSC,
+		DLR_FIELD_TS,
+		DLR_FIELD_DST,
+		DLR_FIELD_SERVICE,
+		DLR_FIELD_URL,
+		DLR_FIELD_MASK,
+		DLR_FIELD_STATUS,
+		smsc,
+		ts,
+		dst,
+		service,
+		url,
+		mask,
+		0);
+	
+#if (SQL_DEBUG)	
+    info(0,"Executing query '%s'",octstr_get_cstr(sql));
+#endif
+    state = mysql_query(connection,octstr_get_cstr(sql));
+    if(state !=0)
+	error(0,"mysql_error %s",mysql_error(connection));
+    octstr_destroy(sql);
+
+#else
    dlr_wle	*dlr;
 	
    info(0,"Adding to DLR list smsc=%s, ts=%s, dst=%s, service=%s, url=%s mask=%d",smsc,ts,dst,service,url,mask);
@@ -113,6 +203,7 @@ void	dlr_add(char *smsc, char *ts, char *dst, char *service, char *url, int mask
    }
    else
    	info(0,"ignored");
+#endif
 }
 
 /* find an entry in the list. if there is one a message is returned and the entry is removed from the list
@@ -120,6 +211,121 @@ otherwhise the message returned is NULL */
 
 Msg *dlr_find(char *smsc, char *ts, char *dst, int typ)
 {
+#if (MYSQL_DLR)
+    Octstr *sql;
+    int	state;
+    MYSQL_RES		*result;
+    MYSQL_ROW		row;
+    int dlr_mask;
+    Octstr *dlr_service;
+    Octstr *dlr_url;
+    Msg	*msg = NULL;
+    
+    sql = octstr_format("SELECT %s, %s, %s FROM %s WHERE %s='%s' AND %s='%s';",
+	DLR_FIELD_MASK,
+	DLR_FIELD_SERVICE,
+	DLR_FIELD_URL,
+	DLR_TABLE,
+	DLR_FIELD_SMSC,
+	smsc,
+	DLR_FIELD_TS,
+	ts);
+
+#if (SQL_DEBUG)	
+    info(0,"Executing query %s",octstr_get_cstr(sql));
+#endif
+    state = mysql_query(connection,octstr_get_cstr(sql));
+    octstr_destroy(sql);
+    if(state !=0)
+    {
+	error(0,"mysql_error %s",mysql_error(connection));
+	return NULL;
+    }
+    result = mysql_store_result(connection);
+    if ( mysql_num_rows(result) < 1)
+    {
+        debug("dlr.mysql",0,"no rows found");
+	mysql_free_result(result);
+	return NULL;
+    }
+    row = mysql_fetch_row(result);
+    if(!row)
+    {
+        debug("dlr.mysql",0,"rows found but coudlnt load them");
+	mysql_free_result(result);
+    	return NULL;
+    }
+    debug("dlr.mysql",0,"Found entry, row[0]=%s, row[1]=%s, row[2]=%s",row[0],row[1],row[2]);
+    dlr_mask = atoi(row[0]);
+    dlr_service = octstr_create(row[1]);
+    dlr_url = octstr_create(row[2]);
+    mysql_free_result(result);
+    
+    sql = octstr_format("UPDATE %s SET %s=%d WHERE %s='%s' AND %s='%s';",
+    	DLR_TABLE,
+    	DLR_FIELD_STATUS,
+    	typ,
+	DLR_FIELD_SMSC,
+	smsc,
+	DLR_FIELD_TS,
+	ts);
+#if (SQL_DEBUG)	
+    info(0,"Executing query %s",octstr_get_cstr(sql));
+#endif
+    state = mysql_query(connection,octstr_get_cstr(sql));
+    octstr_destroy(sql);
+    if(state !=0)
+    {
+	error(0,"mysql_error %s",mysql_error(connection));
+	return NULL;
+    }
+
+    if((typ & dlr_mask))
+    {
+	/* its an entry we are interested in */
+	info(0,"creating DLR message");
+	msg = msg_create(sms);
+	msg->sms.service = octstr_duplicate(dlr_service);
+	msg->sms.dlr_mask = typ;
+	msg->sms.sms_type = report;
+ 	msg->sms.smsc_id = octstr_create(smsc);
+    	msg->sms.sender = octstr_create(dst);
+        msg->sms.receiver = octstr_create("000");
+	msg->sms.msgdata = octstr_duplicate(dlr_url);
+	time(&msg->sms.time);
+	info(0,"DLR = %s",octstr_get_cstr(msg->sms.msgdata));
+    }
+    else
+    {
+    	info(0,"ignoring DLR message because of mask");
+    }
+ 
+    if((typ & DLR_BUFFERED) &&
+    	((dlr_mask & DLR_SUCCESS) || (dlr_mask & DLR_FAIL)))
+    {
+    	debug("dlr.mysql",0,"dlr not deleted because we wait on more reports");
+    }
+    else
+    {
+    	debug("dlr.mysql",0,"removing DLR from database");
+   	sql = octstr_format("DELETE FROM %s WHERE %s='%s' AND %s='%s';",
+	DLR_TABLE,
+	DLR_FIELD_SMSC,
+	smsc,
+	DLR_FIELD_TS,
+	ts);
+	debug("dlr.sql",0,"Executing query %s",octstr_get_cstr(sql));
+	state = mysql_query(connection,octstr_get_cstr(sql));
+    	octstr_destroy(sql);
+    	if(state !=0)
+	{
+	    error(0,"mysql_error %s",mysql_error(connection));
+	}
+    }
+    octstr_destroy(dlr_service);
+    octstr_destroy(dlr_url);
+    return msg;
+#else
     long i;
     long len;
     dlr_wle *dlr;
@@ -182,8 +388,11 @@ Msg *dlr_find(char *smsc, char *ts, char *dst, int typ)
     info(0,"DLR not found!");
    /* we couldnt find a matching entry */
     return NULL;
+#endif
+
 }
 
+#if !(MYSQL_DLR)
 void dump_dlr(dlr_wle *dlr)
 {
     if(!dlr)
@@ -222,4 +431,5 @@ void dump_dlr(dlr_wle *dlr)
     info(0,"dlr->mask = %d", dlr->mask);
 
 }
+#endif
 
