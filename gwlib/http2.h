@@ -124,6 +124,7 @@ enum { HTTP_MAX_FOLLOW = 5 };
  * specially.
  */
 enum {
+	HTTP_OK = 200,
 	HTTP_NOT_FOUND = 404,
 	HTTP_MOVED_PERMANENTLY = 301,
 	HTTP_FOUND = 302,
@@ -211,17 +212,15 @@ void http2_close_old_connections(void);
 #endif
 
 
-#if LIW_TODO
 /*
  * Functions for controlling the well-known port of the server.
  * http2_server_open sets it up, http2_server_close closes it.
  */
-int http2_server_open(int port);
-void http2_server_close(int socket);
-#endif
+typedef struct HTTPSocket HTTPSocket;
+HTTPSocket *http2_server_open(int port);
+void http2_server_close(HTTPSocket *socket);
 
 
-#if LIW_TODO
 /*
  * Functions for dealing with a connection to a single client.
  * http2_server_client_accept waits for a new client, and returns a
@@ -237,13 +236,12 @@ void http2_server_close(int socket);
  * list of CGI-BIN arguments/variables as a List whose elements are 
  * pointers to HTTPCGIVar structures (see beginning of file).
  */
-int http2_server_accept_client(int socket);
-void http2_server_close_client(int client_socket);
-int http2_server_get_request(int client_socket, Octstr **method, Octstr **url, 
+HTTPSocket *http2_server_accept_client(HTTPSocket *socket);
+void http2_server_close_client(HTTPSocket *client_socket);
+int http2_server_get_request(HTTPSocket *client_socket, Octstr **url, 
 	List **headers, Octstr **body, List **cgivars);
-int http2_server_send_reply(int client_socket, int status, List *headers, 
-	Octstr *body);
-#endif
+int http2_server_send_reply(HTTPSocket *client_socket, int status, 
+	List *headers, Octstr *body);
 
 
 /*

@@ -1,3 +1,16 @@
+Sat Apr 22 22:55:05 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* gwlib/http2.[ch]: Moved PoolSocket's out of .c into .h and
+	renamed them to HTTPSocket. This is because the server also
+	needs to use them to keep implementation work easy. Thus, the
+	server is represented as an HTTPSocket, not an int. Re-arranged
+	some of the internal functions in .c regarding this.
+	
+	Oh yes, I implemented a bit of the server side part of the
+	protocol as well. Need to do CGI argument parsing still.
+	
+	* test/test_http2_server.c: Wrote test program for server side.
+
 Sat Apr 22 21:07:11 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* gwlib/gwmem.[ch]: Now report the name of the calling function
