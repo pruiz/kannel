@@ -1,3 +1,10 @@
+Thu Dec 30 17:04:40 1999  Lars Wirzenius  <liw@wapit.com>
+
+	* */Makefile, configure: Ran automake and autoconf and configure,
+	thus some file re-generated.
+	
+	* NEWS, AUTHORS: Added empty ones. automake requires them.
+
 Thu Dec 30 16:57:50 1999  Lars Wirzenius  <liw@wapit.com>
 
 	* Applied patch from bof@bof.de for autoconf support. Renamed
