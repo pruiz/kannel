@@ -103,7 +103,8 @@
 
 	<abstract>
 		<title>Abstract</title> 
-		<para>This document describes how
+		<para>
+		This document describes how
 		to install and use Kannel, the Open Source WAP and SMS Gateway
 		originally developed by Wapit Ltd (now out of business) and now
 		being developed further by the open source community, namely the 
@@ -1442,6 +1443,21 @@ admin-password = f00bar
         queues grow very long).
      </entry></row>
 
+     <row><entry><literal>white-list-regex</literal></entry>
+        <entry>POSIX regular expression</entry>
+        <entry valign="bottom">
+        A regular expression defining the set of accepted senders. See section on regular 
+        expressions for details.
+        </entry>   
+     </row>
+     <row><entry><literal>black-list-regex</literal></entry>
+        <entry>POSIX regular expression</entry>
+        <entry valign="bottom">
+        A regular expression defining the set of rejected senders. See section on regular 
+        expressions for details.
+        </entry>   
+     </row>
+
   </tbody>
   </tgroup>
  </table>
@@ -2298,7 +2314,7 @@ secret-nas = radius
         sent through this SMSC. Multiple entries are separated with 
         semicolon (';'). For example, "040;050" prevents sending of
         any SMS message with prefix of 040 or 050 through this SMSC.
-	If denied-prefix is unset, only this numbers are allowed. If
+	If denied-prefix is unset, only these numbers are allowed. If
 	set, number are allowed if present in allowed or not in 
 	denied list.
      </entry></row>
@@ -2314,7 +2330,7 @@ secret-nas = radius
      <entry><literal>prefix-list</literal></entry>
      <entry valign="bottom">
         As <literal>denied-prefix</literal>, but SMS messages with receiver starting
-        with any of these prefixes is preferably sent through this
+        with any of these prefixes are preferably sent through this
         SMSC. In a case of multiple preferences, one is selected at random
         (also if there are preferences, SMSC is selected randomly)
 
@@ -2412,6 +2428,67 @@ secret-nas = radius
 			For example, route receivers 111 and 222 to smsc-id A and 333 and 444
 			to smsc-id B would look like: "A,111,222; B,333,444".
      </entry></row>
+
+     <row><entry><literal>allowed-smsc-id-regex</literal></entry>
+        <entry>POSIX regular expression</entry>
+        <entry valign="bottom">
+        SMS messages with SMSC ID equal to any of the IDs in this set of SMSC IDs
+        are always routed to this SMSC. 
+        See section on regular 
+        expressions for details.
+        </entry>   
+     </row>
+
+     <row><entry><literal>denied-smsc-id-regex</literal></entry>
+        <entry>POSIX regular expression</entry>
+        <entry valign="bottom">
+        SMS messages with SMSC ID equal to any of the IDs in this set of SMSC IDs
+        are never routed to this SMSC. 
+        See section on regular 
+        expressions for details.
+        </entry>   
+     </row>
+
+     <row><entry><literal>preferred-smsc-id-regex</literal></entry>
+        <entry>POSIX regular expression</entry>
+        <entry valign="bottom">
+        SMS messages with SMSC ID in this set of SMSC IDs are sent to this SMSC
+        as preferred.
+        See section on regular 
+        expressions for details.
+        </entry>   
+     </row>
+
+     <row><entry><literal>allowed-prefix-regex</literal></entry>
+        <entry>POSIX regular expression</entry>
+        <entry valign="bottom">
+        A set of phone number prefixes which are accepted to be
+        sent through this SMSC. 
+        See section on regular 
+        expressions for details.
+        </entry>   
+     </row>
+
+     <row><entry><literal>denied-prefix-regex</literal></entry>
+        <entry>POSIX regular expression</entry>
+        <entry valign="bottom">
+        A set of phone number prefixes which may not be
+        sent through this SMSC. 
+        See section on regular 
+        expressions for details.
+        </entry>   
+     </row>
+
+     <row><entry><literal>preferred-prefix-regex</literal></entry>
+        <entry>POSIX regular expression</entry>
+        <entry valign="bottom">
+        As <literal>denied-prefix-regex</literal>, but SMS messages with receiver matching 
+        any of these prefixes are preferably sent through this
+        SMSC. In a case of multiple preferences, one is selected at random.
+        See section on regular 
+        expressions for details.
+        </entry>   
+     </row>
 
   </tbody>
   </tgroup>
@@ -4457,6 +4534,26 @@ ssl-certkey-file
         non-zero value.
      </entry></row>
 
+     <row><entry><literal>white-list-regex</literal></entry>
+        <entry>POSIX regular expression</entry>
+        <entry valign="bottom">
+        Defines the set of accepted destinations of SMS messages. If a 
+	destination of an SMS message is not in this set, any message 
+	received from the HTTP interface is rejected. 
+        See section on regular 
+        expressions for details.
+        </entry>   
+     </row>
+     <row><entry><literal>black-list-regex</literal></entry>
+        <entry>POSIX regular expression</entry>
+        <entry valign="bottom">
+        As white-list-regex, but SMS messages to numbers within in this set are
+        automatically discarded.
+        See section on regular 
+        expressions for details.
+        </entry>   
+     </row>
+
   </tbody>
   </tgroup>
  </table>
@@ -4645,6 +4742,15 @@ get-url = "http://%S"
 		  which means you don't have to use aliases to handle different
 		  cased versions of your keyword.
      </entry></row>
+
+   <row><entry><literal>keyword-regex</literal></entry>
+     <entry>POSIX regular expression</entry>
+     <entry valign="bottom">
+     This field may be used to enable service-selection based on a regular expression.
+     If this field is defined for a service, then the selection will rely on the regex only, never taking
+     the literal <literal>keyword</literal> into account.
+     See section on regular expressions for details.
+   </entry></row>
 
    <row><entry><literal>aliases</literal></entry>
      <entry>word-list</entry>
@@ -4911,6 +5017,83 @@ get-url = "http://%S"
         As white-list, but SMS messages from these numbers are
         automatically discarded
      </entry></row>
+
+     <row><entry><literal>accepted-smsc-regex</literal></entry>
+        <entry>POSIX regular expression</entry>
+        <entry valign="bottom">
+        Accept only SMS messages arriving from SMSCs with a matching ID.
+        <footnote><para>Even if this service is denied,
+	Kannel still searches for other service which accepts the message,
+	or default service.</para></footnote>
+        See section on regular 
+        expressions for details.
+        </entry>   
+     </row>
+
+     <row><entry><literal>allowed-prefix-regex</literal></entry>
+        <entry>POSIX regular expression</entry>
+        <entry valign="bottom">
+        A set of phone number prefixes of sender-numbers accepted by this service.
+        <footnote><para>Like in accepted-smsc-regex, 
+	Kannel still searches for another service which accepts the message.
+	This way there could be several services with the same keyword and
+	different results.</para></footnote>
+        See section on regular 
+        expressions for details.
+        </entry>   
+     </row>
+
+     <row><entry><literal>denied-prefix-regex</literal></entry>
+        <entry>POSIX regular expression</entry>
+        <entry valign="bottom">
+        A set of phone number prefixes of sender-numbers which may
+        not use this service.
+        See section on regular 
+        expressions for details.
+        </entry>   
+     </row>
+
+     <row><entry><literal>allowed-receiver-prefix-regex</literal></entry>
+        <entry>POSIX regular expression</entry>
+        <entry valign="bottom">
+        A set of phone number prefixes of receiver-numbers which 
+        may receive data sent by this service. This can be used to
+        allow only inbound SMS to certain shortcut numbers to be allowed
+	to this service.
+        See section on regular 
+        expressions for details.
+        </entry>   
+     </row>
+
+     <row><entry><literal>denied-receiver-prefix-regex</literal></entry>
+        <entry>POSIX regular expression</entry>
+        <entry valign="bottom">
+        A set of phone number prefixes of receiver-numbers which may not
+        receive data sent by this service.
+        See section on regular 
+        expressions for details.
+        </entry>   
+     </row>
+
+     <row><entry><literal>white-list-regex</literal></entry>
+        <entry>POSIX regular expression</entry>
+        <entry valign="bottom">
+        Defines a set of accepted senders of SMS messages. If a 
+	sender of an SMS message is not in this list, the message is rejected.
+        See section on regular 
+        expressions for details.
+        </entry>   
+     </row>
+
+     <row><entry><literal>black-list-regex</literal></entry>
+        <entry>POSIX regular expression</entry>
+        <entry valign="bottom">
+        As white-list-regex, but SMS messages from these numbers are
+        automatically discarded.
+        See section on regular 
+        expressions for details.
+        </entry>   
+     </row>
 
   </tbody>
   </tgroup>
@@ -5519,6 +5702,43 @@ text = "No action specified"
 	URL to be fetched if a <literal>dlrmask</literal> CGI 
 	parameter is present.
      </entry></row>
+
+     <row><entry><literal>allowed-prefix-regex</literal></entry>
+        <entry>POSIX regular expression</entry>
+        <entry valign="bottom">
+        A set of phone numbers which are accepted to be
+        sent using this username. 
+        See section on regular expressions for details.
+        </entry>
+     </row>
+
+     <row><entry><literal>denied-prefix-regex</literal></entry>
+        <entry>POSIX regular expression</entry>
+        <entry valign="bottom">
+        A set of phone numbers which may not
+        send using this username. 
+        See section on regular expressions for details.
+        </entry>
+     </row>
+
+     <row><entry><literal>white-list-regex</literal></entry>
+        <entry>POSIX regular expression</entry>
+        <entry valign="bottom">
+        Defines a set of accepted destinations of SMS messages. If a 
+	destination of an SMS message is not in this list, any message 
+	received from the HTTP interface is rejected. 
+        See section on regular expressions for details.
+        </entry>
+     </row>
+
+     <row><entry><literal>black-list-regex</literal></entry>
+        <entry>POSIX regular expression</entry>
+        <entry valign="bottom">
+        As <literal>white-list-regex</literal>, but SMS messages originating from 
+        a number matching the pattern are discarded.
+        See section on regular expressions for details.
+        </entry>
+     </row>
 
   </tbody>
   </tgroup>
@@ -6940,6 +7160,44 @@ allow-ip = 62.254.217.163
              <entry valign="bottom">
              Allow only routing to a defined SMSC ID for this specific push user.
      	     </entry></row>
+
+     <row><entry><literal>white-list-regex</literal></entry>
+        <entry>POSIX regular expression</entry>
+        <entry valign="bottom">
+             Defines the set of phone-numbers accepting pushes from this 
+             pi.
+        See section on regular 
+        expressions for details.
+        </entry>   
+     </row>
+
+     <row><entry><literal>black-list-regex</literal></entry>
+        <entry>POSIX regular expression</entry>
+        <entry valign="bottom">
+             Defines the set of phone-numbers rejecting pushes from this 
+             pi.
+        See section on regular 
+        expressions for details.
+        </entry>   
+     </row>
+
+     <row><entry><literal>allowed-prefix-regex</literal></entry>
+        <entry>POSIX regular expression</entry>
+        <entry valign="bottom">
+             Set of phone number prefixes allowed in pushes coming from this pi. 
+        See section on regular 
+        expressions for details.
+        </entry>   
+     </row>
+     <row><entry><literal>denied-list-regex</literal></entry>
+        <entry>POSIX regular expression</entry>
+        <entry valign="bottom">
+             Set of phone number prefixes denied in pushes coming from this pi. 
+        See section on regular 
+        expressions for details.
+        </entry>   
+     </row>
+
              </tbody>
              </tgroup>
       </table>
@@ -8083,6 +8341,209 @@ test/fakesmsc -m 1 "100 500 udh %0eudh+stuff+here main+message"
 
 </appendix>
 
+<appendix>
+    <title>Regular Expressions</title>
+    <para>Note: this is not intended to be an introduction to regular expressions (short: regex) but a 
+    description of their application within Kannel. For general information regarding regexes
+    please refer to <xref linkend="Biblio-regexp"/>.
+    </para>
+    <sect1>
+        <title>Syntax and semantics of the regex configuration parameter</title>
+        <para>This section describes the regex-configuration parameters and their effects in combination with the
+        respective non-regex-parameter, e.g. <literal>white-list</literal> and <literal>white-list-regex</literal>.</para>
+
+        <sect2>
+                <title>How-to setup the regex-parameters</title>
+                <para>examples, short syntax, what happens on errors
+                Regex-parameters are configured just as every other parameter is configured. Regular expressions are
+                supported as defined by POSIX Extended Regular Expressions. Suppose a configuration where only SMS messages
+                originating from a sender using a number with a prefix of "040", "050", "070" or "090" are accepted.
+                Without regexes the configuration would read
+                <programlisting>
+                allowed-prefix="040;050;070;090"
+                </programlisting>
+                Using regular expressions yields a more concise configuration
+                <programlisting>
+                allowed-prefix-regex=^0[4579]0
+                </programlisting>
+                The following table gives an overview over some regex-operators and their meaning, the POSIX Regular
+                Expressions manual page (regex(7)). Once again, the extended regex-syntax is used and the table is 
+                just meant as a means to give a quickstart to regular expressions, the next section features some more
+                complex examples.
+                <informaltable>
+                        <tgroup cols="2">
+                                <thead>
+                                        <row>
+                                        <entry>Operator</entry>
+                                        <entry>Meaning</entry>
+                                        </row>
+                                </thead>    
+                                <tbody>
+                                        <row>
+                                        <entry><literal>|</literal></entry>
+                                        <entry>or, for example "dog|hog" matches dog or hog.</entry>
+                                        </row>
+                                        <row>
+                                        <entry><literal>{number,number}</literal></entry>
+                                        <entry>repetition, for example "a{2,5}" matches - among others - 
+                                        "aa", "aaa" and "baaaaad"</entry>
+                                        </row>
+                                        <row>
+                                        <entry><literal>*</literal></entry>
+                                        <entry>shorthand for {0,}</entry>
+                                        </row>
+                                        <row>
+                                        <entry><literal>?</literal></entry>
+                                        <entry>shorthand for {0,1}</entry>
+                                        </row>
+                                        <row>
+                                        <entry><literal>+</literal></entry>
+                                        <entry>shorthand for {1,}</entry>
+                                        </row>
+                                        <row>
+                                        <entry><literal>[]</literal></entry>
+                                        <entry>bracket expression, defines a class of possible single character matches.
+                                        For example "[hb]og" matches "hog" and "bog". If the expression starts with
+                                        <literal>^</literal> then the class is negated, e.g. "[^hb]og" does not match
+                                        "hog" and "bog" but matches for example "dog".</entry>
+                                        </row>
+                                        <row>
+                                        <entry><literal>()</literal></entry>
+                                        <entry>groups patterns, e.g. "[hb]o(g|ld)" matches "hog", "hold", "bog", "bold"
+                                        </entry>
+                                        </row>
+                                        <row>
+                                        <entry><literal>[:class:]</literal></entry>
+                                        <entry>A character class such as digit, space etc. See wctype(3) for details.
+                                        </entry>
+                                        </row>
+                                        <row>
+                                        <entry><literal>^</literal></entry>
+                                        <entry>Start of line anchor.</entry>
+                                        </row>
+                                        <row>
+                                        <entry><literal>$</literal></entry>
+                                        <entry>End of line anchor.</entry>
+                                        </row>
+                                </tbody>
+                        </tgroup>
+                </informaltable>
+
+                The advantages of regular expressions are at hand
+		<itemizedlist>
+		<listitem><para>Regexes are easier to understand, if one is fluent in POSIX Regular Expressions. 
+                                Although simple expressions as shown above should be clear to everyone who has
+                                ever used a standard UN*X shell.
+                          </para></listitem>
+                <listitem>
+                        <para>Regexes are easier to maintain. Suppose the example above needed to cope with 
+                        dozens of different prefixes each with subtle differences, in such cases using a - carefully
+                        constructed - regular expression could help to keep things in apple pie order. 
+                        Furthermore regexes help reducing redundancy within the configuration.
+                        </para>
+                </listitem>
+                <listitem>
+                        <para>Regexes more flexible than standard parameters.
+                        </para>
+                </listitem>
+                </itemizedlist>
+                Nevertheless, it must be mentioned that - in addition to the overhead involved - complexity is an issue, 
+                too. Although the syntactic correctness of each used regular expression is ensured (see below)
+                    the semantic correctness cannot be automatically proofed.
+                </para>
+                <para>
+                Expressions that are not compileable, which means they are not valid POSIX regexes, force  Kannel
+                to panic with a message like (note the missing "]")
+	<screen><computeroutput>
+                ERROR: gwlib/regex.c:106: gw_regex_comp_real: regex compilation `[hbo(g|ld)' failed: Invalid regular expression (Called from gw/urltrans.c:987:create_onetrans.)
+                PANIC: Could not compile pattern '[hbo(g|ld)'
+	</computeroutput></screen>
+                As shown the erroneous pattern is reported in the error message. 
+                </para>
+        </sect2>
+        
+        <sect2>
+                <title>Regex and non-regex-parameters</title>
+                <para>
+                Using the regex and non-regex version of a parameter at the same time should be done with caution.
+                Both are combined in a boolean-or sense, for example
+                <programlisting>
+                white-list=01234
+                white-list-regex=^5(23)?$
+                </programlisting>
+                implies that a number is accepted either if it is "01234", "5" or "523" - note the use of anchors!
+                The same goes for all the other parameters, thus both mechanisms can be used without problems in parallel,
+                but care should be taken that the implications are understood and wanted.
+                </para>
+        </sect2>
+        
+        <sect2>
+                <title>Performance issues</title>
+                <para>While there is some overhead involved, the actual performance degradation is neglectible.
+                At startup - e.g. when the configuration files are parsed - the regular expressions are pre-compiled
+                and stored in the pre-compiled fassion, thus future comparisons involve executing the expression on 
+                some string only. To be on the sure side, before using regexes extensivly some benchmarking should be
+                performed, to verify that the loss of performance is acceptable.
+                </para>
+        </sect2>
+    </sect1>
+    <sect1>
+        <title>Examples</title>
+        <para>This section discusses some simple scenarios and potential solutions based on regexes.
+        The examples are not meant to be comprehensive but rather informative.</para>
+        <sect2>
+                <title>Example 1: core-configuration</title>
+                <para>The bearerbox must only accept SMS messages from three costumers. The first costumer uses numbers
+                that always start with "0824" the second one uses numbers that start with either "0123" and end in 
+                "314" or start with "0882" and end in "666". The third costumer uses numbers starting with "0167"
+                and ending in a number between "30" and "57".</para>
+                <para>
+                Important in this and in the following examples is the use of anchors, otherwise a "string contains"
+                semantic instead of a "string is equal" semantic would be used.
+                </para>
+                <programlisting>
+                group=core
+                ...
+                white-list-regex=^((0824[0-9]+)|(0123[0-9]+314)|(0882[0-9]+666)|(0167[0-9]+([34][0-9]|5[0-7])))$
+                ...
+                </programlisting>
+        </sect2>
+        <sect2>
+                <title>Example 3: smsc-configuration</title>
+                <para>Only SMS messages originating from certain smscs (<literal>smsc-id</literal> is either 
+                        "foo", "bar" or "blah")
+                are preferably forwarded to this smsc. 
+                Furthermore all smscs with an id containing "vodafone" must never
+                be forwarded to the smsc. Not the missing anchors around "vodafone".</para>
+                <programlisting>
+                group=smsc
+                ...
+                preferred-smsc-id-regex=^(foo|bar|blah)$
+                denied-prefix-regex=vodafone
+                ...
+                </programlisting>
+        </sect2>
+        <sect2>
+                <title>Example 4: sms-service-configuration</title>
+                <para>Please note that there are a mandatory <literal>keyword</literal> and an optional
+                <literal>keyword-regex</literal> fields.
+                That means that service selection can be simplified as in the following example.
+                Suppose that some Web-content should be delivered to the mobile. Different costumers use the 
+                same service but they rely on different keywords. Whenever a sms-service is requested, Kannel
+                first checks whether a regex has been defined, if not a literal match based on <literal>keyword</literal>
+                is performed. If a regex is configured then the literal match is never tried.
+                </para>
+                <programlisting>
+                group=sms-service
+                ...
+                keyword=web_service
+                keyword-regex=^(data|www|text|net)$
+                get-url=http://someserver.net/getContent.jsp
+                ...
+                </programlisting>
+        </sect2>
+    </sect1>
+</appendix> 
 
 <appendix>
 <title>Log files</title>
@@ -8257,6 +8718,14 @@ test/fakesmsc -m 1 "100 500 udh %0eudh+stuff+here main+message"
                 <copyright><year>?</year></copyright>
         </biblioentry>
 
+        <biblioentry id="Biblio-regexp">
+                <title>regex(7), GNU regex manual</title>
+                <!-- <issn><ulink url="http://techpubs.sgi.com/library/tpl/cgi-bin/getdoc.cgi?coll=linux&db=man&fname=/usr/share/catman/man7/regex.7.html&srch=regex">http://techpubs.sgi.com/library/tpl/cgi-bin/getdoc.cgi?coll=linux&db=man&fname=/usr/share/catman/man7/regex.7.html&srch=regex</ulink></issn>-->
+                <subtitle></subtitle>
+                <orgname>GNU</orgname>
+                <copyright><year>1998</year></copyright>
+        </biblioentry>
+        
 </bibliography>
 
 </book>

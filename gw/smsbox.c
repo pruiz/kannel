@@ -64,6 +64,7 @@
 #include <string.h>
 
 #include "gwlib/gwlib.h"
+#include "gwlib/regex.h"
 
 #include "msg.h"
 #include "sms.h"
@@ -124,6 +125,8 @@ static Octstr *reply_emptymessage = NULL;
 static int mo_recode = 0;
 static Numhash *white_list;
 static Numhash *black_list;
+static regex_t *white_list_regex = NULL;
+static regex_t *black_list_regex = NULL;
 static unsigned long max_http_retries = HTTP_MAX_RETRIES;
 static unsigned long http_queue_delay = HTTP_RETRY_DELAY;
 static Octstr *ppg_service_name = NULL;
@@ -1906,6 +1909,16 @@ static Octstr *smsbox_req_handle(URLTranslation *t, Octstr *client_ip,
         } else {
             list_append_unique(allowed, receiv, octstr_item_match);
         }
+
+        if (urltrans_white_list_regex(t) &&
+                gw_regex_matches(urltrans_white_list_regex(t), receiv) == NO_MATCH) {
+            info(0, "Number <%s> is not in white-list-regex, message discarded",
+                 octstr_get_cstr(receiv));
+            list_append_unique(denied, receiv, octstr_item_match);
+        } else {
+            list_append_unique(allowed, receiv, octstr_item_match);
+        }
+        
         if (urltrans_black_list(t) &&
             numhash_find_number(urltrans_black_list(t), receiv) == 1) {
             info(0, "Number <%s> is in black-list, message discarded",
@@ -1914,6 +1927,17 @@ static Octstr *smsbox_req_handle(URLTranslation *t, Octstr *client_ip,
         } else {
             list_append_unique(allowed, receiv, octstr_item_match);
         }
+
+        if (urltrans_black_list_regex(t) &&
+                gw_regex_matches(urltrans_black_list_regex(t), receiv) == MATCH) {
+            info(0, "Number <%s> is in black-list-regex, message discarded",
+                 octstr_get_cstr(receiv));
+            list_append_unique(denied, receiv, octstr_item_match);
+        } else {
+            list_append_unique(allowed, receiv, octstr_item_match);
+        }
+        
+
         if (white_list &&
             numhash_find_number(white_list, receiv) < 1) {
             info(0, "Number <%s> is not in global white-list, message discarded",
@@ -1922,9 +1946,28 @@ static Octstr *smsbox_req_handle(URLTranslation *t, Octstr *client_ip,
         } else {
             list_append_unique(allowed, receiv, octstr_item_match);
         }
+
+        if (white_list_regex &&
+            gw_regex_matches(white_list_regex, receiv) == NO_MATCH) {
+            info(0, "Number <%s> is not in global white-list-regex, message discarded",
+                 octstr_get_cstr(receiv));
+            list_append_unique(denied, receiv, octstr_item_match);
+        } else {
+            list_append_unique(allowed, receiv, octstr_item_match);
+        }
+
         if (black_list &&
             numhash_find_number(black_list, receiv) == 1) {
             info(0, "Number <%s> is in global black-list, message discarded",
+                 octstr_get_cstr(receiv));
+            list_append_unique(denied, receiv, octstr_item_match);
+        } else {
+            list_append_unique(allowed, receiv, octstr_item_match);
+        }
+
+        if (black_list_regex &&
+            gw_regex_matches(black_list_regex, receiv) == MATCH) {
+            info(0, "Number <%s> is in global black-list-regex, message discarded",
                  octstr_get_cstr(receiv));
             list_append_unique(denied, receiv, octstr_item_match);
         } else {
@@ -3143,10 +3186,24 @@ static Cfg *init_smsbox(Cfg *cfg)
 	    white_list = numhash_create(octstr_get_cstr(os));
 	    octstr_destroy(os);
 	}
+
+	os = cfg_get(grp, octstr_imm("white-list-regex"));
+	if (os != NULL) {
+        if ((white_list_regex = gw_regex_comp(os, REG_EXTENDED)) == NULL)
+                        panic(0, "Could not compile pattern '%s'", octstr_get_cstr(os));
+        octstr_destroy(os);
+	}
+
 	os = cfg_get(grp, octstr_imm("black-list"));
 	if (os != NULL) {
 	    black_list = numhash_create(octstr_get_cstr(os));
 	    octstr_destroy(os);
+	}
+	os = cfg_get(grp, octstr_imm("black-list-regex"));
+	if (os != NULL) {
+        if ((black_list_regex = gw_regex_comp(os, REG_EXTENDED)) == NULL)
+                        panic(0, "Could not compile pattern '%s'", octstr_get_cstr(os));
+        octstr_destroy(os);
 	}
     }
 
@@ -3354,6 +3411,8 @@ int main(int argc, char **argv)
     octstr_destroy(ppg_service_name);    
     numhash_destroy(black_list);
     numhash_destroy(white_list);
+    if (white_list_regex != NULL) gw_regex_destroy(white_list_regex);
+    if (black_list_regex != NULL) gw_regex_destroy(black_list_regex);
     cfg_destroy(cfg);
 
     /* 

@@ -66,6 +66,7 @@
 #include <time.h>
 
 #include "gwlib/gwlib.h"
+#include "gwlib/regex.h"
 #include "smscconn.h"
 #include "smscconn_p.h"
 #include "bb_smscconn_cb.h"
@@ -149,6 +150,11 @@ SMSCConn *smscconn_create(CfgGroup *grp, int start_as_stopped)
     Octstr *smsc_type;
     int ret;
     long throughput;
+    Octstr *allowed_smsc_id_regex;
+    Octstr *denied_smsc_id_regex;
+    Octstr *allowed_prefix_regex;
+    Octstr *denied_prefix_regex;
+    Octstr *preferred_prefix_regex;
 
     if (grp == NULL)
 	return NULL;
@@ -174,6 +180,11 @@ SMSCConn *smscconn_create(CfgGroup *grp, int start_as_stopped)
     conn->reroute = 0;
     conn->reroute_to_smsc = NULL;
     conn->reroute_by_receiver = NULL;
+    conn->allowed_smsc_id_regex = NULL;
+    conn->denied_smsc_id_regex = NULL;
+    conn->allowed_prefix_regex = NULL;
+    conn->denied_prefix_regex = NULL;
+    conn->preferred_prefix_regex = NULL;
 
 #define GET_OPTIONAL_VAL(x, n) x = cfg_get(grp, octstr_imm(n))
     
@@ -188,6 +199,27 @@ SMSCConn *smscconn_create(CfgGroup *grp, int start_as_stopped)
     GET_OPTIONAL_VAL(conn->our_host, "our-host");
     GET_OPTIONAL_VAL(conn->log_file, "log-file");
     cfg_get_bool(&conn->alt_dcs, grp, octstr_imm("alt-dcs"));
+             
+    GET_OPTIONAL_VAL(allowed_smsc_id_regex, "allowed-smsc-id-regex");
+    if (allowed_smsc_id_regex != NULL) 
+        if ((conn->allowed_smsc_id_regex = gw_regex_comp(allowed_smsc_id_regex, REG_EXTENDED)) == NULL)
+            panic(0, "Could not compile pattern '%s'", octstr_get_cstr(allowed_smsc_id_regex));
+    GET_OPTIONAL_VAL(denied_smsc_id_regex, "denied-smsc-id-regex");
+    if (denied_smsc_id_regex != NULL) 
+        if ((conn->denied_smsc_id_regex = gw_regex_comp(denied_smsc_id_regex, REG_EXTENDED)) == NULL)
+            panic(0, "Could not compile pattern '%s'", octstr_get_cstr(denied_smsc_id_regex));
+    GET_OPTIONAL_VAL(allowed_prefix_regex, "allowed-prefix-regex");
+    if (allowed_prefix_regex != NULL) 
+        if ((conn->allowed_prefix_regex = gw_regex_comp(allowed_prefix_regex, REG_EXTENDED)) == NULL)
+            panic(0, "Could not compile pattern '%s'", octstr_get_cstr(allowed_prefix_regex));
+    GET_OPTIONAL_VAL(denied_prefix_regex, "denied-prefix-regex");
+    if (denied_prefix_regex != NULL) 
+        if ((conn->denied_prefix_regex = gw_regex_comp(denied_prefix_regex, REG_EXTENDED)) == NULL)
+            panic(0, "Could not compile pattern '%s'", octstr_get_cstr(denied_prefix_regex));
+    GET_OPTIONAL_VAL(preferred_prefix_regex, "preferred-prefix-regex");
+    if (preferred_prefix_regex != NULL) 
+        if ((conn->preferred_prefix_regex = gw_regex_comp(preferred_prefix_regex, REG_EXTENDED)) == NULL)
+            panic(0, "Could not compile pattern '%s'", octstr_get_cstr(preferred_prefix_regex));
              
     if (cfg_get_integer(&throughput, grp, octstr_imm("throughput")) == -1)
         conn->throughput = 0;   /* defaults to no throughtput limitation */
@@ -208,6 +240,9 @@ SMSCConn *smscconn_create(CfgGroup *grp, int start_as_stopped)
     if (conn->allowed_smsc_id && conn->denied_smsc_id)
 	warning(0, "Both 'allowed-smsc-id' and 'denied-smsc-id' set, deny-list "
 		"automatically ignored");
+    if (conn->allowed_smsc_id_regex && conn->denied_smsc_id_regex)
+        warning(0, "Both 'allowed-smsc-id_regex' and 'denied-smsc-id_regex' set, deny-regex "
+                "automatically ignored");
 
     if (cfg_get_integer(&conn->reconnect_delay, grp, 
                         octstr_imm("reconnect-delay")) == -1)
@@ -304,6 +339,12 @@ int smscconn_destroy(SMSCConn *conn)
     octstr_destroy(conn->our_host);
     octstr_destroy(conn->log_file);
 
+    if (conn->denied_smsc_id_regex != NULL) gw_regex_destroy(conn->denied_smsc_id_regex);
+    if (conn->allowed_smsc_id_regex != NULL) gw_regex_destroy(conn->allowed_smsc_id_regex);
+    if (conn->preferred_prefix_regex != NULL) gw_regex_destroy(conn->preferred_prefix_regex);
+    if (conn->denied_prefix_regex != NULL) gw_regex_destroy(conn->denied_prefix_regex);
+    if (conn->allowed_prefix_regex != NULL) gw_regex_destroy(conn->allowed_prefix_regex);
+
     octstr_destroy(conn->reroute_to_smsc);
     dict_destroy(conn->reroute_by_receiver);
     
@@ -396,15 +437,37 @@ int smscconn_usable(SMSCConn *conn, Msg *msg)
 	list_destroy(list, octstr_destroy_item);
     }
 
+    if (conn->allowed_smsc_id_regex) {
+        if (msg->sms.smsc_id == NULL)
+            return -1;
+        
+        if (gw_regex_matches(conn->allowed_smsc_id_regex, msg->sms.smsc_id) == NO_MATCH) 
+            return -1;
+    }
+    else if (conn->denied_smsc_id_regex && msg->sms.smsc_id != NULL) {
+        if (gw_regex_matches(conn->denied_smsc_id_regex, msg->sms.smsc_id) == MATCH) 
+            return -1;
+    }
+
     /* Have allowed */
     if (conn->allowed_prefix && ! conn->denied_prefix && 
        (does_prefix_match(conn->allowed_prefix, msg->sms.receiver) != 1))
 	return -1;
 
+    if (conn->allowed_prefix_regex && ! conn->denied_prefix_regex) {
+        if (gw_regex_matches(conn->allowed_prefix_regex, msg->sms.receiver) == NO_MATCH)
+            return -1;
+    }
+
     /* Have denied */
     if (conn->denied_prefix && ! conn->allowed_prefix &&
        (does_prefix_match(conn->denied_prefix, msg->sms.receiver) == 1))
 	return -1;
+
+    if (conn->denied_prefix_regex && ! conn->allowed_prefix_regex) {
+        if (gw_regex_matches(conn->denied_prefix_regex, msg->sms.receiver) == MATCH)
+            return -1;
+    }
 
     /* Have allowed and denied */
     if (conn->denied_prefix && conn->allowed_prefix &&
@@ -412,6 +475,12 @@ int smscconn_usable(SMSCConn *conn, Msg *msg)
        (does_prefix_match(conn->denied_prefix, msg->sms.receiver) == 1) )
 	return -1;
 
+    if (conn->allowed_prefix_regex && conn->denied_prefix_regex) {
+        if ((gw_regex_matches(conn->allowed_prefix_regex, msg->sms.receiver) == NO_MATCH)
+            && (gw_regex_matches(conn->denied_prefix_regex, msg->sms.receiver) == MATCH))
+            return -1;
+    }
+    
     /* then see if it is preferred one */
 
     if (conn->preferred_smsc_id && msg->sms.smsc_id != NULL) {
@@ -426,6 +495,11 @@ int smscconn_usable(SMSCConn *conn, Msg *msg)
 	if (does_prefix_match(conn->preferred_prefix, msg->sms.receiver) == 1)
 	    return 1;
 
+    if (conn->preferred_prefix_regex) {
+        if (gw_regex_matches(conn->preferred_prefix_regex, msg->sms.receiver) == MATCH)
+            return 1;
+    }
+        
     return 0;
 }
 

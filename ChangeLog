@@ -1,4 +1,12 @@
 2004-01-23  Alexander Malysh  <a.malysh@centrium.de>
+    * doc/userguide/userguide.xml, gw/bb_smscconn.c, gw/smsbox.c, gw/smscconn.c,
+      gw/smscconn_p.h, gw/urltrans.[ch], gwlib/cfg.def, gwlib/regex.[ch]:
+      Applied a "big" regexp patch from "David Schmitz" <schmitz@wapme-systems.de>.
+      This patch breaks currently kannel build when no 'regexp.h' found. David
+      is working on resolution and most modern OSs has regexp support anyway.
+      Msg-Id: <400D4417.9010306@wapme-systems.de>.
+
+2004-01-23  Alexander Malysh  <a.malysh@centrium.de>
     * gw/bb_boxc.c: fixed double free.
       Thanks to Benjamin Lee for pointing this.
       Msg-Id: <20040123123650.GA22906@xaos.realthought.net>.

@@ -84,6 +84,7 @@
 #include "gwlib/gwlib.h"
 #include "msg.h"
 #include "numhash.h"
+#include "gwlib/regex.h"
 
 /*
  * This is the data structure that holds the list of translations. It is
@@ -303,6 +304,8 @@ Octstr *urltrans_denied_recv_prefix(URLTranslation *t);
 /* Return white and black to number list */
 Numhash *urltrans_white_list(URLTranslation *t);
 Numhash *urltrans_black_list(URLTranslation *t);
+regex_t *urltrans_white_list_regex(URLTranslation *t);
+regex_t *urltrans_black_list_regex(URLTranslation *t);
 
 /* Return value of true (!0) or false (0) variables */
 int urltrans_assume_plain_text(URLTranslation *t);

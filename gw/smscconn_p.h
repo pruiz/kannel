@@ -142,6 +142,7 @@
 
 #include <signal.h>
 #include "gwlib/gwlib.h"
+#include "gwlib/regex.h"
 #include "smscconn.h"
 
 struct smscconn {
@@ -168,12 +169,18 @@ struct smscconn {
     Octstr *id;			/* Abstract name specified in configuration and
 				   used for logging and routing */
     Octstr *allowed_smsc_id;
+    regex_t *allowed_smsc_id_regex;
     Octstr *denied_smsc_id;
+    regex_t *denied_smsc_id_regex;
     Octstr *preferred_smsc_id;
+    regex_t *preferred_smsc_id_regex;
 
     Octstr *allowed_prefix;
+    regex_t *allowed_prefix_regex;
     Octstr *denied_prefix;
+    regex_t *denied_prefix_regex;
     Octstr *preferred_prefix;
+    regex_t *preferred_prefix_regex;
     Octstr *unified_prefix;
     
     Octstr *our_host;   /* local device IP to bind for TCP communication */

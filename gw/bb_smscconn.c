@@ -113,6 +113,9 @@ static Octstr *unified_prefix;
 static Numhash *black_list;
 static Numhash *white_list;
 
+static regex_t *white_list_regex = NULL;
+static regex_t *black_list_regex = NULL;
+
 static long router_thread = -1;
 
 int route_incoming_to_boxc(Msg *sms);
@@ -261,6 +264,15 @@ long bb_smscconn_receive(SMSCConn *conn, Msg *sms)
 	msg_destroy(sms);
         return SMSCCONN_FAILED_REJECTED;
     }
+
+    if (white_list_regex && (gw_regex_matches(white_list_regex, sms->sms.sender) == NO_MATCH)) {
+        info(0, "Number <%s> is not in white-list, message discarded",
+             octstr_get_cstr(sms->sms.sender));
+        bb_alog_sms(conn, sms, "REJECTED - not white-regex-listed SMS");
+        msg_destroy(sms);
+        return SMSCCONN_FAILED_REJECTED;
+    }
+    
     if (black_list &&
 	numhash_find_number(black_list, sms->sms.sender) == 1) {
 	info(0, "Number <%s> is in black-list, message discarded",
@@ -268,6 +280,14 @@ long bb_smscconn_receive(SMSCConn *conn, Msg *sms)
 	bb_alog_sms(conn, sms, "REJECTED - black-listed SMS");
 	msg_destroy(sms);
 	return SMSCCONN_FAILED_REJECTED;
+    }
+
+    if (black_list_regex && (gw_regex_matches(black_list_regex, sms->sms.sender) == NO_MATCH)) {
+        info(0, "Number <%s> is not in black-list, message discarded",
+             octstr_get_cstr(sms->sms.sender));
+        bb_alog_sms(conn, sms, "REJECTED - black-regex-listed SMS");
+        msg_destroy(sms);
+        return SMSCCONN_FAILED_REJECTED;
     }
 
     if (sms->sms.sms_type != report_mo)
@@ -415,10 +435,21 @@ int smsc2_start(Cfg *cfg)
         white_list = numhash_create(octstr_get_cstr(os));
 	octstr_destroy(os);
     }
+    if ((os = cfg_get(grp, octstr_imm("white-list-regex"))) != NULL) {
+        if ((white_list_regex = gw_regex_comp(os, REG_EXTENDED)) == NULL)
+            panic(0, "Could not compile pattern '%s'", octstr_get_cstr(os));
+        octstr_destroy(os);
+    }
+    
     os = cfg_get(grp, octstr_imm("black-list"));
     if (os != NULL) {
         black_list = numhash_create(octstr_get_cstr(os));
 	octstr_destroy(os);
+    }
+    if ((os = cfg_get(grp, octstr_imm("black-list-regex"))) != NULL) {
+        if ((black_list_regex = gw_regex_comp(os, REG_EXTENDED)) == NULL)
+            panic(0, "Could not compile pattern '%s'", octstr_get_cstr(os));
+        octstr_destroy(os);
     }
 
     smsc_groups = cfg_get_multi_group(cfg, octstr_imm("smsc"));
@@ -623,6 +654,8 @@ void smsc2_cleanup(void)
     octstr_destroy(unified_prefix);    
     numhash_destroy(white_list);
     numhash_destroy(black_list);
+    if (white_list_regex != NULL) gw_regex_destroy(white_list_regex);
+    if (black_list_regex != NULL) gw_regex_destroy(black_list_regex);
 }
 
 

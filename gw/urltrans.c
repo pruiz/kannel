@@ -71,6 +71,7 @@
 #include "urltrans.h"
 #include "gwlib/gwlib.h"
 #include "gw/sms.h"
+#include "gwlib/regex.h"
 
 
 /***********************************************************************
@@ -126,6 +127,15 @@ struct URLTranslation {
     int has_catchall_arg;
     int catch_all;
     Octstr *dlr_url;	/* Url to call for delivery reports */
+
+    regex_t *keyword_regex;       /* the compiled regular expression for the keyword*/
+    regex_t *accepted_smsc_regex;
+    regex_t *allowed_prefix_regex;
+    regex_t *denied_prefix_regex;
+    regex_t *allowed_receiver_prefix_regex;
+    regex_t *denied_receiver_prefix_regex;
+    regex_t *white_list_regex;
+    regex_t *black_list_regex;
 };
 
 
@@ -781,9 +791,19 @@ Numhash *urltrans_white_list(URLTranslation *t)
     return t->white_list;
 }
 
+regex_t *urltrans_white_list_regex(URLTranslation *t)
+{
+    return t->white_list_regex;
+}
+
 Numhash *urltrans_black_list(URLTranslation *t)
 {
     return t->black_list;
+}
+
+regex_t *urltrans_black_list_regex(URLTranslation *t)
+{
+    return t->black_list_regex;
 }
 
 int urltrans_assume_plain_text(URLTranslation *t) 
@@ -823,6 +843,15 @@ static URLTranslation *create_onetrans(CfgGroup *grp)
     Octstr *accepted_smsc, *forced_smsc, *default_smsc;
     Octstr *grpname, *sendsms_user, *sms_service;
     int is_sms_service;
+    Octstr *accepted_smsc_regex;
+    Octstr *allowed_prefix_regex;
+    Octstr *denied_prefix_regex;
+    Octstr *allowed_receiver_prefix_regex;
+    Octstr *denied_receiver_prefix_regex;
+    Octstr *white_list_regex;
+    Octstr *black_list_regex;
+    Octstr *keyword_regex;
+    Octstr *os;
     
     grpname = cfg_get_group_name(grp);
     if (grpname == NULL)
@@ -868,6 +897,14 @@ static URLTranslation *create_onetrans(CfgGroup *grp)
     ot->denied_recv_prefix = NULL;
     ot->white_list = NULL;
     ot->black_list = NULL;
+    ot->keyword_regex = NULL;
+    ot->accepted_smsc_regex = NULL;
+    ot->allowed_prefix_regex = NULL;
+    ot->denied_prefix_regex = NULL;
+    ot->allowed_receiver_prefix_regex = NULL;
+    ot->denied_receiver_prefix_regex = NULL;
+    ot->white_list_regex = NULL;
+    ot->black_list_regex = NULL;
     
     if (is_sms_service) {
 	cfg_get_bool(&ot->catch_all, grp, octstr_imm("catch-all"));
@@ -917,6 +954,13 @@ static URLTranslation *create_onetrans(CfgGroup *grp)
 	octstr_convert_range(ot->keyword, 0, octstr_len(ot->keyword), 
 	    	    	     tolower);
 
+        keyword_regex = cfg_get(grp, octstr_imm("keyword-regex"));
+        if (keyword_regex != NULL) {
+            if ((ot->keyword_regex = gw_regex_comp(keyword_regex, REG_EXTENDED)) == NULL)
+                  panic(0, "Could not compile pattern '%s'", octstr_get_cstr(keyword_regex));
+            octstr_destroy(keyword_regex);
+        }
+
 	ot->name = cfg_get(grp, octstr_imm("name"));
 	if (ot->name == NULL)
 	    ot->name = octstr_duplicate(ot->keyword);
@@ -941,6 +985,12 @@ static URLTranslation *create_onetrans(CfgGroup *grp)
 	    ot->accepted_smsc = octstr_split(accepted_smsc, octstr_imm(";"));
 	    octstr_destroy(accepted_smsc);
 	}
+        accepted_smsc_regex = cfg_get(grp, octstr_imm("accepted-smsc-regex"));
+        if (accepted_smsc_regex != NULL) { 
+            if ( (ot->accepted_smsc_regex = gw_regex_comp(accepted_smsc_regex, REG_EXTENDED)) == NULL)
+            panic(0, "Could not compile pattern '%s'", octstr_get_cstr(accepted_smsc_regex));
+            octstr_destroy(accepted_smsc_regex);
+        }
 
 	cfg_get_bool(&ot->assume_plain_text, grp, 
 		     octstr_imm("assume-plain-text"));
@@ -951,9 +1001,22 @@ static URLTranslation *create_onetrans(CfgGroup *grp)
 	
 	ot->prefix = cfg_get(grp, octstr_imm("prefix"));
 	ot->suffix = cfg_get(grp, octstr_imm("suffix"));
+        ot->allowed_recv_prefix = cfg_get(grp, octstr_imm("allowed-receiver-prefix"));
+        allowed_receiver_prefix_regex = cfg_get(grp, octstr_imm("allowed-receiver-prefix-regex"));
+        if (allowed_receiver_prefix_regex != NULL) {
+            if ((ot->allowed_receiver_prefix_regex = gw_regex_comp(allowed_receiver_prefix_regex, REG_EXTENDED)) == NULL)
+            panic(0, "Could not compile pattern '%s'", octstr_get_cstr(allowed_receiver_prefix_regex));
+            octstr_destroy(allowed_receiver_prefix_regex);
+        }
 
 	ot->allowed_recv_prefix = cfg_get(grp, octstr_imm("allowed-receiver-prefix"));
     ot->denied_recv_prefix = cfg_get(grp, octstr_imm("denied-receiver-prefix"));
+        denied_receiver_prefix_regex = cfg_get(grp, octstr_imm("denied-receiver-prefix-regex"));
+        if (denied_receiver_prefix_regex != NULL) {
+            if ((ot->denied_receiver_prefix_regex = gw_regex_comp(denied_receiver_prefix_regex, REG_EXTENDED)) == NULL)
+            panic(0, "Could not compile pattern '%s'",octstr_get_cstr(denied_receiver_prefix_regex));
+            octstr_destroy(denied_receiver_prefix_regex);
+        }
 
 	ot->args = count_occurences(ot->pattern, octstr_imm("%s"));
 	ot->args += count_occurences(ot->pattern, octstr_imm("%S"));
@@ -993,22 +1056,45 @@ static URLTranslation *create_onetrans(CfgGroup *grp)
 	ot->deny_ip = cfg_get(grp, octstr_imm("user-deny-ip"));
 	ot->allow_ip = cfg_get(grp, octstr_imm("user-allow-ip"));
 	ot->default_sender = cfg_get(grp, octstr_imm("default-sender"));
-
     }
+    
     ot->allowed_prefix = cfg_get(grp, octstr_imm("allowed-prefix"));
+    allowed_prefix_regex = cfg_get(grp, octstr_imm("allowed-prefix-regex"));
+    if (allowed_prefix_regex != NULL) {
+        if ((ot->allowed_prefix_regex = gw_regex_comp(allowed_prefix_regex, REG_EXTENDED)) == NULL)
+            panic(0, "Could not compile pattern '%s'", octstr_get_cstr(allowed_prefix_regex));
+        octstr_destroy(allowed_prefix_regex);
+    }
     ot->denied_prefix = cfg_get(grp, octstr_imm("denied-prefix"));
-    {
-	Octstr *os;
+    denied_prefix_regex = cfg_get(grp, octstr_imm("denied-prefix-regex"));
+    if (denied_prefix_regex != NULL) {
+        if ((ot->denied_prefix_regex = gw_regex_comp(denied_prefix_regex, REG_EXTENDED)) == NULL)
+            panic(0, "Could not compile pattern '%s'", octstr_get_cstr(denied_prefix_regex));
+        octstr_destroy(denied_prefix_regex);
+    }
+    
 	os = cfg_get(grp, octstr_imm("white-list"));
 	if (os != NULL) {
 	    ot->white_list = numhash_create(octstr_get_cstr(os));
 	    octstr_destroy(os);
 	}
+    white_list_regex = cfg_get(grp, octstr_imm("white-list-regex"));
+    if (white_list_regex != NULL) {
+        if ((ot->white_list_regex = gw_regex_comp(white_list_regex, REG_EXTENDED)) == NULL)
+            panic(0, "Could not compile pattern '%s'", octstr_get_cstr(white_list_regex));
+        octstr_destroy(white_list_regex);
+    }
+
 	os = cfg_get(grp, octstr_imm("black-list"));
 	if (os != NULL) {
 	    ot->black_list = numhash_create(octstr_get_cstr(os));
 	    octstr_destroy(os);
 	}
+    black_list_regex = cfg_get(grp, octstr_imm("black-list-regex"));
+    if (black_list_regex != NULL) {
+        if ((ot->black_list_regex = gw_regex_comp(black_list_regex, REG_EXTENDED)) == NULL)
+            panic(0, "Could not compile pattern '%s'", octstr_get_cstr(black_list_regex));
+        octstr_destroy(black_list_regex);
     }
 
     if (cfg_get_integer(&ot->max_messages, grp, 
@@ -1054,7 +1140,7 @@ static void destroy_onetrans(void *p)
     
     ot = p;
     if (ot != NULL) {
-	octstr_destroy(ot->keyword);
+        octstr_destroy(ot->keyword);
 	list_destroy(ot->aliases, octstr_destroy_item);
 	octstr_destroy(ot->dlr_url);
 	octstr_destroy(ot->pattern);
@@ -1080,98 +1166,212 @@ static void destroy_onetrans(void *p)
 	octstr_destroy(ot->denied_recv_prefix);
 	numhash_destroy(ot->white_list);
 	numhash_destroy(ot->black_list);
+        if (ot->keyword_regex != NULL) gw_regex_destroy(ot->keyword_regex);
+        if (ot->accepted_smsc_regex != NULL) gw_regex_destroy(ot->accepted_smsc_regex);
+        if (ot->allowed_prefix_regex != NULL) gw_regex_destroy(ot->allowed_prefix_regex);
+        if (ot->denied_prefix_regex != NULL) gw_regex_destroy(ot->denied_prefix_regex);
+        if (ot->allowed_receiver_prefix_regex != NULL) gw_regex_destroy(ot->allowed_receiver_prefix_regex);
+        if (ot->denied_receiver_prefix_regex != NULL) gw_regex_destroy(ot->denied_receiver_prefix_regex);
+        if (ot->white_list_regex != NULL) gw_regex_destroy(ot->white_list_regex);
+        if (ot->black_list_regex != NULL) gw_regex_destroy(ot->black_list_regex);
 	gw_free(ot);
     }
 }
 
 
 /*
- * Find the appropriate translation 
+ * checks if the number of passed words matches the service-pattern defined in the
+ * translation. returns 0 if arguments are okay, -1 otherwise.
  */
-static URLTranslation *find_translation(URLTranslationList *trans, 
-	List *words, Octstr *smsc, Octstr *sender, Octstr *receiver, int *reject)
+static int check_num_args(URLTranslation *t, List *words)
 {
-    Octstr *keyword;
-    int i, n;
-    URLTranslation *t;
-    List *list;
+    const int IS_OKAY = 0;
+    const int NOT_OKAY = -1;
+    int n;
+
     
     n = list_len(words);
-    if (n == 0)
-	return NULL;
-    keyword = list_get(words, 0);
-    keyword = octstr_duplicate(keyword);
-    octstr_convert_range(keyword, 0, octstr_len(keyword), tolower);
+    /* check number of arguments */
+    if (t->catch_all)
+        return IS_OKAY;
     
-    list = dict_get(trans->dict, keyword);
-    t = NULL;
-    for (i = 0; i < list_len(list); ++i) {
-	t = list_get(list, i);
+    if (n - 1 == t->args)
+        return IS_OKAY;
+
+    if (t->has_catchall_arg && n - 1 >= t->args)
+        return IS_OKAY;
+
+    return NOT_OKAY;
+}
+
+/*
+ * checks if a request matches the parameters of a URL-Translation, e.g. whether or not 
+ * a user is allowed to use certain services. returns 0 if allowed, -1 if not.
+ * reject will be set to 1 is a number is rejected due to white/black-lists.
+ */
+static int check_allowed_translation(URLTranslation *t, 
+                  Octstr *smsc, Octstr *sender, Octstr *receiver, int *reject)
+{
+    const int IS_ALLOWED = 0;
+    const int NOT_ALLOWED = -1;
 
 	/* if smsc_id set and accepted_smsc exist, accept
 	 * translation only if smsc id is in accept string
 	 */
 	if (smsc && t->accepted_smsc) {
-	    if (!list_search(t->accepted_smsc, smsc, octstr_item_match)) {
-		t = NULL;
-		continue;
-	    }
-	}
+        if (!list_search(t->accepted_smsc, smsc, octstr_item_match))              
+            return NOT_ALLOWED;
+    };
+    if (smsc && t->accepted_smsc_regex)
+        if (gw_regex_matches( t->accepted_smsc_regex, smsc) == NO_MATCH)
+            return NOT_ALLOWED;
 
 	/* Have allowed for sender */
 	if (t->allowed_prefix && ! t->denied_prefix &&
-	   (does_prefix_match(t->allowed_prefix, sender) != 1)) {
-	    t = NULL;
-	    continue;
-	}
+        (does_prefix_match(t->allowed_prefix, sender) != 1))
+            return NOT_ALLOWED;
+
+    if (t->allowed_prefix_regex && ! t->denied_prefix_regex) 
+        if (gw_regex_matches( t->allowed_prefix_regex, sender) == NO_MATCH)
+            return NOT_ALLOWED;
 
 	/* Have denied for sender */
 	if (t->denied_prefix && ! t->allowed_prefix &&
-	   (does_prefix_match(t->denied_prefix, sender) == 1)) {
-	    t = NULL;
-	    continue;
-	}
+    (does_prefix_match(t->denied_prefix, sender) == 1))
+    return NOT_ALLOWED;
+
+    if (t->denied_prefix_regex && ! t->allowed_prefix_regex)
+        if (gw_regex_matches( t->denied_prefix_regex, sender) == NO_MATCH)
+            return NOT_ALLOWED;
 
 	/* Have allowed for receiver */
 	if (t->allowed_recv_prefix && ! t->denied_recv_prefix &&
-	   (does_prefix_match(t->allowed_recv_prefix, receiver) != 1)) {
-	    t = NULL;
-	    continue;
-	}
+    (does_prefix_match(t->allowed_recv_prefix, receiver) != 1))
+    return NOT_ALLOWED;
+
+    if (t->allowed_receiver_prefix_regex && ! t->denied_receiver_prefix_regex)
+    if (gw_regex_matches( t->allowed_receiver_prefix_regex, receiver) == NO_MATCH)
+        return NOT_ALLOWED;
 
 	/* Have denied for receiver */
 	if (t->denied_recv_prefix && ! t->allowed_recv_prefix &&
-	   (does_prefix_match(t->denied_recv_prefix, receiver) == 1)) {
-	    t = NULL;
-	    continue;
-	}
+    (does_prefix_match(t->denied_recv_prefix, receiver) == 1))
+    return NOT_ALLOWED;
+
+    if (t->denied_receiver_prefix_regex && ! t->allowed_receiver_prefix_regex)
+    if (gw_regex_matches( t->denied_receiver_prefix_regex, receiver) == NO_MATCH)
+        return NOT_ALLOWED;
 
 	if (t->white_list &&
 	    numhash_find_number(t->white_list, sender) < 1) {
-	    t = NULL; *reject = 1;
-	    continue;
+    *reject = 1;
+    return NOT_ALLOWED;
+    }
+
+    if (t->white_list_regex) 
+    if (gw_regex_matches( t->white_list_regex, sender) == NO_MATCH) {
+        *reject = 1;
+        return NOT_ALLOWED;
 	}   
+
 	if (t->black_list &&
 	    numhash_find_number(t->black_list, sender) == 1) {
-	    t = NULL; *reject = 1;
-	    continue;
+    *reject = 1;
+    return NOT_ALLOWED;
+    }
+
+    if (t->black_list_regex) 
+    if (gw_regex_matches(t->black_list_regex, sender) == MATCH) {
+        *reject = 1;
+        return NOT_ALLOWED;
 	}   
 
 	/* Have allowed and denied */
 	if (t->denied_prefix && t->allowed_prefix &&
 	   (does_prefix_match(t->allowed_prefix, sender) != 1) &&
-	   (does_prefix_match(t->denied_prefix, sender) == 1) ) {
-	    t = NULL;
+    (does_prefix_match(t->denied_prefix, sender) == 1) )
+    return NOT_ALLOWED;
+
+    if (t->denied_prefix_regex && t->allowed_prefix_regex
+    && (gw_regex_matches(t->allowed_prefix_regex, sender) == NO_MATCH)
+    && (gw_regex_matches(t->denied_prefix_regex, sender) == MATCH))
+    return NOT_ALLOWED;
+
+    return IS_ALLOWED;
+};
+
+    
+/* get_matching_translations - iterate over all translations in trans. 
+ * for each translation check whether 
+ * the translation's keyword has already been interpreted as a regexp. 
+ * if not, compile it now,
+ * otherwise retrieve compilation result from dictionary.
+ *
+ * the translations where the word matches the translation's pattern 
+ * are returned in a list
+ * 
+ */
+static List* get_matching_translations(URLTranslationList *trans, Octstr *word) 
+{
+    List *list;
+    /*char *tmp_word;*/
+    int i;
+    size_t n_match = 1;
+    regmatch_t p_match[10];
+    URLTranslation *t;
+
+    gw_assert(trans != NULL && word != NULL);
+
+    list = list_create();
+    for (i = 0; i < list_len(trans->list); ++i) {
+        t = list_get(trans->list, i);
+        if (t->keyword == NULL) 
 	    continue;
+
+        /* if regex feature is used try to match */
+        if ((t->keyword_regex != NULL) && (gw_regex_exec(t->keyword_regex, word, n_match, p_match, 0) == 0))
+            list_append(list, t);
+
+        /* otherwise look for exact match */
+        if (octstr_compare(t->keyword, word) == 0) 
+            list_append(list, t);
 	}
+    return list;
+}
 
-	if (t->catch_all)
+/*
+ * Find the appropriate translation 
+ */
+static URLTranslation *find_translation(URLTranslationList *trans, 
+                    List *words, Octstr *smsc, Octstr *sender, Octstr *receiver, int *reject)
+{
+    Octstr *keyword;
+    int i, n;
+    URLTranslation *t;
+    List *list;
+
+    n = list_len(words);
+    if (n == 0)
+        return NULL;
+    n = 1;
+
+    keyword = list_get(words, 0);
+    keyword = octstr_duplicate(keyword);
+    octstr_convert_range(keyword, 0, octstr_len(keyword), tolower);
+
+    list = get_matching_translations(trans, keyword);
+    /*
+      list now contains all translations where the keyword of the sms matches the
+      pattern defined by the tranlsation's keyword
+    */
+    t = NULL;
+    for (i = 0; i < list_len(list); ++i) {
+        t = list_get(list, i);
+
+        if (check_allowed_translation(t, smsc, sender, receiver, reject) == 0
+            && check_num_args(t, words) == 0)
 	    break;
 
-	if (n - 1 == t->args)
-	    break;
-	if (t->has_catchall_arg && n - 1 >= t->args)
-	    break;
 	t = NULL;
     }
 
@@ -1180,6 +1380,7 @@ static URLTranslation *find_translation(URLTranslationList *trans,
 	*reject = 0;
 
     octstr_destroy(keyword);    
+    list_destroy(list, NULL);
     return t;
 }
 
@@ -1198,58 +1399,11 @@ static URLTranslation *find_default_translation(URLTranslationList *trans,
     t = NULL;
     for (i = 0; i < list_len(list); ++i) {
 	t = list_get(list, i);
-	if (smsc && t->accepted_smsc) {
-	    if (!list_search(t->accepted_smsc, smsc, octstr_item_match)) {
-		t = NULL;
-		continue;
-	    }
-	}
 
-	/* Have allowed sender */
-	if (t->allowed_prefix && ! t->denied_prefix &&
-		       	(does_prefix_match(t->allowed_prefix, sender) != 1)) {
+    if (check_allowed_translation(t, smsc, sender, receiver, reject) == 0)
+        break;
+
 	    t = NULL;
-	    continue;
-	}
-
-	/* Have denied sender */
-	if (t->denied_prefix && ! t->allowed_prefix &&
-		       	(does_prefix_match(t->denied_prefix, sender) == 1)) {
-	    t = NULL;
-	    continue;
-	}
-
-	/* Have allowed receiver */
-	if (t->allowed_recv_prefix && ! t->denied_recv_prefix &&
-		       	(does_prefix_match(t->allowed_recv_prefix, receiver) != 1)) {
-	    t = NULL;
-	    continue;
-	}
-
-	/* Have denied receiver */
-	if (t->denied_recv_prefix && ! t->allowed_recv_prefix &&
-		       	(does_prefix_match(t->denied_recv_prefix, receiver) == 1)) {
-	    t = NULL;
-	    continue;
-	}
-
-	if (t->white_list && numhash_find_number(t->white_list, sender) < 1) {
-	    t = NULL; *reject = 1;
-	    continue;
-	}
-	if (t->black_list && numhash_find_number(t->black_list, sender) == 1) {
-	    t = NULL; *reject = 1;
-	    continue;
-										        }
-
-	/* Have allowed and denied */
-	if (t->denied_prefix && t->allowed_prefix &&
-		       	(does_prefix_match(t->allowed_prefix, sender) != 1) &&
-		       	(does_prefix_match(t->denied_prefix, sender) == 1) ) {
-	    t = NULL;
-	    continue;
-	}
-	break;
     }
 
     /* Only return reject if there's only blacklisted smsc's */
