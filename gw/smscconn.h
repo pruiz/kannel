@@ -20,35 +20,46 @@
  * bearerbox has its own smsc struct, in which it helds information
  * about routing information, and then pointer to smscc
  *
- * smscc is internal structure for smscc module. It has a list
+ * SMSCConn is internal structure for smscc module. It has a list
  * of common variables like number of sent/received messages and
  * and pointers to appropriate lists, and then it has a void pointer
  * to appropriate smsc structure defined and used by corresponding smsc
  * connection type module (like CIMD2, SMPP etc al)
+ *
+ * Concurrency notes:
+ *
+ * bearerbox is responsible for not calling cleanup at the same time
+ * as it calls other functions, but must call it after it has noticed that
+ * status == KILLED
  */
 
 typedef struct smscconn SMSCConn;
 
 /* create new SMS center connection from given configuration group,
- * or return NULL if failed 
+ * or return NULL if failed.
  *
- * 'incoming_list' is a list in which the SMSC adds any received
- * SMS messages
- *
- * 'failed_send' is a list in bearerbox, in which the SMSC adds
- *  messages it completely fails to send
+ * The new connection does its work in its own privacy, and calls
+ * callback functions at bb_smscconn_cb module. It calls function
+ * bb_smscconn_ready when it has put everything up.
  *
  * NOTE: this function starts one or more threads to
  *   handle traffic with SMSC, and caller does not need to
  *   care about it afterwards.
  */
-SMSCConn *smscconn_create(ConfigGroup *cfg, List *incoming_list, 
-			  List *failed_send, int start_as_stopped);
+SMSCConn *smscconn_create(ConfigGroup *cfg, int start_as_stopped);
 
-/* destroy smscc. Put all messages in internal outgoing queue
- * into failed_send list, close connections etc.
+/* shutdown/destroy smscc. Call send_failed callback for all
+ * message which failed to be sent, start closing connection etc.
  */
-void smscconn_destroy(SMSCConn *smscconn);
+void smscconn_shutdown(SMSCConn *smscconn);
+
+/* this is final function to cleanup all memory still held by
+ * SMSC Connection after it has been killed (for synchronization
+ *  problems it cannot be cleaned automatically)
+ * Call this after send returns problems or otherwise notice that
+ * status is KILLED. Returns 0 if OK, -1 if it cannot be (yet) destroyed.
+ */
+int smscconn_destroy(SMSCConn *smscconn);
 
 /* stop smscc. A stopped smscc does not receive any messages, but can
  * still send messages, so that internal queue can be emptied. The caller
@@ -63,14 +74,14 @@ void smscconn_start(SMSCConn *smscconn);
 /* Return name of the SMSC. The caller must destroy the octstr */
 Octstr *smscconn_name(SMSCConn *smscconn);
 
-/* Append a copy of message 'msg' to smscc internal queue
- * Return number of messages in outgoing queue, or -1 if operation
- * failed. In any case, caller must destroy msg.
- * XXX possible future: when the message is successfully sent, add
- *     acknowledgement to incoming_list
+/* Call SMSC specific function to handle sending of 'msg'
+ * Returns immediately, with 0 if successful and -1 if failed.
+ * In any case the caller is responsible for 'msg' after that.
+ * Note that return value does NOT mean that message has been send
+ * or send has failed, but SMSC Connection calls appropriate callback
+ * function later
  */
 int smscconn_send(SMSCConn *smsccconn, Msg *msg);
-
 
 /* Return just status as defined below */
 int smscconn_status(SMSCConn *smscconn);
@@ -83,16 +94,19 @@ typedef struct smsc_state {
     long failed;	/* total number */
     long queued;	/* set our internal outgoing queue length */
     long online;	/* in seconds */
+    int load;		/* subjective value 'how loaded we are' for
+			 * routing purposes, similar to sms/wapbox load */
 } StatusInfo;
 
 
 enum {
-    SMSCCONN_UNKNOWN_STATUS = -1,
-    SMSCCONN_ACTIVE = 0,
-    SMSCCONN_CONNECTING = 1,
-    SMSCCONN_RECONNECTING = 2,
-    SMSCCONN_DISCONNECTED = 3,
-    SMSCCONN_KILLED = 4
+    SMSCCONN_UNKNOWN_STATUS = 0,
+    SMSCCONN_STARTING,
+    SMSCCONN_ACTIVE,
+    SMSCCONN_CONNECTING,
+    SMSCCONN_RECONNECTING,
+    SMSCCONN_DISCONNECTED,
+    SMSCCONN_KILLED	/* ready to be cleaned */
 };
 
 /* return current status of the SMSC connection, filled to infotable.

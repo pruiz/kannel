@@ -1,21 +1,77 @@
 #ifndef SMSCCONN_P_H
 #define SMSCCONN_P_H
 
+/* SMSC Connection private header
+ *
+ * Defines internal private structure
+ *
+ * Kalle Marjola 2000 for project Kannel
+ *
 
+ ADDING AND WORKING OF NEW SMS CENTER CONNECTIONS:
+
+ These are guidelines and rules for adding new SMSC Connections to
+ Kannel. See file bb_smscconn.h for callback function prototypes.
+
+ New SMSC Connection handler is free-formed module which only have following
+ rules:
+ 
+ 1) Each new SMSC Connection MUST implement function
+    smsc_xxx_create(SMSCConn *conn, ConfigGrp *cfg), which:
+
+    a) SHOULD NOT block   (XXX)
+    b) MUST warn about any configuration group variables it does
+       not support    (XXX)
+    c) MUST set up send_msg dynamic function to handle messages
+       to-be-sent. This function MAY NOT block.
+    d) CAN set up private shutdown function, which MAY NOT block
+       
+ 2) Each SMSC Connection MUST call certain BB callback functions when
+    certain things occur:
+
+    a) Each SMSC Connection MUST call callback function
+       bb_smscconn_killed when it dies because it was put down
+       via bb_smscconn_shutdown or it simply cannot keep the connection
+       up (wrong password etc.) Reason must be supplied.
+
+    b) When SMSC Connection receives a message from SMSC, it must
+       create a new Msg from it and call bb_smscconn_received
+
+    c) When SMSC Connection has sent a message to SMSC, it MUST call
+       callback function bb_smscconn_sent
+
+    d) When SMSC Connection has failed to send a message to SMSC, it
+       MUST call callback function bb_smscconn_send_failed with appropriate
+       reason
+
+ 3) SMSC Connection MUST fill up SMSCConn structure as needed to, and is
+    responsible for any concurrency timings.
+
+ 4) When SMSC Connection shuts down, it MUST call bb_smscconn_send_failed
+    for each message not yet sent, and must destroy all memory it has used
+    (SMSCConn struct MUST be left, but data is destroyed). Before destroying
+    data, status MUST be set to SMSCCONN_KILLED
+
+ 5) Callback bb_smscconn_ready is automatically called by main
+    smscconn_create. New implementation MAY NOT call it directly
+*/
+ 
 #include <signal.h>
 #include "gwlib/gwlib.h"
 
 struct smscconn {
-    List *incoming_queue;	/* reference to list in which to put new msgs */
-    List *failed_queue;		/* reference to list in which to put failed msgs */
-    sig_atomic_t status;
-    int is_stopped;
-    time_t connect_time;	/* When connection to SMSC was established */
+    int		 status;	/* see smscconn.h */
+    int 	load;	       	/* load factor, 0 = no load */
+    int 	is_stopped;
+    int		is_killed;	/* time to die */
+    time_t 	connect_time;	/* When connection to SMSC was established */
 
+    Mutex 	*flow_mutex;	/* used for thread synchronization */
+
+    /* connection specific counters */
     Counter *received;
     Counter *sent;
     Counter *failed;
-    List *outgoing_queue;	/* our own private list */
 
     Octstr *name;		/* Descriptive name filled from connection info */
     Octstr *id;			/* Abstract name spesified in configuration and
@@ -25,14 +81,16 @@ struct smscconn {
      *      moved straight to bearerbox (routing information)
      */
 
-    int (*destroyer) (SMSCConn *conn);  /* pointer to function which destroys
-					   SMSC specific data */
+    /* pointer to function called when smscconn_shutdown called.
+       Note that this function is not needed always. */
+    int (*shutdown) (SMSCConn *conn);
+
+    /* pointer to function called when a new message is needed to be sent.
+       MAY NOT block */
+    int (*send_msg) (SMSCConn *conn, Msg *msg);
     
     void *data;			/* SMSC specific stuff */
 
-    /* the big question: should we use function pointers to
-     * functions like 'destroy', 'receive_message', 'send_message'?
-     */
 };
 
 /*

@@ -1,3 +1,9 @@
+2000-12-15  Kalle Marjola  <rpr@wapit.com>
+
+	* gw/smscconn.c|h|_p.h, gw/smsc_wrapper.c: continued the work
+
+	* gw/bb_smscconn_cb.h|c: added. Callbacks to synchronize things
+
 2000-12-15  Richard Braakman  <dark@wapit.com>
 
 	* gwlib/dict.[ch]: Implement dict_key_count().  Implement behaviour
