@@ -1,3 +1,9 @@
+2001-06-04  Lars Wirzenius  <liw@iki.fi>
+
+	* gw/smsc_smpp.c: Check for smpp->receiver instead of
+	smpp->transmitter in smsc_smpp_create(). Pointed out by Le
+	Nhu Hai.
+
 2001-06-01  Jarkko Kovala  <jarkko.kovala@iki.fi>
 
 	* gwlib/http.c, gwlib/gwthread-pthread.c: Move the OpenSSL 

@@ -670,7 +670,7 @@ int smsc_smpp_create(SMSCConn *conn, CfgGroup *grp)
 	    gwthread_wakeup(smpp->transmitter);
 	    gwthread_join(smpp->transmitter);
 	}
-	if (smpp->transmitter != -1) {
+	if (smpp->receiver != -1) {
 	    gwthread_wakeup(smpp->receiver);
 	    gwthread_join(smpp->receiver);
 	}
