@@ -1,3 +1,9 @@
+2000-07-13  Derry Hamilton <rasilon@tardis.ed.ac.uk>
+	* config.h.in,configure,configure.in: configure now checks for the 
+	32-bit type and defines kint32 and kuint32 as appropriate in 
+	preparation for 64-bit kannel on Alpha and UltraSPARC since the
+	compiler types int32 and uint32 are not supported everywhere.
+	
 2000-07-13  Yann Muller  <ymuller@3glab.com>
 
 	* gw/smsc_at.c: removed two unused variables.

@@ -71,6 +71,8 @@ dnl do not have one.  AC_FUNC_GETLOADAVG assumed that we do.  Zap it.
 LIBOBJS=`echo "$LIBOBJS" | sed 's/ getloadavg\.o//'`
 
 dnl Checks for typedefs, structures, and compiler characteristics.
+AC_CHECK_SIZEOF(long)
+AC_CHECK_SIZEOF(int)
 
 dnl Checks for library functions.
 
