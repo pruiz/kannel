@@ -4,15 +4,14 @@ Priority: optional
 Maintainer: Bruno Rodrigues <bruno.rodrigues@litux.org>
 Build-Depends: debhelper (>> 4.0.0), libxml2-dev, libssl-dev, openssl, libmysqlclient10-dev, libpam0g-dev
 Build-Depends-Indep: debhelper (>> 4.0.0), docbook-dsssl, jadetex, transfig, imagemagick, gs
-Standards-Version: 3.5.9
+Standards-Version: 3.6.1
 
 Package: kannel
 Architecture: any
 Section: net
 Priority: optional
 Depends: ${shlibs:Depends}
-Conflicts: kannel-devel, kannel-cvs
-Replaces: kannel-devel, kannel-cvs
+Suggests: kannel-extras, kannel-docs
 Description: WAP and SMS gateway
  Kannel is a gateway for connecting WAP (Wireless Application Protocol)
  phones to the Internet. It also works as an SMS gateway, for providing
@@ -43,4 +42,4 @@ Description: WAP and SMS gateway documentation
  phones to the Internet. It also works as an SMS gateway, for providing
  SMS based services for GSM phones.
  .
- Documentation in html, rtf and pdf format.
+ Documentation in HTML, RTF and PDF format.

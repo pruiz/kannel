@@ -1,3 +1,10 @@
+kannel (1.4.0-0) unstable; urgency=low
+
+  * New upstream version.
+  * Bumped standards version
+
+ -- Bruno Rodrigues <bruno.rodrigues@litux.org>  Sat,  7 Aug 2004 13:45:02 +0200
+
 kannel (1.2.1-5) unstable; urgency=low
 
   * New maintainer (Closes: #185224)
