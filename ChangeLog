@@ -1,3 +1,7 @@
+2003-02-07  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/smsc/smsc_cimd2.c: fixed now dependency things for previous 
+      urltrans fix. Thanks to "Dariusz Markowicz" <dariuszm@tenbit.pl>.
+
 2003-02-06  Stipe Tolj  <tolj@wapme-systems.de>
     * gwlib/http.c: bouncing back to "HTTP/1.x %d Foo" style. Bruno has
       requested this and it's seems nothing speaks against serving Foo.
