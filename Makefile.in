@@ -57,6 +57,13 @@ PACKAGE = @PACKAGE@
 RANLIB = @RANLIB@
 SHELL = @SHELL@
 VERSION = @VERSION@
+LEX = @LEX@
+PERL = @PERL@
+YACC = @YACC@
+
+# -v gives verbose output.
+YFLAGS = -d -p ws_yy_
+
 
 mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs
 CONFIG_HEADER = config.h
@@ -65,7 +72,7 @@ CONFIG_CLEAN_FILES =
 VERSION=$(shell head -1 VERSION)
 
 LIBS=@LIBS@
-CFLAGS=@CFLAGS@ -I. -Igw -Igwlib
+CFLAGS=@CFLAGS@ -I. -Igw -Igwlib -Iwmlscript
 LDFLAGS=@LDFLAGS@
 
 MKDEPEND=$(CC) $(CFLAGS) -MM
@@ -87,8 +94,8 @@ TEX_DSL=@TEX_DSL@
 progsrcs = \
 	gw/bearerbox.c \
 	gw/smsbox.c \
-	gw/wapbox.c
-
+	gw/wapbox.c \
+	wmlscript/wmlsc.c
 progobjs = $(progsrcs:.c=.o)
 progs = $(progsrcs:.c=)
 
@@ -98,6 +105,9 @@ gwobjs = $(gwsrcs:.c=.o)
 libsrcs = $(shell echo gwlib/*.c)
 libobjs = $(libsrcs:.c=.o)
 
+wmlscriptsrcs = $(shell echo wmlscript/*.[cy])
+wmlscriptobjs = $(wmlscriptsrcs:.c=.o) $(wmlscriptsrcs:.y=.o)
+
 testsrcs = $(shell echo test/*.c)
 testobjs = $(testsrcs:.c=.o)
 testprogs = $(testsrcs:.c=)
@@ -105,7 +115,9 @@ testprogs = $(testsrcs:.c=)
 srcs = $(shell echo */*.c)
 objs = $(srcs:.c=.o)
 
-srcdirs = gw gwlib test utils
+libs = libgw.a libgwlib.a libwmlscript.a
+
+srcdirs = gw gwlib test utils wmlscript
 
 docsrcs = $(shell grep -l '<!DOCTYPE ' doc/*/*.xml)
 docs = $(docsrcs:.xml=.html) $(docsrcs:.xml=.ps)
@@ -114,7 +126,7 @@ figsrcs = $(shell echo doc/*/*.fig)
 figs = $(figsrcs:.fig=.png)  $(figsrcs:.fig=.ps)
 
 
-.SUFFIXES: $(SUFFIXES) .xml .html .ps .fig .png
+.SUFFIXES: $(SUFFIXES) .xml .html .ps .fig .png .y .c
 
 .xml.html:
 	sed "s/#FIGTYPE#/.png/" $< > $*.tmp
@@ -136,6 +148,12 @@ figs = $(figsrcs:.fig=.png)  $(figsrcs:.fig=.ps)
 .fig.ps:
 	fig2dev -Lps $< $@
 
+.y.c:
+	$(YACC) $(YFLAGS) $< && mv y.tab.c $*.c
+	if test -f y.tab.h; then \
+	if cmp -s y.tab.h $*.h; then rm -f y.tab.h; else mv y.tab.h $*.h; fi; \
+	else :; fi
+
 all: progs tests docs
 progs: $(progs)
 tests: $(testprogs)
@@ -156,7 +174,7 @@ clean:
 	rm -f core $(progs) $(testprogs) $(objs) $(docs) *.a
 	rm -f $(figs) $(docs)
 
-depend .depend:
+depend .depend: wmlscript/wsgram.h
 	for dir in $(srcdirs); do \
 		$(MKDEPEND) $$dir/*.c | sed "s:^[^ ]:$$dir/&:"; done > .depend
 include .depend
@@ -169,12 +187,25 @@ libgwlib.a: $(libobjs)
 	ar rc libgwlib.a $(libobjs)
 	$(RANLIB) libgwlib.a
 
+libwmlscript.a: $(wmlscriptobjs)
+	ar rc libwmlscript.a $(wmlscriptobjs)
+	$(RANLIB) libwmlscript.a
+
+wmlscript/wsgram.h: wmlscript/wsgram.c
+
+make-op-table: $(srcdir)/wmlscript/make-op-table.in
+	sed 's%@PERLPROG@%@PERL@%g' $(srcdir)/wmlscript/make-op-table.in > make-op-table
+	chmod a+x make-op-table
+
+opcodes:
+	./make-op-table $(srcdir)/wmlscript/wsasm.h > $(srcdir)/wmlscript/wsopcodes.h
+
 libtest.a: $(testobjs)
 	ar rc libtest.a $(testobjs)
 	$(RANLIB) libtest.a
 
-$(progs): libgw.a libgwlib.a
-	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $@.o libgw.a libgwlib.a $(LIBS)
+$(progs): $(libs)
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $@.o $(libs) $(LIBS)
 
-$(testprogs): libtest.a libgw.a libgwlib.a
-	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $@.o libtest.a libgw.a libgwlib.a $(LIBS)
+$(testprogs): libtest.a $(libs)
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $@.o libtest.a $(libs) $(LIBS)

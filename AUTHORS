@@ -17,4 +17,9 @@ The gateway inside WapIT:
 	Mikael Gueck <mikael@wapit.com>
 	smsbox (especially SMS center protocols)
 
-For patches sent from other people, see the ChangeLog.
+Other people:
+
+	Markku Rossi <mtr@iki.fi>
+	WMLScript compiler
+
+For patches and other smaller sent from other people, see the ChangeLog.

@@ -1,3 +1,8 @@
+Mon Jan 17 15:38:15 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* AUTHORS, wmlscript/*, configure.in, Makefile.in: Added WMLScript
+	compiler from Marko Rossi.
+
 Mon Jan 17 14:42:50 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* wapbox.c: Added signal handlers for SIGINT, SIGHUP, and SIGPIPE.
