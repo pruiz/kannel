@@ -140,7 +140,7 @@ Octstr *smasi_pdu_pack(SMASI_PDU *pdu)
     }
 
     switch (pdu->type) {
-    #define NONTERMINATED(name)
+    #define NONTERMINATED(name) p = *(&p);
     #define COMATERMINATED(name) \
     if (p->name != NULL) { octstr_append_cstr(os, #name); \
     octstr_append_char(os, '='); \
@@ -177,8 +177,8 @@ SMASI_PDU *smasi_pdu_unpack(Octstr *data_without_len)
     type_name = (temp ? octstr_get_cstr(temp) : "");
 
     if (strcmp(type_name, "dummy") == 0) type = 0;
-    #define NONTERMINATED(name)
-    #define COMATERMINATED(name)
+    #define NONTERMINATED(name) p = *(&p);
+    #define COMATERMINATED(name) p = *(&p);
     #define PDU(name, id, fields) \
     else if (strcmp(type_name, #name) == 0) type = id;
     #include "smasi_pdu.def"
@@ -191,7 +191,7 @@ SMASI_PDU *smasi_pdu_unpack(Octstr *data_without_len)
     skip_until_after_colon(data_without_len, &pos);
 
     switch (type) {
-    #define NONTERMINATED(name)
+    #define NONTERMINATED(name) p = *(&p);
     #define COMATERMINATED(name) \
                 if (octstr_str_compare(field_name, #name) == 0 && field_value != NULL) \
                     p->name = octstr_duplicate(field_value);
@@ -226,7 +226,7 @@ void smasi_pdu_dump(SMASI_PDU *pdu)
     debug("sms.smasi", 0, "SMASI PDU %p dump:", (void *) pdu);
     debug("sms.smasi", 0, "  type_name: %s", pdu->type_name);
     switch (pdu->type) {
-    #define NONTERMINATED(name)
+    #define NONTERMINATED(name) p = *(&p);
     #define COMATERMINATED(name) \
     octstr_dump_short(p->name, 2, #name);
     #define PDU(name, id, fields) \

@@ -3,7 +3,7 @@
 int main(int argc, char **argv)
 {
     Cfg *cfg;
-    int ret;
+    int ret = 1;
     Octstr *name;
     int i;
     
@@ -23,5 +23,5 @@ int main(int argc, char **argv)
     info(0, "Shutting down.");
     gwlib_shutdown();
 
-    return (ret == 0 ? 0 : 1);
+    return ret;
 }
