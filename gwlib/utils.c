@@ -122,7 +122,7 @@ int get_and_set_debugs(int argc, char **argv,
 	    }
 	    if (ret < 0) {
 		fprintf(stderr, "Unknown option %s, exiting.\n", argv[i]);
-		panic(0, "Option paring failed");
+		panic(0, "Option parsing failed");
 	    }
 	    else
 		i += ret;	/* advance additional args */
