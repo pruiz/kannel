@@ -1,3 +1,7 @@
+2003-10-27  Stipe Tolj  <tolj@wapme-systems.de>
+    * wap/cookies.c: fixed BUG#95 causing wapbox to crash while comparing 
+      cookies octstr_compare(). 
+
 2003-10-27  Alexander Malysh  <a.malysh@centrium.de>
     * gw/bb_http.c: small bug fix. Allow http admin commands w/o /cgi-bin/ prefix
       (e.g. /status).

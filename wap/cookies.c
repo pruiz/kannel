@@ -306,59 +306,55 @@ static void add_cookie_to_cache(const WSPMachine *sm, Cookie *value)
 
 static int have_cookie(List *cookies, Cookie *cookie)
 {
-	Cookie *value = NULL;
-	long pos = 0;
+    Cookie *value = NULL;
+    long pos = 0;
 
-	if (cookies == NULL || cookie == NULL) {
-		error(0, "have_cookie: Null argument(s) - no Cookie list, Cookie or both");
-		return 0;
-	}
+    if (cookies == NULL || cookie == NULL) {
+        error(0, "have_cookie: Null argument(s) - no Cookie list, Cookie or both");
+        return 0;
+    }
 
-	/* Walk through the cookie cache, comparing cookie */
-
+    /* Walk through the cookie cache, comparing cookie */
 	while (pos < list_len(cookies)) {
-		value = list_get(cookies, pos);
+        value = list_get(cookies, pos);
 
-		/* octstr_compare() now only returns 0 on an exact match or if both args are 0 */
+        /* octstr_compare() now only returns 0 on an exact match or if both args are 0 */
+        debug ("wap.wsp.http", 0, "have_cookie: Comparing name (%s:%s), path (%s:%s), domain (%s:%s)",
+               octstr_get_cstr(cookie->name), octstr_get_cstr(value->name),
+               octstr_get_cstr(cookie->path), octstr_get_cstr(value->path),
+               octstr_get_cstr(cookie->domain), octstr_get_cstr(value->domain));
 
-		debug ("wap.wsp.http", 0, "have_cookie: Comparing name (%s:%s), path (%s:%s), domain (%s:%s)",
-			   cookie->name == NULL ? "NULL" : octstr_get_cstr(cookie -> name), 
-			   value->name == NULL ? "NULL" : octstr_get_cstr(value -> name),
-			   cookie->path == NULL ? "NULL" : octstr_get_cstr(cookie -> path), 
-			   value->path == NULL ? "NULL" : octstr_get_cstr(value -> path),
-			   cookie->domain == NULL ? "NULL" : octstr_get_cstr(cookie -> domain), 
-			   value->domain == NULL ? "NULL" : octstr_get_cstr(value -> domain));
-
-		/* Match on no value or value and value equality for name, path and domain */
-
-		if ((value->name == NULL || 
-			((value->name != NULL) && octstr_compare(value->name, cookie->name) == 0)) &&
-			(value->path == NULL ||
-			((value->path != NULL) && octstr_compare(value->path, cookie->path) == 0)) &&
-			((value->domain == NULL) ||
-			((value->domain != NULL) && octstr_compare(value->domain, cookie->domain) == 0))) {
+        /* Match on no value or value and value equality for name, path and domain */
+        if ((value->name == NULL || 
+            ((value->name != NULL && cookie->name != NULL) && 
+                octstr_compare(value->name, cookie->name) == 0)) &&
+            (value->path == NULL ||
+            ((value->path != NULL && cookie->path != NULL) && 
+                octstr_compare(value->path, cookie->path) == 0)) &&
+            (value->domain == NULL) ||
+            ((value->domain != NULL && cookie->domain != NULL) && 
+                octstr_compare(value->domain, cookie->domain) == 0)) {
 			
-			/* We have a match according to 4.3.3 - discard the old one */
+            /* We have a match according to 4.3.3 - discard the old one */
+            cookie_destroy(value);
+            list_delete(cookies, pos, 1);
 
-			cookie_destroy(value);
-			list_delete(cookies, pos, 1);
+            /* Discard the new cookie also if max-age is 0 - set if expiry date is up */
+            if (cookie->max_age == 0) {
+                debug("wap.wsp.http", 0, "have_cookie: Discarding expired cookie (%s)",
+                      octstr_get_cstr(cookie->name));
+                return 1;
+            }
 
-			/* Discard the new cookie also if max-age is 0 - set if expiry date is up */
-
-			if (cookie->max_age == 0) {
-				debug("wap.wsp.http", 0, "have_cookie: Discarding expired cookie (%s)",
-				      octstr_get_cstr(cookie->name));
-				return 1;
-			}
-
-			debug("wap.wsp.http", 0, "have_cookie: Updating cached cookie (%s)", 
+            debug("wap.wsp.http", 0, "have_cookie: Updating cached cookie (%s)", 
                   octstr_get_cstr (cookie->name));
-			break;
-		} else
-			pos++;
-	}
+            break;
+        } else {
+            pos++;
+        }
+    }
 
-	return 0;
+    return 0;
 }
 
 /*
