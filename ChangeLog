@@ -1,4 +1,10 @@
 2002-11-20  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/bb_http.c, gw/smsbox.c, gwlib/cfg.def: patch to allow to bind to
+      a specific interface for smsbox's sendsms interface and bearerbox's 
+      admin HTTP server. Patch provided by Nisan Bloch <nisof@amagoblin.co.za>.
+      [Msg-ID: <5.1.0.14.0.20021118225946.024d51a0@amagoblin.ialien.co.za>]
+
+2002-11-20  Stipe Tolj  <tolj@wapme-systems.de>
     * gwlib/charset.c: fixing a compiler warning, thanks to 
       Ignat Vassilev <ozzy@declera.com> for providing patch
 
