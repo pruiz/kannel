@@ -1405,7 +1405,10 @@ static int transform_message(WAPEvent **e, WAPAddrTuple **tuple,
 	debug("wap.push.ppg", 0, "PPG: Content-Transfer-Encoding is \"%s\"",
 	      octstr_get_cstr (content.type));
 	message_deliverable = pap_get_content(&content);
-	if (!message_deliverable) {
+	
+	if (message_deliverable) {
+	    change_header_value(&push_headers, "Content-Transfer-Encoding", "binary");
+	} else {
 	    goto error;
 	}
     }

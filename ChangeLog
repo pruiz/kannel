@@ -1,3 +1,7 @@
+2001-11-09 Jörg Pommnitz <jpo@condat.de>
+    * gateway/gw/wap_push_ppg.c: change Content-Transfer-Encoding to 
+      "binary" after successful decoding.
+
 2001-11-09 Aarno Syvänen <aarno@wiral.com>
     * gw/wap_push_pap_compiler.c: Accept lowercase versions of bearer and net-
       work
