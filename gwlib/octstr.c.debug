@@ -2194,3 +2194,35 @@ int octstr_symbolize(Octstr *ostr)
     return 1;
 }
 
+void octstr_delete_matching(Octstr *haystack, Octstr *needle)
+{
+    int p = -1;
+    long len;
+
+    seems_valid(haystack);
+    seems_valid(needle);
+    gw_assert(!haystack->immutable);
+    len = octstr_len(needle);
+
+    while ((p = octstr_search(haystack, needle, p + 1)) != -1) {
+        octstr_delete(haystack, p, len);
+        p -= len;
+    }
+}
+ 
+int octstr_is_all_hex(Octstr *os)      
+{
+    long len, i;
+    int ch;
+
+    seems_valid(os);
+    len = octstr_len(os);
+    for (i = 0; i < len; ++i) {
+        ch = octstr_get_char(os, i);
+        if (!gw_isxdigit(ch))
+            return 0;
+    }
+
+    return 1;
+}
+

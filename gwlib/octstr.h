@@ -612,6 +612,16 @@ void octstr_replace(Octstr *haystack, Octstr *needle, Octstr *repl);
  * Symbolize hex string '78797a' becomes '%78%79%7a'
  */
 int octstr_symbolize(Octstr *ostr);
+
+/*
+ * Remove all occurrences of 'needle' within 'haystack'.
+ */
+void octstr_delete_matching(Octstr *haystack, Octstr *needle);
+
+/*
+ * Return 1, if octstr 'os' contains only hex chars, 0 otherwise.
+ */
+int octstr_is_all_hex(Octstr *os);                                                    
                                                     
 
 #endif
