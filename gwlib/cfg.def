@@ -244,6 +244,7 @@ MULTI_GROUP(smsc,
     OCTSTR(notification-pid)
     OCTSTR(notification-addr)
     OCTSTR(msg-id-type)
+    OCTSTR(no-dlr)
 )
 
 

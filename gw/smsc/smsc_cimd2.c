@@ -47,6 +47,7 @@ typedef struct privdata {
     long    our_port;
     long    keepalive;
     Octstr  *my_number;
+    int no_dlr;
 
     int     socket;
     int     send_seq;
@@ -1263,6 +1264,7 @@ static void packet_set_sequence(struct packet *packet, int seq)
 static struct packet *packet_encode_message(Msg *msg, Octstr *sender_prefix, SMSCConn *conn)
 {
     struct packet *packet;
+    PrivData *pdata = conn->data;
     Octstr *text;
     int spaceleft;
     long truncated;
@@ -1363,12 +1365,14 @@ static struct packet *packet_encode_message(Msg *msg, Octstr *sender_prefix, SMS
      * with those reports anyway. */
     /* ask for the delivery reports if needed*/
 
-    if (msg->sms.dlr_mask & 0x03)
-    {
-        packet_add_int_parm(packet, P_STATUS_REPORT_REQUEST, 14, conn);
-    }
-    else
-        packet_add_int_parm(packet, P_STATUS_REPORT_REQUEST, 0, conn);
+    if (!pdata->no_dlr)
+        if (msg->sms.dlr_mask & 0x03)
+            packet_add_int_parm(packet, P_STATUS_REPORT_REQUEST, 14, conn);
+    	else
+            packet_add_int_parm(packet, P_STATUS_REPORT_REQUEST, 0, conn);
+    else if( pdata->no_dlr && (msg->sms.dlr_mask & 0x03) )
+    	warning(0, "CIMD2[%s]: dlr request make no sense while no-dlr set to true",
+    		 octstr_get_cstr(conn->id));
 
     /* Turn off reply path as default.
      * This avoids phones automatically asking for a reply
@@ -1878,7 +1882,7 @@ static int cimd2_submit_msg(SMSCConn *conn, Msg *msg)
     }
 
     ret = cimd2_request(packet, conn, &ts);
-    if((ret == 0) && (ts) && (msg->sms.dlr_mask & 0x03)) {
+    if((ret == 0) && (ts) && (msg->sms.dlr_mask & 0x03) && !pdata->no_dlr) {
     
         dlr_add(octstr_get_cstr(conn->name),
             octstr_get_cstr(ts), 
@@ -2229,7 +2233,8 @@ int smsc_cimd2_create(SMSCConn *conn, CfgGroup *grp)
     pdata = gw_malloc(sizeof(PrivData));
     conn->data = pdata;
     pdata->conn = conn;
-
+   
+    pdata->no_dlr = 0;
     pdata->quitting = 0;
     pdata->socket = -1;
     pdata->received = list_create();
@@ -2254,6 +2259,8 @@ int smsc_cimd2_create(SMSCConn *conn, CfgGroup *grp)
     if (cfg_get_integer(&(pdata->keepalive), grp,octstr_imm("keepalive")) == -1)
         pdata->keepalive = 0;
 
+    cfg_get_bool(&pdata->no_dlr, grp, octstr_imm("no-dlr"));
+    
     /* Check that config is OK */
     ok = 1;
     if (pdata->host == NULL) {
