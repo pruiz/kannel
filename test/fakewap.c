@@ -592,7 +592,7 @@ int main(int argc, char **argv)
 	    break;
 
 	case 'n':
-	    tid_new = atoi(optarg);
+	    tid_new = 1;
 	    break;
 
 	case 'd':
