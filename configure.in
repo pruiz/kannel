@@ -85,12 +85,14 @@ AC_CHECK_LIB(socket, accept)
 AC_CHECK_LIB(nsl, inet_ntoa)
 AC_CHECK_LIB(resolv, inet_ntop)
 AC_CHECK_LIB(bind, inet_ntop)
-AC_CHECK_LIB(pthread, pthread_exit)
-AC_CHECK_LIB(iconv, libiconv)
+AC_CHECK_LIB(pthread, pthread_exit, [pthread="yes"])
 if test -z "$pthread"; then
 	AC_CHECK_LIB(c_r, pthread_exit, [LIBS="$LIBS -lc_r"])
 fi
-
+AC_CHECK_LIB(iconv, libiconv, [iconv="yes"])
+if test -z "$iconv"; then
+  AC_MSG_WARN([*** No iconv() on your system. Can't use character set convertion!])
+fi
 
 dnl Checks for header files.
 
@@ -631,6 +633,21 @@ AC_ARG_WITH(mysql,
                           DIR points to the installation [/usr/local/mysql]],
 [ if test -d "$withval"; then 
     mysqlloc="$withval"; 
+    dnl check for MySQL 4.x style mysql_config information
+    PATH="$PATH:$mysqlloc/bin"
+    AC_PATH_PROGS(MYSQL_CONFIG, mysql_config, no)
+    if test "$MYSQL_CONFIG" != "no"; then
+      dnl mysql-4.x style 
+      AC_MSG_CHECKING([mysql version])
+      mysql_version=`$MYSQL_CONFIG --version`
+      AC_MSG_RESULT([$mysql_version])
+      AC_MSG_CHECKING([mysql libs])
+      LIBS="$LIBS `$MYSQL_CONFIG --libs`"
+      AC_MSG_RESULT([`$MYSQL_CONFIG --libs`])
+      AC_MSG_CHECKING([mysql compiler flags])
+      CFLAGS="$CFLAGS `$MYSQL_CONFIG --cflags`"
+      AC_MSG_RESULT([`$MYSQL_CONFIG --cflags`])
+    fi
   else
     AC_MSG_ERROR(Unable to find MySQL libs and/or directories at $withval)
   fi
@@ -664,10 +681,10 @@ else
               [CFLAGS="$CFLAGS -I$loc/include"; LIBS="$LIBS -L$loc/lib -lmysqlclient"]; found=1
              )]
           )
-	fi
+        fi
       done
       if test "x$found" != "x1" ; then 
-        AC_MSG_ERROR(Unable to find mysql.h)
+        AC_MSG_ERROR([Unable to find mysql.h, please provide a --with-mysql=<dir> location])
       fi
     else
       dnl mysql-4.x style 
@@ -678,14 +695,14 @@ else
       CFLAGS="$CFLAGS `$MYSQL_CONFIG --cflags`"
     fi
   else
-      AC_MSG_RESULT(searching in $mysqlloc)
-      AC_CHECK_FILE("$mysqlloc/include/mysql/mysql.h", 
-        [CFLAGS="$CFLAGS -I$mysqlloc/include/mysql"; LIBS="$LIBS -L$mysqlloc/lib/mysql -lmysqlclient"],
-        [AC_CHECK_FILE("$mysqlloc/include/mysql.h", 
-          [CFLAGS="$CFLAGS -I$mysqlloc/include"; LIBS="$LIBS -L$mysqlloc/lib -lmysqlclient"],
-          [AC_MSG_ERROR(Unable to find mysql.h under $mysqlloc)]
-         )]
-      )
+    AC_MSG_RESULT(searching in $mysqlloc)
+    AC_CHECK_FILE("$mysqlloc/include/mysql/mysql.h", 
+      [CFLAGS="$CFLAGS -I$mysqlloc/include/mysql"; LIBS="$LIBS -L$mysqlloc/lib/mysql -lmysqlclient"],
+      [AC_CHECK_FILE("$mysqlloc/include/mysql.h", 
+        [CFLAGS="$CFLAGS -I$mysqlloc/include"; LIBS="$LIBS -L$mysqlloc/lib -lmysqlclient"],
+        [AC_MSG_ERROR([Unable to find mysql.h under location $mysqlloc])]
+      )]
+    )
   fi
   AC_CHECK_HEADERS(mysql/mysql.h mysql/mysql_com.h mysql/mysql_version.h)
   AC_CHECK_LIB(mysqlclient, mysql_init) 
