@@ -1,5 +1,9 @@
 2000-11-21  Richard Braakman  <dark@wapi.com>
 
+	* gw/html.c, gw/msg.c: Reformatted.
+
+2000-11-21  Richard Braakman  <dark@wapi.com>
+
 	* gw/cgi.[ch]: Removed, they are no longer used.
 
 	* gw/smsbox.c, gw/smsbox_req.[ch]: Removed inclusion of cgi.h.
