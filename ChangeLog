@@ -1,3 +1,8 @@
+2001-03-16  Kalle Marjola  <rpr@wapit.com>
+
+	* gwlib/http.c: Bugfix: wakeup server when new port added, so that
+	it is added to select
+
 2001-03-16  Tuomas Luttinen  <tuo@wapit.com>
 
 	* test/decompile.c (DTDTypeList): Added the URLs for those DTDs whose 

@@ -1540,7 +1540,8 @@ int http_open_port(int port)
     list_produce(new_server_sockets, p);
     keep_servers_open = 1;
     start_server_thread();
-
+    gwthread_wakeup(server_thread_id);
+    
     return 0;
 }
 
