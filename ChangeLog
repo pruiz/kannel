@@ -1,3 +1,8 @@
+2000-05-02 Aarno Syvänen <syvanen@wapit.com>
+
+	* wsp_state-decl.h: Commented how implementation state machine 
+	corresponds ones defined by the specs. 
+
 2000-05-02    <Kalle Marjola <rpr@wapit.com>>
 
 	* gwlib/conffile.c|h: modified some functions to work even with

@@ -4,6 +4,9 @@
  * Macro calls to generate rows of the state table. See the documentation for
  * guidance how to use and update these.
  *
+ * Note that two state machines defined by the specs are combined into one.
+ * NULL_STATE of the method table is here CONNECTED.
+ *
  * Lars Wirzenius <liw@wapit.com>
  */
 
