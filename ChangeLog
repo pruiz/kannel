@@ -1,5 +1,10 @@
 2000-11-06  Lars Wirzenius  <liw@iki.fi>
 
+	* gw/smsc_at.c: Applied fix from Paul Keogh to hex number
+	conversion.
+
+2000-11-06  Lars Wirzenius  <liw@iki.fi>
+
 	* utils/kannel-redhat.init.d: New file from Fabrice Gatille.
 
 2000-11-06  Lars Wirzenius  <liw@iki.fi>

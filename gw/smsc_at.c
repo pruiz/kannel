@@ -824,7 +824,7 @@ static int numtext(int num) {
  * Get the numeric value of the text hex
  */
 static int hexchar(char hexc) {
-	hexc -= 48;
+	hexc = toupper(hexc) - 48;
 	return (hexc>9) ? hexc-7 : hexc;
 }
 
