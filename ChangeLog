@@ -1,4 +1,10 @@
 2004-02-16 Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/smsc/smsc_cimd2.c: added RPI (return-path-indication) support and 
+      binfo support via tariff class in CIMD protocoll. 
+      Thanks to "Arne K. Haaje" <haaje@eurobate.com> for the patch.
+      [Msg-ID: <200402160909.47610.haaje@eurobate.com>]
+
+2004-02-16 Stipe Tolj  <tolj@wapme-systems.de>
     * gw/bb_boxc.c, gw/shared.c, gw/smsc/smsc_[cgw|emi|fake|smasi|smpp].c,
       gwlib/conn.[ch], gwlib/http.c, test/drive_smpp.c, test/fakesmsc.c,
       test/test_smsc.c: renamed conn_read_error() to conn_error() to imply
