@@ -1,5 +1,10 @@
 2000-10-02  Kalle Marjola  <rpr@wapit.com>
 
+	* gw/smsbox_req.c: fixed possible crash (panic) with malformed
+	http request
+
+2000-10-02  Kalle Marjola  <rpr@wapit.com>
+
 	* doc/userguide/userguide.xml: added 'pin' to GSM Phone smsc, did
 	some output formatting.
 

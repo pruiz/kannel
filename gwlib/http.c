@@ -241,7 +241,7 @@ int http_get_real(Octstr *url, List *request_headers, Octstr **final_url,
         octstr_destroy(*reply_body);
     }
     if (ret == -1) {
-        octstr_destroy(*final_url);
+	octstr_destroy(*final_url);
         *final_url = NULL;
     }
 

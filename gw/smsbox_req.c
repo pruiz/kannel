@@ -122,7 +122,7 @@ static char *obey_request(URLTranslation *trans, Msg *msg)
 		     octstr_get_cstr(msg->smart_sms.msgdata),
 		     pattern, status,
 		     (status == 200) ? "<< successful >>"
-		     : octstr_get_cstr(reply_body));
+		     : (reply_body != NULL) ? octstr_get_cstr(reply_body) : "");
 		
 		gw_free(pattern);		/* no longer needed */
 
