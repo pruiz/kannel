@@ -396,7 +396,7 @@ int main(int argc, char **argv)
 
     cf_index = get_and_set_debugs(argc, argv, check_args);
 
-    cfg = config_from_file(argv[cf_index], "new_kannel.conf");
+    cfg = config_from_file(argv[cf_index], "kannel.conf");
     if (cfg == NULL)
         panic(0, "No configuration, aborting.");
 

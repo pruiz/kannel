@@ -74,7 +74,6 @@ static void read_config(char *filename) {
 	/*
 	 * get the remaining values from the wapbox group
 	 */
-
 	if ((grp = config_find_first_group(cfg, "group", "wapbox")) == NULL)
 	    panic(0, "No 'wapbox' group in configuration");
 
@@ -324,7 +323,7 @@ int main(int argc, char **argv) {
 	if (argc > cf_index)
 		read_config(argv[cf_index]);
 	else
-		read_config("kannel.wapconf");
+		read_config("kannel.conf");
 		
 	setup_signal_handlers();
 
