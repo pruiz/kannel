@@ -1,3 +1,7 @@
+2000-12-21  Kalle Marjola  <rpr@wapit.com>
+
+	* gw/smsc.c: added missing breaks to _reopen
+
 2000-12-21  Derry Hamilton <rasilon@tardis.ed.ac.uk>
 	
 	* gw/wap-appl.c: Fixed race condition, between updating and

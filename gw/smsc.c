@@ -714,22 +714,31 @@ int smsc_reopen(SMSCenter *smsc)
     switch (smsc->type) {
     case SMSC_TYPE_FAKE:
         ret = fake_reopen(smsc);
+	break;
     case SMSC_TYPE_CIMD:
         ret = cimd_reopen(smsc);
+	break;
     case SMSC_TYPE_CIMD2:
         ret = cimd2_reopen(smsc);
+	break;
     case SMSC_TYPE_EMI_IP:
         ret = emi_reopen_ip(smsc);
+	break;
     case SMSC_TYPE_EMI:
         ret = emi_reopen(smsc);
+	break;
     case SMSC_TYPE_SMPP_IP:
         ret = smpp_reopen(smsc);
+	break;
     case SMSC_TYPE_SEMA_X28:
         ret = sema_reopen(smsc);
+	break;
     case SMSC_TYPE_OIS:
         ret = ois_reopen(smsc);
+	break;
     case SMSC_TYPE_AT:
         ret = at_reopen(smsc);
+	break;
         /* add new SMSCes here */
     default: 		/* Unknown SMSC type */
         ret = -2; 		/* no use */
