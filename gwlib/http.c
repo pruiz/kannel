@@ -1370,6 +1370,12 @@ static HTTPClient *client_create(int port, Connection *conn, Octstr *ip)
 {
     HTTPClient *p;
     
+#ifdef HAVE_LIBSSL
+    if (conn_get_ssl(conn)) 
+        debug("gwlib.http", 0, "HTTP: Creating SSL-enabled HTTPClient for `%s', using cipher '%s'.",
+    	      octstr_get_cstr(ip), SSL_get_cipher_version(conn_get_ssl(conn)));
+    else
+#endif    
     debug("gwlib.http", 0, "HTTP: Creating HTTPClient for `%s'.",
     	  octstr_get_cstr(ip));
     p = gw_malloc(sizeof(*p));
@@ -1710,10 +1716,18 @@ static void server_thread(void *dummy)
 		    ports[i] = -1;
             ssl[i] = 0;
 		} else {
-		    conn = conn_wrap_fd(fd, ssl[i]);
-    	    client = client_create(ports[i], conn, host_ip(addr));
-		    conn_register(conn, server_fdset, receive_request, 
-		    	    	  client);
+            /*
+             * Be aware that conn_wrap_fd() will return NULL if SSL handshake
+             * has failed, so we only client_create() if there is an conn.
+             */             
+            if ((conn = conn_wrap_fd(fd, ssl[i]))) {
+    	        client = client_create(ports[i], conn, host_ip(addr));
+		        conn_register(conn, server_fdset, receive_request, 
+		    	    	      client);
+            } else {
+                error(0, "HTTP: unsuccessfull SSL handshake for client `%s'",
+                      octstr_get_cstr(host_ip(addr)));
+            }
 		}
 	    }
 	}
