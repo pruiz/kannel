@@ -6,9 +6,6 @@
 
 /* TODO: Fail gracefully if there is no space in the thread table,
  * rather than creating a thread anyway and then panicking */
-/* TODO: calling pthread_setspecific in the _creating_ thread is
- * wrong.  Figure out how to have it done by the new thread while
- * still getting synchronization right. */
 
 #include <unistd.h>
 #include <errno.h>
