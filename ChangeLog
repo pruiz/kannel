@@ -1,3 +1,8 @@
+1999-14-12 Aarno Syvänen <syvanen@wapit.com>
+
+	* wtp_send.c: in function wtp_pack_result, fix errors in packing wtp
+	pdu fields (in function wtp_pack_result).
+
 Tue Dec 14 17:05:05 1999  Lars Wirzenius  <liw@wapit.com>
 
 	* gw/wtp_send.c: Set destination address as the phone, not the
