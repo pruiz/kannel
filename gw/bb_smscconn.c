@@ -470,6 +470,9 @@ Octstr *smsc2_status(int status_type)
             octstr_append_cstr(tmp, "<smsc>\n\t\t<name>");
             octstr_append(tmp,  smscconn_name(conn));
             octstr_append_cstr(tmp, "</name>\n\t\t");
+            octstr_append_cstr(tmp, "<id>");
+            octstr_append(tmp,  smscconn_id(conn));
+            octstr_append_cstr(tmp, "</id>\n\t\t");
         }
         else
             octstr_append(tmp, smscconn_name(conn));
