@@ -724,7 +724,7 @@ static void poll_callback(int fd, int revents, void *data)
 
     /* If unlocked_read hits eof or error, it will tell the fdset to
      * stop listening for POLLIN. */
-    if (revents & POLLIN) {
+    if (revents & (POLLIN | POLLERR)) {
         lock_in(conn);
         unlocked_read(conn);
         unlock_in(conn);
