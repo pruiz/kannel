@@ -167,6 +167,7 @@ RQueueItem *csdr_get_message(CSDRouter *router)
 	memset(client_port, 0, sizeof(client_port));
 
 	/* Maximum size of UDP datagram == 64*1024 bytes. */
+retry:
 	clilen = sizeof(cliaddr);
 	length = recvfrom(router->fd, data, sizeof(data), 0, 
 			(struct sockaddr *) &cliaddr, &clilen);
@@ -175,7 +176,13 @@ RQueueItem *csdr_get_message(CSDRouter *router)
 			/* No datagram available, don't block. */
 			goto no_msg;
 		}
-		error(errno, "Error receiving datagram.");
+		if (errno == ECONNREFUSED)  {
+			error(errno, "CSDR: Earlier UDP packet was refused, re-trying receive.");
+			goto retry;
+		}
+#if 0
+		error(errno, "CSDR: Error receiving datagram.");
+#endif
 		goto error;
 	}
 
@@ -210,7 +217,7 @@ RQueueItem *csdr_get_message(CSDRouter *router)
 no_msg:
 	return NULL;
 error:
-	error(errno, "csdr_get_message: could not receive UDP datagram");
+	error(errno, "CSDR: could not receive UDP datagram");
 	rqi_delete(item);
 	return NULL;
 }

@@ -353,8 +353,10 @@ SOCKET connect_to_server_with_port(char *hostname, unsigned short port,
     SOCKET s;
     
     s = socket(AF_INET, SOCK_DGRAM, 0);
-    if (s == -1)
+    if (s == -1) {
+	error(errno, "socket failed");
         goto error;
+    }
 
     dontlinger.l_onoff = 1;
     dontlinger.l_linger = 0;
@@ -368,8 +370,10 @@ SOCKET connect_to_server_with_port(char *hostname, unsigned short port,
 }
 #endif
     hostinfo = gethostbyname(hostname);
-    if (hostinfo == NULL)
+    if (hostinfo == NULL) {
+	error(errno, "gethostbyname failed");
         goto error;
+    }
     
     addr.sin_family = AF_INET;
     addr.sin_port = htons(port);
@@ -386,14 +390,15 @@ SOCKET connect_to_server_with_port(char *hostname, unsigned short port,
             goto error;
         }
     }
-    if (connect(s, (struct sockaddr *) &addr, sizeof(addr)) == -1)
+    if (connect(s, (struct sockaddr *) &addr, sizeof(addr)) == -1) {
+	error(errno, "error connecting to server `%s' at port `%d'",
+	    hostname, port);
         goto error;
+    }
     
     return s;
 
 error:
-    error(errno, "error connecting to server `%s' at port `%d'",
-        hostname, port);
     if (s >= 0)
         close(s);
     return -1;
@@ -494,6 +499,7 @@ client_session( void * arg )
     fd = connect_to_server_with_port( hostname, port, our_port);
     if (fd == -1)
         panic(0, "couldn't connect host ");
+    debug(0, "Connected socket to host.");
 
     gettimeofday(&now, &tz);
     lastsec = (double) now.tv_sec + now.tv_usec / 1e6;
@@ -587,7 +593,7 @@ client_session( void * arg )
         if (tmp < besttime) besttime = tmp;
         if (tmp > worsttime) worsttime = tmp;
         totaltime += tmp;
-        if (interval > 0.01) info(0, "fakewap: sent message # %d", i_this);
+        if (interval > 0.01) info(0, "fakewap: finished session # %d", i_this);
         mutex_unlock( mutex );
 
         if (tmp < (double)interval) {
@@ -677,6 +683,7 @@ int main(int argc, char **argv)
     info( 0, "fakewap: %d client threads made total %d transactions.", org_threads, num_sent );
     delta = difftime(end_time, start_time);
     info( 0, "fakewap: total running time %.1f seconds", delta);
+    info( 0, "fakewap: %.1f messages/seconds on average", num_sent / delta);
     info( 0, "fakewap: time of best, worst and average transaction: %.1f s, %.1f s, %.1f s", 
          besttime, worsttime, totaltime / num_sent );
     return 0;

@@ -738,6 +738,7 @@ static long convert_http_status_to_wsp_status(long http_status) {
 		{ 200, 0x20 },
 		{ 413, 0x4D },
 		{ 415, 0x4F },
+		{ 500, 0x60 },
 	};
 	int i;
 	
@@ -888,6 +889,8 @@ error:
 }
 #endif
 			debug(0, "WSP: WML done.");
+		} else if (strcmp(type, "application/vnd.wap.wmlc") == 0) {
+			body = octstr_create_from_data(data, size);
 		} else if (strcmp(type, "image/vnd.wap.wbmp") == 0) {
 			body = octstr_create_from_data(data, size);
 		} else if (strcmp(type, "text/vnd.wap.wmlscript") == 0) {

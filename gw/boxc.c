@@ -166,7 +166,7 @@ int boxc_get_message(BOXC *boxc, RQueueItem **rmsg)
 	 */
 	return 0;	
     else {
-	if (read_available(boxc->fd) > 0) {
+	if (read_available(boxc->fd, 0) > 0) {
 	    Msg *pmsg;
 	    Octstr *os;
 	    

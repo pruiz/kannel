@@ -86,9 +86,8 @@ static Msg *msg_receive(int s) {
 	Octstr *os;
 	Msg *msg;
 	
-	while (run_status == running && !read_available(s)) {
-		usleep(1000*1000);
-	}
+	while (run_status == running && !read_available(s, 1000*1000))
+		continue;
 	if (run_status != running)
 		return NULL;
 	if (octstr_recv(s, &os) < 1)

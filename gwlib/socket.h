@@ -40,7 +40,7 @@ int read_to_eof(int fd, char **data, size_t *len);
 
 /* Check if there is something to be read in 'fd'. Return 1 if there
  * is data, 0 otherwise, -1 on error */
-int read_available(int fd);
+int read_available(int fd, long wait_usec);
 
 
 

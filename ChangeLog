@@ -1,3 +1,24 @@
+Wed Jan 26 22:19:21 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* gwlib/octet.[ch], gw/boxc.c, gw/wapbox.c: Added a wait time
+	argument to read_available, since sometimes we do want to wait
+	for data a bit. This matters in the wapbox, since now it can wait
+	for data without busylooping too tightly (only once per second),
+	but it will still notice when SIGINT is received (with up to a
+	one second wait).
+	
+	* gw/csdr.c: If we get ECONNREFUSED, re-try the recvfrom. The
+	error is caused by a previous syscall for sending a packet to an
+	unknown destination, but because it's not possible to wait until
+	the error is received, network latencies being rather long, the
+	error is received by a later syscall. We just ignore it now.
+	
+	* gw/wsp.c: Handle "application/vnc.wap.wmlc" by passing it
+	directly to the user.
+	
+	* test/fakewap.c: Added calculation of average number of messages
+	per second, and minor error message fixes.
+	
 Wed Jan 26 20:44:26 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* gw/wsp.c: If an unhandled event is TR-Invoke.ind, then send

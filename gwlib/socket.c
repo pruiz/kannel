@@ -276,7 +276,7 @@ error:
 }
 
 
-int read_available(int fd)
+int read_available(int fd, long wait_usec)
 {
     fd_set rf;
     struct timeval to;
@@ -285,7 +285,7 @@ int read_available(int fd)
     FD_ZERO(&rf);
     FD_SET(fd, &rf);
     to.tv_sec = 0;
-    to.tv_usec = 0;
+    to.tv_usec = wait_usec;
 
     ret = select(FD_SETSIZE, &rf, NULL, NULL, &to);
     if (ret > 0 && FD_ISSET(fd, &rf))
@@ -297,6 +297,3 @@ int read_available(int fd)
     }
     return 0;
 }
-
-
-
