@@ -1,3 +1,8 @@
+2002-01-16  Stipe Tolj  <tolj@wapme-systems.de>
+    * doc/userguide/userguide.xml: fixed a typo in smsc_http.c module 
+      documenation block, where "username" and "password" where used
+      instead of "smsc-username" and "smsc-password".
+
 2002-01-16  Tuomas Luttinen  <Tuomas.Luttinen@reach-u.com>
 
 	* gwlib/http.c (client_is_persistent): A function added to the HTTP 
