@@ -43,7 +43,7 @@ static void dlr_mysql_add(struct dlr_entry *entry)
 
     sql = octstr_format("INSERT INTO %s (%s, %s, %s, %s, %s, %s, %s, %s, %s) VALUES "
                         "('%s', '%s', '%s', '%s', '%s', '%s', '%d', '%s', '%d');",
-		                octstr_get_cstr(fields->table), octstr_get_cstr(fields->field_smsc),
+                        octstr_get_cstr(fields->table), octstr_get_cstr(fields->field_smsc),
                         octstr_get_cstr(fields->field_ts),
                         octstr_get_cstr(fields->field_src), octstr_get_cstr(fields->field_dst),
                         octstr_get_cstr(fields->field_serv), octstr_get_cstr(fields->field_url),
@@ -76,7 +76,7 @@ static struct dlr_entry* dlr_mysql_get(const Octstr *smsc, const Octstr *ts, con
     MYSQL_RES *result;
     MYSQL_ROW row;
 
-    sql = octstr_format("SELECT %s, %s, %s, %s, %s FROM %s WHERE %s='%s' AND %s='%s';",
+    sql = octstr_format("SELECT %s, %s, %s, %s, %s, %s FROM %s WHERE %s='%s' AND %s='%s';",
                         octstr_get_cstr(fields->field_mask), octstr_get_cstr(fields->field_serv),
                         octstr_get_cstr(fields->field_url), octstr_get_cstr(fields->field_src),
                         octstr_get_cstr(fields->field_dst), octstr_get_cstr(fields->field_boxc),
@@ -277,7 +277,7 @@ struct dlr_storage *dlr_init_mysql(Cfg* cfg)
         if (p != NULL && octstr_compare(p, mysql_id) == 0) {
             goto found;
         }
-        octstr_destroy(p);
+        if (p != NULL) octstr_destroy(p);
      }
      panic(0, "DLR: MySQL: connection settings for id '%s' are not specified!",
            octstr_get_cstr(mysql_id));

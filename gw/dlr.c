@@ -1,4 +1,4 @@
-/* 
+/*
  * gw/dlr.c
  *
  * Implementation of handling delivery reports (DLRs)
@@ -336,7 +336,7 @@ Msg *dlr_find(const Octstr *smsc, const Octstr *ts, const Octstr *dst, int typ)
 
         time(&msg->sms.time);
         debug("dlr.dlr", 0, "DLR[%s]: created DLR message for URL <%s>",
-                      dlr_type(), octstr_get_cstr(msg->sms.dlr_url));
+                      dlr_type(), (msg->sms.dlr_url?octstr_get_cstr(msg->sms.dlr_url):""));
     } else {
         debug("dlr.dlr", 0, "DLR[%s]: Ignoring DLR message because of mask", dlr_type());
         /* ok that was a status report but we where not interested in having it */

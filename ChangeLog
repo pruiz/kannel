@@ -1,4 +1,14 @@
 2003-07-02  Alexander Malysh  <a.malysh@centrium.de>
+    * gw/dlr.c: fixed debug message if dlr_url was not set.
+      gw/dlr_mysql.c: fixed a bug in missing '%s' for select statement.
+      Thanks to John.Vandenberg@callista.com.au for pointing this.
+      gw/dlr_sdb.c: fixed varios bugs introduced by me while rewriting of DLR code.
+      Added workaround for Oracle (oracle doesn't like LIMIT 1).
+      Thanks to John.Vandenberg@callista.com.au.
+      doc/examples/dlr-[mysql|sdb].conf: added missing boxc field
+      And again thanks to John.Vandenberg@callista.com.au.
+
+2003-07-02  Alexander Malysh  <a.malysh@centrium.de>
     * configure.in,configure: added ability to biuld in more as one DLR storage type.
       Just call: ./configure --enable-mysql --enable-sdb --with-dlr="mysql sdb"
       in this case we have mysql and sdb support build in.
