@@ -355,7 +355,7 @@ char *octstr_get_cstr_real(Octstr *ostr, const char *file, long line,
     	    	    	   const char *func)
 {
     if (!ostr)
-        return "<NULL>";
+        return "(null)";
     seems_valid_real(ostr, file, line, func);
     if (ostr->len == 0)
         return "";
@@ -1976,7 +1976,7 @@ static void convert(Octstr *os, struct format *format, const char **fmt,
     case 'S':
         new = octstr_duplicate(va_arg(VALST(args), Octstr *));
         if (!new)
-            new = octstr_imm("<NULL>");
+            new = octstr_imm("(null)");
         if (format->has_prec)
             octstr_truncate(new, format->prec);
         break;
@@ -1984,7 +1984,7 @@ static void convert(Octstr *os, struct format *format, const char **fmt,
     case 'E':
         new = octstr_duplicate(va_arg(VALST(args), Octstr *));
         if (!new)
-            new = octstr_imm("<NULL>");
+            new = octstr_imm("(null)");
 	octstr_url_encode(new);
 	/*
 	 * note: we use blind truncate - encoded character can get cut half-way.
