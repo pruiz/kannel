@@ -1,3 +1,11 @@
+2005-03-02  Stipe Tolj  <stolj@wapme.de> 
+    * doc/userguide/userguide.xml: fixed some typos and added sections for
+      URL escape codes %m and %M for sms-service group.
+    * gw/urltrans.c: adding URL escape codes %m for mclass and %M for mwi
+      parameters of our Msg structure. Generally this shall allow to use
+      smsc_http (kannel mode) interface to have MO transported transparently
+      up via sms-service to an upstream smsbox instance for further processing.
+
 2005-03-01 Andreas Fink <afink@gni.ch>
     * gw/smsc/smsc_at.c: be more friendly to modems which
       are not ready after opening serial port or after AT&F.

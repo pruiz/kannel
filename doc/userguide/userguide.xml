@@ -5789,6 +5789,17 @@ message coding: 0 (default, 7 bits), 1 (7 bits),
 2 (8 bits) or 3 (Unicode)
 </entry></row>
 
+<row><entry><literal>%m</literal></entry><entry>
+message class bits of DCS: 0 (directly to display, flash),
+1 (to mobile), 2 (to SIM) or 3 (to SIM toolkit).
+</entry></row>
+
+<row><entry><literal>%M</literal></entry><entry>
+mwi (message waiting indicator) bits of DCS:
+0 (voice), 1, (fax), 2 (email) or 3 (other) for activation
+and 4, 5, 6, 7 for deactivation respectively.
+</entry></row>
+
 <row><entry><literal>%C</literal></entry><entry>
 message charset: for a "normal" message, it will 
 be "GSM" (coding=1), "binary" (coding=2) or 
@@ -6858,10 +6869,10 @@ the Kannel configuration, or 'Authorization failed' is returned.
    <row><entry><literal>mclass</literal></entry>
    <entry><literal>number</literal></entry>
    <entry valign="bottom">
-         Optional. Sets the Message Class in DCS Field.
+         Optional. Sets the Message Class in DCS field.
 	 Accepts values between 0 and 3, for Message Class 0 to 3, 
-	 A value of 0 sends the message directly to display. mclass=1 sends
-	 to mobile, 2 do SIM and 3 to SIM Toolkit.
+	 A value of 0 sends the message directly to display, 1 sends
+	 to mobile, 2 to SIM and 3 to SIM toolkit.
    </entry></row>
 
    <row><entry><literal>mwi</literal></entry>

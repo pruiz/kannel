@@ -642,9 +642,25 @@ Octstr *urltrans_get_pattern(URLTranslation *t, Msg *request)
         }
         break;
 
+    case 'm':  /* mclass - message class */
+        enc = octstr_create("");
+        octstr_append_decimal(enc, request->sms.mclass);
+        octstr_url_encode(enc);
+        octstr_append(result, enc);
+        octstr_destroy(enc);
+        break;
+
+    case 'M':  /* mwi - message waiting indicator */
+        enc = octstr_create("");
+        octstr_append_decimal(enc, request->sms.mwi);
+        octstr_url_encode(enc);
+        octstr_append(result, enc);
+        octstr_destroy(enc);
+        break;
+
+
 	/* XXX sms.parameters not present in here:
 	 *   * pid - will we receive this ? 
-	 *   * mwi,mclass - will we receive these bits from smsc ?
 	 *   * alt-dcs - shouldn't be required unless we want to inform 
 	 *               which alt-dcs external server should use back
 	 *   * compress - if we use compression, probably kannel would 
