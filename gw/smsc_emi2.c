@@ -444,7 +444,6 @@ static int handle_operation(SMSCConn *conn, Connection *server,
 	time(&msg->sms.time);
 
 	msg->sms.smsc_id = octstr_duplicate(conn->id);
-	counter_increase(conn->received);
 	bb_smscconn_receive(conn, msg);
 	reply = emimsg_create_reply(01, emimsg->trn, 1);
 	if (emimsg_send(server, reply) < 0) {

@@ -693,7 +693,6 @@ int at2_wait_modem_command(PrivAT2data *privdata, time_t timeout, int gt_flag)
                     	if(msg != NULL)
                     	{
 			    msg->sms.smsc_id = octstr_duplicate(privdata->conn->id);
-			    counter_increase(privdata->conn->received);
                     	    bb_smscconn_receive(privdata->conn, msg);
                     	}
                     	if(privdata->phase2plus)
