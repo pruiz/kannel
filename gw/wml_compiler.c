@@ -477,7 +477,7 @@ int parse_node(xmlNodePtr node)
 
 int parse_document(xmlNodePtr node)
 {
-  int ret;
+  int ret = 0;
 
   /* 
    * A bad hack, WBXML version is assumed to be 1.2, charset is assumed 
@@ -584,8 +584,8 @@ unsigned char element_check_content(xmlNodePtr node)
 
 int parse_attribute(xmlNodePtr node)
 {
-  int i, j, status, coded_length = 0;
-  unsigned char wbxml_hex;
+  int i, j, status = 0, coded_length = 0;
+  unsigned char wbxml_hex = 0x00;
   Octstr *attribute;
 
   attribute = octstr_create_from_data(node->name, strlen(node->name));
@@ -619,9 +619,9 @@ int parse_attribute(xmlNodePtr node)
    * compressed as it could be... This will be enchanced later.
    */
   if (coded_length < strlen(node->content))    
-    if (status = output_octet_string(octstr_copy(attribute, coded_length, 
-						 octstr_len(attribute) -
-						 coded_length)) != 0)
+    if ((status = output_octet_string(octstr_copy(attribute, coded_length, 
+						  octstr_len(attribute) -
+						  coded_length))) != 0)
       error(0, "WML compiler: could not output attribute value as a string.");
 
   if (wml_attributes[i].attribute == NULL) {

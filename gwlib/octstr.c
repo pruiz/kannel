@@ -229,7 +229,6 @@ char *octstr_get_cstr(Octstr *ostr) {
 
 
 int octstr_compare(Octstr *ostr1, Octstr *ostr2) {
-	int ret;
 	size_t len;
 
 	if (ostr1->len < ostr2->len)
