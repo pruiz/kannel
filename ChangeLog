@@ -1,3 +1,10 @@
+Tue Jan 25 14:59:05 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* utils/seewbmp.c: Added to CVS. Simple debugging tool written by
+	Richard Braakman.
+	
+	* Makefile.in: Related changes.
+
 2000-01-25    <rpr@rpr.wapit.com>
 
 	* gw/bb_msg.c: Fixed error in rq_pull_smg_class, which caused

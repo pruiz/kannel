@@ -98,7 +98,8 @@ progsrcs = \
 	gw/bearerbox.c \
 	gw/smsbox.c \
 	gw/wapbox.c \
-	wmlscript/wmlsc.c
+	wmlscript/wmlsc.c \
+	utils/seewbmp.c
 progobjs = $(progsrcs:.c=.o)
 progs = $(progsrcs:.c=)
 
@@ -211,7 +212,7 @@ libtest.a: $(testobjs)
 	ar rc libtest.a $(testobjs)
 	$(RANLIB) libtest.a
 
-$(progs): $(libs)
+$(progs): $(libs) $(progobjs)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $@.o $(libs) $(LIBS)
 
 $(testprogs): libtest.a $(libs)
