@@ -24,12 +24,12 @@ ROW(NULL_STATE,
 		WTPEvent *wtp_event;
 
 		/* Send TR-Invoke.res to WTP */
-		wtp_event = wtp_event_create(TRInvoke);
+		wtp_event = wtp_event_create(TRInvokeResponse);
 		if (wtp_event == NULL)
 			panic(0, "wtp_event_create failed");
-		wtp_event->TRInvoke.tid = e->machine->tid;
-		wtp_event->TRInvoke.exit_info = NULL;
-		wtp_event->TRInvoke.exit_info_present = 0;
+		wtp_event->TRInvokeResponse.tid = e->machine->tid;
+		wtp_event->TRInvokeResponse.exit_info = NULL;
+		wtp_event->TRInvokeResponse.exit_info_present = 0;
 		debug("wap.wsp", 0, "WSP: sending TR-Invoke.res event to WTP");
 		wtp_handle_event(e->machine, wtp_event);
 
@@ -123,9 +123,9 @@ ROW(CONNECTING,
 		pdu = make_connectreply_pdu(sm, sm->session_id);
 
 		/* Make a TR-Result.req event for WTP. */
-		wtp_event = wtp_event_create(TRResult);
-		wtp_event->TRResult.tid = e->machine->tid;
-		wtp_event->TRResult.user_data = pdu;
+		wtp_event = wtp_event_create(TRResultRequire);
+		wtp_event->TRResultRequire.tid = e->machine->tid;
+		wtp_event->TRResultRequire.user_data = pdu;
 		debug("wap.wsp", 0, "WSP: sending TR-Result.req event to old WTPMachine");
 		wtp_handle_event(e->machine, wtp_event);
 
@@ -214,8 +214,8 @@ ROW(CONNECTED,
 
 		/* Make a TR-Result.req event for WTP. */
 		wtp_event = wtp_event_create(TRAbort);
-		wtp_event->TRResult.tid = e->machine->tid;
-		wtp_event->TRResult.user_data = pdu;
+		wtp_event->TRResultRequire.tid = e->machine->tid;
+		wtp_event->TRResultRequire.user_data = pdu;
 		debug("wap.wsp", 0, "WSP: Try Killing WTP....");
 		wtp_handle_event(e->machine, wtp_event);
 
@@ -243,9 +243,9 @@ ROW(CONNECTED,
 		pdu = make_connectreply_pdu(sm, sm->session_id);
 
 		/* Make a TR-Result.req event for WTP. */
-		wtp_event = wtp_event_create(TRResult);
-		wtp_event->TRResult.tid = e->machine->tid;
-		wtp_event->TRResult.user_data = pdu;
+		wtp_event = wtp_event_create(TRResultRequire);
+		wtp_event->TRResultRequire.tid = e->machine->tid;
+		wtp_event->TRResultRequire.user_data = pdu;
 		debug("wap.wsp", 0, "WSP: Resuming ...sending TR-Result.req event to old WTPMachine");
 		wtp_handle_event(e->machine, wtp_event);
 
@@ -286,10 +286,10 @@ ROW(REQUESTING,
 		WTPEvent *wtp_event;
 		
 		/* Send TR-Invoke.res to WTP */
-		wtp_event = wtp_event_create(TRInvoke);
-		wtp_event->TRInvoke.tid = e->machine->tid;
-		wtp_event->TRInvoke.exit_info = NULL;
-		wtp_event->TRInvoke.exit_info_present = 0;
+		wtp_event = wtp_event_create(TRInvokeResponse);
+		wtp_event->TRInvokeResponse.tid = e->machine->tid;
+		wtp_event->TRInvokeResponse.exit_info = NULL;
+		wtp_event->TRInvokeResponse.exit_info_present = 0;
 		debug("wap.wsp", 0, "WSP: sending TR-Invoke.res event to WTP");
 		wtp_handle_event(e->machine, wtp_event);
 	},
@@ -302,9 +302,9 @@ ROW(PROCESSING,
 		WTPEvent *wtp_event;
 
 		/* Send TR-Result.req to WTP */
-		wtp_event = wtp_event_create(TRResult);
-		wtp_event->TRResult.tid = e->machine->tid;
-		wtp_event->TRResult.user_data = 
+		wtp_event = wtp_event_create(TRResultRequire);
+		wtp_event->TRResultRequire.tid = e->machine->tid;
+		wtp_event->TRResultRequire.user_data = 
 			make_reply_pdu(e->status, e->response_type,
 					e->response_body);
 		debug("wap.wsp", 0, "WSP: sending TR-Result.req event to WTP");

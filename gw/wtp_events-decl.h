@@ -9,14 +9,15 @@
  * acknowledgement and abort. Receiving a message having an illegal PDU (PDU WTP
  * does not understand) is a separate event. 
  *
- * WSP primitives are TRInvoke.require ans response, TRResult.require and TRAbort. * require. 
+ * WSP primitives are TRInvoke.require and response, TRResult.require and TRAbort. 
+ * require. 
  *
  * Fields of an incoming message event corresponds directly with fields of the 
  * message itself. Same apply to the fields of events generates by WSP, they are
  * ones required by specification. However, timer events have a meaningless 
  * dummy field.
  *
- * Data stored in an event is distroyed immediately after the event is handled.
+ * Data stored in an event is destroyed immediately after the event is handled.
  */
 
 EVENT(RcvInvoke,
@@ -57,20 +58,20 @@ EVENT(TRInvokeRequire,
       OCTSTR(user_data);
       })
 
-EVENT(TRInvoke,
+EVENT(TRInvokeResponse,
       {
       INTEGER(tid);
       OCTSTR(exit_info);
       INTEGER(exit_info_present);
       })
 
-EVENT(TRResult,
+EVENT(TRResultRequire,
       {
       INTEGER(tid);
       OCTSTR(user_data);
       })
 
-EVENT(TRAbort,
+EVENT(TRAbortRequire,
      {
      INTEGER(tid);
      INTEGER(abort_type);

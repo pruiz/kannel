@@ -35,12 +35,10 @@ typedef struct Timers Timers;
 static Timers timers =
 {
        NULL,
-       NULL,
+       NULL
 };
 
-/*
- * Ifs are removed when the timers work properly 
- */
+
 WTPTimer *wtp_timer_create(void) {
 	WTPTimer *timer;
 	
@@ -49,7 +47,7 @@ WTPTimer *wtp_timer_create(void) {
 	timer->interval = 0;
         timer->event = NULL;
         timer->machine = NULL;
-
+  
         mutex_lock(timers.lock);
 
         timer->next = timers.list;

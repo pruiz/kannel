@@ -18,6 +18,10 @@ enum {
      fourth_byte
 };
 
+/*
+ * Types of header information added by the user (TPIs, or transportation 
+ * information items). 
+ */
 enum {
      ERROR_DATA = 0x00,
      INFO_DATA = 0x01,
@@ -289,16 +293,17 @@ static Msg *pack_result(Msg *msg, WTPMachine *machine, WTPEvent *event){
  * are the rid field (which tells are we resending or not), and the tid.
  */  
  
-    msg->wdp_datagram.user_data = octstr_duplicate(event->TRResult.user_data);
+    msg->wdp_datagram.user_data = 
+         octstr_duplicate(event->TRResultRequire.user_data);
     
     octet = insert_pdu_type(RESULT, octet);
     octet = indicate_simple_message(octet);
     octet = insert_rid(machine->rid, octet);
     wtp_pdu[first_byte] = octet;
 
-    insert_tid(wtp_pdu, event->TRResult.tid);
+    insert_tid(wtp_pdu, event->TRResultRequire.tid);
 
-    octstr_insert_data(msg->wdp_datagram.user_data, first_byte, wtp_pdu, fourth_byte);
+    octstr_insert_data(msg->wdp_datagram.user_data, first_byte, wtp_pdu, 3);
     
     gw_free(wtp_pdu);
     return msg;
@@ -327,7 +332,7 @@ static Msg *pack_abort(Msg *msg, long abort_type, long abort_reason,
        octet = insert_abort_type(abort_type, octet);
        wtp_pdu[first_byte] = octet;
 
-       insert_tid(wtp_pdu, event->TRAbort.tid);
+       insert_tid(wtp_pdu, event->TRAbortRequire.tid);
 
        wtp_pdu[fourth_byte] = abort_reason;
 

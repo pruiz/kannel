@@ -86,7 +86,7 @@ ROW(LISTEN,
     LISTEN)
 
 ROW(LISTEN,
-    TRAbort,
+    TRAbortRequire,
     1,
     {
      wtp_machine_mark_unused(machine);
@@ -150,7 +150,7 @@ ROW(INVOKE_RESP_WAIT,
     INVOKE_RESP_WAIT)
 
 ROW(INVOKE_RESP_WAIT,
-    TRInvoke,
+    TRInvokeResponse,
     machine->tcl == 2,
     { 
      wtp_timer_stop(machine->timer);
@@ -172,12 +172,12 @@ ROW(INVOKE_RESP_WAIT,
     LISTEN)
 
 ROW(INVOKE_RESP_WAIT,
-    TRAbort,
+    TRAbortRequire,
     1,
     { 
      wtp_timer_destroy(machine->timer);
      wtp_machine_mark_unused(machine);
-     wtp_send_abort(event->TRAbort.abort_type, event->TRAbort.abort_reason,
+     wtp_send_abort(event->TRAbortRequire.abort_type, event->TRAbortRequire.abort_reason,
                     machine, event); 
     },
     LISTEN)
@@ -187,7 +187,7 @@ ROW(INVOKE_RESP_WAIT,
  * possible resending.
  */
 ROW(INVOKE_RESP_WAIT,
-    TRResult,
+    TRResultRequire,
     1,
     {
      machine->rcr = 0;
@@ -196,7 +196,7 @@ ROW(INVOKE_RESP_WAIT,
      timer_event = wtp_event_create(TimerTO_R);
      wtp_timer_start(machine->timer, L_R_WITH_USER_ACK, machine, timer_event);
      debug("wap.wtp", 0, "WTP: sending results");
-     machine->result = wtp_send_result(machine, event); 
+     machine->result = msg_duplicate(wtp_send_result(machine, event)); 
      machine->rid = 1;
     },
     RESULT_RESP_WAIT)
@@ -247,7 +247,7 @@ ROW(INVOKE_RESP_WAIT,
  * possible resending.
  */
 ROW(RESULT_WAIT,
-    TRResult,
+    TRResultRequire,
     1,
     {
      machine->rcr = 0;
@@ -256,7 +256,7 @@ ROW(RESULT_WAIT,
      timer_event = wtp_event_create(TimerTO_R);
      wtp_timer_start(machine->timer, L_R_WITH_USER_ACK, machine, timer_event);
 
-     machine->result = wtp_send_result(machine, event);
+     machine->result = msg_duplicate(wtp_send_result(machine, event));
      machine->rid = 1;
     },
     RESULT_RESP_WAIT)
@@ -296,12 +296,12 @@ ROW(RESULT_WAIT,
     RESULT_WAIT)
 
 ROW(RESULT_WAIT,
-    TRAbort,
+    TRAbortRequire,
     1,
     { 
      wtp_timer_destroy(machine->timer);
      wtp_machine_mark_unused(machine);
-     wtp_send_abort(event->TRAbort.abort_type, event->TRAbort.abort_reason,
+     wtp_send_abort(event->TRAbortRequire.abort_type, event->TRAbortRequire.abort_reason,
                     machine, event); 
     },
     LISTEN)
@@ -351,12 +351,12 @@ ROW(RESULT_RESP_WAIT,
     LISTEN)
 
 ROW(RESULT_RESP_WAIT,
-    TRAbort,
+    TRAbortRequire,
     1,
     { 
      wtp_timer_destroy(machine->timer);
      wtp_machine_mark_unused(machine);
-     wtp_send_abort(event->TRAbort.abort_type, event->TRAbort.abort_reason,
+     wtp_send_abort(event->TRAbortRequire.abort_type, event->TRAbortRequire.abort_reason,
                     machine, event); 
     },
     LISTEN)

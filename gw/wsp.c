@@ -299,11 +299,11 @@ void wsp_handle_event(WSPMachine *sm, WSPEvent *current_event) {
 			WTPEvent *abort;
 			
 			error(0, "WSP: Can't handle TR-Invoke.ind, aborting transaction.");
-			abort = wtp_event_create(TRAbort);
-			abort->TRAbort.tid = 
+			abort = wtp_event_create(TRAbortRequire);
+			abort->TRAbortRequire.tid = 
 				current_event->TRInvokeIndication.machine->tid;
-			abort->TRAbort.abort_type = 0x01; /* USER */
-			abort->TRAbort.abort_reason = 0x01; /* PROTOERR */
+			abort->TRAbortRequire.abort_type = 0x01; /* USER */
+			abort->TRAbortRequire.abort_reason = 0x01; /* PROTOERR */
 
 			wtp_handle_event(current_event->TRInvokeIndication.machine,
 					 abort);
@@ -520,7 +520,7 @@ static int unpack_get_pdu(Octstr **url, HTTPHeader **headers, Octstr *pdu) {
 		header_dump(*headers);
 	} else
 		*headers = NULL;
-	debug("wap.wsp", 0, "WSP: Get PDU had URL <%s>", octstr_get_cstr(*url));
+	/*debug("wap.wsp", 0, "WSP: Get PDU had URL <%s>", octstr_get_cstr(*url));*/
 	return 0;
 }
 

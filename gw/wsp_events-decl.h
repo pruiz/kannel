@@ -51,7 +51,7 @@ WSP_EVENT(TRAbortIndication,
           WTP_MACHINE(machine);
           })
 
-WSP_EVENT(TRAbortRequire,
+WSP_EVENT(SMethodAbortRequire,
           {
           INTEGER(abort_code);
           INTEGER(wsp_tid);
