@@ -1,6 +1,9 @@
 2003-03-04  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/smsc/smsc_smasi.c: fixed bugs in pdu_to_msg(), including the setting
       of 7bit coding to have normal text logged in access.log.
+    * gw/bb_boxc.c: added missing smsbox-id output to XML tree of /status.xml.
+    * gw/sms.c: fixed alt_dcs re-coding misbehaviour. Reported by Alexander.
+    * gwlib/conn.c: cosmetic changes
 
 2003-03-04  Stipe Tolj  <tolj@wapme-systems.de>
     * gwlib/octstr.[ch|debug]: added some more functions provided by Nisan.
