@@ -1,3 +1,14 @@
+2001-03-28  Uoti Urpala  <uau@wapit.com>
+
+	* gw/smsc_emi2.c: Wrote. New implementation of the emi_ip protocol.
+
+	* gw/emimsg.c, gw/emimsg.h: Wrote. Functions for working with EMI
+	messages. Used by smsc_emi2.c and testing programs which I didn't
+	add to CVS yet.
+
+	* gw/smscconn.c, gw/smscconn_p.h: Modified to recognize the new
+	smsc type.
+
 2001-03-28  Kalle Marjola  <rpr@wapit.com>
 
 	* gw/smsbox.c: added content-type checking in sendsms POST, and
