@@ -103,7 +103,7 @@ static void add_push_application_id(List **push_headers, Octstr *appid_flag)
                         "http://www.wiral.com:wml.ua");
     else if (octstr_compare(appid_flag, octstr_imm("mms")) == 0)
         http_header_add(*push_headers, "X-WAP-Application-Id", 
-                        "http://www.wiral.com:push.mms");
+                        "http://www.wiral.com:mms.ua");
     else if (octstr_compare(appid_flag, octstr_imm("scrap")) == 0)
         http_header_add(*push_headers, "X-WAP-Application-Id", 
                         "no appid at all");
@@ -126,6 +126,9 @@ static void add_content_type(Octstr *content_flag, Octstr **wap_content)
     else if (octstr_compare(content_flag, octstr_imm("sia")) == 0)
 	*wap_content = octstr_format("%s",
             "Content-Type: application/vnd.wap.sia\r\n");
+    else if (octstr_compare(content_flag, octstr_imm("mms")) == 0) 
+        *wap_content = octstr_format("%s", 
+            "Content-Type: application/vnd.wap.mms-message\r\n"); 
     else if (octstr_compare(content_flag, octstr_imm("scrap")) == 0)
         *wap_content = octstr_format("%s", "no type at all\r\n"); 
     else if (octstr_compare(content_flag, octstr_imm("nil")) == 0)
@@ -655,6 +658,7 @@ int main(int argc, char **argv)
                     octstr_compare(content_flag, octstr_imm("sia")) != 0 &&
                     octstr_compare(content_flag, octstr_imm("sl")) != 0 &&
                     octstr_compare(content_flag, octstr_imm("nil")) != 0 &&
+                    octstr_compare(content_flag, octstr_imm("mms")) != 0 &&
                     octstr_compare(content_flag, octstr_imm("scrap")) != 0 &&
                     octstr_compare(content_flag, 
                         octstr_imm("multipart")) != 0){

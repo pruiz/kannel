@@ -150,6 +150,7 @@ STRING("text/vnd.wap.co")
 STRING("application/vnd.wap.coc")
 STRING("application/vnd.wap.multipart.related")
 STRING("application/vnd.wap.sia")
+STRING("application/vnd.wap.mms-message") 
 )
 
 /* Table 42, Character Set Assignment (partial) */
@@ -429,7 +430,10 @@ NUMBERED(application_id,
 ASSIGN("*", 0x00)
 ASSIGN("push.sia", 0x01)
 ASSIGN("wml.ua", 0x02)
-ASSIGN("push.mms", 0x04)
+ASSIGN("wta.ua", 0x03) 
+ASSIGN("mms.ua", 0x04) 
+ASSIGN("push.syncml", 0x05) 
+ASSIGN("loc.ua", 0x06) 
 )
 
 /**** More preprocessor magic ****/

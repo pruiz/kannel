@@ -2400,13 +2400,17 @@ static WAPAddrTuple *set_addr_tuple(Octstr *address, long cliport,
  * ain application id reserved by WINA or the part containing assigned code. 
  * Otherwise (regardless of it being an URI or assigned code) we simply pass 
  * it forward. 
+ * These are defined by WINA at http://www.wapforum.org/wina/push-app-id.htm. 
  */
 
 static char *wina_uri[] =
 {   "*",
     "push.sia",
     "wml.ua",
-    "push.mms"
+    "wta.ua", 
+    "mms.ua", 
+    "push.syncml", 
+    "loc.ua" 
 };
 
 #define NUMBER_OF_WINA_URIS sizeof(wina_uri)/sizeof(wina_uri[0])
@@ -2420,7 +2424,10 @@ static char *wina_uri[] =
  *         0, * (meaning any application acceptable)
  *         1, push.sia
  *         2, wml.ua
+ *         3, wta.ua 
  *         4, mms.ua
+ *         5, push.syncml 
+ *         6, loc.ua 
  */
 static long parse_appid_header(Octstr **appid_content)
 {
