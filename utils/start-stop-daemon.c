@@ -30,8 +30,8 @@
 #define OSLinux
 #elif defined(__GNU__)
 #define OSHURD
-#elif defined(__sparc__)
-#define OSsunos
+#elif defined(SunOS)
+
 #else
 #error Unknown architecture - cannot build start-stop-daemon
 #endif
@@ -66,7 +66,7 @@
 /*Solaris needs to be told how
 to talk to it's proc filesystem*/
 #define _STRUCTURED_PROC 1
-#if defined(OSsunos)
+#ifdef SunOS
 #include <sys/procfs.h>
 #endif
 
@@ -119,7 +119,7 @@ static void *xmalloc(int size);
 static void push(struct pid_list **list, int pid);
 static void do_help(void);
 static void parse_options(int argc, char * const *argv);
-#if defined(OSLinux) || defined(OSHURD) || defined(OSsunos)
+#if defined(OSLinux) || defined(OSHURD) || defined(SunOS)
 static int pid_is_user(int pid, int uid);
 static int pid_is_cmd(int pid, const char *name);
 #endif
@@ -188,7 +188,7 @@ do_help(void)
 
 /*Print the help for systems that have getopt long*/
 
-#ifndef OSsunos     /*Solaris doesn't*/
+#ifndef SunOS     /*Solaris doesn't*/
 
 	printf("\
 start-stop-daemon for Debian GNU/Linux - small and fast C version written by\n\
@@ -258,7 +258,7 @@ badusage(const char *msg)
 	if (msg)
 		fprintf(stderr, "%s: %s\n", progname, msg);
 
-	#ifndef OSsunos
+	#ifndef SunOS
 	fprintf(stderr, "Try `%s --help' for more information.\n", progname);
 	#else
 	fprintf(stderr, "Try `%s -H' for more information.\n", progname);
@@ -418,7 +418,7 @@ parse_options(int argc, char * const *argv)
 	}
 
 	if (start == stop)
-		#ifndef OSsunos
+		#ifndef SunOS
 		badusage("need one of --start or --stop");
 		#else
 		badusage("need one of -S (start) or -K (stop)");
@@ -524,7 +524,7 @@ pid_is_cmd(int pid, const char *name)
 }
 #endif /* OSHURD */
 
-#if defined(OSsunos)
+#if defined(SunOS)
 /*
 Lots of lovely system dependant functions for Solaris.  I used to like the
 idea of proc, but now I'm not so sure.  It feels to much like a kludge.
@@ -567,7 +567,7 @@ pid_is_cmd(int pid, const char *name)
    fread(&pid_info,sizeof(psinfo_t),1,f);
    return (!strcmp(name,pid_info.pr_fname));
 }
-#endif /*OSsunos*/
+#endif /*SunOS*/
 
 
 static void
@@ -604,7 +604,7 @@ do_pidfile(const char *name)
 
 /* WTA: this  needs to be an autoconf check for /proc/pid existance.
  */
-#if defined(OSLinux) || defined (OSsunos)
+#if defined(OSLinux) || defined (SunOS)
 static void
 do_procinit(void)
 {
