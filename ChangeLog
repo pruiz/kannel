@@ -1,3 +1,9 @@
+2005-03-17  Alexander Malysh <amalysh at kannel.org>
+    * gw/smsc/smsc_smpp.c: applied patch that implements relaxed source_addr
+      checks in SMPP and adds additionally error reporting why kannel rejected
+      this MO.
+      [Msg-Id: <d0s6c4$1mf$1@sea.gmane.org>]
+
 2005-03-15  Stipe Tolj  <stolj@wapme.de> 
     * configure[.in]: moved required libxml2 version check from 2.2.5 to
       2.2.7, since we use the macro LIBXML_DOTTED_VERSION in gw/shared.c and 

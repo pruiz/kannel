@@ -59,7 +59,7 @@
  *
  * Lars Wirzenius
  * Stipe Tolj <stolj@wapme.de>
- * Alexander Malysh  <a.malysh@centrium.de>
+ * Alexander Malysh  <amalysh at kannel.org>
  */
 
 /* XXX check SMSCConn conformance */
@@ -351,13 +351,34 @@ static Msg *pdu_to_msg(SMPP *smpp, SMPP_PDU *pdu, long *reason)
     ton = pdu->u.deliver_sm.source_addr_ton;
     npi = pdu->u.deliver_sm.source_addr_npi;
 
-    /* check if intl. and digit only; assume number is larger then 7 chars */
-    if (ton == GSM_ADDR_TON_INTERNATIONAL &&
-        octstr_len(pdu->u.deliver_sm.source_addr) >= 7 &&
-        ((octstr_get_char(pdu->u.deliver_sm.source_addr, 0) == '+' &&
-         octstr_check_range(pdu->u.deliver_sm.source_addr, 1, 256, gw_isdigit)) ||
-        octstr_check_range(pdu->u.deliver_sm.source_addr, 0, 256, gw_isdigit))) {
-
+    switch(ton) {
+    case GSM_ADDR_TON_INTERNATIONAL:
+        /*
+         * Checks to perform:
+         *   1) assume international number has at least 7 chars
+         *   2) the whole source addr consist of digits, exception '+' in front
+         */
+        if (octstr_len(pdu->u.deliver_sm.source_addr) < 7) {
+            error(0, "SMPP[%s]: Mallformed source_addr `%s', expected at least 7 digits. "
+                     "Discarding MO message.", octstr_get_cstr(smpp->conn->id),
+                     octstr_get_cstr(pdu->u.deliver_sm.source_addr));
+            *reason = SMPP_ESME_RINVSRCADR;
+            goto error;
+        } else if (octstr_get_char(pdu->u.deliver_sm.source_addr, 0) == '+' &&
+                   !octstr_check_range(pdu->u.deliver_sm.source_addr, 1, 256, gw_isdigit)) {
+            error(0, "SMPP[%s]: Mallformed source_addr `%s', expected all digits. "
+                     "Discarding MO message.", octstr_get_cstr(smpp->conn->id),
+                     octstr_get_cstr(pdu->u.deliver_sm.source_addr));
+            *reason = SMPP_ESME_RINVSRCADR;
+            goto error;
+        } else if (octstr_get_char(pdu->u.deliver_sm.source_addr, 0) != '+' &&
+                   !octstr_check_range(pdu->u.deliver_sm.source_addr, 0, 256, gw_isdigit)) {
+            error(0, "SMPP[%s]: Mallformed source_addr `%s', expected all digits. "
+                     "Discarding MO message.", octstr_get_cstr(smpp->conn->id),
+                     octstr_get_cstr(pdu->u.deliver_sm.source_addr));
+            *reason = SMPP_ESME_RINVSRCADR;
+            goto error;
+        }
         /* check if we received leading '00', then remove it*/
         if (octstr_search(pdu->u.deliver_sm.source_addr, octstr_imm("00"), 0) == 0)
             octstr_delete(pdu->u.deliver_sm.source_addr, 0, 2);
@@ -365,13 +386,22 @@ static Msg *pdu_to_msg(SMPP *smpp, SMPP_PDU *pdu, long *reason)
         /* international, insert '+' if not already here */
         if (octstr_get_char(pdu->u.deliver_sm.source_addr, 0) != '+')
             octstr_insert_char(pdu->u.deliver_sm.source_addr, 0, '+');
-    } else if (octstr_len(pdu->u.deliver_sm.source_addr) > 11 &&
-               (ton == GSM_ADDR_TON_ALPHANUMERIC ||
-               !octstr_check_range(pdu->u.deliver_sm.source_addr, 0, 256, gw_isdigit))) {
-        /* alphanum sender, max. allowed length is 11 (according to GSM specs) */
-        *reason = SMPP_ESME_RINVSRCADR;
-        goto error;
+
+        break;
+    case GSM_ADDR_TON_ALPHANUMERIC:
+        if (octstr_len(pdu->u.deliver_sm.source_addr) > 11) {
+            /* alphanum sender, max. allowed length is 11 (according to GSM specs) */
+            error(0, "SMPP[%s]: Mallformed source_addr `%s', alphanum length greater 11 chars. "
+                     "Discarding MO message.", octstr_get_cstr(smpp->conn->id),
+                     octstr_get_cstr(pdu->u.deliver_sm.source_addr));
+            *reason = SMPP_ESME_RINVSRCADR;
+            goto error;
+        }
+        break;
+    default: /* otherwise don't touch source_addr, user should handle it */
+        break;
     }
+
     msg->sms.sender = pdu->u.deliver_sm.source_addr;
     pdu->u.deliver_sm.source_addr = NULL;
 
@@ -380,6 +410,9 @@ static Msg *pdu_to_msg(SMPP *smpp, SMPP_PDU *pdu, long *reason)
      * it's not allowed to have destination_addr NULL 
      */
     if (pdu->u.deliver_sm.destination_addr == NULL) {
+        error(0, "SMPP[%s]: Mallformed destination_addr `%s', may not be empty. "
+                 "Discarding MO message.", octstr_get_cstr(smpp->conn->id),
+                     octstr_get_cstr(pdu->u.deliver_sm.destination_addr));
         *reason = SMPP_ESME_RINVDSTADR;
         goto error;
     }
@@ -401,6 +434,9 @@ static Msg *pdu_to_msg(SMPP *smpp, SMPP_PDU *pdu, long *reason)
 
     /* now check dest addr range */
     if (ton != GSM_ADDR_TON_ALPHANUMERIC && !octstr_check_range(pdu->u.deliver_sm.destination_addr, 1, 256, gw_isdigit)) {
+        error(0, "SMPP[%s]: Mallformed destination_addr `%s', expected all digits. "
+                 "Discarding MO message.", octstr_get_cstr(smpp->conn->id),
+                     octstr_get_cstr(pdu->u.deliver_sm.destination_addr));
         *reason = SMPP_ESME_RINVDSTADR;
         goto error;
     }
