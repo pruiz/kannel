@@ -35,6 +35,7 @@
 #include "counter.h"
 #include "charset.h"
 #include "conn.h"
+#include "ssl.h"
 #include "parse.h"
 #include "protected.h"
 #include "accesslog.h"
