@@ -1,4 +1,5 @@
-Steps to follow when making a release of the gateway:
+Steps to follow when making a release of the gateway; if there is a
+problem, fix it, and re-start from beginning:
 
 	* Decide on the version number.
 
@@ -37,9 +38,6 @@ Steps to follow when making a release of the gateway:
 		  one by one. XXX Skip this test for now. TESTCASES is
 		  out of date.
 
-		* If there is a problem, restart release procedures
-		  from beginning.
-	
 	* Run release candidate on demo.kannel.org.
 
 		* Check configuration.
