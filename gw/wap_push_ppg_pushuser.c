@@ -62,6 +62,7 @@
 
 #include "wap_push_ppg_pushuser.h"
 #include "numhash.h"
+#include "gwlib/regex.h"
 
 /***************************************************************************
  *
@@ -77,10 +78,17 @@ struct WAPPushUser {
     Octstr *country_prefix;
     Octstr *allowed_prefix;            /* phone number prefixes allowed by 
                                           this user when pushing*/
+    regex_t *allowed_prefix_regex;
+    
     Octstr *denied_prefix;             /* and denied ones */
+    regex_t *denied_prefix_regex;
+
     Numhash *white_list;               /* phone numbers of this user, used for 
                                           push*/
+    regex_t *white_list_regex;
     Numhash *black_list;               /* numbers should not be used for push*/
+    regex_t *black_list_regex;
+
     Octstr *user_deny_ip;              /* this user allows pushes from these 
                                           IPs*/
     Octstr *user_allow_ip;             /* and denies them from these*/
@@ -456,9 +464,13 @@ static WAPPushUser *create_oneuser(CfgGroup *grp)
     u->name = NULL;
     u->username = NULL;                  
     u->allowed_prefix = NULL;           
+    u->allowed_prefix_regex = NULL;           
     u->denied_prefix = NULL;             
+    u->denied_prefix_regex = NULL;             
     u->white_list = NULL;               
+    u->white_list_regex = NULL;               
     u->black_list = NULL;              
+    u->black_list_regex = NULL;              
     u->user_deny_ip = NULL;              
     u->user_allow_ip = NULL;
     u->smsc_id = NULL;
@@ -510,6 +522,27 @@ static WAPPushUser *create_oneuser(CfgGroup *grp)
 	    octstr_destroy(os);
     }
 
+    if ((os = cfg_get(grp, octstr_imm("allowed-prefix-regex"))) != NULL) {
+        if ((u->allowed_prefix_regex = gw_regex_comp(os, REG_EXTENDED)) == NULL)
+            panic(0, "Could not compile pattern '%s'", octstr_get_cstr(os));
+        octstr_destroy(os);
+    };
+    if ((os = cfg_get(grp, octstr_imm("denied-prefix-regex"))) != NULL) {
+        if ((u->denied_prefix_regex = gw_regex_comp(os, REG_EXTENDED)) == NULL)
+            panic(0, "Could not compile pattern '%s'", octstr_get_cstr(os));
+        octstr_destroy(os);
+    };
+    if ((os = cfg_get(grp, octstr_imm("white-list-regex"))) != NULL) {
+        if ((u->white_list_regex = gw_regex_comp(os, REG_EXTENDED)) == NULL)
+            panic(0, "Could not compile pattern '%s'", octstr_get_cstr(os));
+        octstr_destroy(os);
+    };
+    if ((os = cfg_get(grp, octstr_imm("black-list-regex"))) != NULL) {
+        if ((u->black_list_regex = gw_regex_comp(os, REG_EXTENDED)) == NULL)
+            panic(0, "Could not compile pattern '%s'", octstr_get_cstr(os));
+        octstr_destroy(os);
+    };
+
     octstr_destroy(grpname);
     return u;
 
@@ -543,6 +576,11 @@ static void destroy_oneuser(void *p)
      octstr_destroy(u->user_allow_ip);
      octstr_destroy(u->smsc_id);
      octstr_destroy(u->default_smsc_id);
+
+     if (u->black_list_regex != NULL) gw_regex_destroy(u->black_list_regex);
+     if (u->white_list_regex != NULL) gw_regex_destroy(u->white_list_regex);
+     if (u->denied_prefix_regex != NULL) gw_regex_destroy(u->denied_prefix_regex);
+     if (u->allowed_prefix_regex != NULL) gw_regex_destroy(u->allowed_prefix_regex);
      gw_free(u);             
 }
 
@@ -854,7 +892,8 @@ static int prefix_allowed(WAPPushUser *u, Octstr *number)
     if (u == NULL)
         goto no_user;
 
-    if (u->allowed_prefix == NULL && u->denied_prefix == NULL)
+    if (        u->allowed_prefix == NULL && u->denied_prefix == NULL 
+        && u->allowed_prefix_regex == NULL && u->denied_prefix_regex == NULL)
         goto no_configuration;
 
     if (u->denied_prefix != NULL) {
@@ -870,10 +909,15 @@ static int prefix_allowed(WAPPushUser *u, Octstr *number)
         }
     }
 
-    if (u->allowed_prefix == NULL) {
-        goto no_allowed_config;
-    }
+    /* note: country-prefix _must_be included in the pattern */
+    if (u->denied_prefix_regex != NULL) 
+        if (gw_regex_matches(u->denied_prefix_regex, number) == MATCH)
+            goto denied;
 
+    if (u->allowed_prefix_regex == NULL && u->allowed_prefix == NULL) 
+        goto no_allowed_config;
+
+    if (u->allowed_prefix != NULL) {
     allowed = octstr_split(u->allowed_prefix, octstr_imm(";"));
     for (i = 0; i < list_len(allowed); ++i) {
          listed_prefix = list_get(allowed, i);
@@ -884,6 +928,12 @@ static int prefix_allowed(WAPPushUser *u, Octstr *number)
 	         goto allowed;
          }
     }
+    }
+
+    /* note: country-prefix _must_ be included in the pattern */
+    if (u->allowed_prefix_regex != NULL) 
+        if (gw_regex_matches(u->allowed_prefix_regex, number) == MATCH)
+            goto allowed;
 
 /*
  * Here we have an intentional fall-through. It will removed when memory cleaning
@@ -912,18 +962,28 @@ no_allowed_config:
 
 static int whitelisted(WAPPushUser *u, Octstr *number)
 {
-    if (u->white_list == NULL)
-        return 1;
+    int result = 1;
 
-    return numhash_find_number(u->white_list, number);
+    if (u->white_list != NULL)
+        result = numhash_find_number(u->white_list, number);
+
+    if ((result == 0) && (u->white_list_regex != NULL))
+        result = (gw_regex_matches(u->white_list_regex, number) == MATCH) ? 1 : 0;
+
+    return result;
 }
 
 static int blacklisted(WAPPushUser *u, Octstr *number)
 {
+    int result = 0;
+    
     if (u->black_list == NULL)
-        return 0;
+        result = numhash_find_number(u->black_list, number);
 
-    return numhash_find_number(u->black_list, number);
+    if ((result == 0) && (u->black_list_regex != NULL))
+        result = (gw_regex_matches(u->black_list_regex, number) == MATCH) ? 1 : 0;
+
+    return result;
 }
 
 /* 

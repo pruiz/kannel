@@ -1,4 +1,7 @@
 2004-01-23  Alexander Malysh  <a.malysh@centrium.de>
+    * gw/wap_push_ppg_pushuser.c: forgot this one by last commit.
+
+2004-01-23  Alexander Malysh  <a.malysh@centrium.de>
     * doc/userguide/userguide.xml, gw/bb_smscconn.c, gw/smsbox.c, gw/smscconn.c,
       gw/smscconn_p.h, gw/urltrans.[ch], gwlib/cfg.def, gwlib/regex.[ch]:
       Applied a "big" regexp patch from "David Schmitz" <schmitz@wapme-systems.de>.
