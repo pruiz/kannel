@@ -324,19 +324,21 @@ static void smsbox_thread(void *arg)
 	    }
 	    
 	    msg = msg_unpack(os);
-	    if (msg == NULL || msg->type != sms)
+	    if (msg == NULL || msg->type == wdp_datagram)
 		error(0, "Bearerbox sent garbage to smsbox");
-    
-    	    if (first_from_bb == (time_t) -1)
-	    	time(&first_from_bb);
-	    count = counter_increase(num_from_bearerbox) + 1;
-	    debug("test.smpp", 0, 
-		  "Bearerbox sent sms #%ld <%s> to smsbox, sending reply.",
-		  count, octstr_get_cstr(msg->sms.msgdata));
-	    if (count == max_to_esme)
-		info(0, "Bearerbox has sent all messages to smsbox.");
-	    conn_write_withlen(conn, reply_msg);
-	    counter_increase(num_to_bearerbox);
+
+	    if (msg->type == sms) {
+		if (first_from_bb == (time_t) -1)
+		    time(&first_from_bb);
+		count = counter_increase(num_from_bearerbox) + 1;
+		debug("test.smpp", 0, 
+		      "Bearerbox sent sms #%ld <%s> to smsbox, sending reply.",
+		      count, octstr_get_cstr(msg->sms.msgdata));
+		if (count == max_to_esme)
+		    info(0, "Bearerbox has sent all messages to smsbox.");
+		conn_write_withlen(conn, reply_msg);
+		counter_increase(num_to_bearerbox);
+	    }
 	    msg_destroy(msg);
 	    octstr_destroy(os);
 	    time(&last_to_bb);

@@ -109,7 +109,6 @@ static void boxc_receiver(void *arg)
 {
     Boxc *conn = arg;
     Msg *msg;
-    int ret;
 
     /* remove messages from socket until it is closed */
     while(bb_status != BB_DEAD && conn->alive) {

@@ -1,5 +1,11 @@
 2001-02-27  Kalle Marjola  <rpr@wapit.com>
 
+	* gw/drive_smpp.c: modified to accept Msg 'admin', too
+
+	* gw/bb_boxc.c: unused variable removed
+
+2001-02-27  Kalle Marjola  <rpr@wapit.com>
+
 	* gw/bb_boxc.c: Modified to use Conn instead of raw TCP/IP with
 	sms|wapbox connections
 
