@@ -1654,6 +1654,12 @@ commands never arrive nor can you restart it via WAP anymore.</para>
 		  the <literal>smsc</literal> parameter must be given (see above).
    </entry></row>
 
+	<row><entry><literal>restart</literal></entry>
+   <entry valign="bottom">
+        Re-start whole bearerbox, hence all SMSC links. Password required.
+ 		  Beware that you loose the smsbox connections in such a case.
+   </entry></row>
+
   </tbody>
   </tgroup>
  </table>
