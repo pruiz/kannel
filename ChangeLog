@@ -1,3 +1,8 @@
+2000-06-14  Yann Muller  <ymuller@3glab.com>
+
+	* smsc_at.c: Fixed a memory leak in pdu_extract. Removed unused
+	variables.
+	
 2000-06-14  Kalle Marjola <rpr@wapit.com>
 
 	* gw/html.c: fixed parsing bug in html_to_sms
