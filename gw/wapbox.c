@@ -259,7 +259,7 @@ int main(int argc, char **argv) {
 	setup_signal_handlers();
 
 	info(0, "------------------------------------------------------------");
-	info(0, "WAP box starting up.");
+	info(0, "WAP box version %s starting up.", VERSION);
 
 	bbsocket = connect_to_bearer_box();
 	init_queue();
@@ -289,8 +289,3 @@ int main(int argc, char **argv) {
 	info(0, "WAP box terminating.");
 	return 0;
 }
-
-
-
-
-
