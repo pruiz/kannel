@@ -60,12 +60,12 @@ static void *udp_receiver(void *arg)
     list_add_producer(incoming_wdp);
     
     /* remove messages from socket until it is closed */
-    while(bb_status != bb_dead && bb_status != bb_shutdown) {
+    while(bb_status != BB_DEAD && bb_status != BB_SHUTDOWN) {
 
 	// if (bb_status == bb_suspended)
         // wait_for_status_change(&bb_status, bb_suspended);
 
-	if (read_available(conn->fd, 60000000) < 1)
+	if (read_available(conn->fd, 100000) < 1)
 	    continue;
 	ret = udp_recvfrom(conn->fd, &datagram, &cliaddr);
 	if (ret == -1) {
@@ -76,7 +76,7 @@ static void *udp_receiver(void *arg)
 	    error(errno, "Failed to receive an UDP");
 	    break;
 	}
-	debug("bb", 0, "datagram received");
+	debug("bb.udp", 0, "datagram received");
 	msg = msg_create(wdp_datagram);
 
 	msg->wdp_datagram.source_address = udp_get_ip(cliaddr);
@@ -118,12 +118,12 @@ static void *udp_sender(void *arg)
     Msg *msg;
     Udpc *conn = arg;
 
-    while(bb_status != bb_dead) {
+    while(bb_status != BB_DEAD) {
 
 	if ((msg = list_consume(conn->outgoing_list)) == NULL)
 	    break;
 
-	debug("bb", 0, "udp: sending message");
+	debug("bb.udp", 0, "udp: sending message");
 	
         if (send_udp(conn->fd, msg) == -1)
 	    /* ok, we failed... tough
@@ -134,9 +134,12 @@ static void *udp_sender(void *arg)
 
 	msg_destroy(msg);
     }
+    debug("bb.udp", 0, "udp_sender done.");
+    
     if (pthread_join(conn->receiver, NULL) != 0)
 	error(0, "Join failed in udp_sender");
 
+    debug("bb.udp", 0, "udp_sender exiting");
     udpc_destroy(conn);
     return NULL;
 }
@@ -231,7 +234,7 @@ int udp_start(Config *config)
     if (udp_running) return -1;
 
     
-    debug("bb", 0, "starting UDP sender/receiver module");
+    debug("bb.udp", 0, "starting UDP sender/receiver module");
 
     if ((p = config_get(config_find_first_group(config, "group", "core"),
 			"wdp-interface-name")) == NULL) {
@@ -302,6 +305,8 @@ int udp_die(void)
     /*
      * remove producers from all outgoing lists.
      */
+    debug("bb.udp", 0, "udp_die: removing producers from udp-lists");
+
     while((udpc = list_consume(udpc_list)) != NULL) {
 	list_remove_producer(udpc->outgoing_list);
     }

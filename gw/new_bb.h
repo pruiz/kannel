@@ -10,15 +10,30 @@
 /* general bearerbox state */
 
 enum {
-    bb_running = 0,
-    bb_suspended = 1,
-    bb_shutdown = 2,
-    bb_dead = 3
+    BB_RUNNING = 0,
+    BB_SUSPENDED = 1,
+    BB_CLOSED = 2,
+    BB_SHUTDOWN = 3,
+    BB_DEAD = 4
 };
 
 
+/*---------------------------------------------------------------
+ * Module interface to core bearerbox
+ *
+ * Modules implement one or more of the following interfaces:
+ *
+ * XXX_start(Config *config) - start the module
+ * XXX_restart(Config *config) - restart the module, according to new config
+ * XXX_shutdown() - start the avalanche - started from UDP/SMSC
+ * XXX_die() - final cleanup
+ *
+ * XXX_addwdp() - only for SMSC/UDP: add a new WDP message to outgoing system
+ */
+
+
 /*---------------
- * in bb_boxc.c
+ * bb_boxc.c (SMS and WAPBOX connections)
  */
 
 int smsbox_start(Config *config);
@@ -27,35 +42,51 @@ int smsbox_restart(Config *config);
 int wapbox_start(Config *config);
 
 /*---------------
- * in bb_udp.c
+ * bb_udp.c (UDP receiver/sender)
  */
 
 int udp_start(Config *config);
+/* int udp_restart(Config *config); */
+int udp_shutdown(void);
+int udp_die(void);	/* called when router dies */
 
 /* add outgoing WDP. If fails, return -1 and msg is untouched, so
  * caller must think of new uses for it */
-
 int udp_addwdp(Msg *msg);
 
-/* start the avalanche */
-int udp_shutdown(void);
-
-/* shutdown the system, call after everything else is done */
-int udp_die(void);
 
 
 /*---------------
- * in bb_smsc.c
+ * bb_smsc.c (SMS Center connections)
  */
 
 int smsc_start(Config *config);
 int smsc_restart(Config *config);
+int smsc_shutdown(void);
+int smsc_die(void);	/* called when router dies */
 
 /* as udp_addwdp() */
 int smsc_addwdp(Msg *msg);
 
-/* start the avalanche */
-int smsc_shutdown(void);
 
-/* shutdown the system, call after everything else is done */
-int smsc_die(void);
+
+/*---------------
+ * bb_http.c (HTTP Admin)
+ */
+
+int httpadmin_start(Config *config);
+/* int http_restart(Config *config); */
+
+
+/*----------------------------------------------------------------
+ * Core bearerbox public functions;
+ * used only via HTTP adminstration
+ */
+
+int bb_shutdown(void);
+int bb_suspend(void);
+int bb_resume(void);
+int bb_restart(void);
+
+/* return string of current status */
+Octstr *bb_print_status(void);

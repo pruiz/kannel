@@ -128,7 +128,9 @@ Log message at the `debug' level: naming convention for `place'
 		wap.wml		WML encoder
 
 		bb		Bearer box: misc stuff
-		bb.csdr		CSDR implementation
+		bb.udp		BB UDP sender/receiver
+		bb.boxc		BB box connections
+		bb.http		HTTP admin things
 		bb.sms		SMS related stuff
 		bb.sms.cimd	CIMD implementation
 		bb.sms.cimd2	CIMD 2 implementation

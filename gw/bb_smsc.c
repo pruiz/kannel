@@ -17,12 +17,12 @@
 #include <unistd.h>
 #include <signal.h>
 #include <fcntl.h>
-#include <assert.h>
 
 #include "gwlib/gwlib.h"
 #include "msg.h"
 #include "new_bb.h"
 #include "smsc.h"
+
 
 /* passed from bearerbox core */
 
@@ -56,20 +56,25 @@ static void *sms_receiver(void *arg)
     list_add_producer(incoming_sms);
 
     /* remove messages from SMSC until it is closed */
-    while(bb_status != bb_dead && bb_status != bb_shutdown) {
+    while(bb_status != BB_DEAD && bb_status != BB_SHUTDOWN) {
 
 	// if (bb_status == bb_suspended)
         // wait_for_status_change(&bb_status, bb_suspended);
 
 	// XXX mutexes etc are needed, I think?
-
-	/* XXX this is wrong, we had to change the interface in
-	 * SMSC or generate a new RQItem */
-	// ret = smsc_get_message(conn->smsc, &msg);
-
-	if (ret == 1)
-	    list_produce(incoming_sms, msg);
-
+/*
+ * XXX have to think about the new SMSCenter interface...
+ *  
+ *	if (smscenter_pending_smsmessage(conn->smsc) == 1) {
+ *	    ret = smscenter_receive_msg(conn->smsc, new);
+ *
+ *	     if (ret == 1)
+ *		list_produce(incoming_sms, msg);
+ *	    else
+ *		warning(0, "problems with smscenters... FIX FIX");
+ *	} else
+ *	    sleep(1);
+ */
     }    
     list_remove_producer(incoming_sms);
     return NULL;
@@ -85,7 +90,7 @@ static void *sms_sender(void *arg)
     Smsc *conn = arg;
     int ret;
     
-    while(bb_status != bb_dead) {
+    while(bb_status != BB_DEAD) {
 
 	if ((msg = list_consume(conn->outgoing_list)) == NULL)
 	    break;
@@ -118,12 +123,12 @@ static void *sms_router(void *arg)
     Smsc *si;
     int i;
 
-    while(bb_status != bb_dead) {
+    while(bb_status != BB_DEAD) {
 
 	if ((msg = list_consume(outgoing_sms)) == NULL)
 	    break;
 
-	assert(msg_type(msg) == smart_sms);
+	gw_assert(msg_type(msg) == smart_sms);
 	
 	list_lock(smsc_list);
 	/* select in which list to add this */
@@ -221,6 +226,8 @@ int smsc_addwdp(Msg *msg)
 
 int smsc_shutdown(void)
 {
+    if (!smsc_running) return -1;
+
     /* start avalanche by removing producers from lists */
 
     /* XXX shouldn'w we be sure that all smsces have closed their
@@ -242,6 +249,9 @@ int smsc_die(void)
     /*
      * remove producers from all outgoing lists.
      */
+
+    debug("bb.sms", 0, "smsc_die: removing producers from smsc-lists");
+    
     while((si = list_consume(smsc_list)) != NULL) {
 	list_remove_producer(si->outgoing_list);
     }

@@ -15,7 +15,6 @@
 #include <string.h>
 #include <signal.h>
 #include <unistd.h>
-#include <assert.h>
 
 #include "gwlib/gwlib.h"
 #include "msg.h"
@@ -62,12 +61,12 @@ static void *wdp_router(void *arg)
 {
     Msg *msg;
 
-    while(bb_status != bb_dead) {
+    while(bb_status != BB_DEAD) {
 
 	if ((msg = list_consume(outgoing_wdp)) == NULL)
 	    break;
 
-	assert(msg_type(msg) == wdp_datagram);
+	gw_assert(msg_type(msg) == wdp_datagram);
 	
 	// if (msg->list == sms)
 	// smsc_addwdp(msg);
@@ -75,6 +74,7 @@ static void *wdp_router(void *arg)
 
 	udp_addwdp(msg);
     }
+    debug("bb", 0, "wdp_router: exiting");
     udp_die();
     // smsc_endwdp();
 
@@ -161,6 +161,9 @@ static int starter(Config *config)
 	val = config_get(grp, "log-level");
 	open_logfile(log, val ? atoi(val) : 0);
     }
+    info(0, "----------------------------------------");
+    info(0, "Kannel bearerbox II version %s starting", VERSION);
+
     if (check_config(config) == -1)
 	panic(0, "Cannot start with corrupted configuration");
 
@@ -168,6 +171,9 @@ static int starter(Config *config)
     incoming_sms = list_create();
     outgoing_wdp = list_create();
     incoming_wdp = list_create();
+
+    /* XXX do we require this? or not? */
+    httpadmin_start(config);
     
     if (config_find_first_group(config, "group", "smsc"))
 	start_smsc(config);
@@ -189,7 +195,9 @@ int main(int argc, char **argv)
 {
     int cf_index;
     Config *cfg;
-        
+
+    bb_status = BB_RUNNING;
+    
     gwlib_init();
     start_time = time(NULL);
 
@@ -201,13 +209,10 @@ int main(int argc, char **argv)
         panic(0, "No configuration, aborting.");
 
     starter(cfg);
-    info(0, "----------------------------------------");
-    info(0, "Bearerbox version %s starting", VERSION);
-
     debug("bb", 0, "Start-up done, entering mainloop");
     // main_program();
 
-    while(1) sleep(60);
+    while(bb_status != BB_DEAD) sleep(6);
     
     config_destroy(cfg);
     gw_check_leaks();
@@ -216,3 +221,60 @@ int main(int argc, char **argv)
     return 0;
 }
 
+
+
+/*----------------------------------------------------------------
+ * public functions used via HTTP adminstration interface/module
+ */
+
+int bb_shutdown(void)
+{
+    if (bb_status == BB_SHUTDOWN || bb_status == BB_DEAD) return -1;
+    bb_status = BB_SHUTDOWN;
+
+    debug("bb", 0, "shutting down smsc");
+    smsc_shutdown();
+    debug("bb", 0, "shutting down upd");
+    udp_shutdown();
+    
+    return 0;
+}
+
+int bb_suspend(void)
+{
+    if (bb_status != BB_RUNNING) return -1;
+
+    bb_status = BB_SUSPENDED;
+    return 0;
+}
+
+int bb_resume(void)
+{
+    if (bb_status != BB_SUSPENDED) return -1;
+
+    bb_status = BB_RUNNING;
+    return 0;
+}
+
+int bb_restart(void)
+{
+    return -1;
+}
+
+
+Octstr *bb_print_status(void)
+{
+    char *s;
+    char buf[512];
+    
+    switch(bb_status) {
+    case BB_RUNNING:
+	s = "running";
+    case BB_SUSPENDED:
+	s = "suspended";
+    default:
+	s = "going down";
+    }
+    sprintf(buf, "Kannel %s %s", VERSION, s);
+    return octstr_create(buf);
+}

@@ -17,7 +17,6 @@
 #include <sys/socket.h>
 #include <unistd.h>
 #include <signal.h>
-#include <assert.h>
 
 #include "gwlib/gwlib.h"
 #include "msg.h"
@@ -69,7 +68,11 @@ static void boxc_receiver(void *arg)
 
     
     /* remove messages from socket until it is closed */
-    while(bb_status != bb_dead) {
+    while(bb_status != BB_DEAD) {
+
+	if (read_available(conn->fd, 100000) < 1)
+	    continue;
+
 	ret = octstr_recv(conn->fd, &pack);
 
 	if (ret < 1)
@@ -129,9 +132,9 @@ static void *boxc_sender(void *arg)
     
     debug("bb", 0, "box connection sender");
 
-    while(bb_status != bb_dead) {
+    while(bb_status != BB_DEAD) {
 
-	if (bb_status == bb_suspended)
+	if (bb_status == BB_SUSPENDED)
 	    ; // wait_for_status_change(&bb_status, bb_suspended);
 	
 	if ((msg = list_consume(conn->incoming)) == NULL)
@@ -147,6 +150,7 @@ static void *boxc_sender(void *arg)
 	}
 	msg_destroy(msg);
     }
+    debug("bb", 0, "boxc_sender: exiting");
     return NULL;
 }
 
@@ -294,10 +298,12 @@ static void *run_wapbox(void *arg)
     boxc_receiver(newconn);
     list_remove_producer(newconn->outgoing);
 
-    /* XXX remove from routing info! */
+    /* XXX remove from routing info! *
+     *
+     *
+     * list_remove_producer(newlist);
+     */
     
-    list_remove_producer(newlist);
-
     if (pthread_join(sender, NULL) != 0)
 	error(0, "Join failed in wapbox");
 
@@ -305,6 +311,8 @@ cleanup:
     list_delete_equal(wapbox_list, newconn);
     list_destroy(newlist);
     boxc_destroy(newconn);
+
+    debug("bb", 0, "wapbox finally exiting");
 
     return NULL;
 }
@@ -395,15 +403,15 @@ static void *wdp_to_wapboxes(void *arg)
     route_info = list_create();
 
     
-    while(bb_status != bb_dead) {
+    while(bb_status != BB_DEAD) {
 
-	if (bb_status == bb_suspended)
+	if (bb_status == BB_SUSPENDED)
 	    ; // wait_for_status_change(&bb_status, suspended);
 
 	if ((msg = list_consume(incoming_wdp)) == NULL)
 	    break;
 
-	assert(msg_type(msg) == wdp_datagram);
+	gw_assert(msg_type(msg) == wdp_datagram);
 
 	conn = route_msg(route_info, msg);
 	list_produce(conn->incoming, msg);
@@ -412,6 +420,9 @@ static void *wdp_to_wapboxes(void *arg)
     while((ap = list_consume(route_info)) != NULL)
 	ap_destroy(ap);
     list_destroy(route_info);
+    while((conn = list_consume(wapbox_list)) != NULL)
+	list_remove_producer(conn->incoming);
+
     return NULL;
 }
 
@@ -423,6 +434,7 @@ static void *wdp_to_wapboxes(void *arg)
 static void wait_for_connections(int fd, void *(*function) (void *arg))
 {
     fd_set rf;
+    struct timeval tv;
     int ret;
 
     /*
@@ -433,14 +445,16 @@ static void wait_for_connections(int fd, void *(*function) (void *arg))
 
     debug("bb", 0, "Wait for connections, fd = %d", fd);
     
-    while(bb_status != bb_dead && bb_status != bb_shutdown) {
-	
-	FD_ZERO(&rf);
+    while(bb_status != BB_DEAD && bb_status != BB_SHUTDOWN) { 
 
-	if (bb_status == bb_running || bb_status == bb_shutdown)
+	FD_ZERO(&rf);
+	tv.tv_sec = 1;
+	tv.tv_usec = 0;
+	
+	if (bb_status == BB_RUNNING || bb_status == BB_SHUTDOWN)
 	    FD_SET(fd, &rf);
 
-	ret = select(FD_SETSIZE, &rf, NULL, NULL, NULL);
+	ret = select(FD_SETSIZE, &rf, NULL, NULL, &tv);
 	if (ret > 0) {
 	    start_thread(1, function, (void *)fd, 0);
 	    sleep(1);

@@ -1,3 +1,8 @@
+2000-05-10    <Kalle Marjola <rpr@wapit.com>>
+
+	* gw/bb_*.c: and more, now some HTTP adminstration 'works'
+	(implementation partial in other modules)
+
 Tue May  9 Derry Hamilton <rasilon@tardis.ed.ac.uk>
 
 	* gw/wapbox.c,configure.in,configure: Updated getloadavg bits to
