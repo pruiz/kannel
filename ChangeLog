@@ -1,3 +1,8 @@
+2000-14-07 Peter Grönholm
+
+       * gw/wml-definitions.h: A typo corrected in URL value code table.
+       Now URLs ending with .net/ work, too.
+	
 2000-08-10  Tuomas Luttinen  <tuo@wapit.com>
 
 	* gw/wml_compiler.c (check_variable_syntax): Escaping now possible 
