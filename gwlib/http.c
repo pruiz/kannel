@@ -103,6 +103,17 @@ static List *proxy_exceptions = NULL;
 
 static void proxy_add_authentication(List *headers)
 {
+    Octstr *os;
+    
+    if (proxy_username == NULL || proxy_password == NULL)
+    	return;
+
+    os = octstr_format("%S:%S", proxy_username, proxy_password);
+    octstr_binary_to_base64(os);
+    octstr_strip_blanks(os);
+    octstr_insert(os, octstr_create_immutable("Basic "), 0);
+    http_header_add(headers, "Proxy-Authorization", octstr_get_cstr(os));
+    octstr_destroy(os);
 }
 
 

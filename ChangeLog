@@ -1,5 +1,11 @@
 2000-11-14  Lars Wirzenius  <liw@iki.fi>
 
+	* gwlib/http.c: Implemented, I hope, proxy_add_authentication(),
+	but I can't test it, since I don't have a proxy that requires
+	authentication. If it doesn't work, hopefully people will tell me.
+
+2000-11-14  Lars Wirzenius  <liw@iki.fi>
+
 	* gwlib/http.[ch]: Wrote function http_add_basic_auth.
 	
 	* test/test_http.c: Added code to optionally use Basic Auth
