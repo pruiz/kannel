@@ -225,7 +225,7 @@ SMPP_PDU *smpp_pdu_unpack(Octstr *data_without_len)
                 opt_tag = decode_integer(data_without_len, pos, 2); pos += 2;           \
                 debug("sms.smpp", 0, "Optional parameter tag (0x%04lx)", opt_tag);      \
                 opt_len = decode_integer(data_without_len, pos, 2); pos += 2;           \
-                debug("smpp_pdu", 0, "Optional parameter length read as %ld", opt_len);
+                debug("sms.smpp", 0, "Optional parameter length read as %ld", opt_len);
     #define TLV(tag_id, min_len, max_len)                                                                          \
                 if (tag_id == opt_tag) {                                                                           \
                     if ((min_len != -1 && opt_len < min_len) || (max_len != -1 && opt_len > max_len) ||            \
@@ -240,14 +240,13 @@ SMPP_PDU *smpp_pdu_unpack(Octstr *data_without_len)
                     dict_put(p->optional_parameters, tag_str, opt_val);                                            \
                     octstr_destroy(tag_str);                                                                       \
                     opt_val = NULL;                                                                                \
-                }
-    #define OPTIONAL_END                                                                \
-    		if (opt_val != NULL) {                                                             \
-		    error(0, "SMPP: Uknown optional parameter (%ld) for PDU type (%ld) received!", \
+                } else 
+    #define OPTIONAL_END                                                                           \
+    		{                                                             \
+		    error(0, "SMPP: Uknown optional parameter (0x%04lx) for PDU type (%ld) received!", \
 		            opt_tag, type);                                                        \
-                octstr_destroy(opt_val);                                                \
 		}                                                                                  \
-            }                                                                           \
+            }                                                                                      \
         } 
     #define INTEGER(name, octets) \
     	p->name = decode_integer(data_without_len, pos, octets); \
