@@ -1,3 +1,9 @@
+2000-12-07  Lars Wirzenius  <liw@iki.fi>
+
+	* gw/smskannel.conf: Removed the "www" example service, since
+	people seem not to remove it from production installations.
+	They should, since it's potentially a security problem.
+
 2000-12-06  Richard Braakman  <dark@wapit.com>
 
 	* gw/wapbox.c: Memory cleanup: Call close_connection_to_bearerbox()
