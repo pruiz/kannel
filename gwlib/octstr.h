@@ -247,6 +247,13 @@ int octstr_pretty_print(FILE *f, Octstr *ostr);
  */
 int octstr_write_to_socket(int socket, Octstr *ostr);
 
+/*
+ * Read available data from socket and return it as an octstr.
+ * Block if no data is available.  If a lot of data is available,
+ * read only up to an internal limit.
+ * Return NULL for error.
+ */
+int octstr_append_from_socket(Octstr *ostr, int socket);
 
 /*
  * Replace current contents of the octstr with given data.

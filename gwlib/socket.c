@@ -322,12 +322,18 @@ int read_available(int fd, long wait_usec)
     to.tv_sec = 0;
     to.tv_usec = wait_usec;
 
+retry:
     ret = select(FD_SETSIZE, &rf, NULL, NULL, &to);
     if (ret > 0 && FD_ISSET(fd, &rf))
 	return 1;
     if (ret < 0) {
-	if(errno==EINTR) return 0;
-	if(errno==EAGAIN) return 0;
+	/* In most select() implementations, to will now contain the
+	 * remaining time rather than the original time.  That is exactly
+	 * what we want when retrying after an interrupt. */
+	if (errno==EINTR)
+		goto retry;
+	if (errno==EAGAIN)
+		return 0;
 	return -1;	/* some error */
     }
     return 0;

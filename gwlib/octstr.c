@@ -606,9 +606,11 @@ int octstr_write_to_socket(int socket, Octstr *ostr) {
 	len = ostr->len;
 	while (len > 0) {
 		ret = write(socket, data, len);
-		if (ret == -1 && errno != EINTR) {
-			error(errno, "Writing to socket failed");
-			return -1;
+		if (ret == -1) {
+			if (errno != EINTR) {
+				error(errno, "Writing to socket failed");
+				return -1;
+			}
 		} else {
 			/* ret may be less than len */
 			len -= ret;
@@ -616,6 +618,25 @@ int octstr_write_to_socket(int socket, Octstr *ostr) {
 		}
 	}
 	return 0;
+}
+
+
+int octstr_append_from_socket(Octstr *ostr, int socket) {
+	unsigned char buf[4096];
+	int len;
+
+again:
+	len = recv(socket, buf, sizeof(buf), 0);
+	if (len < 0 && errno == EINTR)
+		goto again;
+
+	if (len < 0) {
+		error(errno, "Could not read from socket %d", socket);
+		return -1;
+	}
+
+	octstr_append_data(ostr, buf, len);
+	return len;
 }
 
 

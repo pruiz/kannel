@@ -1,3 +1,10 @@
+2000-04-18  Richard Braakman  <dark@wapit.com>
+
+	* gwlib/octstr.c, gwlib/octstr.h: Added octstr_append_from_socket.
+	Corrected EINTR handling in octstr_write_to_socket.
+
+	* gwlib/socket.c: Made read_available() cope with EINTR.
+
 2000-04-18 Sanna Seppanan <sanna@wapit.com>
 
 	* gwlib/list.h,c Added list_cat. It joins two lists to one.
