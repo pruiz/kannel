@@ -1,3 +1,7 @@
+2004-07-09  Stipe Tolj  <tolj@wapme-systems.de> 
+    * test/test_headers.c: fixing command line options and argument handling
+      which breaks "make check" target.
+
 2004-07-08  Stipe Tolj  <tolj@wapme-systems.de> 
     * Making development release 1.3.2rc1. 
 

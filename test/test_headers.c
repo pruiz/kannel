@@ -166,13 +166,17 @@ int main(int argc, char **argv)
     List *unpacked;
     Octstr *filename;
     long i;
+    int mptr;
 
     gwlib_init();
     wsp_strings_init();
 
-    get_and_set_debugs(argc, argv, NULL);
+    mptr = get_and_set_debugs(argc, argv, NULL);
+    argc - mptr;
+    if (argc - mptr <= 0)
+        panic(0, "Usage: test_headers [options] header-file");
 
-    filename = octstr_create(argv[1]);
+    filename = octstr_create(argv[mptr]);
     headers = octstr_read_file(octstr_get_cstr(filename));
     split_headers(headers, &split, &expected);
     packed = wsp_headers_pack(split, 0, WSP_1_2);
