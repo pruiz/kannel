@@ -1,5 +1,10 @@
 2001-05-07  Richard Braakman  <dark@wapit.com>
 
+	* gwlib/list.h: list_len(NULL) returns 0.  This has been true
+	for some time now.  Make it part of the documented interface.
+
+2001-05-07  Richard Braakman  <dark@wapit.com>
+
 	* gwlib/octstr.[ch]: Added octstr_dump_short() for dumping octstrs
 	that are expected to be short printable strings.  The output is
 	much shorter for such strings, but the function can still handle

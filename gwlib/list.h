@@ -90,7 +90,7 @@ void list_destroy(List *list, list_item_destructor_t *destructor);
 
 
 /*
- * Return the number of items in the list.
+ * Return the number of items in the list.  Return 0 if list is NULL.
  */
 long list_len(List *list);
 
