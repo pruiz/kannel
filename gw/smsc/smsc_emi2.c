@@ -993,25 +993,22 @@ static int emi2_handle_smscreq (SMSCConn *conn, Connection *server)
 
 			octstr_destroy(ts);
 			if (dlrmsg != NULL) {
-			    Octstr *moretext;
 
                 /*
-                 * Recode the msg structure with the given msgdata.
                  * Note: the DLR URL is delivered in msg->sms.dlr_url already.
                  */
-                dlrmsg->sms.msgdata = octstr_duplicate(emimsg->fields[E50_AMSG]);
-                octstr_hex_to_binary(dlrmsg->sms.msgdata);
                 dlrmsg->sms.sms_type = report;
-
-			    moretext = octstr_create("");
+                dlrmsg->sms.msgdata = octstr_create("");
 			    if (octstr_get_char(emimsg->fields[0], 0) == 'N') {
-                    octstr_append(moretext, emimsg->fields[1]);
-                    octstr_append_char(moretext, '-');
-                    octstr_append(moretext, emimsg->fields[2]);
+                    octstr_append(dlrmsg->sms.msgdata, emimsg->fields[1]);
+                    octstr_append_char(dlrmsg->sms.msgdata, '-');
+                    /* system message is optional */
+                    if (emimsg->fields[2] != NULL)
+                        octstr_append(dlrmsg->sms.msgdata, emimsg->fields[2]);
+                    octstr_append_cstr(dlrmsg->sms.msgdata, "/NACK");
+                } else {
+                    octstr_append_cstr(dlrmsg->sms.msgdata, "/ACK");
 			    }
-			    octstr_append_char(moretext, '/');
-			    octstr_insert(dlrmsg->sms.msgdata, moretext, 0);
-			    octstr_destroy(moretext);
 
 			    bb_smscconn_receive(conn, dlrmsg);
 			}
@@ -1036,13 +1033,13 @@ static int emi2_handle_smscreq (SMSCConn *conn, Connection *server)
 				if(m == NULL) {
 				    info(0,"EMI2[%s]: uhhh m is NULL, very bad",
 					 octstr_get_cstr(privdata->name));
-				} else if (m->sms.dlr_mask & 0x7) {
+                } else if ((m->sms.dlr_mask & (DLR_SUCCESS|DLR_FAIL|DLR_BUFFERED))) {
 				    dlr_add(octstr_get_cstr((conn->id ? conn->id : privdata->name)), 
 					    octstr_get_cstr(ts),
 					    octstr_get_cstr(m->sms.sender),
 					    octstr_get_cstr(adc),
-					    octstr_get_cstr(m->sms.service),
-					    octstr_get_cstr(m->sms.dlr_url),
+                        m->sms.service ? octstr_get_cstr(m->sms.service) : NULL,
+                        m->sms.dlr_url ? octstr_get_cstr(m->sms.dlr_url) : NULL,
 					    m->sms.dlr_mask,
 					    octstr_get_cstr(m->sms.boxc_id));
 				}
