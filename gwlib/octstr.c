@@ -2181,3 +2181,73 @@ octstr_recode (Octstr *tocode, Octstr *fromcode, Octstr *orig)
 
     return resultcode;
 }
+
+void octstr_strip_char(Octstr *text, char ch)
+{
+    int start = 0, end, len = 0;
+
+    seems_valid(text);
+    gw_assert(!text->immutable);
+
+    /* Remove char from the beginning of the text */
+    while ((ch == octstr_get_char(text, start)) &&
+           start <= octstr_len(text))
+        start ++;
+
+    if (start > 0)
+        octstr_delete(text, 0, start);
+
+    seems_valid(text);
+}
+
+int octstr_isnum(Octstr *ostr1)
+{
+    int start = 0;
+    char c;
+
+    seems_valid(ostr1);
+    while (start < octstr_len(ostr1)) {
+        c = octstr_get_char(ostr1, start);
+        if (!isdigit(c) && (c!='+'))
+            return 0;
+        start++;
+    }
+    return 1;
+}
+
+void octstr_replace(Octstr *haystack, Octstr *needle, Octstr *repl)
+{
+    int p = -1;
+    long len;
+
+    len = octstr_len(needle);
+
+    while ((p = octstr_search(haystack, needle, p + 1)) != -1) {
+        octstr_delete(haystack, p, len);
+        octstr_insert(haystack, repl, p);
+    }
+}
+
+int octstr_symbolize(Octstr *ostr)
+{
+    long len, i;
+
+    seems_valid(ostr);
+    gw_assert(!ostr->immutable);
+
+    if (ostr->len == 0)
+        return 0;
+
+    /* Check if it's in the right format */
+    if (!octstr_check_range(ostr, 0, ostr->len, gw_isxdigit))
+        return -1;
+
+    len = ostr->len + (ostr->len/2);
+    octstr_grow(ostr, ostr->len * 2);
+
+    for (i = 0; i < len; i += 3)
+        octstr_insert_data(ostr, i, "%", 1);
+
+    return 1;
+}
+

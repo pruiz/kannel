@@ -583,5 +583,25 @@ unsigned long octstr_hash_key(Octstr *ostr);
  */
 int octstr_recode (Octstr *tocode, Octstr *fromcode, Octstr *orig);
 
+/*
+ * Strip all occurence of char ch from start of Octstr
+ */
+void octstr_strip_char(Octstr *text, char ch);
+
+/*
+ * Check if ostr is numeric
+ */
+int octstr_isnum(Octstr *ostr1);
+
+/*
+ * Replace all occurences of needle with repl within haystack
+ */
+void octstr_replace(Octstr *haystack, Octstr *needle, Octstr *repl);
+
+/*
+ * Symbolize hex string '78797a' becomes '%78%79%7a'
+ */
+int octstr_symbolize(Octstr *ostr);
+
 
 #endif
