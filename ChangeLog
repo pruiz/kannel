@@ -1,4 +1,4 @@
-2001-12-05 Jörg Pommnitz <jpo@condat.de>
+2001-12-06 Jörg Pommnitz <jpo@condat.de>
 	* gwlib/conn.c, gwlib/conn.h: new function 
 	  void conn_config_ssl (CfgGroup *grp); to uniformly configure
 	  the SSL code
