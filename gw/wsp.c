@@ -315,87 +315,104 @@ static int unpack_connect_pdu(WSPMachine *m, Octstr *user_data) {
 	debug(0, "Connect PDU dump done.");
 
 	off = 0;
-	unpack_uintvar(&length, caps, &off);
 
-	/* XXX
-	 * capablity identifier is defined as 'multiple octets'
-	 * and encoded as Field-Name, but current supported
-	 * capabilities can be identified via one number
-	 */
+	while (off < caps_len) {
+	    unpack_uintvar(&length, caps, &off);
 
-	/* XXX if the clients sends multiple optional capabilities,
-	 * this system currently selects the last one. FIX XXX
-	 */
-	
-	off++;
-	switch(octstr_get_char(caps,off-1)) {
-	case 0x00:
-	    if (unpack_uintvar(&uiv, caps, &off) == -1)
-		warning(0, "Problems getting client SDU size capability");
-	    else {
-		if (WSP_MAX_CLIENT_SDU && uiv < WSP_MAX_CLIENT_SDU) {
-		    debug(0, "Client tried client SDU size %lu larger than our max %d",
-			  uiv, WSP_MAX_CLIENT_SDU);
-		} else if (!(m->set_caps & WSP_CSDU_SET)) {
-		    debug(0, "Client SDU size negotiated to %lu", uiv);
-		    m->client_SDU_size = uiv;
-		    m->set_caps |= WSP_CSDU_SET;
+	    /* XXX
+	     * capablity identifier is defined as 'multiple octets'
+	     * and encoded as Field-Name, but current supported
+	     * capabilities can be identified via one number
+	     */
+
+	    off++;
+	    switch(octstr_get_char(caps,off-1)) {
+	     case WSP_CAPS_CLIENT_SDU_SIZE:
+		if (unpack_uintvar(&uiv, caps, &off) == -1)
+		    warning(0, "Problems getting client SDU size capability");
+		else {
+		    if (WSP_MAX_CLIENT_SDU && uiv < WSP_MAX_CLIENT_SDU) {
+			debug(0, "Client tried client SDU size %lu larger "
+			      "than our max %d", uiv, WSP_MAX_CLIENT_SDU);
+		    } else if (!(m->set_caps & WSP_CSDU_SET)) {
+			debug(0, "Client SDU size negotiated to %lu", uiv);
+			m->client_SDU_size = uiv;
+			m->set_caps |= WSP_CSDU_SET;
+		    }
 		}
-	    }
-	    break;
-	case 0x01:
-	    if (unpack_uintvar(&uiv, caps, &off) == -1)
-		warning(0, "Problems getting server SDU size capability");
-	    else {
-		if (WSP_MAX_SERVER_SDU && uiv < WSP_MAX_SERVER_SDU) {
-		    debug(0, "Client tried server SDU size %lu larger than our max %d",
-			  uiv, WSP_MAX_SERVER_SDU);
-		} else if (!(m->set_caps & WSP_SSDU_SET)) {
-		    debug(0, "Server SDU size negotiated to %lu", uiv);
-		    m->server_SDU_size = uiv;
-		    m->set_caps |= WSP_SSDU_SET;
+		break;
+	     case WSP_CAPS_SERVER_SDU_SIZE:
+		 if (unpack_uintvar(&uiv, caps, &off) == -1)
+		     warning(0, "Problems getting server SDU size capability");
+		 else {
+		     if (WSP_MAX_SERVER_SDU && uiv < WSP_MAX_SERVER_SDU) {
+			 debug(0, "Client tried server SDU size %lu larger "
+			       "than our max %d", uiv, WSP_MAX_SERVER_SDU);
+		     } else if (!(m->set_caps & WSP_SSDU_SET)) {
+			 debug(0, "Server SDU size negotiated to %lu", uiv);
+			 m->server_SDU_size = uiv;
+			 m->set_caps |= WSP_SSDU_SET;
+		     }
+		 }
+		 break;
+	     case WSP_CAPS_PROTOCOL_OPTIONS:
+		 /* XXX should be taken as octstr or something - and
+		  * be sure, that there is that information */
+
+		 flags = (octstr_get_char(caps,off));
+		 if (!(m->set_caps & WSP_PO_SET)) {
+
+		     /* we do not support anything yet, so answer so */
+
+		     debug(0, "Client protocol option flags %0xd, not supported.", flags);
+		     
+		     m->protocol_options = WSP_MAX_PROTOCOL_OPTIONS;
+		     m->set_caps |= WSP_SSDU_SET;
+		 }
+		 break;
+	     case WSP_CAPS_METHOD_MOR:
+		if (unpack_uint8(&mor, caps, &off) == -1)
+		    warning(0, "Problems getting MOR methods capability");
+		else {
+		    if (mor < WSP_MAX_METHOD_MOR) {
+			debug(0, "Client tried method MOR %lu larger "
+			      "than our max %d", mor, WSP_MAX_METHOD_MOR);
+		    } else if (!(m->set_caps & WSP_MMOR_SET)) {
+			debug(0, "Method MOR negotiated to %lu", mor);
+			m->MOR_method = mor;
+			m->set_caps |= WSP_MMOR_SET;
+		    }
 		}
+		break;
+	    case WSP_CAPS_PUSH_MOR:
+		if (unpack_uint8(&mor, caps, &off) == -1)
+		    warning(0, "Problems getting MOR push capability");
+		else {
+		    if (mor < WSP_MAX_PUSH_MOR) {
+			debug(0, "Client tried push MOR %lu larger "
+			      "than our max %d", mor, WSP_MAX_PUSH_MOR);
+		    } else if (!(m->set_caps & WSP_PMOR_SET)) {
+			debug(0, "Push MOR negotiated to %lu", mor);
+			m->MOR_push = mor;
+			m->set_caps |= WSP_PMOR_SET;
+		    }
+		}
+		break;
+	    case WSP_CAPS_EXTENDED_METHODS:
+		debug(0, "Extended methods capability ignored");
+		break;
+	    case WSP_CAPS_HEADER_CODE_PAGES:
+		debug(0, "Header code pages capability ignored");
+		break;
+	    case WSP_CAPS_ALIASES:
+		debug(0, "Aliases capability ignored");
+		break;
+	    default:
+		/* unassigned */
+		debug(0, "Unknown capability ignored");
+		break;
 	    }
-	    break;
-	case 0x02:
-	    /* XXX should be taken as octstr or something - and
-	    * be sure, that there is that information */
-	    flags = (octstr_get_char(caps,off));
-	    debug(0, "Receiver flags %0xd", flags);
-	    /* currently our server does not serve any of these, but
-	     * save them until we answer */
-	    m->protocol_options = flags;
-	    break;
-	case 0x03:
-	    if (unpack_uint8(&mor, caps, &off) == -1)
-		warning(0, "Problems getting MOR methods capability");
-	    else {
-		debug(0, "MOR methods %lu", mor);
-		m->MOR_method = 0;
-	    }
-	    break;
-	case 0x04:
-	    if (unpack_uint8(&mor, caps, &off) == -1)
-		warning(0, "Problems getting MOR push capability");
-	    else {
-		debug(0, "MOR push %lu", mor);
-		m->MOR_push = 0;
-	    }
-	    break;
-	case 0x05:
-	    /* extended methods */
-	    break;
-	case 0x06:
-	    /* header code pages */
-	    break;
-	case 0x07:
-	    /* aliases */
-	    break;
-	default:
-	    /* unassigned */
-	    break;
 	}
-	
 	return 0;
 }
 
@@ -516,17 +533,48 @@ static void append_octstr(Octstr *pdu, Octstr *os) {
 
 
 static Octstr *make_connectreply_pdu(WSPMachine *m, long session_id) {
-	Octstr *pdu, *caps = NULL, *hdrs = NULL;
+	Octstr *pdu, *caps = NULL, *hdrs = NULL, *tmp;
 	
 	pdu = make_connectionmode_pdu(ConnectReply_PDU);
 	append_uintvar(pdu, session_id);
 	/* set CapabilitiesLen */
 	if (m->set_caps) {
 	    caps = octstr_create_empty();
+	    tmp = octstr_create_empty();
 
 	    /* XXX put negotiated capabilities into octstr */
 
+	    if (m->set_caps & WSP_CSDU_SET) {
+		octstr_truncate(tmp, 0);
+		append_uint8(tmp, WSP_CAPS_SERVER_SDU_SIZE);
+		append_uintvar(tmp, m->client_SDU_size);
+
+		append_uintvar(caps, octstr_len(tmp));
+		append_octstr(caps, tmp);
+	    }
+	    if (m->set_caps & WSP_SSDU_SET) {
+		octstr_truncate(tmp, 0);
+		append_uint8(tmp, WSP_CAPS_SERVER_SDU_SIZE);
+		append_uintvar(tmp, m->server_SDU_size);
+
+		append_uintvar(caps, octstr_len(tmp));
+		append_octstr(caps, tmp);
+	    }
+
+	    if (m->set_caps & WSP_MMOR_SET) {
+		append_uintvar(caps, 2);
+		append_uint8(caps, WSP_CAPS_METHOD_MOR);
+		append_uint8(caps, m->MOR_method);
+	    }
+	    if (m->set_caps & WSP_PMOR_SET) {
+		append_uintvar(caps, 2);
+		append_uint8(caps, WSP_CAPS_PUSH_MOR);
+		append_uint8(caps, m->MOR_push);
+	    }
+	    /* rest are not supported, yet */
+	    
 	    append_uintvar(pdu, octstr_len(caps));
+	    octstr_destroy(tmp);
 	} else
 	    append_uintvar(pdu, 0);
 

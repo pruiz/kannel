@@ -1,3 +1,9 @@
+2000-01-11    <rpr@rpr.wapit.com>
+
+	* gw/wsp.c|h: capabilities client|server SDU size, method|push MOR
+	and protocol options (partially) now supported. Note tested, and I
+	think that rest of the system ignores SDU settings, fix that later.
+
 2000-01-10    <rpr@rpr.wapit.com>
 
 	* gw/wsp.*: continued capability work
