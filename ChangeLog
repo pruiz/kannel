@@ -1,3 +1,10 @@
+Mon Dec 13 19:31:56 1999  Lars Wirzenius  <liw@wapit.com>
+
+	* gw/wapbox.c, gw/wapbox.h (new file): Wrote functions for
+	keeping a queue of messages to be sent to the bearer box.
+	
+	* gw/wtp_send.c: Made use of the message enqueueing function.
+
 Mon Dec 13 18:43:54 1999  Lars Wirzenius  <liw@wapit.com>
 
 	* gw/wsp.c: WSPMachine now remembers its own address and port as

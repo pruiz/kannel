@@ -65,6 +65,56 @@ static Msg *msg_receive(int s) {
 }
 
 
+static void msg_send(int s, Msg *msg) {
+	Octstr *os;
+
+	os = msg_pack(msg);
+	if (os == NULL)
+		panic(0, "msg_pack failed");
+	if (octstr_send(s, os) == -1)
+		error(0, "wapbox: octstr_send failed");
+	octstr_destroy(os);
+	debug(0, "wapbox: wrote msg %p", (void *) msg);
+}
+
+
+#define MAX_MSGS_IN_QUEUE 1024
+static Msg *queue_tab[MAX_MSGS_IN_QUEUE];
+static int queue_start = 0;
+static int queue_len = 0;
+static pthread_mutex_t queue_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+
+void put_msg_in_queue(Msg *msg) {
+	mutex_lock(&queue_mutex);
+	debug(0, "wapbox: putting msg %p in queue", (void *) msg);
+	if (queue_len == MAX_MSGS_IN_QUEUE)
+		error(0, "wapbox: message queue full, dropping message");
+	else {
+		queue_tab[(queue_start + queue_len) % MAX_MSGS_IN_QUEUE] = msg;
+		++queue_len;
+	}
+	mutex_unlock(&queue_mutex);
+}
+
+
+Msg *remove_msg_from_queue(void) {
+	Msg *msg;
+	
+	mutex_lock(&queue_mutex);
+	if (queue_len == 0)
+		msg = NULL;
+	else {
+		msg = queue_tab[queue_start];
+		queue_start = (queue_start + 1) % MAX_MSGS_IN_QUEUE;
+		--queue_len;
+		debug(0, "wapbox: removed msg %p in queue", (void *) msg);
+	}
+	mutex_unlock(&queue_mutex);
+	return msg;
+}
+
+
 int main(int argc, char **argv) {
 	int bbsocket;
 	Msg *msg;
@@ -99,6 +149,13 @@ int main(int argc, char **argv) {
                    continue;
                 debug(0, "wapbox: returning create machine");
 	        wtp_handle_event(wtp_machine, wtp_event);
+
+		for (;;) {
+			msg = remove_msg_from_queue();
+			if (msg == NULL)
+				break;
+			msg_send(bbsocket, msg);
+		}
 	}
 	
 	info(0, "WAP box terminating.");

@@ -6,6 +6,7 @@
 
 #include "wtp_send.h"
 #include "msg.h"
+#include "wapbox.h"
 
 /*****************************************************************************
  *
@@ -24,19 +25,15 @@ static Msg *pack_result(WTPMachine *machine, WTPEvent *event);
  * all errors by itself.
  */
 void wtp_send_result(WTPMachine *machine, WTPEvent *event){
-
      Msg *msg;
-     Octstr *message_string;
 
      msg=pack_result(machine, event);
      if (msg == NULL)
         goto error;
 
-#if 0
-     msg_destroy(msg);
-     octstr_destroy(message_string);
-#endif
+     put_msg_in_queue(msg);
      return;
+
 /*
  *Abort(CAPTEMPEXCEEDED)
  */
