@@ -1,3 +1,6 @@
+2002-01-31 Andreas Fink <andreas@fink.org>
+    * gwlib/gwlib.h: included string.h to avoid compilation warnings
+
 2002-01-29  Stipe Tolj  <tolj@wapme-systems.de>
     * STATUS: added Alex Judd's smsc_smpps.c TON patch and added 
       an open issue for re-connect trying of smsc_emi2.c
