@@ -1329,6 +1329,8 @@ void conn_shutdown_ssl(void)
     ERR_free_strings ();
     EVP_cleanup();
 
+    ssl_static_locks = NULL;
+
     gw_free(ssl_static_locks);
 }
 
@@ -1343,6 +1345,8 @@ void server_shutdown_ssl(void)
     
     ERR_free_strings ();
     EVP_cleanup();
+
+    ssl_server_static_locks = NULL;
 
     gw_free(ssl_server_static_locks);
 }
