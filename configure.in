@@ -358,6 +358,7 @@ AC_ARG_ENABLE(warnings,
     CFLAGS="$CFLAGS -Wmissing-declarations"
     CFLAGS="$CFLAGS -Wnested-externs"
     CFLAGS="$CFLAGS -Winline"
+    CFLAGS="$CFLAGS -Wformat -Wformat-security -Wmissing-format-attribute"
     #CFLAGS="$CFLAGS -Wstrict-prototypes"
     #CFLAGS="$CFLAGS -Wredundant-decls"
     #CFLAGS="$CFLAGS -Wconversion"

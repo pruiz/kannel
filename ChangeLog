@@ -1,3 +1,6 @@
+2004-06-16  Alexander Malysh  <a.malysh@centrium.de> 
+    * configure.in, configure: added "format warnings" if --enable-warnings defined.
+
 2004-06-15  Alexander Malysh  <a.malysh@centrium.de> 
     * doc/userguide/userguide.xml, gw/smsc/smsc_oisd.c: added validity support.
       See #124. Thanks to "Dariusz Markowicz" <dariuszm at tenbit.pl> for
