@@ -29,7 +29,8 @@ problem, fix it, and re-start from beginning:
 	* Make distribution files.
 	
 		* Use "makedist" script. Run it in an empty directory,
-		  not directly from the CVS work directory.
+		  not directly from the CVS work directory. CVSROOT
+		  is set as when setting up CVS for download
 	
 	* Test the distribution files and the software.
 	
