@@ -1,3 +1,8 @@
+1999-11-26  Aarno Syvänen <syvanen@wapit.com>
+
+	*wtp_state-decl.h: Added new rows in the state table (enough to run
+	wtp proto). 
+
 1999-11-25  Aarno Syvänen <syvanen@wapit.com>
 
 	*wtp.c: Fixed another bug in the function handle_event. No it generates
