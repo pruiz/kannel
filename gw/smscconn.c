@@ -85,14 +85,18 @@ SMSCConn *smscconn_create(ConfigGroup *grp, int start_as_stopped)
 void smscconn_shutdown(SMSCConn *conn, int finish_sending)
 {
     gw_assert(conn != NULL);
-    if (conn->status == SMSCCONN_DEAD)
+    mutex_lock(conn->flow_mutex);
+    if (conn->status == SMSCCONN_DEAD) {
+	mutex_unlock(conn->flow_mutex);
 	return;
+    }
 
     /* Call SMSC specific destroyer */
     if (conn->shutdown)
 	conn->shutdown(conn, finish_sending);
     else
 	conn->why_killed = SMSCCONN_KILLED_SHUTDOWN;
+    mutex_unlock(conn->flow_mutex);
     return;
 }
 
@@ -259,10 +263,17 @@ int smscconn_usable(SMSCConn *conn, Msg *msg)
 
 int smscconn_send(SMSCConn *conn, Msg *msg)
 {
+    int ret;
+    
     gw_assert(conn != NULL);
-    if (conn->status == SMSCCONN_DEAD || conn->why_killed != SMSCCONN_ALIVE)
+    mutex_lock(conn->flow_mutex);
+    if (conn->status == SMSCCONN_DEAD || conn->why_killed != SMSCCONN_ALIVE) {
+	mutex_unlock(conn->flow_mutex);
 	return -1;
-    return conn->send_msg(conn, msg);
+    }
+    ret = conn->send_msg(conn, msg);
+	mutex_unlock(conn->flow_mutex);
+    return ret;
 }
 
 

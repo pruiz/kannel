@@ -112,7 +112,11 @@ struct smscconn {
     /* XXX: move rest global data from Smsc here
      */
 
-    /* pointers set by specific driver, but initiated to NULL by smscconn */
+
+
+    /* pointers set by specific driver, but initiated to NULL by smscconn.
+     * Note that flow_mutex is always locked before these functions are
+     * called, and released after execution returns from them */
     
     /* pointer to function called when smscconn_shutdown called.
        Note that this function is not needed always. */
@@ -134,6 +138,7 @@ struct smscconn {
     void (*start_conn) (SMSCConn *conn);
     void (*stop_conn) (SMSCConn *conn);
     
+
     void *data;			/* SMSC specific stuff */
 
 };

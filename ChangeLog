@@ -1,5 +1,12 @@
 2001-01-11  Kalle Marjola  <rpr@wapit.com>
 
+	* gw/smscconn.c: modified so that flow_mutex is always locked in
+	functions using function pointers
+	
+	* gw/smscconn_p.h: added notes about mutex
+
+2001-01-11  Kalle Marjola  <rpr@wapit.com>
+
 	* gw/bearerbox.c|h: added suspend for SMSCConn
 
 	* gw/smscconn*.c: fixed suspend in various parts
