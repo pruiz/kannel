@@ -28,14 +28,15 @@
  
 #ifndef DEBUG 
 /* This version doesn't dump. */ 
-static void dump_pdu(const char *msg, SMPP_PDU *pdu) 
+static void dump_pdu(const char *msg, Octstr *id, SMPP_PDU *pdu) 
 { 
 } 
 #else 
 /* This version does dump. */ 
-static void dump_pdu(const char *msg, SMPP_PDU *pdu) 
+static void dump_pdu(const char *msg, Octstr *id, SMPP_PDU *pdu) 
 { 
-    debug("bb.sms.smpp", 0, "SMPP: %s", msg); 
+    debug("bb.sms.smpp", 0, "SMPP[%s]: %s", 
+          octstr_get_cstr(id), msg); 
     smpp_pdu_dump(pdu); 
 } 
 #endif 
@@ -373,7 +374,7 @@ static void send_enquire_link(SMPP *smpp, Connection *conn, long *last_sent)
     *last_sent = date_universal_now(); 
  
     pdu = smpp_pdu_create(enquire_link, counter_increase(smpp->message_id_counter)); 
-    dump_pdu("Sending enquire link:", pdu); 
+    dump_pdu("Sending enquire link:", smpp->conn->id, pdu); 
     os = smpp_pdu_pack(pdu); 
     conn_write(conn, os); /* Write errors checked by caller. */ 
     octstr_destroy(os); 
@@ -381,12 +382,12 @@ static void send_enquire_link(SMPP *smpp, Connection *conn, long *last_sent)
 } 
  
  
-static int send_pdu(Connection *conn, SMPP_PDU *pdu) 
+static int send_pdu(Connection *conn, Octstr *id, SMPP_PDU *pdu) 
 { 
     Octstr *os; 
     int ret; 
      
-    dump_pdu("Sending PDU:", pdu); 
+    dump_pdu("Sending PDU:", id, pdu); 
     os = smpp_pdu_pack(pdu); 
     ret = conn_write(conn, os);   /* Caller checks for write errors later */ 
     octstr_destroy(os); 
@@ -414,8 +415,8 @@ static void send_messages(SMPP *smpp, Connection *conn, long *pending_submits)
         os = octstr_format("%ld", pdu->u.submit_sm.sequence_number); 
         dict_put(smpp->sent_msgs, os, msg); 
         octstr_destroy(os); 
-        send_pdu(conn, pdu); 
-        dump_pdu("Sent PDU:", pdu); 
+        send_pdu(conn, smpp->conn->id, pdu); 
+        dump_pdu("Sent PDU:", smpp->conn->id, pdu); 
         smpp_pdu_destroy(pdu); 
  
         ++(*pending_submits); 
@@ -452,7 +453,7 @@ static Connection *open_transmitter(SMPP *smpp)
     bind->u.bind_transmitter.interface_version = smpp->version;
     bind->u.bind_transmitter.address_range =  
     	octstr_duplicate(smpp->address_range); 
-    send_pdu(conn, bind); 
+    send_pdu(conn, smpp->conn->id, bind); 
     smpp_pdu_destroy(bind); 
  
     return conn; 
@@ -486,7 +487,7 @@ static Connection *open_transceiver(SMPP *smpp)
         bind->u.bind_transmitter.system_type = octstr_duplicate(smpp->system_type); 
     bind->u.bind_transmitter.interface_version = smpp->version;
     bind->u.bind_transmitter.address_range = octstr_duplicate(smpp->address_range); 
-    send_pdu(conn, bind); 
+    send_pdu(conn, smpp->conn->id, bind); 
     smpp_pdu_destroy(bind); 
  
     return conn; 
@@ -522,7 +523,7 @@ static Connection *open_receiver(SMPP *smpp)
     bind->u.bind_receiver.interface_version = smpp->version;
     bind->u.bind_receiver.address_range =  
         octstr_duplicate(smpp->address_range); 
-    send_pdu(conn, bind); 
+    send_pdu(conn, smpp->conn->id, bind); 
     smpp_pdu_destroy(bind); 
  
     return conn; 
@@ -782,7 +783,7 @@ static void handle_pdu(SMPP *smpp, Connection *conn, SMPP_PDU *pdu,
     } 
      
     if (resp != NULL) { 
-    	send_pdu(conn, resp); 
+    	send_pdu(conn, smpp->conn->id, resp); 
         smpp_pdu_destroy(resp); 
     } 
 } 
@@ -852,23 +853,23 @@ static void io_thread(void *arg)
         for (;;) { 
             timeout = last_enquire_sent + smpp->enquire_link_interval
                         - date_universal_now(); 
-        if (smpp->quitting || conn_wait(conn, timeout) == -1) 
-            break; 
+            if (smpp->quitting || conn_wait(conn, timeout) == -1) 
+                break; 
  
-        send_enquire_link(smpp, conn, &last_enquire_sent); 
-	     
-        while ((ret = read_pdu(smpp, conn, &len, &pdu)) == 1) { 
-            /* Deal with the PDU we just got */ 
-            dump_pdu("Got PDU:", pdu); 
-            handle_pdu(smpp, conn, pdu, &pending_submits); 
-            smpp_pdu_destroy(pdu); 
- 
-            /* Make sure we send enquire_link even if we read a lot */ 
             send_enquire_link(smpp, conn, &last_enquire_sent); 
+	     
+            while ((ret = read_pdu(smpp, conn, &len, &pdu)) == 1) { 
+                /* Deal with the PDU we just got */ 
+                dump_pdu("Got PDU:", smpp->conn->id, pdu); 
+                handle_pdu(smpp, conn, pdu, &pending_submits); 
+                smpp_pdu_destroy(pdu); 
  
-            /* Make sure we send even if we read a lot */ 
-            if (transmitter) 
-                send_messages(smpp, conn, &pending_submits); 
+                /* Make sure we send enquire_link even if we read a lot */ 
+                send_enquire_link(smpp, conn, &last_enquire_sent); 
+ 
+                /* Make sure we send even if we read a lot */ 
+                if (transmitter) 
+                    send_messages(smpp, conn, &pending_submits); 
             } 
 	     
             if (ret == -1) { 
