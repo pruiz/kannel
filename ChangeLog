@@ -1,3 +1,8 @@
+2000-03-31  Richard Braakman  <dark@wapit.com>
+
+	* gwlib/octstr.c: Made octstr_decode_url not segfault on empty
+	octstrs.  Added assertions.
+
 Fri Mar 31 04:58:20 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* gwlib/gwmem.c: Formatting and other minor changes.
@@ -52,12 +57,12 @@ Fri Mar 31 00:31:21 2000  Lars Wirzenius  <liw@wapit.com>
 	* gwlib/octstr.c|h: added function octstr_url_decode (copied from
 	gwstr)
 
-2000-03-29  Richard Braakman  <dark@wapit.com>
+2000-03-30  Richard Braakman  <dark@wapit.com>
 
 	* gwlib/socket.c: Cast sockaddr arguments for recvfrom() and
 	sendto() to (struct sockaddr *).
 
-2000-03-29  Richard Braakman  <dark@wapit.com>
+2000-03-30  Richard Braakman  <dark@wapit.com>
 
 	* gwlib/socket.c: Tidied up gethostnameinfo(), removed excessive
 	use of __ in names.

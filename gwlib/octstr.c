@@ -880,6 +880,10 @@ int octstr_url_decode(Octstr *ostr)
     unsigned char *dptr = ostr->data;
     unsigned char buf[3];   	/* buffer for strtol conversion */
     buf[2] = '\0';
+
+    seems_valid(ostr);
+    if (ostr->len == 0)
+	return 0;
     
     do {
 	if (*string == '%') {
@@ -907,12 +911,15 @@ int octstr_url_decode(Octstr *ostr)
     *dptr = '\0';
 
     ostr->len = (dptr - ostr->data);
+
+    seems_valid(ostr);
     return 0;
 
 error:
     *dptr = '\0';
     ostr->len = (dptr - ostr->data);
     warning(0, "octstr_url_decode: corrupted end-of-string <%s>", string);
+    seems_valid(ostr);
     return -1;
 }
 
