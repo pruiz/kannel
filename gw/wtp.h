@@ -104,7 +104,8 @@ WTPMachine *wtp_machine_find_or_create(Msg *msg, WTPEvent *event);
 
 /*
  * Mark a WTP state machine unused. Normally, removing a state machine from the
- * state machines list means marking turning off a flag.
+ * state machines list means marking turning off a flag. Panics when there is
+ * no machines to mark unused.
  */
 void wtp_machine_mark_unused(WTPMachine *machine);
 

@@ -90,3 +90,14 @@ void mutex_unlock(pthread_mutex_t *mutex)
 	panic(errno, "Mutex failure!");
 }
 
+
+void mutex_destroy(pthread_mutex_t *mutex)
+{
+     if (pthread_mutex_destroy != 0)
+        panic(errno, "Trying to destroy a locked mutex");
+}
+
+
+
+
+

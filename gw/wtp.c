@@ -126,102 +126,92 @@ void wtp_event_dump(WTPEvent *event) {
 }
 
 /*
- * Mark a WTP state machine unused. Normal functions do not remove machines.
+ * Mark a WTP state machine unused. Normal functions do not remove machines. 
+ * Panics when there is no machine to mark unused.
  */
 void wtp_machine_mark_unused(WTPMachine *machine){
 
         WTPMachine *temp;
-        /*int ret;*/
 
-/*      ret=pthread_mutex_lock(&list->mutex);
-        if (ret == EINVAL){
-           info(errno, "Mutex not iniatilized. (List probably empty.)");
-           return;
-	}*/
+/*
+ * If the list or temp was empty, mutex_lock will panic. (This is acceptable, 
+ * because calling this function when there were no machines is a programming
+ * error).
+ */
+        mutex_lock(&list->mutex);
 
         temp=list;
-        /*ret=pthread_mutex_lock(&temp->next->mutex);*/
+        mutex_lock(&temp->next->mutex);
 
         while (temp != NULL && temp->next != machine){
-	    /*ret=pthread_mutex_unlock(&temp->mutex);*/
-            temp=temp->next;
-            /*if (temp != NULL)
-	         ret=pthread_mutex_lock(&temp->next->mutex);*/
+	      mutex_unlock(&temp->mutex);
+              temp=temp->next;
+	      mutex_lock(&temp->next->mutex);
         }
 
         if (temp == NULL){
-	    /*if (ret != EINVAL)
-	         ret=pthread_mutex_unlock(&temp->mutex);*/
+	    mutex_unlock(&temp->mutex);
             debug(0, "Machine unknown");
             return;
 	}
        
         temp->in_use=0;
-        /*if (ret != EINVAL)
-	     ret=pthread_mutex_unlock(&temp->mutex);*/
+        mutex_unlock(&temp->mutex);
         return;
 }
 
 /*
- * Really removes a WTP state machine. Used only by the garbage collection.
+ * Really removes a WTP state machine. Used only by the garbage collection. 
+ * Panics when there is no machines to destroy.
  */
 void wtp_machine_destroy(WTPMachine *machine){
 
         WTPMachine *temp;
-/*      int ret, d_ret;*/
 
-/*      ret=pthread_mutex_lock(&list->mutex);
-        if (ret == EINVAL){
-           error(errno, "Empty list (mutex not iniatilized)");
-           return;
-        }
-        ret=pthread_mutex_lock(&list->next->mutex);
-*/
+        mutex_lock(&list->mutex);
+        mutex_lock(&list->next->mutex);
+
         if (list == machine) {
            list=machine->next;         
-/*      if (ret != EINVAL)
-              ret=pthread_mutex_unlock(&list->next->mutex);
-	      ret=pthread_mutex_unlock(&list->mutex);*/
+           mutex_unlock(&list->next->mutex);
+	   mutex_unlock(&list->mutex);
 
         } else {
           temp=list;
 
           while (temp != NULL && temp->next != machine){ 
-	        /*ret=pthread_mutex_unlock(&temp->mutex);*/
+	        mutex_unlock(&temp->mutex);
                 temp=temp->next;
-/*              if (temp != NULL)
-		   ret=pthread_mutex_lock(&temp->next->mutex);*/
+                if (temp != NULL)
+		   mutex_lock(&temp->next->mutex);
           }
 
           if (temp == NULL){
-              
-/*            if (ret != EINVAL)
-                  ret=pthread_mutex_unlock(&temp->next->mutex);
-	      ret=pthread_mutex_unlock(&temp->mutex);*/
+              mutex_unlock(&temp->next->mutex);
+	      mutex_unlock(&temp->mutex);
               info(0, "Machine unknown");
               return;
 	  }
+
           temp->next=machine->next;
 	}
+
+        mutex_unlock(&temp->next->mutex);
 
         #define INTEGER(name)
         #define ENUM(name)        
         #define OCTSTR(name) octstr_destroy(temp->name)
         #define TIMER(name) wtp_timer_destroy(temp->name)
-        #define QUEUE(name) /*queue to be implemented later*/
-/*#if HAVE_THREADS
-        #define MUTEX(name) d_ret=pthread_mutex_destroy(&temp->name)
-#else*/
-        #define MUTEX(name)
-/*#endif*/
+        #define QUEUE(name) if (temp->name != NULL)\
+                               panic(0, "Event queue was not empty")
+        #define MUTEX(name) mutex_destroy(&temp->name)
         #define NEXT(name)
         #define MACHINE(field) field
         #include "wtp_machine-decl.h"
 
         free(temp);
-/*      if (ret != EINVAL)
-           ret=pthread_mutex_unlock(&machine->next->mutex);
-	ret=pthread_mutex_unlock(&machine->mutex);*/
+        mutex_unlock(&machine->next->mutex);
+	mutex_unlock(&machine->mutex);
         
         return;
 }
@@ -232,34 +222,30 @@ void wtp_machine_destroy(WTPMachine *machine){
  */
 void wtp_machine_dump(WTPMachine  *machine){
 
-        /*int ret;*/
-
         if (machine != NULL){
 
            debug(0, "The machine was %p:", (void *) machine); 
 	   #define INTEGER(name) \
            debug(0, "Integer field %s,%ld:", #name, machine->name)
            #define ENUM(name) debug(0, "state=%s.", name_state(machine->name))
-	   #define OCTSTR(name)  debug(0, "Octstr field %s :", #name);\
+	   #define OCTSTR(name)  debug(0, "Octstr field %s :", #name); \
                                  octstr_dump(machine->name)
            #define TIMER(name)   debug(0, "Machine timer %p:", (void *) \
-                              machine->name)
-           #define QUEUE(name)   /*to be implemented later*/
-/*#if HAVE_THREADS
-           #define MUTEX(name)   ret=pthread_mutex_trylock(&machine->name);\
-                                 if (ret == EBUSY)\
+                                       machine->name)
+           #define QUEUE(name)   debug (0, "Next event to be processed, %s", \
+                                        name_event(machine->name->type)) 
+           #define MUTEX(name)   if (mutex_try_lock(&machine->name) == EBUSY) \
                                     debug(0, "Machine locked");\
                                  else {\
                                     debug(0, "Machine unlocked");\
-                                    ret=pthread_mutex_unlock(&machine->name);\
+                                    mutex_unlock(&machine->name);\
                                  }
-#else*/
-           #define MUTEX(name)
-/*#endif*/
            #define NEXT(name)
 	   #define MACHINE(field) field
 	   #include "wtp_machine-decl.h"
-	}
+	
+         } else
+           debug(0, "Machine does not exist");
 }
 
 
@@ -586,49 +572,45 @@ WTPMachine *wtp_machine_find(Octstr *source_address, long source_port,
 	   Octstr *destination_address, long destination_port, long tid){
 
            WTPMachine *temp;
-           /*int ret;*/
 
 /*
- *We are interested only machines in use, it is, having in_use-flag 1.
+ * We are interested only machines in use, it is, having in_use-flag 1.
  */
-/*         ret=pthread_mutex_lock(&list->mutex);
-           if (ret == EINVAL){
-               error(errno, "Empty list (mutex not iniatilized)");
-           return NULL;
-           }
-*/
-           if (list == NULL)
+           if (list == NULL){
+              debug (0, "Empty list");
               return NULL;
-           
+           }
+
+           mutex_lock(&list->mutex);
+              
            temp=list;
 
            while (temp != NULL){
    
-	     if ((octstr_compare(temp->source_address, source_address) == 0) &&
-                  temp->source_port == source_port &&
-                  (octstr_compare(temp->destination_address, 
-                                  destination_address) == 0) &&
-                   temp->destination_port == destination_port &&
-		   temp->tid == tid && temp->in_use == 1){
+	   if ((octstr_compare(temp->source_address, source_address) == 0) &&
+                temp->source_port == source_port && 
+                (octstr_compare(temp->destination_address,
+                                destination_address) == 0) &&
+                temp->destination_port == destination_port &&
+		temp->tid == tid && temp->in_use == 1){
 
-                   /*pthread_mutex_unlock(&temp->mutex);*/
-                   return temp;
+                mutex_unlock(&temp->mutex);
+                return temp;
                  
 		} else {
 
-		  /*pthread_mutex_unlock(&temp->mutex);*/
+		   mutex_unlock(&temp->mutex);
                    temp=temp->next;
-		   /* pthread_mutex_lock(&temp->mutex);*/
+		   mutex_lock(&temp->mutex);
                }              
            }
-           /*pthread_mutex_unlock(&temp->mutex);*/         
+           mutex_unlock(&temp->mutex);         
            return temp;
 }
 
 static WTPMachine *wtp_machine_create_empty(void){
 
         WTPMachine *machine;
-        /*int dummy, ret;*/
 
         machine=malloc(sizeof(WTPMachine));
         if (machine == NULL)
@@ -648,17 +630,15 @@ static WTPMachine *wtp_machine_create_empty(void){
         #define MACHINE(field) field
         #include "wtp_machine-decl.h"
 
-        /*ret=pthread_mutex_lock(&list->mutex);*/
+        mutex_lock(&list->mutex);
         machine->next=list;
         list=machine;
-/*
- * List was not empty
- */
-/*        if (ret != EINVAL)
-	     ret=pthread_mutex_unlock(&list->mutex);*/
 
-          debug(0, "wtp_create_machine: machine created");
-          return machine;
+        mutex_unlock(&list->mutex);
+
+        debug(0, "wtp_create_machine: machine created");
+        return machine;
+
 /*
  * Message Abort(CAPTEMPEXCEEDED), to be added later. 
  * Thou shalt not leak memory... Note, that a macro could be called many times.
@@ -669,13 +649,9 @@ static WTPMachine *wtp_machine_create_empty(void){
             #define ENUM(name)
             #define OCTSTR(name) if (machine->name != NULL)\
                                     octstr_destroy(machine->name)
-            #define QUEUE(name)  /*to be implemented later*/
-/*#if HAVE_THREADS
-            #define MUTEX(name)  ret=pthread_mutex_lock(&machine->name);\
-                                 ret=pthread_mutex_destroy(&machine->name)
-#else*/
-            #define MUTEX(name)
-/*#endif*/
+            #define QUEUE(name)  
+            #define MUTEX(name)  mutex_lock(&machine->name);\
+                                 mutex_destroy(&machine->name)
             #define TIMER(name) if (machine->name != NULL)\
                                    wtp_timer_destroy(machine->name)
             #define NEXT(name)
