@@ -2,7 +2,7 @@ Tue Nov 16 15:40:59 1999  Lars Wirzenius  <liw@wapit.com>
 
 	* Makefile: Added compilation of test programs.
 	
-	* 
+	* test/test_msg.c: Added a call to msg_dump.c.
 
 Tue Nov 16 14:57:55 1999  Lars Wirzenius  <liw@wapit.com>
 

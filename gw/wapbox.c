@@ -13,6 +13,7 @@
 #include "octstr.h"
 #include "msg.h"
 #include "config.h"
+#include "wtp.h"
 
 static char *bearerbox_host = NULL;
 static int bearerbox_port = -1;
@@ -69,6 +70,7 @@ static Msg *msg_receive(int s) {
 int main(int argc, char **argv) {
 	int bbsocket;
 	Msg *msg;
+	WTPEvent *event;
 
 	info(0, "WAP box starting up.");
 
@@ -83,8 +85,9 @@ int main(int argc, char **argv) {
 		if (msg == NULL)
 			break;
 		msg_dump(msg);
+		event = wtp_unpack_wdp_datagram(msg);
+		wtp_event_dump(event);
 #if 0
-		event = wtp_unpack_datagram_to_event(msg);
 		machine = create_or_find_wtp_machine(event);
 		debug(0, "Ignoring stuff since implementation isn't done.");
 #endif

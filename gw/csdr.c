@@ -142,6 +142,7 @@ RQueueItem *csdr_get_message(CSDRouter *router)
 		error(errno, "Error receiving datagram.");
 		goto error;
 	}
+	debug(0, "csdr_get_message: recvfrom returned %d", length);
 
 	getsockname(router->fd, (struct sockaddr*)&servaddr, &servlen);
 
@@ -166,6 +167,8 @@ RQueueItem *csdr_get_message(CSDRouter *router)
 	item->msg->wdp_datagram.destination_address = octstr_create(server_ip);
 	item->msg->wdp_datagram.destination_port    = atoi(server_port);
 	item->msg->wdp_datagram.user_data = octstr_create_from_data(data, length);
+	debug(0, "csdr_get_message: message dump follows");
+	msg_dump(item->msg);
 
 	return item;
 

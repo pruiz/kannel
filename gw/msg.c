@@ -70,9 +70,11 @@ void msg_destroy(Msg *msg) {
 void msg_dump(Msg *msg) {
 	debug(0, "Msg object at %p:", (void *) msg);
 	debug(0, "  type: %s", type_as_str(msg));
-	#define INTEGER(name) debug(0, "  %s: %ld", #name, (long) p->name)
-	#define OCTSTR(name) debug(0, "  %s:", #name); octstr_dump(p->name)
-	#define MSG(type, stmt) { struct type *p = &msg->type; stmt }
+	#define INTEGER(name) \
+		debug(0, "  %s.%s: %ld", t, #name, (long) p->name)
+	#define OCTSTR(name) \
+		debug(0, "  %s.%s:", t, #name); octstr_dump(p->name)
+	#define MSG(type, stmt) { char *t = #type; struct type *p = &msg->type; stmt }
 	#include "msg-decl.h"
 	debug(0, "Msg object ends.");
 }

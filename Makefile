@@ -111,7 +111,7 @@ cvsignore:
 		while read d; do > $$d/.cvsignore; \
 		echo .cvsignore >> $$d/.cvsignore; done
 	echo .depend >> .cvsignore
-	for prog in $(progs); do \
+	for prog in $(progs) $(testprogs); do \
 		echo `basename $$prog` >> `dirname $$prog`/.cvsignore; done
 
 install: all

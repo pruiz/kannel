@@ -19,6 +19,7 @@ int main(void) {
 	info(0, "Creating msg.");
 	msg = msg_create(heartbeat);
 	msg->heartbeat.load = 42;
+	msg_dump(msg);
 	
 	info(0, "Packing msg.");
 	os = msg_pack(msg);

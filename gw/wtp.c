@@ -348,7 +348,7 @@ WTPMachine *wtp_machine_find(Octstr *source_address, long source_port,
  *the host byte order. Updates the log and sends protocol error messages.
  */
 
-WTPEvent *WTP_unpack_datagram(Msg *msg){
+WTPEvent *wtp_unpack_wdp_datagram(Msg *msg){
 
          WTPEvent *event;
          int octet,
@@ -379,6 +379,7 @@ WTPEvent *WTP_unpack_datagram(Msg *msg){
          last_tid=octstr_get_char(msg->wdp_datagram.user_data,2);
          tid=last_tid;
          tid=(tid << 8) + first_tid;
+debug(0, "first_tid=%d last_tid=%d tid=%d", first_tid, last_tid, tid);
 
          this_octet=octet=octstr_get_char(msg->wdp_datagram.user_data, 0);
          if (octet == -1)
