@@ -91,19 +91,6 @@ void list_destroy(List *list) {
 }
 
 
-void list_destroy_with(List *list, list_item_destructor_t *destructor) {
-	long i;
-
-	if (list == NULL)
-		return;
-
-	for (i = 0; i < list->len; i++) {
-		destructor(GET(list, i));
-	}
-	list_destroy(list);
-}
-
-
 long list_len(List *list) {
 	return list->len;
 }

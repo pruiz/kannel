@@ -89,13 +89,6 @@ void list_destroy(List *list);
 
 
 /*
- * Destroy the list, after calling a destructor function on each item
- * in the list.
- */
-void list_destroy_with(List *list, list_item_destructor_t *destructor);
-
-
-/*
  * Return the number of items in the list.
  */
 long list_len(List *list);
