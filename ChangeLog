@@ -1,3 +1,12 @@
+2002-01-16  Tuomas Luttinen  <Tuomas.Luttinen@reach-u.com>
+
+	* gwlib/http.c (client_is_persistent): A function added to the HTTP 
+	server to define whether the connection from the client is persistent 
+	or not. The value is stored into the client object and used to decide 
+	whether to close or reuse the client.
+	(http_send_reply): Added a check to the outgoing headers to cut the 
+	connection if there is "Connection: close" header.
+
 2002-01-15  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/urltrans.c: fixed a bug while sending an empty SMS message
       and servicing it with the default sms-service and using the

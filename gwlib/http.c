@@ -989,7 +989,7 @@ static int parse_url(Octstr *url, Octstr **host, long *port, Octstr **path,
 {
     Octstr *prefix, *prefix_https;
     long prefix_len;
-    int host_len, colon, slash, at, auth_sep=0;
+    int host_len, colon, slash, at, auth_sep = 0;
 
     prefix = octstr_imm("http://");
     prefix_https = octstr_imm("https://");
@@ -1362,6 +1362,7 @@ struct HTTPClient {
     int method;  /* HTTP_METHOD_ value */
     Octstr *url;
     int use_version_1_0;
+    int persistent_conn;
     HTTPEntity *request;
 };
 
@@ -1385,6 +1386,7 @@ static HTTPClient *client_create(int port, Connection *conn, Octstr *ip)
     p->state = reading_request_line;
     p->url = NULL;
     p->use_version_1_0 = 0;
+    p->persistent_conn = 1;
     p->request = NULL;
     return p;
 }
@@ -1416,6 +1418,31 @@ static void client_reset(HTTPClient *p)
     	  octstr_get_cstr(p->ip));
     p->state = reading_request_line;
     gw_assert(p->request == NULL);
+}
+
+
+/*
+ * Checks whether the client connection is meant to be persistent or not.
+ * Returns 1 for true, 0 for false.
+ */
+
+static int client_is_persistent(List *headers, int use_version_1_0)
+{
+    Octstr *h = http_header_find_first(headers, "Connection");
+
+    if (h == NULL) {
+	return !use_version_1_0;
+    } else {
+        if (use_version_1_0) {
+	    if (octstr_compare(h, octstr_imm("keep-alive")) == 0)
+	        return 1;
+	    else
+		return 0;
+	} else if (octstr_compare(h, octstr_imm("close")) == 0)
+	    return 0;
+    }
+
+    return 1;
 }
 
 
@@ -1644,7 +1671,7 @@ static void receive_request(Connection *conn, void *data)
 	    if (conn_outbuf_len(conn) > 0)
 		return;
 	    /* Reply has been sent completely */
-	    if (client->use_version_1_0) {
+	    if (!client->persistent_conn) {
 		client_destroy(client);
 		return;
 	    }
@@ -1903,6 +1930,9 @@ HTTPClient *http_accept_request(int port, Octstr **client_ip, Octstr **url,
 	octstr_destroy(*body);
 	*body = NULL;
     }
+
+    client->persistent_conn = client_is_persistent(client->request->headers,
+						   client->use_version_1_0);
     
     client->url = NULL;
     client->request->headers = NULL;
@@ -1919,12 +1949,17 @@ void http_send_reply(HTTPClient *client, int status, List *headers,
 {
     Octstr *response;
     long i;
-    int ret;
+    int ret, p;
 
     if (client->use_version_1_0)
     	response = octstr_format("HTTP/1.0 %d Foo\r\n", status);
     else
     	response = octstr_format("HTTP/1.1 %d Foo\r\n", status);
+
+    if (!client->use_version_1_0 && 
+	(p = client_is_persistent(headers, client->use_version_1_0)) != 
+	client->persistent_conn)
+        client->persistent_conn = p;
 
     octstr_format_append(response, "Content-Length: %ld\r\n",
 			 octstr_len(body));
@@ -1939,7 +1974,7 @@ void http_send_reply(HTTPClient *client, int status, List *headers,
     octstr_destroy(response);
 
     if (ret == 0) {	/* Sent already */
-	if (client->use_version_1_0)
+	if (!client->persistent_conn)
 	    client_destroy(client);
 	else {
 	    client_reset(client);
