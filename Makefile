@@ -57,9 +57,7 @@ LIBS += $(THREADLIB) $(EFENCELIB) -lm
 progsrcs = \
 	gw/bearerbox.c \
 	gw/smsbox.c \
-	gw/wapbox.c \
-	test/fakesmsc.c \
-	test/wapbox_feeder.c
+	gw/wapbox.c
 
 progobjs = $(progsrcs:.c=.o)
 progs = $(progsrcs:.c=)
@@ -70,12 +68,17 @@ gwobjs = $(gwsrcs:.c=.o)
 libsrcs = $(shell echo gwlib/*.c)
 libobjs = $(libsrcs:.c=.o)
 
+testsrcs = $(shell echo test/*.c)
+testobjs = $(testsrcs:.c=.o)
+testprogs = $(testsrcs:.c=)
+
 srcs = $(shell echo */*.c)
 objs = $(srcs:.c=.o)
 
-all: progs
+all: progs tests
 
-progs: $(progobjs) $(progs)
+progs: $(progs)
+tests: $(testprogs)
 
 clean:
 	rm -f core $(progs) $(objs) *.a gateway.pid
@@ -93,8 +96,15 @@ libgwlib.a: $(libobjs)
 	ar rc libgwlib.a $(libobjs)
 	$(RANLIB) libgwlib.a
 
+libtest.a: $(testobjs)
+	ar rc libtest.a $(testbjs)
+	$(RANLIB) libtest.a
+
 $(progs): libgw.a libgwlib.a
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $@.o libgw.a libgwlib.a $(LIBS)
+
+$(testprogs): libtest.a libgw.a libgwlib.a
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $@.o libtest.a libgw.a libgwlib.a $(LIBS)
 
 cvsignore:
 	find . -name CVS -type d | sed 's:/CVS$$::' | \

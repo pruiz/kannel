@@ -1,3 +1,9 @@
+Tue Nov 16 15:40:59 1999  Lars Wirzenius  <liw@wapit.com>
+
+	* Makefile: Added compilation of test programs.
+	
+	* 
+
 Tue Nov 16 14:57:55 1999  Lars Wirzenius  <liw@wapit.com>
 
 	* Moved a number of files from smsgateway here.
