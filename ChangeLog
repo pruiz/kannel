@@ -1,4 +1,9 @@
 2002-05-16  Stipe Tolj <tolj@wapme-systems.de>
+    * gw/bb_boxc.c: fixed a misbehaviour in accept_boxc() which didn't close
+      new socket descriptors if the remote IP is banned. Thanks to Paul.
+      [Msg-ID: <F88041028581AE4AB60F630CD4E801B50F90A8@ocasey.anam.com>]
+
+2002-05-16  Stipe Tolj <tolj@wapme-systems.de>
     * gwlib/conn.c: added Oded's non-blocking SSL_connect() patch.
       [Msg-ID: <2CFC21DAF860CC49AF57333C4459DD4B167F62@exchange.m-wise.com>]
 
