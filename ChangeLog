@@ -266,7 +266,6 @@ Wed Feb  2 13:52:14 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* gw/bearerbox.c: updated XML to be synchronized with Plectra
 
->>>>>>> 1.220
 2000-01-31  Markku Rossi  <mtr@iki.fi>
 
 	* wmlscript: Lots of code review changes.  Implemented IEEE 754

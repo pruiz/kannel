@@ -28,9 +28,8 @@ Requirements
 
 Documentation
 
-	There is some documentation about how the gateway has been
-	implemented in the doc/arch directory. The doc/userguide directory
-	will contain a user manual, but that isn't written yet.
+	The user manual is in the doc/userguide directory, but it is still
+	very raw. Developer documentation is in the doc/arch directory.
 
 Getting the gateway sources
 
@@ -39,7 +38,8 @@ Getting the gateway sources
 	
 	Note that you also need the Gnome-xml library from
 	http://xmlsoft.org/xml.html. That one probably requires zlib,
-	depending on how it is configured.
+	depending on how it is configured. You need at least version
+	1.8.1.
 
 Compiling and installing the gateway
 
