@@ -1,7 +1,11 @@
+2003-01-13  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/wap-appl.c: fixed memory leak in set_referer_url(). Patch 
+      provided by Vjacheslav Chekushin <slava@lmt.lv>. Thanks
+
 2003-01-12  Bruno Rodrigues  <bruno.rodrigues@litux.org> 
     * ChangeLog: fix spaces ;) Sorry, I'm too used to debian's changelog
     * debian/changelog: fix changing day but not month and year
- 
+     
 22003-01-11  Bruno Rodrigues  <bruno.rodrigues@litux.org> 
     * debian/*: updated to generate packages for 1.3.0
     * test/.cvsignore: ignore new wapproxy file
