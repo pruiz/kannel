@@ -1,49 +1,5 @@
 /*
- * SMS BOX
- *
- * (WAP/SMS) Gateway
- *
- * Kalle Marjola 1999 for Wapit ltd.
- *
- */
-
-/*
- * this is a SMS Service BOX
- *
- * it's main function is to receive SMS Messages from
- * (gateway) bearerbox and then fulfill requests in those
- * messages
- *
- * It may also send SMS Messages on its own, sending them
- * to bearerbox and that way into SMS Centers
- *
- * 
- * FUNCTION:
- *
- * 1. main loop opens a TCP/IP socket into the bearerbox, doing
- *    necessary handshake
- *
- * 2. for each SMS Message received, a new thread is created to
- *    handle the request
- *
- * 3. replies to requests and HTTP-initiated messages are sent
- *    (back) to the bearerbox. A global mutex is used for locking
- *    purposes
- *
- * THREAD FUNCTION:
- *
- * this program can also be used as a separate thread in bearerbox
- * When used this way, request thread is directly created by the
- * main program in bearerbox and repolies directly added to the
- * bearerbox reply queue. TODO: This functionality is added later.
- *
- * CONFIGURATION:
- *
- * - Information required for connecting the bearerbox is stored into
- *   a seperate configuration file.
- * - Service handling information is received from the bearerbox during
- *   handshake procedure (currently: from same configuration as rest)
- *
+ * smsbox.c - main program of the smsbox
  */
 
 #include <errno.h>

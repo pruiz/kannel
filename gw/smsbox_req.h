@@ -45,14 +45,6 @@ void smsbox_req_shutdown(void);
  */
 long smsbox_req_count(void);
 
-
-/*
- * handle one MO request. Arg is Msg *msg, and is void so that this can be
- * run directly with 'start_thread'
- */
-void smsbox_req_thread(void *arg);
-
-
 /*
  * handle sendsms request. Note that this does NOT start a new thread, but
  * instead must be called from appropriate HTTP-thread

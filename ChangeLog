@@ -1,6 +1,8 @@
 2000-12-04  Lars Wirzenius  <liw@iki.fi>
 
 	* gw/smsbox_req.c: Rearranged code to be somewhat clearer.
+	
+	* gw/smsbox.c: Removed ancient file comment.
 
 2000-12-04  Lars Wirzenius  <liw@iki.fi>
 

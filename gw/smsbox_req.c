@@ -61,7 +61,7 @@ List *smsbox_requests = NULL;
 
 
 /***********************************************************************
- * SMS splitting.
+ * Stuff to send messages to bearerbox for delivery to phones.
  */
 
 
@@ -194,19 +194,94 @@ static List *sms_split(Msg *orig, Octstr *header, Octstr *footer,
 }
 
 
-/*-------------------------------------------------------------------*
- * STATIC FUNCTIONS
+/*
+ * Send a message to the bearerbox for delivery to a phone. Use
+ * configuration from `trans' to format the message before sending.
+ * Destroy `msg'. Return 0 for success, -1 for failure.
+ */
+static int send_message(URLTranslation *trans, Msg *msg)
+{
+    int max_msgs;
+    Octstr *header, *footer, *suffix, *split_chars;
+    int catenate;
+    List *list;
+    Msg *part;
+    static char *empty = "<Empty reply from service provider>";
+    
+    gw_assert(msg != NULL);
+    gw_assert(msg_type(msg) == sms);
+    
+    if (trans != NULL)
+	max_msgs = urltrans_max_messages(trans);
+    else
+	max_msgs = 1;
+    
+    if (max_msgs == 0) {
+	info(0, "No reply sent, denied.");
+	msg_destroy(msg);
+	return 0;
+    }
+    
+    if (msg->sms.flag_udh == 0 && octstr_len(msg->sms.msgdata) == 0) {
+	if (trans != NULL && urltrans_omit_empty(trans) != 0) {
+	    max_msgs = 0;
+	} else { 
+	    octstr_replace(msg->sms.msgdata, empty, strlen(empty));
+	}
+    }
+
+    if (max_msgs == 0)
+    	return 0;
+
+    if (trans == NULL) {
+	header = NULL;
+	footer = NULL;
+	suffix = NULL;
+	split_chars = NULL;
+	catenate = 0;
+    } else {
+#define CREATE(cstr) ((cstr) ? octstr_create(cstr) : NULL)
+    	header = CREATE(urltrans_header(trans));
+	footer = CREATE(urltrans_footer(trans));
+	suffix = CREATE(urltrans_split_suffix(trans));
+	split_chars = CREATE(urltrans_split_chars(trans));
+#undef CREATE
+	catenate = urltrans_concatenation(trans);
+    }
+
+    if (catenate)
+    	catenate = counter_increase(catenated_sms_counter) & 0xFF;
+
+    list = sms_split(msg, header, footer, suffix, split_chars, catenate,
+    	    	     max_msgs, sms_max_length);
+    msg_destroy(msg);
+    octstr_destroy(header);
+    octstr_destroy(footer);
+    octstr_destroy(suffix);
+    octstr_destroy(split_chars);
+
+    while ((part = list_extract_first(list)) != NULL)
+	smsbox_send_to_bearerbox(part);
+    list_destroy(list, NULL);
+    
+    return 0;
+}
+
+
+/***********************************************************************
+ * Stuff to remember which receiver belongs to which HTTP query.
  */
 
-static int send_message(URLTranslation *trans, Msg *msg);
 
 static HTTPCaller *caller;
 static Dict *receivers;
+
 
 struct receiver {
     Msg *msg;
     URLTranslation *trans;
 };
+
 
 static void destroy_receiver(void *p)
 {
@@ -216,6 +291,7 @@ static void destroy_receiver(void *p)
     msg_destroy(r->msg);
     gw_free(r);
 }
+
 
 static void remember_receiver(long id, Msg *msg, URLTranslation *trans)
 {
@@ -256,6 +332,11 @@ static void get_receiver(long id, Msg **msg, URLTranslation **trans)
 }
 
 
+/***********************************************************************
+ * Thread for receiving reply from HTTP query and sending it to phone.
+ */
+
+
 static void strip_prefix_and_suffix(Octstr *html, char *prefix, char *suffix)
 {
     char *p, *q, *data;
@@ -273,7 +354,6 @@ static void strip_prefix_and_suffix(Octstr *html, char *prefix, char *suffix)
     octstr_delete(html, 0, p - data);
     octstr_truncate(html, q - p);
 }
-
 
 
 static void url_result_thread(void *arg)
@@ -348,6 +428,13 @@ static void url_result_thread(void *arg)
 }
 
 
+/***********************************************************************
+ * Thread to receive SMS messages from bearerbox and obeying the requests
+ * in them. HTTP requests are started in the background (another thread
+ * will deal with the replies) and other requests are fulfilled directly.
+ */
+
+
 /*
  * Perform the service requested by the user: translate the request into
  * a pattern, if it is an URL, start its fetch and return 0, otherwise
@@ -413,77 +500,106 @@ error:
 }
 
 
-/*
- * send the 'reply', according to settings in 'trans' and 'msg'
- * return -1 if failed utterly, 0 otherwise
- */
-static int send_message(URLTranslation *trans, Msg *msg)
+static void obey_request_thread(void *arg) 
 {
-    int max_msgs;
-    Octstr *header, *footer, *suffix, *split_chars;
-    int catenate;
-    List *list;
-    Msg *part;
-    static char *empty = "<Empty reply from service provider>";
+    Msg *msg;
+    Octstr *tmp, *reply;
+    URLTranslation *trans;
+    char *p;
     
-    gw_assert(msg != NULL);
-    gw_assert(msg_type(msg) == sms);
+    while ((msg = list_consume(smsbox_requests)) != NULL) {
+	if (octstr_len(msg->sms.sender) == 0 ||
+	    octstr_len(msg->sms.receiver) == 0) 
+	{
+	    error(0, "smsbox_req_thread: no sender/receiver, dump follows:");
+	    msg_dump(msg, 0);
+		    /* NACK should be returned here if we use such 
+		       things... future implementation! */
+	    continue;
+	}
     
-    if (trans != NULL)
-	max_msgs = urltrans_max_messages(trans);
-    else
-	max_msgs = 1;
+	if (octstr_compare(msg->sms.sender, msg->sms.receiver) == 0) {
+	    info(0, "NOTE: sender and receiver same number <%s>, ignoring!",
+		 octstr_get_cstr(msg->sms.sender));
+	    continue;
+	}
     
-    if (max_msgs == 0) {
-	info(0, "No reply sent, denied.");
-	msg_destroy(msg);
-	return 0;
-    }
+	trans = urltrans_find(translations, msg->sms.msgdata, 
+	    	    	      msg->sms.smsc_id);
+	if (trans == NULL) {
+	    Octstr *t;
+	    warning(0, "No translation found for <%s> from <%s> to <%s>",
+		    octstr_get_cstr(msg->sms.msgdata),
+		    octstr_get_cstr(msg->sms.sender),
+		    octstr_get_cstr(msg->sms.receiver));
+	    t = msg->sms.sender;
+	    msg->sms.sender = msg->sms.receiver;
+	    msg->sms.receiver = t;
+	    goto error;
+	}
     
-    if (msg->sms.flag_udh == 0 && octstr_len(msg->sms.msgdata) == 0) {
-	if (trans != NULL && urltrans_omit_empty(trans) != 0) {
-	    max_msgs = 0;
-	} else { 
-	    octstr_replace(msg->sms.msgdata, empty, strlen(empty));
+	info(0, "Starting to service <%s> from <%s> to <%s>",
+	     octstr_get_cstr(msg->sms.msgdata),
+	     octstr_get_cstr(msg->sms.sender),
+	     octstr_get_cstr(msg->sms.receiver));
+    
+	/*
+	 * now, we change the sender (receiver now 'cause we swap them later)
+	 * if faked-sender or similar set. Note that we ignore if the 
+	 * replacement fails.
+	 */
+	tmp = octstr_duplicate(msg->sms.sender);
+	    
+	p = urltrans_faked_sender(trans);
+	if (p != NULL)
+	    octstr_replace(msg->sms.sender, p, strlen(p));
+	else if (global_sender != NULL)
+	    octstr_replace(msg->sms.sender, global_sender, 
+	    	    	   strlen(global_sender));
+	else {
+	    octstr_replace(msg->sms.sender, 
+	    	    	   octstr_get_cstr(msg->sms.receiver),
+			   octstr_len(msg->sms.receiver));
+	}
+	octstr_destroy(msg->sms.receiver);
+	msg->sms.receiver = tmp;
+    
+	/* TODO: check if the sender is approved to use this service */
+    
+	switch (obey_request(&reply, trans, msg)) {
+	case -1:
+    error:
+	    error(0, "request failed");
+	    /* XXX this can be something different, according to 
+	       urltranslation */
+	    reply = octstr_create("Request failed");
+	    trans = NULL;	/* do not use any special translation */
+    	    break;
+	    
+	case 1:
+	    octstr_destroy(msg->sms.msgdata);
+	    msg->sms.msgdata = reply;
+	
+	    msg->sms.flag_8bit = 0;
+	    msg->sms.flag_udh  = 0;
+	    msg->sms.time = time(NULL);	/* set current time */
+	
+	    if (send_message(trans, msg) < 0)
+		error(0, "request_thread: failed");
+    	    break;
+    	
+	default:
+	    msg_destroy(msg);
 	}
     }
-
-    if (max_msgs == 0)
-    	return 0;
-
-    if (trans == NULL) {
-	header = NULL;
-	footer = NULL;
-	suffix = NULL;
-	split_chars = NULL;
-	catenate = 0;
-    } else {
-#define CREATE(cstr) ((cstr) ? octstr_create(cstr) : NULL)
-    	header = CREATE(urltrans_header(trans));
-	footer = CREATE(urltrans_footer(trans));
-	suffix = CREATE(urltrans_split_suffix(trans));
-	split_chars = CREATE(urltrans_split_chars(trans));
-#undef CREATE
-	catenate = urltrans_concatenation(trans);
-    }
-
-    if (catenate)
-    	catenate = counter_increase(catenated_sms_counter) & 0xFF;
-
-    list = sms_split(msg, header, footer, suffix, split_chars, catenate,
-    	    	     max_msgs, sms_max_length);
-    msg_destroy(msg);
-    octstr_destroy(header);
-    octstr_destroy(footer);
-    octstr_destroy(suffix);
-    octstr_destroy(split_chars);
-
-    while ((part = list_extract_first(list)) != NULL)
-	smsbox_send_to_bearerbox(part);
-    list_destroy(list, NULL);
-    
-    return 0;
 }
+
+
+
+/***********************************************************************
+ * HTTP sendsms interface.
+ */
+
 
 /* Function that test the authentification via Plugable authentification module*/
 #ifdef HAVE_SECURITY_PAM_APPL_H /*Module for pam authentication */
@@ -645,151 +761,9 @@ static URLTranslation *authorise_user(List *list, char *client_ip)
 #endif
 }
 
-/*----------------------------------------------------------------*
- * PUBLIC FUNCTIONS
- */
 
-void smsbox_req_init(URLTranslationList *transls,
-		    Config *config,
-		    int sms_max,
-		    char *global,
-		    char *accept_str)
-{
-    translations = transls;
-    cfg = config;
-    sms_max_length = sms_max;
-    if (accept_str)
-	sendsms_number_chars = accept_str;
-    else
-	sendsms_number_chars = SENDSMS_DEFAULT_CHARS;
-    
-    if (global != NULL)
-	global_sender = gw_strdup(global);
-    
-    caller = http_caller_create();
-    smsbox_requests = list_create();
-    list_add_producer(smsbox_requests);
-    receivers = dict_create(1024, destroy_receiver);
-    catenated_sms_counter = counter_create();
-    gwthread_create(smsbox_req_thread, NULL);
-    gwthread_create(url_result_thread, NULL);
-}
-
-void smsbox_req_shutdown(void)
-{
-    list_remove_producer(smsbox_requests);
-    gwthread_join_every(smsbox_req_thread);
-    http_caller_signal_shutdown(caller);
-    gwthread_join_every(url_result_thread);
-    gw_assert(list_len(smsbox_requests) == 0);
-    list_destroy(smsbox_requests, NULL);
-    gw_free(global_sender);
-    http_caller_destroy(caller);
-    dict_destroy(receivers);
-    counter_destroy(catenated_sms_counter);
-}
-
-long smsbox_req_count(void)
-{
-    return 0; /* XXX should check number of pending http requests */
-}
-
-void smsbox_req_thread(void *arg) 
-{
-    Msg *msg;
-    Octstr *tmp, *reply;
-    URLTranslation *trans;
-    char *p;
-    
-    while ((msg = list_consume(smsbox_requests)) != NULL) {
-	if (octstr_len(msg->sms.sender) == 0 ||
-	    octstr_len(msg->sms.receiver) == 0) 
-	{
-	    error(0, "smsbox_req_thread: no sender/receiver, dump follows:");
-	    msg_dump(msg, 0);
-		    /* NACK should be returned here if we use such 
-		       things... future implementation! */
-	    continue;
-	}
-    
-	if (octstr_compare(msg->sms.sender, msg->sms.receiver) == 0) {
-	    info(0, "NOTE: sender and receiver same number <%s>, ignoring!",
-		 octstr_get_cstr(msg->sms.sender));
-	    continue;
-	}
-    
-	trans = urltrans_find(translations, msg->sms.msgdata, 
-	    	    	      msg->sms.smsc_id);
-	if (trans == NULL) {
-	    Octstr *t;
-	    warning(0, "No translation found for <%s> from <%s> to <%s>",
-		    octstr_get_cstr(msg->sms.msgdata),
-		    octstr_get_cstr(msg->sms.sender),
-		    octstr_get_cstr(msg->sms.receiver));
-	    t = msg->sms.sender;
-	    msg->sms.sender = msg->sms.receiver;
-	    msg->sms.receiver = t;
-	    goto error;
-	}
-    
-	info(0, "Starting to service <%s> from <%s> to <%s>",
-	     octstr_get_cstr(msg->sms.msgdata),
-	     octstr_get_cstr(msg->sms.sender),
-	     octstr_get_cstr(msg->sms.receiver));
-    
-	/*
-	 * now, we change the sender (receiver now 'cause we swap them later)
-	 * if faked-sender or similar set. Note that we ignore if the 
-	 * replacement fails.
-	 */
-	tmp = octstr_duplicate(msg->sms.sender);
-	    
-	p = urltrans_faked_sender(trans);
-	if (p != NULL)
-	    octstr_replace(msg->sms.sender, p, strlen(p));
-	else if (global_sender != NULL)
-	    octstr_replace(msg->sms.sender, global_sender, 
-	    	    	   strlen(global_sender));
-	else {
-	    octstr_replace(msg->sms.sender, 
-	    	    	   octstr_get_cstr(msg->sms.receiver),
-			   octstr_len(msg->sms.receiver));
-	}
-	octstr_destroy(msg->sms.receiver);
-	msg->sms.receiver = tmp;
-    
-	/* TODO: check if the sender is approved to use this service */
-    
-	switch (obey_request(&reply, trans, msg)) {
-	case -1:
-    error:
-	    error(0, "request failed");
-	    /* XXX this can be something different, according to 
-	       urltranslation */
-	    reply = octstr_create("Request failed");
-	    trans = NULL;	/* do not use any special translation */
-    	    break;
-	    
-	case 1:
-	    octstr_destroy(msg->sms.msgdata);
-	    msg->sms.msgdata = reply;
-	
-	    msg->sms.flag_8bit = 0;
-	    msg->sms.flag_udh  = 0;
-	    msg->sms.time = time(NULL);	/* set current time */
-	
-	    if (send_message(trans, msg) < 0)
-		error(0, "request_thread: failed");
-    	    break;
-    	
-	default:
-	    msg_destroy(msg);
-	}
-    }
-}
-
-/*****************************************************************************
- * Creates and sends an SMS message from an HTTP request
+/*
+ * Create and send an SMS message from an HTTP request.
  * Args: list contains the CGI parameters
  */
 char *smsbox_req_sendsms(List *list, char *client_ip)
@@ -905,8 +879,8 @@ error:
 }
 
 
-/*****************************************************************************
- * Creates and sends an SMS OTA (auto configuration) message from an HTTP request
+/*
+ * Create and send an SMS OTA (auto configuration) message from an HTTP request
  * Args: list contains the CGI parameters
  * 
  * This will be changed later to use an XML compiler.
@@ -1095,5 +1069,57 @@ error:
     error(0, "sendota_request: failed");
     /*octstr_destroy(from);*/
     return "Sending failed.";
+}
+
+
+/***********************************************************************
+ * Module initialization and shutdown.
+ */
+
+void smsbox_req_init(URLTranslationList *transls,
+    	    	     Config *config,
+		     int sms_max,
+		     char *global,
+		     char *accept_str)
+{
+    translations = transls;
+    cfg = config;
+    sms_max_length = sms_max;
+    if (accept_str)
+	sendsms_number_chars = accept_str;
+    else
+	sendsms_number_chars = SENDSMS_DEFAULT_CHARS;
+    
+    if (global != NULL)
+	global_sender = gw_strdup(global);
+    
+    caller = http_caller_create();
+    smsbox_requests = list_create();
+    list_add_producer(smsbox_requests);
+    receivers = dict_create(1024, destroy_receiver);
+    catenated_sms_counter = counter_create();
+    gwthread_create(obey_request_thread, NULL);
+    gwthread_create(url_result_thread, NULL);
+}
+
+
+void smsbox_req_shutdown(void)
+{
+    list_remove_producer(smsbox_requests);
+    gwthread_join_every(obey_request_thread);
+    http_caller_signal_shutdown(caller);
+    gwthread_join_every(url_result_thread);
+    gw_assert(list_len(smsbox_requests) == 0);
+    list_destroy(smsbox_requests, NULL);
+    gw_free(global_sender);
+    http_caller_destroy(caller);
+    dict_destroy(receivers);
+    counter_destroy(catenated_sms_counter);
+}
+
+
+long smsbox_req_count(void)
+{
+    return 0; /* XXX should check number of pending http requests */
 }
 
