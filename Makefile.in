@@ -102,7 +102,8 @@ STARTSTOPDAEMONSRC=@STARTSTOPDAEMONSRC@
 binsrcs = \
 	wmlscript/wmlsc.c \
 	wmlscript/wmlsdasm.c \
-	utils/seewbmp.c
+	utils/seewbmp.c \
+	utils/mtbatch.c
 sbinsrcs = \
 	gw/bearerbox.c \
 	gw/smsbox.c \
