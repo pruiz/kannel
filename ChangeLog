@@ -1,4 +1,9 @@
 2002-03-22  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/smsc_at2.c: fixed timestamp issue in at2, patch contributed by 
+      Oded Arbel <oded@m-wise.com>
+      [Msg-ID: <2CFC21DAF860CC49AF57333C4459DD4B166E88@exchange.m-wise.com>]
+
+2002-03-22  Stipe Tolj  <tolj@wapme-systems.de>
     * doc/userguide/userguide.xml, gw/smsc_smpp.c, gwlib/socket.c: added
       support for multi-homed bearerbox machines to select outgoing
       ethernet device, patch contributed by Simon Beale <simon.beale@ngame.com>
