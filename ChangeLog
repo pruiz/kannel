@@ -1,6 +1,8 @@
 2000-03-25 Derry Hamilton <rasilon@tardis.ed.ac.uk>
 	* Makefile.in: Added -Iutils to CFLAGS
 	* utils/start-stop-daemon.c: Added short option only stuff.
+	* utils/kannel-nag: Now asks for bash specifically rather than assuming
+	  that /bin/sh is actually bash
 
 Fri Mar 24 16:43:16 2000  Lars Wirzenius  <liw@wapit.com>
 

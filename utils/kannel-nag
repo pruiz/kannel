@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #
 # kannel-nag - do a test compile of Kannel and mail results to devel list
 #
