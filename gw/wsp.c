@@ -253,7 +253,7 @@ void wsp_handle_event(WSPMachine *sm, WSPEvent *current_event) {
 		if (current_event->type == TRInvokeIndication) {
 			WTPEvent *abort;
 			
-			error(0, "WSP: Can't handle TR-Inovke.ind, aborting transaction.");
+			error(0, "WSP: Can't handle TR-Invoke.ind, aborting transaction.");
 			abort = wtp_event_create(TRAbort);
 			abort->TRAbort.tid = 
 				current_event->TRInvokeIndication.machine->tid;
@@ -262,6 +262,8 @@ void wsp_handle_event(WSPMachine *sm, WSPEvent *current_event) {
 
 			wtp_handle_event(current_event->TRInvokeIndication.machine,
 					 abort);
+			sm->client_address = NULL;
+			sm->client_port = -1;
 		} else {
 			error(0, "WSP: Can't handle event.");
 			debug(0, "WSP: The unhandled event:");
