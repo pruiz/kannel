@@ -2535,8 +2535,8 @@ connect-allow-ip = 127.0.0.1
 group = smsc
 smsc = http
 system-type = kannel
-username = nork
-password = z0rK
+smsc-username = nork
+smsc-password = z0rK
 port = 13015
 send-url = "http://localhost:20022"
 </programlisting>
@@ -2589,14 +2589,14 @@ send-url = "http://localhost:20022"
      (localhost) is the only host allowed to connect.
      </entry></row>
 
-   <row><entry><literal>username</literal></entry>
+   <row><entry><literal>smsc-username</literal></entry>
      <entry><literal>string</literal></entry>
      <entry valign=bottom>
        Username associated to connection, if needed. 'kannel' requires
        this, and it is the same as send-sms username at other end.
      </entry></row>
 
-   <row><entry><literal>password</literal></entry>
+   <row><entry><literal>smsc-password</literal></entry>
      <entry><literal>string</literal></entry>
      <entry valign=bottom>
        Password for username, if needed.
