@@ -5265,7 +5265,7 @@ text = "No action specified"
 	sence in <literal>sms-service</literal>.</para>
 
 	<!--
-	<para><literal>ud</literal><note><para>Davi: I still have to test binary and unicode
+	<para><literal>ud</literal><note><para>DAVI: I still have to test binary and unicode
 	&#60;ud&#62; content</para></note></para>
 	-->
 	
