@@ -1,4 +1,8 @@
 2002-01-16  Stipe Tolj  <tolj@wapme-systems.de>
+    * gwlib/list.h: added declaration of new function list_append_unique()
+    * gwlib/list.c: added implementation of new func list_append_unique()
+
+2002-01-16  Stipe Tolj  <tolj@wapme-systems.de>
     * doc/userguide/userguide.xml: fixed a typo in smsc_http.c module 
       documenation block, where "username" and "password" where used
       instead of "smsc-username" and "smsc-password".
