@@ -59,7 +59,7 @@ ROW(NULL_STATE,
 		new_event = wap_event_create(S_Connect_Res);
 		new_event->u.S_Connect_Res.mid = e->mid;
 		new_event->u.S_Connect_Res.tid = e->tid;
-		wsp_dispatch_event(new_event);
+		wsp_session_dispatch_event(new_event);
 	},
 	CONNECTING)
 
@@ -134,7 +134,7 @@ ROW(CONNECTED,
 		new_event->u.Release.tid = e->tid;
 		new_event->u.Release.url = octstr_duplicate(pdu->u.Get.uri);
 		new_event->u.Release.http_headers = headers;
-		wsp_dispatch_event(new_event);
+		wsp_session_dispatch_event(new_event);
 	},
 	HOLDING)
 
@@ -151,7 +151,7 @@ ROW(CONNECTED,
 		new_event->u.Release.mid = e->mid;
 		new_event->u.Release.tid = e->tid;
 		new_event->u.Release.url = octstr_duplicate(pdu->u.Post.uri);
-		wsp_dispatch_event(new_event);
+		wsp_session_dispatch_event(new_event);
 		/* XXX we should handle headers here as well --liw */
 	},
 	HOLDING)
@@ -247,9 +247,9 @@ ROW(PROCESSING,
 		
 		new_pdu = wsp_pdu_create(Reply);
 		new_pdu->u.Reply.status = 
-			convert_http_status_to_wsp_status(e->status);
+			wsp_convert_http_status_to_wsp_status(e->status);
 		new_pdu->u.Reply.headers = 
-			encode_http_headers(e->response_type);
+			wsp_encode_http_headers(e->response_type);
 		new_pdu->u.Reply.data = octstr_duplicate(e->response_body);
 
 		/* Send TR-Result.req to WTP */

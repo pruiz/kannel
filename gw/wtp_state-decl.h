@@ -93,7 +93,7 @@ ROW(LISTEN,
      current_primitive = TR_Invoke_Ind;
 
      wsp_event = pack_wsp_event(current_primitive, event, machine);
-     wsp_dispatch_event(wsp_event);
+     wsp_session_dispatch_event(wsp_event);
 
      timer_event = wap_event_create(TimerTO_A);
      wtp_timer_start(machine->timer, L_A_WITH_USER_ACK, machine, timer_event); 
@@ -128,7 +128,7 @@ ROW(LISTEN,
     {
      current_primitive = TR_Invoke_Ind;
      wsp_event = pack_wsp_event(current_primitive, event, machine);
-     wsp_dispatch_event(wsp_event);
+     wsp_session_dispatch_event(wsp_event);
     },
     LISTEN)
 
@@ -153,7 +153,7 @@ ROW(TIDOK_WAIT,
     (machine->tcl == 2 || machine->tcl == 1) && event->u.RcvAck.tid_ok == 1,
     { 
      wsp_event = wap_event_duplicate(machine->invoke_indication);
-     wsp_dispatch_event(wsp_event);
+     wsp_session_dispatch_event(wsp_event);
      
      timer_event = wap_event_create(TimerTO_A);
      wtp_timer_start(machine->timer, L_A_WITH_USER_ACK, machine, timer_event); 
@@ -215,7 +215,7 @@ ROW(INVOKE_RESP_WAIT,
     {
      current_primitive = TR_Abort_Ind;
      /*wsp_event = pack_wsp_event(current_primitive, event, machine);*/
-     /*wsp_dispatch_event(wsp_event);*/
+     /*wsp_session_dispatch_event(wsp_event);*/
     },
     LISTEN)
 
@@ -280,7 +280,7 @@ ROW(INVOKE_RESP_WAIT,
      
      current_primitive = TR_Abort_Ind;
      /*wsp_event = pack_wsp_event(current_primitive, event, machine);*/
-     /*wsp_dispatch_event(wsp_event);*/
+     /*wsp_session_dispatch_event(wsp_event);*/
     },
     LISTEN)
 
@@ -307,7 +307,7 @@ ROW(RESULT_WAIT,
     {
      current_primitive = TR_Abort_Ind;
      /*wsp_event = pack_wsp_event(current_primitive, event, machine);*/
-     /*wsp_dispatch_event(wsp_event);*/
+     /*wsp_session_dispatch_event(wsp_event);*/
     },
     LISTEN)
 
@@ -348,7 +348,7 @@ ROW(RESULT_WAIT,
      
      current_primitive = TR_Abort_Ind;
      /*wsp_event = pack_wsp_event(current_primitive, event, machine);*/
-     /*wsp_dispatch_event(wsp_event);*/
+     /*wsp_session_dispatch_event(wsp_event);*/
     },
     LISTEN)
 
@@ -366,7 +366,7 @@ ROW(RESULT_RESP_WAIT,
     {
      current_primitive = TR_Result_Cnf;
      wsp_event = pack_wsp_event(current_primitive, event, machine);
-     wsp_dispatch_event(wsp_event);
+     wsp_session_dispatch_event(wsp_event);
     },
     LISTEN)
 
@@ -376,7 +376,7 @@ ROW(RESULT_RESP_WAIT,
     {
      current_primitive = TR_Abort_Ind;
      /*wsp_event = pack_wsp_event(current_primitive, event, machine);*/
-     /*wsp_dispatch_event(wsp_event);*/
+     /*wsp_session_dispatch_event(wsp_event);*/
     },
     LISTEN)
 
@@ -410,7 +410,7 @@ ROW(RESULT_RESP_WAIT,
     {
      current_primitive = TR_Abort_Ind;
      /*wsp_event = pack_wsp_event(current_primitive, event, machine);*/
-     /*wsp_dispatch_event(wsp_event);*/
+     /*wsp_session_dispatch_event(wsp_event);*/
     },
     LISTEN)
 
@@ -446,7 +446,7 @@ ROW(RESULT_RESP_WAIT,
     {
      current_primitive = TR_Abort_Ind;
      /*wsp_event = pack_wsp_event(current_primitive, event, machine);*/
-     /*wsp_dispatch_event(wsp_event);*/
+     /*wsp_session_dispatch_event(wsp_event);*/
     },
     LISTEN)
 #endif
@@ -459,7 +459,7 @@ ROW(RESULT_RESP_WAIT,
       
      current_primitive = TR_Abort_Ind;
      /*wsp_event = pack_wsp_event(current_primitive, event, machine);*/
-     /*wsp_dispatch_event(wsp_event);*/
+     /*wsp_session_dispatch_event(wsp_event);*/
     },
     LISTEN)
 

@@ -2,7 +2,6 @@
  * wsp-unit.c - Implement WSP Connectionless mode
  *
  * Lars Wirzenius
- * Capabilities/headers by Kalle Marjola <rpr@wapit.com>
  */
 
 
@@ -13,46 +12,6 @@
 #include "wsp_pdu.h"
 #include "wsp_headers.h"
 #include "wapbox.h"
-
-/* WAP standard defined values for capabilities */
-
-#define WSP_CAPS_CLIENT_SDU_SIZE	0x00
-#define WSP_CAPS_SERVER_SDU_SIZE	0x01
-#define WSP_CAPS_PROTOCOL_OPTIONS	0x02
-#define WSP_CAPS_METHOD_MOR		0x03
-#define WSP_CAPS_PUSH_MOR		0x04
-#define WSP_CAPS_EXTENDED_METHODS    	0x05
-#define WSP_CAPS_HEADER_CODE_PAGES    	0x06
-#define WSP_CAPS_ALIASES	   	0x07
-
-
-
-enum {
-	Bad_PDU = -1,
-	Connect_PDU = 0x01,
-	ConnectReply_PDU = 0x02,
-	Redirect_PDU = 0x03,
-	Reply_PDU = 0x04,
-	Disconnect_PDU = 0x05,
-	Push_PDU = 0x06,
-	ConfirmedPush_PDU = 0x07,
-	Suspend_PDU = 0x08,
-	Resume_PDU = 0x09,
-	Get_PDU = 0x40,
-	Options_PDU = 0x41,
-	Head_PDU = 0x42,
-	Delete_PDU = 0x43,
-	Trace_PDU = 0x44,
-	Post_PDU = 0x60,
-	Put_PDU = 0x61
-};
-
-typedef enum {
-	#define STATE_NAME(name) name,
-	#define ROW(state, event, condition, action, next_state)
-	#include "wsp_state-decl.h"
-	WSPState_count
-} WSPState;
 
 
 /*

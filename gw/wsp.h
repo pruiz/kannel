@@ -74,27 +74,6 @@ struct WSPMethodMachine {
 };
 
 
-/*
- * Initialize the WSP subsystem. This MUST be called before any other
- * functions in this header.
- */
-void wsp_init(void);
-
-
-/*
- * Shut down the WSP subsystem. This MUST be called after nothing will
- * need WSP anymore.
- */
-void wsp_shutdown(void);
-
-
-/*
- * Find the correct WSPMachine to send the event to, or create a new
- * one, and then make that machine handle the event.
- */
-void wsp_dispatch_event(WAPEvent *event);
-
-
 /* configure an URL mapping; parses string on whitespace, uses left
  * part for the source URL, and right part for the destination URL
  */
@@ -114,6 +93,30 @@ void wsp_http_map_url_config_info(void);
 void wap_appl_init(void);
 void wap_appl_shutdown(void);
 void wap_appl_dispatch(WAPEvent *event);
+
+
+/*
+ * WSP session oriented mode.
+ */
+void wsp_session_init(void);
+void wsp_session_shutdown(void);
+void wsp_session_dispatch_event(WAPEvent *event);
+
+
+/*
+ * Connectionless mode.
+ */
+void wsp_unit_init(void);
+void wsp_unit_shutdown(void);
+void wsp_unit_dispatch_event(WAPEvent *event);
+WAPEvent *wsp_unit_unpack_wdp_datagram(Msg *msg);
+
+
+/*
+ * Shared stuff.
+ */
+Octstr *wsp_encode_http_headers(long type);
+long wsp_convert_http_status_to_wsp_status(long http_status);
 
 
 #endif
