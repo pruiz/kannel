@@ -81,7 +81,11 @@ static void udp_receiver(void *arg)
 		/* No datagram available, don't block. */
 		continue;
 
-	    error(errno, "Failed to receive an UDP");
+	    if (errno == EINTR || errno == ECONNREFUSED) {
+		error(errno, "Failed to receive an UDP");
+		continue;
+	    }
+	    error(errno, "Failed to receive an UDP - Fatal");
 	    break;
 	}
 	debug("bb.udp", 0, "datagram received");
@@ -141,9 +145,10 @@ static void udp_sender(void *arg)
 	    /* ok, we failed... tough
 	     * XXX log the message or something like that... but this
 	     * is not as fatal as it is with SMS-messages...
-	     */
+	     */ {
+	    msg_destroy(msg);
 	    continue;
-
+	}
 	counter_increase(outgoing_wdp_counter);
 	msg_destroy(msg);
     }

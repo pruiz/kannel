@@ -1,3 +1,11 @@
+2000-08-24  Kalle Marjola  <rpr@wapit.com>
+
+	* gw/bb_udp.c (udp_receiver): trap ECONNREFUSED too (hey it was
+	missing from Man page) and just continue
+
+	* gw/bb_boxc.c: extend wapbox_list lock to prevent packet routing
+	to exiting wapboxes	
+
 2000-08-23  Richard Braakman  <dark@wapit.com>
 
 	* gw/wap-appl.c: Make sure content.url and content.body have valid

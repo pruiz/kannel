@@ -400,14 +400,14 @@ route:
 	i = gw_rand() % list_len(wapbox_list);
 
 	conn = list_get(wapbox_list, i);
-	list_unlock(wapbox_list);
-
 	if (conn == NULL) {
 	    warning(0, "wapbox_list empty!");
+	    list_unlock(wapbox_list);
 	    return NULL;
 	}
 	ap->wapboxid = conn->id;
 	list_produce(route_info, ap);
+	list_unlock(wapbox_list);
     } else
 	conn = list_search(wapbox_list, ap, cmp_boxc);
 
