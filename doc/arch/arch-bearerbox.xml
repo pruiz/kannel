@@ -9,11 +9,11 @@
 	the bearer box.</para>
 	
 	<para>The bearer box connects to the SMSC's in the configuration,
-	and accepts UDP packets at a suitable port. It identifies SMS
-	messages normal or WDP packets. It routes stuff to appropriate
+	and accepts UDP packets at a suitable port. It checks whether SMS
+	messages are normal ones or WDP packets. It routes stuff to appropriate
 	boxes, taking care of load balancing. It keeps unsent messages
 	in queues (incoming and outgoing), in case of traffic jams.
-	It lets keep track of the other boxes (lets them register, notices
+	It keeps track of the other boxes (lets them register, notices
 	when connections break, keeps track of heartbeats).</para>
 
 <sect1>
@@ -44,13 +44,13 @@
 	several CSD Routers are used, multiple CSDR threads are used.</para> 
 
 	<para><emphasis>Box connection threads</emphasis> do all the
-	data transfering with SMS and WAP Boxes. Thread picks all
+	data transfer with SMS and WAP Boxes. Thread picks all
 	appropriate messages from Request Queue and send them to
 	Boxes. Likewise they receive messages from Boxes and put them
 	into Reply Queue, wherefrom the appropriate SMSC or CSDR Thread 
 	reads it.</para>
 
-	<para><emphasis>Main program</emphasis> keeps eveything in
+	<para><emphasis>Main program</emphasis> keeps everything in
 	control. It listens to new Box connection requests and creates
 	new threads for them, listens to HTTP-service port for
 	adminstrative commands and keeps a record of all boxes
@@ -60,7 +60,7 @@
 </sect1>
 
 <sect1>
-<title>MO SMS Messages</title>
+<title>Mobile Originated SMS Messages</title>
 
         <para>Mobile oriented SMS Messages are handled by the SMSC
         thread, which is connected to corresponding SMS Center. The
@@ -84,7 +84,7 @@
 </sect1>
 
 <sect1>
-<title>MT SMS Messages</title>
+<title>Mobile Terminated SMS Messages</title>
 
         <para>Mobile terminated SMS Messages are initiated by the SMS
         Box. It transfers the message into the bearer box via Box
@@ -93,7 +93,7 @@
         Queue.</para>
 
 	<para>As with ACK/NACK messages, the SMS Center finds the
-	message from Reply Qeueu and sends it to SMS Center. However,
+	message from Reply Queue and sends it to SMS Center. However,
 	the message is not removed from the reply queue until an ACK
 	or NACK is received from the SMS Center (NOTE: Actually, the
 	message is first removed, then send and if we crash during
@@ -101,8 +101,8 @@
 
 	<para>If a NACK message is received, the SMSC thread either
 	retries later or sends it back to SMS Box via Request Queue
-	and Box connection. This is curently left to SMSC
-	implementation. If the message is sent successfully, an ACK
+	and Box connection. This is currently left to the implementation
+	of the SMSC protocol. If the message is sent successfully, an ACK
 	message is put into requet queue to inform the original box
 	that the message has been relied (NOTE: Currently no ACK/NACK 
 	is sent back to SMS Box connection)</para>
@@ -122,13 +122,13 @@
 <sect1>
 <title>Heartbeat</title>
 
-       <para>The main program is responsible for knowing which parts
-       of the program still work. Each other thread upkeeps its
-       personal 'alive' status (heartbeat) and the main program keeps
-       track that each thread has not stopped responding. If the alive
-       status has not been updated for a configured time, the main
-       program assumes that the thread has died or is otherwise
-       stopped, and the main program does necessary actions to destroy
+       <para>The main thread is responsible for knowing which parts
+       of the program still work. The other threads upkeep their
+       personal 'alive' status (heartbeat) and the main thread checks
+       that the other threads have not stopped responding. If the alive
+       status has not been updated for too long a time, the main
+       thread assumes that the other thread has died or is otherwise
+       stopped, and the main thread does necessary actions to destroy
        or restart it.</para>
 
        <para>Likewise each Box Connection keeps their personal
@@ -163,7 +163,7 @@
 <sect1>
 <title>HTTP Monitoring</title>
 
-       <para>The bearer box can be monitorized and configured via HTTP
+       <para>The bearer box can be monitored and configured via HTTP
        interface. The main program handles HTTP-requests.</para>
 
 </sect1>

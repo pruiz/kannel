@@ -10,7 +10,7 @@
 	to the bearer box. This way, the bearer box does not have to
 	have a static list of the other boxes. Instead, it starts with
 	an empty list and waits for the others to register themselves.
-	This design makes it trivial to add new WAP and SMS boxes:
+	This design makes it trivial to add new WAP and SMS boxes on the fly:
 	you just install a new one and configure it to connect to the
 	appropriate bearer box.</para>
 	
@@ -24,12 +24,11 @@
 	treat them as errors (silent, or preferably by responding with
 	error messages to the phone).</para>
 	
-	<para>In addition to messages related to protocol packets received
-	from or sent outside the gateway, the boxes within the gateway
-	send <glossterm>heartbeat</glossterm> packets. These are used to
-	keep track of which boxes are alive and which are not functional.
-	Each box sends a message at regular intervals to the bearer box
-	that says, essentially, <quote>I'm alive and well</quote>. If the
+	<para>A box can also go catatonic: it is alive but is not
+	responding to any messages. To detect this, the boxes within
+	the gateway send <glossterm>heartbeat</glossterm> packets. Each
+	box sends a message at regular intervals to the bearer box that
+	says, essentially, <quote>I'm alive and well</quote>. If the
 	bearer box does not receive such messages, it will assume that
 	the other box in question has crashed, but not enough to make
 	the TCP stream break. It then closes the stream and removes the
@@ -39,17 +38,21 @@
 	<para>The heartbeat message includes the sender's load. The
 	bearer box will use this for load balancing.</para>
 	
+	<note><para>Load balancing is not yet implemented.</para></note>
+	
 <sect1>
 <title>General message structure and implementation</title>
 
 	<para>For communication between gateway components, we will use
 	the same general message structure and implementation. This will
-	make it easier to get things to work corretly and will make it
+	make it easier to get things to work correctly and will make it
 	easier to modify messages by minimizing the need to write tedious,
 	repetitious, monotonous, error-prone code. The way we will do
-	this is, however, a hack that needs to be explained.</para>
+	this is, however, a hack that is explained in 
+	<xref endterm="cpp-trick.title" linkend="cpp-trick.bib"> (see
+	bibliography for details).</para>
 	
-	<para>Messages always begin with a length (integers, see below)
+	<para>Messages always begin with a length (integer, see below)
 	and a type field (integer).  The other fields are either
 	integers (signed 32 bits, network byte order) or variable length
 	strings (integer giving length, then that many octets). There

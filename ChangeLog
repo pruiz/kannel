@@ -1,3 +1,8 @@
+Fri Jan 21 14:18:24 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* wmlscript/wsgram.c, wmlscript/wsgram.h: Added to CVS. These
+	are the files that Bison generates.
+
 Fri Jan 21 13:42:57 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* VERSION: Bumbped to 0.3. Forgot to do that for the release.

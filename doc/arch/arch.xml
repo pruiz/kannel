@@ -9,41 +9,50 @@
 <!ENTITY requirementschapter SYSTEM "arch-requirements.xml">
 <!ENTITY smsboxchapter SYSTEM "arch-smsbox.xml">
 <!ENTITY wapboxchapter SYSTEM "arch-wapbox.xml">
+<!ENTITY bibliography SYSTEM "arch-bib.xml">
 
 <!ENTITY figtype "#FIGTYPE#">
 <!ENTITY timestamp "#DATE#">
+<!ENTITY version "#VERSION#">
 ]>
 
 
 <book>
 
 <bookinfo>
-	<title>Open Source WAP Gateway Architecture Design</title>
-	<subtitle>&timestamp;</subtitle>
-	<author>
-		<firstname>Lars</firstname>
-		<surname>Wirzenius</surname>
-		<affiliation>
-			<jobtitle>Gateway architect</jobtitle>
-			<orgname>WapIT Ltd</orgname>
-			<address>
-			<street>Atomitie 5 C</street>
-			<postcode>Fin-00370 Helsinki</postcode>
-			<country>Finland</country>
-			<phone>GSM: +358-50 300 0019</phone>
-			<fax>FAX: +358-9 694 7007</fax>
-			<email>liw@wapit.com</email>
-			<otheraddr>http://www.wapit.com</otheraddr>
-			<otheraddr>http://www.wapgateway.org</otheraddr>
-			</address>
-		</affiliation>
-	</author>
+	<title>Kannel: Open Source WAP and SMS Gateway Architecture Design</title>
+	<subtitle>For gateway version &version;</subtitle>
+	<authorgroup>
+		<author>
+			<firstname>Lars</firstname>
+			<surname>Wirzenius</surname>
+			<affiliation>
+				<jobtitle>Gateway architect</jobtitle>
+				<orgname>WapIT Ltd</orgname>
+				<address>
+				<email>liw@wapit.com</email>
+				<otheraddr>http://www.wapgateway.org</otheraddr>
+				</address>
+			</affiliation>
+		</author>
+		<author>
+			<firstname>Kalle</firstname>
+			<surname>Marjola</surname>
+			<affiliation>
+				<jobtitle>Gateway specialist</jobtitle>
+				<orgname>WapIT Ltd</orgname>
+				<address>
+				<email>rpr@wapit.com</email>
+				</address>
+			</affiliation>
+		</author>
+	</authorgroup>
 	<abstract>
 		<title>Abstract</title>
 		<para>This document describes the software architecture
-		of the Open Source WAP Gateway being produced by WapIT Ltd.
-		It is meant for programmers wishing to understand or
-		modify the gateway.
+		of Kannel, the Open Source WAP Gateway being produced
+		by WapIT Ltd.  It is meant for programmers wishing to
+		understand or modify the gateway.
 		</para>
 	</abstract>
 </bookinfo>
@@ -56,6 +65,7 @@
 &bearerboxchapter;
 &smsboxchapter;
 &wapboxchapter;
+&bibliography;
 
 
 <chapter>
