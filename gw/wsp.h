@@ -142,4 +142,14 @@ void wsp_http_map_url_config_device_home(char *);
 /* show all configured URL mappings */
 void wsp_http_map_url_config_info(void);
 
+
+/*
+ * The application layer.
+ */
+
+void wap_appl_init(void);
+void wap_appl_shutdown(void);
+void wap_appl_dispatch(WAPEvent *event);
+
+
 #endif

@@ -11,7 +11,6 @@
 #include "gwlib/gwlib.h"
 #include "wsp.h"
 #include "wsp_headers.h"
-#include "wap-appl.h"
 
 /* WAP standard defined values for capabilities */
 

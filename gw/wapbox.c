@@ -20,7 +20,6 @@
 #include "wtp.h"
 #include "wtp_timer.h"
 #include "bb.h"
-#include "wap-appl.h"
 
 static Config *cfg = NULL;
 static char *bearerbox_host = BB_DEFAULT_HOST;

@@ -581,6 +581,30 @@ static int pid_is_user(int pid, int uid)
   return 0;
  return ((int) sb.st_uid == uid);
 }
+
+static int
+pid_is_cmd(int pid, const char *name)
+{
+	char buf[32];
+	FILE *f;
+	int c;
+
+	sprintf(buf, "/proc/%d/stat", pid);
+	f = fopen(buf, "r");
+	if (!f)
+		return 0;
+	while ((c = getc(f)) != EOF && c != '(')
+		;
+	if (c != '(') {
+		fclose(f);
+		return 0;
+	}
+	/* this hopefully handles command names containing ')' */
+	while ((c = getc(f)) != EOF && c == *name)
+		name++;
+	fclose(f);
+	return (c == ')' && *name == '\0');
+}
 #endif /*FreeBSD*/
 
 static void

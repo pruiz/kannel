@@ -521,7 +521,7 @@ Octstr *http2_header_find_first(List *headers, char *name) {
 
 	for (i = 0; i < list_len(headers); ++i) {
 		h = list_get(headers, i);
-		if (octstr_str_ncompare(h, name) == 0 &&
+		if (header_is_called(h, name) == 0 &&
 		    octstr_get_char(h, name_len) == ':')
 			return octstr_copy(h, name_len + 1, octstr_len(h));
 	}

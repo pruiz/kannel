@@ -20,7 +20,6 @@
 #include <string.h>
 
 #include "gwlib/gwlib.h"
-#include "wap-appl.h"
 #include "wmlscript/ws.h"
 #include "wsp.h"
 #include "wml_compiler.h"
