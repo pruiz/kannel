@@ -168,21 +168,18 @@ Remaining variables are smsc-dependant. FILL THESE LATER
  wait_report = 0/1 (0 means false, 1 means true)
  #       used by sms2000 protocol 
  #
- dial-prefix = (dial-prefix string)
- #       dial prefixs normalization string. 
- #       The SMSC may accept several prefixes, which are seperated by ';'
- #       Each 'official prefix' is followed by expected prefix
- #       which is then replaced by the official prefix. NOTE: NOT
- #       SUPPORTED RIGHT NOW
+ denied-prefix = <prefix-list>
+ #       A list of phone number prefixes which are NOT accepted to be
+ #       sent through this SMSC. Multiple entries are separated with 
+ #       semicolon (';'). For example, "040;050" permits sending of
+ #       any SMS message with prefix of 040 or 050 through this SMSC
  #
- route-prefix = (accepted prefixes)
- #       The SMS is routed to this SMS Center if the reciever number matches
- #       one of the prefixes given here. Use ';' to separate entries, and
- #       'default' to identify the SMS Center used if no SMSC is found.
- #       'backup' is as 'default' but is is only used if default receiver
- #       is not available currently (temporarily down)
- #       If default is not set, SMS Message with no suitable SMSC is
- #	 ignored. NOTE: NOT SUPPORTED RIGHT NOW
+ preferred-prefix = <prefix-list>
+ #       As denied-prefix, but SMS messages with receiver starting
+ #       with any of these prefixes is prefereably sent through this
+ #       SMSC. In a case of multiple preferred, random one is selected
+ #       (likewise if there is none preferred, random SMSC is selected
+ #        from the existing ones)
  #
  alt-charset = (number)
  #       As some SMS Centers do not follow the standards in character

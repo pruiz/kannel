@@ -44,11 +44,9 @@ struct SMSCenter {
 	char name[1024];
 	int id;
     	
-	/* Personal dialing prefix (normalization string). */
-	char *dial_prefix;
-
-	/* Routing prefix. */
-	char *route_prefix;
+	/* Routing prefixes. */
+	char *preferred_prefix;
+	char *denied_prefix;
 
 	/* Alternative charset */
         int alt_charset;

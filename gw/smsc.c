@@ -50,8 +50,8 @@ SMSCenter *smscenter_construct(void) {
 
 	smsc->killed = 0;
 	smsc->type = SMSC_TYPE_DELETED;
-	smsc->dial_prefix = NULL;
-	smsc->route_prefix = NULL;
+	smsc->preferred_prefix = NULL;
+	smsc->denied_prefix = NULL;
 	smsc->alt_charset = 0;
 	smsc->keepalive = 0;
 
@@ -430,7 +430,7 @@ SMSCenter *smsc_open(ConfigGroup *grp)
 {
 	SMSCenter *smsc;
         char *type, *host, *port, *username, *password, *phone, *device;
-        char *dial_prefix, *route_prefix;
+        char *preferred_prefix, *denied_prefix;
         char *backup_port, *receive_port, *our_port; 
         char *alt_chars;
         char *smpp_system_id, *smpp_system_type, *smpp_address_range;
@@ -451,8 +451,8 @@ SMSCenter *smsc_open(ConfigGroup *grp)
         password = config_get(grp, "smsc-password");
         phone = config_get(grp, "phone");
         device = config_get(grp, "device");
-        dial_prefix = config_get(grp, "dial-prefix");
-        route_prefix = config_get(grp, "route-prefix");
+        preferred_prefix = config_get(grp, "preferred-prefix");
+        denied_prefix = config_get(grp, "denied-prefix");
         alt_chars = config_get(grp, "alt-charset");
 
         smpp_system_id = config_get(grp, "system-id");
@@ -565,8 +565,8 @@ SMSCenter *smsc_open(ConfigGroup *grp)
 	}
 	if (smsc != NULL) {
 	    smsc->alt_charset = (alt_chars != NULL ? atoi(alt_chars) : 0);
-	    smsc->dial_prefix = dial_prefix;
-	    smsc->route_prefix = route_prefix;
+	    smsc->preferred_prefix = preferred_prefix;
+	    smsc->denied_prefix = denied_prefix;
 	}
 	
 	return smsc;
@@ -605,22 +605,12 @@ char *smsc_name(SMSCenter *smsc)
 }
 
 
-char *smsc_dial_prefix(SMSCenter *smsc)
+static int does_prefix_match(char *p, char *number)
 {
-    return smsc->dial_prefix;
-}
+    char *b;
 
-
-int smsc_receiver(SMSCenter *smsc, char *number)
-{
-    char *p, *b;
-
-    p = smsc->route_prefix;
-
-    if(p==NULL) {
-	error(0, "smsc_receiver: no route prefix");
+    if(p==NULL)
 	return 0;
-    }
 
     while(*p != '\0') {
 	b = number;
@@ -634,13 +624,20 @@ int smsc_receiver(SMSCenter *smsc, char *number)
 	    p++;
 	while(*p == ';') p++;
     }
-    if (strstr(smsc->route_prefix, "default") != NULL)
-	return 2;		/* default */
-    if (strstr(smsc->route_prefix, "backup") != NULL)
-	return 3;		/* backup */
-
     return 0;
 }
+
+
+int smsc_preferred(SMSCenter *smsc, char *number)
+{
+    return does_prefix_match(smsc->preferred_prefix, number);
+}
+
+int smsc_denied(SMSCenter *smsc, char *number)
+{
+    return does_prefix_match(smsc->denied_prefix, number);
+}
+
 
 
 int smsc_close(SMSCenter *smsc)

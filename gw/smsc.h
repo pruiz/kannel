@@ -50,17 +50,9 @@ int smsc_reopen(SMSCenter *smsc);
    cannot fail. */
 char *smsc_name(SMSCenter *smsc);
 
-/* Return SMSC personal dial prefix, if any
- */
-char *smsc_dial_prefix(SMSCenter *smsc);
-
-/* Return 1 if the SMSC is router for 'number', 2 if the SMSC is
- * default router, 3 if the SMSC is backup default router and 0 if
- * not suitable.
- * (function checks if the prefix of the number is in route_prefix)
- */
-int smsc_receiver(SMSCenter *smsc, char *number);
-
+/* Return 1 if match found, 0 otherwise */
+int smsc_preferred(SMSCenter *smsc, char *number);
+int smsc_denied(SMSCenter *smsc, char *number);
 
 /* Close the connection to an SMS center. Return -1 for error
    (the connection will be closed anyway, but there was some error

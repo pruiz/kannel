@@ -147,8 +147,9 @@ static void *sms_sender(void *arg)
 static void *sms_router(void *arg)
 {
     Msg *msg;
-    Smsc *si;
-    int i;
+    Smsc *si, *backup;
+    char *number;
+    int i, s, ret;
 
     debug("bb.thread", 0, "START: sms_router");
     list_add_producer(flow_threads);
@@ -171,19 +172,38 @@ static void *sms_router(void *arg)
 	normalize_number(unified_prefix, &(msg->smart_sms.receiver));
 	    
 	list_lock(smsc_list);
-	/* select in which list to add this */
-
+	/* select in which list to add this
+	 * start - from random SMSC, as they are all 'equal'
+	 */
+	s = rand() % list_len(smsc_list);
+	number = octstr_get_cstr(msg->smart_sms.receiver);
+	backup = NULL;
+	
 	for (i=0; i < list_len(smsc_list); i++) {
-	    si = list_get(smsc_list, i);
+	    si = list_get(smsc_list,  (i+s) % list_len(smsc_list));
 
-	    /* XXX here we _should_ have some good routing system */
-	    {
-		debug("bb", 0, "sms_router: adding message to <%s>",
+	    if (smsc_denied(si->smsc, number)==1)
+		continue;
+
+	    if (smsc_preferred(si->smsc, number)==1) {
+		debug("bb", 0, "sms_router: adding message to preferred <%s>",
 		      smsc_name(si->smsc));
 		list_produce(si->outgoing_list, msg);
-		break;
+		goto found;
 	    }
+	    if (backup == NULL)
+		backup = si;
 	}
+	if (backup) {
+	    debug("bb", 0, "sms_router: adding message to <%s>",
+		  smsc_name(backup->smsc));
+	    list_produce(backup->outgoing_list, msg);
+	}
+	else {
+	    warning(0, "Cannot find SMSC for message to <%s>, discarded.", number);
+	    msg_destroy(msg);
+	}
+    found:
 	list_unlock(smsc_list);
     }
     smsc_die();
@@ -192,6 +212,7 @@ static void *sms_router(void *arg)
     list_remove_producer(flow_threads);
     return NULL;
 }
+
 
 
 static Smsc *create_new_smsc(ConfigGroup *grp)
