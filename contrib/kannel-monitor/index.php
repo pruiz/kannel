@@ -13,13 +13,16 @@ include("xmlfunc.php");
 
 $configs = array(
             array( "base_url" => "http://kannel.foobar.com:13000",
-                   "passwd" => "tester"
+                   "passwd" => "tester",
+                   "name" => "NAME-A"
                  ),
             array( "base_url" => "http://kannel.foonar.com:23000",
-                   "passwd" => "tester"
+                   "passwd" => "tester",
+                   "name" => "NAME-B"
                  ),
             array( "base_url" => "http://kannel.foobar.com:33000",
-                   "passwd" => "tester"
+                   "passwd" => "tester",
+                   "name" => "NAME-C"
                  )
             );
 
@@ -94,9 +97,9 @@ error_reporting(0);
 
         /* open the file description to the URL */
         if (($fp = fopen($url, "r"))) {
-            echo "<span class=green>($inst) <b>$url</b></span> <br /> \n";
+            echo "<span class=green>($inst) (".$config["name"].") <b>$url</b></span> <br /> \n";
         } else {
-            echo "<span class=red>($inst) <b>$url</b></span> <br /> \n";
+            echo "<span class=red>($inst) (".$config["name"].") <b>$url</b></span> <br /> \n";
         }     
         
         /* read the XML input */
@@ -272,7 +275,7 @@ error_reporting(0);
                     $i++;
                     echo "($inst) <b>".XPathValue("type", $y)."</b>, ";
                     if (ereg("on-line (.*)d (.*)h (.*)m (.*)s", XPathValue("status", $y), $regs)) {
-                        $ts = ($regs[1]*24*60*60*60) + ($regs[2]*60*60) 
+                        $ts = ($regs[1]*24*60*60) + ($regs[2]*60*60) 
                             + ($regs[3]*60) + $regs[4];
                         echo "started ".date("Y-m-d H:i:s", mktime()-$ts);
                         echo ", uptime $regs[1]d $regs[2]h $regs[3]m $regs[4]s, ";
