@@ -546,15 +546,11 @@ static int ip_allowed_by_user(WAPPushUser *u, Octstr *ip)
 
     if (wap_push_ppg_pushuser_search_ip_from_wildcarded_list(u->user_deny_ip, 
 	    ip, octstr_imm(";"), octstr_imm("."))) {
-        warning(0, "%s denied by user %s", octstr_get_cstr(ip_copy), 
-                octstr_get_cstr(copy));
         goto denied;
     }
 
     if (wap_push_ppg_pushuser_search_ip_from_wildcarded_list(u->user_allow_ip, 
 	    ip, octstr_imm(";"), octstr_imm("."))) {
-        warning(0, "%s not allowed by user %s", octstr_get_cstr(ip_copy), 
-                octstr_get_cstr(copy));
         goto allowed;
     }
 
@@ -569,6 +565,8 @@ allowed:
     return 1;
 
 denied:
+    warning(0, "%s denied by user %s", octstr_get_cstr(ip_copy), 
+                octstr_get_cstr(copy));
     octstr_destroy(copy);
     octstr_destroy(ip_copy);
     return 0;

@@ -1,4 +1,10 @@
 2001-11-09 Aarno Syvänen <aarno@wiral.com>
+    * gw/wap_push_pap_compiler.c: Accept lowercase versions of bearer and net-
+      work
+
+    * gw/wap_push_ppg_pushuser.c: Drop a strange warning
+
+2001-11-09 Aarno Syvänen <aarno@wiral.com>
     * gw/pushkannel.conf: Updated the sample configuration file
 	
     * test/test_ppg.c: Handle http level responses. Added a switch for sending

@@ -449,9 +449,8 @@ static void ota_read_thread (void *arg)
 }
 
 /*
- * We close a client when we are unable to figure who the user was or when ip 
- * or phone number was unacceptable. Authorization failure as such causes a 
- * challenge to the client (a required by rfc 2617, chapter 1).
+ * Authorization failure as such causes a challenge to the client (a required by rfc
+ * 2617, chapter 1).
  * We store HTTPClient data structure corresponding a given push id, so that 
  * we can send responses to the rigth address.
  * Pap chapter 14.4.1 states that we must return http status 202 after we have 

@@ -468,10 +468,10 @@ static int uses_gsm_msisdn_address(long network_required, Octstr *network,
     if (!network || !bearer)
         return 0;
     
-    return (octstr_compare(network, octstr_imm("GSM")) == 0 &&
-	   octstr_compare(bearer, octstr_imm("SMS")) == 0) ||
-           (octstr_compare(network, octstr_imm("ANSI-136")) == 0 &&
-	   octstr_compare(bearer, octstr_imm("GHOST/R_DATA")) == 0);
+    return (octstr_case_compare(network, octstr_imm("GSM")) == 0 &&
+	   octstr_case_compare(bearer, octstr_imm("SMS")) == 0) ||
+           (octstr_case_compare(network, octstr_imm("ANSI-136")) == 0 &&
+	   octstr_case_compare(bearer, octstr_imm("GHOST/R_DATA")) == 0);
 }
 
 static int uses_ipv4_address(long network_required, long bearer_required,
@@ -1044,7 +1044,7 @@ static Octstr *parse_bearer(Octstr *attr_value)
     Octstr *ros;
 
     for (i = 0; i < NUM_BEARER_TYPES; i++) {
-         if (octstr_compare(attr_value, 
+         if (octstr_case_compare(attr_value, 
                  ros = octstr_imm(pap_bearer_types[i])) == 0)
 	     return ros;
     }
@@ -1059,7 +1059,7 @@ static Octstr *parse_network(Octstr *attr_value)
     Octstr *ros;
 
     for (i = 0; i < NUM_NETWORK_TYPES; i++) {
-         if (octstr_compare(attr_value, 
+         if (octstr_case_compare(attr_value, 
                  ros = octstr_imm(pap_network_types[i])) == 0)
 	     return ros;
     }
@@ -1171,6 +1171,7 @@ static int parse_state(Octstr *attr_value)
 static int parse_address(Octstr **address, int *type_of_address)
 {
     long pos;
+    Octstr *copy;
 
     pos = octstr_len(*address) - 1;
 /*
@@ -1192,7 +1193,11 @@ static int parse_address(Octstr **address, int *type_of_address)
         warning(0, "PAP_COMPILER: parse_address: unimplemented feature");
         return -1;
     }
-    
+
+    debug("wap.push.ppg.compiler", 0, "client address was <%s>, accepted", 
+           octstr_get_cstr(copy = octstr_duplicate(*address)));    
+    octstr_destroy(copy);
+
     return pos;
 }
 
