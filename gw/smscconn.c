@@ -31,6 +31,7 @@ SMSCConn *smscconn_create(ConfigGroup *grp, int start_as_stopped)
     conn->status = SMSCCONN_CONNECTING;
     conn->connect_time = -1;
     conn->load = 0;
+    conn->is_stopped = start_as_stopped;
 
     conn->received = counter_create();
     conn->sent = counter_create();
@@ -42,7 +43,9 @@ SMSCConn *smscconn_create(ConfigGroup *grp, int start_as_stopped)
     conn->shutdown = NULL;
     conn->queued = NULL;
     conn->send_msg = NULL;
-
+    conn->stop_conn = NULL;
+    conn->start_conn = NULL;
+    
 #define GET_OPTIONAL_VAL(x, n) x = (p = config_get(grp,n)) ? octstr_create(p) : NULL
     
     GET_OPTIONAL_VAL(conn->id, "smsc-id");
@@ -71,10 +74,6 @@ SMSCConn *smscconn_create(ConfigGroup *grp, int start_as_stopped)
 	return NULL;
     }
     gw_assert(conn->send_msg != NULL);
-
-    conn->is_stopped = start_as_stopped;
-    if (start_as_stopped && conn->stop_conn)
-	conn->stop_conn(conn);
 
     bb_smscconn_ready(conn);
     

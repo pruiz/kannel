@@ -67,15 +67,19 @@ static int reconnect(SMSCConn *conn)
     while(conn->why_killed == SMSCCONN_ALIVE) {
 	ret = smsc_reopen(wrap->smsc);
 	if (ret == 0) {
+	    mutex_lock(conn->flow_mutex);
 	    conn->status = SMSCCONN_ACTIVE;
 	    conn->connect_time = time(NULL);
+	    mutex_unlock(conn->flow_mutex);
 	    break;
 	}
 	else if (ret == -2) {
 	    error(0, "Re-open of %s failed permanently",
 		  octstr_get_cstr(conn->name));
+	    mutex_lock(conn->flow_mutex);
 	    conn->status = SMSCCONN_DISCONNECTED;
 	    mutex_unlock(wrap->reconnect_mutex);
+	    mutex_unlock(conn->flow_mutex);
 	    return -1;	/* permanent failure */
 	}
 	else {
@@ -351,6 +355,10 @@ int smsc_wrapper_create(SMSCConn *conn, ConfigGroup *cfg)
     
     conn->status = SMSCCONN_ACTIVE;
     conn->connect_time = time(NULL);
+
+    if (conn->is_stopped)
+	list_add_producer(wrap->stopped);
+	
 
     /* XXX here we could fail things... especially if the second one
      *     fails.. so fix this ASAP

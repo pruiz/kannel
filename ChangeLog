@@ -1,3 +1,14 @@
+2001-01-15  Kalle Marjola  <rpr@wapit.com>
+
+	* gw/smscconn_p.h: modified so that 'start as stopped' is done
+	in protocol specific creator
+
+	* gw/smscconn.c: added missing settings to NULL, and removed call
+	for conn_stop (see above)
+
+	* gw/smsc_wrapper.c: added one protection mutex and fixed startup
+	to follow above interface
+
 2001-01-15  Lars Wirzenius  <liw@iki.fi>
 
 	* gw/urltrans.c: Implemented %k in URL translations, based on

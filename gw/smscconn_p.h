@@ -85,9 +85,8 @@ struct smscconn {
     /* variables set by appropriate SMSCConn driver */
     int		status;		/* see smscconn.h */
     int 	load;	       	/* load factor, 0 = no load */
-    int		why_killed;	/* time to die with reason (this is set to
-				   SHUTDOWN in smscconn.c when
-				   smscconn_shutdown called) */
+    int		why_killed;	/* time to die with reason, set when
+				* shutdown called */
     time_t 	connect_time;	/* When connection to SMSC was established */
 
     /* connection specific counters (created in smscconn.c, updated
@@ -123,7 +122,8 @@ struct smscconn {
      * called, and released after execution returns from them */
     
     /* pointer to function called when smscconn_shutdown called.
-     * Note that this function is not needed always. */
+     * Note that this function is not needed always. If set, this
+     * function MUST set why_killed */
     int (*shutdown) (SMSCConn *conn, int finish_sending);
 
     /* pointer to function called when a new message is needed to be sent.
@@ -156,6 +156,11 @@ struct smscconn {
  * Each function is responsible for setting up all dynamic
  * function pointers at SMSCConn structure and starting up any
  * threads it might need.
+ *
+ * If conn->is_stopped is set (!= 0), create function MUST set
+ * its internal state as stopped, so that laterwards called
+ * smscconn_start works fine (and until it is called, no messages
+ *  are received)
  */
 
 /* generic wrapper for old SMSC implementations (uses old smsc.h).
