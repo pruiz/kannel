@@ -1,3 +1,8 @@
+2000-07-11  Yann Muller  <ymuller@3glab.com>
+
+	* doc/userguide/newconf.txt: Added configuration information to use
+	a GSM modem as an SMSC.
+
 2000-07-10  Yann Muller  <ymuller@3glab.com>
 
 	* gw/smsc_at.c: now removes SMSC address at beginning of PDU sent
