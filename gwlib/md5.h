@@ -34,11 +34,6 @@ typedef struct {
     unsigned char buffer[64];   /* input buffer */
 } md5_ctx;
 
-static void md5_digest(char *md5str, unsigned char *digest);
-static void md5_init(md5_ctx *);
-static void md5_update(md5_ctx *, const unsigned char *, unsigned int);
-static void md5_final(unsigned char[16], md5_ctx *);
-
 /*
  * Calculates the MD5 digest key of a given Octstr.
  * Returns NULL in case NULL has been given as argument.

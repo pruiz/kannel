@@ -34,6 +34,15 @@
 #include "gwlib.h"
 #include "md5.h"
 
+/* Declaration of static functions */
+
+static void md5_digest(char *md5str, unsigned char *digest);
+static void md5_init(md5_ctx *);
+static void md5_update(md5_ctx *, const unsigned char *, unsigned int);
+static void md5_final(unsigned char[16], md5_ctx *);
+
+
+
 static void md5_digest(char *md5str, unsigned char *digest)
 {
     int i;

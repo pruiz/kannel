@@ -1,4 +1,7 @@
 2003-04-24  Alexander Malysh  <a.malysh@centrium.de>
+    * gwlib/md5.[ch]: fixed compiler warnings about static functions.
+
+2003-04-24  Alexander Malysh  <a.malysh@centrium.de>
     * gw/smsc/smpp_pdu.c: fixed typo in error message.
     
 2003-04-24  Alexander Malysh  <a.malysh@centrium.de>
