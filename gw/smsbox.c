@@ -333,6 +333,7 @@ static void get_x_kannel_from_headers(List *headers, Octstr **from,
 	    *udh = octstr_duplicate(val);
 	    octstr_strip_blanks(*udh);
 	    if (octstr_hex_to_binary(*udh) == -1) {
+	        warning(0, "Invalid UDH received in X-Kannel-UDH");
 		octstr_destroy(*udh);
 		*udh = NULL;
 	    }
@@ -688,7 +689,7 @@ static void fill_message(Msg *msg, URLTranslation *trans,
 	    msg->sms.udhdata = udh;
 	} else {
 	    warning(0, "Tried to set UDH field, denied.");
-	    // Will be destroyed down there octstr_destroy(udh);
+	    O_DESTROY(udh);
 	}
     }
     if (mclass) {
@@ -734,7 +735,6 @@ static void fill_message(Msg *msg, URLTranslation *trans,
 	else
 	  msg->sms.coding = DC_7BIT;
     }
-    octstr_destroy(udh);
 
     if (validity) {
 	if (urltrans_accept_x_kannel_headers(trans))

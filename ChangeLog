@@ -1,4 +1,9 @@
 2002-05-01  Bruno Rodrigues  <bruno.rodrigues@litux.org>
+    * : The "where was my head at that day" patch
+    * gw/smsbox.c: reverted octstr_destroy(udh) but replaced original one
+      with O_DESTROY;
+
+2002-05-01  Bruno Rodrigues  <bruno.rodrigues@litux.org>
     * configure.in: configure now defaults to --disable-mysql 
     * gw/smsbox.c: http reply, when text/plain, doesn't strip_blanks. Needed
       to be able to send smscards with spaces in first line
