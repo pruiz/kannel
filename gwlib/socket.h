@@ -48,14 +48,6 @@ int socket_query_blocking(int socket);
  * 0 for success. */
 int socket_set_blocking(int socket, int blocking);
 
-/*
- * Return the IP number of the peer of a connected socket. Return value
- * is a dynamically allocated C string, which the caller is expected to
- * free.
- */
-char *socket_get_peer_ip(int s);
-
-
 /* Read a line from a socket. Return -1 for error, 0 for EOF, or 1 for OK.
    Remove CRLF and LF from end of line. */
 int read_line(int fd, char *line, int max);

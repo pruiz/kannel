@@ -956,6 +956,7 @@ static int wait_for_client(int port) {
 	socklen_t addrlen;
 	int listenfd;
 	int clientfd;
+	Octstr *addr;
 
 	listenfd = make_server_socket(port);
 	if (listenfd < 0) {
@@ -976,8 +977,10 @@ static int wait_for_client(int port) {
 		panic(0, "failed to make client socket nonblocking");
 	}
 
+    	addr = gw_netaddr_to_octstr(AF_INET, &sin.sin_addr);
 	info(0, "Accepted client from %s:%d",
-		inet_ntoa(sin.sin_addr), ntohs(sin.sin_port));
+		octstr_get_cstr(addr), ntohs(sin.sin_port));
+    	octstr_destroy(addr);
 
 	close(listenfd);
 

@@ -1,3 +1,19 @@
+2001-01-26  Lars Wirzenius  <liw@iki.fi>
+
+	* The standard library function inet_ntoa is not thread safe.
+	Instead of writing a wrapper, I decided it's better to convert
+	to using the gw_netaddr_to_octstr implementation Derek Hamilton
+	wrote for us.
+	
+    	* gwlib/protected.h: Added a macro to trap inet_ntoa calls.
+	
+	* gw/smsc_ois.c, gwlib/socket.c, test/test_cimd2.c: Converted
+	use of inet_ntoa to gw_netaddr_to_octstr.
+	
+	* gwlib/socket.[ch]: Removed the unused function
+	socket_get_peer_ip and slighly change the use of whitespace in
+	the gw_netaddr_to_octstr to follow project coding style.
+
 2001-01-26  Uoti Urpala  <uau@wapit.com>
 
 	* gw/urltrans.c: Converted to use octstr_create_urlcoded instead

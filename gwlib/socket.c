@@ -19,8 +19,6 @@
 #include "gwlib.h"
 
 
-static Mutex *inet_mutex;
-
 static Octstr *official_name = NULL;
 static Octstr *official_ip = NULL;
 
@@ -194,20 +192,6 @@ int socket_set_blocking(int fd, int blocking)
     return 0;
 }
 
-char *socket_get_peer_ip(int s)
-{
-    socklen_t len;
-    struct sockaddr_in addr;
-
-    len = sizeof(addr);
-    if (getsockname(s, (struct sockaddr *) &addr, &len) == -1) {
-        error(errno, "getsockname failed");
-        return gw_strdup("0.0.0.0");
-    }
-
-    gw_assert(addr.sin_family == AF_INET);
-    return gw_strdup(inet_ntoa(addr.sin_addr));  /* XXX not thread safe */
-}
 
 int read_line(int fd, char *line, int max)
 {
@@ -426,7 +410,7 @@ Octstr *udp_get_ip(Octstr *addr)
 
     gw_assert(octstr_len(addr) == sizeof(sa));
     memcpy(&sa, octstr_get_cstr(addr), sizeof(sa));
-    return octstr_create(inet_ntoa(sa.sin_addr));
+    return gw_netaddr_to_octstr(AF_INET, &sa.sin_addr);
 }
 
 
@@ -475,12 +459,7 @@ int udp_recvfrom(int s, Octstr **datagram, Octstr **addr)
 
 Octstr *host_ip(struct sockaddr_in addr)
 {
-    Octstr *ret;
-    mutex_lock(inet_mutex);
-
-    ret = octstr_create(inet_ntoa(addr.sin_addr));
-    mutex_unlock(inet_mutex);
-    return ret;
+    return gw_netaddr_to_octstr(AF_INET, &addr.sin_addr);
 }
 
 
@@ -513,20 +492,18 @@ static void setup_official_name(void)
 	official_ip = octstr_create("127.0.0.1");
     } else {
         official_name = octstr_create(h.h_name);
-	official_ip = octstr_create(inet_ntoa(*(struct in_addr *) h.h_addr));
+	official_ip = gw_netaddr_to_octstr(AF_INET, h.h_addr);
     }
 }
 
 
 void socket_init(void)
 {
-    inet_mutex = mutex_create();
     setup_official_name();
 }
 
 void socket_shutdown(void)
 {
-    mutex_destroy(inet_mutex);
     octstr_destroy(official_name);
     official_name = NULL;
     octstr_destroy(official_ip);
@@ -534,44 +511,39 @@ void socket_shutdown(void)
 }
 
 
-static Octstr *gw_netaddr_to_octstr4(unsigned char* src)
+static Octstr *gw_netaddr_to_octstr4(unsigned char *src)
 {
-    return octstr_format("%d.%d.%d.%d",src[0],src[1],src[2],src[3]);
+    return octstr_format("%d.%d.%d.%d", src[0], src[1], src[2], src[3]);
 }
 
 
 #ifdef AF_INET6
-
-#define INET6_OCTETS 16
-
-static Octstr *gw_netaddr_to_octstr6(unsigned char* src)
+static Octstr *gw_netaddr_to_octstr6(unsigned char *src)
 {
-    Octstr *address;
-
-    address=octstr_format("%x:%x:%x:%x:%x:%x:%x:%x:%x:%x:%x:%x:%x:%x:%x:%x",
-	src[0],src[1],src[2],src[3],src[4],src[5],src[6],src[7],src[8],
-	src[9],src[10],src[11],src[12],src[13],src[14],src[15]);
-    
-    return address;
+    return octstr_format(
+	    	"%x:%x:%x:%x:"
+		"%x:%x:%x:%x:"
+		"%x:%x:%x:%x:"
+		"%x:%x:%x:%x",
+	         src[0],  src[1],  src[2],  src[3], 
+		 src[4],  src[5],  src[6],  src[7], 
+		 src[8],  src[9], src[10], src[11], 
+		src[12], src[13], src[14], src[15]);
 }
 #endif
 
-Octstr *gw_netaddr_to_octstr(int af, void* src)
+Octstr *gw_netaddr_to_octstr(int af, void *src)
 {
-    switch(af){
-
-	case AF_INET:
-	return gw_netaddr_to_octstr4((char*)src);
+    switch (af) {
+    case AF_INET:
+	return gw_netaddr_to_octstr4(src);
 
 #ifdef AF_INET6
-	case AF_INET6:
-	return gw_netaddr_to_octstr6((char*)src);
+    case AF_INET6:
+	return gw_netaddr_to_octstr6(src);
 #endif
-	default:
-	    return NULL;
+
+    default:
+	return NULL;
     } 
-
-    return NULL;
 }
-
-

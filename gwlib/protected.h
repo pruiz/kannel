@@ -29,6 +29,7 @@ int gw_gethostbyname(struct hostent *ret, const char *name);
 #define gmtime(t) do_not_use_gmtime_directly
 #define rand() do_not_use_rand_directly
 #define gethostbyname() do_not_use_gethostbyname_directly
+#define inet_ntoa(in) use_gw_netaddr_to_octstr_instead_of_inet_ntoa
 
 
 #endif

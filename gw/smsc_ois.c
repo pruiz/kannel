@@ -474,6 +474,7 @@ static int ois_open_receiver(SMSCenter *smsc)
 {
     struct sockaddr_in addr;
     int addrlen;
+    Octstr *os;
 
     SAY(2, "ois_open_receiver");
 
@@ -495,8 +496,10 @@ static int ois_open_receiver(SMSCenter *smsc)
     }
 
     SAY2(2, "ois_open_receiver fd=%d", smsc->socket);
+    os = gw_netaddr_to_octstr(AF_INET, &addr.sin_addr);
     debug("bb.sms.ois", 0, "connection from host %s port %hu",
-	  inet_ntoa(addr.sin_addr), ntohs(addr.sin_port));
+	  octstr_get_cstr(os), ntohs(addr.sin_port));
+    octstr_destroy(os);
     time(&smsc->ois_alive);
     return 0;
 }
