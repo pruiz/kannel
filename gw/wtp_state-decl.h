@@ -17,17 +17,17 @@ ROW(LISTEN,
     (event->RcvInvoke.tcl == 2 || event->RcvInvoke.tcl == 1) &&
     event->RcvInvoke.up_flag == 1 && wtp_tid_is_valid(event),
     {
-     machine->u_ack=event->RcvInvoke.up_flag;
-     machine->tcl=event->RcvInvoke.tcl;
-     current_primitive=TRInvokeIndication;
+     machine->u_ack = event->RcvInvoke.up_flag;
+     machine->tcl = event->RcvInvoke.tcl;
+     current_primitive = TRInvokeIndication;
 
-     wsp_event=pack_wsp_event(current_primitive, event, machine);
+     wsp_event = pack_wsp_event(current_primitive, event, machine);
      if (wsp_event == NULL)
         goto mem_error;
      debug(0, "WTP: Sending TR-Invoke.ind to WSP");
      wsp_dispatch_event(machine, wsp_event);
 
-     timer=wtp_timer_create();
+     timer = wtp_timer_create();
      if (timer == NULL)
         goto mem_error;
      wtp_timer_start(timer, L_A_WITH_USER_ACK, machine, event); 
@@ -46,7 +46,6 @@ ROW(LISTEN,
      wsp_dispatch_event(machine, wsp_event);
     },
     LISTEN)
-
 
 /*
  * Ignore receiving invoke, when the state of the machine is INVOKE_RESP_WAIT.
@@ -73,8 +72,11 @@ ROW(INVOKE_RESP_WAIT,
     RcvAbort,
     1,
     {
-     current_primitive=TRAbortIndication;
-     wsp_event=pack_wsp_event(current_primitive, event, machine);
+     current_primitive = TRAbortIndication;
+     wsp_event = pack_wsp_event(current_primitive, event, machine);
+     if (wsp_event == NULL)
+        goto mem_error;
+     /*wsp_dispatch_event(machine, wsp_event);*/
      wtp_machine_mark_unused(machine);
     },
     LISTEN)
@@ -83,15 +85,15 @@ ROW(RESULT_WAIT,
     TRResult,
     1,
     {
-     machine->rcr=0;
+     machine->rcr = 0;
 
-     timer=wtp_timer_create();
+     timer = wtp_timer_create();
      if (timer == NULL)
         goto mem_error;
      wtp_timer_start(timer, L_R_WITH_USER_ACK, machine, event);
 
      wtp_send_result(machine, event); 
-     machine->rid=1;
+     machine->rid = 1;
     },
     RESULT_RESP_WAIT)
 
@@ -99,8 +101,11 @@ ROW(RESULT_WAIT,
     RcvAbort,
     1,
     {
-     current_primitive=TRAbortIndication;
-     wsp_event=pack_wsp_event(current_primitive, event, machine);
+     current_primitive = TRAbortIndication;
+     wsp_event = pack_wsp_event(current_primitive, event, machine);
+     if (wsp_event == NULL)
+        goto mem_error;
+     /*wsp_dispatch_event(machine, wsp_event);*/
      wtp_machine_mark_unused(machine);
     },
     LISTEN)
@@ -109,8 +114,10 @@ ROW(RESULT_RESP_WAIT,
     RcvAck,
     1,
     {
-     current_primitive=TRResultConfirmation;
-     wsp_event=pack_wsp_event(current_primitive, event, machine);
+     current_primitive = TRResultConfirmation;
+     wsp_event = pack_wsp_event(current_primitive, event, machine);
+     if (wsp_event == NULL)
+        goto mem_error;
      wsp_dispatch_event(machine, wsp_event);
      wtp_machine_mark_unused(machine);
     },
@@ -120,12 +127,17 @@ ROW(RESULT_RESP_WAIT,
     RcvAbort,
     1,
     {
-     current_primitive=TRAbortIndication;
-     wsp_event=pack_wsp_event(current_primitive, event, machine);
-     /* XXX wsp_dispatch_event(machine, wsp_event); */
+     current_primitive = TRAbortIndication;
+     wsp_event = pack_wsp_event(current_primitive, event, machine);
+     if (wsp_event == NULL)
+        goto mem_error;
+     /*wsp_dispatch_event(machine, wsp_event);*/
      wtp_machine_mark_unused(machine);
     },
     LISTEN)
 
 #undef ROW
 #undef STATE_NAME
+
+
+

@@ -44,23 +44,11 @@ WSP_EVENT(TRAbortIndication,
           MACHINE(machine);
           })
 
-WSP_EVENT(TRInvokeResponse,
-          {
-          OCTSTR(exit_info);
-          INTEGER(exit_info_present);
-          INTEGER(wsp_tid);
-          })
-
-WSP_EVENT(TRResultRequire,
-          {
-          OCTSTR(user_data);
-          INTEGER(wsp_tid);
-          })
-
 WSP_EVENT(TRAbortRequire,
           {
           INTEGER(abort_code);
           INTEGER(wsp_tid);
+          MACHINE(machine);
           })
 
 WSP_EVENT(SConnectResponse,

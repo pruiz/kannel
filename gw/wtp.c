@@ -140,12 +140,12 @@ void wtp_machine_mark_unused(WTPMachine *machine){
  */
         mutex_lock(list->mutex);
 
-        temp=list;
+        temp = list;
         mutex_lock(temp->next->mutex);
 
         while (temp != NULL && temp->next != machine){
 	      mutex_unlock(temp->mutex);
-              temp=temp->next;
+              temp = temp->next;
 	      mutex_lock(temp->next->mutex);
         }
 
@@ -155,7 +155,7 @@ void wtp_machine_mark_unused(WTPMachine *machine){
             return;
 	}
        
-        temp->in_use=0;
+        temp->in_use = 0;
         mutex_unlock(temp->mutex);
         return;
 #endif
@@ -175,15 +175,15 @@ void wtp_machine_destroy(WTPMachine *machine){
         mutex_lock(list->next->mutex);
 
         if (list == machine) {
-           list=machine->next;         
+           list = machine->next;         
            mutex_unlock(&list->next->mutex);
 	   mutex_unlock(&list->mutex);
         } else {
-          temp=list;
+          temp = list;
 
           while (temp != NULL && temp->next != machine){ 
 	        mutex_unlock(&temp->mutex);
-                temp=temp->next;
+                temp = temp->next;
                 if (temp != NULL)
 		   mutex_lock(&temp->next->mutex);
           }
@@ -195,7 +195,7 @@ void wtp_machine_destroy(WTPMachine *machine){
               return;
 	  }
 
-          temp->next=machine->next;
+          temp->next = machine->next;
 	}
 
         mutex_unlock(&temp->next->mutex);
@@ -234,7 +234,7 @@ void wtp_machine_dump(WTPMachine  *machine){
            debug(0, "WTPMachine %p: dump starting", (void *) machine); 
 	   #define INTEGER(name) \
 	           debug(0, "  %s: %ld", #name, machine->name)
-           #define ENUM(name) debug(0, "  state=%s.", name_state(machine->name))
+           #define ENUM(name) debug(0, "  state = %s.", name_state(machine->name))
 	   #define OCTSTR(name)  debug(0, "  Octstr field %s :", #name); \
                                  octstr_dump(machine->name)
            #define TIMER(name)   debug(0, "  Machine timer %p:", (void *) \
@@ -265,37 +265,39 @@ WTPMachine *wtp_machine_find_or_create(Msg *msg, WTPEvent *event){
           switch (event->type){
 
 	          case RcvInvoke:
-                       tid=event->RcvInvoke.tid;
-#if 0
-                       debug(0, "WTP: machine_find_or_create: receiving invoke");
-#endif
+                       tid = event->RcvInvoke.tid;
+                       machine = wtp_machine_find(msg->wdp_datagram.source_address,
+                                 msg->wdp_datagram.source_port, 
+                                 msg->wdp_datagram.destination_address,
+                                 msg->wdp_datagram.destination_port, 
+                                 tid);
+                       if (machine == NULL){
+	                  machine = wtp_machine_create(
+                                    msg->wdp_datagram.source_address,
+				    msg->wdp_datagram.source_port, 
+				    msg->wdp_datagram.destination_address,
+				    msg->wdp_datagram.destination_port,
+				    tid, event->RcvInvoke.tcl);
+                          machine->in_use = 1;
+                       }
                   break;
 
 	          case RcvAck: 
+                       tid = event->RcvAck.tid;
                        tid=event->RcvAck.tid;
-#if 0
-                       debug(0, "WTP: machine_find_or_create: receiving ack");
-#endif
+                       machine = wtp_machine_find(msg->wdp_datagram.source_address,
+                                    msg->wdp_datagram.source_port, 
+                                    msg->wdp_datagram.destination_address,
+                                    msg->wdp_datagram.destination_port, 
+                                    tid);
+                       if (machine == NULL)
+			  error(0, "ack received, yet having no machine");
                   break;
                  
 	          default:
                        debug(0, "WTP: machine_find_or_create: wrong event");
                   break;
 	   }
-
-           machine=wtp_machine_find(msg->wdp_datagram.source_address,
-                                    msg->wdp_datagram.source_port, 
-                                    msg->wdp_datagram.destination_address,
-                                    msg->wdp_datagram.destination_port, 
-                                    tid);
-           if (machine == NULL){
-	       machine = wtp_machine_create(msg->wdp_datagram.source_address,
-				  msg->wdp_datagram.source_port, 
-				  msg->wdp_datagram.destination_address,
-				  msg->wdp_datagram.destination_port,
-				  tid, event->RcvInvoke.tcl);
-               machine->in_use=1;
-           }
 
            return machine;
 }
@@ -329,25 +331,20 @@ WTPEvent *wtp_unpack_wdp_datagram(Msg *msg){
  * already in host order. Not that the iniator turns the first bit off, so we do
  * have a genuine tid.
  */
-         first_tid=octstr_get_char(msg->wdp_datagram.user_data,1);
-         last_tid=octstr_get_char(msg->wdp_datagram.user_data,2);
-         tid=first_tid;
-         tid=(tid << 8) + last_tid;
+         first_tid = octstr_get_char(msg->wdp_datagram.user_data,1);
+         last_tid = octstr_get_char(msg->wdp_datagram.user_data,2);
+         tid = first_tid;
+         tid = (tid << 8) + last_tid;
 
-#if 0
-         debug(0, "WTP: first_tid=%d last_tid=%d tid=%d", first_tid, 
-               last_tid, tid);
-#endif
-
-         this_octet=octet=octstr_get_char(msg->wdp_datagram.user_data, 0);
+         this_octet = octet = octstr_get_char(msg->wdp_datagram.user_data, 0);
          if (octet == -1)
             goto no_datagram;
 
-         con=this_octet>>7; 
+         con = this_octet>>7; 
          if (con == 0){
-            this_octet=octet;
-            pdu_type=this_octet>>3&15;
-            this_octet=octet;
+            this_octet = octet;
+            pdu_type = this_octet>>3&15;
+            this_octet = octet;
 
             if (pdu_type == 0){
                goto no_segmentation;
@@ -357,41 +354,41 @@ WTPEvent *wtp_unpack_wdp_datagram(Msg *msg){
  */
             if (pdu_type == 1){
 
-               event=wtp_event_create(RcvInvoke);
+               event = wtp_event_create(RcvInvoke);
                if (event == NULL)
                   goto cap_error;
-               event->RcvInvoke.tid=tid;
+               event->RcvInvoke.tid = tid;
 
-               gtr=this_octet>>2&1;
-               this_octet=octet;
-               ttr=this_octet>>1&1;
+               gtr = this_octet>>2&1;
+               this_octet = octet;
+               ttr = this_octet>>1&1;
                if (gtr == 0 || ttr == 0){
 		  goto no_segmentation;
                }
-               this_octet=octet;
-               event->RcvInvoke.rid=this_octet&1; 
+               this_octet = octet;
+               event->RcvInvoke.rid = this_octet&1; 
 
-               this_octet=octet=octstr_get_char(
+               this_octet = octet = octstr_get_char(
                           msg->wdp_datagram.user_data, 3);
-               version=this_octet>>6&3;
+               version = this_octet>>6&3;
                if (version != 0){
                   goto wrong_version;
                } 
-               this_octet=octet;
-               event->RcvInvoke.tid_new=this_octet>>5&1;
-               this_octet=octet;
-               event->RcvInvoke.up_flag=this_octet>>4&1;
-               this_octet=octet;
-               tcl=this_octet&3; 
+               this_octet = octet;
+               event->RcvInvoke.tid_new = this_octet>>5&1;
+               this_octet = octet;
+               event->RcvInvoke.up_flag = this_octet>>4&1;
+               this_octet = octet;
+               tcl = this_octet&3; 
                if (tcl > 2)
                   goto illegal_header;
-               event->RcvInvoke.tcl=tcl; 
+               event->RcvInvoke.tcl = tcl; 
  
 /*
  * At last, the message itself. We remove the header.
  */
                octstr_delete(msg->wdp_datagram.user_data, 0, 4);
-               event->RcvInvoke.user_data=msg->wdp_datagram.user_data;     
+               event->RcvInvoke.user_data = msg->wdp_datagram.user_data;     
             }
 /*
  * Message type is supposed to be result. This is impossible, so we have an
@@ -404,41 +401,37 @@ WTPEvent *wtp_unpack_wdp_datagram(Msg *msg){
  * Message type was ack.
  */
             if (pdu_type == 3){
-               event=wtp_event_create(RcvAck);
+               event = wtp_event_create(RcvAck);
                if (event == NULL)
                   goto cap_error;
-               event->RcvAck.tid=tid;
+               event->RcvAck.tid = tid;
 
-               this_octet=octet=octstr_get_char(
+               this_octet = octet = octstr_get_char(
                           msg->wdp_datagram.user_data, 0);
-               event->RcvAck.tid_ok=this_octet>>2&1;
-               this_octet=octet;
-               event->RcvAck.rid=this_octet&1;
-#if 0
-               debug(0, "Ack event packed");
-               wtp_event_dump(event);
-#endif
+               event->RcvAck.tid_ok = this_octet>>2&1;
+               this_octet = octet;
+               event->RcvAck.rid = this_octet&1;
             }
 
 /*
  *Message type was abort.
  */
 	    if (pdu_type == 4){
-                event=wtp_event_create(RcvAbort);
+                event = wtp_event_create(RcvAbort);
                 if (event == NULL)
                     goto cap_error;
-                event->RcvAbort.tid=tid;
+                event->RcvAbort.tid = tid;
                 
-               octet=octstr_get_char(msg->wdp_datagram.user_data, 0);
-               abort_type=octet&7;
+               octet = octstr_get_char(msg->wdp_datagram.user_data, 0);
+               abort_type = octet&7;
                if (abort_type > 1)
                   goto illegal_header;
-               event->RcvAbort.abort_type=abort_type;   
+               event->RcvAbort.abort_type = abort_type;   
 
-               octet=octstr_get_char(msg->wdp_datagram.user_data, 3);
+               octet = octstr_get_char(msg->wdp_datagram.user_data, 3);
                if (octet > NUMBER_OF_ABORT_REASONS)
                   goto illegal_header;
-               event->RcvAbort.abort_reason=octet;
+               event->RcvAbort.abort_reason = octet;
                info(0, "abort event packed");
             }
 
@@ -457,8 +450,8 @@ WTPEvent *wtp_unpack_wdp_datagram(Msg *msg){
  * an invoke message.(For now, only info tpis are supported.)
  */
          } else {
-           this_octet=octet=octstr_get_char(msg->wdp_datagram.user_data, 4);
-           tpi_length_type=this_octet>>2&1;
+           this_octet = octet = octstr_get_char(msg->wdp_datagram.user_data, 4);
+           tpi_length_type = this_octet>>2&1;
 /*
  * TPI can be long
  */
@@ -515,37 +508,23 @@ no_datagram:
  */
 void wtp_handle_event(WTPMachine *machine, WTPEvent *event){
      WSPEventType current_primitive;
-     WSPEvent *wsp_event=NULL;
-     WTPTimer *timer=NULL;
-
-#if 0
-     debug(0, "wtp_handle_event called");
-#endif
+     WSPEvent *wsp_event = NULL;
+     WTPTimer *timer = NULL;
 
 /* 
  * If we're already handling events for this machine, add the event to the 
  * queue.
  */
      if (mutex_try_lock(machine->mutex) == -1) {
-#if 0
-	  debug(0, "wtp_handle_event: machine already locked, queing event");
-#endif
 	  append_to_event_queue(machine, event);
 	  return;
      }
-
-#if 0
-     debug(0, "wtp_handle_event: got mutex");
-#endif
 
      do {
 	  debug(0, "WTP: state is %s, event is %s.",
 	  		name_state(machine->state),
 	  		name_event(event->type));
-#if 0
-	  debug(0, "WTP: event details:");
-	  wtp_event_dump(event);
-#endif
+
 	  #define STATE_NAME(state)
 	  #define ROW(wtp_state, event_type, condition, action, next_state) \
 		  if (machine->state == wtp_state && \
@@ -567,9 +546,6 @@ void wtp_handle_event(WTPMachine *machine, WTPEvent *event){
      } while (event != NULL);
 
      mutex_unlock(machine->mutex);
-#if 0
-     debug(0, "wtp_handle_event: done");
-#endif
      return;
 
 /*
@@ -586,7 +562,7 @@ mem_error:
      mutex_unlock(machine->mutex);
 }
 
-long wtp_tid_next(void){
+unsigned long wtp_tid_next(void){
      static unsigned long next_tid = 0;
      return ++next_tid;
 }
@@ -631,9 +607,6 @@ static WTPMachine *wtp_machine_find(Octstr *source_address, long source_port,
  * We are interested only machines in use, it is, having in_use-flag 1.
  */
            if (list == NULL){
-#if 0
-              debug (0, "wtp_machine_find: empty list");
-#endif
               return NULL;
            }
 
@@ -650,9 +623,6 @@ static WTPMachine *wtp_machine_find(Octstr *source_address, long source_port,
 		temp->tid == tid && temp->in_use == 1){
 
                 mutex_unlock(temp->mutex);
-#if 0
-                debug (0, "wtp_machine_find: machine found");
-#endif
                 return temp;
                  
 		} else {
@@ -664,9 +634,6 @@ static WTPMachine *wtp_machine_find(Octstr *source_address, long source_port,
 		      mutex_lock(temp->mutex);
                }              
            }
-#if 0
-           debug (0, "wtp_machine_find: machine not found");      
-#endif
            return temp;
 }
 
@@ -674,21 +641,21 @@ static WTPMachine *wtp_machine_create_empty(void){
 
         WTPMachine *machine;
 
-        machine=malloc(sizeof(WTPMachine));
+        machine = malloc(sizeof(WTPMachine));
         if (machine == NULL)
            goto error;
         
-        #define INTEGER(name) machine->name=0
-        #define ENUM(name) machine->name=LISTEN
-        #define OCTSTR(name) machine->name=octstr_create_empty();\
+        #define INTEGER(name) machine->name = 0
+        #define ENUM(name) machine->name = LISTEN
+        #define OCTSTR(name) machine->name = octstr_create_empty();\
                              if (machine->name == NULL)\
                                 goto error
-        #define QUEUE(name) machine->name=NULL
+        #define QUEUE(name) machine->name = NULL
         #define MUTEX(name) machine->name = mutex_create()
-        #define TIMER(name) machine->name=wtp_timer_create();\
+        #define TIMER(name) machine->name = wtp_timer_create();\
                             if (machine->name == NULL)\
                                goto error
-        #define NEXT(name) machine->name=NULL
+        #define NEXT(name) machine->name = NULL
         #define MACHINE(field) field
         #include "wtp_machine-decl.h"
 
@@ -697,8 +664,8 @@ static WTPMachine *wtp_machine_create_empty(void){
            mutex_lock(&list->mutex);
 #endif
 
-        machine->next=list;
-        list=machine;
+        machine->next = list;
+        list = machine;
 
 #if 0
         mutex_unlock(&list->mutex);
@@ -744,12 +711,12 @@ WTPMachine *wtp_machine_create(Octstr *source_address,
 	   if (machine == NULL)
 	   	panic(0, "wtp_machine_create_empty failed, out of memory");
 
-           machine->source_address=source_address;
-           machine->source_port=source_port;
-           machine->destination_address=destination_address;
-           machine->destination_port=destination_port;
-           machine->tid=tid;
-           machine->tcl=tcl;
+           machine->source_address = source_address;
+           machine->source_port = source_port;
+           machine->destination_address = destination_address;
+           machine->destination_port = destination_port;
+           machine->tid = tid;
+           machine->tcl = tcl;
 
            return machine;
 } 
@@ -762,11 +729,7 @@ WTPMachine *wtp_machine_create(Octstr *source_address,
 static WSPEvent *pack_wsp_event(WSPEventType wsp_name, WTPEvent *wtp_event, 
          WTPMachine *machine){
 
-         WSPEvent *event=wsp_event_create(wsp_name);
-
-#if 0
-         debug(0, "pack_wsp_event: Gen_tid has a value %ld", gen_tid);
-#endif
+         WSPEvent *event = wsp_event_create(wsp_name);
 
 /*
  * Abort(CAPTEMPEXCEEDED)
@@ -780,40 +743,47 @@ static WSPEvent *pack_wsp_event(WSPEventType wsp_name, WTPEvent *wtp_event,
          switch (wsp_name){
                 
 	        case TRInvokeIndication:
-                     event->TRInvokeIndication.ack_type=machine->u_ack;
-                     event->TRInvokeIndication.user_data=
+                     event->TRInvokeIndication.ack_type = machine->u_ack;
+                     event->TRInvokeIndication.user_data =
                             wtp_event->RcvInvoke.user_data;
-                     event->TRInvokeIndication.tcl=wtp_event->RcvInvoke.tcl;
-                     event->TRInvokeIndication.wsp_tid=wtp_tid_next();
-                     event->TRInvokeIndication.machine=machine;
+                     event->TRInvokeIndication.tcl = wtp_event->RcvInvoke.tcl;
+                     event->TRInvokeIndication.wsp_tid = wtp_tid_next();
+                     event->TRInvokeIndication.machine = machine;
+                break;
+
+	        case TRInvokeConfirmation:
+                     event->TRInvokeConfirmation.wsp_tid =
+                            event->TRInvokeIndication.wsp_tid;
+                     event->TRInvokeConfirmation.machine = machine;
                 break;
                 
 	        case TRResultConfirmation:
-                     event->TRResultConfirmation.exit_info=
+                     event->TRResultConfirmation.exit_info =
                             wtp_event->RcvInvoke.exit_info;
-                     event->TRResultConfirmation.exit_info_present=
+                     event->TRResultConfirmation.exit_info_present =
                             wtp_event->RcvInvoke.exit_info_present;
-                     event->TRResultConfirmation.machine=machine;
+                     event->TRResultConfirmation.wsp_tid =
+                            event->TRInvokeIndication.wsp_tid;
+                     event->TRResultConfirmation.machine = machine;
                 break;
 
 	        case TRAbortIndication:
-                     event->TRAbortIndication.abort_code=
+                     event->TRAbortIndication.abort_code =
                             wtp_event->RcvAbort.abort_reason;
-                     event->TRAbortIndication.machine=machine;
+                     event->TRResultConfirmation.wsp_tid =
+                            event->TRInvokeIndication.wsp_tid;
+                     event->TRAbortIndication.machine = machine;
                 break;
                 
 	        default:
                 break;
          }
-#if 0
-         debug (0,"pack_wsp_event:");
-         wsp_event_dump(event);
-#endif
+
          return event;
 } 
 
 static int wtp_tid_is_valid(WTPEvent *event){
-
+ 
     return 1;
 }
 
@@ -860,5 +830,11 @@ static WTPEvent *remove_from_event_queue(WTPMachine *machine) {
 	return event;
 }
 
-
 /*****************************************************************************/
+
+
+
+
+
+
+

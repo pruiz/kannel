@@ -47,7 +47,8 @@ EVENT(TRResult,
 EVENT(TRAbort,
      {
      INTEGER(tid);
-     INTEGER(abort_code);
+     INTEGER(abort_type);
+     INTEGER(abort_reason);
      }) 
 
 EVENT(TimerTO_A,
