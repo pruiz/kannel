@@ -1,3 +1,9 @@
+2000-10-24  Yann Muller  <ymuller@3glab.com>
+
+	* gw/smsc_at.c: Added support for Falcom A2D modem, thanks to
+	Mike Gaertner. Also changed the default protocol identifier
+	and coding scheme. Preliminary support for Nokia 7110 as SMSC.
+	
 2000-10-23  Lars Wirzenius  <liw@iki.fi>
 
 	* gwlib/gwmem.h, gwlib/protected.h: Wrote macros to make it
