@@ -1,3 +1,11 @@
+Tue Jan 25 17:27:53 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* gwlib/http.c: Commented out gw_free calls for error situations,
+	where it causes a segfault for some reason. This is not a fix,
+	it is an ugly workaround, but it should avoid the problem until
+	we have time to review the whole memory allocation/freeing
+	situation. (The gateway is already leaking memory a lot.)
+
 Tue Jan 25 17:14:12 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* gwlib/thread.c: Added comments to explain how mutex_try_lock

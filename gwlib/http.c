@@ -1034,8 +1034,12 @@ HTTPRequest* httprequest_execute(HTTPRequest *request) {
 error:
 	error(errno, "httprequest_execute: failed");
 	close(s);
+#if 0 /* XXX these cause segfaults in some situations, no idea why.
+         we'll fix this later, causing a memory leak is just a workaround.
+	 --liw */
 	gw_free(datasend);
 	gw_free(datareceive);
+#endif
 	return NULL;
 }
 
