@@ -1,3 +1,9 @@
+2005-02-18  Stipe Tolj  <stolj@wapme.de> 
+    * wap/wtp.c: fixing bug #197, causing wapbox to PANIC on truncated WDP
+      datagrams. Thanks to Jonathan Houser <jhouser@wirelessonenet.com> for
+      reporing this bug in ML users@kannel.org.
+      [Msg-ID: <4214F128.4090007@wirelessonenet.com>]
+
 2005-02-17  Stipe Tolj  <stolj@wapme.de> 
     * test/test_radius_pdu.c: some minor issues, like usage display etc.
 

@@ -108,41 +108,41 @@ List *wtp_unpack_wdp_datagram(WAPEvent *datagram)
      events = gwlist_create();
         
      if (concatenated_message(datagram->u.T_DUnitdata_Ind.user_data)) {
-         data = octstr_duplicate(datagram->u.T_DUnitdata_Ind.user_data);
-	 octstr_delete(data, 0, 1);
+        data = octstr_duplicate(datagram->u.T_DUnitdata_Ind.user_data);
+        octstr_delete(data, 0, 1);
 
-         while (octstr_len(data) != 0) {
+        while (octstr_len(data) != 0) {
 
-	     if (octstr_get_bits(data, 0, 1) == 0) {
-	         pdu_len = octstr_get_char(data, 0);
-                 octstr_delete(data, 0, 1);
-
-             } else {
-		    pdu_len = octstr_get_bits(data, 1, 15);
-                    octstr_delete(data, 0, 2);
-             }
+            if (octstr_get_bits(data, 0, 1) == 0) {
+                pdu_len = octstr_get_char(data, 0);
+                octstr_delete(data, 0, 1);
+            } else {
+                pdu_len = octstr_get_bits(data, 1, 15);
+                octstr_delete(data, 0, 2);
+            }
       
-	     subdgram = wap_event_duplicate(datagram);
-	     octstr_destroy(subdgram->u.T_DUnitdata_Ind.user_data);
-             subdgram->u.T_DUnitdata_Ind.user_data =
-	          octstr_copy(data, 0, pdu_len);
-             wap_event_assert(subdgram);
-             event = unpack_wdp_datagram_real(subdgram);
-             wap_event_assert(event);
-             gwlist_append(events, event);
-             octstr_delete(data, 0, pdu_len);
-             wap_event_destroy(subdgram);
-         }
+            subdgram = wap_event_duplicate(datagram);
+            octstr_destroy(subdgram->u.T_DUnitdata_Ind.user_data);
+            subdgram->u.T_DUnitdata_Ind.user_data = octstr_copy(data, 0, pdu_len);
+            wap_event_assert(subdgram);
+            if ((event = unpack_wdp_datagram_real(subdgram)) != NULL) {
+                wap_event_assert(event);
+                gwlist_append(events, event);
+            }
+            octstr_delete(data, 0, pdu_len);
+            wap_event_destroy(subdgram);
+        }
 
-     octstr_destroy(data);
+        octstr_destroy(data);
 
-     } else {
-          event = unpack_wdp_datagram_real(datagram); 
-          wap_event_assert(event);
-          gwlist_append(events, event);
-     } 
+    } else if ((event = unpack_wdp_datagram_real(datagram)) != NULL) { 
+        wap_event_assert(event);
+        gwlist_append(events, event);
+    } else {
+        warning(0, "WTP: dropping unhandled datagram");
+    }
 
-     return events;
+    return events;
 }
 
 /*
@@ -350,14 +350,14 @@ WAPEvent *unpack_wdp_datagram_real(WAPEvent *datagram)
 
     if (truncated_datagram(datagram)) {
         warning(0, "WTP: got a truncated datagram, ignoring");
-	return NULL;
+        return NULL;
     }
 
     pdu = wtp_pdu_unpack(data);
 
-/*
- * Wtp_pdu_unpack returned NULL, we build a rcv error event. 
- */
+    /*
+     * wtp_pdu_unpack returned NULL, we build a rcv error event. 
+     */
     if (pdu == NULL) {
         error(0, "WTP: cannot unpack pdu, creating an error pdu");
         event = pack_error(datagram);
