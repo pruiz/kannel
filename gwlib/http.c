@@ -304,6 +304,12 @@ void http_caller_destroy(HTTPCaller *caller)
 }
 
 
+void http_caller_signal_shutdown(HTTPCaller *caller)
+{
+    list_remove_producer(caller);
+}
+
+
 static Octstr *get_redirection_location(HTTPServer *trans)
 {
     if (trans->status < 0 || trans->follow_remaining <= 0)

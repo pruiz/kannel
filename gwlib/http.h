@@ -185,6 +185,14 @@ void http_caller_destroy(HTTPCaller *caller);
 
 
 /*
+ * Signal to a caller (presumably waiting in http_receive_result) that
+ * we're entering shutdown phase. This will make http_receive_result
+ * no longer block if the queue is empty.
+ */
+void http_caller_signal_shutdown(HTTPCaller *caller);
+
+
+/*
  * Start an HTTP request. It will be completed in the background, and
  * the result will eventually be received by http_receive_result. The
  * return value is the request identifier; http_receive_result will

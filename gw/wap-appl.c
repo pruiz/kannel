@@ -47,6 +47,12 @@ static List *queue = NULL;
 
 
 /*
+ * HTTP caller identifier for application layer.
+ */
+static HTTPCaller *caller = NULL;
+
+
+/*
  * Number of currently running HTTP fetching threads.
  */
 static Counter *fetches = NULL;
@@ -67,11 +73,25 @@ struct content {
 
 
 /*
+ * A mapping from HTTP request identifiers to information about the request.
+ */
+struct request_data {
+    long client_SDU_size;
+    WAPEvent *event;
+    long session_id;
+    Octstr *url;
+    long x_wap_tod;
+};
+static Dict *id_to_request_data = NULL;
+
+
+/*
  * Private functions.
  */
 
 static void main_thread(void *);
-static void fetch_thread(void *);
+static void start_fetch(WAPEvent *);
+static void return_replies_thread(void *);
 
 static void  dev_null(const char *data, size_t len, void *context);
 
@@ -107,18 +127,25 @@ void wap_appl_init(void) {
 	list_add_producer(queue);
 	run_status = running;
 	charsets = wml_charsets();
+	caller = http_caller_create();
+	id_to_request_data = dict_create(1024, NULL);
 	gwthread_create(main_thread, NULL);
+	gwthread_create(return_replies_thread, NULL);
 }
 
 
 void wap_appl_shutdown(void) {
 	gw_assert(run_status == running);
-	list_remove_producer(queue);
 	run_status = terminating;
-	
+
+	list_remove_producer(queue);
 	gwthread_join_every(main_thread);
-	gwthread_join_every(fetch_thread);
+
+    	http_caller_signal_shutdown(caller);
+	gwthread_join_every(return_replies_thread);
 	
+    	http_caller_destroy(caller);
+	dict_destroy(id_to_request_data);
 	list_destroy(queue, wap_event_destroy_item);
 	list_destroy(charsets, octstr_destroy_item);
 	counter_destroy(fetches);
@@ -154,11 +181,11 @@ static void main_thread(void *arg) {
 			res->u.S_MethodInvoke_Res.session_id =
 				ind->u.S_MethodInvoke_Ind.session_id;
 			wsp_session_dispatch_event(res);
-			gwthread_create(fetch_thread, ind);
+			start_fetch(ind);
 			break;
 
 		case S_Unit_MethodInvoke_Ind:
-			gwthread_create(fetch_thread, ind);
+			start_fetch(ind);
 			break;
 
 		case S_Connect_Ind:
@@ -458,6 +485,37 @@ static void return_reply(int status, struct content content, List *headers,
 
 
 /*
+ * This thread receives replies from HTTP layer and sends them back to
+ * the phone.
+ */
+static void return_replies_thread(void *arg)
+{
+    struct content content;
+    long id;
+    Octstr *idstr;
+    struct request_data *p;
+    int status;
+    Octstr *final_url;
+    List *headers;
+
+    while (run_status == running) {
+	id = http_receive_result(caller, &status, &final_url, &headers,
+	    	    	    	 &content.body);
+    	if (id == -1)
+	    break;
+    	idstr = octstr_format("%ld", id);
+	p = dict_remove(id_to_request_data, idstr);
+	gw_assert(p != NULL);
+	octstr_destroy(idstr);
+	return_reply(status, content, headers, p->client_SDU_size,
+		     p->event, p->session_id, p->url, p->x_wap_tod);
+    	gw_free(p);
+    	octstr_destroy(final_url);
+    }
+}
+
+
+/*
  * This WML deck is returned when the user asks for the URL "kannel:alive".
  */
 #define HEALTH_DECK \
@@ -466,9 +524,8 @@ static void return_reply(int status, struct content content, List *headers,
     "\"http://www.wapforum.org/DTD/wml_1.1.xml\">" \
     "<wml><card id=\"health\"><p>Ok</p></card></wml>"
 
-static void fetch_thread(void *arg) {
+static void start_fetch(WAPEvent *event) {
 	int ret;
-	WAPEvent *event;
 	long client_SDU_size; /* 0 means no limit */
 	Octstr *url;
 	List *session_headers;
@@ -483,12 +540,14 @@ static void fetch_thread(void *arg) {
 	Octstr *request_body;
 	int x_wap_tod;          /* X-WAP.TOD header was present in request */
 	Octstr *magic_url;
+	struct request_data *p;
+	long id;
+	Octstr *idstr;
 	
     	counter_increase(fetches);
 
 	content = empty_content;
 
-	event = arg;
 	if (event->type == S_MethodInvoke_Ind) {
 		struct S_MethodInvoke_Ind *p;
 		
@@ -553,19 +612,25 @@ static void fetch_thread(void *arg) {
 	    octstr_destroy(request_body);
 	    return_reply(ret, content, resp_headers, client_SDU_size,
 			 event, session_id, url, x_wap_tod);
-	} else if (method == 0x40) {
-	    ret = http_get(url, actual_headers, &resp_headers, &content.body);
+	} else if (method == 0x40 || method == 0x60) {
+	    if (method == 0x40 && request_body != NULL) {
+	    	octstr_destroy(request_body);
+		request_body = NULL;
+	    }
+	    id = http_start_request(caller, url, actual_headers, 
+	    	    	    	    request_body, 0);
 	    http_destroy_headers(actual_headers);
 	    octstr_destroy(request_body);
-	    return_reply(ret, content, resp_headers, client_SDU_size,
-			 event, session_id, url, x_wap_tod);
-	} else if (method == 0x60) {
-	    ret = http_post(url, actual_headers, request_body,
-			    &resp_headers, &content.body);
-	    http_destroy_headers(actual_headers);
-	    octstr_destroy(request_body);
-	    return_reply(ret, content, resp_headers, client_SDU_size,
-			 event, session_id, url, x_wap_tod);
+
+	    idstr = octstr_format("%ld", id);
+	    p = gw_malloc(sizeof(*p));
+	    p->client_SDU_size = client_SDU_size;
+	    p->event = event;
+	    p->session_id = session_id;
+	    p->url = url;
+	    p->x_wap_tod = x_wap_tod;
+	    dict_put(id_to_request_data, idstr, p);
+	    octstr_destroy(idstr);
 	} else {
 	    error(0, "WSP: Method %d not supported.", method);
 	    content.body = octstr_create("");

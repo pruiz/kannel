@@ -1,5 +1,14 @@
 2000-11-10  Lars Wirzenius  <liw@iki.fi>
 
+	* gw/wap-appl.c: Changed thread structure so that there is a
+	static number of thread regardless of how many requests are
+	made. This should make things a bit faster when the load is heavy.
+	
+	* gwlib/http.[ch]: Wrote function http_client_signal_shutdown,
+	to allow the wapbox to shutdown.
+
+2000-11-10  Lars Wirzenius  <liw@iki.fi>
+
 	* gw/wap-appl.c: Rearranged code in preparation for changing
 	the thread structure so that a new thread is not started for
 	each request.
