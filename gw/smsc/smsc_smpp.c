@@ -943,7 +943,8 @@ static void handle_pdu(SMPP *smpp, Connection *conn, SMPP_PDU *pdu,
                     dlrstat = DLR_SUCCESS;
                 else if (stat != NULL && (octstr_compare(stat, octstr_imm("ACKED")) == 0 ||
                              octstr_compare(stat, octstr_imm("ENROUTE")) == 0 ||
-                             octstr_compare(stat, octstr_imm("ACCEPTD")) == 0))
+                             octstr_compare(stat, octstr_imm("ACCEPTD")) == 0 ||
+                             octstr_compare(stat, octstr_imm("BUFFRED")) == 0))
                     dlrstat = DLR_BUFFERED;
                 else
                     dlrstat = DLR_FAIL;

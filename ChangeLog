@@ -1,4 +1,8 @@
 2003-11-03  Alexander Malysh  <a.malysh@centrium.de>
+    * gw/smsc/smsc_smpp.c: applied yet another workaround for BUFFERED
+      DLR's. Thanks to: "Alex Kinch" <alex@alexkinch.com> for patch.
+
+2003-11-03  Alexander Malysh  <a.malysh@centrium.de>
     * configure.in, configure: applied patch with better gethostbyname_r/gethostbyname
       detection.
 
