@@ -1,3 +1,6 @@
+2003-03-19  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/wml_compiler.c: fixed compiler warning.
+
 2003-03-18  Stipe Tolj  <tolj@wapme-systems.de>
     * test/test_http_server.c: added a special URI /save which causes to save
       the received body of a POST request to a temporary /tmp/body.<pid>.<n> 
