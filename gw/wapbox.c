@@ -216,6 +216,7 @@ static void signal_handler(int signum)
             warning(0, "SIGHUP received, catching and re-opening logs");
             config_reload(1);
             log_reopen();
+            alog_reopen();
             break;
     
         /* 
