@@ -57,6 +57,10 @@ variables. It must have following variables defined:
  #	 port of the local www server, just invent any port, but
  #	 must be over 1023 unless you are running Kannel as a
  #       root process (not recommended)
+ #
+ admin-password = <password>
+ #       Password for HTTP admin commands except for status
+ #
 
 To start certain modules of the Kannel, following configuration
 variables can be set:
@@ -487,3 +491,49 @@ password = buz
 #user-allow-ip = "127.0.0.1"
 
 -------------------
+
+
+# SMSC-EXAMPLES:
+#
+# group = smsc
+# smsc = fake
+# host = localhost
+# port = 10000
+#
+# group = smsc
+# smsc = cimd
+# host = 100.101.102.103
+# port = 600
+# smsc-username = foo
+# smsc-password = bar
+#
+# group = smsc
+# smsc = emi_ip
+# host = 103.102.101.100
+# port = 600
+# our-port = 600 (optional bind in our end)
+# receive-port = 700 (the port in which the SMSC will contact)
+#
+# group = smsc
+# smsc = emi
+# host = 100.102.100.102
+# device = /dev/tty0
+# smsc-username = foo
+# smsc-password = bar
+#
+# group = smsc
+# smsc = smpp
+# host = 127.0.0.1
+# port = 600
+# receive-port = 700      (receiver port if it a different one)
+# system-id = "param, ask from dealer.. 'same' as username"
+# smsc-password = foo
+# system-type = "param, ask from dealer"
+# address-range = "" (regex of received numbers)
+#
+# group = smsc
+# smsc = ois
+# host = 103.102.101.100
+# port = 10000
+# receive-port = 10000 (the port in which the SMSC will contact)
+#

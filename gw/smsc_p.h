@@ -30,6 +30,7 @@ enum {
 	SMSC_TYPE_EMI_IP,
 	SMSC_TYPE_SMPP_IP,
 	SMSC_TYPE_SEMA_X28,
+	SMSC_TYPE_OIS,
 	SMSC_TYPE_AT
 };
 
@@ -67,7 +68,7 @@ struct SMSCenter {
 	/* TCP/IP */
 	char *hostname;
 	int port;
-        int receive_port; /* if used, with EMI 2.0/SMPP 3.3 */
+        int receive_port; /* if used, with EMI 2.0/SMPP 3.3/OIS 4.5 */
 	
 	/* PSTN/ISDN */
 	char *phonenum;
@@ -133,7 +134,20 @@ struct SMSCenter {
         char * sema_homenua;
         char * sema_serialdevice;
         struct sema_msglist *sema_mt, *sema_mo;
-        int sema_fd; 
+        int sema_fd;
+
+        /* SEMA SMS2000 OIS 5.0 (TCP/IP to X.25 router) */
+
+        time_t ois_alive;
+        time_t ois_alive2;
+        void *ois_received_mo;
+        int ois_ack_debt;
+        int ois_flags;
+        int ois_listening_socket;
+        int ois_socket;
+        char *ois_buffer;
+        size_t ois_bufsize;
+        size_t ois_buflen;
     
 	/* AT Commands (wireless modems...) */
 	char *at_serialdevice;
@@ -214,8 +228,8 @@ int cimd2_receive_msg(SMSCenter *smsc, Msg **msg);
 SMSCenter *emi_open(char *phonenum, char *serialdevice, char *username, char *password);
 int emi_reopen(SMSCenter *smsc);
 int emi_close(SMSCenter *smsc);
-SMSCenter *emi_open_ip(char *hostname, int port, char *username, char *password,
-		       int receive_port, int our_port);
+SMSCenter *emi_open_ip(char *hostname, int port, char *username,
+		       char *password, int receive_port, int our_port);
 int emi_reopen_ip(SMSCenter *smsc);
 int emi_close_ip(SMSCenter *smsc);
 int emi_pending_smsmessage(SMSCenter *smsc);
@@ -225,7 +239,8 @@ int emi_receive_msg(SMSCenter *smsc, Msg **msg);
 /*
  * Interface to Aldiscon SMS centers using SMPP 3.3.
  */
-SMSCenter *smpp_open(char *hostname, int port, char*, char*, char*, char*,int receiveport);
+SMSCenter *smpp_open(char *hostname, int port, char*, char*, char*, char*,
+		     int receiveport);
 int smpp_reopen(SMSCenter *smsc);
 int smpp_close(SMSCenter *smsc);
 int smpp_pending_smsmessage(SMSCenter *smsc);
@@ -235,12 +250,27 @@ int smpp_receive_msg(SMSCenter *smsc, Msg **msg);
 /*
  * Interface to Sema SMS centers using SM2000
  */
-SMSCenter *sema_open(char *smscnua,  char *homenua, char* serialdevice ,int waitreport);
+SMSCenter *sema_open(char *smscnua,  char *homenua, char* serialdevice,
+		     int waitreport);
 int sema_reopen(SMSCenter *smsc);
 int sema_close(SMSCenter *smsc);
 int sema_pending_smsmessage(SMSCenter *smsc);
 int sema_submit_msg(SMSCenter *smsc, Msg *msg);
 int sema_receive_msg(SMSCenter *smsc, Msg **msg);
+
+/*
+ * Interface to Sema SMS centers using OIS 5.0.
+ * Interface to Sema SMS centers using SM2000
+ */
+SMSCenter *ois_open(int receiveport, const char *hostname, int port,
+		    int debug_level);
+int ois_reopen(SMSCenter *smsc);
+int ois_close(SMSCenter *smsc);
+int ois_pending_smsmessage(SMSCenter *smsc);
+int ois_submit_msg(SMSCenter *smsc, const Msg *msg);
+int ois_receive_msg(SMSCenter *smsc, Msg **msg);
+void ois_delete_queue(SMSCenter *smsc);
+
 
 /*
  * Interface to wireless modems using AT commands.

@@ -1,3 +1,11 @@
+2000-07-05  Kalle Marjola  <rpr@wapit.com>
+
+	* doc/userguide/newconf.txt: oops, forgot admin-username. And
+	returned sample smsc-groups
+
+	* gw/smsc.c, gw/smsc_p.h, gw/smsc_ois.c: Added support for SEMA
+	SMS2000 (G6.0) OIS 5.0 over X.25, under name OIS, by Jouko Koski.
+
 2000-07-03  Richard Braakman  <dark@wapit.com>
 
 	* gw/wml_definitions.h: Applied patch by brennon loh york hong

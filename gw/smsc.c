@@ -99,6 +99,18 @@ SMSCenter *smscenter_construct(void) {
 	smsc->sema_homenua = NULL;
 	smsc->sema_serialdevice = NULL;
 	smsc->sema_fd = -1;
+
+	/* SEMA SMS2000 OIS X.25 */
+	smsc->ois_alive = 0;
+	smsc->ois_alive2 = 0;
+	smsc->ois_received_mo = NULL;
+	smsc->ois_ack_debt = 0;
+	smsc->ois_flags = 0;
+	smsc->ois_listening_socket = -1;
+	smsc->ois_socket = -1;
+	smsc->ois_buflen = 0;
+	smsc->ois_bufsize = 0;
+	smsc->ois_buffer = 0;
 	
 	/* AT Wireless modems  (GSM 03.40 version 7.4.0) */
 
@@ -153,6 +165,10 @@ void smscenter_destruct(SMSCenter *smsc) {
 	gw_free(smsc->sema_smscnua);
 	gw_free(smsc->sema_homenua);
 	gw_free(smsc->sema_serialdevice);
+
+	/* OIS */
+	ois_delete_queue(smsc);
+	gw_free(smsc->ois_buffer);
 	
 	/* AT */
 	gw_free(smsc->at_serialdevice);
@@ -206,6 +222,11 @@ int smscenter_submit_msg(SMSCenter *smsc, Msg *msg) {
 
 	case SMSC_TYPE_SEMA_X28:
                 if(sema_submit_msg(smsc,msg) == -1)
+		        goto error;
+		break;
+
+	case SMSC_TYPE_OIS:
+	        if(ois_submit_msg(smsc, msg) == -1)
 		        goto error;
 		break;
 	    
@@ -268,6 +289,13 @@ int smscenter_receive_msg(SMSCenter *smsc, Msg **msg)
 	if (ret == -1)
 	    goto error;
 	break;
+
+    case SMSC_TYPE_OIS:
+        ret = ois_receive_msg(smsc, msg);
+	if(ret == -1)
+	    goto error;
+	break;
+
 	
     case SMSC_TYPE_SEMA_X28:
 	ret = sema_receive_msg(smsc, msg);
@@ -346,6 +374,12 @@ int smscenter_pending_smsmessage(SMSCenter *smsc)
 	    goto error;
 	break;
 
+    case SMSC_TYPE_OIS:
+	ret = ois_pending_smsmessage(smsc);
+	if(ret == -1)
+	    goto error;
+	break;
+	
     case SMSC_TYPE_AT:
 	ret = at_pending_smsmessage(smsc);
 	if(ret == -1)
@@ -470,9 +504,10 @@ SMSCenter *smsc_open(ConfigGroup *grp)
 	char *sema_smscnua, *sema_homenua, *sema_report;
 	char *at_modemtype, *at_pin;
 	char *keepalive;
+	char *ois_debug_level;
 
         int typeno, portno, backportno, ourportno, receiveportno, iwaitreport;
-	int keepalivetime;
+	int keepalivetime, ois_debug;
 
 
         type = config_get(grp, "smsc");
@@ -499,6 +534,8 @@ SMSCenter *smsc_open(ConfigGroup *grp)
 	iwaitreport = (sema_report != NULL ? atoi(sema_report) : 1);
 	keepalive = config_get(grp, "keepalive");
 
+	ois_debug_level = config_get(grp, "ois-debug-level");
+	
 	at_modemtype = config_get(grp, "modemtype");
 	at_pin = config_get(grp, "pin");
 		
@@ -510,6 +547,7 @@ SMSCenter *smsc_open(ConfigGroup *grp)
 	backportno = (backup_port != NULL ? atoi(backup_port) : 0);
 	receiveportno = (receive_port != NULL ? atoi(receive_port) : 0);
 	keepalivetime = (keepalive != NULL? atoi(keepalive) : 0);
+	ois_debug = (ois_debug_level != NULL ? atoi(ois_debug_level) : 0);
 
 	/* Use either, but prefer receive-port */
 	
@@ -533,6 +571,7 @@ SMSCenter *smsc_open(ConfigGroup *grp)
 	else if (strcmp(type, "emi_ip") == 0) typeno = SMSC_TYPE_EMI_IP;
 	else if (strcmp(type, "smpp") == 0) typeno = SMSC_TYPE_SMPP_IP;
 	else if (strcmp(type, "sema") == 0) typeno = SMSC_TYPE_SEMA_X28;
+	else if (strcmp(type, "ois") == 0) typeno = SMSC_TYPE_OIS;
 	else if (strcmp(type, "at") == 0) typeno = SMSC_TYPE_AT;
 	else {
 	    error(0, "Unknown SMSC type '%s'", type);
@@ -600,6 +639,13 @@ SMSCenter *smsc_open(ConfigGroup *grp)
 		smsc = sema_open(sema_smscnua, sema_homenua, device,
 				 iwaitreport);
 	    break;    
+
+	case SMSC_TYPE_OIS:
+	    if (host == NULL || portno == 0 || receiveportno == 0)
+		error(0, "Required field missing for OIS center.");
+            else
+		smsc = ois_open(receiveportno, host, portno, ois_debug);
+	    break;
 	    
 	case SMSC_TYPE_AT:
 	    if (device == NULL)
@@ -641,6 +687,8 @@ int smsc_reopen(SMSCenter *smsc) {
 	    return smpp_reopen(smsc);
 	case SMSC_TYPE_SEMA_X28:
 	    return sema_reopen(smsc);
+	case SMSC_TYPE_OIS:
+	    return ois_reopen(smsc);
 	case SMSC_TYPE_AT:
 	    return at_reopen(smsc);
 	 /* add new SMSCes here */
@@ -737,6 +785,11 @@ int smsc_close(SMSCenter *smsc)
 	    errors = 1;
 	break;
 		
+    case SMSC_TYPE_OIS:
+	if (ois_close(smsc) == -1)
+	    errors = 1;
+	break;
+
     case SMSC_TYPE_AT:
 	if(at_close(smsc) == -1)
 	    errors = 1;
