@@ -1,3 +1,8 @@
+2000-02-17    <rpr@rpr.wapit.com>
+
+	* gw/bearerbox.c, gw/bb.h: added max thread BB_DEFAULT.. value,
+	instead of hardcoded number
+
 2000-02-17  Tuomas Luttinen  <tuo@tuo.wapit.fi>
 
 	* gw/wml_compiler.c (parse_document): Standard headers now :

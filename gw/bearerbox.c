@@ -1796,7 +1796,7 @@ static void init_bb(Config *cfg)
     bbox->mutex = mutex_create();
     route_mutex = mutex_create();
     
-    bbox->thread_limit = 20;
+    bbox->thread_limit = BB_DEFAULT_THREAD_MAX;
     bbox->http_port = BB_DEFAULT_HTTP_PORT;
     bbox->wapbox_port = BB_DEFAULT_WAPBOX_PORT;
     bbox->smsbox_port = BB_DEFAULT_SMSBOX_PORT;

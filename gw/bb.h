@@ -7,7 +7,7 @@
 #ifndef _BB_H
 #define _BB_H
 
-
+#define BB_DEFAULT_THREAD_MAX	20
 #define BB_DEFAULT_HOST		"localhost"
 #define BB_DEFAULT_SMSBOX_PORT	13001
 #define BB_DEFAULT_WAPBOX_PORT	13000
