@@ -461,8 +461,9 @@ STRING("ansi-136_ghost/r_data_gsm_isdn")
 )
 
 /*
- * Well known push application ids, from http://www.wapforum.org/wina/
- * push-app-id.htm.
+ * Well known and reserver push application ids, from http://www.openmobile-
+ * alliance.org/omna/omna-push-app-id.htm. Note that id strings does not contain
+ * x-wap-application, this being default.
  */
 NUMBERED(application_id,
 ASSIGN("*", 0x00)
@@ -488,6 +489,9 @@ ASSIGN("x-motorola:browser.ua", 0x8008)
 ASSIGN("x-motorola:splash.ua", 0x8009)
 ASSIGN("x-wap-nai:mvsw.command", 0x800B)
 ASSIGN("x-wap-openvawe:iota.ua", 0x8010)
+ASSIGN("x-wap-docomo: imode.mail2.ua", 0x9000)
+ASSIGN("x-oma-nec: otaprov.ua", 0x9001)
+ASSIGN("x-oma-nokia: call.ua", 0x9002)
 )
 
 /**** More preprocessor magic ****/
