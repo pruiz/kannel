@@ -20,23 +20,10 @@
 #include <fcntl.h>
 #include <string.h>
 
-
-#if defined(LIBXML_VERSION) && LIBXML_VERSION >= 20000
-
-#include <libxml/xmlmemory.h>
-#include <libxml/parser.h>
-#include <libxml/tree.h>
-#include <libxml/debugXML.h>
-
-#else
-
-#include <gnome-xml/xmlmemory.h>
-#include <gnome-xml/parser.h>
-#include <gnome-xml/tree.h>
-#include <gnome-xml/debugXML.h>
-
-#endif
-
+#include <xmlmemory.h>
+#include <parser.h>
+#include <tree.h>
+#include <debugXML.h>
 
 #include "gwlib/gwlib.h"
 #include "wml_compiler.h"

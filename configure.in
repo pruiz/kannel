@@ -36,15 +36,24 @@ AC_CHECK_LIB(m, log)
 AC_CHECK_LIB(socket, accept)
 AC_CHECK_LIB(nsl, inet_ntoa)
 AC_CHECK_LIB(pthread, pthread_create)
+if test -z "$pthread"; then
+	AC_CHECK_LIB(c_r, pthread_create, [LIBS="$LIBS -lc_r"])
+fi
+
 AC_CHECK_LIB(z, gzopen)
-AC_CHECK_LIB(xml, xmlDocGetRootElement, ,
-	echo "You MUST have the gnome-xml library installed"; exit 1)
-case `xml-config --version` in 
-*1.8.6[)] AC_DEFINE(HAVE_LIBXML_1_8_6) [;;] 
-*1.8.7[)] [;;] 
-*2.0.0[)] [;;] 
-*[)] echo "Libxml is too old. You need at least 1.8.6." [;] exit 1 [;;] 
-esac
+AC_PATH_PROG(XML_CONFIG, xml-config, no)
+if test "$XML_CONFIG" = "no"; then
+	echo "You MUST have the gnome-xml library installed"; exit 1
+else
+	case `$XML_CONFIG --version` in 
+	*1.8.6[)] AC_DEFINE(HAVE_LIBXML_1_8_6) [;;] 
+	*1.8.7[)] [;;] 
+	*2.0.0[)] [;;] 
+	*[)] echo "Libxml is too old. You need at least 1.8.6." [;] exit 1 [;;] 
+	esac
+	LIBS="$LIBS `$XML_CONFIG --libs`"
+	CFLAGS="$CFLAGS `$XML_CONFIG --cflags`"
+fi
 
 dnl Checks for header files.
 
