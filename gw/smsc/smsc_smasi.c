@@ -821,7 +821,7 @@ static void send_messages(SMASI *smasi, Connection *conn,
     while (*pending_submits < MAX_PENDING_SUBMITS) {
         SMASI_PDU *pdu = NULL;
         /* Get next message, quit if none to be sent. */
-        Msg * msg = list_extract_first(smasi->msgs_to_send);
+        Msg *msg = list_extract_first(smasi->msgs_to_send);
 
         if (msg == NULL) break;
 
