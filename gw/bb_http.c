@@ -27,6 +27,8 @@ static volatile sig_atomic_t httpadmin_running;
 
 static int	ha_port;
 static char	*ha_password;
+static char	*ha_allow_ip;
+static char	*ha_deny_ip;
 
 
 /*---------------------------------------------------------
@@ -240,6 +242,8 @@ int httpadmin_start(Config *config)
 	warning(0, "No HTTP admin password set");
     
     ha_port = atoi(p);
+    ha_allow_ip = config_get(grp, "admin-allow-ip");
+    ha_deny_ip = config_get(grp, "admin-deny-ip");
     
     if ((int)(start_thread(0, httpadmin_run, (void *)ha_port, 0)) == -1)
 	panic(0, "Failed to start a new thread for HTTP admin");

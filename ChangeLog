@@ -1,3 +1,11 @@
+2000-05-22    <Kalle Marjola <rpr@wapit.com>>
+
+	* gwlib/utils.c|h, gw/bearerbox.c: moved normalize_number to
+	utils module from old bearerbox
+
+	* gwlib/http2.h|c: first version of http2_socket_ip, although
+	not yet working with servers, beware
+
 2000-05-22  Richard Braakman  <dark@wapit.com>
 
 	* gwlib/conn.h, gwlib/conn.c: Made output buffering explicit instead

@@ -9,6 +9,7 @@
 
 #include <stddef.h>
 #include <stdio.h>
+#include "octstr.h"
 
 /*
  * Octet and MultibyteInteger (variable length) functions
@@ -76,6 +77,15 @@ void print_std_args_usage(FILE *stream);
  */
 int check_ip(char *accept_string, char *ip, char *match_buffer);
 
+
+/*
+ * Normalize 'number', like change number "040500" to "0035840500" if
+ * the dial-prefix is like "0035840,040;0035850,050"
+ *
+ * return -1 on error, 0 if no match in dial_prefixes and 1 if match found
+ * If the 'number' needs normalization, it is done.
+ */
+int normalize_number(char *dial_prefixes, Octstr **number);
 
 /*
  * Convert a standard "network long" (32 bits in 4 octets, most significant

@@ -191,6 +191,52 @@ found:
 }
 
 
+int normalize_number(char *dial_prefixes, Octstr **number)
+{
+    char *t, *p, *official, *start;
+    int len, official_len;
+    
+    if (dial_prefixes == NULL || dial_prefixes[0] == '\0')
+        return 0;
+
+    t = official = dial_prefixes;
+    official_len = 0;
+
+    gw_assert(number != NULL);
+    
+    while(1) {
+
+        for(p = octstr_get_cstr(*number), start = t, len = 0; ; t++, p++, len++)
+	{
+            if (*t == ',' || *t == ';' || *t == '\0') {
+                if (start != official) {
+                    Octstr *nstr;
+                    nstr = octstr_create_limited(official, official_len);
+                    octstr_insert_data(nstr, official_len,
+                                           octstr_get_cstr(*number) + len,
+                                           octstr_len(*number) - len);
+                    octstr_destroy(*number);
+                    *number = nstr;
+                }
+                return 1;
+            }
+            if (*p == '\0' || *t != *p)
+                break;          /* not matching */
+        }
+        for(; *t != ',' && *t != ';' && *t != '\0'; t++, len++)
+            ;
+        if (*t == '\0') break;
+        if (start == official) official_len = len;
+        if (*t == ';') official = t+1;
+        t++;
+    }
+    return 0;
+}
+
+
+
+
+
 long decode_network_long(unsigned char *data) {
         return (data[0] << 24) | (data[1] << 16) | (data[2] << 8) | data[3];
 }

@@ -229,6 +229,11 @@ int http2_socket_fd(HTTPSocket *socket) {
 }
 
 
+Octstr *http2_socket_ip(HTTPSocket *socket) {
+        return octstr_duplicate(socket->host);
+}
+
+
 HTTPSocket *http2_server_accept_client(HTTPSocket *socket) {
 	return socket_accept(socket);
 }
