@@ -1,9 +1,9 @@
 
 /*
- *wtp_machine-decl.h. Macro call for generating WTP state machine. See the 
- *architecture document for guidance how to use and update it.
+ * wtp_machine-decl.h - macro call for generating WTP state machine. See the 
+ * architecture document for guidance how to use and update it.
  *
- *By Aarno Syvänen for WapIT Ltd.
+ * By Aarno Syvänen for WapIT Ltd.
  */
 
 MACHINE(INTEGER(in_use);
@@ -20,7 +20,6 @@ MACHINE(INTEGER(in_use);
         INTEGER(hold_on);
         INTEGER(rid);
         INTEGER(ack_pdu_sent);
-        INTEGER(result_pdu_sent);
         TIMER(timer_data);
         MUTEX(mutex);
 	MUTEX(queue_lock);

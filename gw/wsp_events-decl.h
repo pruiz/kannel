@@ -1,10 +1,11 @@
 /*
- *Macro calls to generate WTP indications and confirmations. See documentation
- *for guidance how to use and update these.
+ * Macro calls to generate WTP indications and confirmations and WSP events
+ * (data structures represents both of them. See documentation for guidance 
+ * how to use and update these.
  *
- *Note that the address five-tuple and tid are fields of wtp machine.
+ * Note that the address five-tuple is included in fields of wtp machine.
  * 
- *By Aarno Syvänen for WapIt Ltd.
+ * By Aarno Syvänen for WapIt Ltd.
  */
 
 WSP_EVENT(TRInvokeIndication,

@@ -19,8 +19,9 @@ typedef struct WTPEvent WTPEvent;
 
 #define NUMBER_OF_ABORT_REASONS 8
 /*
- *For now, timers are defined. They will depend on bearer information fetched
- *from address.
+ * For now, timers are defined. They will depend on bearer information fetched
+ * from address (or from a header field of the protocol speaking with the 
+ * bearerbox).
  */
 
 #define L_A_WITH_USER_ACK 4
@@ -102,8 +103,8 @@ WTPMachine *wtp_machine_find_or_create(Msg *msg, WTPEvent *event);
 
 
 /*
- *Mark a WTP state machine unused. Normally, removing a stete machine from the
- *state machines list means marking it unused.
+ * Mark a WTP state machine unused. Normally, removing a state machine from the
+ * state machines list means marking turning off a flag.
  */
 void wtp_machine_mark_unused(WTPMachine *machine);
 
@@ -130,7 +131,9 @@ void wtp_machine_dump(WTPMachine  *machine);
  */
 void wtp_handle_event(WTPMachine *machine, WTPEvent *event);
 
-
+/*
+ * Generates a new transaction handle by incrementing the previous by one.
+ */
 long wtp_tid_next(void);
 
 #endif

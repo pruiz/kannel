@@ -20,10 +20,9 @@ ROW(LISTEN,
      machine->u_ack=event->RcvInvoke.up_flag;
      machine->tcl=event->RcvInvoke.tcl;
      current_primitive=TRInvokeIndication;
-     machine->rid=0;
-     machine->result_pdu_sent=1;
 
-     wsp_event=pack_wsp_event(current_primitive, event, machine);
+     gen_tid=wtp_tid_next();
+     wsp_event=pack_wsp_event(current_primitive, event, machine, gen_tid);
      if (wsp_event == NULL)
         goto mem_error;
 
@@ -34,8 +33,8 @@ ROW(LISTEN,
     },
     INVOKE_RESP_WAIT)
 /*
- *Ignore receiving invoke, when the state of the machine is INVOKE_RESP_WAIT.
- *(Always (1) do nothing ({ }).)
+ * Ignore receiving invoke, when the state of the machine is INVOKE_RESP_WAIT.
+ * (Always (1) do nothing ({ }).)
  */
 ROW(INVOKE_RESP_WAIT,
     RcvInvoke,
@@ -59,7 +58,7 @@ ROW(INVOKE_RESP_WAIT,
     1,
     {
      current_primitive=TRAbortIndication;
-     wsp_event=pack_wsp_event(current_primitive, event, machine);
+     wsp_event=pack_wsp_event(current_primitive, event, machine, gen_tid);
      wtp_machine_mark_unused(machine);
     },
     LISTEN)
@@ -76,6 +75,7 @@ ROW(RESULT_WAIT,
      wtp_timer_start(timer, L_R_WITH_USER_ACK, machine, event);
 
      wtp_send_result(machine, event); 
+     machine->rid=1;
     },
     RESULT_RESP_WAIT)
 
@@ -84,7 +84,7 @@ ROW(RESULT_WAIT,
     1,
     {
      current_primitive=TRAbortIndication;
-     wsp_event=pack_wsp_event(current_primitive, event, machine);
+     wsp_event=pack_wsp_event(current_primitive, event, machine, gen_tid);
      wtp_machine_mark_unused(machine);
     },
     LISTEN)
@@ -94,7 +94,7 @@ ROW(RESULT_RESP_WAIT,
     1,
     {
      current_primitive=TRResultConfirmation;
-     wsp_event=pack_wsp_event(current_primitive, event, machine);
+     wsp_event=pack_wsp_event(current_primitive, event, machine, gen_tid);
      wtp_machine_mark_unused(machine);
     },
     LISTEN)
@@ -104,7 +104,7 @@ ROW(RESULT_RESP_WAIT,
     1,
     {
      current_primitive=TRAbortIndication;
-     wsp_event=pack_wsp_event(current_primitive, event, machine);
+     wsp_event=pack_wsp_event(current_primitive, event, machine, gen_tid);
      wtp_machine_mark_unused(machine);
     },
     LISTEN)

@@ -1,5 +1,6 @@
 /*
- * wtp_events-decl.h. Macro calls for defining WTP events. See the architecture * document how to use and update these.
+ * wtp_events-decl.h - macro calls for defining WTP events. See the 
+ * architecture document how to use and update these.
  *
  *By Aarno Syvänen for WapIT Ltd.
  */

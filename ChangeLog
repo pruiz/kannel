@@ -1,3 +1,7 @@
+1999-01-12 Aarno Syvänen <syvanen@wapit.com>
+
+	* fixed a bug in wtp_machine_find
+
 1999-30-11 Aarno Syvänen <syvanen@wapit.com>
 
 	* wtp_state-decl.h: added event receive abort pdu
