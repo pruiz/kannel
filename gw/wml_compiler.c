@@ -1402,9 +1402,15 @@ static List *string_table_collect_words(List *strings)
       item = list_extract_first(strings);
 
       if (list == NULL)
-	list = octstr_split_words(item->string);
+	{
+	  list = octstr_split_words(item->string);
+	  string_table_proposal_destroy(item);
+	}
       else
-	list = list_cat(octstr_split_words(item->string), list);
+	{
+	  list = list_cat(octstr_split_words(item->string), list);
+	  string_table_proposal_destroy(item);
+	}
     }
 
   list_destroy(strings);
