@@ -1,4 +1,12 @@
 2003-07-27  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/wapbox.c, gw/wap-appl.c: re-organized Burno's 'wap-url-map' and 
+      'wap-user-map' mapping functions to be more modularic in the new
+      gw/wap-maps.[ch] files. Renamed also function calls, because they
+      are not wsp specific.
+    * gw/wap-maps.[ch]: moved Bruno's mapping function in here to have a 
+      cleaner modularization. Don't code everything to gw/wap-appl.c.
+
+2003-07-27  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/wap-appl.c: general source code cleanup, no logic change.
     * gw/wapbox.c: cleaned up config_reload() to use reload_foobar() wrapper
       functions for various types.
