@@ -1,3 +1,11 @@
+2001-05-14  Lars Wirzenius  <liw@iki.fi>
+
+	* benchmarks/bench_sms.conf: Add smsc-username, which is now
+	used instead of system-id.
+	
+	* checks/check_list.c: #undef strcmp so that stupid glibc bug
+	won't cause half a dozen of warnings for a single call.
+
 2001-05-14  Derry Hamilton <rasilon@tardis.ed.ac.uk>
 
 	* gw/smsbox.c: Wrapped the ssl_certkey_file declaration in 

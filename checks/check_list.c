@@ -123,6 +123,9 @@ static void main_for_producer_and_consumer(void) {
 
 
 static int compare_cstr(void *item, void *pat) {
+    	/* Remove a macro definition of strcmp to prevent warnings from
+	 * a broken version in the glibc libary. */
+	#undef strcmp
 	return strcmp(item, pat) == 0;
 }
 
