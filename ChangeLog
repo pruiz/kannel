@@ -1,3 +1,7 @@
+2001-01-29  Kalle Marjola  <rpr@wapit.com>
+
+	* Makefile.in: clean now deletes */*.o, too. 
+
 2001-01-29  Lars Wirzenius  <liw@iki.fi>
 
 	* gwlib/protected.h: Undefine the protection macros before
