@@ -1,4 +1,10 @@
 2002-08-05  Stipe Tolj  <tolj@wapme-systems.de>
+    * doc/userguide/userguide.xml: added documentation about RPI support
+    * gw/smsc_smpp.c, gw/smsc_emi2.c, gw/smsbox.c, gw/smpp_pdu.h,
+      gw/msg-decl.h: added Return Path Indicator (RPI) support for 
+      SMPP and EMI2 via boolean sendsms interface parameter 'rpi'
+
+2002-08-05  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/smsc_emi2.c, gwlib/cfg.def: added EMI2 specific configuration
       directives 'notification-pid' and 'notification-addr'. 
       Patch submitted by "Dima Milentiev" <Dima@m-wise.com>
