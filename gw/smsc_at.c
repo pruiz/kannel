@@ -142,6 +142,9 @@ SMSCenter *at_open(char *serialdevice, char *modemtype, char *pin) {
 	if (smsc->at_fd < 0)
 		goto error;
 
+        /* wait a bit to make sure phones as SMSC will initialise */
+        sleep(1);
+
 	/* Turn Echo off on the modem: we don't need it */
 	if(send_modem_command(smsc->at_fd, "ATE0", 0) == -1)
 		goto error;
@@ -454,7 +457,7 @@ static int pdu_extract(SMSCenter *smsc, Octstr **pdu) {
 		pos++;
 	
 	/* skip the SMSC address but not on the Premicell */
-	if(strcmp(smsc->at_modemtype, PREMICELL) == 0 ) {
+	if(strcmp(smsc->at_modemtype, PREMICELL) != 0 ) {
 		tmp = hexchar(octstr_get_char(buffer, pos))*16
 		    + hexchar(octstr_get_char(buffer, pos+1));
 		tmp = 2 + tmp * 2;
