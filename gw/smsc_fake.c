@@ -22,76 +22,90 @@
 #include "smsc.h"
 #include "smsc_p.h"
 
-/* This smsc stores the last-read line in smsc->private as an Octstr. */
 
-int fake_open(SMSCenter *smsc, ConfigGroup *grp)
+/* do the handshake baby */
+static int fake_open_connection(SMSCenter *smsc)
 {
-    gw_assert(smsc->type == SMSC_TYPE_FAKE);
-
-    if (smsc->hostname == NULL) {
-	error(0, "smsc_fake config: 'host' field missing.");
-	return -1;
-    }
-
-    if (smsc->port == NULL) {
-	error(0, "smsc_fake config: 'port' field missing.");
-	return -1;
-    }
-
-    smsc->conn = conn_open_tcp(smsc->hostname, smsc->port);
-    if (smsc->conn == NULL)
-	return -1;
-
-    sprintf(smsc->name, "FAKE:%s:%d", smsc->hostname, smsc->port);
-    info(0, "Fake open successfully done");
+    smsc->socket = tcpip_connect_to_server(smsc->hostname, smsc->port);
+    if (smsc->socket == -1)
+        return -1;
 
     return 0;
+}
+
+
+SMSCenter *fake_open(char *hostname, int port)
+{
+    SMSCenter *smsc;
+
+    smsc = smscenter_construct();
+    if (smsc == NULL)
+        goto error;
+
+    smsc->type = SMSC_TYPE_FAKE;
+    smsc->port = port;
+    smsc->hostname = gw_strdup(hostname);
+    if (fake_open_connection(smsc) < 0)
+        goto error;
+
+    sprintf(smsc->name, "FAKE:%s:%d", smsc->hostname, smsc->port);
+
+    info(0, "Fake open successfully done");
+
+    return smsc;
+
+error:
+    smscenter_destruct(smsc);
+    return NULL;
 }
 
 
 int fake_reopen(SMSCenter *smsc)
 {
-    if (smsc->conn == NULL) {
+    if (smsc->socket == -1) {
         info(0, "trying to close already closed fake, ignoring");
-    } else {
-        conn_destroy(smsc->conn);
-        smsc->conn = conn_open_tcp(smsc->hostname, smsc->port);
-        if (smsc->conn == NULL)
-  	    return -1;
+    } else if (close(smsc->socket) == -1) {
+        error(errno, "Closing socket to server `%s' port `%d' failed.",
+              smsc->hostname, smsc->port);
+        return -1;
     }
-
-    return 0;
+    return fake_open_connection(smsc);
 }
 
 
 int fake_close(SMSCenter *smsc)
 {
-    if (smsc->conn == NULL) {
+    if (smsc->socket == -1) {
         info(0, "trying to close already closed fake, ignoring");
         return 0;
     }
-    conn_destroy(smsc->conn);
-    smsc->conn = NULL;
+    if (close(smsc->socket) == -1) {
+        error(errno, "Closing socket to server `%s' port `%d' failed.",
+              smsc->hostname, smsc->port);
+        return -1;
+    }
+    smscenter_destruct(smsc);
     return 0;
 }
 
 
 int fake_pending_smsmessage(SMSCenter *smsc)
 {
-    if (smsc->conn == NULL)
-	return 0;
+    int ret;
 
-    if (smsc->private != NULL)
-	return 1;
+    if (memchr(smsc->buffer, '\n', smsc->buflen) != NULL)
+        return 1;
 
-    smsc->private = conn_read_line(smsc->conn);
+    ret = smscenter_read_into_buffer(smsc);
+    if (ret == -1) {
+        error(0, "fake_pending_smsmessage: read_into_buffer failed");
+        return -1;
+    }
+    if (ret == 0)
+        return 1;  /* yes, 1; next call to receive will signal EOF */
 
-    if (smsc->private != NULL)
-	return 1;
-
-    if (conn_eof(smsc->conn))
-	return 1;  /* next call to receive will signal EOF */
-
+    if (memchr(smsc->buffer, '\n', smsc->buflen) != NULL)
+        return 1;
     return 0;
 }
 
@@ -99,46 +113,58 @@ int fake_pending_smsmessage(SMSCenter *smsc)
 int fake_submit_msg(SMSCenter *smsc, Msg *msg)
 {
     if (msg_type(msg) == smart_sms) {
-	Octstr *line;
-	int ret;
-
-	line = octstr_format("%S %S %S\n",
-		msg->smart_sms.sender,
-		msg->smart_sms.receiver,
-		msg->smart_sms.msgdata);
-	ret = conn_write(smsc->conn, line);
-	octstr_destroy(line);
-	if (ret < 0)
-	    return -1;
+        if (octstr_write_to_socket(smsc->socket, msg->smart_sms.sender) == -1 ||
+            write_to_socket(smsc->socket, " ") == -1 ||
+            octstr_write_to_socket(smsc->socket, msg->smart_sms.receiver) == -1 ||
+            write_to_socket(smsc->socket, " ") == -1 ||
+            octstr_write_to_socket(smsc->socket, msg->smart_sms.msgdata) == -1 ||
+            write_to_socket(smsc->socket, "\n") == -1)
+            return -1;
     }
     return 0;
 }
 
-
 int fake_receive_msg(SMSCenter *smsc, Msg **msg)
 {
-    Octstr *sender, *receiver, *text;
-    Octstr *line;
-    long pos1, pos2;
+    char *newline, *p, *sender, *receiver, *text;
+    int ret;
 
-    if (smsc->private == NULL)
-	return 0;
-    line = smsc->private;
-
-    pos1 = octstr_search_char(line, ' ', 0);
-    if (pos1 < 0)
-	pos1 = pos2 = octstr_len(line);
-    else {
-	pos2 = octstr_search_char(line, ' ', pos1 + 1);
-	if (pos2 < 0)
-		pos2 = octstr_len(line);
+    for (; ; ) {
+        newline = memchr(smsc->buffer, '\n', smsc->buflen);
+        if (newline != NULL)
+            break;
+        ret = smscenter_read_into_buffer(smsc);
+        if (ret <= 0)
+            return -1;
     }
 
-   *msg = msg_create(smart_sms);
-   (*msg)->smart_sms.sender = octstr_copy(line, 0, pos1);
-   (*msg)->smart_sms.receiver = octstr_copy(line, pos1 + 1, pos2 - pos1 - 1);
-   (*msg)->smart_sms.text = octstr_copy(line, pos2 + 1, octstr_len(line));
+    *newline = '\0';
+    if (newline > smsc->buffer && newline[ -1] == '\r')
+        newline[ -1] = '\0';
 
-    octstr_destroy(line);
+    sender = smsc->buffer;
+    p = strchr(sender, ' ');
+    if (p == NULL)
+        receiver = text = "";
+    else {
+        *p++ = '\0';
+        receiver = p;
+        p = strchr(receiver, ' ');
+        if (p == NULL)
+            text = "";
+        else {
+            *p++ = '\0';
+            text = p;
+        }
+    }
+
+    *msg = msg_create(smart_sms);
+    if (*msg == NULL) return -1;
+
+    (*msg)->smart_sms.sender = octstr_create(sender);
+    (*msg)->smart_sms.receiver = octstr_create(receiver);
+    (*msg)->smart_sms.msgdata = octstr_create(text);
+
+    smscenter_remove_from_buffer(smsc, newline - smsc->buffer + 1);
     return 1;
 }
