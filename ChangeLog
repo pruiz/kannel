@@ -1,3 +1,14 @@
+2000-06-15  Richard Braakman  <dark@wapit.com>
+
+	* gw/wap-appl.c: In fetch_thread(), explicitly set content.charset
+	to an empty octstr if the http fetch failed, otherwise it remains
+	uninitialized and causes a crash when octstr_destroy is called on it.
+	Thanks to Paul Keogh for finding this.
+
+	* gw/wsp-session.c: In wsp_disconnect_other_sessions(), use
+	"Disconnect_Event" instead of "Disconnect".  The latter is a PDU
+	type, not an event type.  Thanks to Paul Keogh for finding this.
+
 2000-06-15 Aarno Syvänen <syvanen@wapit.com>
 
 	* wtp.c: Bugfixes in error handlin

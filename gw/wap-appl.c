@@ -344,6 +344,7 @@ static void fetch_thread(void *arg) {
 		error(0, "WSP: http_get_real failed (%d), oops.", ret);
 		status = 500; /* Internal server error; XXX should be 503 */
 		content.type = octstr_create("text/plain");
+		content.charset = octstr_create_empty();
 	} else {
 		http_header_get_content_type(resp_headers,
 				&content.type, &content.charset);

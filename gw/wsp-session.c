@@ -884,7 +884,7 @@ static void wsp_disconnect_other_sessions(WSPMachine *sm) {
 	for (i = 0; i < list_len(old_sessions); i++) {
 		sm2 = list_get(old_sessions, i);
 		if (sm2 != sm) {
-			disconnect = wap_event_create(Disconnect);
+			disconnect = wap_event_create(Disconnect_Event);
 			handle_session_event(sm2, disconnect, NULL);
 		}
 	}
