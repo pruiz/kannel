@@ -197,7 +197,7 @@ distclean: clean
 nag:
 	utils/find-long-lines
 
-depend .depend: wmlscript/wsgram.h
+depend .depend: wmlscript/wsgram.h config.h
 	for dir in $(srcdirs); do \
 		$(MKDEPEND) $$dir/*.c | sed "s:^[^ ]:$$dir/&:"; done > .depend
 include .depend
