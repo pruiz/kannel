@@ -1,3 +1,8 @@
+2000-04-18  Tuomas Luttinen  <tuo@wapit.com>
+
+	* gw/wml_compiler.c: tyoe conflict with output_char corrected, 
+	calls to octstr_cat_char removed.
+
 2000-04-18  Richard Braakman  <dark@wapit.com>
 
 	* gwlib/octstr.c, gwlib/octstr.h: Added octstr_append_from_socket.

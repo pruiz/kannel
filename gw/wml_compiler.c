@@ -320,7 +320,7 @@ static var_esc_t check_variable_syntax(Octstr *variable);
 
 /* Output into the wbxml_string. */
 
-static void output_char(char byte, Octstr **wbxml_string);
+static void output_char(int byte, Octstr **wbxml_string);
 static int output_octet_string(Octstr *ostr, Octstr **wbxml_string);
 static int output_plain_octet_string(Octstr *ostr, Octstr **wbxml_string);
 static Octstr *output_variable(Octstr *variable, var_esc_t escaped, 
@@ -1063,7 +1063,7 @@ static int parse_octet_string(Octstr *ostr, Octstr **wbxml_string)
  * Returns 0 for success, -1 for error.
  */
 
-static void output_char(char byte, Octstr **wbxml_string)
+static void output_char(int byte, Octstr **wbxml_string)
 {
   octstr_append_char(*wbxml_string, byte);
 }
@@ -1120,7 +1120,7 @@ static Octstr *output_variable(Octstr *variable, var_esc_t escaped,
 {
   char ch;
   char cha[2];
-  Octstr *ret, *temp;
+  Octstr *ret;
 
   switch (escaped)
     {
@@ -1144,10 +1144,8 @@ static Octstr *output_variable(Octstr *variable, var_esc_t escaped,
       break;
     }
 
-  temp = octstr_cat(ret, variable);
-  octstr_destroy(ret);
-  ret = octstr_cat_char(temp, STR_END);
-  octstr_destroy(temp);
+  octstr_insert(ret, variable, octstr_len(ret));
+  octstr_append_char(ret, STR_END);
 
   if (ret == NULL)
     error(0, "WML compiler: could not output variable name.");
