@@ -24,6 +24,8 @@ ROW(LISTEN,
      wsp_event=pack_wsp_event(current_primitive, event, machine);
      if (wsp_event == NULL)
         goto mem_error;
+     debug(0, "RcvInvoke: generated wsp event");
+     wsp_dispatch_event(machine, wsp_event);
 
      timer=wtp_timer_create();
      if (timer == NULL)

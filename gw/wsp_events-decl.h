@@ -63,6 +63,12 @@ WSP_EVENT(TRAbortRequire,
           INTEGER(wsp_tid);
           })
 
+WSP_EVENT(SConnectResponse,
+	  {
+	  OCTSTR(server_headers);
+	  OCTSTR(negotiated_capabilities);
+	  })
+
 #undef WSP_EVENT
 #undef OCTSTR
 #undef INTEGER

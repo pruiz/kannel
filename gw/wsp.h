@@ -31,9 +31,10 @@ struct WSPEvent {
 struct WSPMachine
 	#define MUTEX(name) pthread_mutex_t name
 	#define INTEGER(name) long name
+	#define OCTSTR(name) Octstr *name
 	#define EVENT_POINTER(name) WSPEvent *name
 	#define METHOD_POINTER(name) WSPMethodMachine *name
-	#define SESSION_POINTER(name) WSPMethodMachine *name
+	#define SESSION_POINTER(name) WSPMachine *name
 	#define SESSION_MACHINE(fields) fields
 	#define METHOD_MACHINE(fields)
 	#include "wsp_machine-decl.h"
@@ -77,6 +78,12 @@ char *wsp_event_name(WSPEventType type);
 void wsp_event_dump(WSPEvent *event);
 
 
+
+/*
+ * Find the correct WSPMachine to send the event to, or create a new
+ * one, and then make that machine handle the event.
+ */
+void wsp_dispatch_event(WTPMachine *wtp_sm, WSPEvent *event);
 
 
 /*

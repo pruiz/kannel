@@ -16,11 +16,27 @@ ROW(NULL_STATE,
 	TRInvokeIndication,
 	e->tcl == 2 && wsp_deduce_pdu_type(e->user_data, 0) == Connect_PDU,
 	{
-		error(0, "State not yet implemented.");
+		WSPEvent *new_event;
+		WTPEvent *wtp_event;
+
+		/* TR-Invoke.res */
+		wtp_event = wtp_event_create(TRInvoke);
+		if (wtp_event == NULL)
+			panic(0, "wtp_event_create failed");
+		wtp_event->TRInvoke.tid = e->machine->tid;
+		wtp_event->TRInvoke.exit_info = NULL;
+		wtp_event->TRInvoke.exit_info_present = 0;
+		debug(0, "WSP: sending event to WTP:");
+		wtp_event_dump(wtp_event);
+		debug(0, "WSP: event will be sent to the following machine:");
+		wtp_machine_dump(e->machine);
+		wtp_handle_event(e->machine, wtp_event);
+
+		sm->n_methods = 0;
+		new_event = wsp_event_create(SConnectResponse);
+		wsp_handle_event(sm, new_event);
 	},
 	CONNECTING)
-
-#if 0
 
 ROW(CONNECTING,
 	SConnectResponse,
@@ -29,6 +45,8 @@ ROW(CONNECTING,
 		error(0, "State not yet implemented.");
 	},
 	CONNECTING_2)
+
+#if 0
 
 ROW(CONNECTING_2,
 	TRResultConfirmation,

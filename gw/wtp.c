@@ -15,9 +15,11 @@
  * Global data structures:
  */
 
+#if 0
 static long gen_tid=0;                /* tid used as transaction identifying 
                                        * handle.
                                        */
+#endif
 
 static WTPMachine *list = NULL;       /* list of wtp state machines */
 
@@ -108,23 +110,30 @@ error:
  */
 
 void wtp_event_destroy(WTPEvent *event) {
-	#define INTEGER(name) p->name = 0
-        #define OCTSTR(name) octstr_destroy(p->name)
-        #define EVENT(type, field) { struct type *p = &event->type; field } 
-        #include "wtp_events-decl.h"
-
-	free(event);
+#if 0
+	if (event != NULL) {
+		#define INTEGER(name) p->name = 0
+	        #define OCTSTR(name) octstr_destroy(p->name)
+	        #define EVENT(type, field) { struct type *p = &event->type; field } 
+	        #include "wtp_events-decl.h"
+	
+		free(event);
+	}
+#endif
 }
 
 void wtp_event_dump(WTPEvent *event) {
 
-  	debug(0, "Event %p:", (void *) event); 
-	debug(0, " type = %s", name_event(event->type));
-	#define INTEGER(name) debug(0, "Integer field %s,%ld:",#name,p->name) 
-	#define OCTSTR(name)  debug(0, "Octstr field %s:",#name);\
-                              octstr_dump(p->name)
-	#define EVENT(type, field) { struct type *p = &event->type; field } 
+  	debug(0, "WTPEvent %p:", (void *) event); 
+	debug(0, "  type = %s", name_event(event->type));
+	#define INTEGER(name) debug(0, "  %s.%s: %ld", t, #name, p->name)
+	#define OCTSTR(name) \
+		debug(0, "  %s.%s:", t, #name); \
+		octstr_dump(p->name)
+	#define EVENT(type, field) \
+		{ char *t = #type; struct type *p = &event->type; field } 
 	#include "wtp_events-decl.h"
+  	debug(0, "WTPEvent %p ends.", (void *) event); 
 }
 
 /*
@@ -153,7 +162,7 @@ void wtp_machine_mark_unused(WTPMachine *machine){
 
         if (temp == NULL){
 	    mutex_unlock(&temp->mutex);
-            debug(0, "Machine unknown");
+            debug(0, "WTPMachine unknown");
             return;
 	}
        
@@ -226,13 +235,13 @@ void wtp_machine_dump(WTPMachine  *machine){
 
         if (machine != NULL){
 
-           debug(0, "Machine %p: dump starting", (void *) machine); 
+           debug(0, "WTPMachine %p: dump starting", (void *) machine); 
 	   #define INTEGER(name) \
-           debug(0, "Integer field %s,%ld:", #name, machine->name)
-           #define ENUM(name) debug(0, "state=%s.", name_state(machine->name))
-	   #define OCTSTR(name)  debug(0, "Octstr field %s :", #name); \
+	           debug(0, "  %s: %ld", #name, machine->name)
+           #define ENUM(name) debug(0, "  state=%s.", name_state(machine->name))
+	   #define OCTSTR(name)  debug(0, "  Octstr field %s :", #name); \
                                  octstr_dump(machine->name)
-           #define TIMER(name)   debug(0, "Machine timer %p:", (void *) \
+           #define TIMER(name)   debug(0, "  Machine timer %p:", (void *) \
                                        machine->name)
            #define MUTEX(name)   if (mutex_try_lock(&machine->name) == EBUSY) \
                                     debug(0, "%s locked", #name);\
@@ -240,11 +249,12 @@ void wtp_machine_dump(WTPMachine  *machine){
                                     debug(0, "%s unlocked", #name);\
                                     mutex_unlock(&machine->name);\
                                  }
-           #define QUEUE(name)   debug (0,"%s %p",#name,(void *) machine->name) 
+           #define QUEUE(name) \
+	   	debug (0, "  %s %p",#name, (void *) machine->name) 
            #define NEXT(name) 
 	   #define MACHINE(field) field
 	   #include "wtp_machine-decl.h"
-           debug (0, "machine dump ends");
+           debug (0, "WTPMachine dump ends");
 	
          } else
            debug(0, "wtp_machine_dump: machine does not exist");
@@ -273,6 +283,8 @@ WTPMachine *wtp_machine_find_or_create(Msg *msg, WTPEvent *event){
                                     msg->wdp_datagram.destination_address,
                                     msg->wdp_datagram.destination_port,
                                     event->RcvInvoke.tid);
+	         /* XXX is this correct? */
+		 machine->tcl = event->RcvInvoke.tcl;
               }
            }
            machine->in_use=1;
@@ -313,7 +325,7 @@ WTPEvent *wtp_unpack_wdp_datagram(Msg *msg){
          tid=first_tid;
          tid=(tid << 8) + last_tid;
 
-         debug(0, "first_tid=%d last_tid=%d tid=%d", first_tid, 
+         debug(0, "WTP: first_tid=%d last_tid=%d tid=%d", first_tid, 
                last_tid, tid);
 
          this_octet=octet=octstr_get_char(msg->wdp_datagram.user_data, 0);
@@ -458,7 +470,7 @@ wrong_version:
  */
 no_segmentation:
          wtp_event_destroy(event);
-         error(errno, "No segmentation implemented");
+         error(0, "No segmentation implemented");
          return NULL;
 /*
  *TBD: Send Abort(CAPTEMPEXCEEDED), too.
@@ -472,14 +484,14 @@ cap_error:
  */
 illegal_header:
          wtp_event_destroy(event);
-         error(errno, "Illegal header structure");
+         error(0, "Illegal header structure");
          return NULL;
 /*
  *TBD: Reason to panic?
  */
 no_datagram:   
          free(event);
-         error(errno, "No datagram received");
+         error(0, "No datagram received");
          return NULL;
 }
 
@@ -489,40 +501,60 @@ no_datagram:
  * the macro definition (it ends with a line without a backlash). 
  */
 void wtp_handle_event(WTPMachine *machine, WTPEvent *event){
-
-     
-     states current_state=machine->state;
-     long current_event=event->type;
      WSPEventType current_primitive;
      WSPEvent *wsp_event=NULL;
      WTPTimer *timer=NULL;
+
+     debug(0, "wtp_handle_event called");
 
 /* 
  * If we're already handling events for this machine, add the event to the 
  * queue.
  */
      if (mutex_try_lock(&machine->mutex) == EBUSY) {
+	append:
+	  debug(0, "wtp_handle_event: machine already locked, queing event");
 	  append_to_event_queue(machine, event);
 	  return;
      }
+     /* 
+      * The following is a damn idiotic kludge that is necessary because
+      * pthread_mutex_trylock on Linux (at least) doesn't protect us from
+      * ourselves, even though the documentation says it does.
+      */
+     if (pthread_equal((pthread_t) machine->locker, pthread_self()))
+	     goto append;
+     machine->locker = (long) pthread_self();
+
+     debug(0, "wtp_handle_event: got mutex");
 
      do {
-	  debug(0,"handle_event: current state=%s.",name_state(machine->state));
-          debug(0,"handle_event: queue visited");
+	  debug(0, "wtp_handle_event: state is %s, event is %s.",
+	  		name_state(machine->state),
+	  		name_event(event->type));
 	  #define STATE_NAME(state)
-	  #define ROW(wtp_state, event, condition, action, next_state) \
-		  if (current_state == wtp_state && current_event == event &&\
-		     (condition)){\
-		     action\
-		     machine->state=next_state;\
+	  #define ROW(wtp_state, event_type, condition, action, next_state) \
+		  if (machine->state == wtp_state && \
+		     event->type == event_type && \
+		     (condition)) { \
+		     debug(0, "WTP: doing action for %s", #wtp_state); \
+		     action \
+		     debug(0, "WTP: setting state to %s", #next_state); \
+		     machine->state = next_state; \
 		  } else 
 	  #include "wtp_state-decl.h"
-		  {panic(0, "wtp_handle_event: out of synch error");}
+		  {
+			error(0, "wtp_handle_event: unhandled event!");
+			debug(0, "wtp_handle_event: unhandled event is");
+			wtp_event_dump(event);
+		  }
 
           event = remove_from_event_queue(machine);
      } while (event != NULL);
 
+     machine->locker = -1;
      mutex_unlock(&machine->mutex);
+     debug(0, "wtp_handle_event: done");
      return;
 
 /*
@@ -539,9 +571,9 @@ mem_error:
      mutex_unlock(&machine->mutex);
 }
 
-long wtp_tid_next(long tid){
-
-     return ++tid;
+long wtp_tid_next(void){
+     static unsigned long next_tid = 0;
+     return ++next_tid;
 }
 
 
@@ -639,6 +671,8 @@ static WTPMachine *wtp_machine_create_empty(void){
         #define MACHINE(field) field
         #include "wtp_machine-decl.h"
 
+	machine->locker = -1;
+
         if (list != NULL)
            mutex_lock(&list->mutex);
 
@@ -700,12 +734,15 @@ static WSPEvent *pack_wsp_event(WSPEventType wsp_name, WTPEvent *wtp_event,
 
          WSPEvent *event=wsp_event_create(wsp_name);
 
-         debug(0, "Gen_tid has a value %ld", gen_tid);
+#if 0
+         debug(0, "pack_wsp_event: Gen_tid has a value %ld", gen_tid);
+#endif
+
 /*
  * Abort(CAPTEMPEXCEEDED)
  */
          if (event == NULL){
-            debug(0, "Out of memory");
+            debug(0, "pack_wsp_event: Out of memory");
             free(event);
             return NULL;
          }
@@ -717,7 +754,7 @@ static WSPEvent *pack_wsp_event(WSPEventType wsp_name, WTPEvent *wtp_event,
                      event->TRInvokeIndication.user_data=
                             wtp_event->RcvInvoke.user_data;
                      event->TRInvokeIndication.tcl=wtp_event->RcvInvoke.tcl;
-                     event->TRInvokeIndication.wsp_tid=wtp_tid_next(gen_tid);
+                     event->TRInvokeIndication.wsp_tid=wtp_tid_next();
                      event->TRInvokeIndication.machine=machine;
                 break;
                 
@@ -738,8 +775,10 @@ static WSPEvent *pack_wsp_event(WSPEventType wsp_name, WTPEvent *wtp_event,
 	        default:
                 break;
          }
+#if 0
          debug (0,"pack_wsp_event:");
          wsp_event_dump(event);
+#endif
          return event;
 } 
 
@@ -793,15 +832,3 @@ static WTPEvent *remove_from_event_queue(WTPMachine *machine) {
 
 
 /*****************************************************************************/
-
-
-
-
-
-
-
-
-
-
-
-

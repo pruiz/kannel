@@ -15,6 +15,10 @@ SESSION_MACHINE({
 	MUTEX(queue_lock);
 	EVENT_POINTER(event_queue_head);
 	EVENT_POINTER(event_queue_tail);
+	OCTSTR(client_address);
+	INTEGER(client_port);
+	SESSION_POINTER(next);
+	INTEGER(locker);
 })
 
 METHOD_MACHINE({
@@ -25,6 +29,7 @@ METHOD_MACHINE({
 
 #undef MUTEX
 #undef INTEGER
+#undef OCTSTR
 #undef EVENT_POINTER
 #undef METHOD_POINTER
 #undef SESSION_POINTER
