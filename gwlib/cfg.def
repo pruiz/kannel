@@ -243,7 +243,7 @@ MULTI_GROUP(sendsms-user,
 )
 
 
-MULTI_GROUP(otaconfig,
+MULTI_GROUP(ota-setting,
     OCTSTR(ota-id)
     OCTSTR(location)
     OCTSTR(service)
@@ -257,6 +257,12 @@ MULTI_GROUP(otaconfig,
     OCTSTR(authentication)
     OCTSTR(login)
     OCTSTR(secret)
+)
+
+MULTI_GROUP(ota-bookmark,
+    OCTSTR(ota-id)
+    OCTSTR(name)
+    OCTSTR(url)
 )
 
 SINGLE_GROUP(emibox,
