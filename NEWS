@@ -11,6 +11,7 @@ Changes since version 0.10.2:
   * Various bugs and memory leaks fixed.
   * Better support for UDH SMS.
   * Support for POST is no longer optional.
+  * WMLScript compiler is now aware of the Crypto library.
 
 * Known problems:
 

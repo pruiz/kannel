@@ -33,6 +33,7 @@ struct WsStdLibFuncRegRec
 
   /* The exact number of arguments. */
   int num_args;
+  WsUInt8 function_id;
 };
 
 typedef struct WsStdLibFuncRegRec WsStdLibFuncReg;
@@ -57,145 +58,150 @@ typedef struct WsStdLibRegRec WsStdLibReg;
 
 static WsStdLibFuncReg lib_lang_functions[] =
 {
-  {"abs",		1},
-  {"min",		2},
-  {"max",		2},
-  {"parseInt",		1},
-  {"parseFloat",	1},
-  {"isInt",		1},
-  {"isFloat",		1},
-  {"maxInt",		0},
-  {"minInt",		0},
-  {"float",		0},
-  {"exit",		1},
-  {"abort",		1},
-  {"random",		1},
-  {"seed",		1},
-  {"characterSet",	0},
+  {"abs",		1, 0},
+  {"min",		2, 1},
+  {"max",		2, 2},
+  {"parseInt",		1, 3},
+  {"parseFloat",	1, 4},
+  {"isInt",		1, 5},
+  {"isFloat",		1, 6},
+  {"maxInt",		0, 7},
+  {"minInt",		0, 8},
+  {"float",		0, 9},
+  {"exit",		1, 10},
+  {"abort",		1, 11},
+  {"random",		1, 12},
+  {"seed",		1, 13},
+  {"characterSet",	0, 14},
 };
 
 static WsStdLibFuncReg lib_float_functions[] =
 {
-  {"int",	1},
-  {"floor",	1},
-  {"ceil",	1},
-  {"pow",	2},
-  {"round",	1},
-  {"sqrt",	1},
-  {"maxFloat",	0},
-  {"minFloat",	0},
+  {"int",	1, 0},
+  {"floor",	1, 1},
+  {"ceil",	1, 2},
+  {"pow",	2, 3},
+  {"round",	1, 4},
+  {"sqrt",	1, 5},
+  {"maxFloat",	0, 6},
+  {"minFloat",	0, 7},
 };
 
 static WsStdLibFuncReg lib_string_functions[] =
 {
-  {"length",	1},
-  {"isEmpty",	1},
-  {"charAt",	2},
-  {"subString",	3},
-  {"find",	2},
-  {"replace",	3},
-  {"elements",	2},
-  {"elementAt",	3},
-  {"removeAt",	3},
-  {"replaceAt",	4},
-  {"insertAt",	4},
-  {"squeeze",	1},
-  {"trim",	1},
-  {"compare",	2},
-  {"toString",	1},
-  {"format",	2},
+  {"length",	1, 0},
+  {"isEmpty",	1, 1},
+  {"charAt",	2, 2},
+  {"subString",	3, 3},
+  {"find",	2, 4},
+  {"replace",	3, 5},
+  {"elements",	2, 6},
+  {"elementAt",	3, 7},
+  {"removeAt",	3, 8},
+  {"replaceAt",	4, 9},
+  {"insertAt",	4, 10},
+  {"squeeze",	1, 11},
+  {"trim",	1, 12},
+  {"compare",	2, 13},
+  {"toString",	1, 14},
+  {"format",	2, 15},
 };
 
 static WsStdLibFuncReg lib_url_functions[] =
 {
-  {"isValid",		1},
-  {"getScheme",		1},
-  {"getHost",		1},
-  {"getPort",		1},
-  {"getPath",		1},
-  {"getParameters",	1},
-  {"getQuery",		1},
-  {"getFragment",	1},
-  {"getBase",		0},
-  {"getReferer",	0},
-  {"resolve",		2},
-  {"escapeString",	1},
-  {"unescapeString",	1},
-  {"loadString",	2},
+  {"isValid",		1, 0},
+  {"getScheme",		1, 1},
+  {"getHost",		1, 2},
+  {"getPort",		1, 3},
+  {"getPath",		1, 4},
+  {"getParameters",	1, 5},
+  {"getQuery",		1, 6},
+  {"getFragment",	1, 7},
+  {"getBase",		0, 8},
+  {"getReferer",	0, 9},
+  {"resolve",		2, 10},
+  {"escapeString",	1, 11},
+  {"unescapeString",	1, 12},
+  {"loadString",	2, 13},
 };
 
 static WsStdLibFuncReg lib_wmlbrowser_functions[] =
 {
-  {"getVar",		1},
-  {"setVar",		2},
-  {"go",		1},
-  {"prev",		0},
-  {"newContext",	0},
-  {"getCurrentCard",	0},
-  {"refresh",		0},
+  {"getVar",		1, 0},
+  {"setVar",		2, 1},
+  {"go",		1, 2},
+  {"prev",		0, 3},
+  {"newContext",	0, 4},
+  {"getCurrentCard",	0, 5},
+  {"refresh",		0, 6},
 };
 
 static WsStdLibFuncReg lib_dialogs_functions[] =
 {
-  {"prompt",	2},
-  {"confirm",	3},
-  {"alert",	1},
+  {"prompt",	2, 0},
+  {"confirm",	3, 1},
+  {"alert",	1, 2},
 };
 
 static WsStdLibFuncReg lib_wtapublic_functions[] =
 {
-  {"makeCall", 1},
-  {"sendDTMF", 1},
+  {"makeCall", 1, 0},
+  {"sendDTMF", 1, 1},
 };
 
 static WsStdLibFuncReg lib_wtavoicecall_functions[] =
 {
-  {"setup", 2},
-  {"accept", 2},
-  {"release", 1},
-  {"sendDTMF", 1},
+  {"setup",     2, 0},
+  {"accept",    2, 1},
+  {"release",   1, 2},
+  {"sendDTMF",  1, 3},
 };
 
 static WsStdLibFuncReg lib_wtanettext_functions[] =
 {
-  {"send", 2},
-  {"read", 1},
-  {"remove", 1},
-  {"getFieldValue", 2},
+  {"send",          2, 0},
+  {"read",          1, 1},
+  {"remove",        1, 2},
+  {"getFieldValue", 2, 3},
 };
 
 static WsStdLibFuncReg lib_phonebook_functions[] =
 {
-  {"write", 3},
-  {"read", 2},
-  {"remove", 1},
-  {"getFieldValue", 2},
+  {"write",         3, 0},
+  {"read",          2, 1},
+  {"remove",        1, 2},
+  {"getFieldValue", 2, 3},
 };
 
 static WsStdLibFuncReg lib_wtacalllog_functions[] =
 {
-  {"dialled", 1},
-  {"missed", 1},
-  {"received", 1},
-  {"getFieldValue", 2},
+  {"dialled",       1, 0},
+  {"missed",        1, 1},
+  {"received",      1, 2},
+  {"getFieldValue", 2, 3},
 };
 
 static WsStdLibFuncReg lib_wtamisc_functions[] =
 {
-  {"indication", 3},
-  {"endcontext", 0},
-  {"protected", 1},
+  {"indication", 3, 0},
+  {"endcontext", 0, 1},
+  {"protected",  1, 2},
 };
 
 static WsStdLibFuncReg lib_wtagsm_functions[] =
 {
-  {"reject", 1},
-  {"hold", 1},
-  {"transfer", 1},
-  {"multiparty", 0},
-  {"retrieve", 1},
-  {"location", 0},
-  {"sendUSSD", 4},
+  {"reject",     1, 0},
+  {"hold",       1, 1},
+  {"transfer",   1, 2},
+  {"multiparty", 0, 3},
+  {"retrieve",   1, 4},
+  {"location",   0, 5},
+  {"sendUSSD",   4, 6},
+};
+
+static WsStdLibFuncReg lib_crypto_functions[] =
+{
+  {"signText",     4, 16},
 };
 
 static WsStdLibReg libraries[] =
@@ -207,6 +213,7 @@ static WsStdLibReg libraries[] =
   {"WMLBrowser",	4, NF(lib_wmlbrowser_functions),
    lib_wmlbrowser_functions},
   {"Dialogs",		5, NF(lib_dialogs_functions), lib_dialogs_functions},
+  {"Crypto",		6, NF(lib_crypto_functions), lib_crypto_functions},
   {"WTAPublic",         512, NF(lib_wtapublic_functions), lib_wtapublic_functions},
   {"WTAVoiceCall",      513, NF(lib_wtavoicecall_functions), lib_wtavoicecall_functions},
   {"WTANetText",        514, NF(lib_wtanettext_functions), lib_wtanettext_functions},
@@ -241,7 +248,7 @@ ws_stdlib_function(const char *library, const char *function,
 	for (f = 0; f < libraries[l].num_functions; f++)
 	  if (strcmp(libraries[l].functions[f].name, function) == 0)
 	    {
-	      *findex_return = f;
+	      *findex_return = libraries[l].functions[f].function_id;
 	      *findex_found_return = WS_TRUE;
 
 	      *num_args_return = libraries[l].functions[f].num_args;
@@ -260,20 +267,21 @@ ws_stdlib_function_name(WsUInt16 lindex, WsUInt8 findex,
 			const char **function_return)
 {
   WsUInt16 l;
+  WsUInt8  f;
   
   *library_return = NULL;
   *function_return = NULL;
 
   for (l = 0; libraries[l].name != NULL; l++)
     if (libraries[l].library_id == lindex)
-      {
-        if (findex >= libraries[l].num_functions)
-          return WS_FALSE;
-	  
-        *library_return = libraries[l].name;
-        *function_return = libraries[l].functions[findex].name;
-        return WS_TRUE;
-      }
+      for (f = 0; f < libraries[l].num_functions; f++)
+        {
+          if (libraries[l].functions[f].function_id == findex) {
+	    *library_return = libraries[l].name;
+            *function_return = libraries[l].functions[f].name;
+	    return WS_TRUE;
+          }
+        }
 
   return WS_FALSE;
 }

@@ -4,6 +4,11 @@
 
 2000-08-02  Richard Braakman  <dark@wapit.com>
 
+	* Applied Joerg Pommnitz's patch for Crypto library support in
+	the WMLScript compiler.
+
+2000-08-02  Richard Braakman  <dark@wapit.com>
+
 	* Folded in POST_SUPPORT.  Duplication of code is Bad.
 
 2000-08-01  Richard Braakman  <dark@wapit.com>
