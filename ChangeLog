@@ -1,3 +1,8 @@
+2001-07-18 Yann Muller <ymuller@3glab.com>
+
+	* doc/userguide/user2.1.xml, wtls.xml: applied fix by Jörg Pommnitz
+	to generate HTML docs.
+	
 2001-07-17 Aarno Syvänen <aarno@wiral.com>
 
 	* test/test_ppg.c: Added parameter for content type. Some of these
