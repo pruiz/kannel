@@ -73,13 +73,16 @@
  * of his list is looked up once a delivery report comes in
  */
 static List *dlr_waiting_list;
+static RWLock rwlock = GW_RWLOCK_INITIALIZER;
 
 /*
  * Destroy dlr_waiting_list.
  */
 static void dlr_mem_shutdown()
 {
+    gw_rwlock_wrlock(&rwlock);
     list_destroy(dlr_waiting_list, (list_item_destructor_t *)dlr_entry_destroy);
+    gw_rwlock_unlock(&rwlock);
 }
 
 /*
@@ -95,11 +98,11 @@ static void dlr_mem_flush(void)
     long i;
     long len;
 
-    list_lock(dlr_waiting_list);
+    gw_rwlock_wrlock(&rwlock);
     len = list_len(dlr_waiting_list);
     for (i=0; i < len; i++)
         list_delete(dlr_waiting_list, i, 1);
-    list_unlock(dlr_waiting_list);
+    gw_rwlock_unlock(&rwlock);
 }
 
 /*
@@ -107,7 +110,9 @@ static void dlr_mem_flush(void)
  */
 static void dlr_mem_add(struct dlr_entry *dlr)
 {
+    gw_rwlock_wrlock(&rwlock);
     list_append(dlr_waiting_list,dlr);
+    gw_rwlock_unlock(&rwlock);
 }
 
 /*
@@ -134,7 +139,7 @@ static struct dlr_entry *dlr_mem_get(const Octstr *smsc, const Octstr *ts, const
     long len;
     struct dlr_entry *dlr = NULL, *ret = NULL;
 
-    list_lock(dlr_waiting_list);
+    gw_rwlock_rdlock(&rwlock);
     len = list_len(dlr_waiting_list);
     for (i=0; i < len; i++) {
         dlr = list_get(dlr_waiting_list, i);
@@ -144,7 +149,7 @@ static struct dlr_entry *dlr_mem_get(const Octstr *smsc, const Octstr *ts, const
             break;
         }
     }
-    list_unlock(dlr_waiting_list);
+    gw_rwlock_unlock(&rwlock);
 
     /* we couldnt find a matching entry */
     return ret;
@@ -159,7 +164,7 @@ static void dlr_mem_remove(const Octstr *smsc, const Octstr *ts, const Octstr *d
     long len;
     struct dlr_entry *dlr = NULL;
 
-    list_lock(dlr_waiting_list);
+    gw_rwlock_wrlock(&rwlock);
     len = list_len(dlr_waiting_list);
     for (i=0; i < len; i++) {
         dlr = list_get(dlr_waiting_list, i);
@@ -170,7 +175,7 @@ static void dlr_mem_remove(const Octstr *smsc, const Octstr *ts, const Octstr *d
             break;
         }
     }
-    list_unlock(dlr_waiting_list);
+    gw_rwlock_unlock(&rwlock);
 }
 
 static struct dlr_storage  handles = {
