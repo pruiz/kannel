@@ -2231,11 +2231,12 @@ static Octstr *smsbox_req_sendota(List *list, Octstr *client_ip, int *status)
 	return octstr_create("Authorization failed for sendota");
     }
     
-    phonenumber = http_cgi_variable(list, "phonenumber");
-    if (phonenumber == NULL) {
-	error(0, "%s needs a valid phone number.", octstr_get_cstr(sendota_url));
-	*status = HTTP_BAD_REQUEST;
-	return octstr_create("Wrong sendota args.");
+    if ((phonenumber = http_cgi_variable(list, "to")) == NULL) {
+        if ((phonenumber = http_cgi_variable(list, "phonenumber")) == NULL) {
+            error(0, "%s needs a valid phone number.", octstr_get_cstr(sendota_url));
+            *status = HTTP_BAD_REQUEST;
+            return octstr_create("Wrong sendota args.");
+        }
     }
 
     if (urltrans_faked_sender(t) != NULL) {
@@ -2427,6 +2428,7 @@ static Octstr *smsbox_sendota_post(List *args, List *headers, Octstr *body,
      */
     id = !id ? http_cgi_variable(args, "otaid") : id;
     from = !from ? http_cgi_variable(args, "from") : from;
+    to = !to ? http_cgi_variable(args, "to") : to;
     to = !to ? http_cgi_variable(args, "phonenumber") : to;
     user = !user ? http_cgi_variable(args, "username") : user;
     pass = !pass ? http_cgi_variable(args, "password") : pass;

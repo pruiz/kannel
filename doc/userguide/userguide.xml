@@ -5387,7 +5387,7 @@ the Kannel configuration, or 'Authorization failed' is returned.
 	
 <screen><userinput>
 http://smsbox.host.name:13013/cgi-bin/sendota?
-otaid=myconfig&amp;username=foo&amp;password=bar&amp;phonenumber=0123456
+otaid=myconfig&amp;username=foo&amp;password=bar&amp;to=0123456
 </userinput></screen>
 
        URL containing XML document looks like this (you must URL encode it before sending
@@ -5395,7 +5395,7 @@ otaid=myconfig&amp;username=foo&amp;password=bar&amp;phonenumber=0123456
 
 <screen><userinput>
 http://smsbox.host.name:13013/cgi-bin/sendota?
-username=foo&amp;password=bar&amp;phonenumber=0123456&amp;text=MyURLEncodedXMLdocument&amp;
+username=foo&amp;password=bar&amp;to=0123456&amp;text=MyURLEncodedXMLdocument&amp;
 type=settings
 </userinput></screen>
        
@@ -5479,7 +5479,7 @@ type=settings
        'Authorization failed' is returned.
    </entry></row>
 
-   <row><entry><literal>phonenumber</literal></entry>
+   <row><entry><literal>to</literal></entry>
    <entry valign=bottom>
        Number of the phone that is to receive the OTA configuration message.
    </entry></row>
