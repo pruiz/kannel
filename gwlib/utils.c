@@ -341,33 +341,18 @@ static int change_user(const char *user)
         error(0, "Could not find a user `%s' in system.", user);
         return -1;
     }
-    gw_claim_area(pass);
-    gw_claim_area(pass->pw_name);
-    gw_claim_area(pass->pw_passwd);
-    gw_claim_area(pass->pw_gecos);
-    gw_claim_area(pass->pw_dir);
-    gw_claim_area(pass->pw_shell);
 
     if (-1 == setgid(pass->pw_gid)) {
         error(errno, "Could not change group id %ld -> %ld.", (long) getgid(), (long) pass->pw_gid);
-        goto out;
+        return -1;
     }
 
     if (-1 == setuid(pass->pw_uid)) {
         error(errno, "Could not change user id %ld -> %ld.", (long) getuid(), (long) pass->pw_uid);
-        goto out;
+        return -1;
     }
 
     return 0;
-
-out:
-    gw_free(pass->pw_name);
-    gw_free(pass->pw_passwd);
-    gw_free(pass->pw_gecos);
-    gw_free(pass->pw_dir);
-    gw_free(pass->pw_shell);
-    gw_free(pass);
-    return -1;
 }
 
 /*

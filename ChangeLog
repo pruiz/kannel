@@ -1,3 +1,7 @@
+2004-02-04  Alexander Malysh  <a.malysh@centrium.de>
+    * gwlib/utils.c: don't free 'struct passwd*' because it's allocated
+      staticaly within glibc.
+
 2004-02-02 Stipe Tolj  <tolj@wapme-systems.de>
     * gw/shared.c: changed connect_to_bearerbox_real() to not drop panic
       in case we couldn't connect to bearerbox. This allows the caller to
