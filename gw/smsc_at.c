@@ -3,7 +3,7 @@
  *
  * Yann Muller - 3G Lab, 2000.
  *
- * $Id: smsc_at.c,v 1.7 2000-07-10 15:54:50 3glab Exp $
+ * $Id: smsc_at.c,v 1.8 2000-07-13 08:56:08 3glab Exp $
  * 
  * Make sure your kannel configuration file contains the following lines
  * to be able to use the AT SMSC:
@@ -349,6 +349,9 @@ static int send_modem_command(int fd, char *cmd, int multiline) {
 	/* debug */
 	/* printf("Command: %s\n", cmd); */
 	
+	/* DEBUG !!! - pretend to send but just return success (0)*/
+	/* return 0; */
+	
 	/* send the command */	
 	write(fd, cmd, strlen(cmd));
 	write(fd, "\r", 1);
@@ -596,7 +599,7 @@ static Msg *pdu_decode_deliver_sm(Octstr *data) {
  */
 static int pdu_encode(Msg *msg, unsigned char *pdu) {
 	int pos = 0, i,len;
-	int c; /* debug only */
+	/*int c;*/ /* debug only */
 	
 	/* The message is encoded directly in the text representation of 
 	 * the hex values that will be sent to the modem.
@@ -754,11 +757,8 @@ static int encode7bituncompressed(Octstr *input, unsigned char *encoded) {
  */
 static int encode8bituncompressed(Octstr *input, unsigned char *encoded) {
 	int len, i;
-	char tmpc[3];
 
 	len = octstr_len(input);
-	/*if( len > maxlen)
-		len = maxlen;*/
 	
 	for(i=0; i<len; i++) {
 		encoded[i*2] = numtext((octstr_get_char(input, i) & 240) >> 4);
