@@ -977,7 +977,7 @@ static int blacklisted(WAPPushUser *u, Octstr *number)
 {
     int result = 0;
     
-    if (u->black_list == NULL)
+    if (u->black_list != NULL)
         result = numhash_find_number(u->black_list, number);
 
     if ((result == 0) && (u->black_list_regex != NULL))
