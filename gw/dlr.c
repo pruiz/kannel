@@ -147,6 +147,7 @@ static void dlr_init_mysql(Cfg* cfg)
         if (p != NULL && octstr_compare(p, mysql_id) == 0) {
             goto found;
         }
+        octstr_destroy(p);
      }
      panic(0, "DLR: MySQL: connection settings for id '%s' are not specified!", 
            octstr_get_cstr(mysql_id));
