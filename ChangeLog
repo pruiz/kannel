@@ -1,4 +1,8 @@
 2001-11-30 Jörg Pommnitz <jpo@condat.de>
+	* gwlib/conn.c: fix longstanding bug in SSL locking. This fixes the
+	  crashes in gwlib_shutdown()
+	
+2001-11-30 Jörg Pommnitz <jpo@condat.de>
 	* gw/smsc_emi2.c: code cleanup/reorganization, new feature "idle-timeout"
 	* gwlib/cfg.def: add new smsc config option "idle-timeout"
 	* doc/userguide/userguide.xml: document new config option "idle-timeout"

@@ -1049,6 +1049,14 @@ void openssl_locking_function(int mode, int n, const char *file, int line)
         mutex_unlock(ssl_static_locks[n-1]);
 }
 
+void openssl_server_locking_function(int mode, int n, const char *file, int line) 
+{
+    if (mode & CRYPTO_LOCK)
+        mutex_lock(ssl_server_static_locks[n-1]);
+    else
+        mutex_unlock(ssl_server_static_locks[n-1]);
+}
+
 void conn_init_ssl(void)
 {
     int c, maxlocks = CRYPTO_num_locks();
@@ -1076,7 +1084,7 @@ void server_ssl_init(void)
     for (c=0;c<maxlocks;c++) 
          ssl_server_static_locks[c] = mutex_create();
 
-    CRYPTO_set_locking_callback(openssl_locking_function);
+    CRYPTO_set_locking_callback(openssl_server_locking_function);
     CRYPTO_set_id_callback(gwthread_self);
 
     SSLeay_add_ssl_algorithms();
