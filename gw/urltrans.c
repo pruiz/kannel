@@ -549,7 +549,8 @@ Octstr *urltrans_get_pattern(URLTranslation *t, Msg *request)
      * this SHOULD be done in smsbox, not here, but well,
      * much easier to do here
      */
-    if (t->type == TRANSTYPE_POST_URL && t->strip_keyword)
+    if ( (t->type == TRANSTYPE_POST_URL || t->type == TRANSTYPE_POST_XML)
+		    && t->strip_keyword)
 	strip_keyword(request);
 
     octstr_destroy(url);
@@ -708,7 +709,7 @@ int urltrans_send_sender(URLTranslation *t)
 static URLTranslation *create_onetrans(CfgGroup *grp)
 {
     URLTranslation *ot;
-    Octstr *aliases, *url, *post_url, *text, *file, *exec;
+    Octstr *aliases, *url, *post_url, *post_xml, *text, *file, *exec;
     Octstr *accepted_smsc, *forced_smsc, *default_smsc;
     Octstr *grpname, *sendsms_user, *sms_service;
     int is_sms_service;
@@ -766,6 +767,7 @@ static URLTranslation *create_onetrans(CfgGroup *grp)
 	    url = cfg_get(grp, octstr_imm("url"));
 	    
 	post_url = cfg_get(grp, octstr_imm("post-url"));
+	post_xml = cfg_get(grp, octstr_imm("post-xml"));
 	file = cfg_get(grp, octstr_imm("file"));
 	text = cfg_get(grp, octstr_imm("text"));
 	exec = cfg_get(grp, octstr_imm("exec"));
@@ -775,6 +777,10 @@ static URLTranslation *create_onetrans(CfgGroup *grp)
 	} else if (post_url != NULL) {
 	    ot->type = TRANSTYPE_POST_URL;
 	    ot->pattern = post_url;
+	    ot->catch_all = 1;
+	} else if (post_xml != NULL) {
+	    ot->type = TRANSTYPE_POST_XML;
+	    ot->pattern = post_xml;
 	    ot->catch_all = 1;
 	} else if (file != NULL) {
 	    ot->type = TRANSTYPE_FILE;
@@ -787,7 +793,7 @@ static URLTranslation *create_onetrans(CfgGroup *grp)
 	    ot->pattern = exec;
 	} else {
 	    error(0, "Configuration group `sms-service' "
-	    	     "did not specify get-url, post-url, file or text.");
+	    	     "did not specify get-url, post-url, post-xml, file or text.");
     	    goto error;
 	}
 

@@ -71,6 +71,7 @@ typedef struct {
     Octstr *password;
     Octstr *address_range;
     Octstr *our_host;
+    Octstr *my_number;
     int source_addr_ton;
     int source_addr_npi;
     int dest_addr_ton;
@@ -87,7 +88,8 @@ static SMPP *smpp_create(SMSCConn *conn, Octstr *host, int transmit_port,
                          Octstr *username, Octstr *password,
     	    	    	 Octstr *address_range, Octstr *our_host, 
                          int source_addr_ton, int source_addr_npi, 
-                         int dest_addr_ton, int dest_addr_npi)
+                         int dest_addr_ton, int dest_addr_npi,
+			 Octstr *my_number)
 {
     SMPP *smpp;
     
@@ -109,6 +111,7 @@ static SMPP *smpp_create(SMSCConn *conn, Octstr *host, int transmit_port,
     smpp->dest_addr_ton = dest_addr_ton;
     smpp->dest_addr_npi = dest_addr_npi;
     smpp->our_host = octstr_duplicate(our_host);
+    smpp->my_number = octstr_duplicate(my_number);
     smpp->transmit_port = transmit_port;
     smpp->receive_port = receive_port;
     smpp->quitting = 0;
@@ -523,6 +526,12 @@ static void handle_pdu(SMPP *smpp, Connection *conn, SMPP_PDU *pdu,
  	{
         /* ensure the smsc-id is set */
         msg = pdu_to_msg(pdu);
+
+	/* Replace MO destination number with my-number */
+	if(octstr_len(smpp->my_number)) {
+	    octstr_destroy(msg->sms.receiver);
+	    msg->sms.receiver = octstr_duplicate(smpp->my_number);
+	}
         time(&msg->sms.time);
         msg->sms.smsc_id = octstr_duplicate(smpp->conn->id);
 	    (void) bb_smscconn_receive(smpp->conn, msg);
@@ -837,9 +846,12 @@ int smsc_smpp_create(SMSCConn *conn, CfgGroup *grp)
     long dest_addr_ton;
     long dest_addr_npi;
     Octstr *our_host;
+    Octstr *my_number;
     SMPP *smpp;
     int ok;
     
+    my_number = NULL;
+
     host = cfg_get(grp, octstr_imm("host"));
     if (cfg_get_integer(&port, grp, octstr_imm("port")) == -1)
     	port = 0;
@@ -850,6 +862,7 @@ int smsc_smpp_create(SMSCConn *conn, CfgGroup *grp)
     system_type = cfg_get(grp, octstr_imm("system-type"));
     address_range = cfg_get(grp, octstr_imm("address-range"));
     our_host = cfg_get(grp, octstr_imm("our-host"));
+    my_number = cfg_get(grp, octstr_imm("my-number"));
     
     system_id = cfg_get(grp, octstr_imm("system-id"));
     if (system_id != NULL) {
@@ -892,7 +905,7 @@ int smsc_smpp_create(SMSCConn *conn, CfgGroup *grp)
     smpp = smpp_create(conn, host, port, receive_port, system_type, 
     	    	       username, password, address_range, our_host,
                        source_addr_ton, source_addr_npi, dest_addr_ton, 
-                       dest_addr_npi);
+                       dest_addr_npi, my_number);
 
     conn->data = smpp;
     conn->name = octstr_format("SMPP:%S:%d/%d:%S:%S", 
@@ -906,6 +919,7 @@ int smsc_smpp_create(SMSCConn *conn, CfgGroup *grp)
     octstr_destroy(system_type);
     octstr_destroy(address_range);
     octstr_destroy(our_host);
+    octstr_destroy(my_number);
 
     conn->status = SMSCCONN_CONNECTING;
       

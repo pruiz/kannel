@@ -372,6 +372,90 @@ static void get_x_kannel_from_headers(List *headers, Octstr **from,
     }
 }
 
+static void get_x_kannel_from_xml(Octstr **type, Octstr **body, 
+                                  List *headers, Octstr **from,
+                                  Octstr **to, Octstr **udh,
+                                  Octstr **user, Octstr **pass,
+                                  Octstr **smsc, int *mclass, int *mwi,
+                                  int *coding, int *compress, 
+                                  int *validity, int *deferred,
+                                  int *dlr_mask, Octstr **dlr_url,
+                                  Octstr **account, int *pid, int *alt_dcs)
+{                                    
+
+    long start, end;
+    Octstr *text;
+
+    *dlr_mask = 0;
+    *dlr_url = NULL;
+    *mclass = *mwi = *coding = *compress = *validity = 
+	*deferred = *pid = *alt_dcs = 0;
+
+    debug("sms", 0, "DAVI Body: <%s>", octstr_get_cstr(*body));
+
+    if(user != NULL) {
+	start = octstr_search(*body, octstr_imm("<user>"), 0);
+	if(start != -1) {
+	    end = octstr_search(*body, octstr_imm("</user>"), start);
+	    if(end != -1) {
+		octstr_destroy(*user);
+		*user = octstr_copy(*body, start + 6, end - start - 6);
+		debug("sms", 0, "DAVI user: <%s>", octstr_get_cstr(*user));
+	    }
+	}
+    }
+
+    if(pass != NULL) {
+	start = octstr_search(*body, octstr_imm("<pass>"), 0);
+	if(start != -1) {
+	    end = octstr_search(*body, octstr_imm("</pass>"), start);
+	    if(end != -1) {
+		octstr_destroy(*pass);
+		*pass = octstr_copy(*body, start + 6, end - start - 6);
+		debug("sms", 0, "DAVI pass: <%s>", octstr_get_cstr(*pass));
+	    }
+	}
+    }
+
+    start = octstr_search(*body, octstr_imm("<from>"), 0);
+    if(start != -1) {
+	end = octstr_search(*body, octstr_imm("</from>"), start);
+	if(end != -1) {
+	    octstr_destroy(*from);
+	    *from = octstr_copy(*body, start + 6, end - start - 6);
+	    debug("sms", 0, "DAVI from: <%s>", octstr_get_cstr(*from));
+	}
+    }
+
+    start = octstr_search(*body, octstr_imm("<to>"), 0);
+    if(start != -1) {
+	end = octstr_search(*body, octstr_imm("</to>"), start);
+	if(end != -1) {
+	    octstr_destroy(*to);
+	    *to = octstr_copy(*body, start + 4, end - start - 4);
+	    debug("sms", 0, "DAVI to: <%s>", octstr_get_cstr(*to));
+	}
+    }
+
+    start = octstr_search(*body, octstr_imm("<text>"), 0);
+    if(start != -1) {
+	end = octstr_search(*body, octstr_imm("</text>"), start);
+	if(end != -1) {
+	    text = octstr_copy(*body, start + 6, end - start - 6);
+	    debug("sms", 0, "DAVI text: <%s>", octstr_get_cstr(text));
+	    octstr_destroy(*body);
+	    *body = octstr_duplicate(text);
+	    octstr_destroy(text);
+	}
+    }
+
+    /* XXX Add more fields */
+
+    octstr_destroy(*type);
+    *type = octstr_create("text/plain");
+}
+
+
 static void fill_message(Msg *msg, URLTranslation *trans,
 			 Octstr *replytext, int octet_stream,
 			 Octstr *from, Octstr *to, Octstr *udh, 
@@ -513,6 +597,7 @@ static void url_result_thread(void *arg)
     Octstr *text_html;
     Octstr *text_plain;
     Octstr *text_wml;
+    Octstr *text_xml;
     Octstr *octet_stream;
     Octstr *udh, *from, *to;
     Octstr *dlr_url;
@@ -528,6 +613,7 @@ static void url_result_thread(void *arg)
     text_html = octstr_imm("text/html");
     text_wml = octstr_imm("text/vnd.wap.wml");
     text_plain = octstr_imm("text/plain");
+    text_xml = octstr_imm("text/xml");
     octet_stream = octstr_imm("application/octet-stream");
 
     for (;;) {
@@ -566,6 +652,13 @@ static void url_result_thread(void *arg)
 					  &coding, &compress, &validity, 
 					  &deferred, &dlr_mask, &dlr_url, 
 					  &account, &pid, &alt_dcs);
+	    } else if (octstr_case_compare(type, text_xml) == 0) {
+		replytext = octstr_duplicate(reply_body);
+		reply_body = NULL;
+		get_x_kannel_from_xml(&type, &replytext, reply_headers, &from, &to, &udh,
+				NULL, NULL, &smsc, &mclass, &mwi, &coding,
+				&compress, &validity, &deferred,
+				&dlr_mask, &dlr_url, &account, &pid, &alt_dcs);
 	    } else if (octstr_case_compare(type, octet_stream) == 0) {
 		replytext = octstr_duplicate(reply_body);
 		octets = 1;
@@ -635,7 +728,7 @@ static void url_result_thread(void *arg)
  */
 static int obey_request(Octstr **result, URLTranslation *trans, Msg *msg)
 {
-    Octstr *pattern;
+    Octstr *pattern, *xml, *tmp;
     List *request_headers;
     void *id;
     struct tm tm;
@@ -807,6 +900,100 @@ static int obey_request(Octstr **result, URLTranslation *trans, Msg *msg)
 	}
 	http_start_request(caller, pattern, request_headers, 
  			   msg->sms.msgdata, 1, id, NULL);
+	octstr_destroy(pattern);
+	http_destroy_headers(request_headers);
+	*result = NULL;
+	return 0;
+
+    case TRANSTYPE_POST_XML:
+
+/* XXX The first two chars are beeing eaten somewhere and
+ * only sometimes */
+
+#define OCTSTR_APPEND_XML(xml, tag, text)                  \
+	octstr_append(xml, octstr_imm("  "));        \
+	octstr_append(xml, octstr_imm("\t\t<"));        \
+	octstr_append(xml, octstr_imm(tag));            \
+	octstr_append(xml, octstr_imm(">"));            \
+	octstr_append(xml, text);                       \
+	octstr_append(xml, octstr_imm("</"));           \
+	octstr_append(xml, octstr_imm(tag));            \
+	octstr_append(xml, octstr_imm(">\n"));
+
+#define OCTSTR_APPEND_XML_NUMBER(xml, tag, value)          \
+	octstr_append(xml, octstr_imm("  "));        \
+	octstr_append(xml, octstr_imm("\t\t<"));        \
+	octstr_append(xml, octstr_imm(tag));            \
+	octstr_append(xml, octstr_imm(">"));            \
+	octstr_append_decimal(xml, value);              \
+	octstr_append(xml, octstr_imm("</"));           \
+	octstr_append(xml, octstr_imm(tag));            \
+	octstr_append(xml, octstr_imm(">\n"));
+
+	request_headers = http_create_empty_headers();
+	http_header_add(request_headers, "User-Agent", "Kannel " VERSION);
+	id = remember_receiver(msg, trans);
+
+	http_header_add(request_headers, "Content-Type", "text/xml");
+
+	xml = octstr_create("");
+	octstr_append(xml, octstr_imm("<?xml version=\"1.0\"?>\n")); 
+				/* XXX Should add encoding="" */
+
+	octstr_append(xml, octstr_imm("<message>\n"));
+	octstr_append(xml, octstr_imm("\t<type>SMS</type>\n"));
+	octstr_append(xml, octstr_imm("\t<body>\n"));
+
+	if(urltrans_send_sender(trans))
+	    OCTSTR_APPEND_XML(xml, "from", msg->sms.receiver);
+	OCTSTR_APPEND_XML(xml, "to", msg->sms.sender);
+
+	if(octstr_len(msg->sms.udhdata)) {
+	    Octstr *t;
+	    t = octstr_duplicate(msg->sms.udhdata);
+	    octstr_binary_to_hex(t, 1);
+	    OCTSTR_APPEND_XML(xml, "udh", t);
+	    octstr_destroy(t);
+	}
+
+	if(octstr_len(msg->sms.msgdata))
+	    OCTSTR_APPEND_XML(xml, "text", msg->sms.msgdata);
+	if(octstr_len(msg->sms.smsc_id))
+	    OCTSTR_APPEND_XML(xml, "smsc", msg->sms.smsc_id);
+	if(msg->sms.coding)
+	    OCTSTR_APPEND_XML_NUMBER(xml, "coding", msg->sms.coding);
+	if(msg->sms.mclass)
+	    OCTSTR_APPEND_XML_NUMBER(xml, "mclass", msg->sms.mclass);
+	if(msg->sms.pid)
+	    OCTSTR_APPEND_XML_NUMBER(xml, "pid", msg->sms.pid);
+	if(msg->sms.alt_dcs)
+	    OCTSTR_APPEND_XML_NUMBER(xml, "alt-dcs", msg->sms.alt_dcs);
+	if(msg->sms.mwi)
+	    OCTSTR_APPEND_XML_NUMBER(xml, "mwi", msg->sms.mwi);
+	if(msg->sms.compress)
+	    OCTSTR_APPEND_XML_NUMBER(xml, "compress", msg->sms.compress);
+	if(msg->sms.validity)
+	    OCTSTR_APPEND_XML_NUMBER(xml, "validity", msg->sms.validity);
+	if(msg->sms.deferred)
+	    OCTSTR_APPEND_XML_NUMBER(xml, "deferred", msg->sms.deferred);
+
+	tm = gw_gmtime(msg->sms.time);
+	tmp = octstr_format("%04d-%02d-%02d %02d:%02d:%02d",
+		       	tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday,
+		       	tm.tm_hour, tm.tm_min, tm.tm_sec);
+	OCTSTR_APPEND_XML(xml, "time", tmp);
+	octstr_destroy(tmp);
+
+	octstr_append(xml, octstr_imm("\t</body>\n"));
+	octstr_append(xml, octstr_imm("</message>\n"));
+
+	if(msg->sms.msgdata != NULL)
+	    octstr_destroy(msg->sms.msgdata);
+
+	msg->sms.msgdata = xml;
+
+	http_start_request(caller, pattern, request_headers,
+			msg->sms.msgdata, 1, id, NULL);
 	octstr_destroy(pattern);
 	http_destroy_headers(request_headers);
 	*result = NULL;
@@ -1611,13 +1798,23 @@ static Octstr *smsbox_sendsms_post(List *headers, Octstr *body,
  
     from = to = user = pass = udh = smsc = dlr_url = account = NULL;
    
-    get_x_kannel_from_headers(headers, &from, &to, &udh,
+    ret = NULL;
+    
+    /* XXX here we should take into account content-type of body
+    */
+    http_header_get_content_type(headers, &type, &charset);
+    if(octstr_case_compare(type, octstr_imm("text/xml")) == 0) {
+	get_x_kannel_from_xml(&type, &body, headers, &from, &to, &udh,
+		       	&user, &pass, &smsc, &mclass, &mwi, &coding,
+		       	&compress, &validity, &deferred,
+		       	&dlr_mask, &dlr_url, &account, &pid, &alt_dcs);
+    } else {
+	get_x_kannel_from_headers(headers, &from, &to, &udh,
 			      &user, &pass, &smsc, &mclass, &mwi, &coding,
 			      &compress, &validity, &deferred, 
 			      &dlr_mask, &dlr_url, &account, &pid, &alt_dcs);
-    
-    ret = NULL;
-    
+    }
+
     /* check the username and password */
     t = authorise_username(user, pass, client_ip);
     if (t == NULL) {
@@ -1636,10 +1833,6 @@ static Octstr *smsbox_sendsms_post(List *headers, Octstr *body,
 	return octstr_create("Empty receiver number not allowed, rejected");
     } 
     else {
-	/* XXX here we should take into account content-type of body
-	 */
-	http_header_get_content_type(headers, &type, &charset);
-
 	if (octstr_case_compare(type,
 				octstr_imm("application/octet-stream")) == 0) {
 	    if (coding == DC_UNDEF)
@@ -1672,6 +1865,7 @@ static Octstr *smsbox_sendsms_post(List *headers, Octstr *body,
     octstr_destroy(smsc);
     octstr_destroy(dlr_url);
     octstr_destroy(account);
+error(0, "got here");
     return ret;
 }
 
@@ -2035,10 +2229,10 @@ static void sendsms_thread(void *arg)
 
    	if (octstr_compare(url, sendsms_url) == 0)
 	{
-        /* 
-         * decide if this is a GET or POST request and let the 
-         * related routine handle the checking
-         */
+	    /* 
+	    * decide if this is a GET or POST request and let the 
+	    * related routine handle the checking
+	    */
 	    if (body == NULL)
 		answer = smsbox_req_sendsms(args, ip, &status);
 	    else

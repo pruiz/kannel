@@ -1,3 +1,15 @@
+2002-04-09  Bruno Rodrigues  <bruno.rodrigues@litux.org>
+    * gw/smsc_smpp.c, doc/userguide/userguide.xml: Added my-number to SMPP
+    * doc/userguide/userguide.xml: changed at2 my-number description
+    * gw/smsbox.c, gw/urltrans.[ch]: Added preliminary XML Post to smsbox.
+    * Makefile.in: when building ps from xml, only echo "check log" if 
+      jadetex fail, cleaning "make -s"
+    * Makefile.in, configure.in, configure : added --enable-drafts to 
+      enable/disable draft blocks being included in documentation
+    * doc/userguide/userguide.xml: added draft conditional includes, 
+      defined with --enable-drafts to be able to write text without being 
+      displayed on snapshot documentation until it's almost final
+
 2002-04-08 Andreas Fink <andreasgfink.org>
     * gw/dlr.c: fixed mysql_close issue pointed
       out by "Dima Milentiev" <Dima@m-wise.com>

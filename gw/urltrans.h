@@ -45,6 +45,7 @@ typedef struct URLTranslation URLTranslation;
 enum {
     TRANSTYPE_GET_URL = 0,
     TRANSTYPE_POST_URL,
+    TRANSTYPE_POST_XML,
     TRANSTYPE_TEXT,
     TRANSTYPE_FILE,
     TRANSTYPE_EXECUTE,

@@ -13,6 +13,7 @@
 <!ENTITY figtype "#FIGTYPE#">
 <!ENTITY timestamp "#DATE#">
 <!ENTITY version "#VERSION#">
+<!ENTITY % draft "#DRAFTS#">
 ]>
 
 <book>
@@ -2282,6 +2283,13 @@ address-range = ""
        the default device of the machine will be used.
      </entry></row>
 
+    <row><entry><literal>my-number</literal></entry>
+      <entry><literal>number</literal></entry>
+      <entry valign=bottom>
+      	Optional smsc short number. Should be set if smsc sends
+	a different one.
+     </entry></row>
+
    </tbody></tgroup></informaltable>
  
 
@@ -2572,7 +2580,7 @@ pin = 2345
     <row><entry><literal>my-number</literal></entry>
       <entry><literal>number</literal></entry>
       <entry valign=bottom>
-      	Modem number.
+      	Optional phone number.
      </entry></row>
 
     <row><entry><literal>sms-center</literal></entry>
@@ -3741,6 +3749,17 @@ get-url = "http://%S"
      </entry></row>
 
 
+   <![%draft;[
+   <row><entry><literal>post-xml (c)</literal></entry>
+     <entry>URL</entry>
+     <entry valign=bottom>
+        Requested URL. As above, but request is done as XML POST.
+	Always matches the keyword, regardless of pattern matching.
+	See notes on POST otherwhere.
+
+     </entry></row>
+
+]]>
    <row><entry><literal>file (c)</literal></entry>
      <entry>filename</entry>
      <entry valign=bottom>
@@ -4107,6 +4126,12 @@ text = "No action specified"
 	</row>
 	
 	<row>
+	<entry><literal>text/xml</literal></entry>
+	<entry>Processed as a POST-XML. See <xref
+	    linkend="postxml" endterm="postxml.title"></entry>
+	</row>
+	
+	<row>
 	<entry><literal>application/octet-stream</literal></entry>
 	<entry>The body will be transmitted as the SMS message, as
 	8-bit data. This can be avoided by setting
@@ -4206,6 +4231,41 @@ text = "No action specified"
 
 </sect3>
 	
+<![%draft;[
+<sect3 id="postxml">
+<title id="postxml.title">XML Post</title>
+	
+	<para>Kannel can send and receive XML POST with the following
+	format:</para>
+
+<screen><userinput>
+&#60;?xml version="1.0"?&#62;
+&#60;message&#62;
+  &#60;type&#62;SMS&#60;/type&#62;
+  &#60;body&#62;
+    &#60;user&#62;username&#60;/user&#62;
+    &#60;pass&#62;password&#60;/pass&#62;
+  
+    &#60;from&#62;from&#60;/from&#62;
+    &#60;to&#62;to&#60;/to&#62;
+    &#60;text&#62;text&#60;/text&#62;
+    &#60;udh&#62;udh&#60;/udh&#62;
+    &#60;smsc&#62;smsc&#60;/smsc&#62;
+    &#60;coding&#62;coding&#60;/coding&#62;
+    &#60;mclass&#62;mclass&#60;/mclass&#62;
+    &#60;pid&#62;pid&#60;/pid&#62;
+    &#60;alt-dcs&#62;alt-dcs&#60;/alt-dcs&#62;
+    &#60;mwi&#62;mwi&#60;/mwi&#62;
+    &#60;compress&#62;compress&#60;/compress&#62;
+    &#60;validity&#62;validity&#60;/validity&#62;
+    &#60;deferred&#62;deferred&#60;/deferred&#62;
+    &#60;time&#62;time&#60;/time&#62;
+  &#60;/body&#62;
+&#60;/message&#62;
+</userinput></screen>
+</sect3>
+]]>
+
 </sect2>
 
 

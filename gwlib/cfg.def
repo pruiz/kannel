@@ -206,6 +206,7 @@ MULTI_GROUP(sms-service,
     OCTSTR(url)
     OCTSTR(get-url)
     OCTSTR(post-url)
+    OCTSTR(post-xml)
     OCTSTR(file)
     OCTSTR(text)
     OCTSTR(exec)

@@ -238,6 +238,28 @@ no-docs) echo Not building documentation. ;;
 docs) echo Documentation will be built as well. ;;
 esac
 
+dnl Implement --enable-drafts option.
+
+AC_SUBST(DOCDRAFTS)
+DOCDRAFTS="IGNORE"
+
+AC_ARG_ENABLE(drafts,
+[  --enable-drafts         enable building of documentation drafts (default: disabled)], [
+  if test "$enableval" = "yes"
+  then
+      DOCDRAFTS="INCLUDE"
+  else
+      DOCDRAFTS="IGNORE"
+  fi
+])
+if test "x$DOCSTARGET" = "xdocs"
+then
+    case "$DOCDRAFTS" in
+    IGNORE) echo Not including drafts in documentation. ;;
+    INCLUDE) echo Documentation will include drafts. ;;
+    esac
+fi
+
 
 dnl Implement --with-defaults=speed/debug option.
 
