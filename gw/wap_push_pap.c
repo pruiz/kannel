@@ -174,7 +174,7 @@ static void http_read_thread(void *arg)
 
     boundary = octstr_create("");
     i = 0;
-    while (i < 1) {
+    while (i < 0) {
         if (!headers_acceptable(push_headers, &content_header)) {
 	    goto error;
 
@@ -245,11 +245,11 @@ error:
         continue;
     }
 
-    /*http_destroy_headers(push_headers);
+    http_destroy_headers(push_headers);
     http_destroy_headers(content_headers);
-    octstr_destroy(pap_content);
-    octstr_destory(mime_content);
-    octstr_destroy(push_data);*/
+    octstr_destroy(mime_content);
+    octstr_destroy(push_data);
+    octstr_destroy(boundary);
 }
 
 static void handle_pap_event(WAPEvent *e)
