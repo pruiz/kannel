@@ -56,8 +56,8 @@ typedef struct {
 typedef struct {
   unsigned char wbxml_version;
   unsigned char wml_public_id;
-  unsigned char character_set;
-  unsigned char string_table_length;
+  unsigned long character_set;
+  unsigned long string_table_length;
   List *string_table;
   Octstr *wbxml_string;
   unsigned char *utf8map;
@@ -68,7 +68,7 @@ typedef struct {
  */
 
 typedef struct {
-  long offset;
+  unsigned long offset;
   Octstr *string;
 } string_table_t;
 
@@ -139,7 +139,7 @@ void output_variable(Octstr *variable, Octstr **output, var_esc_t escaped,
 
 static string_table_t *string_table_create(int offset, Octstr *ostr);
 static void string_table_destroy(string_table_t *node);
-static int string_table_add(Octstr *ostr, wml_binary_t **wbxml);
+static unsigned long string_table_add(Octstr *ostr, wml_binary_t **wbxml);
 static void string_table_output(Octstr *ostr, wml_binary_t **wbxml);
 
 /*
@@ -989,8 +989,8 @@ static void wml_binary_output(Octstr *ostr, wml_binary_t *wbxml)
 {
   octstr_append_char(ostr, wbxml->wbxml_version);
   octstr_append_char(ostr, wbxml->wml_public_id);
-  octstr_append_char(ostr, wbxml->character_set);
-  octstr_append_char(ostr, wbxml->string_table_length);
+  octstr_append_uintvar(ostr, wbxml->character_set);
+  octstr_append_uintvar(ostr, wbxml->string_table_length);
 
   if (wbxml->string_table_length > 0)
     string_table_output(ostr, &wbxml);
@@ -1099,7 +1099,7 @@ void output_variable(Octstr *variable, Octstr **output, var_esc_t escaped,
   octstr_append_char(*output, STR_END);
   octstr_destroy (variable);
 #else
-  octstr_append_char(*output, string_table_add(variable, wbxml));
+  octstr_append_uintvar(*output, string_table_add(variable, wbxml));
 #endif
 }
 
@@ -1145,11 +1145,10 @@ static void string_table_destroy(string_table_t *node)
  * of the first copy.
  */
 
-static int string_table_add(Octstr *ostr, wml_binary_t **wbxml)
+static unsigned long string_table_add(Octstr *ostr, wml_binary_t **wbxml)
 {
   string_table_t *item = NULL;
-  int i;
-  long offset = 0;
+  unsigned long i, offset = 0;
 
   octstr_append_char(ostr, STR_END);
 
