@@ -190,7 +190,7 @@ static void dlr_update_oracle(const Octstr *smsc, const Octstr *ts, const Octstr
     if (pconn == NULL)
         return;
 
-    sql = octstr_format("UPDATE %s SET %s=%d WHERE %s='%s' AND %s='%s' ROWNUM < 2",
+    sql = octstr_format("UPDATE %s SET %s=%d WHERE %s='%s' AND %s='%s' AND ROWNUM < 2",
                         octstr_get_cstr(fields->table),
                         octstr_get_cstr(fields->field_status), status,
                         octstr_get_cstr(fields->field_smsc), octstr_get_cstr(smsc),
