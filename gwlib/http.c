@@ -3017,7 +3017,6 @@ static int http_something_accepted(List *headers, char *header_name,
         octstr_convert_range(header_value, 0, octstr_len(header_value), toupper);
         if (octstr_compare(header_value, oswhat) == 0)
             found = 1;
-        octstr_destroy(header_value);
     }
 
     octstr_destroy(oswhat);
