@@ -1,3 +1,8 @@
+1999-11-19    <mikael@wapit.com>
+
+	* gw/csdr.(c|h): added csdr_is_to_us to check whether a
+	wdp_datagram should be routed through a specific CSDRouter.
+
 1999-11-18    <rpr@rpr.wapit.com>
 
 	* gw/bearerbox.c: added wdp_datagram routing functions, and means
