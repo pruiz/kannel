@@ -46,7 +46,7 @@ int smsc_reopen(SMSCenter *smsc);
 
 
 /* Return the `name' of an SMC center. Name is defined here as a string that
-   a humand understands that uniquely identifies the SMSC. This operation
+   a human understands that uniquely identifies the SMSC. This operation
    cannot fail. */
 char *smsc_name(SMSCenter *smsc);
 
