@@ -15,8 +15,10 @@
 	send_abort
 
         * wtp_machine-decl.h: added attribute tid_ve, which tells are we 
-	doing tid verification or normal acknowledgement   
-	
+	doing tid verification or normal acknowledgement 
+
+	* wtp_state-decl.h: added rows for handling receiving invoke pdu, when
+	state is result_wait
 
 1999-12-22    <rpr@rpr.wapit.com>
 
