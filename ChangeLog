@@ -1,3 +1,8 @@
+2000-05-04    <Kalle Marjola <rpr@wapit.com>>
+
+	* gwlib/conffile.c|h: more changes so that all functions needing
+	ConfigGroup work with NULL argument, returning just NULL
+
 2000-05-03  Steffen Weinreich  <steve@weinreich.org>
 
 	* smsc_emi.c: Fixed the EMI code for UDH and added an initialisation

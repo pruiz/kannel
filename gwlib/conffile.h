@@ -72,7 +72,8 @@ ConfigGroup *config_next_group(ConfigGroup *grp);
 /* Find the first group where variable `name' has value `value'. */
 ConfigGroup *config_find_first_group(Config *cfg, char *name, char *value);
 
-/* Find the next group where variable `name' has value `value'. */
+/* Find the next group where variable `name' has value `value'.
+* return NULL if not found or *grp is NULL */
 ConfigGroup *config_find_next_group(ConfigGroup *grp, char *name, char *value);
 
 /* Add a new group at end. */

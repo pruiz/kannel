@@ -285,6 +285,7 @@ ConfigGroup *config_first_group(Config *cfg) {
 
 
 ConfigGroup *config_next_group(ConfigGroup *grp) {
+        if (grp == NULL) return NULL;
 	return grp->next;
 }
 
@@ -296,6 +297,7 @@ ConfigGroup *config_find_first_group(Config *cfg, char *name, char *value) {
 
 ConfigGroup *config_find_next_group(ConfigGroup *grp, char *name, char *value)
 {
+        if (grp == NULL) return NULL;
 	return find_group_starting_with(grp->next, name, value);
 }
 
