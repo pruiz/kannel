@@ -75,7 +75,7 @@ int xmlrpc_call_add_value(XMLRPCMethodCall *method, XMLRPCValue *value);
 Octstr *xmlrpc_call_octstr(XMLRPCMethodCall *call);
 
 /* Send MethodCall to given URL with given Headers. Note: adds XML-RPC
- *  spesified headers into given list. 'headers' are always destroyed, and
+ *  specified headers into given list. 'headers' are always destroyed, and
  * if NULL when this function called, automatically generated
  *
  * Return 0 if all went fine, -1 if failure. As user reference, uses *void
