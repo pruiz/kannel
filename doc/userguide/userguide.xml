@@ -2502,7 +2502,7 @@ marked as "not tested" because the table is still new.</para>
   <tbody>
    <row>
     <entry spanname="feature">Can set DCS<footnote id="fields-to-dcs"><para>To use 
-      <literal>class</literal>, <literal>mwi</literal>, <literal>coding</literal>
+      <literal>mclass</literal>, <literal>mwi</literal>, <literal>coding</literal>
       and <literal>compress</literal> fields.</para></footnote></entry>
    </row>
    <row>
@@ -3612,10 +3612,10 @@ text = "No action specified"
    <entry><literal>X-Kannel-SMSC</literal></entry></row>
 
    <row><entry><literal>flash</literal></entry>
-   <entry><literal>X-Kannel-Flash</literal> (deprecated, see <literal>X-Kannel-Class</literal></entry></row>
+   <entry><literal>X-Kannel-Flash</literal> (deprecated, see <literal>X-Kannel-MClass</literal></entry></row>
 
-   <row><entry><literal>class</literal></entry>
-   <entry><literal>X-Kannel-Class</literal></entry></row>
+   <row><entry><literal>mclass</literal></entry>
+   <entry><literal>X-Kannel-MClass</literal></entry></row>
 
    <row><entry><literal>mwi</literal></entry>
    <entry><literal>X-Kannel-MWI</literal></entry></row>
@@ -4163,15 +4163,15 @@ the Kannel configuration, or 'Authorization failed' is returned.
    <row><entry><literal>flash</literal></entry>
    <entry><literal>number</literal></entry>
    <entry valign=bottom>
-         Deprecated. See <literal>class</literal>.
+         Deprecated. See <literal>mclass</literal>.
    </entry></row>
 
-   <row><entry><literal>class</literal></entry>
+   <row><entry><literal>mclass</literal></entry>
    <entry><literal>number</literal></entry>
    <entry valign=bottom>
          Optional. Sets the Message Class in DCS Field.
 	 Accepts values between 1 and 4, for Message Class 0 to 3, 
-	 A value of 1 sends the message directly to display. Class=2 sends
+	 A value of 1 sends the message directly to display. mclass=2 sends
 	 to mobile, 3 do SIM and 4 to SIM Toolkit.
    </entry></row>
 

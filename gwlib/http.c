@@ -2556,11 +2556,11 @@ void http_shutdown(void)
  */
 int http_status_class(int code)
 {
-    int class;
+    int sclass;
 
     if (code < 100 || code >= 600)
-        class = HTTP_STATUS_UNKNOWN;
+        sclass = HTTP_STATUS_UNKNOWN;
     else
-        class = code - (code % 100);
-    return class;
+        sclass = code - (code % 100);
+    return sclass;
 }

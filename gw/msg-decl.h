@@ -31,7 +31,7 @@ MSG(sms,
 		OCTSTR(service);
 		INTEGER(id);
 		INTEGER(sms_type);
-		INTEGER(class);
+		INTEGER(mclass);
 		INTEGER(mwi);
 		INTEGER(coding);
 		INTEGER(compress);

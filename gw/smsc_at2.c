@@ -156,9 +156,6 @@ int	at2_modem2id(char *name);
 
 int	at2_open_device1(PrivAT2data *privdata)
 {
-    struct termios tios;
-    int ret;
-    
     info(0,"AT2[%s]: opening device",octstr_get_cstr(privdata->device));
     privdata->fd = open(octstr_get_cstr(privdata->device), O_RDWR|O_NONBLOCK|O_NOCTTY);
     if(privdata->fd == -1)
@@ -263,7 +260,6 @@ void	at2_read_buffer(PrivAT2data *privdata)
     char buf[MAX_READ];
     int s;
     int count;
-    Octstr *buf2;
  
     if(privdata->fd == -1)
     {
@@ -395,7 +391,7 @@ int  at2_write_line(PrivAT2data *privdata, Octstr* line)
 
 int  at2_write_line_cstr(PrivAT2data *privdata, char* line)
 {
-    int i;
+    int i=0;
     int count;
     int s;
     char eol = '\r';
@@ -418,7 +414,6 @@ int  at2_write_line_cstr(PrivAT2data *privdata, char* line)
 
 int  at2_write_ctrlz(PrivAT2data *privdata)
 {
-    int count;
     int s;
     char *ctrlz =  "\x1A";
   
@@ -467,10 +462,8 @@ void  at2_flush_buffer(PrivAT2data *privdata)
 
 int	at2_init_device(PrivAT2data *privdata)
 {
-    struct termios tios;
     int res;
     int ret;
-    int i;
     Octstr *setpin;
     
     info(0,"AT2[%s]: init device",octstr_get_cstr(privdata->device));
@@ -521,7 +514,7 @@ int	at2_init_device(PrivAT2data *privdata)
         }
  
  	/* we have to wait until +CPIN: READY appears before issuing
-    	/* the next command. 10 sec should be suficient */
+    	the next command. 10 sec should be suficient */
     	if(!privdata->pin_ready)
     	{
    	   ret = at2_wait_modem_command(privdata,10, 0);
@@ -600,11 +593,6 @@ int	at2_init_device(PrivAT2data *privdata)
 
 int at2_send_modem_command(PrivAT2data *privdata,char *cmd, time_t timeout, int gt_flag)
 {
-    Octstr *line;
-    int ret, i;
-    time_t end_time;
-    time_t cur_time;
-       
     at2_write_line_cstr(privdata,cmd);
     return at2_wait_modem_command(privdata, timeout, gt_flag);
 }
@@ -619,7 +607,7 @@ int at2_wait_modem_command(PrivAT2data *privdata, time_t timeout, int gt_flag)
 {
     Octstr *line, *line2;
     Octstr *pdu = NULL;
-    int ret, i;
+    int ret;
     time_t end_time;
     time_t cur_time;
     Msg	*msg;
@@ -795,7 +783,6 @@ void at2_device_thread(void *arg)
 {
     SMSCConn	*conn = arg;
     PrivAT2data	*privdata = conn->data;
-    StatusInfo info;
 
     int l;
    
@@ -902,12 +889,8 @@ int at2_add_msg_cb(SMSCConn *conn, Msg *sms)
 int  smsc_at2_create(SMSCConn *conn, CfgGroup *cfg)
 {
     PrivAT2data	*privdata;
-    Octstr *allow_ip, *deny_ip, *host;
     Octstr *modem_type_string;
    
-    long portno, our_port, keepalive, flowcontrol, waitack; 
-    	/* has to be long because of cfg_get_integer */
-    int i;
 
     privdata = gw_malloc(sizeof(PrivAT2data));
     privdata->outgoing_queue = list_create();
@@ -922,7 +905,7 @@ int  smsc_at2_create(SMSCConn *conn, CfgGroup *cfg)
     modem_type_string = cfg_get(cfg, octstr_imm("modemtype"));
     if(modem_type_string == NULL)
     {
-        info(0,"configuration doesnt show modemtype. will autodetect", octstr_get_cstr(modem_type_string));
+        info(0,"configuration doesn't show modemtype. will autodetect");
     	privdata->modemid = AT2_AUTODETECT;
     }
     else
@@ -1258,7 +1241,7 @@ void at2_send_messages(PrivAT2data *privdata)
     
     do
     {
-    	if( msg = list_extract_first(privdata->outgoing_queue))
+    	if( ( msg = list_extract_first(privdata->outgoing_queue )))
 	    at2_send_one_message(privdata, msg);
     } while (msg);
 }
@@ -1284,7 +1267,7 @@ void at2_send_one_message(PrivAT2data *privdata, Msg *msg)
    	at2_pdu_encode(msg, &pdu[0], privdata);
    	
     	sprintf(command, "AT+CMGS=%d", strlen(pdu)/2);
-    	if(ret = at2_send_modem_command(privdata, command, 5, 1) == 1) /* got a > */
+    	if( (ret = at2_send_modem_command(privdata, command, 5, 1)) == 1) /* got a > */
     	{
 	    sleep(1);
 

@@ -226,8 +226,8 @@ static void kannel_send_sms(SMSCConn *conn, Msg *sms)
     if (octstr_len(sms->sms.udhdata))
 	octstr_format_append(url, "&udh=%E", sms->sms.udhdata);
     
-    if (sms->sms.class)
-	octstr_format_append(url, "&class=%d", sms->sms.class);
+    if (sms->sms.mclass)
+	octstr_format_append(url, "&mclass=%d", sms->sms.mclass);
     if (sms->sms.coding)
 	octstr_format_append(url, "&coding=%d", sms->sms.coding);
     if (sms->sms.mwi)
@@ -257,11 +257,11 @@ static void kannel_receive_sms(SMSCConn *conn, HTTPClient *client,
     ConnData *conndata = conn->data;
     Octstr *user, *pass, *from, *to, *text, *udh, *tmp_string;
     Octstr *retmsg;
-    int	class, mwi, coding, validity, deferred;
+    int	mclass, mwi, coding, validity, deferred;
     List *reply_headers;
     int ret;
 
-    class = mwi = coding = validity = deferred = 0;
+    mclass = mwi = coding = validity = deferred = 0;
 
     user = http_cgi_variable(cgivars, "user");
     pass = http_cgi_variable(cgivars, "pass");
@@ -272,11 +272,11 @@ static void kannel_receive_sms(SMSCConn *conn, HTTPClient *client,
 
     tmp_string = http_cgi_variable(cgivars, "flash");
     if(tmp_string) {
-	sscanf(octstr_get_cstr(tmp_string),"%d", &class);
+	sscanf(octstr_get_cstr(tmp_string),"%d", &mclass);
     }
-    tmp_string = http_cgi_variable(cgivars, "class");
+    tmp_string = http_cgi_variable(cgivars, "mclass");
     if(tmp_string) {
-	sscanf(octstr_get_cstr(tmp_string),"%d", &class);
+	sscanf(octstr_get_cstr(tmp_string),"%d", &mclass);
     }
     tmp_string = http_cgi_variable(cgivars, "mwi");
     if(tmp_string) {
@@ -321,7 +321,7 @@ static void kannel_receive_sms(SMSCConn *conn, HTTPClient *client,
 
 	msg->sms.smsc_id = octstr_duplicate(conn->id);
 	msg->sms.time = time(NULL);
-	msg->sms.class = class;
+	msg->sms.mclass = mclass;
 	msg->sms.mwi = mwi;
 	msg->sms.coding = coding;
 	msg->sms.validity = validity;

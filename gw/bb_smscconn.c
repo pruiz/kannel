@@ -73,7 +73,7 @@ static void log_sms(SMSCConn *conn, Msg *sms, char *message)
 	 sms->sms.service ? octstr_get_cstr(sms->sms.service) : "",
 	 octstr_get_cstr(sms->sms.sender),
 	 octstr_get_cstr(sms->sms.receiver),
-	 sms->sms.class, sms->sms.coding, sms->sms.mwi, sms->sms.compress,
+	 sms->sms.mclass, sms->sms.coding, sms->sms.mwi, sms->sms.compress,
 	 octstr_len(sms->sms.msgdata), octstr_get_cstr(text),
 	 octstr_len(sms->sms.udhdata), octstr_get_cstr(udh)
     );

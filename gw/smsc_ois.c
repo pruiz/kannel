@@ -1197,7 +1197,7 @@ static int ois_adjust_additional_information(Msg *msg, const char *raw)
     /* ois_adjust_sm_text will set the correct value */
 
     /* XXX I used mc temporarily. use fields_to_dcs! */
-    msg->sms.class = raw[0] & 0xff;
+    msg->sms.mclass = raw[0] & 0xff;
 
     return 1;
 }
@@ -1220,7 +1220,7 @@ static int ois_adjust_sm_text(Msg *msg, const char *raw)
     case 0x00: /* gsm7 */
 	ois_expand_gsm7(buffer, &raw[2], msglen7);
 	ois_convert_to_iso88591(buffer, msglen7);
-	if (msg->sms.class & 0x02) { /* XXX class temporarily */
+	if (msg->sms.mclass & 0x02) { /* XXX mclass temporarily */
 	    msg->sms.msgdata = octstr_create("");
 	    msg->sms.udhdata = octstr_create_from_data(buffer, msglen7);
 	} else {
@@ -1232,7 +1232,7 @@ static int ois_adjust_sm_text(Msg *msg, const char *raw)
     case 0x0f: /* ia5 */
 	memcpy(buffer, &raw[2], msglen8);
 	ois_convert_to_iso88591(buffer, msglen8);
-	if (msg->sms.class & 0x02) { /* XXX class temporarily */
+	if (msg->sms.mclass & 0x02) { /* XXX mclass temporarily */
 	    msg->sms.msgdata = octstr_create("");
 	    msg->sms.udhdata = octstr_create_from_data(buffer, msglen8);
 	} else {
@@ -1242,7 +1242,7 @@ static int ois_adjust_sm_text(Msg *msg, const char *raw)
 	msg->sms.coding = DC_7BIT;
 	break;
     default: /* 0xf4, 0xf5, 0xf6, 0xf7; 8bit to disp, mem, sim or term */ 
-	if (msg->sms.class & 0x02) { /* XXX class temporarily */
+	if (msg->sms.mclass & 0x02) { /* XXX mclass temporarily */
 	    msg->sms.msgdata = octstr_create("");
 	    msg->sms.udhdata = octstr_create_from_data(&raw[2], msglen8);
 	} else {
@@ -1252,7 +1252,7 @@ static int ois_adjust_sm_text(Msg *msg, const char *raw)
 	msg->sms.coding = DC_8BIT;
 	break;
     }
-    msg->sms.class = MC_UNDEF;
+    msg->sms.mclass = MC_UNDEF;
 
     if (octstr_len(msg->sms.udhdata)) {
 	IOTRACE("decoded udh", octstr_get_cstr(msg->sms.udhdata),
