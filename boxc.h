@@ -12,6 +12,7 @@ typedef struct boxc {
     int fd;		/* if BOXC_THREAD, just a separate thread in bearerbox */
     int load;
     time_t box_heartbeat;
+    char *client_ip;
 
 } BOXC;
 

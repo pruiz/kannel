@@ -10,34 +10,44 @@
 localhost, with HTTP-adminstration port set as '12345'
 
 <table>
-<tr align=center>
+<tr>
 <form method=get action="http://localhost:12345/cgi-bin/status">
-<td><input type=submit value="Status"></td>
-<td colspan=2>&nbsp;</td>
+<td><input type=submit value="Status"> <I>Print general information</I></td>
+<td colspan=1>&nbsp;</td>
 </form>
 </tr>
 
-<tr align=center>
-<form method=get action="http://localhost:12345/cgi-bin/start">
-<td><input type=submit value="Start"></td>
-<td>Username: <input size=15 name=username></td>
-<td>Password: <input size=15 name=password></td>
-</form>
-</tr>
-
-<tr align=center>
+<tr>
 <form method=get action="http://localhost:12345/cgi-bin/stop">
-<td><input type=submit value="Stop"></td>
-<td>Username: <input size=15 name=username></td>
-<td>Password: <input size=15 name=password></td>
+<td><input type=submit value="Stop"><I>Suspend the Gateway</I></td>
+<td>Username: <input size=15 name=username><BR>
+Password: <input size=15 name=password></td>
 </form>
 </td>
 
-<tr align=center>
+<tr>
+<form method=get action="http://localhost:12345/cgi-bin/start">
+<td><input type=submit value="Start"><I>Re-start the Gateway</I></td>
+<td>Username: <input size=15 name=username><BR>
+Password: <input size=15 name=password></td>
+</form>
+</tr>
+
+<tr>
 <form method=get action="http://localhost:12345/cgi-bin/kill">
-<td><input type=submit value="Kill"></td>
-<td>Username: <input size=15 name=username></td>
-<td>Password: <input size=15 name=password></td>
+<td><input type=submit value="Kill"><I>Shutdown the Gateway</I></td>
+<td>Username: <input size=15 name=username><BR>
+Password: <input size=15 name=password></td>
+</form>
+</tr>
+
+
+<tr>
+<form method=get action="http://localhost:12345/cgi-bin/disconnect">
+<td><input type=submit value="Disconnect">Id: <input size=5
+name=id><BR><I>Disconnect thread with given Id</I></td>
+<td>Username: <input size=15 name=username><BR>
+Password: <input size=15 name=password></td>
 </form>
 </tr>
 </table>
@@ -46,7 +56,7 @@ localhost, with HTTP-adminstration port set as '12345'
 <HR>
  
 <B>Note:</B> This calls an SMSBOX in localhost, which is expected to
-listen to HTTP-requests at port 22022.
+listen to HTTP-requests at port '22022'.
 
 <p>
 <form method=get action="http://localhost:22022/cgi-bin/sendsms">

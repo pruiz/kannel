@@ -1,5 +1,12 @@
 1999-11-15    <rpr@rpr.wapit.com>
 
+	* bearerbox.c, control.html, bearerbox.conf: added new
+	adminstration command 'disconnect'
+
+	* boxc.c, boxc.h: added 'client_ip' information
+	
+1999-11-15    <rpr@rpr.wapit.com>
+
 	* control.html: added simple control tool
 
 	* bearerbox.c, bearerbox.conf, fake.conf: added simple

@@ -808,6 +808,45 @@ static void new_bbt_smsbox()
     debug(0, "Created a new SMS BOX thread (id = %d)", nt->id);
 }
 
+/*
+ * return a name for given status
+ */
+static char *bbt_status_name(int status)
+{
+    switch(status) {
+    case BB_STATUS_CREATED:
+	return "Created";
+    case BB_STATUS_OK:
+	return "Running";
+    case BB_STATUS_SUSPENDED:
+	return "Suspended";
+    case BB_STATUS_KILLED:
+	return "Killed";
+    case BB_STATUS_DEAD:
+	return "Dead";
+    default:
+	return "Unknown";
+    }
+}
+
+/*
+ * kill a threads with given id
+ */
+static int bbt_kill(int id)
+{
+    BBThread *thr;
+    int i, num, del;
+    num = del = 0;
+    
+    for(i=0; i < bbox->thread_limit; i++) {
+	thr = bbox->threads[i];
+	if (thr != NULL && thr->id == id) {
+	    thr->status = BB_STATUS_KILLED;
+	    return 0;
+	}
+    }
+    return -1;
+}
 
 
 /*-----------------------------------------------------------
@@ -853,6 +892,14 @@ static char *http_admin_command(char *command, CGIArg *list)
 	    warning(0, "Shutdown initiated via HTTP-admin");
 	    return "Shutdown started";
 	}
+    }
+    else if (strcasecmp(command, "/cgi-bin/disconnect") == 0) {
+	if (cgiarg_get(list, "id", &val) == -1)
+	    return "Id number missing";
+	if (bbt_kill(atoi(val)) == -1)
+	    return "Failed (no such id or other error)";
+	else
+	    return "Disconnected";
     }
     else
 	return "Unknown request.";
@@ -981,8 +1028,8 @@ static void check_threads(void)
 	thr = bbox->threads[i];
 	if (thr != NULL) {
 	    if (thr->status == BB_STATUS_DEAD) {
-		del_bbt(thr);
 		bbox->threads[i] = NULL;
+		del_bbt(thr);
 		del++;
 	    }
 	    else
@@ -1150,9 +1197,12 @@ static void print_threads(char *buffer)
     BBThread *thr;
     int i, ret, num;
     int smsbox, wapbox, smsc, csdr;
+    char buf[1024];
 
     smsbox = wapbox = smsc = csdr = 0;
     num = 0;
+
+    buffer[0] = '\0';	/* if no threads */
     
     ret = pthread_mutex_lock(&bbox->mutex);
     if (ret != 0)
@@ -1160,30 +1210,41 @@ static void print_threads(char *buffer)
 
     for(i=0; i < bbox->thread_limit; i++) {
 	thr = bbox->threads[i];
-	if (thr != NULL) {
-	    if (thr->status == BB_STATUS_OK) {
-		switch(thr->type) {
-		case BB_TTYPE_SMSC: smsc++; break;
-		case BB_TTYPE_CSDR: csdr++; break;
-		case BB_TTYPE_SMS_BOX: smsbox++; break;
-		case BB_TTYPE_WAP_BOX: wapbox++; break;
-		}
+	if (thr != NULL && thr->status != BB_STATUS_DEAD) {
+	    switch(thr->type) {
+	    case BB_TTYPE_SMSC:
+		sprintf(buf, "[%d] SMSC Connection %s (%s)\n", thr->id,
+			smsc_name(thr->smsc), bbt_status_name(thr->status));
+		break;
+	    case BB_TTYPE_CSDR:
+		sprintf(buf, "[%d] CSDR Connection (%s)\n", thr->id,
+			bbt_status_name(thr->status));
+		break;
+	    case BB_TTYPE_SMS_BOX:
+		sprintf(buf, "[%d] SMS BOX Connection from <%s> (%s)\n", thr->id,
+			thr->boxc->client_ip, bbt_status_name(thr->status));
+		break;
+	    case BB_TTYPE_WAP_BOX: 
+		sprintf(buf, "[%d] WAP BOX Connection from <%s> (%s)\n", thr->id,
+			thr->boxc->client_ip, bbt_status_name(thr->status));
+		break;
+	    default:
+		sprintf(buf, "Unknown connection type");
 	    }
-	    if (thr->status != BB_STATUS_DEAD)
-		num++;
+	    strcat(buffer, buf);
 	}
     }
     ret = pthread_mutex_unlock(&bbox->mutex);
     if (ret != 0)
 	goto error;
 
-    sprintf(buffer, "Total %d receiver threads, of which...\n"
-	    "active ones: %d SMSC, %d CSDR, %d SMS BOX, %d WAP BOX",
-	    num, smsc, csdr, smsbox,wapbox);
-
+    if (bbox->http_port > -1) {
+	sprintf(buf, "[n/a] HTTP-Adminstration at port %d\n", bbox->http_port);
+	strcat(buffer, buf);
+    }
     return;	      
 error:
-    error(ret, "Failed to print threads");
+    error(errno, "Failed to print threads");
 }
 
 

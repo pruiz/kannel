@@ -10,20 +10,25 @@
 #include <unistd.h>
 #include <stdlib.h>
 
+#include <netdb.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <netinet/in.h>
 
 #include "wapitlib.h"
+#include "http.h"
 #include "boxc.h"
 #include "bb_msg.h"
 #include "octstr.h"
 #include "msg.h"
 
+
 BOXC *boxc_open(int fd)
 {
-    struct sockaddr client_addr;
+    struct sockaddr_in client_addr;
     socklen_t client_addr_len;
     BOXC *nb;
+    char accept_ip[NI_MAXHOST];
 
     nb = malloc(sizeof(BOXC));
     if (nb == NULL)
@@ -33,12 +38,20 @@ BOXC *boxc_open(int fd)
 	nb->fd = fd;
     } else {
 	debug(0, "BOXC: Accepting a new client...");
-	
-	nb->fd = accept(fd, &client_addr, &client_addr_len);
+
+	client_addr_len = sizeof(client_addr);
+	nb->fd = accept(fd, (struct sockaddr *)&client_addr, &client_addr_len);
 	if (nb->fd < 0)
 	    goto error;
 
-	info(0, "BOXC: Client connected.");
+	memset(accept_ip, 0, sizeof(accept_ip));
+        getnameinfo((struct sockaddr *)&client_addr, client_addr_len,
+		    accept_ip, sizeof(accept_ip), 
+		    NULL, 0, NI_NUMERICHOST);
+        nb->client_ip = strdup(accept_ip);
+	if (nb->client_ip == NULL) 
+	    goto error;
+	info(0, "BOXC: Client connected from <%s>", accept_ip);
 
 	/* TODO: do the hand-shake, baby, yeah-yeah! */
     }
@@ -47,6 +60,7 @@ BOXC *boxc_open(int fd)
     
 error:
     error(errno, "BOXC: Failed to create and open Box connection");
+    free(nb);
     return NULL;
 
 }
@@ -62,6 +76,7 @@ int boxc_close(BOXC *boxc)
     free(boxc);
     return 0;
 }
+
 
 
 int boxc_send_message(BOXC *boxc, RQueueItem *msg, RQueue *reply_queue)
