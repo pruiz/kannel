@@ -1230,7 +1230,7 @@ static struct packet *packet_encode_message(Msg *msg) {
 
 	if (truncated > 0) {
 		warning(0, "CIMD2: truncating message text to fit "
-			"in %d characters.\n", spaceleft);
+			"in %d characters.", spaceleft);
 	}
 
 	octstr_destroy(text);
