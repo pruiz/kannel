@@ -2414,9 +2414,10 @@ static Octstr *smsbox_req_sendsms(List *args, Octstr *client_ip, int *status)
      * we required "to" to be defined
      */
     if (to == NULL) {
-	error(0, "%s got insufficient headers",octstr_get_cstr(sendsms_url));
+	error(0, "%s got insufficient headers (<to> is NULL)",
+	      octstr_get_cstr(sendsms_url));
 	*status = HTTP_BAD_REQUEST;
-	return octstr_create("Insufficient headers, rejected");
+	return octstr_create("Missing receiver number, rejected");
     } 
     else if (octstr_len(to) == 0) {
 	error(0, "%s got empty <to> cgi variable", octstr_get_cstr(sendsms_url));
@@ -2506,9 +2507,10 @@ static Octstr *smsbox_sendsms_post(List *headers, Octstr *body,
 	ret = octstr_create("Authorization failed for sendsms");
     }
     else if (to == NULL && tolist == NULL) {
-	error(0, "%s got insufficient headers", octstr_get_cstr(sendsms_url));
+	error(0, "%s got insufficient headers (<to> and <tolist> are NULL)",
+	      octstr_get_cstr(sendsms_url));
 	*status = HTTP_BAD_REQUEST;
-	ret = octstr_create("Insufficient headers, rejected");
+	ret = octstr_create("Missing receiver(s) number(s), rejected");
     } 
     else if (to != NULL && octstr_len(to) == 0) {
 	error(0, "%s got empty <to> cgi variable", octstr_get_cstr(sendsms_url));
