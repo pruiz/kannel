@@ -561,6 +561,7 @@ WSPEvent *wtp_handle_event(WTPMachine *machine, WTPEvent *event){
         goto mem_error;
 
      debug(0,"handle_event: current state=%s.",name_state(machine->state));
+     #define STATE_NAME(state)
      #define ROW(wtp_state, event, condition, action, next_state) \
              if (current_state == wtp_state && current_event == event &&\
                 (condition)){\
@@ -613,8 +614,8 @@ static char *name_wsp_event(int s){
 static char *name_state(int s){
 
        switch (s){
-              #define ROW(state, event, condition, action, new_state) \
-                      case state: return #state;
+              #define STATE_NAME(state) case state: return #state;
+              #define ROW(state, event, condition, action, new_state)
               #include "wtp_state-decl.h"
               default:
                       return "unknown state";
@@ -846,12 +847,12 @@ WSPEvent *pack_wsp_event(wsp_event wsp_name, WTPEvent *wtp_event,
                      event->TRInvokeIndication.machine=machine;
                 break;
                 
-	        case TRInvokeConfirmation:
-                     event->TRInvokeConfirmation.exit_info=
+	        case TRResultConfirmation:
+                     event->TRResultConfirmation.exit_info=
                             wtp_event->RcvInvoke.exit_info;
-                     event->TRInvokeConfirmation.exit_info_present=
+                     event->TRResultConfirmation.exit_info_present=
                             wtp_event->RcvInvoke.exit_info_present;
-                     event->TRInvokeConfirmation.machine=machine;
+                     event->TRResultConfirmation.machine=machine;
                 break;
 
 	        case TRAbortIndication:

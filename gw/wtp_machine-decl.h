@@ -15,6 +15,7 @@ MACHINE(
         INTEGER(source_port);
         OCTSTR(destination_address);
         INTEGER(destination_port);
+        INTEGER(tcl);
         INTEGER(aec);
         INTEGER(rcr);
         INTEGER(u_ack);
@@ -35,6 +36,7 @@ MACHINE(
         INTEGER(source_port);
         OCTSTR(destination_address);
         INTEGER(destination_port);
+        INTEGER(tcl);
         INTEGER(aec);
         INTEGER(rcr);
         INTEGER(u_ack);

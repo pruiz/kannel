@@ -13,9 +13,10 @@ typedef struct WSPEvent WSPEvent;
 #include <netinet/in.h>
 #include <stdlib.h>
 
-#include "wapitlib.h"
+#include "gwlib.h"
 #include "msg.h" 
 #include "wtp_timer.h" 
+#include "wtp_send.h"
 
 #define NUMBER_OF_ABORT_REASONS 8
 /*
@@ -23,7 +24,8 @@ typedef struct WSPEvent WSPEvent;
  *from address.
  */
 
-#define L_A_WITH_USER_ACK 10
+#define L_A_WITH_USER_ACK 4
+#define L_R_WITH_USER_ACK 7
 
 enum event_name {
      #define EVENT(name, field) name,
@@ -31,7 +33,8 @@ enum event_name {
 };
 
 enum states {
-    #define ROW(state, event, condition, action, next_state) state, 
+    #define STATE_NAME(state) state,
+    #define ROW(state, event, condition, action, next_state)
     #include "wtp_state-decl.h"
 };
 

@@ -15,7 +15,7 @@ WSP_EVENT(TRInvokeIndication,
           MACHINE(machine);
 	  })
 
-WSP_EVENT(TRInvokeConfirmation,
+WSP_EVENT(TRResultConfirmation,
 	  {
           OCTSTR(exit_info);
           INTEGER(exit_info_present);

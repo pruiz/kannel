@@ -32,17 +32,20 @@ EVENT(RcvAck,
 
 EVENT(TRInvoke,
       {
+      INTEGER(tid);
       OCTSTR(exit_info);
       INTEGER(exit_info_present);
       })
 
 EVENT(TRResult,
       {
+      INTEGER(tid);
       OCTSTR(user_data);
       })
 
 EVENT(TRAbort,
      {
+     INTEGER(tid);
      INTEGER(abort_code);
      }) 
 
