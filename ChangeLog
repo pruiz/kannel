@@ -1,3 +1,16 @@
+2002-03-24  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/dlr.[ch]: restructuring the DLR MySQL support to fit the new general
+      MySQL connection configuration sections.
+    * gwlib/cfg.def: changed config directives to support general MySQL 
+      connections using 'mysql-connection' groups and added 'dlr-storage' type 
+      indicator to core group.
+    * configure[.in], aclocal.m4: added mysql-4.x detection routine, changed 
+      --enable-mysql-dlr to --with-dlr[=TYPE] to support general DLR storage
+      types, re-arranged configure groups, beautified configure ouput
+    * doc/userguide/userguide.xml, doc/dlr-mysql.conf: added documentation about
+      the new general MySQL connection groups and the specific definitions for
+      external DLR storage support.
+
 2002-03-22  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/smsc_at2.[ch]: splitted .c to header and source file, run 
       through astyle and edited both by hand.
