@@ -1,3 +1,10 @@
+1999-11-23 Aarno Syvänen <syvanen@wapit.com>
+
+	* header files: fixed few bugs in files wtp_machine-decl.h and 
+	wtp_state-decl.h
+
+	* wtp.c: fixed bugs in various functions
+
 Tue Nov 23 12:07:03 1999  Lars Wirzenius  <liw@wapit.com>
 
 	* Makefile: Added more stuff for docs.
