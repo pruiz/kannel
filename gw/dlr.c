@@ -390,13 +390,18 @@ Msg *dlr_find(const Octstr *smsc, const Octstr *ts, const Octstr *dst, int typ)
         /* its an entry we are interested in */
         msg = msg_create(sms);
         msg->sms.sms_type = report;
-        msg->sms.service = octstr_duplicate(dlr->service);
+        msg->sms.service = dlr->service;
+        dlr->service = NULL;
         msg->sms.dlr_mask = typ;
-        msg->sms.smsc_id = octstr_duplicate(dlr->smsc);
-        msg->sms.receiver = octstr_duplicate(dlr->destination);
-        msg->sms.sender = octstr_duplicate(dlr->source);
+        msg->sms.smsc_id = dlr->smsc;
+        dlr->smsc = NULL;
+        msg->sms.receiver = dlr->destination;
+        dlr->destination = NULL;
+        msg->sms.sender = dlr->source;
+        dlr->source = NULL;
         /* if dlr_url was present, recode it here again */
-        msg->sms.dlr_url = octstr_len(dlr->url) ? octstr_duplicate(dlr->url) : NULL;
+        msg->sms.dlr_url = dlr->url;
+        dlr->url = NULL;
         /* 
          * insert orginal message to the data segment 
          * later in the smsc module 
@@ -406,7 +411,8 @@ Msg *dlr_find(const Octstr *smsc, const Octstr *ts, const Octstr *dst, int typ)
          * If a boxc_id is available, then instruct bearerbox to 
          * route this msg back to originating smsbox
          */
-        msg->sms.boxc_id = octstr_len(dlr->boxc_id) ? octstr_duplicate(dlr->boxc_id) : NULL;
+        msg->sms.boxc_id = dlr->boxc_id;
+        dlr->boxc_id = NULL;
 
         time(&msg->sms.time);
         debug("dlr.dlr", 0, "DLR[%s]: created DLR message for URL <%s>",

@@ -1,4 +1,8 @@
 2003-11-30  Alexander Malysh  <a.malysh@centrium.de>
+    * gw/dlr.c: don't duplicate values from dlr_entry struct, just reuse these.
+      This give us a bit speedup.
+
+2003-11-30  Alexander Malysh  <a.malysh@centrium.de>
     * gwlib/conn.[ch]: applied conn-ssl-cleanup.patch. This patch does:
 	1) removes ssl_mutex
 	2) corrects SSL_[read|write] operations
