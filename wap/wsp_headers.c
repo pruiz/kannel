@@ -2846,6 +2846,7 @@ Octstr *wsp_headers_pack(List *headers, int separate_content_type)
     int errors;
 
     packed = octstr_create("");
+    octstr_append_char(packed, 0X01);    
     if (separate_content_type)
         pack_separate_content_type(packed, headers);
 
