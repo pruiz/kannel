@@ -1,3 +1,16 @@
+2002-06-28 Aarno Syvdnen <aarno@global-networks.ch>
+    * checks/check_sendsms.sh: Better debugging for failure cases
+    * checks/check_smpp.sh: Do test only 10 times, to save nerves
+    * checks/check_fakewap.sh: Use name SIGINT
+    * checks/check_http.sh: Do not test https part when --disable-ssl option
+    is used.
+    * gw/wap_push_pap_compiler.c: Better debugging
+    * gw/wap_push_ppg.c: Ip tests work again, do not destroy pap event too
+    early. Another bugfix.
+    * gw/wap_push_ppg_pushuser.c: Added some comments
+    * checks/check_fakesmsc.sh: Better debugging.
+    * checks/check_ppg.sh: Minor corrections
+
 2002-06-28  Stipe Tolj <tolj@wapme-systems.de>
     * gw/smsc_emi2.c: fixing an assertion checking bug
 
