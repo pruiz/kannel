@@ -426,6 +426,12 @@ List *octstr_split(Octstr *os, Octstr *sep);
 
 
 /*
+ * Compare two octet strings in a manner suitable for list_search.
+ */
+int octstr_item_match(void *item, void *pattern);
+
+
+/*
  * Print debugging information about octet string.
  */
 void octstr_dump(Octstr *ostr, int level);

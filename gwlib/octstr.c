@@ -1331,6 +1331,12 @@ List *octstr_split(Octstr *os, Octstr *sep)
 }
 
 
+int octstr_item_match(void *item, void *pattern)
+{
+    return octstr_compare(item, pattern) == 0;
+}
+
+
 void octstr_dump(Octstr *ostr, int level)
 {
     unsigned char *p, *d, buf[1024], charbuf[256];

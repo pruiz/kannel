@@ -214,10 +214,6 @@ Octstr *urltrans_forced_smsc(URLTranslation *t);
 Octstr *urltrans_default_smsc(URLTranslation *t);
 
 
-/* Return list of accepted SMSC IDs, if set */
-Octstr *urltrans_accepted_smsc(URLTranslation *t);
-
-
 /* Return allow and deny IP strings, if set. */
 Octstr *urltrans_allow_ip(URLTranslation *t);
 Octstr *urltrans_deny_ip(URLTranslation *t);

@@ -1,5 +1,14 @@
 2000-12-05  Lars Wirzenius  <liw@iki.fi>
 
+	* gw/urltrans.[ch]: Removed urltrans_accepted_smsc(), since
+	it wasn't being used. Made the accepted SMSC list in an
+	URLTranslation be a List. This allows us to kill one more call
+	to str_find_substr.
+	
+	* gwlib/octstr.[ch]: Wrote octstr_item_match.
+
+2000-12-05  Lars Wirzenius  <liw@iki.fi>
+
 	* gwlib/octstr.[ch]: Wrote octstr_split.
 	
 	* gw/urltrans.c: Use a Dict to look up the URLTranslation,

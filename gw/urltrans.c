@@ -40,7 +40,7 @@ struct URLTranslation {
     int omit_empty;	/* if the reply is empty, is notification send */
     Octstr *header;	/* string to be inserted to each SMS */
     Octstr *footer;	/* string to be appended to each SMS */
-    Octstr *accepted_smsc; /* smsc id's allowed to use this service. If not set,
+    List *accepted_smsc; /* smsc id's allowed to use this service. If not set,
 			    all messages can use this service */
     
     Octstr *username;	/* send sms username */
@@ -435,11 +435,6 @@ Octstr *urltrans_default_smsc(URLTranslation *t)
     return t->default_smsc;
 }
 
-Octstr *urltrans_accepted_smsc(URLTranslation *t) 
-{
-    return t->accepted_smsc;
-}
-
 Octstr *urltrans_allow_ip(URLTranslation *t) 
 {
     return t->allow_ip;
@@ -481,7 +476,8 @@ static URLTranslation *create_onetrans(ConfigGroup *grp)
     ot->footer = ot->header = NULL;
     ot->username = ot->password = NULL;
     ot->omit_empty = 0;
-    ot->accepted_smsc = ot->forced_smsc = ot->default_smsc = NULL;
+    ot->accepted_smsc = NULL;
+    ot->forced_smsc = ot->default_smsc = NULL;
     ot->allow_ip = ot->deny_ip = NULL;
     
     keyword = config_get(grp, "keyword");
@@ -560,8 +556,12 @@ static URLTranslation *create_onetrans(ConfigGroup *grp)
 	} else
 	    ot->aliases = list_create();
 
-	if (accepted_smsc)
-	    ot->accepted_smsc = octstr_create(accepted_smsc);
+	if (accepted_smsc) {
+	    Octstr *temp = octstr_create(accepted_smsc);
+	    ot->accepted_smsc = octstr_split(temp, 
+	    	    	    	    	     octstr_create_immutable(";"));
+	    octstr_destroy(temp);
+	}
 	    
 	if (prefix != NULL && suffix != NULL) {
 	    ot->prefix = octstr_create(prefix);
@@ -631,7 +631,7 @@ static void destroy_onetrans(void *p)
     ot = p;
     if (ot != NULL) {
 	gw_free(ot->keyword);
-	gw_free(ot->aliases);
+	list_destroy(ot->aliases, octstr_destroy_item);
 	octstr_destroy(ot->pattern);
 	octstr_destroy(ot->prefix);
 	octstr_destroy(ot->suffix);
@@ -640,7 +640,7 @@ static void destroy_onetrans(void *p)
 	octstr_destroy(ot->split_suffix);
 	octstr_destroy(ot->username);
 	octstr_destroy(ot->password);
-	octstr_destroy(ot->accepted_smsc);
+	list_destroy(ot->accepted_smsc, octstr_destroy_item);
 	octstr_destroy(ot->forced_smsc);
 	octstr_destroy(ot->default_smsc);
 	octstr_destroy(ot->allow_ip);
@@ -675,9 +675,7 @@ static URLTranslation *find_translation(URLTranslationList *trans,
 	 * translation only if smsc id is in accept string
 	 */
 	if (smsc && t->accepted_smsc) {
-	    if (str_find_substr(octstr_get_cstr(t->accepted_smsc),
-				octstr_get_cstr(smsc), ";")==0)
-	    {
+	    if (list_search(t->accepted_smsc, smsc, octstr_item_match)) {
 		t = NULL;
 		continue;
 	    }
