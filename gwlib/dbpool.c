@@ -17,6 +17,7 @@
 
 #include "dbpool_mysql.c"
 #include "dbpool_oracle.c"
+#include "dbpool_sqlite.c"
 
 
 static inline void dbpool_conn_destroy(DBPoolConn *conn)
@@ -58,6 +59,11 @@ DBPool *dbpool_create(enum db_type db_type, DBConf *conf, unsigned int connectio
 #ifdef HAVE_ORACLE
         case DBPOOL_ORACLE:
             p->db_ops = &oracle_ops;
+            break;
+#endif
+#ifdef HAVE_SQLITE
+        case DBPOOL_SQLITE:
+            p->db_ops = &sqlite_ops;
             break;
 #endif
         case DBPOOL_SDB:

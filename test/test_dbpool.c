@@ -1,7 +1,7 @@
 /*
  * test_dbpool.c - test DBPool objects
  *
- * Stipe Tolj
+ * Stipe Tolj <tolj@wapme-systems.de>
  * Alexander Malysh <a.malysh@centrium.de>
  */
              
@@ -25,7 +25,7 @@ static void help(void)
     info(0, "-p password");
     info(0, "    password to use for the login credentials");
     info(0, "-d database");
-    info(0, "    database to connect to (for oracle tnsname)");
+    info(0, "    database to connect to (for oracle tnsname) or file to open (for sqlite)");
     info(0, "-s number");
     info(0, "    size of the database connection pool (default: 5)");
     info(0, "-q number");
@@ -35,7 +35,7 @@ static void help(void)
     info(0, "-S string");
     info(0, "    the SQL string that is performed while the queries (default: SHOW STATUS)");
     info(0, "-T type");
-    info(0, "    the type of database to use [mysql|oracle]");
+    info(0, "    the type of database to use [mysql|oracle|sqlite]");
 }
 
 /* global variables */
@@ -86,16 +86,16 @@ static void mysql_client_thread(void *arg)
     info(0, "This thread: %ld succeeded, %ld failed.", succeeded, failed);
 }
 
-static DBConf *mysql_create_conf(Octstr *user,Octstr *pass, Octstr *db, Octstr *host)
+static DBConf *mysql_create_conf(Octstr *user, Octstr *pass, Octstr *db, Octstr *host)
 {
     DBConf *conf;
     conf = gw_malloc(sizeof(DBConf));
     conf->mysql = gw_malloc(sizeof(MySQLConf));
 
-    conf->mysql->username = user;
-    conf->mysql->password = pass;
-    conf->mysql->database = db;
-    conf->mysql->host = host;
+    conf->mysql->username = octstr_duplicate(user);
+    conf->mysql->password = octstr_duplicate(pass);
+    conf->mysql->database = octstr_duplicate(db);
+    conf->mysql->host = octstr_duplicate(host);
 
     return conf;
 }
@@ -162,6 +162,66 @@ static void oracle_client_thread(void *arg)
 }
 #endif
 
+#ifdef HAVE_SQLITE
+#include <sqlite.h>
+
+static DBConf *sqlite_create_conf(Octstr *db)
+{
+    DBConf *conf;
+    conf = gw_malloc(sizeof(DBConf));
+    conf->sqlite = gw_malloc(sizeof(SQLiteConf));
+
+    conf->sqlite->file = octstr_duplicate(db);
+
+    return conf;
+}
+
+static int callback(void *not_used, int argc, char **argv, char **col_name)
+{
+    int i;
+    
+    for (i = 0; i < argc; i++) {
+        debug("",0,"SQLite: result: %s = %s", col_name[i], argv[i]);
+    }
+
+    return 0;
+}
+
+static void sqlite_client_thread(void *arg)
+{
+    unsigned long i, succeeded, failed;
+    DBPool *pool = arg;
+    char *errmsg = 0;
+
+    succeeded = failed = 0;
+
+    info(0,"Client thread started with %ld queries to perform on pool", queries);
+
+    /* perform random queries on the pool */
+    for (i = 1; i <= queries; i++) {
+        DBPoolConn *pconn;
+        int state;
+
+        /* provide us with a connection from the pool */
+        pconn = dbpool_conn_consume(pool);
+        debug("",0,"Query %ld/%ld: sqlite conn obj at %p",
+              i, queries, (void*) pconn->conn);
+
+        state = sqlite_exec(pconn->conn, octstr_get_cstr(sql), callback, 0, &errmsg);
+        if (state != SQLITE_OK) {
+            error(0, "SQLite: %s", errmsg);
+            failed++;
+        } else {
+            succeeded++;
+        }
+
+        /* return the connection to the pool */
+        dbpool_conn_produce(pconn);
+    }
+    info(0, "This thread: %ld succeeded, %ld failed.", succeeded, failed);
+}
+#endif
+
 static void inc_dec_thread(void *arg)
 {
     DBPool *pool = arg;
@@ -190,7 +250,7 @@ int main(int argc, char **argv)
     time_t start = 0, end = 0;
     double run_time;
     Octstr *user, *pass, *db, *host, *db_type;
-    int j;
+    int j, bail_out;
 
     user = pass = db = host = db_type = NULL;
 
@@ -265,17 +325,32 @@ int main(int argc, char **argv)
         info(0, "Do tests for oracle database.");
         database_type = DBPOOL_ORACLE;
     }
+    else if (octstr_case_compare(db_type, octstr_imm("sqlite")) == 0) {
+        info(0, "Do tests for sqlite database.");
+        database_type = DBPOOL_SQLITE;
+    }
     else {
         panic(0, "Unknown database type '%s'", octstr_get_cstr(db_type));
     }
 
     /* check if we have the database connection details */
-    if ((!host && database_type != DBPOOL_ORACLE) || !user || !pass || !db) {
+    switch (database_type) {
+        case DBPOOL_ORACLE:
+            bail_out = (!user || !pass || !db) ? 1 : 0;
+            break;
+        case DBPOOL_SQLITE:
+            bail_out = (!db) ? 1 : 0;
+            break;
+        default:
+            bail_out = (!host || !user || !pass || !db) ? 1 : 0;
+            break;
+    }
+    if (bail_out) {
         help();
         panic(0, "Database connection details are not fully provided!");
     }
 
-    for(j=0; j < 1; j++) {
+    for (j = 0; j < 1; j++) {
 
     /* create DBConf */
     switch (database_type) {
@@ -291,6 +366,12 @@ int main(int argc, char **argv)
             client_thread = oracle_client_thread;
             break;
 #endif
+#ifdef HAVE_SQLITE
+        case DBPOOL_SQLITE:
+            conf = sqlite_create_conf(db);
+            client_thread = sqlite_client_thread;
+            break;
+#endif
         default:
             panic(0, "ooops ....");
     };
@@ -303,12 +384,12 @@ int main(int argc, char **argv)
 
     for (i = 0; i < num_threads; ++i) {
         if (gwthread_create(inc_dec_thread, pool) == -1)
-            panic(0, "Couldnot create thread %ld", i);
+            panic(0, "Could not create thread %ld", i);
     }
     gwthread_join_all();
 
     info(0, "Connections within pool: %ld", dbpool_conn_count(pool));
-    info(0,"Checked pool, %d connections still active and ok", dbpool_check(pool));
+    info(0, "Checked pool, %d connections still active and ok", dbpool_check(pool));
 
     /* queries */
     info(0,"SQL query is `%s'", octstr_get_cstr(sql));
@@ -336,7 +417,7 @@ int main(int argc, char **argv)
     info(0,"Destroying pool");
     dbpool_destroy(pool);
 
-    } // for
+    } /* for loop */
 
     octstr_destroy(sql);
     octstr_destroy(db_type);
