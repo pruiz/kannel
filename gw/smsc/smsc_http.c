@@ -671,8 +671,10 @@ static Octstr *parse_xml_tag(Octstr *body, Octstr *tag)
         octstr_destroy(etag);
         return NULL;
     }
-
-    ret = octstr_copy(body, spos+octstr_len(stag), epos - spos+octstr_len(stag));
+    
+    ret = octstr_copy(body, spos+octstr_len(stag), epos+1 - (spos+octstr_len(etag)));  
+    octstr_strip_blanks(ret);
+    octstr_strip_crlfs(ret);
 
     octstr_destroy(stag);
     octstr_destroy(etag);
