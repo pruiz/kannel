@@ -1172,6 +1172,7 @@ static void client_reset(HTTPClient *p)
     debug("gwlib.http", 0, "HTTP: Resetting HTTPClient for `%s'.",
     	  octstr_get_cstr(p->ip));
     p->state = reading_request_line;
+    gw_assert(p->headers == NULL);
     p->headers = http_create_empty_headers();
 }
 
@@ -1491,7 +1492,7 @@ void http_send_reply(HTTPClient *client, int status, List *headers,
     if (client->use_version_1_0)
     	client_destroy(client);
     else {
-    	client_reset(client);
+	client_reset(client);
 	conn_register(client->conn, server_fdset, receive_request, client);
     }
 }

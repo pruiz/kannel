@@ -729,6 +729,20 @@ admin-password = f00bar
          proxy. Separate each entry with space.
      </entry></row>
     
+    <row><entry><literal>http-proxy-username</literal></entry>
+     <entry>username</entry>
+     <entry valign=bottom>
+         Username for authenticating proxy use, for proxies that
+	 require this.
+     </entry></row>
+    
+    <row><entry><literal>http-proxy-password</literal></entry>
+     <entry>URL-list</entry>
+     <entry valign=bottom>
+         Password for authenticating proxy use, for proxies that
+	 require this.
+     </entry></row>
+    
 
   </tbody>
   </tgroup>

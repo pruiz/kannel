@@ -115,7 +115,6 @@ static void http_thread(void *arg) {
 	List *headers;
 	Octstr *body;
 	List *cgivars;
-	HTTPCGIVar *v;
 	Octstr *reply_body = octstr_create(
 		"<?xml version=\"1.0\"?>\n"
 		"<!DOCTYPE wml PUBLIC \"-//WAPFORUM//DTD WML 1.1//EN\"\n"
@@ -135,19 +134,15 @@ static void http_thread(void *arg) {
 		if (client == NULL)
 			break;
 		http_send_reply(client, 200, reply_headers, reply_body);
-		list_destroy(headers, octstr_destroy_item);
+		http_destroy_headers(headers);
 		octstr_destroy(ip);
 		octstr_destroy(url);
 		octstr_destroy(body);
-		while ((v = list_extract_first(cgivars)) != NULL) {
-		    octstr_destroy(v->name);
-		    octstr_destroy(v->value);
-		    gw_free(v);
-		}
+		http_destroy_cgiargs(cgivars);
 	}
 
 	octstr_destroy(reply_body);
-	list_destroy(reply_headers, octstr_destroy_item);
+    	http_destroy_headers(reply_headers);
 }
 	
 
