@@ -1089,8 +1089,6 @@ int smsc_at2_create(SMSCConn *conn, CfgGroup *cfg)
     privdata->phase2plus = 0;
     privdata->validityperiod = cfg_get(cfg, octstr_imm("validityperiod"));
 
-    cfg_get_bool(&privdata->alt_dcs, cfg, octstr_imm("alt-dcs"));
-
     conn->data = privdata;
     conn->name = octstr_format("AT2[%s]", octstr_get_cstr(privdata->name));
 
@@ -1766,7 +1764,7 @@ Octstr* at2_pdu_encode(Msg *msg, PrivAT2data *privdata)
 
     octstr_append_char(buffer, msg->sms.pid); /* protocol identifier */
     octstr_append_char(buffer, fields_to_dcs(msg, /* data coding scheme */
-	(msg->sms.alt_dcs ? 2 - msg->sms.alt_dcs : privdata->alt_dcs)));
+	(msg->sms.alt_dcs ? 2 - msg->sms.alt_dcs : privdata->conn->alt_dcs)));
 
     /* 
      * Validity-Period (TP-VP)

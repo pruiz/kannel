@@ -64,6 +64,7 @@ SMSCConn *smscconn_create(CfgGroup *grp, int start_as_stopped)
     GET_OPTIONAL_VAL(conn->unified_prefix, "unified-prefix");
     GET_OPTIONAL_VAL(conn->our_host, "our-host");
     GET_OPTIONAL_VAL(conn->log_file, "log-file");
+    cfg_get_bool(&conn->alt_dcs, grp, octstr_imm("alt-dcs"));
     
     if (cfg_get_integer(&conn->log_level, grp, octstr_imm("log-level")) == -1)
         conn->log_level = 0;

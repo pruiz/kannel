@@ -73,7 +73,6 @@ typedef struct PrivAT2data {
     SMSCConn *conn;
     int phase2plus;
     Octstr *validityperiod;
-    int	alt_dcs;
     int retry;
     Octstr *my_number;
     Octstr *sms_center;

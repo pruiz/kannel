@@ -80,7 +80,6 @@ typedef struct {
     int source_addr_npi; 
     int dest_addr_ton; 
     int dest_addr_npi;
-    int alt_dcs;
     int transmit_port; 
     int receive_port; 
     int quitting; 
@@ -102,7 +101,7 @@ static SMPP *smpp_create(SMSCConn *conn, Octstr *host, int transmit_port,
     	    	    	 Octstr *address_range,
                          int source_addr_ton, int source_addr_npi,  
                          int dest_addr_ton, int dest_addr_npi, 
-                         int alt_dcs, int enquire_link_interval, 
+                         int enquire_link_interval, 
                          int max_pending_submits, int version, int priority,
                          Octstr *my_number, int smpp_msg_id_type, 
                          int autodetect_addr, Octstr *alt_charset, 
@@ -128,7 +127,6 @@ static SMPP *smpp_create(SMSCConn *conn, Octstr *host, int transmit_port,
     smpp->source_addr_npi = source_addr_npi; 
     smpp->dest_addr_ton = dest_addr_ton; 
     smpp->dest_addr_npi = dest_addr_npi; 
-    smpp->alt_dcs = alt_dcs;
     smpp->my_number = octstr_duplicate(my_number); 
     smpp->service_type = octstr_duplicate(service_type);
     smpp->transmit_port = transmit_port; 
@@ -389,7 +387,7 @@ static SMPP_PDU *msg_to_pdu(SMPP *smpp, Msg *msg)
      * check if we have a forced value for this from the smsc-group.
      */
     pdu->u.submit_sm.data_coding = fields_to_dcs(msg, (msg->sms.alt_dcs ? 
-        2 - msg->sms.alt_dcs : smpp->alt_dcs));
+        2 - msg->sms.alt_dcs : smpp->conn->alt_dcs));
 
     /* set protocoll id */
     if(msg->sms.pid) 
@@ -1283,7 +1281,6 @@ int smsc_smpp_create(SMSCConn *conn, CfgGroup *grp)
     int ok; 
     int transceiver_mode; 
     Octstr *smsc_id; 
-    int alt_dcs;
     long enquire_link_interval;
     long max_pending_submits;
     long version;
@@ -1294,7 +1291,6 @@ int smsc_smpp_create(SMSCConn *conn, CfgGroup *grp)
  
     my_number = alt_charset = NULL; 
     transceiver_mode = 0;
-    alt_dcs = 0;
     autodetect_addr = 1;
  
     host = cfg_get(grp, octstr_imm("host")); 
@@ -1303,7 +1299,6 @@ int smsc_smpp_create(SMSCConn *conn, CfgGroup *grp)
     if (cfg_get_integer(&receive_port, grp, octstr_imm("receive-port")) == -1) 
         receive_port = 0; 
     cfg_get_bool(&transceiver_mode, grp, octstr_imm("transceiver-mode")); 
-    cfg_get_bool(&alt_dcs, grp, octstr_imm("alt-dcs")); 
     username = cfg_get(grp, octstr_imm("smsc-username")); 
     password = cfg_get(grp, octstr_imm("smsc-password")); 
     system_type = cfg_get(grp, octstr_imm("system-type")); 
@@ -1404,7 +1399,7 @@ int smsc_smpp_create(SMSCConn *conn, CfgGroup *grp)
     smpp = smpp_create(conn, host, port, receive_port, system_type,  
     	    	       username, password, address_range,
                        source_addr_ton, source_addr_npi, dest_addr_ton,  
-                       dest_addr_npi, alt_dcs, enquire_link_interval, 
+                       dest_addr_npi, enquire_link_interval, 
                        max_pending_submits, version, priority, my_number, 
                        smpp_msg_id_type, autodetect_addr, alt_charset, 
                        service_type); 

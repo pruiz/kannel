@@ -1275,7 +1275,8 @@ static struct packet *packet_encode_message(Msg *msg, Octstr *sender_prefix, SMS
     gw_assert(msg->type == sms);
     gw_assert(msg->sms.receiver != NULL);
 
-    dcs = fields_to_dcs(msg, 0);
+    dcs = fields_to_dcs(msg, (msg->sms.alt_dcs ? 
+        2 - msg->sms.alt_dcs : conn->alt_dcs));
     if (msg->sms.sender == NULL)
         msg->sms.sender = octstr_create("");
 
