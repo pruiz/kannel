@@ -413,6 +413,13 @@ Octstr *octstr_read_file(const char *filename);
 
 
 /*
+ * Read the contents of a file descriptor pipe to an octet string. 
+ * Return pointer to octet string.
+ */
+Octstr *octstr_read_pipe(FILE *f);
+
+
+/*
  * Split an octet string into words at whitespace, and return a list
  * containing the new octet strings.
  */
