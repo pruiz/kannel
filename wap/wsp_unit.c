@@ -156,41 +156,42 @@ error:
  * Local functions
  */
 
-
-static void main_thread(void *arg) {
-	WAPEvent *e;
-	WAPEvent *newevent;
+static void main_thread(void *arg) 
+{
+    WAPEvent *e;
+    WAPEvent *newevent;
 	
-	while (run_status == running && (e = list_consume(queue)) != NULL) {
-                debug("wap.wsp.unit", 0, "WSP (UNIT): event arrived");
-		wap_event_assert(e);
-		switch (e->type) {
-		case T_DUnitdata_Ind:
-			newevent = unpack_datagram(e);
-			dispatch_to_appl(newevent);
-			break;
+    while (run_status == running && (e = list_consume(queue)) != NULL) {
+        debug("wap.wsp.unit", 0, "WSP (UNIT): event arrived");
+        wap_event_assert(e);
+        switch (e->type) {
+            case T_DUnitdata_Ind:
+                newevent = unpack_datagram(e);
+                if (newevent != NULL)
+                    dispatch_to_appl(newevent);
+                break;
 
-		case S_Unit_MethodResult_Req:
-			newevent = pack_into_result_datagram(e);
-			if (newevent != NULL)
-				dispatch_to_wdp(newevent);
-			break;
+            case S_Unit_MethodResult_Req:
+                newevent = pack_into_result_datagram(e);
+                if (newevent != NULL)
+                    dispatch_to_wdp(newevent);
+                break;
 
-                case S_Unit_Push_Req:
-		        newevent = pack_into_push_datagram(e);
-                        if (newevent != NULL) 
-				dispatch_to_wdp(newevent);
-                        debug("wsp.unit", 0, "WSP (UNIT): delivering to wdp");
-		        break;
+            case S_Unit_Push_Req:
+                newevent = pack_into_push_datagram(e);
+                if (newevent != NULL) 
+                    dispatch_to_wdp(newevent);
+                debug("wsp.unit", 0, "WSP (UNIT): delivering to wdp");
+                break;
 	
-		default:
-			warning(0, "WSP UNIT: Unknown event type %d", e->type);
-			break;
-		}
-
-                wap_event_destroy(e);
-	}
+            default:
+                warning(0, "WSP UNIT: Unknown event type %d", e->type);
+                break;
+        }
+        wap_event_destroy(e);
+    }
 }
+
 
 /*
  * We do not set TUnitData.ind's SMS-specific fields here, because we do not
