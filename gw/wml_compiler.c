@@ -854,10 +854,11 @@ var_esc_t check_variable_syntax(Octstr *variable)
 
   if ((pos = octstr_search_char(variable, ':')) > 0)
     {
-      buf = gw_malloc((len = (octstr_len(variable) - pos)));
-      octstr_get_many_chars(buf, variable, pos, len);
+      buf = gw_malloc((len = (octstr_len(variable) - pos) - 1));
+      octstr_get_many_chars(buf, variable, pos + 1, len);
       escaped = octstr_create_tolower(buf);
       octstr_truncate(variable, pos);
+      octstr_truncate(escaped, len);
 
       noesc = octstr_create("noesc");
       unesc = octstr_create("unesc");
@@ -976,22 +977,23 @@ int parse_octet_string(Octstr *ostr)
 	}
     }
   
-  start;
 
   /* Was there still something after the last variable? */
   if (start < pos - 1)
-    if (octstr_len(output) != 0)
-      {
-	temp1 = octstr_cat(output, temp2);
-	output = octstr_duplicate(temp1);
-	octstr_destroy(temp1);
-      }
-    else
-      {
-	temp1 = octstr_copy(ostr, start, pos - start);
-	output_octet_string(temp1);
-	octstr_destroy(temp1);
-      }
+    {
+      if (octstr_len(output) != 0)
+	{
+	  temp1 = octstr_cat(output, temp2);
+	  output = octstr_duplicate(temp1);
+	  octstr_destroy(temp1);
+	}
+      else
+	{
+	  temp1 = octstr_copy(ostr, start, pos - start);
+	  output_octet_string(temp1);
+	  octstr_destroy(temp1);
+	}
+    }
 
   if (octstr_len(output) > 0)
     if (output_octet_string(output) == -1)
