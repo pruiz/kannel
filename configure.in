@@ -963,3 +963,22 @@ dnl Final Output
 
 AC_CONFIG_SECTION([Generating output files]) 
 AC_OUTPUT(Makefile)
+
+
+dnl LICENSE notice
+
+AC_CONFIG_SECTION([License information])
+cat <<X
++--------------------------------------------------------------------+
+| License:                                                           |
+| This software is subject to the Kannel Software License, available |
+| in this distribution in the file LICENSE. By continuing this       |
+| installation process, you are bound by the terms of this license   |
+| agreement. If you do not agree with the terms of this license, you |
+| must abort the installation process at this point.                 |
+|                                                                    |
+|                      The Kannel Group <http://www.kannel.org/>     |
++--------------------------------------------------------------------+
+
+Thank you for using Kannel.
+X

@@ -1,3 +1,18 @@
+2003-11-15  Stipe Tolj  <tolj@wapme-systems.de>
+    * LICENSE: changed to Kannel Software License v1.0. BSD-style as before
+      with some more restrictions to the name "Kannel" and usage of it.
+      Changed in consensus with all other Kannel developers and members of
+      the Kannel group.
+    * COPYING: removed "old" license text and add reference to LICENSE file.
+    * README: intent line fix.
+    * configure[.in]: added license information notice in end of output to 
+      inform the user that he/she is bound to the license agreement terms
+      when proceeding with instllation.
+    * utils/update-license.sh: added simple shell script to prefix the source
+      files with the license text. Needs to be modified to be able to really
+      "update" in terms of exchanging old against new.
+    * */*.[c|h|def|h.in]: added LICENSE file as comment prefix block.
+
 2003-11-13  Stipe Tolj  <tolj@wapme-systems.de>
     * test/fakesmsc.c: don't dump msg line in debug, because this takes speed
       away and the EOL is anyway annoying.

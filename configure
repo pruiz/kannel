@@ -5448,3 +5448,25 @@ chmod +x $CONFIG_STATUS
 rm -fr confdefs* $ac_clean_files
 test "$no_create" = yes || ${CONFIG_SHELL-/bin/sh} $CONFIG_STATUS || exit 1
 
+
+
+
+
+  nl='
+'
+  echo "${nl}${T_MD}License information ...${T_ME}"
+
+cat <<X
++--------------------------------------------------------------------+
+| License:                                                           |
+| This software is subject to the Kannel Software License, available |
+| in this distribution in the file LICENSE. By continuing this       |
+| installation process, you are bound by the terms of this license   |
+| agreement. If you do not agree with the terms of this license, you |
+| must abort the installation process at this point.                 |
+|                                                                    |
+|                      The Kannel Group <http://www.kannel.org/>     |
++--------------------------------------------------------------------+
+
+Thank you for using Kannel.
+X
