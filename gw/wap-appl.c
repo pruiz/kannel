@@ -947,7 +947,7 @@ static void return_reply(int status, Octstr *content_body, List *headers,
 
     if (content.body == NULL)
         content.body = octstr_create("");
-
+   
     /*
      * Deal with otherwise wap-aware servers that return text/html error
      * messages if they report an error.
@@ -1221,6 +1221,8 @@ static void start_fetch(WAPEvent *event)
          * POST requests for the HTTP server.
          * Mainly this is used for multipart/form-data transmissions,
          * including MMS on-the-fly message decoding.
+         * When we are doing mms, the phone POSTs contents and acknowled-
+         * gements. In this case, we dont do not deconvert anything.
          */
         if (octstr_str_compare(method, "POST") == 0 && request_body && 
             octstr_len(request_body)) {
@@ -1235,6 +1237,8 @@ static void start_fetch(WAPEvent *event)
                 http_header_mark_transformation(actual_headers, content.body, 
                                                 content.type);
             request_body = content.body;
+            octstr_destroy(content.type);
+            octstr_destroy(content.charset);
         }
 
         /* struct that is used for the HTTP response identifier */

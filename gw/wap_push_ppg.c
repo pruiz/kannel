@@ -1082,12 +1082,12 @@ static int handle_push_message(HTTPClient **c, WAPEvent *e, int status)
     }
     
     if (!message_transformable) {
-	    pm = update_push_data_with_attribute(&sm, pm, 
-            PAP_TRANSFORMATION_FAILURE, PAP_UNDELIVERABLE1);  
+	pm = update_push_data_with_attribute(&sm, pm, 
+        PAP_TRANSFORMATION_FAILURE, PAP_UNDELIVERABLE1);  
         if (tuple != NULL)   
-	        *c = response_push_message(pm, PAP_TRANSFORMATION_FAILURE, status);
+	    *c = response_push_message(pm, PAP_TRANSFORMATION_FAILURE, status);
         else
-	        *c = response_push_message(pm, PAP_ADDRESS_ERROR, status);
+	    *c = response_push_message(pm, PAP_ADDRESS_ERROR, status);
         goto no_transformation;
     }
     
@@ -1122,20 +1122,20 @@ static int handle_push_message(HTTPClient **c, WAPEvent *e, int status)
 	    goto store_push;
 
     if (constraints == NO_CONSTRAINTS) {
-	    http_header_mark_transformation(pm->push_headers, pm->push_data, type);
+	http_header_mark_transformation(pm->push_headers, pm->push_data, type);
         if (sm)
             sm = update_session_data_with_headers(sm, pm); 
 
         if (!confirmation_requested(e)) {
             pm = deliver_unit_push(NOT_LAST, pm, sm, session_exists);
             goto unit_push_delivered;
-	    } 
+	} 
 	      
         if (session_exists) {
             deliver_confirmed_push(NOT_LAST, pm, sm);   
         } else { 
             coriented_possible = coriented_deliverable(coded_appid_value); 
-	        http_header_remove_all(e->u.Push_Message.push_headers, 
+	    http_header_remove_all(e->u.Push_Message.push_headers, 
                                    "Content-Type");  
             if (coriented_possible) {
                 create_session(e, pm);
@@ -1730,6 +1730,7 @@ static void push_machine_assert(PPGPushMachine *pm)
  * chapter 6.1.1, states that we MUST reject a push having an erroneous PAP
  * push message element. So we must validate it even when we do not compile
  * it.
+ * If message content was not si or sl, we pass it without modifications.
  * We do not do any (formally optional, but phones may disagree) header 
  * conversions to the binary format here, these are responsibility of our OTA 
  * module (gw/wap_push_ota.c). 
@@ -1737,7 +1738,7 @@ static void push_machine_assert(PPGPushMachine *pm)
  *
  * Return 
  *    a) message, either transformed or not (if there is no-transform cache 
- *       directive or wml code is erroneous) 
+ *       directive, wml code is erroneous or content was not si or sl.) 
  *    b) The transformed gw address. Use here global-sender, when the bearer
  *       is SMS (some SMS centers would require this).
  *    c) the transformed message content type
@@ -1785,24 +1786,23 @@ static int transform_message(WAPEvent **e, WAPAddrTuple **tuple,
     if (content.body == NULL)
         goto no_transform;
 
-    content.type = http_header_find_first(push_headers, 
-        "Content-Transfer-Encoding");
+    content.type = http_header_find_first(push_headers, "Content-Transfer-Encoding");
     if (content.type) {
-	    octstr_strip_blanks(content.type);
-	    debug("wap.push.ppg", 0, "PPG: Content-Transfer-Encoding is \"%s\"",
-	          octstr_get_cstr (content.type));
-	    message_deliverable = pap_get_content(&content);
+	octstr_strip_blanks(content.type);
+	debug("wap.push.ppg", 0, "PPG: Content-Transfer-Encoding is \"%s\"",
+	      octstr_get_cstr (content.type));
+	message_deliverable = pap_get_content(&content);
 	
-	    if (message_deliverable) {
-	        change_header_value(&push_headers, "Content-Transfer-Encoding", 
+        if (message_deliverable) {
+	    change_header_value(&push_headers, "Content-Transfer-Encoding", 
                                 "binary");
-	    } else {
-	        goto error;
-	    }
+	} else {
+	    goto error;
+	}
     }
 
-    http_header_get_content_type(push_headers, &content.type,
-                                 &content.charset);   
+    octstr_destroy(content.type);
+    http_header_get_content_type(push_headers, &content.type, &content.charset);   
     message_deliverable = pap_convert_content(&content);
 
     if (content.type == NULL)
@@ -1823,6 +1823,7 @@ static int transform_message(WAPEvent **e, WAPAddrTuple **tuple,
 
 herror:
     warning(0, "PPG: transform_message: no push headers, cannot accept");
+    octstr_destroy(content.type);
     return 0;
 
 error:
@@ -1834,8 +1835,6 @@ error:
 
 no_transform:
     warning(0, "PPG: transform_message: push content non transformable");
-    octstr_destroy(content.type);
-    octstr_destroy(content.charset);
     return 1;
 }
 
@@ -2002,10 +2001,10 @@ static int pap_convert_content(struct content *content)
 
     for (i = 0; i < NUM_CONVERTERS; i++) {
         if (octstr_compare(content->type, 
-	            octstr_imm(converters[i].type)) == 0) {
-	        new_body = converters[i].convert(content);
+	        octstr_imm(converters[i].type)) == 0) {
+	    new_body = converters[i].convert(content);
             if (new_body == NULL)
-	            return 0;
+	        return 0;
             octstr_destroy(content->body);
             content->body = new_body;
             octstr_destroy(content->type); 
@@ -3314,10 +3313,12 @@ static long set_dlr_mask(List *headers, Octstr *dlr_url)
     if ((masklen = octstr_parse_long(&dlr_mask, dlrmaskos, 0, 10)) != -1 &&
              masklen == octstr_len(dlrmaskos) &&
              dlr_mask >= -1 && dlr_mask <= 31) {
+         octstr_destroy(dlrmaskos);
          return dlr_mask;
     }
 
     warning(0, "unparsable dlr mask, rejected");
+    octstr_destroy(dlrmaskos);
     return 0;
 }
 
@@ -3332,12 +3333,11 @@ static long set_dlr_mask(List *headers, Octstr *dlr_url)
 
 static Octstr *set_smsbox_id(List *headers, Octstr *username, int trusted_pi)
 {
-    Octstr *smsboxidos;
     Octstr *smsbox_id = NULL;
 
-    smsboxidos = http_header_value(headers, octstr_imm("X-Kannel-Smsbox-Id"));
-    if (smsboxidos != NULL) {
-        return octstr_duplicate(smsboxidos);
+    smsbox_id = http_header_value(headers, octstr_imm("X-Kannel-Smsbox-Id"));
+    if (smsbox_id != NULL) {
+        return smsbox_id;
     }
 
     if (!trusted_pi)
