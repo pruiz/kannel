@@ -1317,7 +1317,7 @@ case 39:
 case 41:
 #line 395 "wmlscript/wsgram.y"
 {
-		  yyval.stmt = NULL;
+		  yyval.stmt = ws_stmt_empty(pctx, yylsp[0].first_line);
 		;
     break;}
 case 42:

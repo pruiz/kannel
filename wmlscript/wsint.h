@@ -19,12 +19,15 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
 #include <string.h>
 #include <stdarg.h>
 #include <errno.h>
 #include <assert.h>
 #include <math.h>
+
+#if HAVE_UNISTD_H
+#include <unistd.h>
+#endif /* HAVE_UNISTD_H */
 
 /********************* Types and definitions ****************************/
 

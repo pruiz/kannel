@@ -393,7 +393,7 @@ Statement:
 	| VariableStatement
 	| ';'			/* EmptyStatement */
 		{
-		  $$ = NULL;
+		  $$ = ws_stmt_empty(pctx, @1.first_line);
 		}
 	| Expression ';'	/* ExpressionStatement */
 		{

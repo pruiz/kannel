@@ -97,7 +97,7 @@ static WsBool read_float_from_exp(WsCompiler *compiler, WsBuffer *buffer,
 static struct
 {
   char *name;
-  int name_len;
+  size_t name_len;
   int token;
 } keywords[] =
 {
@@ -927,7 +927,7 @@ lookup_keyword(char *id, size_t len, int *token_return)
 
   while (left < right)
     {
-      int l;
+      size_t l;
       int result;
 
       center = left + (right - left) / 2;

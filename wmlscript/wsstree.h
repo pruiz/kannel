@@ -74,7 +74,7 @@ struct WsNamespaceRec
   WsUInt32 line;
 
   /* The index of this variable. */
-  WsUInt32 vindex;
+  WsUInt8 vindex;
 };
 
 typedef struct WsNamespaceRec WsNamespace;
@@ -415,6 +415,7 @@ typedef enum
 {
   WS_STMT_BLOCK,
   WS_STMT_VARIABLE,
+  WS_STMT_EMPTY,
   WS_STMT_EXPR,
   WS_STMT_IF,
   WS_STMT_FOR,
@@ -479,6 +480,9 @@ WsStatement *ws_stmt_block(WsCompilerPtr compiler, WsUInt32 first_line,
 /* Create a new variable initialization statement. */
 WsStatement *ws_stmt_variable(WsCompilerPtr compiler, WsUInt32 line,
 			      WsList *variables);
+
+/* Create a new empty statement. */
+WsStatement *ws_stmt_empty(WsCompilerPtr compiler, WsUInt32 line);
 
 /* Create a new expression statement. */
 WsStatement *ws_stmt_expr(WsCompilerPtr compiler, WsUInt32 line,

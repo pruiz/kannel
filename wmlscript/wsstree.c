@@ -1146,6 +1146,10 @@ ws_stmt_linearize(WsCompiler *compiler, WsStatement *stmt)
       linearize_variable_init(compiler, stmt->u.var, stmt->first_line);
       break;
 
+    case WS_STMT_EMPTY:
+      /* Nothing here. */
+      break;
+
     case WS_STMT_EXPR:
       ws_expr_linearize(compiler, stmt->u.expr);
 
@@ -1390,6 +1394,13 @@ ws_stmt_variable(WsCompilerPtr compiler, WsUInt32 line, WsList *variables)
     stmt->u.var = variables;
 
   return stmt;
+}
+
+
+WsStatement *
+ws_stmt_empty(WsCompiler *compiler, WsUInt32 line)
+{
+  return stmt_alloc(compiler, WS_STMT_EMPTY, line, line);
 }
 
 

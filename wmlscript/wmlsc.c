@@ -15,9 +15,13 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
 #include <string.h>
 #include <errno.h>
+
+#if HAVE_UNISTD_H
+#include <unistd.h>
+#endif /* HAVE_UNISTD_H */
+
 #include <sys/types.h>
 #include <sys/stat.h>
 
@@ -230,7 +234,7 @@ usage(void)
                 standard output\n\
   -d		use ws_eval_data() function instead of ws_eval_file()\n\
   -h            print this help message and exit successfully\n\
-  -l            encode strings in ISO-8859/1 (ISO latin1) instead of using
+  -l            encode strings in ISO-8859/1 (ISO latin1) instead of using\n\
                 UTF-8\n\
   -p            print pragmas\n\
   -s            print symbolic byte-code assembler to the standard output\n\
