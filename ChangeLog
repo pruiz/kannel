@@ -1,5 +1,11 @@
 2000-09-14  Lars Wirzenius  <liw@iki.fi>
 
+	* test/test_http_server.c: Catch SIGTERM and die immediately.
+	
+	* checks/check_http.sh: Wrote.
+
+2000-09-14  Lars Wirzenius  <liw@iki.fi>
+
 	* gw/smsbox.c, gw/wapbox.c, doc/userguide/newconf.txt: Added
 	HTTP proxy support to configuration files. No way to test it,
 	right now, but will eagerly await bug reports.

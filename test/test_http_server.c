@@ -7,6 +7,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <signal.h>
 
 #include "gwlib/gwlib.h"
 #include "gwlib/http.h"
@@ -71,11 +72,21 @@ static void help(void) {
 	info(0, "Usage: test_http_server [-p port]\n");
 }
 
+static void sigterm(int signo) {
+    	exit(0);
+}
+
 int main(int argc, char **argv) {
 	int opt, port, use_threads;
 	HTTPSocket *httpd_socket, *client_socket;
+	struct sigaction act;
 	
 	gwlib_init();
+
+    	act.sa_handler = sigterm;
+	sigemptyset(&act.sa_mask);
+	act.sa_flags = 0;
+    	sigaction(SIGTERM, &act, NULL);
 
 	port = 8080;
 	use_threads = 0;
