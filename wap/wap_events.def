@@ -662,6 +662,7 @@ WAPEVENT(Push_Message, "push-message",
          OPTIONAL_OCTSTR(ppg_notify_requested_to)
          INTEGER(progress_notes_requested)
          OCTSTR(address_value)                       /* as parsed PAP */
+         INTEGER(address_type)
          INTEGER(priority)
          INTEGER(delivery_method)
          OPTIONAL_OCTSTR(network)

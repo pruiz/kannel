@@ -1,7 +1,8 @@
 /*
- * xml_shared.c: Common functions of xml compilers (mainly charset handling)
+ * xml_shared.c: Common functions of xml compilers (mainly charset handling 
+ * and operations with wbxml binary not using a string table)
  *
- * By Tuomas Luttinen 
+ * By Tuomas Luttinen & Aarno Syvänen (for Wiral Ltd) 
  */
 
 #include <ctype.h>
@@ -174,6 +175,77 @@ List *wml_charsets(void)
     return result;  
 }
 
+/*
+ * Functions working with simple binary data type (no string table). No 
+ * variables are present either. 
+ */
 
+simple_binary_t *simple_binary_create(void)
+{
+    simple_binary_t *binary;
 
+    binary = gw_malloc(sizeof(simple_binary_t));
+    
+    binary->wbxml_version = 0x00;
+    binary->public_id = 0x00;
+    binary->charset = 0x00;
+    binary->binary = octstr_create("");
 
+    return binary;
+}
+
+void simple_binary_destroy(simple_binary_t *binary)
+{
+    if (binary == NULL)
+        return;
+
+    octstr_destroy(binary->binary);
+    gw_free(binary);
+}
+
+/*
+ * Output the wbxml content field after field into octet string os. We add 
+ * string table length 0 (meaning no string table) before the content.
+ */
+void simple_binary_output(Octstr *os, simple_binary_t *binary)
+{
+    gw_assert(octstr_len(os) == 0);
+    octstr_format_append(os, "%c", binary->wbxml_version);
+    octstr_format_append(os, "%c", binary->public_id);
+    octstr_append_uintvar(os, binary->charset);
+    octstr_format_append(os, "%c", 0x00);
+    octstr_format_append(os, "%S", binary->binary);
+}
+
+void parse_end(simple_binary_t **binary)
+{
+    output_char(WBXML_END, binary);
+}
+
+void output_char(int byte, simple_binary_t **binary)
+{
+    octstr_append_char((**binary).binary, byte);
+}
+
+void parse_octet_string(Octstr *os, simple_binary_t **binary)
+{
+    output_octet_string(os, binary);
+}
+
+/*
+ * Add global tokens to the start and to the end of an inline string.
+ */ 
+void parse_inline_string(Octstr *temp, simple_binary_t **binary)
+{
+    Octstr *startos;   
+
+    octstr_insert(temp, startos = octstr_format("%c", WBXML_STR_I), 0);
+    octstr_destroy(startos);
+    octstr_format_append(temp, "%c", WBXML_STR_END);
+    parse_octet_string(temp, binary);
+}
+
+void output_octet_string(Octstr *os, simple_binary_t **sibxml)
+{
+    octstr_insert((*sibxml)->binary, os, octstr_len((*sibxml)->binary));
+}

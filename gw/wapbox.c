@@ -323,7 +323,7 @@ static Msg *pack_sms_datagram(WAPEvent *dgram)
     msg->sms.mclass = MC_UNDEF;
     msg->sms.validity = 0;
     msg->sms.deferred = 0;
-
+    
     return msg;   
 }
 

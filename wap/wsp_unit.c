@@ -267,7 +267,7 @@ static WAPEvent *pack_into_push_datagram(WAPEvent *event) {
         }
 
 	datagram->u.T_DUnitdata_Req.user_data = ospdu;
-
+        
         return datagram;
 }
 

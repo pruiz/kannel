@@ -1,4 +1,4 @@
-/*
+ /*
  * wap_push_ppg_pushuser.c: Implementation of wap_push_ppg_pushuser.h header.
  *
  * By Aarno Syvänen for Wiral Ltd.
@@ -49,7 +49,7 @@ static WAPPushUserList *users = NULL;
  */
 static Dict *next_try = NULL;
 
-/******************* *********************************************************
+/***********************************************************************************
  *
  * Prototypes of internal functions
  */
@@ -72,6 +72,7 @@ static void challenge(HTTPClient *c, List *push_headers);
 static void reply(HTTPClient *c, List *push_headers);
 static int parse_cgivars_for_username(List *cgivars, Octstr **username);
 static int parse_cgivars_for_password(List *cgivars, Octstr **password);
+static int compare_octstr_sequence(Octstr *os1, Octstr *os2, long start, long end);
 
 /****************************************************************************
  *
@@ -350,16 +351,25 @@ static WAPPushUser *create_oneuser(CfgGroup *grp)
     u->user_allow_ip = NULL;
 
     u->name = cfg_get(grp, octstr_imm("wap-push-user"));
+
+    if (u->name == NULL) {
+        warning(0, "user name missing, dump follows");
+        oneuser_dump(u);
+        goto error;
+    }
+
     u->username = cfg_get(grp, octstr_imm("ppg-username"));
     u->password = cfg_get(grp, octstr_imm("ppg-password"));
+
     if (u->username == NULL) {
-        error(0, "password for user %s missing, dump follows", 
+        warning(0, "login name for user %s missing, dump follows", 
               octstr_get_cstr(u->name));
         oneuser_dump(u);
         goto error;
     }
+
     if (u->password == NULL) {
-        error(0, "password for user %s missing, dump follows", 
+        warning(0, "password for user %s missing, dump follows", 
               octstr_get_cstr(u->name));
         oneuser_dump(u);
         goto error;
@@ -416,18 +426,25 @@ static void destroy_oneuser(void *p)
 
 static void oneuser_dump(WAPPushUser *u)
 {
-    if (u == NULL)
+    if (u == NULL) {
+        debug("wap.push.ppg.pushuser", 0, "no user found");
         return;
+    }
 
+    debug("wap.push.ppg.pushuser", 0, "Dumping user data: Name of the user:");
     octstr_dump(u->name, 0);
+    debug("wap.push.ppg.pushuser", 0, "username:");
     octstr_dump(u->username, 0);  
-    octstr_dump(u->password, 0);                
-    octstr_dump(u->allowed_prefix, 0);           
-    octstr_dump(u->denied_prefix, 0);             
-    numhash_size(u->white_list);               
-    numhash_size(u->black_list);              
-    octstr_dump(u->user_deny_ip, 0);              
+    debug("wap.push.ppg.pushuser", 0, "omitting password");   
+    debug("wap.push.ppg.pushuser", 0, "allowed prefix list:");            
+    octstr_dump(u->allowed_prefix, 0);  
+    debug("wap.push.ppg.pushuser", 0, "denied prefix list:");         
+    octstr_dump(u->denied_prefix, 0);   
+    debug("wap.push.ppg.pushuser", 0, "denied ip list:");                         
+    octstr_dump(u->user_deny_ip, 0);    
+    debug("wap.push.ppg.pushuser", 0, "allowed ip list:");                   
     octstr_dump(u->user_allow_ip, 0);
+    debug("wap.push.ppg.pushuser", 0, "end of the dump");
 }
 
 /*
@@ -715,20 +732,22 @@ static int prefix_allowed(WAPPushUser *u, Octstr *number)
     allowed = NULL;
     denied = NULL;
 
+    if (u == NULL)
+        goto no_user;
+
     if (u->allowed_prefix == NULL && u->denied_prefix == NULL)
         goto no_configuration;
 
     sure = octstr_imm("+358");
     sure_len = octstr_len(sure);
     gw_assert(octstr_ncompare(number, sure, sure_len) == 0);
-    octstr_delete(number, 0, sure_len);
 
     if (u->denied_prefix != NULL) {
         denied = octstr_split(u->denied_prefix, octstr_imm(";"));
         for (i = 0; i < list_len(denied); ++i) {
              listed_prefix = list_get(denied, i);
-             if (octstr_ncompare(number, listed_prefix,  
-                     octstr_len(listed_prefix)) == 0) {
+             if (compare_octstr_sequence(number, listed_prefix, sure_len,
+                     sure_len + octstr_len(listed_prefix) - 1) == 0) {
 	         goto denied;
              }
         }
@@ -741,8 +760,8 @@ static int prefix_allowed(WAPPushUser *u, Octstr *number)
     allowed = octstr_split(u->allowed_prefix, octstr_imm(";"));
     for (i = 0; i < list_len(allowed); ++i) {
          listed_prefix = list_get(allowed, i);
-         if (octstr_ncompare(number, listed_prefix, 
-                 octstr_len(listed_prefix)) == 0) {
+         if (compare_octstr_sequence(number, listed_prefix, sure_len, 
+                 sure_len + octstr_len(listed_prefix) - 1) == 0) {
 	     goto allowed;
          }
     }
@@ -756,13 +775,16 @@ denied:
     list_destroy(denied, octstr_destroy_item);
     return 0;
 
-allowed:         
+allowed:      
     list_destroy(allowed, octstr_destroy_item);
     list_destroy(denied, octstr_destroy_item);
     return 1;
 
 no_configuration:
     return 1;
+
+no_user:
+    return 0;
 
 no_allowed_config:
     list_destroy(denied, octstr_destroy_item);
@@ -785,8 +807,9 @@ static int blacklisted(WAPPushUser *u, Octstr *number)
     return numhash_find_number(u->black_list, number);
 }
 
-/* 'NULL' means here 'no value found'.
- * Return 1 when we found password or username, 0 when we did not.
+/* 
+ * 'NULL' means here 'no value found'.
+ * Return 1 when we found username, 0 when we did not.
  */
 static int parse_cgivars_for_username(List *cgivars, Octstr **username)
 {
@@ -812,7 +835,37 @@ static int parse_cgivars_for_password(List *cgivars, Octstr **password)
     return 1;
 }
 
+/*
+ * Compare an octet string os2 with a sequence of an octet string os1. The sequence
+ * starts with a position start and ends with end. 
+ */
+static int compare_octstr_sequence(Octstr *os1, Octstr *os2, long start, long end)
+{
+    int ret;
+    long len;
+    unsigned char *prefix;
 
+    if (start >= end)
+        return -1;
+
+    if ((len = octstr_len(os2)) != end - start + 1)
+        return -1;
+
+    if (octstr_len(os2) == 0)
+        return 1;
+
+    if (octstr_len(os1) == 0)
+        return -1;
+
+    prefix = gw_malloc(start);
+    octstr_get_many_chars(prefix, os1, 0, start);
+    octstr_delete(os1, 0, start);
+    ret = octstr_ncompare(os1, os2, end - start + 1);
+    octstr_insert_data(os1, 0, prefix, start);
+    gw_free(prefix);
+
+    return ret;
+}
 
 
 

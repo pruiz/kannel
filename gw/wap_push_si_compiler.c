@@ -1,7 +1,7 @@
 /*
  * wap_push_si_compiler.c: Tokenizes a SI document. SI DTD is defined in 
  * Wapforum specification WAP-167-ServiceInd-20010731-a (hereafter called si),
- *  chapter 8.2.
+ * chapter 8.2.
  *
  * By Aarno Syvänen for Wiral Ltd
  */
@@ -42,20 +42,6 @@ struct si_3table_t {
 };
 
 typedef struct si_3table_t si_3table_t;
-
-/*
- * Si binary. We do not implement string table (we send SI using SMS, so si
- * document must be very short).
- */
-
-struct si_binary_t {
-    unsigned char wbxml_version;
-    unsigned char si_public_id;
-    unsigned long charset;
-    Octstr *si_binary;
-};
-
-typedef struct si_binary_t si_binary_t;
 
 /*
  * Elements from tag code page zero. These are defined in si, chapter 9.3.1.
@@ -115,27 +101,18 @@ static si_2table_t si_URL_values[] = {
  */
 
 static int parse_document(xmlDocPtr document, Octstr *charset, 
-			  si_binary_t **si_binary);
-static int parse_node(xmlNodePtr node, si_binary_t **sibxml);    
-static int parse_element(xmlNodePtr node, si_binary_t **sibxml);
-static si_binary_t *si_binary_create(void);
-static void si_binary_destroy(si_binary_t *sibxml);
-static void si_binary_output(Octstr *os, si_binary_t *sibxml);
-static int parse_text(xmlNodePtr node, si_binary_t **sibxml);   
-static void parse_inline_string(Octstr *temp, si_binary_t **sibxml);
-static int parse_cdata(xmlNodePtr node, si_binary_t **sibxml);  
-static void parse_end(si_binary_t **sibxml);                     
-static int parse_attribute(xmlAttrPtr attr, si_binary_t **sibxml);
-static void output_char(int byte, si_binary_t **sibxml);         
-static void output_octet_string(Octstr *os, si_binary_t **sibxml);
+			  simple_binary_t **si_binary);
+static int parse_node(xmlNodePtr node, simple_binary_t **sibxml);    
+static int parse_element(xmlNodePtr node, simple_binary_t **sibxml);
+static int parse_text(xmlNodePtr node, simple_binary_t **sibxml);   
+static int parse_cdata(xmlNodePtr node, simple_binary_t **sibxml);             static int parse_attribute(xmlAttrPtr attr, simple_binary_t **sibxml);       
 static int url(int hex);   
 static int action(int hex);
 static int date(int hex);
-static void parse_octet_string(Octstr *ostr, si_binary_t **sibxml);
 static Octstr *tokenize_date(Octstr *date);
 static void octstr_drop_trailing_zeros(Octstr **date_token);
-static void parse_url_value(Octstr *value, si_binary_t **sibxml);
 static void flag_date_length(Octstr **token);
+static void parse_url_value(Octstr *value, simple_binary_t **sibxml);
                           
 /****************************************************************************
  *
@@ -144,14 +121,14 @@ static void flag_date_length(Octstr **token);
 
 int si_compile(Octstr *si_doc, Octstr *charset, Octstr **si_binary)
 {
-    si_binary_t *sibxml;
+    simple_binary_t *sibxml;
     int ret;
     xmlDocPtr pDoc;
     size_t size;
     char *si_c_text;
 
     *si_binary = octstr_create(""); 
-    sibxml = si_binary_create();
+    sibxml = simple_binary_create();
 
     octstr_strip_blanks(si_doc);
     set_charset(si_doc, charset);
@@ -162,17 +139,17 @@ int si_compile(Octstr *si_doc, Octstr *charset, Octstr **si_binary)
     ret = 0;
     if (pDoc) {
         ret = parse_document(pDoc, charset, &sibxml);
-        si_binary_output(*si_binary, sibxml);
+        simple_binary_output(*si_binary, sibxml);
         xmlFreeDoc(pDoc);
     } else {
         xmlFreeDoc(pDoc);
         octstr_destroy(*si_binary);
-        si_binary_destroy(sibxml);
+        simple_binary_destroy(sibxml);
         error(0, "SI: No document to parse. Probably an error in SI source");
         return -1;
     }
 
-    si_binary_destroy(sibxml);
+    simple_binary_destroy(sibxml);
 
     return ret;
 }
@@ -186,57 +163,19 @@ int si_compile(Octstr *si_doc, Octstr *charset, Octstr **si_binary)
  */
 
 static int parse_document(xmlDocPtr document, Octstr *charset, 
-                          si_binary_t **sibxml)
+                          simple_binary_t **sibxml)
 {
     xmlNodePtr node;
 
-    (**sibxml).wbxml_version = 0x02; /* WBXML Version number 1.2  */
-    (**sibxml).si_public_id = 0x05; /* SI 1.0 Public ID */
+    (*sibxml)->wbxml_version = 0x02; /* WBXML Version number 1.2  */
+    (*sibxml)->public_id = 0x05; /* SI 1.0 Public ID */
     
     charset = octstr_create("UTF-8");
-    (**sibxml).charset = parse_charset(charset);
+    (*sibxml)->charset = parse_charset(charset);
     octstr_destroy(charset);
 
     node = xmlDocGetRootElement(document);
     return parse_node(node, sibxml);
-}
-
-static si_binary_t *si_binary_create(void)
-{
-    si_binary_t *sibxml;
-
-    sibxml = gw_malloc(sizeof(si_binary_t));
-    
-    sibxml->wbxml_version = 0x00;
-    sibxml->si_public_id = 0x00;
-    sibxml->charset = 0x00;
-    sibxml->si_binary = octstr_create("");
-
-    return sibxml;
-}
-
-static void si_binary_destroy(si_binary_t *sibxml)
-{
-    if (sibxml == NULL)
-        return;
-
-    octstr_destroy(sibxml->si_binary);
-    gw_free(sibxml);
-}
-
-/*
- * Output the sibxml content field after field into octet string os. See si,
- * chapter 10, for an annotated example. We add string table length 0 (no 
- * string table) before the content.
- */
-static void si_binary_output(Octstr *os, si_binary_t *sibxml)
-{
-    gw_assert(octstr_len(os) == 0);
-    octstr_format_append(os, "%c", sibxml->wbxml_version);
-    octstr_format_append(os, "%c", sibxml->si_public_id);
-    octstr_append_uintvar(os, sibxml->charset);
-    octstr_format_append(os, "%c", 0x00);
-    octstr_format_append(os, "%S", sibxml->si_binary);
 }
 
 /*
@@ -247,7 +186,7 @@ static void si_binary_output(Octstr *os, si_binary_t *sibxml)
  *               0, do not add an end tag (it has children)
  *              -1, an error occurred
  */
-static int parse_element(xmlNodePtr node, si_binary_t **sibxml)
+static int parse_element(xmlNodePtr node, simple_binary_t **sibxml)
 {
     Octstr *name;
     size_t i;
@@ -315,7 +254,7 @@ static int parse_element(xmlNodePtr node, si_binary_t **sibxml)
  * inline string.
  */
 
-static int parse_text(xmlNodePtr node, si_binary_t **sibxml)
+static int parse_text(xmlNodePtr node, simple_binary_t **sibxml)
 {
     Octstr *temp;
 
@@ -336,25 +275,12 @@ static int parse_text(xmlNodePtr node, si_binary_t **sibxml)
 }
 
 /*
- * Add global tokens to the start and to the end of an inline string.
- */ 
-static void parse_inline_string(Octstr *temp, si_binary_t **sibxml)
-{
-    Octstr *startos;   
-
-    octstr_insert(temp, startos = octstr_format("%c", WBXML_STR_I), 0);
-    octstr_destroy(startos);
-    octstr_format_append(temp, "%c", WBXML_STR_END);
-    parse_octet_string(temp, sibxml);
-}
-
-/*
  * Tokenises an attribute, and in most cases, the start of its value (some-
  * times whole of it). Tokenisation is based on tables in si, chapters 9.3.2
  * and 9.3.3. 
  * Returns 0 when success, -1 when error.
  */
-static int parse_attribute(xmlAttrPtr attr, si_binary_t **sibxml)
+static int parse_attribute(xmlAttrPtr attr, simple_binary_t **sibxml)
 {
     Octstr *name,
            *value,
@@ -423,13 +349,6 @@ error:
     return -1;
 }
 
-/*
- * Si documents does not contain variables
- */
-static void parse_octet_string(Octstr *os, si_binary_t **sibxml)
-{
-    output_octet_string(os, sibxml);
-}
 
 /*
  * checks whether a si attribute value is an URL or some other kind of value. 
@@ -543,58 +462,13 @@ static void flag_date_length(Octstr **token)
 }
 
 /*
- * In the case of SI document, only attribute values to be tokenised are parts
- * of urls. See si, chapter 9.3.3. The caller removes the start of the url.
- * Check whether we can find one of tokenisable values in value. If not, parse
- * value as a inline string, else parse parts before and after the tokenisable
- * url value as a inline string.
- */
-static void parse_url_value(Octstr *value, si_binary_t **sibxml)
-{
-    size_t i;
-    long pos;
-    Octstr *urlos,
-           *first_part,
-	   *last_part;
-    size_t first_part_len;
-
-    i = 0;
-    first_part_len = 0;
-    first_part = NULL;
-    last_part = NULL;
-    while (i < NUMBER_OF_URL_VALUES) {
-        pos = octstr_search(value, 
-            urlos = octstr_imm(si_URL_values[i].name), 0);
-        if (pos >= 0) {
-	    first_part = octstr_duplicate(value);
-            octstr_delete(first_part, pos, octstr_len(first_part) - pos);
-            first_part_len = octstr_len(first_part);
-            parse_inline_string(first_part, sibxml);
-            output_char(si_URL_values[i].token, sibxml);
-            last_part = octstr_duplicate(value);
-            octstr_delete(last_part, 0, first_part_len + octstr_len(urlos));
-            parse_inline_string(last_part, sibxml);
-	    octstr_destroy(first_part);
-            octstr_destroy(last_part);
-            break;
-        }
-        octstr_destroy(urlos);
-        ++i;
-    }
-
-    if (pos < 0) 
-	parse_inline_string(value, sibxml);
-        
-}
-
-/*
  * The recursive parsing function for the parsing tree. Function checks the 
  * type of the node, calls for the right parse function for the type, then 
  * calls itself for the first child of the current node if there's one and 
  * after that calls itself for the next child on the list.
  */
 
-static int parse_node(xmlNodePtr node, si_binary_t **sibxml)
+static int parse_node(xmlNodePtr node, simple_binary_t **sibxml)
 {
     int status = 0;
     
@@ -615,7 +489,7 @@ static int parse_node(xmlNodePtr node, si_binary_t **sibxml)
 	break;
 	/*
 	 * XML has also many other node types, these are not needed with 
-	 * WML. Therefore they are assumed to be an error.
+	 * SI. Therefore they are assumed to be an error.
 	 */
     default:
 	error(0, "SI compiler: Unknown XML node in the SI source.");
@@ -656,46 +530,64 @@ static int parse_node(xmlNodePtr node, si_binary_t **sibxml)
     return 0;
 }
 
-static void parse_end(si_binary_t **sibxml)
-{
-    output_char(WBXML_END, sibxml);
-}
-	
-static void output_octet_string(Octstr *os, si_binary_t **sibxml)
-{
-    octstr_insert((**sibxml).si_binary, os, octstr_len((**sibxml).si_binary));
-}
-
-static void output_char(int byte, si_binary_t **sibxml)
-{
-    octstr_append_char((**sibxml).si_binary, byte);
-}
-
 /*
  * Cdata section parsing function. Output this "as it is"
  */
 
-static int parse_cdata(xmlNodePtr node, si_binary_t **sibxml)
+static int parse_cdata(xmlNodePtr node, simple_binary_t **sibxml)
 {
     int ret = 0;
     Octstr *temp;
 
     temp = create_octstr_from_node(node);
-
     parse_octet_string(temp, sibxml);
-    
     octstr_destroy(temp);
 
     return ret;
 }
 
+/*
+ * In the case of SI documents, only attribute values to be tokenized are
+ * parts of urls (see si, chapter 9.3.3). The caller romoves the start of an
+ * url. Check whether we can find parts in the value. If not, parse value a an
+ * inline string, otherwise parse parts before and after tokenizable parts as
+ * inline strings.
+ */
+void parse_url_value(Octstr *value, simple_binary_t **sibxml)
+{
+    size_t i;
+    long pos;
+    Octstr *urlos,
+           *first_part,
+	   *last_part;
+    size_t first_part_len;
 
+    i = 0;
+    first_part_len = 0;
+    first_part = NULL;
+    last_part = NULL;
+    while (i < NUMBER_OF_URL_VALUES) {
+        pos = octstr_search(value, 
+            urlos = octstr_imm(si_URL_values[i].name), 0);
+        if (pos >= 0) {
+	    first_part = octstr_duplicate(value);
+            octstr_delete(first_part, pos, octstr_len(first_part) - pos);
+            first_part_len = octstr_len(first_part);
+            parse_inline_string(first_part, sibxml);
+            output_char(si_URL_values[i].token, sibxml);
+            last_part = octstr_duplicate(value);
+            octstr_delete(last_part, 0, first_part_len + octstr_len(urlos));
+            parse_inline_string(last_part, sibxml);
+	    octstr_destroy(first_part);
+            octstr_destroy(last_part);
+            break;
+        }
+        octstr_destroy(urlos);
+        ++i;
+    }
 
-
-
-
-
-
-
-
+    if (pos < 0) 
+	parse_inline_string(value, sibxml);
+        
+}
 

@@ -62,9 +62,15 @@ static void add_content_type(Octstr *content_flag, Octstr **wap_content)
     else if (octstr_compare(content_flag, octstr_imm("si")) == 0)
 	*wap_content = octstr_format("%s",
             "Content-Type: text/vnd.wap.si\r\n");
+    else if (octstr_compare(content_flag, octstr_imm("sl")) == 0)
+	*wap_content = octstr_format("%s",
+            "Content-Type: text/vnd.wap.sl\r\n");
     else if (octstr_compare(content_flag, octstr_imm("multipart")) == 0)
         *wap_content = octstr_format("%s",
             "Content-Type: multipart/related; boundary=fsahgwruijkfldsa\r\n");
+    else if (octstr_compare(content_flag, octstr_imm("sia")) == 0)
+	*wap_content = octstr_format("%s",
+            "Content-Type: application/vnd.wap.sia\r\n");
     else if (octstr_compare(content_flag, octstr_imm("scrap")) == 0)
         *wap_content = octstr_format("%s", "no type at all\r\n"); 
     else if (octstr_compare(content_flag, octstr_imm("nil")) == 0)
@@ -492,8 +498,8 @@ static void help(void)
     info(0, "print this info");
     info(0, "-c content qualifier");
     info(0, "Define content type of the push content. Wml, multipart, nil,"); 
-    info(0, "scrap and si accepted. Si is default, nil (no content type at");
-    info(0, " all) and scrap (random string) are used for debugging");
+    info(0, "scrap, sl, sia and si accepted. Si is default, nil (no content"); 
+    info(0, " type at all) and scrap (random string) are used for debugging");
     info(0, "-a application id");
     info(0, "Define the client application that will handle the push. Any,"); 
     info(0, "sia, ua, mms, nil and scrap accepted, default any.");
@@ -564,6 +570,8 @@ int main(int argc, char **argv)
 	        content_flag = octstr_create(optarg);
                 if (octstr_compare(content_flag, octstr_imm("wml")) != 0 && 
                     octstr_compare(content_flag, octstr_imm("si")) != 0 &&
+                    octstr_compare(content_flag, octstr_imm("sia")) != 0 &&
+                    octstr_compare(content_flag, octstr_imm("sl")) != 0 &&
                     octstr_compare(content_flag, octstr_imm("nil")) != 0 &&
                     octstr_compare(content_flag, octstr_imm("scrap")) != 0 &&
                     octstr_compare(content_flag, 

@@ -1,8 +1,7 @@
 /*
  * xml_definitions.h - definitions common to XML compilers
  *
- * This file contains definitions for global tokens and character set data 
- * structures
+ * This file contains definitions for global tokens 
  *
  * Tuomas Luttinen for Wapit Ltd.
  */

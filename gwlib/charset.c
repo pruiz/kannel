@@ -256,7 +256,7 @@ void charset_init(void)
 
     for (i = 0; chars_aliases[i].real != NULL; i++) {
       xmlAddEncodingAlias(chars_aliases[i].real,chars_aliases[i].alias);
-      debug("encoding",0,"Add encoding for %s",chars_aliases[i].alias);
+      /*debug("encoding",0,"Add encoding for %s",chars_aliases[i].alias);*/
     }
 }
 

@@ -10,6 +10,17 @@
 #include "wap/wap_events.h"
 #include "gwlib/gwlib.h"
 
+/* 
+ * Possible address types
+ */
+enum {
+    ADDR_USER,
+    ADDR_PLMN,
+    ADDR_IPV4,
+    ADDR_IPV6,
+    ADDR_WINA
+};
+
 /*
  * Compile PAP control document to a corresponding Kannel event. Checks vali-
  * dity of the document. The caller must initialize wap event to NULL. In add-
@@ -17,7 +28,8 @@
  *
  * After compiling, some semantic analysing of the resulted event. Do not
  * accept an IP address, when a non-IP bearer is requested, and a phone number,
- * when an IP-bearer is requested.
+ * when an IP-bearer is requested. In addition, update address_type field of
+ * the Kannel event.
  *
  * Returns 0, when success
  *        -1, when a non-implemented pap feature is asked for
@@ -28,3 +40,4 @@
 int pap_compile(Octstr *pap_content, WAPEvent **e);
 
 #endif
+

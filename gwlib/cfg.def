@@ -83,6 +83,12 @@ SINGLE_GROUP(ppg,
     OCTSTR(users)
     OCTSTR(ppg-allow-ip)
     OCTSTR(ppg-deny-ip)
+    OCTSTR(ssl-server-cert-file)
+    OCTSTR(ssl-server-key-file)
+)
+
+SINGLE_GROUP(test_ppg,
+    OCTSTR(ssl-client-certkey-file)
 )
 
 MULTI_GROUP(wap-push-user,

@@ -28,6 +28,7 @@
 #include "wap/wsp.h"
 #include "wap/wsp_strings.h"
 #include "wap_push_si_compiler.h"
+#include "wap_push_sl_compiler.h"
 #include "wap_push_pap_compiler.h"
 #include "wap_push_pap_mime.h"
 #include "wap_push_ppg_pushuser.h"
@@ -127,6 +128,10 @@ static long number_of_users = DEFAULT_NUMBER_OF_USERS;
 static Octstr *ppg_deny_ip = NULL;
 static Octstr *ppg_allow_ip = NULL; 
 static int user_configuration = USER_CONFIGURATION_NOT_ADDED;
+#ifdef HAVE_LIBSSL
+static Octstr *ssl_server_cert_file = NULL;
+static Octstr *ssl_server_key_file = NULL;
+#endif
 
 /*****************************************************************************
  *
@@ -229,9 +234,21 @@ static void send_bad_message_response(HTTPClient *c, Octstr *body_fragment,
                                       int code, int status);
 static void send_push_response(WAPEvent *e, int status);
 static void send_to_pi(HTTPClient *c, Octstr *reply_body, int status);
-/*static int parse_cgivars(List *cgivars, Octstr **username, Octstr **password);*/
 static void tell_fatal_error(HTTPClient *c, WAPEvent *e, Octstr *url, 
                              int status, int code);
+
+/*
+ * PPG core authentication (not related to any particular user).
+ */
+static int read_ppg_config(Cfg *cfg);
+static int ip_allowed_by_ppg(Octstr *ip);
+
+/*
+ * Interface to various compilers
+ */
+static Octstr *convert_wml_to_wmlc(struct content *content);
+static Octstr *convert_si_to_sic(struct content *content);
+static Octstr *convert_sl_to_slc(struct content *content);
 
 /*
  * Various utility functions
@@ -248,15 +265,12 @@ static int content_transformable(List *push_headers);
 static WAPAddrTuple *set_addr_tuple(Octstr *address, long cliport, 
                                     long servport);
 static WAPAddrTuple *addr_tuple_change_cliport(WAPAddrTuple *tuple, long port);
-static Octstr *convert_wml_to_wmlc(struct content *content);
-static Octstr *convert_si_to_sic(struct content *content);
 static void initialize_time_item_array(long time_data[], struct tm now);
 static int date_item_compare(Octstr *before, long time_data, long pos);
 static long parse_appid_header(Octstr **assigned_code);
 static Octstr *escape_fragment(Octstr *fragment);
-static int read_ppg_config(Cfg *cfg);
-static int ip_allowed_by_ppg(Octstr *ip);
 static int coriented_deliverable(long code);
+static int is_phone_number(long type_of_address);
 
 /*****************************************************************************
  *
@@ -381,6 +395,21 @@ static int read_ppg_config(Cfg *cfg)
      ppg_deny_ip = cfg_get(grp, octstr_imm("ppg-deny-ip"));
      ppg_allow_ip = cfg_get(grp, octstr_imm("ppg-allow-ip"));
 
+#ifdef HAVE_LIBSSL
+     ssl_server_cert_file = cfg_get(grp, octstr_imm("ssl-server-cert-file"));
+     ssl_server_key_file = cfg_get(grp, octstr_imm("ssl-server-key-file"));
+     if (ppg_port_ssl) {
+         if (ssl_server_cert_file != NULL && ssl_server_key_file != NULL) {
+             use_global_server_certkey_file(ssl_server_cert_file, 
+                                            ssl_server_key_file);
+         } else { 
+             panic(0, "cannot continue without server cert and/or key files");
+         }
+     }
+     octstr_destroy(ssl_server_cert_file);
+     octstr_destroy(ssl_server_key_file);
+#endif
+
      if ((list = cfg_get_multi_group(cfg, octstr_imm("wap-push-user")))
               == NULL) {
          info(0, "No configuration for any user, continuing without");
@@ -449,8 +478,8 @@ static void ota_read_thread (void *arg)
 }
 
 /*
- * Authorization failure as such causes a challenge to the client (a required by rfc
- * 2617, chapter 1).
+ * Authorization failure as such causes a challenge to the client (a required 
+ * by rfc 2617, chapter 1).
  * We store HTTPClient data structure corresponding a given push id, so that 
  * we can send responses to the rigth address.
  * Pap chapter 14.4.1 states that we must return http status 202 after we have 
@@ -474,7 +503,7 @@ static void http_read_thread(void *arg)
            *url,
            *ip,
            *not_found,
-           *username = NULL;
+           *username;
     int compiler_status,
         http_status;
     List *push_headers,                /* MIME headers themselves */
@@ -600,13 +629,15 @@ static void http_read_thread(void *arg)
 
             dict_put(urls, ppg_event->u.Push_Message.pi_push_id, url); 
  
-            if (!trusted_pi && user_configuration && 
-                !wap_push_ppg_pushuser_client_phone_number_acceptable(username, 
-		    ppg_event->u.Push_Message.address_value)) {
+            if (is_phone_number(ppg_event->u.Push_Message.address_type)) {
+                if (!trusted_pi && user_configuration && 
+                        !wap_push_ppg_pushuser_client_phone_number_acceptable(
+                        username, ppg_event->u.Push_Message.address_value)) {
                 tell_fatal_error(client, ppg_event, url, http_status, 
                                  PAP_FORBIDDEN);
 	        goto not_acceptable;
-	    }           
+	        }   
+            }        
 
             debug("wap.push.ppg", 0, "PPG: http_read_thread: pap control"
                   " entity compiled ok");
@@ -620,7 +651,7 @@ static void http_read_thread(void *arg)
 
         http_destroy_headers(push_headers);
         http_destroy_cgiargs(cgivars);
-        if (username) octstr_destroy(username);
+        octstr_destroy(username);
         octstr_destroy(mime_content);
         octstr_destroy(pap_content);
         octstr_destroy(push_data);
@@ -737,13 +768,6 @@ static int handle_push_message(WAPEvent *e, int status)
     coded_appid_value = check_x_wap_application_id_header(&push_headers);
     coriented_possible = coriented_deliverable(coded_appid_value);
     cless = cless_accepted(e, sm);
-
-    if (!cless && !coriented_possible) {
-        warning(0, "PPG: handle_push_message: wrong app id for confirmed push");
-        response_push_message(pm, PAP_BAD_REQUEST, status);
-        goto no_start;
-    }
-
     message_transformable = transform_message(&e, &tuple, push_headers, cless, 
                                               &type);
 
@@ -754,6 +778,12 @@ static int handle_push_message(WAPEvent *e, int status)
     if (!store_push_data(&pm, sm, e, tuple, cless)) {
         warning(0, "PPG: handle_push_message: duplicate push id");
         response_push_message(pm, PAP_DUPLICATE_PUSH_ID, status);
+        goto no_start;
+    }
+
+    if (!cless && !coriented_possible) {
+        warning(0, "PPG: handle_push_message: wrong app id for confirmed push");
+        response_push_message(pm, PAP_BAD_REQUEST, status);
         goto no_start;
     }
 
@@ -1550,6 +1580,17 @@ static Octstr *convert_si_to_sic(struct content *content)
     return NULL;
 }
 
+static Octstr *convert_sl_to_slc(struct content *content)
+{
+    Octstr *slc;
+
+    if (sl_compile(content->body, content->charset, &slc) == 0)
+        return slc;
+    warning(0, "PPG: sl compilation failed");
+    return NULL;
+}
+
+
 static Octstr *extract_base64(struct content *content)
 {
     Octstr *orig = octstr_duplicate(content->body);
@@ -1567,7 +1608,10 @@ static struct {
       convert_wml_to_wmlc },
     { "text/vnd.wap.si",
       "application/vnd.wap.sic",
-      convert_si_to_sic } 
+      convert_si_to_sic },
+    { "text/vnd.wap.sl",
+      "application/vnd.wap.slc",
+      convert_sl_to_slc}
 };
 
 #define NUM_CONVERTERS ((long) (sizeof(converters) / sizeof(converters[0])))
@@ -2544,6 +2588,10 @@ static void change_header_value(List **push_headers, char *name, char *value)
     http_header_add(*push_headers, name, value);
 }
 
+/*
+ * Some application level protocols may use MIME headers. This may cause problems
+ * to them. 
+ */
 static void remove_mime_headers(List **push_headers)
 {
     http_header_remove_all(*push_headers, "MIME-Version");
@@ -2774,8 +2822,10 @@ static Octstr *escape_fragment(Octstr *fragment)
     return fragment;
 }
 
-
-
+static int is_phone_number(long address_type)
+{
+    return address_type == ADDR_PLMN;
+}
 
 
 
