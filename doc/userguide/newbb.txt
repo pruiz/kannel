@@ -47,13 +47,13 @@ and arguments when they are launched. These arguments are:
  --fileverbosity
 
  -S		  Start the system initially at SUSPENDED state
-		  (Bearerbox only)
+ --suspended	  (Bearerbox only)
 
  -I		  Start the system initially at ISOLATED state
-		  (Bearerbox only)
+ --isolated	  (Bearerbox only)
 
  -H               Only try to open HTTP sendsms interface; if it
-                  fails, only warn about that. (Smsbox only)
+ --tryhttp        fails, only warn about that. (Smsbox only)
 
 KANNEL STATUSES
 

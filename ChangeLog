@@ -1,5 +1,14 @@
 2000-07-06  Kalle Marjola  <rpr@wapit.com>
 
+	* gw/bearerbox.c: added --suspended and --isolated command-line
+	option names (same as -S and -I)
+
+	* gw/smsbox.c: fix in command line parsing
+
+	* doc/userguide/newbb.conf: added data on those new options
+
+2000-07-06  Kalle Marjola  <rpr@wapit.com>
+
 	* gw/smsbox.c: modified so that if the HTTP-sendsms interface is
 	defined, the smsbox won't start if it fails to init it. Use new
 	command line option -H or --tryhttp to override this feature 

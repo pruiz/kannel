@@ -262,9 +262,9 @@ static int check_config(Config *config)
  */
 
 static int check_args(int i, int argc, char **argv) {
-    if (strcmp(argv[i], "-S")==0)
+    if (strcmp(argv[i], "-S")==0 || strcmp(argv[i], "--suspended")==0)
 	bb_status = BB_SUSPENDED;
-    else if (strcmp(argv[i], "-I")==0)
+    else if (strcmp(argv[i], "-I")==0 || strcmp(argv[i], "--isolated")==0)
 	bb_status = BB_ISOLATED;
     else
 	return -1;

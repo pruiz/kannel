@@ -453,8 +453,7 @@ error:
 
 
 static int check_args(int i, int argc, char **argv) {
-    if (strcmp(argv[i], "-H")==0
-	|| strcmp(argv[i], "--tryhttp"))
+    if (strcmp(argv[i], "-H")==0 || strcmp(argv[i], "--tryhttp")==0)
     {
 	only_try_http = 1;
     }
