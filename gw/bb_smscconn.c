@@ -582,6 +582,7 @@ Octstr *smsc2_status(int status_type)
         }
 
         conn_id = conn ? smscconn_id(conn) : octstr_imm("unknown");
+        conn_id = conn_id ? conn_id : octstr_imm("unknown");
         conn_name = conn ? smscconn_name(conn) : octstr_imm("unknown");
 
         if (status_type == BBSTATUS_HTML) {
