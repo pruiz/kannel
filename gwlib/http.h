@@ -36,9 +36,18 @@ enum http_action {
 };
 
 
+enum http_method {
+    GET,
+    POST,
+    PUT,
+    HEAD,
+};
+
+
 /**********************************************
  *This is where we store parsed URL information
- */
+ *
+ * "scheme://username:password@host:port/abs_path?query" */
 
 typedef struct URL {
     
@@ -62,6 +71,7 @@ typedef struct HTTPRequest {
     
     int action;
     int status;       /* server status code */
+    enum http_method method_type;
     int http_version_major, http_version_minor;
     URL *url;
     char temp[1024];
@@ -118,7 +128,7 @@ int http_get_u(char *url, char **type, char **data, size_t *size, HTTPHeader *he
  *http_post - POSTs an entity to server
  *
  * user provides headers and data. http_post counts the length of the data to send it to server.
- * pointer *size points to the size of the data returned by the server.
+ * pointer 'size' points to the size of the data returned by the server.
  */
 
 int http_post(char *urltext, char **type, char **data, size_t *size, HTTPHeader *header);
