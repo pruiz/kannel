@@ -774,8 +774,8 @@ int conn_register(Connection *conn, FDSet *fdset,
         result = 0;
     }
 
-    unlock_in(conn);
     unlock_out(conn);
+    unlock_in(conn);
 
     return result;
 }
