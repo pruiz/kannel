@@ -4,15 +4,12 @@
  * Lars Wirzenius
  */
  
-/* XXX SMSCConn status setting needs thinking */
+/* XXX check SMSCConn conformance */
 /* XXX UDH reception */
 /* XXX check UDH sending fields esm_class and data_coding from GSM specs */
-/* XXX some _resp pdus have semi-optional body field: used when status != 0 */
-/* XXX write out unbind pdus at quit time */
 /* XXX charset conversions on incoming messages (didn't work earlier, 
        either) */
 /* XXX numbering plans and type of number: check spec */
-/* XXX notice that link is down if responses to enquire_link aren't received */
  
 #include "gwlib/gwlib.h"
 #include "msg.h"
@@ -69,8 +66,10 @@ typedef struct {
     List *received_msgs;
     Counter *message_id_counter;
     Octstr *host;
+    Octstr *system_type;
     Octstr *username;
     Octstr *password;
+    Octstr *address_range;
     int transmit_port;
     int receive_port;
     int quitting;
@@ -79,7 +78,9 @@ typedef struct {
 
 
 static SMPP *smpp_create(SMSCConn *conn, Octstr *host, int transmit_port, 
-    	    	    	 int receive_port, Octstr *username, Octstr *password)
+    	    	    	 int receive_port, Octstr *system_type, 
+			 Octstr *username, Octstr *password,
+    	    	    	 Octstr *address_range)
 {
     SMPP *smpp;
     
@@ -92,8 +93,10 @@ static SMPP *smpp_create(SMSCConn *conn, Octstr *host, int transmit_port,
     smpp->received_msgs = list_create();
     smpp->message_id_counter = counter_create();
     smpp->host = octstr_duplicate(host);
+    smpp->system_type = octstr_duplicate(system_type);
     smpp->username = octstr_duplicate(username);
     smpp->password = octstr_duplicate(password);
+    smpp->address_range = octstr_duplicate(address_range);
     smpp->transmit_port = transmit_port;
     smpp->receive_port = receive_port;
     smpp->quitting = 0;
@@ -113,6 +116,7 @@ static void smpp_destroy(SMPP *smpp)
 	octstr_destroy(smpp->host);
 	octstr_destroy(smpp->username);
 	octstr_destroy(smpp->password);
+	octstr_destroy(smpp->address_range);
 	gw_free(smpp);
     }
 }
@@ -300,8 +304,14 @@ static Connection *open_transmitter(SMPP *smpp)
 			   counter_increase(smpp->message_id_counter));
     bind->u.bind_transmitter.system_id = octstr_duplicate(smpp->username);
     bind->u.bind_transmitter.password = octstr_duplicate(smpp->password);
-    bind->u.bind_transmitter.system_type = octstr_create("VMA");
+    if (smpp->system_type == NULL)
+	bind->u.bind_transmitter.system_type = octstr_create("VMA");
+    else
+	bind->u.bind_transmitter.system_type = 
+	    octstr_duplicate(smpp->system_type);
     bind->u.bind_transmitter.interface_version = 0x34;
+    bind->u.bind_transmitter.address_range = 
+    	octstr_duplicate(smpp->address_range);
     send_pdu(conn, bind);
     smpp_pdu_destroy(bind);
 
@@ -331,6 +341,8 @@ static Connection *open_receiver(SMPP *smpp)
     bind->u.bind_receiver.password = octstr_duplicate(smpp->password);
     bind->u.bind_receiver.system_type = octstr_create("VMA");
     bind->u.bind_receiver.interface_version = 0x34;
+    bind->u.bind_receiver.address_range = 
+    	octstr_duplicate(smpp->address_range);
     send_pdu(conn, bind);
     smpp_pdu_destroy(bind);
 
@@ -351,8 +363,10 @@ static void handle_pdu(SMPP *smpp, Connection *conn, SMPP_PDU *pdu,
     switch (pdu->type) {
     case deliver_sm:
 	/* XXX UDH */
-	/* XXX handle error return */
-	bb_smscconn_receive(smpp->conn, pdu_to_msg(pdu));
+	/* bb_smscconn_receive can fail, but we ignore that since we
+	   have no way to usefull tell the SMS center about this
+	   (no suitable error code for the deliver_sm_resp is defined) */
+	(void) bb_smscconn_receive(smpp->conn, pdu_to_msg(pdu));
 	resp = smpp_pdu_create(deliver_sm_resp, 
 			       pdu->u.deliver_sm.sequence_number);
 	break;
@@ -456,6 +470,7 @@ static void io_thread(void *arg)
     long pending_submits;
     long len;
     SMPP_PDU *pdu;
+    double timeout;
 
     io_arg = arg;
     smpp = io_arg->smpp;
@@ -478,7 +493,12 @@ static void io_thread(void *arg)
 	last_enquire_sent = date_universal_now();
 	pending_submits = -1;
 	len = 0;
-	while (!smpp->quitting && conn_wait(conn, 1.0) != -1) { /* XXX 1.0 should be calc'd */
+    	for (;;) {
+	    timeout = last_enquire_sent + SMPP_ENQUIRE_LINK_INTERVAL 
+	    	    	    - date_universal_now();
+    	    if (smpp->quitting || conn_wait(conn, timeout) == -1)
+	    	break;
+
 	    send_enquire_link(smpp, conn, &last_enquire_sent);
 	    
 	    while ((ret = read_pdu(conn, &len, &pdu)) == 1) {
@@ -581,7 +601,9 @@ int smsc_smpp_create(SMSCConn *conn, CfgGroup *grp)
     Octstr *password;
     Octstr *system_id;
     Octstr *system_type;
+    Octstr *address_range;
     SMPP *smpp;
+    int ok;
     
     host = cfg_get(grp, octstr_imm("host"));
     if (cfg_get_integer(&port, grp, octstr_imm("port")) == -1)
@@ -590,13 +612,26 @@ int smsc_smpp_create(SMSCConn *conn, CfgGroup *grp)
     	receive_port = 0;
     username = cfg_get(grp, octstr_imm("smsc-username"));
     password = cfg_get(grp, octstr_imm("smsc-password"));
+/* XXX system-id is unnecessary? */
     system_id = cfg_get(grp, octstr_imm("system-id"));
     system_type = cfg_get(grp, octstr_imm("system-type"));
+    address_range = cfg_get(grp, octstr_imm("address-range"));
     
-    /* XXX check that config is OK */
-    /* XXX implement address-range */
+    /* Check that config is OK */
+    ok = 1;
+    if (username == NULL) {
+	error(0, "SMPP: Configuration file doesn't specify username.");
+	ok = 0;
+    }
+    if (password == NULL) {
+	error(0, "SMPP: Configuration file doesn't specify password.");
+	ok = 0;
+    }
+    if (!ok)
+    	return -1;
 
-    smpp = smpp_create(conn, host, port, receive_port, username, password);
+    smpp = smpp_create(conn, host, port, receive_port, system_type, 
+    	    	       username, password, address_range);
     conn->data = smpp;
     conn->name = octstr_format("SMPP:%S:%d/%d:%S:%S", 
     	    	    	       host, port,
@@ -608,6 +643,7 @@ int smsc_smpp_create(SMSCConn *conn, CfgGroup *grp)
     octstr_destroy(password);
     octstr_destroy(system_id);
     octstr_destroy(system_type);
+    octstr_destroy(address_range);
 
     conn->status = SMSCCONN_CONNECTING;
     smpp->transmitter = gwthread_create(io_thread, io_arg_create(smpp, 1));

@@ -1,5 +1,16 @@
 2001-05-03  Lars Wirzenius  <liw@iki.fi>
 
+	* gw/smsc_smpp.c: Implemented system-type and address-range
+	variables from the config file. In the I/O thread, timeouts
+	are calculated to the next time when enquire_link needs to be
+	sent, instead of using 1.0 seconds always. Configuration file
+	is checked that it specifies smsc-username and smsc-password.
+	
+	* test/drive_smpp.conf: Added missing smsc-username and
+	smsc-password.
+
+2001-05-03  Lars Wirzenius  <liw@iki.fi>
+
 	* gw/smsc_smpp.c: Partly rewritten to use a simpler thread
 	structure and to deal with I/O errors (such as broken
 	connections). Most of the code is the same, but it has been
