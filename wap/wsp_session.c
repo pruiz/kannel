@@ -492,7 +492,7 @@ static WSPMachine *machine_create(void) {
 	#define ADDRTUPLE(name) p->name = NULL;
 	#define MACHINESLIST(name) p->name = gwlist_create();
 	#define CAPABILITIES(name) p->name = NULL;
-	#define COOKIES(name) p->name = NULL;
+	#define COOKIES(name) p->name = gwlist_create();
 	#define REFERER(name) p->name = NULL;
 	#define MACHINE(fields) fields
 	#include "wsp_server_session_machine.def"

@@ -1,4 +1,12 @@
 2005-02-18  Stipe Tolj  <stolj@wapme.de> 
+    * gw/wap-appl.c, wap/cookies.c, wap/wsp_session.c: fixing an assertion
+      PANIC, while passing a NULLed List* to cookies.c:add_cookie_to_cache().
+      We now gwlist_create() the cookies list inside machine_create().
+      Thanks to Jacob Dalsgaard <jakob.dalsgaard@cybercomgroup.com> for
+      reporting this and Davy for pushing the "recalling"-button.
+      [Msg-ID: <4018EB52.306@cybercomgroup.com>]
+
+2005-02-18  Stipe Tolj  <stolj@wapme.de> 
     * wap/wtp.c: fixing bug #197, causing wapbox to PANIC on truncated WDP
       datagrams. Thanks to Jonathan Houser <jhouser@wirelessonenet.com> for
       reporing this bug in ML users@kannel.org.

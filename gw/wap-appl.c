@@ -824,7 +824,6 @@ static void return_reply(int status, Octstr *content_body, List *headers,
  
 #ifdef ENABLE_COOKIES
         if (session_id != -1)
-            /* DAVI if (get_cookies(url, headers, find_session_machine_by_id(session_id)) == -1) */
             if (get_cookies(headers, find_session_machine_by_id(session_id)) == -1)
                 error(0, "WSP: Failed to extract cookies");
 #endif

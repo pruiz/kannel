@@ -170,9 +170,6 @@ int set_cookies(List *headers, WSPMachine *sm)
 		return -1;
 	}
 
-	if (sm->cookies == NULL)
-		sm->cookies = gwlist_create();
-
 	/* Expire cookies that have timed out */
 	expire_cookies(sm->cookies);
 
@@ -347,10 +344,10 @@ static Cookie *parse_cookie(Octstr *cookiestr)
 static void add_cookie_to_cache(const WSPMachine *sm, Cookie *value)
 {
 	gw_assert(sm != NULL);
-	gw_assert(sm -> cookies != NULL);
+	gw_assert(sm->cookies != NULL);
 	gw_assert(value != NULL);
 
-	gwlist_append(sm -> cookies, value);
+	gwlist_append(sm->cookies, value);
 
 	return;
 }
