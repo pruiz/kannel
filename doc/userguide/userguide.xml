@@ -3163,9 +3163,101 @@ test/fakesmsc -m 1 "100 500 udh %0eudh+stuff+here main+message"
 <appendix>
 <title>Setting up a dial-up line</title>
 
-	<para>This appendix explains how to set up a dial-up line for
-	use with the gateway. It will probably be very short, and refer
-	to existing documentation.</para>
+	<para>This appendix explains how to set up a dial-up line in Linux
+	for use with the Kannel WAP gateway. In order for it to work you need
+	a Linux kernel with PPP capabilities. Most distributions provides PPP
+	kernel support by default. For more information how to compile PPP
+	support into the kernel please read the "Linux Kernel HOWTO"
+	at http://www.linuxdoc.org/.</para>
+
+<sect1>
+<title>Analog modem</title>
+
+	<para>This section explains how to set up a dial-up line with an
+	analog modem.</para>
+
+	<para>Download and install the mgetty package.</para>
+
+	<screen>
+	<userinput>rpm -ivh mgetty-VERSION-rpm</userinput>
+	</screen>	
+
+	<para>To run mgetty as a daemon, add the following line to
+	/etc/inittab.</para>
+
+	<para>Read man inittab for more detailed information. In this
+	example we assume your modem is connected to the serial port ttyS0
+	(COM 1).</para>
+	
+	<screen>
+	<userinput>S0:2345:respawn:/sbin/mgetty ttyS0 -x 6 -D /dev/ttyS0
+	</userinput>
+	</screen>
+
+	<para>We need to start the pppd automatically when mgetty recieves
+	an AutoPPP request. Add the next line to /etc/mgetty+sendfax/login.config</para>
+
+	<screen>
+	<userinput>/AutoPPP/ - - /usr/sbin/pppd file /etc/ppp/options.server
+	</userinput>
+	</screen>
+
+	<para>In /etc/mgetty+sendfax/mgetty.config you might need to change
+	the connect speed between the computer and the modem. Note: this is
+	not the connect speed between the WAP client and the server modem.
+	If you are e.g. going to use a Nokia 7110 as the server side modem
+	you need to change the speed to 19200. Usually you can just leave the
+	speed to the default value (38400).</para>
+
+	<screen>
+	<userinput>speed 38400</userinput>
+	</screen>
+
+	<para>Add the following lines to /etc/ppp/options.server</para>
+	
+	<screen>
+	<userinput>refuse-chap
+	require-pap
+	lock
+	modem
+	crtscts
+	passive
+	192.168.1.10:192.168.1.20
+	debug
+	</userinput>
+	</screen>
+
+	<para>In /etc/ppp/pap-secrets add the username and password for the
+	ppp account. The IP address is the one assigned to the phone.</para>
+
+	<screen>
+	<userinput>wapuser * wappswd 192.168.0.20</userinput>
+	</screen>
+
+	<para>Configure your phone (this example is for Nokia 7110)</para>
+
+	<screen>
+	<userinput>homepage http:/yourhost/hello.wml
+	connection type continuous
+	connection security off
+	bearer data
+	dial up number (your phone number)
+	ip address (IP of host running bearerbox)
+	auth type normal
+	data call type analogue
+	data call speed 9600
+	username wapuser
+	password wappswd
+	</userinput>
+	</screen>
+</sect1>
+
+<sect1>
+<title>ISDN terminal</title>
+
+	<para>This section needs to be written</para>
+
+</sect1>
 
 </appendix>
 

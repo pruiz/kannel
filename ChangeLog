@@ -1,3 +1,7 @@
+2001-02-23  Peter Grönholm  <peter@wapit.com>
+
+        * userguide: Wrote section "Setting up a dial-up line"
+
 2001-02-21  Richard Braakman  <dark@wapit.com>
 
 	* gw/wap-appl.c: Suppress server-generated error pages if they
