@@ -220,15 +220,6 @@
 /* Define if you have and want to use the SQLite database library (-lsqlite) */
 #undef HAVE_SQLITE
 
-/* Define if you want to use the MySQL support for DLR (delivery reports) */
-#undef DLR_MYSQL
-
-/* Define if you want to use the simple database library (libSDB) support for DLR */
-#undef DLR_SDB
-
-/* Define if you want to use SQLite (libsqlite) support for DLR */
-#undef DLR_SQLITE
-
 /* Define version of used libSDB */
 #undef LIBSDB_VERSION
 

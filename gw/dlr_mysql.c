@@ -70,7 +70,7 @@
 #include "dlr_p.h"
 
 
-#ifdef DLR_MYSQL
+#ifdef HAVE_MYSQL
 #include <mysql/mysql.h>
 
 /*
@@ -392,5 +392,5 @@ struct dlr_storage *dlr_init_mysql(Cfg* cfg)
 {
     return NULL;
 }
-#endif /* DLR_MYSQL */
+#endif /* HAVE_MYSQL */
 

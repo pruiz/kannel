@@ -612,12 +612,36 @@
 	    Enable using PAM for authentication of sendsms users for
 	    smsbox.</para></listitem>
 
-        <listitem><para><literal>--enable-oracle</literal>
+        <listitem><para><literal>--with-mysql</literal>
 
-            Enable using Oracle OCI libraries for Oracle 8i/9i dbpool and
-            dlr support.</para></listitem>
+            Enable using MySQL libraries for DBPool and
+            DLR support.</para></listitem>
 
-	<!-- XXX DAVI add mysql, openssl and others in here -->
+        <listitem><para><literal>--with-mysql-dir=</literal><replaceable>DIR</replaceable>
+
+            Where to look for MySQL libs and header files.
+            DIR points to the installation of MySQL.</para></listitem>
+
+        <listitem><para><literal>--with-sdb</literal>
+
+            Enable using LibSDB libraries for dlr support.
+            <emphasis>Attention: No DBPool support and LibSDB doesn't support
+                       permanent database connections.</emphasis></para></listitem>
+
+        <listitem><para><literal>--with-oracle</literal>
+
+            Enable using Oracle OCI-Libraries for Oracle 8i/9i DBPool and
+            DLR support.</para></listitem>
+
+        <listitem><para><literal>--with-oracle-includes=</literal><replaceable>DIR</replaceable>
+
+            Where to look for Oracle OCI-Header files.</para></listitem>
+
+        <listitem><para><literal>--with-oracle-libs=</literal><replaceable>DIR</replaceable>
+
+            Where to look for Oracle OCI-Library files.</para></listitem>
+
+	<!-- XXX DAVI add openssl and others in here -->
 
 	</itemizedlist>
 	</para>

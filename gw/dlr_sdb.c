@@ -68,7 +68,7 @@
 #include "gwlib/gwlib.h"
 #include "dlr_p.h"
 
-#ifdef DLR_SDB
+#ifdef HAVE_SDB
 #include <sdb.h>
 static char *connection;
 
@@ -413,4 +413,4 @@ struct dlr_storage *dlr_init_sdb(Cfg* cfg)
 {
     return NULL;
 }
-#endif /* DLR_SDB */
+#endif /* HAVE_SDB */

@@ -1,3 +1,11 @@
+2004-01-10  Alexander Malysh  <a.malysh@centrium.de>
+    * gw-config.h.in, configure[.in], gw/dlr_[mysql|sdb].c, doc/userguide/userguide.xml:
+      Applied patch that removes '--with-dlr' configure option and replace:
+          --with-mysql --> --with-mysql-dir
+          --enable-[mysql|oracle|sdb|sqlite] --> --with-[mysql|oracle|sdb|sqlite]
+      Added documentation for those.
+      Msg-Id: <200401091444.52832.a.malysh@centrium.de> and <200401091517.54703.a.malysh@centrium.de>
+
 2004-01-08  Alexander Malysh  <a.malysh@centrium.de>
     * gwlib/http.[ch], gwlib/cfg.def, gw/wapbox.c, doc/userguide/userguide.xml:
       Applied patch from Vjacheslav Chekushin <slava@lmt.lv> that adds new config option

@@ -723,10 +723,10 @@ fi
 
 AC_CONFIG_SECTION([Configuring DB support])
 
-dnl Implement the --with-mysql option.
+dnl Implement the --with-mysql-dir option.
 
-AC_ARG_WITH(mysql,
-[  --with-mysql[=DIR]      where to look for MySQL libs and header files
+AC_ARG_WITH(mysql-dir,
+[  --with-mysql-dir=DIR    where to look for MySQL libs and header files
                           DIR points to the installation [/usr/local/mysql]],
 [ if test -d "$withval"; then
     mysqlloc="$withval";
@@ -751,13 +751,13 @@ AC_ARG_WITH(mysql,
 ])
 
 
-dnl Implement the --enable-mysql option. This will set HAVE_MYSQL in gw-config.h
+dnl Implement the --with-mysql option. This will set HAVE_MYSQL in gw-config.h
 dnl accordingly and enable the usage of the libmysqlclient routines.
 
 AC_MSG_CHECKING([whether to compile with MySQL support])
-AC_ARG_ENABLE(mysql,
-[  --enable-mysql          enable MySQL storage [disabled]], [
-  if test "$enableval" != yes ; then
+AC_ARG_WITH(mysql,
+[  --with-mysql            enable MySQL storage [disabled]], [
+  if test "$withval" != yes ; then
     AC_MSG_RESULT(disabled)
 else
   dnl test only if --with-mysql has not been used
@@ -781,7 +781,7 @@ else
         fi
       done
       if test "x$found" != "x1" ; then
-        AC_MSG_ERROR([Unable to find mysql.h, please provide a --with-mysql=<dir> location])
+        AC_MSG_ERROR([Unable to find mysql.h, please provide a --with-mysql-dir=<dir> location])
       fi
     else
       dnl mysql-4.x style
@@ -813,13 +813,13 @@ else
 ])
 
 
-dnl Implement the --enable-sdb option. This will set HAVE_SDB in gw-config.h
+dnl Implement the --with-sdb option. This will set HAVE_SDB in gw-config.h
 dnl accordingly and enable the usage of the libsdb routines.
 
 AC_MSG_CHECKING([whether to compile with LibSDB support])
-AC_ARG_ENABLE(sdb,
-[  --enable-sdb            enable LibSDB storage [disabled]], [
-  if test "$enableval" != yes; then
+AC_ARG_WITH(sdb,
+[  --with-sdb              enable LibSDB storage [disabled]], [
+  if test "$withval" != yes; then
     AC_MSG_RESULT(disabled)
   else
     AC_MSG_RESULT(searching)
@@ -845,13 +845,13 @@ AC_ARG_ENABLE(sdb,
 ])
 
 
-dnl Implement the --enable-sqlite option. This will set HAVE_SQLITE in gw-config.h
+dnl Implement the --with-sqlite option. This will set HAVE_SQLITE in gw-config.h
 dnl accordingly and enable the usage of the libsqlite routines.
 
 AC_MSG_CHECKING([whether to compile with SQLite support])
-AC_ARG_ENABLE(sqlite,
-[  --enable-sqlite         enable SQLite storage [disabled]], [
-  if test "$enableval" != yes; then
+AC_ARG_WITH(sqlite,
+[  --with-sqlite           enable SQLite storage [disabled]], [
+  if test "$withval" != yes; then
     AC_MSG_RESULT(disabled)
   else
     AC_MSG_RESULT(searching)
@@ -870,12 +870,12 @@ AC_ARG_ENABLE(sqlite,
 ])
 
 
-dnl Implement the --enable-oracle option. This will set HAVE_ORACLE in gw-config.h
+dnl Implement the --with-oracle option. This will set HAVE_ORACLE in gw-config.h
 dnl accordingly and enable the usage of the OCI routines.
 
 AC_MSG_CHECKING([whether to compile with Oracle support])
-AC_ARG_ENABLE(oracle,
-[  --enable-oracle         enable ORACLE storage [disabled]],
+AC_ARG_WITH(oracle,
+[  --with-oracle           enable ORACLE storage [disabled]],
 [
     AC_MSG_RESULT(searching)
         AC_ARG_WITH(
@@ -915,50 +915,6 @@ AC_ARG_ENABLE(oracle,
     AC_MSG_RESULT(yes)
 ],
 [AC_MSG_RESULT(disabled)])
-
-
-dnl Implement the --with-dlr option.
-dnl Checks which external DLR storage should be used.
-
-AC_ARG_WITH(dlr,
-[  --with-dlr[=TYPE TYPE]  select DLR storage to use: internal/mysql/sdb [internal]],
-[ AC_CONFIG_SECTION([Configuring DLR support])
-  for myval in $withval; do
-    AC_MSG_CHECKING([for DLR storage type $myval])
-    case "$myval" in
-      internal)
-        ;;
-      mysql)
-        if test "$MYSQL" != "yes"; then
-          AC_MSG_ERROR(Option --with-dlr=mysql requires MySQL client support)
-        else
-          AC_MSG_RESULT(enabled)
-          AC_DEFINE(DLR_MYSQL)
-        fi
-        ;;
-      sdb)
-        if test "$SDB" != "yes"; then
-          AC_MSG_ERROR(Option --with-dlr=sdb requires SDB support)
-        else
-          AC_DEFINE(DLR_SDB)
-          AC_MSG_RESULT(enabled)
-        fi
-        ;;
-      sqlite)
-        if test "$SQLITE" != "yes"; then
-          AC_MSG_ERROR(Option --with-dlr=sqlte requires SQLite support)
-        else
-          AC_DEFINE(DLR_SQLITE)
-          AC_MSG_RESULT(enabled)
-        fi
-        ;;
-      *) 
-        AC_MSG_ERROR(Unknown DLR storage support!)
-        exit 1 
-        ;;
-    esac
-  done
-])
 
 
 dnl Implement the --with-wtls option.
