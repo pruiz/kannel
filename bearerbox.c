@@ -17,6 +17,7 @@
 #include "wapitlib.h"
 #include "config.h"
 #include "http.h"
+#include "cgi.h"
 
 #include "bb_msg.h"
 #include "msg.h"
@@ -91,6 +92,9 @@ typedef struct bb_s {
     int http_port;		/* adminstration port */
     int wapbox_port;		/* wap box port */
     int smsbox_port;		/* sms box port */
+    
+    char *admin_username;	/* for HTTP-adminstration */
+    char *admin_password;	/* ditto */
 
     int http_fd, wap_fd, sms_fd;	/* socket FDs */
     
@@ -111,6 +115,7 @@ static BearerBox *bbox = NULL;
  */
 
 static void print_threads(char *buffer);
+static void print_queues(char *buffer);
 
 
 
@@ -396,7 +401,6 @@ static void *smscenter_thread(void *arg)
     RQueueItem	*msg;
     time_t	our_time, last_time;
     int 	ret;
-    int		wait;
     
     us = arg;
     us->status = BB_STATUS_OK;
@@ -405,7 +409,6 @@ static void *smscenter_thread(void *arg)
     info(0, "smscenter thread [%d/%s]..", us->id, smsc_name(us->smsc));
     
     while(bbox->abort_program < 2) {
-	wait = 1;
 	if (us->status == BB_STATUS_KILLED) break;
 	HEARTBEAT_UPDATE(our_time, last_time, us);
 
@@ -420,6 +423,7 @@ static void *smscenter_thread(void *arg)
 	/* check for any new messages from SMSC
 	 */
 	if (bbox->abort_program == 0 &&
+	    bbox->suspended == 0 &&
 	    rq_queue_len(bbox->request_queue, NULL) < bbox->max_queue) {
 
 	    ret = smsc_get_message(us->smsc, &msg);
@@ -432,16 +436,15 @@ static void *smscenter_thread(void *arg)
 		route_msg(us, msg);
 	    
 		rq_push_msg(bbox->request_queue, msg);
-		debug(0, "Got message [%d] from %s", msg->id, smsc_name(us->smsc));
-		wait = 0;
+		continue;
 	    }
 	}
-	if (wait)
-	    usleep(1000);
+	usleep(1000);
     }
-    us->status = BB_STATUS_DEAD;
+    warning(0, "SMSC: Closing and dying...");
     smsc_close(us->smsc);
     us->smsc = NULL;
+    us->status = BB_STATUS_DEAD;
     return NULL;
 }
 
@@ -481,15 +484,22 @@ static void *csdrouter_thread(void *arg)
 	}
 	/* check for any new messages from CSD Router
 	 */
-	msg = csdr_get_message(us->csdr);
-	if (msg) {
-	    route_msg(us, msg);
-	    rq_push_msg(bbox->request_queue, msg);
-	    continue;	/* is this necessary? */
-	}
+	if (bbox->abort_program == 0 &&
+	    bbox->suspended == 0 &&
+	    rq_queue_len(bbox->request_queue, NULL) < bbox->max_queue) {
 
+	    msg = csdr_get_message(us->csdr);
+	    if (msg) {
+		route_msg(us, msg);
+		rq_push_msg(bbox->request_queue, msg);
+		continue;	/* is this necessary? */
+	    }
+	}
 	usleep(1000);
     }
+    warning(0, "CSDR: Closing and dying...");
+    csdr_close(us->csdr);
+    us->csdr = NULL;
     us->status = BB_STATUS_DEAD;
     return NULL;
 }
@@ -546,7 +556,7 @@ static void *wapboxconnection_thread(void *arg)
 	    continue;
 	}
     }
-    info(0, "WAPBOXC: Closing and dying...");
+    warning(0, "WAPBOXC: Closing and dying...");
     boxc_close(us->boxc);
     us->boxc = NULL;
     us->status = BB_STATUS_DEAD;
@@ -630,7 +640,7 @@ static void *smsboxconnection_thread(void *arg)
 	written--;
 	usleep(1000);
     }
-    info(0, "SMSBOXC: Closing and dying...");
+    warning(0, "SMSBOXC: Closing and dying...");
     boxc_close(us->boxc);
     us->boxc = NULL;
     us->status = BB_STATUS_DEAD;
@@ -804,11 +814,59 @@ static void new_bbt_smsbox()
  * HTTP ADMINSTRATION
  */
 
+static char *http_admin_command(char *command, CGIArg *list)
+{
+    char *val;
+    
+    if (cgiarg_get(list, "username", &val) == -1 ||
+	bbox->admin_username == NULL ||
+	strcasecmp(bbox->admin_username, val) != 0 ||
+	cgiarg_get(list, "password", &val) == -1 ||
+	bbox->admin_password == NULL ||
+	strcmp(bbox->admin_password, val) != 0)
+
+	return "Authorization failed";	
+
+    if (strcasecmp(command, "/cgi-bin/stop") == 0) {
+	if (bbox->suspended != 0)
+	    return "Already suspended";
+	else {
+	    bbox->suspended = 1;
+	    info(0, "Suspended via HTTP-admin");
+	    return "Suspended";
+	}
+    }
+    else if (strcasecmp(command, "/cgi-bin/start") == 0) {
+	if (bbox->suspended == 0)
+	    return "Already running";
+	else {
+	    bbox->suspended = 0;
+	    info(0, "Re-started via HTTP-admin");
+	    return "Re-started";
+	}
+    }
+    else if (strcasecmp(command, "/cgi-bin/kill") == 0) {
+	if (bbox->abort_program > 0)
+	    return "Already killed, trying to die";
+	else {
+	    bbox->abort_program = 1;
+	    warning(0, "Shutdown initiated via HTTP-admin");
+	    return "Shutdown started";
+	}
+    }
+    else
+	return "Unknown request.";
+}
+
+
+
 static void *http_request_thread(void *arg)
 {
     int client;
     char *path = NULL, *args = NULL, *client_ip = NULL;
-    char answer[10*1024];
+    char answerbuf[10*1024];
+    char *answer = answerbuf;
+    CGIArg *arglist;
     
     client = httpserver_get_request(bbox->http_fd, &client_ip, &path, &args);
     bbox->accept_pending--;
@@ -817,9 +875,25 @@ static void *http_request_thread(void *arg)
 	return NULL;
     }
 
-    sprintf(answer, "HTTP adminstration not yet installed, you have our sympathy");
-    info(0, "%s", answer);
+    /* print client information */
 
+    info(0, "Get HTTP request < %s > from < %s >", path, client_ip);
+    
+    if (strcmp(path, "/cgi-bin/status") == 0) {
+	char buf[1024], buf2[1024];
+	print_queues(buf);
+	print_threads(buf2);
+	sprintf(answer, "<pre>%s\n\nQUEUE STATUS:\n%s\n\nTHREAD STATUS:\n%s</pre>",
+		(bbox->abort_program > 0) ? "Gateway is going down..." : 
+		(bbox->suspended > 0) ? "Gateway is currently suspended" :
+		"Gateway is running",
+		buf, buf2);
+    } else {
+	arglist = cgiarg_decode_to_list(args);
+	answer = http_admin_command(path, arglist);
+	
+	cgiarg_destroy_list(arglist);
+    }
     if (httpserver_answer(client, answer) == -1)
 	error(0, "HTTP: Error responding to client. Too bad.");
 
@@ -857,6 +931,7 @@ static void http_start_thread()
 static void check_queues(void)
 {
     int ret;
+    time_t now;
     RQueueItem *ptr, *prev;
     
     ret = pthread_mutex_lock(&bbox->request_queue->mutex);
@@ -865,6 +940,7 @@ static void check_queues(void)
 
     ptr = bbox->request_queue->first;
     prev = NULL;
+    now = time(NULL);
     while(ptr) {
 	/*
 	 * TODO:
@@ -872,6 +948,12 @@ static void check_queues(void)
 	 * receiver. Nuke if there is no, and put a NACK into
 	 * queue unless it was ACK/NACK message
 	 */
+	
+	if (ptr->time_tag + 300 < now)
+	    warning(0, "We have a message older than 5 minutes in queue!");
+
+	/* TODO: send mail or something like that! */
+	
 	ptr = ptr->next;
     }
     ret = pthread_mutex_unlock(&bbox->request_queue->mutex);
@@ -1043,13 +1125,14 @@ static void update_queue_watcher()
 	goto error;
 
     c++;
-    if (c >= 20) {
-	if (c > 120 || req > 0 || rep > 0) {
-	    char buf[1024];
-	    print_queues(buf);
-	    info(0, "\n%s", buf);
-	    c = 0;
-	}
+    if (c % 20 == 19)
+	check_queues();
+    
+    if (c >= 120) {
+	char buf[1024];
+	print_queues(buf);
+	info(0, "\n%s", buf);
+	c = 0;
     }
     return;	      
     
@@ -1217,6 +1300,8 @@ static void init_bb(Config *cfg)
     bbox->heartbeat_freq = BB_DEFAULT_HEARTBEAT;
     bbox->max_queue = BB_DEFAULT_MAX_QUEUE;
     bbox->pid_file = NULL;
+    bbox->admin_username = NULL;
+    bbox->admin_password = NULL;
     bbox->global_prefix = NULL;
     
     grp = config_first_group(cfg);
@@ -1231,6 +1316,10 @@ static void init_bb(Config *cfg)
 	    bbox->smsbox_port = atoi(p);
 	if ((p = config_get(grp, "global-prefix")) != NULL)
 	    bbox->global_prefix = p;
+	if ((p = config_get(grp, "admin-username")) != NULL)
+	    bbox->admin_username = p;
+	if ((p = config_get(grp, "admin-password")) != NULL)
+	    bbox->admin_password = p;
 	if ((p = config_get(grp, "heartbeat-freq")) != NULL)
 	    bbox->heartbeat_freq = atoi(p);
 	if ((p = config_get(grp, "pid-file")) != NULL)

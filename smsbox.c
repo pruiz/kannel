@@ -23,25 +23,26 @@
  * 1. main loop opens a TCP/IP socket into the bearer box, doing
  *    necessary handshake
  *
- * 2. for each SMS Message received, an ACK is sent back to bearer
- *    box and then a new thread is created to handle the request
+ * 2. for each SMS Message received, a new thread is created to
+ *    handle the request
  *
- * 3. replies to requests and HTTP-initiated messages are added
- *    to reply queue, which is then emptied by the main loop onto
- *    the bearer box
+ * 3. replies to requests and HTTP-initiated messages are sent
+ *    (back) to the bearerbox. A global mutex is used for locking
+ *    purposes
  *
  * THREAD FUNCTION:
  *
  * this program can also be used as a separate thread in Bearer Box
- * When used this way, different main porgram is simply used and messages
- * are transfered via queue
+ * When used this way, request thread is directly created by the
+ * main program in bearerbox and repolies directly added to the
+ * beare box reply queue. TODO: This functionality is added later.
  *
  * CONFIGURATION:
  *
  * - Information required for connecting the bearer box is stored into
  *   a seperate configuration file.
  * - Service handling information is received from the bearer box during
- *   handshake procedure
+ *   handshake procedure (currently: from same configuratipon as rest)
  *
  */
 
