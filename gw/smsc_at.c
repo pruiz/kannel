@@ -3,11 +3,14 @@
  *
  * Yann Muller - 3G Lab, 2000.
  * 
+ * Ericsson code by Chris Blown 30/01/2001 - Hinterlands Aust.
+ *
  * Make sure your kannel configuration file contains the following lines
  * to be able to use the AT SMSC:
  *     group = smsc
  *     smsc = at
- *     modemtype = wavecom | premicell | siemens | falcom | nokiaphone
+ *     modemtype = wavecom | premicell | siemens | falcom |
+ *                 nokiaphone | ericsson
  *     device = /dev/xxx 
  */
 
@@ -62,6 +65,7 @@ static int numtext(int num);
 #define SIEMENS		"siemens"
 #define FALCOM		"falcom"
 #define NOKIAPHONE	"nokiaphone"
+#define ERICSSON	"ericsson"
 
 /******************************************************************************
  * Message types defines
@@ -177,11 +181,21 @@ SMSCenter *at_open(char *serialdevice, char *modemtype, char *pin,
 				goto error;
 		}
 	}
+
 	/* Set the modem to PDU mode and autodisplay of new messages */
 	if(send_modem_command(smsc->at_fd, "AT+CMGF=0", 0) == -1)
 		goto error;
-	if(send_modem_command(smsc->at_fd, "AT+CNMI=1,2,0,0,0", 0) == -1)
-		goto error;
+
+	/* The Ericsson GM12 modem requires different new message 
+	 * indication options from the other modems */ 
+ 	if(strcmp(smsc->at_modemtype, ERICSSON) == 0) {
+		if(send_modem_command(smsc->at_fd, "AT+CNMI=3,2,0,0", 0) == -1)
+			goto error;
+	}
+	else {
+		if(send_modem_command(smsc->at_fd, "AT+CNMI=1,2,0,0,0", 0) == -1)
+                        goto error;
+	}
 		
 	sprintf(smsc->name, "AT: %s", smsc->at_serialdevice); 
 	
@@ -270,9 +284,10 @@ int at_submit_msg(SMSCenter *smsc, Msg *msg) {
 	/* Some modem types need a '00' prepended to the PDU
 	 * to indicate to use the default SC. */
 	sc[0] = '\0';
-	if((strcmp(smsc->at_modemtype, WAVECOM) == 0) || 
-       (strcmp(smsc->at_modemtype, SIEMENS) == 0) ||
-	   (strcmp(smsc->at_modemtype, NOKIAPHONE) == 0))
+	if((strcmp(smsc->at_modemtype, WAVECOM ) == 0) || 
+	   (strcmp(smsc->at_modemtype, SIEMENS ) == 0) ||
+	   (strcmp(smsc->at_modemtype, NOKIAPHONE ) == 0) ||
+	   (strcmp(smsc->at_modemtype, ERICSSON ) == 0))
 		strcpy(sc, "00");
 	
 	if(msg_type(msg)==sms) {
@@ -476,7 +491,8 @@ static int pdu_extract(SMSCenter *smsc, Octstr **pdu) {
 	/* skip the SMSC address on some modem types */
    	if((strcmp(smsc->at_modemtype, WAVECOM) == 0) ||
 	   (strcmp(smsc->at_modemtype, SIEMENS) == 0) ||
-       (strcmp(smsc->at_modemtype, NOKIAPHONE) == 0)) {
+	   (strcmp(smsc->at_modemtype, ERICSSON) == 0) ||
+	   (strcmp(smsc->at_modemtype, NOKIAPHONE) == 0) ) {
 		tmp = hexchar(octstr_get_char(buffer, pos))*16
 		    + hexchar(octstr_get_char(buffer, pos+1));
 		tmp = 2 + tmp * 2;

@@ -1,3 +1,8 @@
+2001-02-07  Yann Muller  <ymuller@3glab.com>
+
+	* gw/smsc_at.c: added support for Ericsson GSM modems (patch from
+	Chris Blown).
+
 2001-02-06  Uoti Urpala  <uau@wapit.com>
 
 	* gw/urltrans.c: Changed the %a URL parameter to mean the original
