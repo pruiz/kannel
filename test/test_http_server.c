@@ -93,7 +93,7 @@ static void client_thread(void *arg)
 }
 
 static void help(void) {
-    info(0, "Usage: test_http_server [-v loglevel][-l logfile][-f file][-h][-q][-p port]\n");
+    info(0, "Usage: test_http_server [-v loglevel][-l logfile][-f file][-h][-q][-p port][-s][-c ssl_cert][-k ssl_key]\n");
 }
 
 static void sigterm(int signo) {
@@ -109,6 +109,8 @@ int main(int argc, char **argv) {
     Octstr *log_filename;
     Octstr *file_contents;
     int ssl = 0;   /* indicate if SSL-enabled server should be used */
+    Octstr *ssl_server_cert_file = NULL;
+    Octstr *ssl_server_key_file = NULL;
 
     gwlib_init();
 
@@ -123,14 +125,14 @@ int main(int argc, char **argv) {
     filename = NULL;
     log_filename = NULL;
 
-    while ((opt = getopt(argc, argv, "hqv:p:tf:l:")) != EOF) {
+    while ((opt = getopt(argc, argv, "hqv:p:tf:l:sc:k:")) != EOF) {
 	switch (opt) {
 	case 'v':
 	    log_set_output_level(atoi(optarg));
 	    break;
 
         case 'q':
-	    verbose = 0;
+	    verbose = 0;                                           
 	    break;
 
 	case 'h':
@@ -144,6 +146,20 @@ int main(int argc, char **argv) {
 	case 't':
 	    use_threads = 1; /* XXX unimplemented as of now */
 	    break;
+
+    case 'c':
+	    octstr_destroy(ssl_server_cert_file);
+	    ssl_server_cert_file = octstr_create(optarg);
+        break;
+
+    case 'k':
+	    octstr_destroy(ssl_server_key_file);
+	    ssl_server_key_file = octstr_create(optarg);
+        break;
+
+	case 's':
+        ssl = 1;
+        break;
 
 	case 'f':
 	    filename = optarg;
@@ -172,6 +188,20 @@ int main(int argc, char **argv) {
     else
     	file_contents = octstr_read_file(filename);
 
+    /*
+     * check if we are doing a SSL-enabled server version here
+     * load the required cert and key file
+     */
+    if (ssl) {
+        if (ssl_server_cert_file != NULL && ssl_server_key_file != NULL) {
+            use_global_server_certkey_file(ssl_server_cert_file, ssl_server_key_file);
+            octstr_destroy(ssl_server_cert_file);
+            octstr_destroy(ssl_server_key_file);
+        } else {
+            panic(0, "certificate and public key need to be given!");
+        }
+    }
+     
     if (http_open_port(port, ssl) == -1)
 	panic(0, "http_open_server failed");
 
