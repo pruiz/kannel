@@ -1132,6 +1132,10 @@ int smsc_smpp_create(SMSCConn *conn, CfgGroup *grp)
 	    error(0, "SMPP: Configuration file doesn't specify password."); 
 	    ok = 0; 
     } 
+    if (system_type == NULL) { 
+	    error(0, "SMPP: Configuration file doesn't specify system-type."); 
+	    ok = 0; 
+    } 
     if (!ok) 
         return -1; 
  
