@@ -289,6 +289,7 @@ static Connection *open_send_connection(SMSCConn *conn)
 		continue;
 	    }
 	    privdata->last_activity_time = 0; /* to force keepalive after login */
+	    privdata->can_write = 1;
 
 	}
 
@@ -756,7 +757,7 @@ static void clear_sent(PrivData *privdata)
  */
 static EMI2Event emi2_wait (SMSCConn *conn, Connection *server, double seconds)
 {
-    if (list_len(PRIVDATA(conn)->outgoing_queue)) {
+    if (emi2_can_send(conn) && list_len(PRIVDATA(conn)->outgoing_queue)) {
 	return EMI2_SENDREQ;
     }
     
@@ -1119,9 +1120,20 @@ static void emi2_send_loop(SMSCConn *conn, Connection **server)
     PrivData *privdata = conn->data;
 
     for (;;) {
-	double timeouttime = emi2_get_timeouttime (conn, *server);
+	double timeouttime;
+	EMI2Event event;
 	
-	EMI2Event event = emi2_wait (conn, *server, timeouttime);
+	if (emi2_needs_keepalive (conn)) {
+	    if (*server == NULL) {
+		return; /* reopen the connection */
+	    }
+	    
+	    emi2_keepalive_handling (conn, *server);
+	}
+	
+	timeouttime = emi2_get_timeouttime (conn, *server);
+	
+	event = emi2_wait (conn, *server, timeouttime);
 	
 	switch (event) {
 	case EMI2_CONNERR:
@@ -1146,17 +1158,10 @@ static void emi2_send_loop(SMSCConn *conn, Connection **server)
 	case EMI2_TIMEOUT:
 	    break;
 	}
+
         if ((*server !=NULL) && (emi2_handle_smscreq (conn, *server) < 0)) {
             return; /* reopen the connection */
         }
-	
-	if (emi2_needs_keepalive (conn)) {
-	    if (*server == NULL) {
-		return; /* reopen the connection */
-	    }
-	    
-	    emi2_keepalive_handling (conn, *server);
-	}
 	
 	emi2_idleprocessing (conn);
 	emi2_idletimeout_handling (conn, server);

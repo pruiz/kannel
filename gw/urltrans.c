@@ -349,8 +349,8 @@ Octstr *urltrans_get_pattern(URLTranslation *t, Msg *request)
 
 	switch (octstr_get_char(pattern, pos + 1)) {
 	case 'k':
-        if (num_words <= 0)
-        break;
+	    if (num_words <= 0)
+		break;
 	    enc = octstr_duplicate(list_get(word_list, 0));
 	    octstr_url_encode(enc);
 	    octstr_append(result, enc);
@@ -437,7 +437,7 @@ Octstr *urltrans_get_pattern(URLTranslation *t, Msg *request)
 		octstr_append(result, enc);
 		octstr_destroy(enc);
 	    }
-	break;
+	    break;
 
 	case 'a':
 	    for (j = 0; j < num_words; ++j) {
@@ -552,10 +552,8 @@ Octstr *urltrans_get_pattern(URLTranslation *t, Msg *request)
     if (t->type == TRANSTYPE_POST_URL && t->strip_keyword)
 	strip_keyword(request);
 
-    if (url != NULL) 
-	octstr_destroy(url);
-    if (reply != NULL)
-	octstr_destroy(reply);
+    octstr_destroy(url);
+    octstr_destroy(reply);
 
     list_destroy(word_list, octstr_destroy_item);
     return result;
