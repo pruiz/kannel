@@ -1,23 +1,5 @@
-/* config.h.in.  Generated automatically from configure.in by autoheader.  */
-/* config.h.top - config.h.in prefix, used by autoheader */
-
-#ifndef GW_AC_CONFIG_H
-#define GW_AC_CONFIG_H
-
-/* Define to empty if the keyword does not work.  */
-#undef const
-
-/* Define if you don't have vprintf but do have _doprnt.  */
-#undef HAVE_DOPRNT
-
-/* Define if you have the strftime function.  */
-#undef HAVE_STRFTIME
-
-/* Define if you have the vprintf function.  */
-#undef HAVE_VPRINTF
-
-/* Define to `unsigned' if <sys/types.h> doesn't define.  */
-#undef size_t
+#ifndef CONFIG_H
+#define CONFIG_H
 
 /* Define if you have the ANSI C header files.  */
 #undef STDC_HEADERS
@@ -30,12 +12,6 @@
 
 /* Define if you have getopt_long(3). */
 #undef HAVE_GETOPT_LONG
-
-/* Define if you can safely include both <sys/time.h> and <time.h>.  */
-#undef TIME_WITH_SYS_TIME
-
-/* Define if your <sys/time.h> declares struct tm.  */
-#undef TM_IN_SYS_TIME
 
 /* the VERSION symbol - for older autoconfs */
 #undef VERSION
@@ -64,53 +40,17 @@
 /* Define if you have the socket function.  */
 #undef HAVE_SOCKET
 
-/* Define if you have the strcspn function.  */
-#undef HAVE_STRCSPN
-
-/* Define if you have the strdup function.  */
-#undef HAVE_STRDUP
-
-/* Define if you have the strerror function.  */
-#undef HAVE_STRERROR
-
-/* Define if you have the strspn function.  */
-#undef HAVE_STRSPN
-
-/* Define if you have the strstr function.  */
-#undef HAVE_STRSTR
-
-/* Define if you have the strtol function.  */
-#undef HAVE_STRTOL
-
 /* Define if you have the <fcntl.h> header file.  */
 #undef HAVE_FCNTL_H
-
-/* Define if you have the <gnome-xml/parser.h> header file.  */
-#undef HAVE_GNOME_XML_PARSER_H
-
-/* Define if you have the <limits.h> header file.  */
-#undef HAVE_LIMITS_H
 
 /* Define if you have the <pthread.h> header file.  */
 #undef HAVE_PTHREAD_H
 
-/* Define if you have the <stdarg.h> header file.  */
-#undef HAVE_STDARG_H
-
 /* Define if you have the <stdint.h> header file.  */
 #undef HAVE_STDINT_H
 
-/* Define if you have the <stdlib.h> header file.  */
-#undef HAVE_STDLIB_H
-
-/* Define if you have the <string.h> header file.  */
-#undef HAVE_STRING_H
-
 /* Define if you have the <sys/ioctl.h> header file.  */
 #undef HAVE_SYS_IOCTL_H
-
-/* Define if you have the <sys/time.h> header file.  */
-#undef HAVE_SYS_TIME_H
 
 /* Define if you have the <sys/types.h> header file.  */
 #undef HAVE_SYS_TYPES_H
@@ -161,5 +101,3 @@
 #undef HAVE_INET_ATON
 
 #endif
-
-/* config.h.bot - config.h.in suffix, used by autoheader */

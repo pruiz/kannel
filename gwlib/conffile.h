@@ -24,8 +24,8 @@
  * Lars Wirzenius <liw@wapit.com>
  */
 
-#ifndef CONFIG_H
-#define CONFIG_H
+#ifndef CONFFILE_H
+#define CONFFILE_H
 
 typedef struct ConfigVar {
 	struct ConfigVar *next;

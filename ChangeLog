@@ -1,3 +1,13 @@
+Thu Mar 30 05:28:02 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* acconfig.h, config.h.bot, config.h.top, stamp-h.in: Removed as
+	unnecessary.
+	
+	* config.h.in, configure.in, gwlib/conffile.h, gwlib/log.c:
+	Cleaned up by removing unnecessary checks. For example, since
+	we *require* an ANSI C compiler anyway, there's no point in
+	checking for const.
+
 Thu Mar 30 04:47:25 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* gwlib/gwmem.c: Added some code to keep track of memory allocations

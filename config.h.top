@@ -1,4 +1,0 @@
-/* config.h.top - config.h.in prefix, used by autoheader */
-
-#ifndef GW_AC_CONFIG_H
-#define GW_AC_CONFIG_H
