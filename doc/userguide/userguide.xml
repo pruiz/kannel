@@ -626,8 +626,7 @@
         <listitem><para><literal>--with-sdb</literal>
 
             Enable using LibSDB libraries for dlr support.
-            <emphasis>Attention: No DBPool support and LibSDB doesn't support
-                       permanent database connections.</emphasis></para></listitem>
+            <emphasis>Attention: No DBPool support.</emphasis></para></listitem>
 
         <listitem><para><literal>--with-oracle</literal>
 
