@@ -1,3 +1,7 @@
+Tue Mar  7 12:51:35 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* gwlib/thread.c: Added missing #include for <string.h>.
+
 Sun Mar  5 12:53:14 CET 2000	Patrick Schaaf	<bof@bof.de>
 
 	* gw/wapbox.c, gw/wsp_http.c, gwlib/octstr.*: more or less
