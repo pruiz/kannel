@@ -1350,6 +1350,13 @@ static void server_init(void)
 }
 
 
+static void destroy_int_pointer(void *p)
+{
+    (void) close(*(int *) p);
+    gw_free(p);
+}
+
+
 static void server_shutdown(void)
 {
     list_remove_producer(new_server_sockets);
@@ -1358,6 +1365,7 @@ static void server_shutdown(void)
     mutex_destroy(server_thread_lock);
     fdset_destroy(server_fdset);
     list_destroy(clients_with_requests, client_destroy);
+    list_destroy(new_server_sockets, destroy_int_pointer);
 }
 
 

@@ -1,5 +1,9 @@
 2000-11-07  Lars Wirzenius  <liw@iki.fi>
 
+	* gwlib/http.c: Bugfix. Destroy the new_server_sockets list.
+
+2000-11-07  Lars Wirzenius  <liw@iki.fi>
+
 	* gwlib/http.c: Massive rearranging and some renaming, but no real
 	changes. The code is now much cleaner and easier to understand.
 
