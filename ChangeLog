@@ -1,3 +1,10 @@
+2000-05-03  Steffen Weinreich  <steve@weinreich.org>
+
+	* smsc_emi.c: Fixed the EMI code for UDH and added an initialisation
+	for the TRN counter. This fixes the error with negative TRN if there
+	wasnt a message received before  the first send
+	
+
 2000-05-03  Tuomas Luttinen  <tuo@wapit.com>
 
 	* gw/wsp_http.c: Added the charset support here too. Now it's still 

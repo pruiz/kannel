@@ -127,6 +127,8 @@ SMSCenter *emi_open(char *phonenum, char *serialdevice, char *username, char *pa
 	smsc->emi_username = gw_strdup(username);
 	smsc->emi_password = gw_strdup(password);
 
+	smsc->emi_current_msg_number = 0;
+
 	if (emi_open_connection(smsc) < 0)
 		goto error;
 
@@ -188,6 +190,8 @@ SMSCenter *emi_open_ip(char *hostname, int port, char *username,
 	smsc->emi_password = gw_strdup(password);
 	smsc->emi_backup_port = receive_port;
 	smsc->emi_our_port = our_port;
+
+	smsc->emi_current_msg_number = 0;
 
 	if (emi_open_connection_ip(smsc) < 0)
 	    goto error;
@@ -989,10 +993,10 @@ static int internal_emi_parse_msg_to_rawmessage(SMSCenter *smsc, Msg *msg, char 
 	  /* we need a properbly formated UDH here, there first byte contains his length 
 	   * this will be formatted in the xser field of the EMI Protocol
 	   */
-	  udh_len = octstr_get_char(msg->smart_sms.msgdata,0)+1;
+	  udh_len = octstr_get_char(msg->smart_sms.udhdata,0)+1;
 	  xserbuf[0] = 1;
 	  xserbuf[1] = udh_len;
-	  octstr_get_many_chars(&xserbuf[2], msg->smart_sms.msgdata, 0, udh_len);
+	  octstr_get_many_chars(&xserbuf[2], msg->smart_sms.udhdata, 0, udh_len);
 	  internal_emi_parse_binary_to_emi(xserbuf, xser,udh_len+2);	   
 	} else {
 	  udh_len = 0;
@@ -1000,19 +1004,19 @@ static int internal_emi_parse_msg_to_rawmessage(SMSCenter *smsc, Msg *msg, char 
 
 	if (msg->smart_sms.flag_8bit != 1) {
 	  /* skip the probably existing UDH */
-	  octstr_get_many_chars(msgtext, msg->smart_sms.msgdata, udh_len, octstr_len(msg->smart_sms.msgdata) - udh_len);
-	  msgtext[octstr_len(msg->smart_sms.msgdata)-udh_len] = '\0';
+	  octstr_get_many_chars(msgtext, msg->smart_sms.msgdata, 0, octstr_len(msg->smart_sms.msgdata));
+	  msgtext[octstr_len(msg->smart_sms.msgdata)] = '\0';
 	  internal_emi_parse_iso88591_to_emi(msgtext, my_buffer2,
-					     octstr_len(msg->smart_sms.msgdata) - udh_len,
+					     octstr_len(msg->smart_sms.msgdata),
 					     smsc->alt_charset);	  
 
 	  strcpy(snumbits,"");
 	  mt = '3';
 	  strcpy(mcl,"");
 	} else {
-	  octstr_get_many_chars(msgtext, msg->smart_sms.msgdata, udh_len, octstr_len(msg->smart_sms.msgdata) - udh_len);
-	  msgtext[octstr_len(msg->smart_sms.msgdata) - udh_len] = '\0';
-	  internal_emi_parse_binary_to_emi(msgtext, my_buffer2, octstr_len(msg->smart_sms.msgdata) - udh_len);	  
+	  octstr_get_many_chars(msgtext, msg->smart_sms.msgdata, 0, octstr_len(msg->smart_sms.msgdata));
+
+	  internal_emi_parse_binary_to_emi(msgtext, my_buffer2, octstr_len(msg->smart_sms.msgdata));	  
 	  
 	  sprintf(snumbits,"%04d",(int) (octstr_len(msg->smart_sms.msgdata)-udh_len)*8);
 	  mt = '4';
@@ -1071,7 +1075,7 @@ static int internal_emi_parse_msg_to_rawmessage(SMSCenter *smsc, Msg *msg, char 
 		/* IC3S braindead EMI stack chopes on this... must fix it at the next time... */
 		strcat(rawmessage, "\r");
 	}	
-	
+	debug("smsc_emi",0,"emi %d message %s",smsc->emi_current_msg_number,rawmessage);
 	return strlen(rawmessage);
 
 }
