@@ -1,3 +1,11 @@
+2004-05-15  Alexander Malysh  <a.malysh@centrium.de> 
+    * gw/bb_udp.c: applied slightly modified patch that allows to put
+      semicolon-separated list of ip addresses in wdp-interfaces 
+      statement in config file and kannel send responses from proper
+      addresses. Thanks to Paul P Komkoff Jr <i@stingr.net> for provided
+      patch.
+      [Msg-Id: <20040506114255.GF13255@stingr.net>].
+
 2004-04-27  Alexander Malysh  <a.malysh@centrium.de> 
     * doc/userguide/userguide.xml: applied patch that corrects libSDB
       section.

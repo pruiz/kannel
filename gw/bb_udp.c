@@ -322,8 +322,9 @@ error:
 
 int udp_start(Cfg *cfg)
 {
-    Octstr *interface_name;
     CfgGroup *grp;
+    Octstr *iface;
+    List *ifs;
     int allow_wtls;
     
     if (udp_running) return -1;
@@ -331,8 +332,8 @@ int udp_start(Cfg *cfg)
     debug("bb.udp", 0, "starting UDP sender/receiver module");
 
     grp = cfg_get_single_group(cfg, octstr_imm("core"));
-    interface_name = cfg_get(grp, octstr_imm("wdp-interface-name"));
-    if (interface_name == NULL) {
+    iface = cfg_get(grp, octstr_imm("wdp-interface-name"));
+    if (iface == NULL) {
         error(0, "Missing wdp-interface-name variable, cannot start UDP");
         return -1;
     }
@@ -346,23 +347,30 @@ int udp_start(Cfg *cfg)
 
     udpc_list = list_create();	/* have a list of running systems */
 
-    add_service(9200, octstr_get_cstr(interface_name));	   /* wsp 	*/
-    add_service(9201, octstr_get_cstr(interface_name));	   /* wsp/wtp	*/
+    ifs = octstr_split(iface, octstr_imm(";"));
+    octstr_destroy(iface);
+    while (list_len(ifs) > 0) {
+        iface = list_extract_first(ifs);
+	info(0, "Adding interface %s", octstr_get_cstr(iface));
+        add_service(9200, octstr_get_cstr(iface));   /* wsp 	*/
+        add_service(9201, octstr_get_cstr(iface));   /* wsp/wtp	*/
+    
 #ifdef HAVE_WTLS_OPENSSL
-    if (allow_wtls) {
-        add_service(9202, octstr_get_cstr(interface_name));    /* wsp/wtls	*/
-        add_service(9203, octstr_get_cstr(interface_name));    /* wsp/wtp/wtls */
-    }
+        if (allow_wtls) {
+             add_service(9202, octstr_get_cstr(iface));   /* wsp/wtls	*/
+             add_service(9203, octstr_get_cstr(iface));   /* wsp/wtp/wtls */
+        }
 #else
-    if (allow_wtls)
-    	error(0, "These is a 'wtls' group in configuration, but no WTLS support compiled in!");
+        if (allow_wtls)
+    	     error(0, "These is a 'wtls' group in configuration, but no WTLS support compiled in!");
 #endif
     /* add_service(9204, octstr_get_cstr(interface_name));  * vcard	*/
     /* add_service(9205, octstr_get_cstr(interface_name));  * vcal	*/
     /* add_service(9206, octstr_get_cstr(interface_name));  * vcard/wtls */
     /* add_service(9207, octstr_get_cstr(interface_name));  * vcal/wtls	*/
-    
-    octstr_destroy(interface_name);
+        octstr_destroy(iface);
+    }
+    list_destroy(ifs, NULL);
     
     list_add_producer(incoming_wdp);
     udp_running = 1;
@@ -377,8 +385,10 @@ int udp_start(Cfg *cfg)
 int udp_addwdp(Msg *msg)
 {
     int i;
-    Udpc *udpc;
+    Udpc *udpc, *def_udpc;
+    Octstr *ip;
     
+    def_udpc = NULL;
     if (!udp_running) return -1;
     assert(msg != NULL);
     assert(msg_type(msg) == wdp_datagram);
@@ -388,13 +398,25 @@ int udp_addwdp(Msg *msg)
     for (i=0; i < list_len(udpc_list); i++) {
 		udpc = list_get(udpc_list, i);
 
-		if (msg->wdp_datagram.source_port == udp_get_port(udpc->addr))
-		{
-	    	list_produce(udpc->outgoing_list, msg);
-	    	list_unlock(udpc_list);
-	    	return 0;
+		if (msg->wdp_datagram.source_port == udp_get_port(udpc->addr)) {
+                    def_udpc = udpc;
+                    ip = udp_get_ip(udpc->addr);
+		    if (octstr_compare(msg->wdp_datagram.source_address, ip) == 0) {
+                        octstr_destroy(ip);
+	    		list_produce(udpc->outgoing_list, msg);
+	    		list_unlock(udpc_list);
+	    		return 0;
+		    }
+                    octstr_destroy(ip);
 		}
     }
+
+    if (NULL != def_udpc) {
+	list_produce(def_udpc->outgoing_list, msg);
+	list_unlock(udpc_list);
+	return 0;
+    }
+
     list_unlock(udpc_list);
     return -1;
 }
