@@ -7082,7 +7082,7 @@ the Kannel configuration, or 'Authorization failed' is returned.
 
 <programlisting>
 &#60;?xml version="1.0"?&#62;
-&#60;!DOCTYPE CHARACTERISTIC_LIST SYSTEM "file://gw/settings.dtd"&#62;
+&#60;!DOCTYPE CHARACTERISTIC_LIST SYSTEM "file:///gw/settings.dtd"&#62;
 &#60;CHARACTERISTIC-LIST&#62;
   &#60;CHARACTERISTIC TYPE="BOOKMARK"&#62;
     &#60;PARM NAME="NAME" VALUE="WAP Company"/&#62;
