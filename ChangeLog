@@ -1,3 +1,7 @@
+2003-11-01  Stipe Tolj  <tolj@wapme-systems.de>
+	* test/test_[regex|pcre].c: make test programs compile only if gw-config.h
+	  #defines are set.
+
 2003-10-30  Alexander Malysh  <a.malysh@centrium.de>
     * gw/bb_boxc.c: applied bb_boxc patch. This patch solve major problems within
       bearerbox<->smsbox routing:

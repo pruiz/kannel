@@ -11,6 +11,7 @@
 #include "gwlib/gwlib.h"
 #include "gwlib/regex.h"
 
+#if defined(HAVE_REGEX) || defined(HAVE_PCRE)
 
 int main(int argc, char **argv)
 {
@@ -83,3 +84,5 @@ int main(int argc, char **argv)
     gwlib_shutdown();
     return 0;
 }
+
+#endif

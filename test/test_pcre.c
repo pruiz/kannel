@@ -11,6 +11,8 @@
 #include "gwlib/gwlib.h"
 #include "gwlib/pcre.h"
 
+#ifdef HAVE_PCRE
+
 int main(int argc, char **argv)
 {
     Octstr *re, *os;
@@ -58,3 +60,5 @@ int main(int argc, char **argv)
     gwlib_shutdown();
     return 0;
 }
+
+#endif
