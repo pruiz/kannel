@@ -1,3 +1,6 @@
+2003-04-14  Alexander Malysh  <a.malysh@centrium.de>
+    * gw/smsc/smsc_emi2.c: fixed c&p typo.
+
 2003-04-14  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/smsc/smsc_http.c: added new bruHTP 2.1 version and using account field
       for cgi var proxying inside the module.

@@ -549,7 +549,7 @@ static int handle_operation(SMSCConn *conn, Connection *server,
 	else {
 	    msg->sms.receiver = octstr_duplicate(emimsg->fields[E01_ADC]);
 	}
-	if (msg->sms.sender == NULL) {
+	if (msg->sms.receiver == NULL) {
 	    warning(0, "EMI2[%s]: Empty receiver field in received message",
 		    octstr_get_cstr(privdata->name));
 	    msg->sms.receiver = octstr_create("");
@@ -660,7 +660,7 @@ static int handle_operation(SMSCConn *conn, Connection *server,
 	else {
 	    msg->sms.receiver = octstr_duplicate(emimsg->fields[E50_ADC]);
 	}
-	if (msg->sms.sender == NULL) {
+	if (msg->sms.receiver == NULL) {
 	    warning(0, "EMI2[%s]: Empty receiver field in received message",
 		    octstr_get_cstr(privdata->name));
 	    msg->sms.receiver = octstr_create("");
