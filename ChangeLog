@@ -1,4 +1,4 @@
-2003-09-03  Alexander Malysh  <a.malysh@centrium.de>
+2003-09-10  Alexander Malysh  <a.malysh@centrium.de>
     * gwlib/octstr.c: fixed bug in octstr_replace(...). We should not replace
       in replacement, so just skip replacement length. Otherwise here follow
       simple OOM: 
