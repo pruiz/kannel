@@ -184,8 +184,8 @@ figs = $(figsrcs:.fig=.png)  $(figsrcs:.fig=.ps)
 	sed "s/#FIGTYPE#/.ps/;s/#VERSION#/`head -1 VERSION`/;s/#DATE#/`date +%Y.%m.%d`/" $< > $*.tmp
 	$(JADE) -o $*.tex -t tex -d $(TEX_DSL) $*.tmp
 	echo Check `dirname $<`/`basename $*`.log for errors
-	cd `dirname $<` && $(JADETEX) `basename $*`.tex >/dev/null || /bin/true
-	cd `dirname $<` && $(JADETEX) `basename $*`.tex >/dev/null || /bin/true
+	cd `dirname $<` && $(JADETEX) `basename $*`.tex >/dev/null || true
+	cd `dirname $<` && $(JADETEX) `basename $*`.tex >/dev/null || true
 	cd `dirname $<` && $(JADETEX) `basename $*`.tex >/dev/null
 	cd `dirname $<` && dvips -q -o `basename $*`.ps `basename $*`.dvi
 	rm -f $*.dvi $*.tex $*.aux $*.log $*.tmp
