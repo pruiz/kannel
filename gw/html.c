@@ -40,7 +40,7 @@ static void skip_html_comment(Octstr *html, long *pos)
 }
 
 
-/* Skip a beginning of ending tag in HTML, including any attributes. */
+/* Skip a beginning or ending tag in HTML, including any attributes. */
 static void skip_html_tag(Octstr *html, long *pos)
 {
     long i, len;
