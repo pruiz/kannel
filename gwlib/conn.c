@@ -1325,6 +1325,10 @@ void conn_shutdown_ssl(void)
 
     for (c=0;c<maxlocks;c++) 
         mutex_destroy(ssl_static_locks[c]);
+    
+    ERR_free_strings ();
+    EVP_cleanup();
+
     gw_free(ssl_static_locks);
 }
 
@@ -1336,6 +1340,10 @@ void server_shutdown_ssl(void)
 
     for (c=0;c<maxlocks;c++) 
         mutex_destroy(ssl_server_static_locks[c]);
+    
+    ERR_free_strings ();
+    EVP_cleanup();
+
     gw_free(ssl_server_static_locks);
 }
 
