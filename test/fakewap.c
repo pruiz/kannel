@@ -175,10 +175,10 @@ static char *choose_message(char **urls, int num_urls) {
     return urls[rand() % num_urls];
 }
 /* returns TID */
-static unsigned short get_tid() {
+static unsigned short get_tid(void) {
     static unsigned short tid = 0;
     tid += tid_addition;
-    tid %= (unsigned short)pow(2,15);
+    tid %= 1 << 15;
     return tid;
 }
 
@@ -186,7 +186,7 @@ static unsigned short get_tid() {
 **  if -v option has been defined, function prints the trace message and
 **  the first bytes in the message header
 */
-void print_msg( unsigned short port, const char * trace, unsigned char * msg,
+static void print_msg( unsigned short port, const char * trace, unsigned char * msg,
                 int msg_len ) {
     int i;
     if (verbose) {
@@ -201,7 +201,7 @@ void print_msg( unsigned short port, const char * trace, unsigned char * msg,
 /*
 **  Function stores WAP/WSP variable length integer to buffer and returns actual len
 */
-int StoreVarInt( unsigned char *buf, unsigned long varInt )
+static int StoreVarInt( unsigned char *buf, unsigned long varInt )
 {
     int i, len = 1, non_zero_bits = 7;
 
@@ -228,7 +228,7 @@ int StoreVarInt( unsigned char *buf, unsigned long varInt )
 /*
 **  Function length of WAP/WSP variable length integer in the buffer
 */
-int ReadVarIntLen( const unsigned char *buf )
+static int ReadVarIntLen( const unsigned char *buf )
 {
     int    len = 1;
 
@@ -240,7 +240,7 @@ int ReadVarIntLen( const unsigned char *buf )
 /*
 **  Function sends message to WAP GW
 */
-int
+static int
 wap_msg_send( unsigned short port, SOCKET fd, const unsigned char * hdr,
             int hdr_len, const unsigned short * tid, unsigned char * data,
             int data_len )
@@ -283,7 +283,7 @@ wap_msg_send( unsigned short port, SOCKET fd, const unsigned char * hdr,
 **      == 0 => got acknowlengement or abort but not the expected data
 **      < 0  => error,
 */
-int
+static int
 wap_msg_recv( unsigned short port, SOCKET fd, const char * hdr, int hdr_len,
               unsigned short tid, unsigned char * data, int data_len,
               int timeout )
@@ -370,7 +370,7 @@ wap_msg_recv( unsigned short port, SOCKET fd, const char * hdr, int hdr_len,
 **  Function initializes and binds datagram socket.
 */
 
-SOCKET connect_to_server_with_port(char *hostname, unsigned short port,
+static SOCKET connect_to_server_with_port(char *hostname, unsigned short port,
                                          unsigned short our_port)
 {
     struct sockaddr_in addr;
@@ -435,7 +435,7 @@ error:
 /*
 **  We cannot use wapit library in Windows
 */
-void panic(int level, const char * args, ...)
+static void panic(int level, const char * args, ...)
 {
     va_list ap;
 
@@ -446,7 +446,7 @@ void panic(int level, const char * args, ...)
     exit(level);
 }
 
-void error(int level, const char * args, ...)
+static void error(int level, const char * args, ...)
 {
     va_list ap;
 
@@ -457,7 +457,7 @@ void error(int level, const char * args, ...)
     printf( "\n");
 }
 
-void info(int level, const char * args, ...)
+static void info(int level, const char * args, ...)
 {
     va_list ap;
 
@@ -470,25 +470,25 @@ void info(int level, const char * args, ...)
 /*
 **  UNCHECKED! mappings to WINAPI
 */
-Mutex *mutex_create() {
+static Mutex *mutex_create() {
     return (Mutex *)CreateMutex( NULL, FALSE, NULL );
 }
 
-void mutex_lock( Mutex *mutex ) {
+static void mutex_lock( Mutex *mutex ) {
     WaitForSingleObject( (HANDLE)mutex, INFINITE );
 }
 
-void mutex_unlock( Mutex *mutex) {
+static void mutex_unlock( Mutex *mutex) {
     ReleaseMutex((HANDLE)mutex);
 }
 
-pthread_t start_thread(int detached, Threadfunc *func, void *arg, size_t size) {
+static pthread_t start_thread(int detached, Threadfunc *func, void *arg, size_t size) {
     DWORD id;
     return CreateThread(NULL,0,(LPTHREAD_START_ROUTINE)func,arg,0,&id)? id : -1;
 }
 #endif
 
-int get_next_transaction() {
+static int get_next_transaction(void) {
     int i_this;
     mutex_lock( mutex );
     i_this = num_sent + 1;
@@ -501,7 +501,7 @@ int get_next_transaction() {
 **  Function (or thread) sets up a dgram socket.  Then it loops: WTL/WSP
 **  Connect, Get a url and Disconnect until all requests are have been done.
 */
-void *
+static void *
 client_session( void * arg)
 {
     SOCKET fd;
@@ -683,7 +683,7 @@ int main(int argc, char **argv)
     WSP_Connect[0] += (atoi(argv[8])&15)<<3;
     WSP_Connect[3] += atoi(argv[9])&3;
     WSP_Connect[3] += (atoi(argv[10])&1)<<5;
-    tid_addition = (unsigned short)atof(argv[11]);
+    tid_addition = (unsigned short)atol(argv[11]);
     urls = argv + 12;
     num_urls = argc - 12;
     srand((unsigned int) time(NULL));

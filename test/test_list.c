@@ -27,8 +27,8 @@
 #define NUM_CONSUMERS (1)
 #endif
 
-static pthread_t producers[NUM_PRODUCERS];
-static pthread_t consumers[NUM_CONSUMERS];
+static long producers[NUM_PRODUCERS];
+static long consumers[NUM_CONSUMERS];
 
 #define NUM_ITEMS_PER_PRODUCER (100*1000)
 

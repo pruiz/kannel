@@ -99,7 +99,7 @@ static sig_atomic_t 	abort_program = 0;
  * MUST DO: free (or otherwise get rid of) pmsg, and
  * return 0 if OK, -1 if failed
  */
-int socket_sender(Msg *pmsg)
+static int socket_sender(Msg *pmsg)
 {
     Octstr *pack;
 
@@ -115,8 +115,8 @@ int socket_sender(Msg *pmsg)
     }
     mutex_unlock(socket_mutex);
 
-    debug("sms", 0, "write <%*s> [%d]",
-	  octstr_len(pmsg->smart_sms.msgdata),
+    debug("sms", 0, "write <%*s> [%ld]",
+	  (int) octstr_len(pmsg->smart_sms.msgdata),
 	  octstr_get_cstr(pmsg->smart_sms.msgdata),
 	  octstr_len(pmsg->smart_sms.udhdata));
     octstr_destroy(pack);
@@ -203,7 +203,7 @@ done:
 }
 
 
-static void http_start_thread()
+static void http_start_thread(void)
 {
     (void)start_thread(1, http_request_thread, NULL, 0);
 }
@@ -316,7 +316,7 @@ static void init_smsbox(Config *cfg)
 /*
  * send the heartbeat packet
  */
-int send_heartbeat()
+static int send_heartbeat(void)
 {
     static Msg *msg = NULL;
     Octstr *pack;
@@ -338,7 +338,7 @@ int send_heartbeat()
 }
 
 
-void main_loop()
+static void main_loop(void)
 {
     time_t start, t;
     int ret, secs;

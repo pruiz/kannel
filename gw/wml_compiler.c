@@ -789,7 +789,7 @@ static int parse_variable(Octstr *text, int start, Octstr **output,
 static Octstr *get_variable(Octstr *text, int start)
 {
   Octstr *var = NULL;
-  size_t end;
+  long end;
   int ch;
 
   assert(text != NULL);

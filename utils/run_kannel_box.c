@@ -24,9 +24,9 @@ static char *pidfile; /* The name of the pidfile to use.  NULL if no pidfile */
 static char *extra_arguments[] = {
 	"-v", "4",   /* Minimal output on stderr, goes to /dev/null anyway */
 };
-#define NUM_EXTRA (sizeof(extra_arguments) / sizeof(*extra_arguments))
+#define NUM_EXTRA ((int) (sizeof(extra_arguments) / sizeof(*extra_arguments)))
 
-void print_usage(FILE *stream)
+static void print_usage(FILE *stream)
 {
 	fprintf(stderr,
 		"Usage: %s [--pidfile PIDFILE] [--min-delay SECONDS] BOXPATH [boxoptions...]\n",
@@ -36,7 +36,7 @@ void print_usage(FILE *stream)
 /* Create the argument list to pass to the box process, and put it
  * in the box_arglist global variable.  This is also the right place
  * to add any standard arguments that we want to pass. */
-void build_box_arglist(char *boxfile, int argc, char **argv)
+static void build_box_arglist(char *boxfile, int argc, char **argv)
 {
 	int i;
 	char **argp;
@@ -66,7 +66,7 @@ void build_box_arglist(char *boxfile, int argc, char **argv)
 	*argp++ = (char *)NULL;
 }
 
-void write_pidfile(void)
+static void write_pidfile(void)
 {
 	int fd;
 	FILE *f;
@@ -93,7 +93,7 @@ void write_pidfile(void)
 	}
 }
 
-void remove_pidfile(void)
+static void remove_pidfile(void)
 {
 	if (!pidfile)
 		return;
@@ -103,7 +103,7 @@ void remove_pidfile(void)
 
 /* Set 0 (stdin) to /dev/null, and 1 and 2 (stdout and stderr) to /dev/full
  * if it's available and /dev/null otherwise. */
-void rebind_standard_streams(void)
+static void rebind_standard_streams(void)
 {
 	int devnullfd;
 	int devfullfd;
@@ -131,7 +131,7 @@ void rebind_standard_streams(void)
 
 /* Some code to determine the highest possible file descriptor number,
  * so that we can close them all.  */
-int open_max(void)
+static int open_max(void)
 {
 #ifdef OPEN_MAX
 	return OPEN_MAX;
@@ -147,7 +147,7 @@ int open_max(void)
 }
 
 /* Close all file descriptors other than 0, 1, and 2. */
-void close_extra_files(void)
+static void close_extra_files(void)
 {
 	int max = open_max();
 	int fd;
@@ -159,7 +159,7 @@ void close_extra_files(void)
 
 /* We received a signal that we should pass on to the child box.
  * We ignore it ourselves. */
-void signal_transfer(int signum)
+static void signal_transfer(int signum)
 {
 	if (child_box > 0) {
 		kill(child_box, signum);
@@ -169,7 +169,7 @@ void signal_transfer(int signum)
 /* We received a signal that we should pass on to the child box,
  * and then die from ourselves.  It has to be a signal that
  * terminates the process as its default action! */
-void signal_transfer_and_die(int signum)
+static void signal_transfer_and_die(int signum)
 {
 	/* First send it to the child process */
 	if (child_box > 0) {
@@ -188,7 +188,7 @@ void signal_transfer_and_die(int signum)
 	kill(getpid(), signum);
 }
 
-void setup_signals(void)
+static void setup_signals(void)
 {
 	signal(SIGHUP, &signal_transfer);
 	signal(SIGINT, &signal_transfer_and_die);
@@ -200,7 +200,7 @@ void setup_signals(void)
 
 /* Fork off a box process and loop indefinitely, forking a new one
  * every time it dies. */
-void main_loop(char *boxfile)
+static void main_loop(char *boxfile)
 {
 	time_t next_fork = 0;
 

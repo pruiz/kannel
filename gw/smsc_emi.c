@@ -92,7 +92,7 @@ static int secondary_fd	= -1;	/* opened secondary fd */
 /******************************************************************************
 * Open the connection and log in - handshake baby
 */
-int emi_open_connection(SMSCenter *smsc) {
+static int emi_open_connection(SMSCenter *smsc) {
 	char tmpbuff[1024];
 
 	sprintf(tmpbuff, "/dev/%s", smsc->emi_serialdevice);
@@ -443,7 +443,7 @@ static int at_dial(char *device, char *phonenum, char *at_prefix, time_t how_lon
 				goto timeout;
 
 			/* We don't need more space for dialout */
-			if (howmanyread >= sizeof(tmpbuff))
+			if (howmanyread >= (int) sizeof(tmpbuff))
 				goto error;
 
 			/* We read 1 char a time so that we don't
@@ -1078,7 +1078,7 @@ static int internal_emi_parse_emi_to_iso88591(char *from, char *to,
 	unsigned int mychar;
 	char tmpbuff[128];
 	
-	for(hmtg=0;hmtg<=strlen(from);hmtg+=2) {
+	for(hmtg=0;hmtg<=(int)strlen(from);hmtg+=2) {
 		strncpy(tmpbuff, from+hmtg, 2);
 		sscanf(tmpbuff, "%x", &mychar);
 		to[hmtg/2] = internal_char_sms_to_iso(mychar, alt_charset);

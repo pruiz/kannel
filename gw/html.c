@@ -196,12 +196,14 @@ static int convert_html_entity(char **html) {
 
 /* Convert an HTML page into an SMS message: Remove tags, convert entities,
    and so on. */
-void html_to_sms(char *sms, size_t smsmax, char *html_arg) {
+void html_to_sms(char *sms, size_t smsmax_u, char *html_arg) {
 	int n;
+	long smsmax;
 	unsigned char *html;
 	
 	html = html_arg;
 	n = 0;
+	smsmax = smsmax_u;
 	while (n < smsmax-1 && *html != '\0') {
 		switch (*html) {
 		case '<':

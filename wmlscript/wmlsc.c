@@ -176,7 +176,7 @@ main(int argc, char *argv[])
 		      strerror(errno));
 	      exit(1);
 	    }
-	  if (fread(data, 1, stat_st.st_size, ifp) < stat_st.st_size)
+	  if (fread(data, 1, stat_st.st_size, ifp) < (size_t) stat_st.st_size)
 	    {
 	      fprintf(stderr, "wsc: could not read data: %s\n",
 		      strerror(errno));

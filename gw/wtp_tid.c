@@ -135,7 +135,7 @@ static int tid_in_window(long rcv_tid, long last_tid){
        } 
 
        if (rcv_tid > last_tid) {
-	  if (abs(rcv_tid - last_tid) <= window_size) {
+	  if (rcv_tid - last_tid <= WTP_TID_WINDOW_SIZE) {
              return 1;
           } else {
              return 0;
@@ -143,7 +143,7 @@ static int tid_in_window(long rcv_tid, long last_tid){
        }
        
        if (rcv_tid < last_tid) {
-	  if (abs(rcv_tid - last_tid) >= window_size){
+	  if (abs(rcv_tid - last_tid) >= WTP_TID_WINDOW_SIZE){
              return 1;
           } else {
              return 0;

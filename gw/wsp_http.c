@@ -400,9 +400,10 @@ static int encode_content_type(const char *type) {
 		{ "application/vnd.wap.wmlscriptc", 0x15 },
 		{ "image/vnd.wap.wbmp", 0x21 },
 	};
+	int num_items = sizeof(tab) / sizeof(tab[0]);
 	int i;
 	
-	for (i = 0; i < sizeof(tab) / sizeof(tab[0]); ++i)
+	for (i = 0; i < num_items; ++i)
 		if (strcmp(type, tab[i].type) == 0)
 			return tab[i].shortint;
 	error(0, "WSP: Unknown content type <%s>, assuming text/plain.", type);

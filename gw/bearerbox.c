@@ -332,7 +332,7 @@ end:
  *
  * Return number of references deleted
  */
-static int check_receivers()
+static int check_receivers(void)
 {
     int i;
     int tot = 0;
@@ -923,7 +923,7 @@ disconnect:
  * to smsbox_req_init, and is then called by smsbox_req_thread
  * when we have a ready SMS Message
  */
-int thread_writer(Msg *msg)
+static int thread_writer(Msg *msg)
 {
     RQueueItem *rqi;
 
@@ -937,8 +937,8 @@ int thread_writer(Msg *msg)
     normalize_numbers(rqi, NULL);
     route_msg(internal_smsbox(), rqi);
     rq_push_msg(bbox->reply_queue, rqi);
-    debug("bb", 0, "SMSBox: wrote <%*s> [%d] into queue",
-	  octstr_len(msg->smart_sms.msgdata),
+    debug("bb", 0, "SMSBox: wrote <%*s> [%ld] into queue",
+	  (int) octstr_len(msg->smart_sms.msgdata),
 	  octstr_get_cstr(msg->smart_sms.msgdata),
 	  octstr_len(msg->smart_sms.udhdata));
     return 0;
@@ -953,7 +953,7 @@ int thread_writer(Msg *msg)
 /*
  * find first empty thread place in bearer box structure
  */
-int find_bbt_index(void)
+static int find_bbt_index(void)
 {
     BBThread *thr, **new;
     int i, ns, in;
@@ -976,7 +976,7 @@ int find_bbt_index(void)
 /*
  * find new id for the new thread
  */
-int find_bbt_id(void)
+static int find_bbt_id(void)
 {
     BBThread *thr;
     int i, max = bbox->id_max;
@@ -1080,7 +1080,7 @@ static void new_bbt_csdr(CSDRouter *csdr)
 /*
  * create a new WAP BOX Thread
  */
-static void new_bbt_wapbox()
+static void new_bbt_wapbox(void)
 {
     BBThread *nt;
     nt = create_bbt(BB_TTYPE_WAP_BOX);
@@ -1097,7 +1097,7 @@ static void new_bbt_wapbox()
 /*
  * create a new SMS BOX Thread
  */
-static void new_bbt_smsbox()
+static void new_bbt_smsbox(void)
 {
     BBThread *nt;
     nt = create_bbt(BB_TTYPE_SMS_BOX);
@@ -1323,7 +1323,7 @@ done:
 }
 
 
-static void http_start_thread()
+static void http_start_thread(void)
 {
     bbox->accept_pending++;
     
@@ -1379,7 +1379,7 @@ static void *sendsms_thread(void *arg)
 }
 
 
-static void sendsms_start_thread()
+static void sendsms_start_thread(void)
 {
     bbox->accept_pending++;
 
@@ -1547,7 +1547,7 @@ static void print_queues(char *buffer, int in_xml)
  * value each heartbeat moment and the value is average of last 10
  * heartbeats
  */
-static void update_queue_watcher()
+static void update_queue_watcher(void)
 {
     static int req_ql[10], rep_ql[10];
     static int index = 0;
@@ -2038,7 +2038,7 @@ static void open_all_receivers(Config *cfg)
  * this function creates an internal SMS BOX Thread
  * (it is much faster than sms box connected via tcp/ip)
  */
-void create_internal_smsbox(Config *cfg)
+static void create_internal_smsbox(Config *cfg)
 {
     ConfigGroup *grp;
     BBThread *nt;

@@ -722,7 +722,7 @@ static int internal_cimd_parse_iso88591_to_cimd(char* from, char* to,
 
 	*to='\0';
 
-	while( (*from != '\0') && (strlen(temp) < (length-2)) ) {	
+	while( (*from != '\0') && ((int) strlen(temp) < (length-2)) ) {	
 
 		switch(*from) {	
 
@@ -877,7 +877,7 @@ static int internal_cimd_parse_cimd_to_iso88591(char* from, char* to, int length
 	
 	*to = '\0';
 	
-	for(my_int=0; ( (my_int<strlen(from)) && (strlen(to) < length) ) ;) {	
+	for(my_int=0; ( (my_int<(int)strlen(from)) && ((int)strlen(to) < length) ) ;) {	
 		
 	        if( (from[my_int] == '_') && (from[my_int+1] == 'a') && (from[my_int+2] == '"') ) { strcat(to, "ä"); my_int += 3; }
 		else if( (from[my_int] == '_') && (from[my_int+1] == 'a') && (from[my_int+2] == '*') ) { strcat(to, "å"); my_int += 3; }

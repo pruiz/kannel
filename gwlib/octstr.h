@@ -51,7 +51,7 @@ Octstr *octstr_create_tolower(const char *cstr);
  * Create an octet string from arbitrary binary data. The length of the
  * data is given, so it can contain NUL characters.
  */
-Octstr *octstr_create_from_data(const char *data, size_t len);
+Octstr *octstr_create_from_data(const char *data, long len);
 
 
 /*
@@ -64,7 +64,7 @@ void octstr_destroy(Octstr *ostr);
 /*
  * Return the length of (number of octets in) an object string.
  */
-size_t octstr_len(Octstr *ostr);
+long octstr_len(Octstr *ostr);
 
 
 /*
@@ -73,7 +73,7 @@ size_t octstr_len(Octstr *ostr);
  * octet string is created. If `from+len' is after the end of `ostr', 
  * `len' is reduced appropriately.
  */
-Octstr *octstr_copy(Octstr *ostr, size_t from, size_t len);
+Octstr *octstr_copy(Octstr *ostr, long from, long len);
 
 
 /*
@@ -94,7 +94,7 @@ Octstr *octstr_cat(Octstr *ostr1, Octstr *ostr2);
  * value has a range of 0..255 for valid positions, and -1 if `pos' is
  * after the end of the octet string.
  */
-int octstr_get_char(Octstr *ostr, size_t pos);
+int octstr_get_char(Octstr *ostr, long pos);
 
 
 /*
@@ -102,7 +102,7 @@ int octstr_get_char(Octstr *ostr, size_t pos);
  * fail: if pos is not inside the string, the operation will silently be
  * ignored.
  */
-void octstr_set_char(Octstr *ostr, size_t pos, int ch);
+void octstr_set_char(Octstr *ostr, long pos, int ch);
 
 
 /*
@@ -115,7 +115,7 @@ Octstr *octstr_cat_char(Octstr *ostr1, int ch);
 /*
  * Copy characters from octet string into char buffer.
  */
-void octstr_get_many_chars(char *buf, Octstr *ostr, size_t pos, size_t len);
+void octstr_get_many_chars(char *buf, Octstr *ostr, long pos, long len);
 
 
 /*
@@ -143,7 +143,7 @@ int octstr_compare(Octstr *ostr1, Octstr *ostr2);
 /*
  * as above, but comparing is done only up to n bytes
  */
-int octstr_ncompare(Octstr *ostr1, Octstr *ostr2, size_t n);
+int octstr_ncompare(Octstr *ostr1, Octstr *ostr2, long n);
 
 
 /*
@@ -163,7 +163,7 @@ int octstr_search_char(Octstr *ostr, int ch);
  * Search the character from octet string starting from position pos. Returns 
  * the position (index) of the char in string, -1 if not found.
  */
-int octstr_search_char_from(Octstr *ostr, int ch, size_t pos);
+int octstr_search_char_from(Octstr *ostr, int ch, long pos);
 
 
 /*
@@ -190,14 +190,14 @@ int octstr_write_to_socket(int socket, Octstr *ostr);
 /*
  * Replace current contents of the octstr with given data.
  */
-void octstr_replace(Octstr *ostr, char *data, size_t len);
+void octstr_replace(Octstr *ostr, char *data, long len);
 
 
 /*
  * Insert one octet string into another. `pos' gives the position
  * in `ostr1' where `ostr2' should be inserted.
  */
-void octstr_insert(Octstr *ostr1, Octstr *ostr2, size_t pos);
+void octstr_insert(Octstr *ostr1, Octstr *ostr2, long pos);
 
 
 /*
@@ -207,13 +207,13 @@ void octstr_insert(Octstr *ostr1, Octstr *ostr2, size_t pos);
  * If the given `pos' is greater than the length of the input octet string,
  * it is set to that length, resulting in an append.
  */
-void octstr_insert_data(Octstr *ostr, size_t pos, char *data, size_t len);
+void octstr_insert_data(Octstr *ostr, long pos, char *data, long len);
 
 
 /*
  * Append characters from C array at the tail of an octet string.
  */
-void octstr_append_data(Octstr *ostr, char *data, size_t len);
+void octstr_append_data(Octstr *ostr, char *data, long len);
 
 
 /*
@@ -246,7 +246,7 @@ void octstr_shrink_blank(Octstr *text);
 /*
  * Delete part of an octet string.
  */
-void octstr_delete(Octstr *ostr1, size_t pos, size_t len);
+void octstr_delete(Octstr *ostr1, long pos, long len);
 
 
 /*
@@ -272,7 +272,7 @@ void octstr_list_destroy(OctstrList *list, int strings_also);
 /*
  * Return length of octet string.
  */
-size_t octstr_list_len(OctstrList *list);
+long octstr_list_len(OctstrList *list);
 
 
 /*
@@ -285,7 +285,7 @@ void octstr_list_append(OctstrList *list, Octstr *ostr);
  * Return an item in an octet string. `index' starts at 0. If it is outside
  * the length of the list, return NULL.
  */
-Octstr *octstr_list_get(OctstrList *list, size_t index);
+Octstr *octstr_list_get(OctstrList *list, long index);
 
 
 /*

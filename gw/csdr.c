@@ -235,7 +235,7 @@ int csdr_send_message(CSDRouter *router, RQueueItem *item)
 	debug("bb.csdr", 0, "CSDR: Time to send a message");
 
 	/* Can only do 64k of data... have to def a MIN macro one of these times... -MG */
-	datalen = (sizeof(data)<octstr_len(item->msg->wdp_datagram.user_data)) ? 
+	datalen = ((long)sizeof(data)<octstr_len(item->msg->wdp_datagram.user_data)) ? 
 		sizeof(data) : octstr_len(item->msg->wdp_datagram.user_data);
 
 	octstr_get_many_chars(data, item->msg->wdp_datagram.user_data, 0, datalen);

@@ -12,7 +12,7 @@
 
 #include "wtp.h"
 
-#define window_size (long)pow(2,14)
+#define WTP_TID_WINDOW_SIZE (1L << 14)
 
 enum {
      no_cache = -1,

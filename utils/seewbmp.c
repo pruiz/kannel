@@ -39,7 +39,7 @@
  * sizes to about 2 billion pixels width or height, which I think we can live
  * with. */
 /* The function returns -1 in case of an error. */
-long get_mbi(FILE *infile) {
+static long get_mbi(FILE *infile) {
 	int c;
 	long result = 0;
 
@@ -56,7 +56,7 @@ long get_mbi(FILE *infile) {
  * So it's not limited to 31 bits, and it ends up skipping all bytes that
  * have their high bit set. */
 /* The function returns 0 for success, or -1 in case of an error. */
-int skip_mbi(FILE *infile) {
+static int skip_mbi(FILE *infile) {
 	int c;
 
 	do {
@@ -67,7 +67,7 @@ int skip_mbi(FILE *infile) {
 	return 0;
 }
 
-int show_image_from_file(char *bmpname, FILE *bmpfile,
+static int show_image_from_file(char *bmpname, FILE *bmpfile,
 			long width, long height) {
 	long w, h;
 
@@ -103,7 +103,7 @@ struct parm {
 
 struct parm *extparms = NULL;
 
-void clear_extparms(void) {
+static void clear_extparms(void) {
 	while (extparms) {
 		struct parm *tmp = extparms;
 		extparms = extparms->next;
@@ -115,7 +115,7 @@ void clear_extparms(void) {
 
 /* Record a new parameter.  The name and value will be used directly,
  * not copied. */
-int new_extparm(char *name, char *value) {
+static int new_extparm(char *name, char *value) {
 	struct parm *new;
 	struct parm *p;
 	
@@ -142,7 +142,7 @@ int new_extparm(char *name, char *value) {
 	return 0;
 }
 
-void print_extparms(FILE *outfile) {
+static void print_extparms(FILE *outfile) {
 	struct parm *p;
 
 	for (p = extparms; p; p = p->next) {
@@ -150,7 +150,7 @@ void print_extparms(FILE *outfile) {
 	}
 }
 
-int parse_headers(FILE *bmpfile) {
+static int parse_headers(FILE *bmpfile) {
 	int c;
 	int exttype;
 
@@ -186,13 +186,13 @@ int parse_headers(FILE *bmpfile) {
 				namelen = (c >> 4) & 0x07;
 				name = malloc(namelen + 1);
 				if (!name) return -1;
-				if (fread(name, namelen, 1, bmpfile) < namelen)
+				if (fread(name, namelen, 1, bmpfile) < (size_t) namelen)
 					return -1;
 
 				valuelen = c & 0x0f;
 				value = malloc(valuelen + 1);
 				if (!value) { free(name); return -1; }
-				if (fread(value, valuelen, 1, bmpfile) < valuelen)
+				if (fread(value, valuelen, 1, bmpfile) < (size_t) valuelen)
 					return -1;
 			
 				new_extparm(name, value);
@@ -203,7 +203,7 @@ int parse_headers(FILE *bmpfile) {
 }
 
 /* Return 0 for success, < 0 for failure */
-int show_wbmp_from_file(char *bmpname, FILE *bmpfile) {
+static int show_wbmp_from_file(char *bmpname, FILE *bmpfile) {
 	long typefield;
 	long width, height;
 

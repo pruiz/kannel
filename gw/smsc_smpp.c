@@ -778,7 +778,7 @@ error:
 */
 static int data_receive(int fd, Octstr *to) {
 
-	size_t length;
+	long length;
 	char   data[1024];
 	Octstr *newstr = NULL;
 
@@ -847,7 +847,7 @@ error:
 */
 static int data_send(int fd, Octstr *from) {
 
-	size_t length, curl, written = 0;
+	long length, curl, written = 0;
 	char *willy = NULL;
 
 /*	debug("bb.sms.smpp", 0, "data_send: starting"); */
@@ -1689,7 +1689,7 @@ static int pdu_decode_deliver_sm(smpp_pdu* pdu, Octstr* str) {
 	   of max short_message size. */
 	end = start + strlen(start);
 	memcpy(deliver_sm->short_message, start,
-		(deliver_sm->sm_length > sizeof(deliver_sm->short_message)) ?
+		(deliver_sm->sm_length > (int) sizeof(deliver_sm->short_message)) ?
 			sizeof(deliver_sm->short_message) : deliver_sm->sm_length);
 	start = end+1;
 

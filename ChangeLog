@@ -1,3 +1,10 @@
+Thu Mar 30 02:25:51 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* lotsafiles: Made minor tweaks to make things compile on my
+	machine with CFLAGS='-Wall -O2 -g -Wbad-function-cast -Wcast-align
+	-Wsign-compare -Wstrict-prototypes -Wmissing-prototypes
+	-Wmissing-declarations' (which is getting pretty aggressive).
+
 Thu Mar 30 01:27:40 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* Changed msg_dump and octstr_dump to take a "level" argument.

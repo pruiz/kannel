@@ -120,7 +120,9 @@ static void segment_lists_destroy(Segments *segments);
  */
 static WTPSegment *create_segment(void);
 
+#if 0
 static void segment_dump(WTPSegment *segment);
+#endif
 
 static void segment_destroy(WTPSegment *segment);
 
@@ -823,6 +825,7 @@ static WTPSegment *create_segment(void){
        return segment;
 }
 
+#if 0
 static void segment_dump(WTPSegment *segment){
 
        debug("wap.wtp", 0, "WTP: segment was:");
@@ -832,6 +835,7 @@ static void segment_dump(WTPSegment *segment){
        octstr_dump(segment->data, 1);
        debug("wap.wtp", 0, "WTP: segment dump ends");
 }
+#endif
 
 static void segment_destroy(WTPSegment *segment){
 

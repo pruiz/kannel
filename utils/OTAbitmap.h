@@ -8,7 +8,7 @@
  * functions to store OTA Bitmaps and and create Octet strings from them
  */
 
-#include "gwlib.h"
+#include "gwlib/gwlib.h"
 
 /* OTA Bitmap
  */

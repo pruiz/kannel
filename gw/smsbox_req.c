@@ -399,7 +399,7 @@ void *smsbox_req_thread(void *arg) {
     if (trans == NULL) goto error;
 
     info(0, "Starting to service <%*s> from <%s> to <%s>",
-	 octstr_len(msg->smart_sms.msgdata),
+	 (int) octstr_len(msg->smart_sms.msgdata),
 	 octstr_get_cstr(msg->smart_sms.msgdata),
 	 octstr_get_cstr(msg->smart_sms.sender),
 	 octstr_get_cstr(msg->smart_sms.receiver));

@@ -12,7 +12,6 @@
 #include "gwlib/gwlib.h"
 #include "wsp.h"
 #include "wsp_headers.h"
-#include "wml.h"
 
 /* WAP standard defined values for capabilities */
 
@@ -779,9 +778,10 @@ static long convert_http_status_to_wsp_status(long http_status) {
 		{ 415, 0x4F },
 		{ 500, 0x60 },
 	};
+	int num_items = sizeof(tab) / sizeof(tab[0]);
 	int i;
 	
-	for (i = 0; i < sizeof(tab) / sizeof(tab[0]); ++i)
+	for (i = 0; i < num_items; ++i)
 		if (tab[i].http_status == http_status)
 			return tab[i].wsp_status;
 	error(0, "WSP: Unknown status code used internally. Oops.");

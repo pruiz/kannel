@@ -9,6 +9,7 @@
 
 #include "gwlib/gwlib.h"
 #include "wsp.h"
+#include "wsp_headers.h"
 
 
 /*
@@ -217,7 +218,7 @@ static char *encoded_language(int val, int val2)
 static char *encode_language_str(Octstr *str, char *buf, int off, int data_len)
 {
     char *ch;
-    unsigned long len;
+    long len;
     int ret, val, data_off, end;
     end = off;
     

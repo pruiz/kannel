@@ -802,7 +802,7 @@ int internal_url_destroy(URL *url) {
 /*********************************************************************
 * Create an exact duplicate of an URL structure
 */
-URL* url_duplicate(URL* url) {
+static URL* url_duplicate(URL* url) {
 
     URL *newurl = NULL;
 
@@ -1044,7 +1044,7 @@ HTTPRequest* httprequest_wrap(char *from, size_t size) {
 
 	    /* Get the chunk size. */
 	    tmpint = strtol(ptr, NULL, 16);
-	    if( (tmpint2+tmpint) > size) {
+	    if( (tmpint2+tmpint) > (int) size) {
 		error(0, "httprequest_wrap: chunk size too big");
 		break;
 	    }
@@ -1394,7 +1394,7 @@ int header_pack(HTTPHeader *hdr)
     HTTPHeader *ptr = NULL, *prev = NULL;
     char *buf = NULL;
     int ret = 0;
-    size_t len = 0;
+    int len = 0;
     
     while(hdr != NULL) {
 	/* find identical headers */
@@ -1514,7 +1514,7 @@ static char *internal_base6t4(char *pass) {
     result[0] = 0;
 
     twentyfour = 0;
-    for (ictr=0;ictr<strlen(pass);ictr++) {
+    for (ictr=0;ictr<(int)strlen(pass);ictr++) {
 	switch(ictr%3) {
 	case 0:
 	    twentyfour=0l;

@@ -197,7 +197,7 @@ static void append_string(Octstr *os, Octstr *field) {
 
 static int parse_integer(int32 *i, Octstr *packed, int *off) {
 	assert(*off >= 0);
-	if (sizeof(int32) + *off > octstr_len(packed)) {
+	if ((int) sizeof(int32) + *off > octstr_len(packed)) {
 		error(0, "Packet too short while unpacking Msg.");
 		return -1;
 	}

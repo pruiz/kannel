@@ -263,7 +263,7 @@ struct sigpair {
 	int signal;
 };
 
-const struct sigpair siglist[] = {
+static const struct sigpair siglist[] = {
 	{ "ABRT", SIGABRT },
 	{ "ALRM", SIGALRM },
 	{ "FPE", SIGFPE },
@@ -284,11 +284,12 @@ const struct sigpair siglist[] = {
 	{ "TTIN", SIGTTIN },
 	{ "TTOU", SIGTTOU }
 };
+static int sigcount = sizeof (siglist) / sizeof (siglist[0]);
 
 static int parse_signal (const char *signal_str, int *signal_nr)
 {
 	int i;
-	for (i = 0; i < sizeof (siglist) / sizeof (siglist[0]); i++) {
+	for (i = 0; i < sigcount; i++) {
 		if (strcmp (signal_str, siglist[i].name) == 0) {
 			*signal_nr = siglist[i].signal;
 			return 0;
@@ -454,7 +455,7 @@ pid_is_user(int pid, int uid)
 	sprintf(buf, "/proc/%d", pid);
 	if (stat(buf, &sb) != 0)
 		return 0;
-	return (sb.st_uid == uid);
+	return ((int) sb.st_uid == uid);
 }
 
 

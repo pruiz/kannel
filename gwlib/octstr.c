@@ -45,8 +45,8 @@
  */
 struct Octstr {
 	unsigned char *data;
-	size_t len;
-	size_t size;
+	long len;
+	long size;
 };
 
 
@@ -144,7 +144,7 @@ Octstr *octstr_create_tolower(const char *cstr) {
 }
 
 
-Octstr *octstr_create_from_data(const char *data, size_t len) {
+Octstr *octstr_create_from_data(const char *data, long len) {
 	Octstr *ostr;
 	
 	ostr = octstr_create_empty();
@@ -169,13 +169,13 @@ void octstr_destroy(Octstr *ostr) {
 }
 
 
-size_t octstr_len(Octstr *ostr) {
+long octstr_len(Octstr *ostr) {
 	seems_valid(ostr);
 	return ostr->len;
 }
 
 
-Octstr *octstr_copy(Octstr *ostr, size_t from, size_t len) {
+Octstr *octstr_copy(Octstr *ostr, long from, long len) {
 	seems_valid(ostr);
 
 	if (from >= ostr->len)
@@ -217,7 +217,7 @@ Octstr *octstr_cat(Octstr *ostr1, Octstr *ostr2) {
 }
 
 
-int octstr_get_char(Octstr *ostr, size_t pos) {
+int octstr_get_char(Octstr *ostr, long pos) {
 	seems_valid(ostr);
 	if (pos >= ostr->len)
 		return -1;
@@ -245,7 +245,7 @@ Octstr *octstr_cat_char(Octstr *ostr1, int ch) {
 }
 
 
-void octstr_set_char(Octstr *ostr, size_t pos, int ch) {
+void octstr_set_char(Octstr *ostr, long pos, int ch) {
 	seems_valid(ostr);
 	if (pos < ostr->len)
 		ostr->data[pos] = ch;
@@ -253,7 +253,7 @@ void octstr_set_char(Octstr *ostr, size_t pos, int ch) {
 }
 
 
-void octstr_get_many_chars(char *buf, Octstr *ostr, size_t pos, size_t len) {
+void octstr_get_many_chars(char *buf, Octstr *ostr, long pos, long len) {
 	gw_assert(buf != NULL);
 	seems_valid(ostr);
 
@@ -276,7 +276,7 @@ char *octstr_get_cstr(Octstr *ostr) {
 
 int octstr_compare(Octstr *ostr1, Octstr *ostr2) {
 	int ret;
-	size_t len;
+	long len;
 
 	seems_valid(ostr1);
 	seems_valid(ostr2);
@@ -300,8 +300,8 @@ int octstr_compare(Octstr *ostr1, Octstr *ostr2) {
 }
 
 
-int octstr_ncompare(Octstr *ostr1, Octstr *ostr2, size_t n) {
-	size_t len;
+int octstr_ncompare(Octstr *ostr1, Octstr *ostr2, long n) {
+	long len;
 
 	seems_valid(ostr1);
 	seems_valid(ostr2);
@@ -326,8 +326,8 @@ int octstr_search_char(Octstr *ostr, int ch) {
 }
 
 
-int octstr_search_char_from(Octstr *ostr, int ch, size_t pos) {
-	size_t len;
+int octstr_search_char_from(Octstr *ostr, int ch, long pos) {
+	long len;
 	int ch_at_pos;
 	
 	seems_valid(ostr);
@@ -348,7 +348,7 @@ int octstr_search_char_from(Octstr *ostr, int ch, size_t pos) {
 
 
 int octstr_search_str(Octstr *ostr, char *str) {
-	size_t pos_a, pos_b = 0, len_c = 0, len_o =0, a=0, b=0; 
+	long pos_a, pos_b = 0, len_c = 0, len_o =0, a=0, b=0; 
 	Octstr *char_to_oct = NULL;
 	
 	seems_valid(ostr);
@@ -397,7 +397,7 @@ int octstr_print(FILE *f, Octstr *ostr) {
 
 int octstr_pretty_print(FILE *f, Octstr *ostr) {
 	unsigned char *p;
-	size_t i;
+	long i;
 	
 	gw_assert(f != NULL);
 	seems_valid(ostr);
@@ -416,7 +416,7 @@ int octstr_pretty_print(FILE *f, Octstr *ostr) {
 
 
 int octstr_write_to_socket(int socket, Octstr *ostr) {
-	size_t len;
+	long len;
 	unsigned char *data;
 	int ret;
 
@@ -440,7 +440,7 @@ int octstr_write_to_socket(int socket, Octstr *ostr) {
 }
 
 
-void octstr_insert(Octstr *ostr1, Octstr *ostr2, size_t pos) {
+void octstr_insert(Octstr *ostr1, Octstr *ostr2, long pos) {
 	seems_valid(ostr1);
 	seems_valid(ostr2);
 
@@ -458,7 +458,7 @@ void octstr_insert(Octstr *ostr1, Octstr *ostr2, size_t pos) {
 }
 
 
-void octstr_replace(Octstr *ostr, char *data, size_t len) {
+void octstr_replace(Octstr *ostr, char *data, long len) {
 	seems_valid(ostr);
 	gw_assert(data != NULL);
 
@@ -535,7 +535,7 @@ void octstr_shrink_blank(Octstr *text) {
 }
 
 
-void octstr_insert_data(Octstr *ostr, size_t pos, char *data, size_t len) {
+void octstr_insert_data(Octstr *ostr, long pos, char *data, long len) {
 	seems_valid(ostr);
 	gw_assert(pos <= ostr->len);
 
@@ -554,7 +554,7 @@ void octstr_insert_data(Octstr *ostr, size_t pos, char *data, size_t len) {
 }
 
 
-void octstr_append_data(Octstr *ostr, char *data, size_t len) {
+void octstr_append_data(Octstr *ostr, char *data, long len) {
 	octstr_insert_data(ostr, ostr->len, data, len);
 }
 
@@ -564,7 +564,7 @@ void octstr_append_cstr(Octstr *ostr, char *cstr) {
 }
 
 
-void octstr_delete(Octstr *ostr1, size_t pos, size_t len) {
+void octstr_delete(Octstr *ostr1, long pos, long len) {
 	seems_valid(ostr1);
 
 	if (pos > ostr1->len)
@@ -587,7 +587,7 @@ Octstr *octstr_read_file(const char *filename) {
 	FILE *f;
 	Octstr *os;
 	char buf[128*1024];
-	size_t n;
+	long n;
 	
 	gw_assert(filename != NULL);
 
@@ -637,9 +637,9 @@ void octstr_list_destroy(OctstrList *list, int strings_also) {
 }
 
 
-size_t octstr_list_len(OctstrList *list) {
+long octstr_list_len(OctstrList *list) {
 	Node *n;
-	size_t len;
+	long len;
 	
 	for (len = 0, n = list->head; n != NULL; n = n->next, ++len)
 		;
@@ -664,7 +664,7 @@ void octstr_list_append(OctstrList *list, Octstr *ostr) {
 }
 
 
-Octstr *octstr_list_get(OctstrList *list, size_t index) {
+Octstr *octstr_list_get(OctstrList *list, long index) {
 	Node *n;
 	
 	for (n = list->head; index > 0 && n != NULL; n = n->next, --index)
@@ -679,7 +679,7 @@ OctstrList *octstr_split_words(Octstr *ostr) {
 	unsigned char *p;
 	OctstrList *list;
 	Octstr *word;
-	size_t i, start, end;
+	long i, start, end;
 	
 	seems_valid(ostr);
 
@@ -714,7 +714,7 @@ OctstrList *octstr_split_words(Octstr *ostr) {
 
 void octstr_dump(Octstr *ostr, int level) {
 	unsigned char *p, *d, buf[1024], charbuf[256];
-	size_t pos;
+	long pos;
 	const int octets_per_line = 8;
 	int c, this_line_begins_at;
 
@@ -811,7 +811,7 @@ int octstr_recv(int fd, Octstr **ostr) {
 	
 	/* How many octets in incomint Octstr. */
 	readlength = 0;
-	while(readlength < sizeof(uint32_t)) {
+	while(readlength < (int) sizeof(uint32_t)) {
 		ret = recv(fd, (&nlength)+readlength, sizeof(uint32_t)-readlength, 0);
 		if(ret == 0)
 			goto eof;

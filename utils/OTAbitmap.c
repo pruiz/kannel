@@ -3,7 +3,7 @@
 #include <string.h>
 #include <errno.h>
 
-#include "gwlib.h"
+#include "gwlib/gwlib.h"
 #include "OTAbitmap.h"
 
 
