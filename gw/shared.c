@@ -65,14 +65,11 @@ void close_connection_to_bearerbox(void)
 void write_to_bearerbox(Msg *pmsg)
 {
     Octstr *pack;
-    int ret;
 
     pack = msg_pack(pmsg);
-    ret = conn_write_withlen(bb_conn, pack);
+    if (conn_write_withlen(bb_conn, pack) == -1)
+    	error(0, "Couldn't write Msg to bearerbox.");
 
-    info(0, "Message sent to bearerbox, receiver <%s>",
-         octstr_get_cstr(pmsg->sms.receiver));
-   
     msg_destroy(pmsg);
     octstr_destroy(pack);
 }

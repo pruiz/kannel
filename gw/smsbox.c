@@ -109,8 +109,8 @@ static void prepend_catenation_udh(Msg *sms, int part_no, int num_messages,
     	    	    	    	   int msg_sequence)
 {
     gw_assert(sms->sms.udhdata != NULL);
-    octstr_format_append(sms->sms.udhdata, "\0\3%c%c%c", 
-    	    	    	 part_no, num_messages, msg_sequence);
+    octstr_format_append(sms->sms.udhdata, "%c\3%c%c%c", 
+    	    	    	 0, part_no, num_messages, msg_sequence);
     sms->sms.flag_udh = 1;
 }
 

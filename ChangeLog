@@ -1,5 +1,21 @@
 2000-12-05  Lars Wirzenius  <liw@iki.fi>
 
+	* gw/wapbox.c: Converted to use bearerbox communication stuff
+	from gw/shared.c (and therefore Connection) instead of using
+	old plain socket stuff. Among other things, this kills one thread
+	(empty_queue_thread).
+	
+	* gw/shared.c: Check for write errors and don't report messages
+	that were sent.
+
+	* checks/check_fakewap.sh: Set log level to 0 and shorten sleeps
+	between box startups.
+	
+	* gw/smsbox.c: Don't use \0 in format string, use %c and argument
+	0 instead. \0 has a tendency to cut C strings short...
+
+2000-12-05  Lars Wirzenius  <liw@iki.fi>
+
 	* gw/shared.[ch]: Moved bearerbox communication stuff from
 	smsbox.c to shared.c, so that it can easily be used by wapbox
 	as well.

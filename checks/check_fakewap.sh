@@ -6,17 +6,17 @@ set -e
 
 times=1
 url="http://www.wapit.com/~liw/hello.wml"
-loglevel=1
+loglevel=0
 
 gw/bearerbox -v $loglevel gw/wapkannel.conf > check_bb.log 2>&1 &
 bbpid=$!
 
-sleep 5
+sleep 2
 
 gw/wapbox -v $loglevel gw/wapkannel.conf > check_wap.log 2>&1 &
 wappid=$!
 
-sleep 5
+sleep 2
 
 test/fakewap -m $times $url > check_fake.log 2>&1
 ret=$?

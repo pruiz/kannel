@@ -20,7 +20,7 @@
 
 
 static Config *cfg = NULL;
-static char *bearerbox_host = BB_DEFAULT_HOST;
+static Octstr *bearerbox_host;
 static int bearerbox_port = BB_DEFAULT_WAPBOX_PORT;
 static int heartbeat_freq = BB_DEFAULT_HEARTBEAT;
 static long heartbeat_thread;
@@ -31,14 +31,6 @@ static int http_proxy_port = -1;
 static List *http_proxy_exceptions = NULL;
 static Octstr *http_proxy_username = NULL;
 static Octstr *http_proxy_password = NULL;
-
-
-static enum {
-    initializing,
-    running_ok,
-    aborting,
-    aborting_with_prejudice
-} run_status = initializing;
 
 
 /*
@@ -101,7 +93,7 @@ static void read_config(char *filename)
 	panic(0, "No 'wapbox' group in configuration");
     
     if ((s = config_get(grp, "bearerbox-host")) != NULL)
-	bearerbox_host = s;
+	bearerbox_host = octstr_create(s);
     if ((s = config_get(grp, "heartbeat-freq")) != NULL)
 	heartbeat_freq = atoi(s);
     
@@ -156,89 +148,6 @@ static void read_config(char *filename)
 }
 
 
-static int connect_to_bearer_box(void) 
-{
-    int s;
-    
-    s = tcpip_connect_to_server(bearerbox_host, bearerbox_port);
-    if (s == -1)
-	panic(0, "Couldn't connect to bearer box %s:%d.",
-	      bearerbox_host, bearerbox_port);
-    debug("bbox", 0, "Bearerbox connected");
-    return s;
-}
-
-
-static Msg *msg_receive(int s) 
-{
-    Octstr *os;
-    Msg *msg;
-    
-    while (run_status == running_ok && !read_available(s, 1000*1000))
-	continue;
-    if (run_status != running_ok)
-	return NULL;
-    if (octstr_recv(s, &os) < 1)
-	return NULL;
-    msg = msg_unpack(os);
-    
-    if (msg == NULL)
-	return NULL;
-    octstr_destroy(os);
-#if 0
-    debug("wap", 0, "Received message from bearer box:");
-    msg_dump(msg, 0);
-#endif
-    return msg;
-}
-
-
-static void msg_send(int s, Msg *msg) 
-{
-    Octstr *os;
-
-#if 0
-    if (msg->type != heartbeat) {
-	debug("wap", 0, "Sending message to bearer box:");
-	msg_dump(msg, 0);
-    }
-#endif
-
-    os = msg_pack(msg);
-    if (os == NULL)
-	panic(0, "msg_pack failed");
-    if (octstr_send(s, os) == -1)
-	error(0, "wapbox: octstr_send failed");
-    octstr_destroy(os);
-}
-
-
-
-/*
- * This is the queue of messages that are being sent to the bearerbox.
- */
-static List *queue = NULL;
-
-static void empty_queue_thread(void *arg) 
-{
-    Msg *msg;
-    int socket;
-    
-    socket = *(int *) arg;
-    while (run_status == running_ok) {
-	msg = list_consume(queue);
-	if (msg != NULL)
-	    msg_send(socket, msg);
-        msg_destroy(msg);
-    }
-}
-
-static void put_msg_on_queue(Msg *msg)
-{
-    list_produce(queue, msg);
-}
-
-
 static void signal_handler(int signum) 
 {
     /* 
@@ -251,16 +160,9 @@ static void signal_handler(int signum)
     
     switch (signum) {
     case SIGINT:
-	switch (run_status) {
-	case aborting_with_prejudice:
-	    break;
-	case aborting:
-	    error(0, "New SIGINT received, let's die harder");
-	    run_status = aborting_with_prejudice;
-	    break;
-	default:
+	if (program_status != shutting_down) {
 	    error(0, "SIGINT received, let's die.");
-	    run_status = aborting;
+	    program_status = shutting_down;
 	    break;
 	}
 	break;
@@ -317,7 +219,7 @@ static void dispatch_datagram(WAPEvent *dgram)
         msg->wdp_datagram.user_data =
 	    octstr_duplicate(dgram->u.T_DUnitdata_Req.user_data);
 
-	put_msg_on_queue(msg);
+	write_to_bearerbox(msg);
     }
 
     wap_event_destroy(dgram);
@@ -325,7 +227,6 @@ static void dispatch_datagram(WAPEvent *dgram)
 
 int main(int argc, char **argv) 
 {
-    int bbsocket;
     int cf_index;
     Msg *msg;
     
@@ -342,7 +243,7 @@ int main(int argc, char **argv)
     setup_signal_handlers();
     
     info(0, "------------------------------------------------------------");
-    info(0, "WAP box version %s starting up.", VERSION);
+    info(0, "Kannel wapbox version %s starting up.", VERSION);
     
     wsp_session_init(&wtp_resp_dispatch_event,
                      &wtp_initiator_dispatch_event,
@@ -356,18 +257,20 @@ int main(int argc, char **argv)
                   &wsp_push_client_dispatch_event);
     wap_appl_init();
     
-    bbsocket = connect_to_bearer_box();
-    queue = list_create();
+    if (bearerbox_host == NULL)
+    	bearerbox_host = octstr_create(BB_DEFAULT_HOST);
+    connect_to_bearerbox(bearerbox_host, bearerbox_port);
     
-    run_status = running_ok;
-    list_add_producer(queue);
-    heartbeat_thread =
-        heartbeat_start(put_msg_on_queue, heartbeat_freq, wap_appl_get_load);
-    gwthread_create(empty_queue_thread, &bbsocket);
+    program_status = running;
+    heartbeat_thread = heartbeat_start(write_to_bearerbox, heartbeat_freq, 
+    	    	    	    	       wap_appl_get_load);
 
-    while (run_status == running_ok && (msg = msg_receive(bbsocket)) != NULL) {
+    while (program_status != shutting_down) {
 	WAPEvent *dgram;
 
+	msg = read_from_bearerbox();
+	if (msg == NULL)
+	    break;
 	dgram = wap_event_create(T_DUnitdata_Ind);
 	dgram->u.T_DUnitdata_Ind.addr_tuple = wap_addr_tuple_create(
 		msg->wdp_datagram.source_address,
@@ -381,18 +284,15 @@ int main(int argc, char **argv)
 	wap_dispatch_datagram(dgram);
     }
 
-    info(0, "WAP box terminating.");
+    info(0, "Kannel wapbox terminating.");
     
-    run_status = aborting;
-    list_remove_producer(queue);
+    program_status = shutting_down;
     heartbeat_stop(heartbeat_thread);
-    gwthread_join_every(empty_queue_thread);
     wtp_initiator_shutdown();
     wtp_resp_shutdown();
     wsp_push_client_shutdown();
     wsp_unit_shutdown();
     wsp_session_shutdown();
-    list_destroy(queue, msg_destroy_item);
     wap_appl_shutdown();
     wsp_http_map_destroy();
     config_destroy(cfg);
