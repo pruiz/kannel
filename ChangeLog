@@ -1,3 +1,7 @@
+Fri Mar 24 16:43:16 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* Making release 0.7.
+
 Fri Mar 24 14:52:19 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* gwlib/http.c: Changed it so that binary images also work.
