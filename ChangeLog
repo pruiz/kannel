@@ -1,3 +1,16 @@
+2000-10-03  Kalle Marjola  <rpr@wapit.com>
+
+	* gw/bb-smsc.c: added SMS multi-send. This is achieved via
+	multiple phone numbers at 'to' field in send-SMS request, each
+	separated with space (currently, possibly changed later). This is
+	not a complete multi-send at SMSC protocol level - the message is
+	splitted into several ones in bearerbox before sending it to
+	SMSC. Note that 'preferred-prefix' and 'denied-prefix' only care
+	about the FIRST phone number in such a message (anyway, use smsc
+	ID instead)
+	
+	* doc/userguide/userguide.xml: added notes on multi-send
+
 2000-10-03  Lars Wirzenius  <liw@iki.fi>
 
 	* debian/changelog: Added new entry for newer upstream version

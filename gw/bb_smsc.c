@@ -124,6 +124,32 @@ static void sms_receiver(void *arg)
 /*---------------------------------------------
  * sender thingies
  */
+
+static int sms_send(Smsc *conn, Msg *msg)
+{
+    int ret;
+    debug("bb.sms", 0, "sms_sender: sending message");
+	
+    ret = smsc_send_message(conn->smsc, msg);
+    if (ret == -1) {
+	alog("Send FAILED (retrying) - SMSC:%s receiver:%s msg: '%s'",
+	     smsc_id(conn->smsc),
+	     octstr_get_cstr(msg->smart_sms.receiver),
+	     octstr_get_cstr(msg->smart_sms.msgdata));
+
+
+	return -1;
+    } else {
+	alog("Sent a message - SMSC:%s receiver:%s msg: '%s'",
+	     smsc_id(conn->smsc),
+	     octstr_get_cstr(msg->smart_sms.receiver),
+	     octstr_get_cstr(msg->smart_sms.msgdata));
+
+	counter_increase(outgoing_sms_counter);
+	return 0;
+    }
+}
+
 static void sms_sender(void *arg)
 {
     Msg *msg;
@@ -139,25 +165,40 @@ static void sms_sender(void *arg)
 	if ((msg = list_consume(conn->outgoing_list)) == NULL)
 	    break;
 
-	debug("bb.sms", 0, "sms_sender: sending message");
-	
-	ret = smsc_send_message(conn->smsc, msg);
-	if (ret == -1) {
-	    alog("Send FAILED (retrying) - SMSC:%s receiver:%s msg: '%s'",
-		 smsc_id(conn->smsc),
-		 octstr_get_cstr(msg->smart_sms.receiver),
-		 octstr_get_cstr(msg->smart_sms.msgdata));
+	if (octstr_search_char(msg->smart_sms.receiver, ' ', 0) != -1) {
+	    /*
+	     * multi-send: this should be implemented in corresponding
+	     *  SMSC protocol, but while we are waiting for that...
+	     */
+	    int i;
+	    /* split from spaces: in future, split with something more sensible,
+	     * this is dangerous... (as space is url-encoded as '+')
+	     */
+	    List *nlist = octstr_split_words(msg->smart_sms.receiver);
 
-	    error(0, "sms_sender: failed, appending back to outgoing list");
-	    list_produce(outgoing_sms, msg);
-	} else {
-	    alog("Sent a message - SMSC:%s receiver:%s msg: '%s'",
-		 smsc_id(conn->smsc),
-		 octstr_get_cstr(msg->smart_sms.receiver),
-		 octstr_get_cstr(msg->smart_sms.msgdata));
-	
+	    for(i=0; i < list_len(nlist); i++) {
+		octstr_destroy(msg->smart_sms.receiver);
+
+		msg->smart_sms.receiver = list_get(nlist, i);
+		ret = sms_send(conn, msg);
+		if (ret == -1) {
+		    Msg *copy;
+		    error(0, "sms_sender: failed, appending back to outgoing list");
+		    copy = msg_duplicate(msg);
+		    list_produce(outgoing_sms, copy);
+		}
+	    }
+	    list_destroy(nlist, NULL);
 	    msg_destroy(msg);
-	    counter_increase(outgoing_sms_counter);
+	}
+	else {
+	    ret = sms_send(conn, msg);
+	    if (ret == -1) {
+		error(0, "sms_sender: failed, appending back to outgoing list");
+		list_produce(outgoing_sms, msg);
+	    }
+	    else
+		msg_destroy(msg);
 	}
     }
     list_lock(smsc_list);

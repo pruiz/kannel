@@ -1578,7 +1578,11 @@ bearerbox-host = localhost
      <entry valign=bottom>
         Only these characters are allowed in 'to' field when send-SMS
         service is requested via HTTP. Naturally, you should allow 
-        at least <literal>0123456789</literal>. If this variable is
+        at least <literal>0123456789</literal>. The
+        <emphasis>space</emphasis> character (' ') has special
+        meaning: it is used to separate multiple phone numbers from
+        each other in multi-send. To disable this feature, do not have
+        it on accepted characters. If this variable is
         not set, default set <literal>"0123456789&nbsp;+-"</literal> is used.
      </entry></row>
 
@@ -1615,7 +1619,7 @@ bearerbox-host = localhost
 group = smsbox
 bearerbox-host = localhost
 sendsms-port = 13131
-sendsms-chars = "0123456789"
+sendsms-chars = "0123456789 "
 global-sender = 123456
 access-log = "kannel.access"
 log-file = "smsbox.log"
@@ -2115,7 +2119,10 @@ http://smsbox.host.name:13013/cgi-bin/sendsms?username=foo&amp;password=bar&amp;
 
    <row><entry><literal>to</literal></entry>
    <entry valign=bottom>
-        Phone number of the receiver.
+        Phone number of the receiver. To send for multiple receivers,
+   separate each entry with <emphasis>space</emphasis> (' ', '+'
+   url-encoded) - but note that this can be deactivated via
+   <literal>sendsms-chars</literal> in 'smsbox' group.
    </entry></row>
 
    <row><entry><literal>text</literal></entry>
