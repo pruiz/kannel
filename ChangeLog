@@ -1,4 +1,9 @@
 2004-06-14  Alexander Malysh  <a.malysh@centrium.de> 
+    * gw/bb_boxc.c: added tracking of pending messages between smsbox <-> bearerbox.
+    * gwlib/cfg.def doc/userguide/userguide.xml: added new config option
+      'smsbox-max-pending'. See userguide for description.
+
+2004-06-14  Alexander Malysh  <a.malysh@centrium.de> 
     * gwlib/gwlib.h: added "gw-rwlock.h".
     * gw/bb_boxc.c: changed 'boxc' to 'Counter'.
       Switched 'list_[lock|unlock](smsbox_list)' to rwlock's.

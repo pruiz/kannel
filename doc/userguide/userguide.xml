@@ -1457,6 +1457,13 @@ admin-password = f00bar
         </entry>   
      </row>
 
+     <row><entry><literal>smsbox-max-pending</literal></entry>
+        <entry>number of messages</entry>
+        <entry valign="bottom">
+        Maximum number of pending messages on the line to smsbox compatible boxes.
+        </entry>   
+     </row>
+  
   </tbody>
   </tgroup>
  </table>

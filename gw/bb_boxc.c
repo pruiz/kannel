@@ -79,6 +79,8 @@
 #include "bearerbox.h"
 #include "bb_smscconn_cb.h"
 
+#define SMSBOX_MAX_PENDING 100
+
 /* passed from bearerbox core */
 
 extern volatile sig_atomic_t bb_status;
@@ -111,7 +113,10 @@ static Dict *smsbox_by_receiver;
 static long	smsbox_port;
 static int smsbox_port_ssl;
 static long	wapbox_port;
-static int wapbox_port_ssl = 0;
+static int wapbox_port_ssl;
+
+/* max pending messages on the line to smsbox */
+static long smsbox_max_pending;
 
 static Octstr *box_allow_ip;
 static Octstr *box_deny_ip;
@@ -125,16 +130,18 @@ static long sms_dequeue_thread;
 
 typedef struct _boxc {
     Connection	*conn;
-    int		is_wap;
-    long      	id;
-    int		load;
-    time_t	connect_time;
-    Octstr    	*client_ip;
-    List      	*incoming;
-    List      	*retry;   	/* If sending fails */
-    List       	*outgoing;
+    int               is_wap;
+    long            id;
+    int               load;
+    time_t        connect_time;
+    Octstr        *client_ip;
+    List            *incoming;
+    List            *retry;   	/* If sending fails */
+    List            *outgoing;
+    Dict           *sent;
+    Semaphore *pending;
     volatile sig_atomic_t alive;
-    Octstr *boxc_id; /* identifies the connected smsbox instance */
+    Octstr        *boxc_id; /* identifies the connected smsbox instance */
     /* used to mark connection usable or still waiting for ident. msg */
     volatile int routable;
 } Boxc;
@@ -144,6 +151,8 @@ typedef struct _boxc {
 static void sms_to_smsboxes(void *arg);
 static int send_msg(Boxc *boxconn, Msg *pmsg);
 int route_incoming_to_boxc(Msg *sms);
+static void boxc_sent_push(Boxc*, Msg*);
+static void boxc_sent_pop(Boxc*, Msg*);
 
 
 /*-------------------------------------------------
@@ -313,6 +322,7 @@ static void boxc_receiver(void *arg)
                 conn->load = msg->heartbeat.load;
             }
             else if (msg_type(msg) == ack) {
+                boxc_sent_pop(conn, msg);
                 store_save(msg);
                 debug("bb.boxc", 0, "boxc_receiver: got ack");
             }
@@ -387,6 +397,45 @@ static int send_msg(Boxc *boxconn, Msg *pmsg)
 }
 
 
+static void boxc_sent_push(Boxc *conn, Msg *m)
+{
+    Octstr *os;
+    char id[UUID_STR_LEN + 1];
+    
+    if (conn->is_wap || !conn->sent || !m || msg_type(m) != sms)
+        return;
+    
+    uuid_unparse(m->sms.id, id);
+    os = octstr_create(id);
+    dict_put(conn->sent, os, msg_duplicate(m));
+    semaphore_down(conn->pending);
+    octstr_destroy(os);
+}
+
+
+static void boxc_sent_pop(Boxc *conn, Msg *m)
+{
+    Octstr *os;
+    char id[UUID_STR_LEN + 1];
+    Msg *msg;
+
+    if (conn->is_wap || !conn->sent || !m || (msg_type(m) != ack && msg_type(m) != sms))
+        return;
+
+    uuid_unparse((msg_type(m) == sms ? m->sms.id : m->ack.id), id);
+    os = octstr_create(id);
+    msg = dict_remove(conn->sent, os);
+    octstr_destroy(os);
+    if (!msg) {
+        error(0, "BOXC: Got ack for nonexistend message!");
+        msg_dump(m, 0);
+        return;
+    }
+    semaphore_up(conn->pending);
+    msg_destroy(msg);
+}
+
+
 static void boxc_sender(void *arg)
 {
     Msg *msg;
@@ -417,8 +466,10 @@ static void boxc_sender(void *arg)
             msg_destroy(msg);
             continue;
         }
+        boxc_sent_push(conn, msg);
         if (!conn->alive || send_msg(conn, msg) == -1) {
             /* we got message here */
+            boxc_sent_pop(conn, msg);
             list_produce(conn->retry, msg);
             break;
         }
@@ -527,6 +578,8 @@ static void run_smsbox(void *arg)
     Boxc *newconn;
     long sender;
     Msg *msg;
+    List *keys;
+    Octstr *key;
 
     list_add_producer(flow_threads);
     fd = (int)arg;
@@ -539,6 +592,8 @@ static void run_smsbox(void *arg)
     list_add_producer(newconn->incoming);
     newconn->retry = incoming_sms;
     newconn->outgoing = outgoing_sms;
+    newconn->sent = dict_create(smsbox_max_pending, NULL);
+    newconn->pending = semaphore_create(smsbox_max_pending);
 
     sender = gwthread_create(boxc_sender, newconn);
     if (sender == -1) {
@@ -575,7 +630,21 @@ static void run_smsbox(void *arg)
     if (list_producer_count(newconn->incoming) > 0)
         list_remove_producer(newconn->incoming);
 
+    /* check if we are still waiting for ack's and semaphore locked */
+    if (dict_key_count(newconn->sent) >= smsbox_max_pending)
+        semaphore_up(newconn->pending); /* allow sender to go down */
+        
     gwthread_join(sender);
+
+    /* put not acked msgs into incoming queue */    
+    keys = dict_keys(newconn->sent);
+    while((key = list_extract_first(keys)) != NULL) {
+        msg = dict_remove(newconn->sent, key);
+        list_produce(incoming_sms, msg);
+        octstr_destroy(key);
+    }
+    gw_assert(list_len(keys) == 0);
+    list_destroy(keys, octstr_destroy_item);
 
     /* clear our send queue */
     while((msg = list_extract_first(newconn->incoming)) != NULL) {
@@ -585,6 +654,9 @@ static void run_smsbox(void *arg)
 cleanup:
     gw_assert(list_len(newconn->incoming) == 0);
     list_destroy(newconn->incoming, NULL);
+    gw_assert(dict_key_count(newconn->sent) == 0);
+    dict_destroy(newconn->sent);
+    semaphore_destroy(newconn->pending);
     boxc_destroy(newconn);
 
     /* wakeup the dequeueing thread */
@@ -1054,6 +1126,11 @@ int smsbox_start(Cfg *cfg)
 
     if (smsbox_port_ssl)
         debug("bb", 0, "smsbox connection module is SSL-enabled");
+        
+    if (cfg_get_integer(&smsbox_max_pending, grp, octstr_imm("smsbox-max-pending")) == -1) {
+        smsbox_max_pending = SMSBOX_MAX_PENDING;
+        info(0, "BOXC: 'smsbox-max-pending' not set, using default (%ld).", smsbox_max_pending);
+    }
     
     smsbox_list = list_create();	/* have a list of connections */
     smsbox_list_rwlock = gw_rwlock_create();
@@ -1226,7 +1303,7 @@ Octstr *boxc_status(int status_type)
                     "\t\t<ssl>%s</ssl>\n\t</box>",
                     (bi->boxc_id ? octstr_get_cstr(bi->boxc_id) : ""),
 		            octstr_get_cstr(bi->client_ip),
-		            list_len(bi->incoming),
+		            list_len(bi->incoming) + dict_key_count(bi->sent),
 		            t/3600/24, t/3600%24, t/60%60, t%60,
 #ifdef HAVE_LIBSSL
                     conn_get_ssl(bi->conn) != NULL ? "yes" : "no"
@@ -1237,7 +1314,7 @@ Octstr *boxc_status(int status_type)
             else
                 octstr_format_append(tmp, "%ssmsbox:%s, IP %s (%ld queued), (on-line %ldd %ldh %ldm %lds) %s %s",
                     ws, (bi->boxc_id ? octstr_get_cstr(bi->boxc_id) : "(none)"), 
-                    octstr_get_cstr(bi->client_ip), list_len(bi->incoming),
+                    octstr_get_cstr(bi->client_ip), list_len(bi->incoming) + dict_key_count(bi->sent),
 		            t/3600/24, t/3600%24, t/60%60, t%60, 
 #ifdef HAVE_LIBSSL
                     conn_get_ssl(bi->conn) != NULL ? "using SSL" : "",
