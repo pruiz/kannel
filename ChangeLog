@@ -1,3 +1,17 @@
+2001-02-12  Kalle Marjola  <rpr@wapit.com>
+
+	* gw/bb_smscconn.c, gw/bb_boxc.c, gw/bearerbox.h: Modified so that
+	SMS messages from smsbox are directly put into corresponding SMS
+	centers, or if not able, either rejected (i.e. discarded right
+	now) or put to outgoing_sms queue which acts like delayed list
+
+	* gw/bb_smscconn_cb.h: added new callback, smscconn_connected,
+	which is called when status changes to ACTIVE, and makes bearerbox
+	trying to empty outgoing_sms queue
+
+	* gw/smsc_wrapper.c, gw/smsc_fake.c: modified to call that new
+	callback
+
 2001-02-12  Lars Wirzenius  <liw@iki.fi>
 
 	* Makefile.in: Moved -I. to before other -I options (before

@@ -260,6 +260,7 @@ static void fake_listener(void *arg)
 	conn->status = SMSCCONN_ACTIVE;
 	conn->connect_time = time(NULL);
 	mutex_unlock(conn->flow_mutex);
+	bb_smscconn_connected(conn);
 
 	main_connection_loop(conn, client);
 

@@ -115,11 +115,14 @@ static void boxc_receiver(void *arg)
 	    /* XXXX save modifies ID, so if the smsbox uses it, save
 	     *    it FIRST for the reply message!!! */
 	    store_save(msg);
+	    if (smsc2_rout(msg)== -1) {
+		warning(0, "Message rejected by bearerbox, no router!");
+		/* send NACK */
+		msg_destroy(msg);
+	    }
 	    if (msg->sms.sms_type == mt_push) {
 		/* XXX generate ack-message and send it */
 	    }
-
-	    list_produce(conn->outgoing, msg);
 	}
 	else if (msg_type(msg) == wdp_datagram && conn->is_wap)
 	{

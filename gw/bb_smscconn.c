@@ -53,7 +53,7 @@ static Octstr *unified_prefix;
 static Numhash *black_list;
 static Numhash *white_list;
 
-
+static long router_thread = -1;
 
 static void log_sms(SMSCConn *conn, Msg *sms, char *message)
 {
@@ -77,6 +77,13 @@ void bb_smscconn_ready(SMSCConn *conn)
 {
     list_add_producer(flow_threads);
     list_add_producer(incoming_sms);
+}
+
+
+void bb_smscconn_connected(SMSCConn *conn)
+{
+    if (router_thread >= 0)
+	gwthread_wakeup(router_thread);
 }
 
 
@@ -190,35 +197,40 @@ int bb_smscconn_receive(SMSCConn *conn, Msg *sms)
 
 
     
-/* function to route outgoing SMS'es,
+/* function to route outgoing SMS'es from delay-list
  * use some nice magics to route them to proper SMSC
  */
 static void sms_router(void *arg)
 {
-    Msg *msg;
-    SMSCConn *conn, *best_preferred, *best_ok, *best_bad;
-    long bp_load, bo_load, bb_load;
-    int i, s, ret;
-    StatusInfo info;
-    char *uf;
+    Msg *msg, *newmsg, *startmsg;
 
+    
     list_add_producer(flow_threads);
     gwthread_wakeup(MAIN_THREAD_ID);
 
-    bp_load = 0;
-    bo_load = 0;
-    bb_load = 0;
-
+    newmsg = startmsg = NULL;
+    
     while(bb_status != BB_DEAD) {
 
-        /* list_consume(suspended);        * block here if suspended */
+	if (newmsg == startmsg) {
+	    debug("bb.sms", 0, "sms_router: time to sleep"); 
+	    gwthread_sleep(600.0);	/* hopefully someone wakes us up */
+	    debug("bb.sms", 0, "sms_router: list_len = %ld",
+		  list_len(outgoing_sms)); 
+	    startmsg = list_consume(outgoing_sms);
+	    newmsg = NULL;
+	    msg = startmsg;
+	} else {
+	    newmsg = list_consume(outgoing_sms);
+	    msg = newmsg;
+	}
+	debug("bb.sms", 0, "sms_router: handling message (%p vs %p)",
+	      newmsg, startmsg);
 	
-        if ((msg = list_consume(outgoing_sms)) == NULL)
+	if (msg == NULL)
             break;
 
-        gw_assert(msg_type(msg) == sms);
-
-        if (list_len(smsc_list) == 0) {
+	if (smsc2_rout(msg) == -1) {
             warning(0, "No SMSCes to receive message, discarding it!");
             alog("SMS DISCARDED - SMSC:%s receiver:%s msg: '%s'",
                  (msg->sms.smsc_id) == NULL ?
@@ -226,77 +238,7 @@ static void sms_router(void *arg)
                  octstr_get_cstr(msg->sms.receiver),
                  octstr_get_cstr(msg->sms.msgdata));
             msg_destroy(msg);
-            continue;
         }
-        /* XXX we normalize the receiver - if set, but do we want
-         *     to normalize the sender, too?
-         */
-    	if (unified_prefix == NULL)
-	    uf = NULL;
-	else
-	    uf = octstr_get_cstr(unified_prefix);
-        normalize_number(uf, &(msg->sms.receiver));
-            
-        /* select in which list to add this
-         * start - from random SMSCConn, as they are all 'equal'
-         */
-
-        list_lock(smsc_list);
-
-        s = gw_rand() % list_len(smsc_list);
-	best_preferred = best_ok = best_bad = NULL;
-
-	conn = NULL;
-        for (i=0; i < list_len(smsc_list); i++) {
-            conn = list_get(smsc_list,  (i+s) % list_len(smsc_list));
-
-	    ret = smscconn_usable(conn,msg);
-	    if (ret == -1)
-		continue;
-
-	    /* if we already have a preferred one, skip non-preferred */
-	    if (ret != 1 && best_preferred)	
-		continue;
-
-	    smscconn_info(conn, &info);
-	    if (info.status != SMSCCONN_ACTIVE) {
-		if (best_bad == NULL || info.load < bb_load) {
-		    best_bad = conn;
-		    bb_load = info.load;
-		}
-		continue;
-	    }
-	    if (ret == 1) {          /* preferred */
-		if (best_preferred == NULL || info.load < bp_load) {
-		    best_preferred = conn;
-		    bp_load = info.load;
-		    continue;
-		}
-	    }
-	    if (best_ok == NULL || info.load < bo_load) {
-		best_ok = conn;
-		bo_load = info.load;
-	    }
-	}
-	list_unlock(smsc_list);
-
-	if (best_preferred)
-	    ret = smscconn_send(best_preferred, msg);
-	else if (best_ok)
-	    ret = smscconn_send(best_ok, msg);
-	else if (best_bad)
-	    ret = smscconn_send(best_bad, msg);
-	else {
-            warning(0, "Cannot find SMSCConn for message to <%s>, discarded.",
-		    octstr_get_cstr(msg->sms.receiver));
-	    log_sms(conn, msg, "FAILED Routing SMS");
-	    ret = 0;
-	}
-
-	if (ret == -1)
-	    list_produce(outgoing_sms, msg);
-	else
-            msg_destroy(msg);
     }
     /* router has died, make sure that rest die, too */
     
@@ -348,7 +290,7 @@ int smsc2_start(Cfg *cfg)
         list_append(smsc_list, conn);
     }
     list_destroy(groups, NULL);
-    if (gwthread_create(sms_router, NULL) == -1)
+    if ((router_thread = gwthread_create(sms_router, NULL)) == -1)
 	panic(0, "Failed to start a new thread for SMS routing");
     
     list_add_producer(incoming_sms);
@@ -367,6 +309,8 @@ void smsc2_resume(void)
         conn = list_get(smsc_list, i);
 	smscconn_start(conn);
     }
+    if (router_thread >= 0)
+	gwthread_wakeup(router_thread);
 }
 
 
@@ -398,6 +342,8 @@ int smsc2_shutdown(void)
 	smscconn_shutdown(conn, 1);
     }
     list_unlock(smsc_list);
+    if (router_thread >= 0)
+	gwthread_wakeup(router_thread);
 
     /* start avalanche by calling shutdown */
 
@@ -483,6 +429,106 @@ Octstr *smsc2_status(int status_type)
     strcat(tmp, "\n\n");
     return octstr_create(tmp);
 }
+
+
+/* function to route outgoing SMS'es
+ *
+ * If finds a good one, puts into it and returns 1
+ * If finds only bad ones, but acceptable, queues and
+ *  returns 0  8like all acceptable currently disconnected)
+ * If cannot find nothing at all, returns -1 and
+ * message is NOT destroyed (otherwise it is)
+ */
+int smsc2_rout(Msg *msg)
+{
+    StatusInfo info;
+    SMSCConn *conn, *best_preferred, *best_ok;
+    long bp_load, bo_load;
+    int i, s, ret, bad_found;
+    char *uf;
+
+    bp_load = bo_load = 0;
+
+    /* XXX handle ack here? */
+    if (msg_type(msg) != sms)
+	return -1;
+    
+    if (list_len(smsc_list) == 0) {
+	warning(0, "No SMSCes to receive message");
+	return -1;
+    }
+    /* unify prefix of receiver, in case of it has not been
+     * already done */
+
+    if (unified_prefix == NULL)
+	uf = NULL;
+    else
+	uf = octstr_get_cstr(unified_prefix);
+    normalize_number(uf, &(msg->sms.receiver));
+            
+    /* select in which list to add this
+     * start - from random SMSCConn, as they are all 'equal'
+     */
+
+    list_lock(smsc_list);
+
+    s = gw_rand() % list_len(smsc_list);
+    best_preferred = best_ok = NULL;
+    bad_found = 0;
+    
+    conn = NULL;
+    for (i=0; i < list_len(smsc_list); i++) {
+	conn = list_get(smsc_list,  (i+s) % list_len(smsc_list));
+
+	ret = smscconn_usable(conn,msg);
+	if (ret == -1)
+	    continue;
+
+	/* if we already have a preferred one, skip non-preferred */
+	if (ret != 1 && best_preferred)	
+	    continue;
+
+	smscconn_info(conn, &info);
+	/* If connection is not currently answering... */
+	if (info.status != SMSCCONN_ACTIVE) {
+	    bad_found = 1;
+	    continue;
+	}
+	if (ret == 1) {          /* preferred */
+	    if (best_preferred == NULL || info.load < bp_load) {
+		best_preferred = conn;
+		bp_load = info.load;
+		continue;
+	    }
+	}
+	if (best_ok == NULL || info.load < bo_load) {
+	    best_ok = conn;
+	    bo_load = info.load;
+	}
+    }
+    list_unlock(smsc_list);
+
+    if (best_preferred)
+	ret = smscconn_send(best_preferred, msg);
+    else if (best_ok)
+	ret = smscconn_send(best_ok, msg);
+    else if (bad_found) {
+	list_produce(outgoing_sms, msg);
+	return 0;
+    }
+    else {
+	warning(0, "Cannot find SMSCConn for message to <%s>, rejected.",
+		octstr_get_cstr(msg->sms.receiver));
+	return -1;
+    }
+    /* check the status of sending operation */
+    if (ret == -1)
+	return (smsc2_rout(msg));	/* re-try */
+
+    msg_destroy(msg);
+    return 1;
+}
+
 
 
 

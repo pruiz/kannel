@@ -86,16 +86,12 @@ int smsc2_shutdown(void);
 void smsc2_cleanup(void); /* final clean-up */
 
 Octstr *smsc2_status(int status_type);
-
-
-
-/* old bb_smsc.c functions not yet/anymore supported by new bb_smscconn */
-int smsc_die(void);	/* called when router dies */
-/* as udp_addwdp() */
-int smsc_addwdp(Msg *msg);
-
-/* tell total number of messages in seperate SMSC outgoing queues */
-int smsc_outgoing_queue(void);
+/* Route message to SMSC. If finds a good one, puts into it and returns 1
+ * If finds only bad ones, but acceptable, queues and returns 0
+ * (like all acceptable currently disconnected)
+ * If cannot find nothing at all, returns -1 and message is NOT destroyed
+ * (otherwise it is) */
+int smsc2_rout(Msg *msg);
 
 
 /*---------------

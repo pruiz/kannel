@@ -54,6 +54,9 @@
        MUST call callback function bb_smscconn_send_failed with appropriate
        reason. The message supplied as with bb_smscconn_send
 
+    e) When SMSC Connection changes to SMSCCONN_ACTIVE, connection MUST
+       call bb_smscconn_connected
+
  3) SMSC Connection MUST fill up SMSCConn structure as needed to, and is
     responsible for any concurrency timings. SMSCConn->status MAY NOT be
     set to SMSCCONN_DEAD until the connection is really that.

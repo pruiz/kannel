@@ -75,6 +75,7 @@ static int reconnect(SMSCConn *conn)
 	    conn->status = SMSCCONN_ACTIVE;
 	    conn->connect_time = time(NULL);
 	    mutex_unlock(conn->flow_mutex);
+	    bb_smscconn_connected(conn);
 	    break;
 	}
 	else if (ret == -2) {

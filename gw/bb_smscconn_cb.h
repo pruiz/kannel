@@ -17,6 +17,10 @@
  * various implementations */
 void bb_smscconn_ready(SMSCConn *conn);
 
+/* called each time when SMS center connected
+ */
+void bb_smscconn_connected(SMSCConn *conn);
+
 
 /* called after SMSCConn is shutdown or it kills itself
  * because of non-recoverable problems. SMSC Connection has already
