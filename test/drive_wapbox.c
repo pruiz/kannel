@@ -137,7 +137,7 @@ static void http_thread(void *arg) {
 		    	    	    	     &body, &cgivars);
 		if (client == NULL)
 			break;
-		http_send_reply(client, 200, reply_headers, reply_body);
+		http_send_reply(client, HTTP_OK, reply_headers, reply_body);
 		http_destroy_headers(headers);
 		octstr_destroy(ip);
 		octstr_destroy(url);
