@@ -245,219 +245,18 @@ error:
 
 int http_get_u(char *urltext, char **type, char **data, size_t *size,  HTTPHeader *header)
 { 
-    
     URL *url = NULL;
-    HTTPRequest *request = NULL, *response = NULL;
-    char *ptr = NULL, tempbuffer[4];
-    char *authorization = NULL;
-    int how_many_moves = 0;
-    size_t temp =0;
-
-
-   /* Initializing... */
-    /* ..request */
+    
     if( (url = internal_url_create(urltext)) == NULL) {
-	error(errno, "http_get_u: Creating URL failed");
-	goto error;
+	error(0, "http_get_u: Creating URL failed");
+	warning(0, "http_get_u: Couldn't create request");
+	    return -1;
     }
-
+    *data = gw_strdup(url->query);
+    http_post(urltext, type, data, size, header);
+    internal_url_destroy(url);
     
-    /* ..url */
-    else if( (request = httprequest_create(url, NULL)) == NULL) {
-	error(errno, "http_get_u: Creating HTTPRequest failed");
-	internal_url_destroy(url);    
-	goto error;
-    }
-    
-    internal_url_destroy(url);    
-    
-    /* Adding useful stuff */
-    
-    if( request->method_type == POST ){
-	memset(tempbuffer, 0, strlen(tempbuffer));
-	temp = (int) strlen(*data);
-	sprintf(tempbuffer, "%d", temp);
-	httprequest_add_header( request, "Content-Length", tempbuffer );
-    } else {
-	request->method_type = GET;
-	/* data length zero */
-	httprequest_add_header(request, "Content-Length", "0" );
-    }
-    
-    
-    
-    /* .. the common headers... */
-    httprequest_add_header(request, "Host", request->url->host);
-    httprequest_add_header(request, "Connection", "close");
-    httprequest_add_header(request, "User-Agent",
-			   "Mozilla/2.0 (compatible; Open Source WAP Gateway)");
-
-    header_dump(request->baseheader);
-    
-    /* ..username */
-    if(request->url->username != NULL) {
-	ptr = gw_malloc(1024 + 1);
-	sprintf(ptr, "%s:%s", request->url->username, request->url->password);
-	if( (authorization = internal_base6t4(ptr)) == NULL){
-	    error(errno, "http_get_u: internal_base6t4 failed");
-	    gw_free(ptr);
-	    goto error;
-	}
-	sprintf(ptr, "Basic %s", authorization);
-	httprequest_add_header(request, "Authorization", ptr);
-	gw_free(authorization);
-	gw_free(ptr);
-    }
-    
-    
-    /* ..the user defined headers */
-    for(;;){
-	if(header == NULL)break;
-	httprequest_replace_header(request, header->key, header->value);
-	header = header->next;
-    }
-    
-    
-    
-    for(;;) {
-	
-	debug("gwlib.http", 0, "http_get_u: Making request using headers:");
-	header_dump(request->baseheader);
-
-	/* Open connection, send request, get response. */
-	response = httprequest_execute(request);
-	if(response == NULL){
-	    error(errno, "http_get_u: Response failed");
-	    httprequest_destroy(request);
-	    goto error;
-	}
-	
-	/* Great, the server responded "200 OK" */
-	if(response->status == 200) break;
-       
-
-
-	 /* We are redirected to another URL */
-	 else if((response->status == 301) || (response->status == 302) || (response->status == 303)){
-
-	     url = internal_url_create(httprequest_get_header_value(
-		 response, "Location"));
-	     if(url==NULL){
-		 error(0,"http_get_u: missing 'Location' header in response");
-		 httprequest_destroy(response);
-		 httprequest_destroy(request);
-		 goto error;
-	     }
-
-	     httprequest_destroy(request);
-	     httprequest_destroy(response);
-
-	     /* Abort if we feel like we might be pushed around in 
-		an endless loop. 10 is just an arbitrary number. */
-	     if(how_many_moves > 10) {
-		 internal_url_destroy(url);
-		 error(0, "http_get_u: too many redirects");
-		 goto error;
-	     }
-	     how_many_moves++;
-
-	     /* let's create the request all over again */
-	     request = httprequest_create(url, NULL);
-	     internal_url_destroy(url);
-	     if(request == NULL) goto error;
-
-
-
-	     /* .. the common headers... */
-	     httprequest_add_header(request, "Host", request->url->host);
-	     httprequest_add_header(request, "Connection", "close");
-	     httprequest_add_header(
-		 request, "User-Agent",
-		 "Mozilla/2.0 (compatible; Open Source WAP Gateway)");
-
-
-	     /* ..username */
-	     if(request->url->username != NULL) {
-		 ptr = gw_malloc(1024 + 1);
-		 sprintf(ptr, "%s:%s", request->url->username,
-			 request->url->password);
-		 if( (authorization = internal_base6t4(ptr)) == NULL){
-		     error(errno, "http_get_u: internal_base6t4 failed");
-		     gw_free(ptr);
-		     goto error;
-		 }
-		 sprintf(ptr, "Basic %s", authorization);
-		 httprequest_add_header(request, "Authorization", ptr);
-		 gw_free(authorization);
-		 gw_free(ptr);
-	     }
-
-
-
-	     /* ..the user defined headers */
-	     for(;;){
-		 if(header == NULL)break;
-		 httprequest_add_header(request, header->key, header->value);
-		 header = header->next;
-	     }
-	     
-	     
-	 } /* redirection handling ends*/
-
-	/* Bad Request */
-	else if(response->status == 400) break;
-
-	
-	/* Server returned "404 Authorization Required" */
-	else if(response->status == 401) break;
-	
-	
-	/* Server returned "404 Not Found" */
-	else if(response->status == 404) break;
-	
-	
-	/* Server returned "501 Not Implemented" */
-	else if(response->status == 501) break;
-	
-	
-	/* If we haven't handled the response code this far, abort. */
-	else break;
-	
-    } /* for ends */
-    
-    httprequest_destroy(request);
-
-
-    
-    
-    
-/* Check the content of the "Content-Type" header. */
-    if( (ptr = httprequest_get_header_value(response,
-					    "Content-Type")) != NULL ) {
-	*type = gw_strdup(ptr);
-    } else {
-	*type = NULL;
-    }
-    
-    /* Fill in the variables which we'll return. */
-    if( (response->data != NULL) && (response->data_length > 0) ) {
-	*data = gw_malloc(response->data_length + 1);
-	memset(*data, 0, response->data_length + 1);
-	memcpy(*data, response->data, response->data_length);
-	*size = response->data_length;
-    } else {
-	*data = NULL;
-	*size = 0;
-    }
-
-    httprequest_destroy(response);
     return 0;
-
-
-    
-error:
-    error(0, "http_get_u: failed");
-    return -1;
 }
 
 
@@ -494,7 +293,7 @@ int http_post(char *urltext, char **type, char **data, size_t *size,  HTTPHeader
 
     /* Adding... */
     request->method_type = POST;
-    httprequest_add_header(request, "Connection", "Keep-Alive");
+    httprequest_add_header(request, "Connection", "Close");
     httprequest_add_header(request,
 			   "User-Agent",
 			   "Mozilla/2.0 (compatible; Open Source WAP Gateway)");
@@ -524,6 +323,7 @@ int http_post(char *urltext, char **type, char **data, size_t *size,  HTTPHeader
 	gw_free(authorization);
 	gw_free(ptr);
     }
+
     
 
     for(;;) {
@@ -1088,7 +888,7 @@ error:
 /*****************************************************************************
  * Convert a HTTPRequest structure to data writable to a socket
  */
-char* httprequest_unwrap(HTTPRequest *request) {
+char *httprequest_unwrap(HTTPRequest *request) {
     
     char *method_used = NULL, *tmpbuff = NULL, *tmpline = NULL, *bigbuff = NULL, *finalbuff = NULL;
     HTTPHeader *header = NULL;
@@ -1395,7 +1195,6 @@ int header_pack(HTTPHeader *hdr)
 		ret = sprintf(buf, "%s, %s", hdr->value, ptr->value);
 		if(ret < len) return -1;
 		
-		debug("gwlib.http",0,"header_pack: buf: %s",buf);
 		/* replace with cat value */
 		gw_free(hdr->value);
 		hdr->value = gw_strdup(buf);
@@ -1459,7 +1258,8 @@ int httprequest_remove_header(HTTPRequest *request, char *key) {
 
 /*
  * httprequets_get_header_value - find the given header and return the value.
- * If header doesn't exist or function fails return NULL.
+ * If header doesn't exist or function fails return NULL. If multiple
+ * occurrences pack headers and return value.
  */
 char* httprequest_get_header_value(HTTPRequest *request, char *key) {
 
@@ -1469,7 +1269,9 @@ char* httprequest_get_header_value(HTTPRequest *request, char *key) {
 	error(0, "httprequest_get_header_value: Bad input.");
 	return NULL;
     }
-    hdr = request->baseheader;
+    
+    header_pack(hdr = request->baseheader);
+    
     while(hdr!=NULL){
 	if(strcasecmp(hdr->key, key) == 0)
 	    /* match */

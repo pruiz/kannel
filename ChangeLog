@@ -1,3 +1,8 @@
+2000-03-29 Sanna Seppanen <sanna@wapit.com>
+
+	* gwlib/http.c: http_get_u() deleted a bunch of duplicate code.
+	GET query is sent as a message body.
+
 2000-03-28 Aarno Syvänen <syvanen@wapit.com>
 
 	* wtp*,  wsp*: Changed primitive names. Now they conform with ones 
