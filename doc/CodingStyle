@@ -101,6 +101,7 @@ Log message at the `debug' level: naming convention for `place'
 		wap.wsp.http	WSP implementation
 		wap.wtp		WTP implementation
 		wap.wtp.timer	WTP timers
+                wap.wtp.tid     WTP tid validation
 		wap.wml		WML encoder
 
 		bb		Bearer box: misc stuff
@@ -126,3 +127,5 @@ Log message at the `debug' level: naming convention for `place'
 		util		Utility programs
 
 	If you need more subsystems, please add them here as well.
+
+
