@@ -6,7 +6,6 @@
 
 #include <unistd.h>
 #include <errno.h>
-#include <sys/poll.h>
 #include <pthread.h>
 
 #include <gwlib/gwlib.h>

@@ -1,5 +1,17 @@
 2000-10-18  Richard Braakman  <dark@wapit.com>
 
+	* configure.in, config.h.in: New test for HAVE_SYS_POLL_H.
+
+	* gwlib/gwpoll.h, gwlib/gwpoll.c: Files that either include 
+	sys/poll.h or define poll() themselves.
+
+	* gwlib/gwlib.h: Include gwpoll.h.
+
+	* gwlib/conn.c, gwlib/gwthread-pthread.h: Do not include
+	sys/poll.h directly, let gwlib/gwlib.h do it.
+
+2000-10-18  Richard Braakman  <dark@wapit.com>
+
 	* gw/bb_udp.c, gwlib/http.c: Corrected some stray free() calls
 	to gw_free().
 

@@ -58,7 +58,7 @@ fi
 dnl Checks for header files.
 
 AC_HEADER_STDC
-AC_CHECK_HEADERS(sys/ioctl.h sys/time.h sys/types.h unistd.h)
+AC_CHECK_HEADERS(sys/ioctl.h sys/time.h sys/types.h unistd.h sys/poll.h)
 AC_CHECK_HEADERS(pthread.h getopt.h)
 AC_CHECK_HEADER(sys/strsun.h, CFLAGS="$CFLAGS -DSunOS=1") 
 
