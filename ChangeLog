@@ -1,3 +1,9 @@
+2000-10-09 Aarno Syvänen <syvanen@wapit.com>
+
+	* gw/wtp_init.c, wtp_resp.c: When the state machines cannot handle
+	an event, we ignore it and log an error message. Timer will abort
+	this tranaction.
+
 2000-10-09  Richard Braakman  <dark@wapit.com>
 
 	* gw/smsc_cimd2.c: Converted to new formatting style.
