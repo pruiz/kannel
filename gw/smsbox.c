@@ -531,7 +531,7 @@ static void url_result_thread(void *arg)
  */
 static int obey_request(Octstr **result, URLTranslation *trans, Msg *msg)
 {
-    char *pattern;
+    Octstr *pattern;
     Octstr *url;
     List *request_headers;
     long id;
@@ -544,17 +544,18 @@ static int obey_request(Octstr **result, URLTranslation *trans, Msg *msg)
     
     switch (urltrans_type(trans)) {
     case TRANSTYPE_TEXT:
-	debug("sms", 0, "formatted text answer: <%s>", pattern);
-	*result = octstr_create(pattern);
+	debug("sms", 0, "formatted text answer: <%s>", 
+	      octstr_get_cstr(pattern));
+	*result = pattern;
 	alog("SMS request sender:%s request: '%s' fixed answer: '%s'",
 	     octstr_get_cstr(msg->sms.receiver),
 	     octstr_get_cstr(msg->sms.msgdata),
-	     pattern);
+	     octstr_get_cstr(pattern));
 	break;
     
     case TRANSTYPE_FILE:
-	*result = octstr_read_file(pattern);
-	gw_free(pattern);
+	*result = octstr_read_file(octstr_get_cstr(pattern));
+	octstr_destroy(pattern);
 	alog("SMS request sender:%s request: '%s' file answer: '%s'",
 	     octstr_get_cstr(msg->sms.receiver),
 	     octstr_get_cstr(msg->sms.msgdata),
@@ -562,8 +563,7 @@ static int obey_request(Octstr **result, URLTranslation *trans, Msg *msg)
 	break;
     
     case TRANSTYPE_URL:
-	url = octstr_create(pattern);
-	gw_free(pattern);
+	url = pattern;
 	request_headers = list_create();
 	id = http_start_request(caller, url, request_headers, NULL, 1);
 	octstr_destroy(url);

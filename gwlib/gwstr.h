@@ -12,10 +12,6 @@
 char *trim_ends(char *str);
 
 
-/* Count the number of times `pat' occurs on `str'. */
-int count_occurences(char *str, char *pat);
-
-
 /* like strstr, but ignore case */
 char *str_case_str(char *str, char *pat);
 

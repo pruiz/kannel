@@ -29,7 +29,7 @@ struct URLTranslation {
     char *keyword;	/* keyword in SMS (similar) query */
     char *aliases;	/* separated with ':', after each (inc. last one) */
     int type;		/* see enumeration in header file */
-    char *pattern;	/* url, text or file-name pattern */
+    Octstr *pattern;	/* url, text or file-name pattern */
     Octstr *prefix;	/* for prefix-cut */
     Octstr *suffix;	/* for suffix-cut */
     Octstr *faked_sender;/* works only with certain services */
@@ -63,24 +63,18 @@ struct URLTranslationList {
 };
 
 
-/*
- * Maximum number of encoded characters from one unencoded character.
- * (See encode_for_url.)
- */
-#define ENCODED_LEN 3
-
-
 /***********************************************************************
  * Declarations of internal functions. These are defined at the end of
  * the file.
  */
 
+static long count_occurences(Octstr *str, Octstr *pat);
 static URLTranslation *create_onetrans(ConfigGroup *grp);
 static void destroy_onetrans(void *ot);
 static URLTranslation *find_translation(URLTranslationList *trans, 
 					List *words, Octstr *smsc);
 static URLTranslation *find_default_translation(URLTranslationList *trans);
-static void encode_for_url(char *buf, char *str);
+static Octstr *encode_for_url(Octstr *str);
 
 
 /***********************************************************************
@@ -181,169 +175,154 @@ URLTranslation *urltrans_find_username(URLTranslationList *trans,
 
 
 
-char *urltrans_get_pattern(URLTranslation *t, Msg *request)
+Octstr *urltrans_get_pattern(URLTranslation *t, Msg *request)
 {
-    char *buf, *enc, *s, *p, *pattern, *tilde;
+    Octstr *enc;
     int nextarg, j;
-    size_t len, maxword;
     struct tm tm;
-    char *words[161];
-    int max_words;
+    int num_words;
     List *word_list;
-    int n;
+    Octstr *result;
+    long pattern_len;
+    long pos;
+    int c;
+    long i;
+    Octstr *temp;
     
     if (t->type == TRANSTYPE_SENDSMS)
-	return gw_strdup("");
+	return octstr_create("");
     
     word_list = octstr_split_words(request->sms.msgdata);
-    n = list_len(word_list);
-    max_words = sizeof(words) / sizeof(words[0]);
-    if (n > max_words)
-	n = max_words;
-    for (j = 0; j < n; ++j)
-	words[j] = octstr_get_cstr(list_get(word_list, j));
+    num_words = list_len(word_list);
     
-    maxword = 0;
-    for (j = 0; j < n; ++j) {
-	len = strlen(words[j]);
-	if (len > maxword)
-	    maxword = len;
-    }
-    
-    pattern = t->pattern;
-    len = strlen(pattern);
-    len += count_occurences(pattern, "%s") * maxword * ENCODED_LEN;
-    len += count_occurences(pattern, "%S") * maxword * ENCODED_LEN;
-    len += count_occurences(pattern, "%a") * 
-    (maxword + 1) * n * ENCODED_LEN;
-    len += count_occurences(pattern, "%r") * 
-    (maxword + 1) * n * ENCODED_LEN;
-    len += count_occurences(pattern, "%p") * 
-    octstr_len(request->sms.receiver) * ENCODED_LEN;
-    len += count_occurences(pattern, "%P") * 
-    octstr_len(request->sms.sender) * ENCODED_LEN;
-    len += count_occurences(pattern, "%q") * 
-    octstr_len(request->sms.receiver) * ENCODED_LEN;
-    len += count_occurences(pattern, "%Q") * 
-    octstr_len(request->sms.sender) * ENCODED_LEN;
-    len += count_occurences(pattern, "%t") * strlen("YYYY-MM-DD+HH:MM");
-    
-    buf = gw_malloc(len + 1);
-    enc = gw_malloc(len + 1);
-    
-    *buf = '\0';
-    s = buf;
+    result = octstr_create("");
+    pattern_len = octstr_len(t->pattern);
     nextarg = 1;
+    pos = 0;
     for (;;) {
-	s = strchr(s, '\0');
-	p = strstr(pattern, "%");
-	if (p == NULL || p[1] == '\0') {
-	    strcpy(s, pattern);
-	    break;
+    	while (pos < pattern_len) {
+	    c = octstr_get_char(t->pattern, pos);
+	    if (c == '%' && pos + 1 < pattern_len)
+	    	break;
+	    octstr_append_char(result, c);
+	    ++pos;
 	}
-    
-	sprintf(s, "%.*s", (int) (p - pattern), pattern);
-	s = strchr(s, '\0');
 
-	switch (p[1]) {
+    	if (pos == pattern_len)
+	    break;
+
+	switch (octstr_get_char(t->pattern, pos + 1)) {
 	case 's':
-	    encode_for_url(enc, words[nextarg]);
-	    sprintf(s, "%s", enc);
+	    enc = encode_for_url(list_get(word_list, nextarg));
+	    octstr_format_append(result, "%s", enc);
+	    octstr_destroy(enc);
 	    ++nextarg;
 	    break;
 
 	case 'S':
-	    sprintf(s, "%s", words[nextarg]);
-	    ++nextarg;
-	    while ((tilde = strchr(s, '*')) != NULL) {
-		*tilde++ = '~';
-		s = tilde;
+	    temp = list_get(word_list, nextarg);
+	    for (i = 0; i < octstr_len(temp); ++i) {
+		if (octstr_get_char(temp, i) == '*')
+		    octstr_append_char(result, '~');
+		else
+		    octstr_append_char(result, octstr_get_char(temp, i));
 	    }
-	break;
+	    ++nextarg;
+	    break;
 
 	case 'r':
-	    for (j = nextarg; j < n; ++j) {
-		encode_for_url(enc, words[j]);
+	    for (j = nextarg; j < num_words; ++j) {
+		enc = encode_for_url(list_get(word_list, j));
 		if (j == nextarg)
-		    sprintf(s, "%s", enc);
+		    octstr_format_append(result, "%s", enc);
 		else
-		    sprintf(s, "+%s", enc);
-		s = strchr(s, '\0');
+		    octstr_format_append(result, "+%s", enc);
+		octstr_destroy(enc);
 	    }
-	break;
+	    break;
     
 	/* NOTE: the sender and receiver is already switched in
 	 *    message, so that's why we must use 'sender' when
 	 *    we want original receiver and vice versa
 	 */
 	case 'P':
-	    encode_for_url(enc, 
-			   octstr_get_cstr(request->sms.sender));
-			   sprintf(s, "%s", enc);
+	    enc = encode_for_url(request->sms.sender);
+	    octstr_format_append(result, "%s", enc);
+	    octstr_destroy(enc);
 	    break;
 
 	case 'p':
-	    encode_for_url(enc, 
-			   octstr_get_cstr(request->sms.receiver));
-			   sprintf(s, "%s", enc);
+	    enc = encode_for_url(request->sms.receiver);
+	    octstr_format_append(result, "%s", enc);
+	    octstr_destroy(enc);
 	    break;
 
 	case 'Q':
 	    if (strncmp(octstr_get_cstr(request->sms.sender), "00", 2) == 0) {
-		encode_for_url(enc, octstr_get_cstr(request->sms.sender) + 2);
-		sprintf(s, "%%2B%s", enc);
+		temp = octstr_copy(request->sms.sender, 2, 
+		    	    	  octstr_len(request->sms.sender));
+		enc = encode_for_url(temp);
+		octstr_format_append(result, "%%2B%s", enc);
+		octstr_destroy(enc);
+		octstr_destroy(temp);
 	    } else {
-		encode_for_url(enc, octstr_get_cstr(request->sms.sender));
-		sprintf(s, "%s", enc);
+		enc = encode_for_url(request->sms.sender);
+		octstr_format_append(result, "%s", enc);
+		octstr_destroy(enc);
 	    }
 	    break;
 
 	case 'q':
 	    if (strncmp(octstr_get_cstr(request->sms.receiver), "00", 2) == 0) {
-		encode_for_url(enc, octstr_get_cstr(request->sms.receiver) + 2);
-		sprintf(s, "%%2B%s", enc);
+		temp = octstr_copy(request->sms.receiver, 2, 
+		    	    	  octstr_len(request->sms.receiver));
+		enc = encode_for_url(temp);
+		octstr_format_append(result, "%%2B%s", enc);
+		octstr_destroy(enc);
+		octstr_destroy(temp);
 	    } else {
-		encode_for_url(enc, octstr_get_cstr(request->sms.receiver));
-		sprintf(s, "%s", enc);
+		enc = encode_for_url(request->sms.receiver);
+		octstr_format_append(result, "%s", enc);
+		octstr_destroy(enc);
 	    }
 	break;
 
 	case 'a':
-	    for (j = 0; j < n; ++j) {
-		encode_for_url(enc, words[j]);
+	    for (j = 0; j < num_words; ++j) {
+		enc = encode_for_url(list_get(word_list, j));
 		if (j > 0)
-		    sprintf(s, "+%s", enc);
+		    octstr_format_append(result, "+%s", enc);
 		else
-		    sprintf(s, "%s", enc);
-		s = strchr(s, '\0');
+		    octstr_format_append(result, "%s", enc);
+		octstr_destroy(enc);
 	    }
 	    break;
 
 	case 't':
 	    tm = gw_gmtime(request->sms.time);
-	    sprintf(s, "%04d-%02d-%02d+%02d:%02d",
-		    tm.tm_year + 1900,
-		    tm.tm_mon + 1,
-		    tm.tm_mday,
-		    tm.tm_hour,
-		    tm.tm_min);
+	    octstr_format_append(result, "%04d-%02d-%02d+%02d:%02d",
+				 tm.tm_year + 1900,
+				 tm.tm_mon + 1,
+				 tm.tm_mday,
+				 tm.tm_hour,
+				 tm.tm_min);
 	    break;
 
 	case '%':
-	    *s = '%';
+	    octstr_format_append(result, "%%");
 	    break;
 
 	default:
-	    sprintf(s, "%%%c", p[1]);
+	    octstr_format_append(result, "%%%c",
+	    	    	    	 octstr_get_char(t->pattern, pos));
 	    break;
 	}
 
-	pattern = p + 2;
+	pos += 2;
     }
     
     list_destroy(word_list, octstr_destroy_item);
-    gw_free(enc);
-    return buf;
+    return result;
 }
 
 
@@ -459,7 +438,8 @@ static URLTranslation *create_onetrans(ConfigGroup *grp)
     
     ot = gw_malloc(sizeof(URLTranslation));
 
-    ot->keyword = ot->aliases = ot->pattern = NULL;
+    ot->keyword = ot->aliases = NULL;
+    ot->pattern = NULL;
     ot->prefix = ot->suffix = NULL;
     ot->faked_sender = NULL;
     ot->split_chars = ot->split_suffix = NULL;
@@ -496,16 +476,16 @@ static URLTranslation *create_onetrans(ConfigGroup *grp)
     
     if (url) {
 	ot->type = TRANSTYPE_URL;
-	ot->pattern = gw_strdup(url);
+	ot->pattern = octstr_create(url);
     } else if (file) {
 	ot->type = TRANSTYPE_FILE;
-	ot->pattern = gw_strdup(file);
+	ot->pattern = octstr_create(file);
     } else if (text) {
 	ot->type = TRANSTYPE_TEXT;
-	ot->pattern = gw_strdup(text);
+	ot->pattern = octstr_create(text);
     } else if (username) {
 	ot->type = TRANSTYPE_SENDSMS;
-	ot->pattern = gw_strdup("");
+	ot->pattern = octstr_create("");
 	ot->username = octstr_create(username);
 	if (password)
 	    ot->password = octstr_create(password);
@@ -552,10 +532,13 @@ static URLTranslation *create_onetrans(ConfigGroup *grp)
 	    ot->suffix = octstr_create(suffix);
 	}
 
-	ot->args = count_occurences(ot->pattern, "%s");
-	ot->args += count_occurences(ot->pattern, "%S");
-	ot->has_catchall_arg = (count_occurences(ot->pattern, "%r") > 0) ||
-	    (count_occurences(ot->pattern, "%a") > 0);
+	ot->args = count_occurences(ot->pattern, 
+	    	    	    	    octstr_create_immutable("%s"));
+	ot->args += count_occurences(ot->pattern, 
+	    	    	    	     octstr_create_immutable("%S"));
+	ot->has_catchall_arg = 
+	    (count_occurences(ot->pattern, octstr_create_immutable("%r")) > 0) ||
+	    (count_occurences(ot->pattern, octstr_create_immutable("%a")) > 0);
     }
     else { 		/* send-sms user */
 	ot->args = 0;
@@ -613,7 +596,7 @@ static void destroy_onetrans(void *p)
     if (ot != NULL) {
 	gw_free(ot->keyword);
 	gw_free(ot->aliases);
-	gw_free(ot->pattern);
+	octstr_destroy(ot->pattern);
 	octstr_destroy(ot->prefix);
 	octstr_destroy(ot->suffix);
 	octstr_destroy(ot->faked_sender);
@@ -697,34 +680,54 @@ static URLTranslation *find_default_translation(URLTranslationList *trans)
 
 
 /*
- * Encode `str' for insertion into a URL. Put the result into `buf',
- * which must be long enough (at most strlen(str) * ENCODED_LEN + 1.
+ * Encode `str' for insertion into a URL. Return result.
  * 
  * RFC 2396 defines the list of characters that need to be encoded.
  */
-static void encode_for_url(char *buf, char *str) {
+static Octstr *encode_for_url(Octstr *str) {
     static unsigned char *safe = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 	    "abcdefghijklmnopqrstuvwxyz-_.!~*'()";
     static char is_safe[UCHAR_MAX + 1];
-    static char hexdigits[] = "0123456789ABCDEF";
-    unsigned char *ustr;
+    static int init = 0;
+    Octstr *enc;
+    long i, len;
+    int c;
     
-    if (safe != NULL) {
-	for (; *safe != '\0'; ++safe)
-	    is_safe[*safe] = 1;
-	safe = NULL;
+    if (!init) {
+	for (i = 0; safe[i] != '\0'; ++i)
+	    is_safe[safe[i]] = 1;
+	init = 1;
     }
 	
-    ustr = str;
-    while (*ustr != '\0') {
-	if (is_safe[*ustr])
-	    *buf++ = *ustr++;
-	else {
-	    *buf++ = '%';
-	    *buf++ = hexdigits[*ustr / 16];
-	    *buf++ = hexdigits[*ustr % 16];
-	    ++ustr;
-	}
+    enc = octstr_create("");
+    len = octstr_len(str);
+    for (i = 0; i < len; ++i) {
+	c = octstr_get_char(str, i);
+	if (is_safe[c])
+	    octstr_append_char(enc, c);
+	else
+	    octstr_format_append(enc, "%%%02x", c);
     }
-    *buf = '\0';
+    return enc;
+}
+
+
+
+/*
+ * Count the number of times `pat' occurs in `str'.
+ */
+static long count_occurences(Octstr *str, Octstr *pat)
+{
+    long count;
+    long pos;
+    long len;
+    
+    count = 0;
+    pos = 0;
+    len = octstr_len(pat);
+    while ((pos = octstr_search(str, pat, pos)) != -1) {
+    	++count;
+	pos += len;
+    }
+    return count;
 }

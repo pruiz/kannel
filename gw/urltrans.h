@@ -130,7 +130,7 @@ URLTranslation *urltrans_find_username(URLTranslationList *trans,
  *
  * The pattern is URL, fixed text or file name according to type of urltrans
  */
-char *urltrans_get_pattern(URLTranslation *t, Msg *sms);
+Octstr *urltrans_get_pattern(URLTranslation *t, Msg *sms);
 
 
 /*

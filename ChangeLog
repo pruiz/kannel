@@ -1,5 +1,12 @@
 2000-12-04  Lars Wirzenius  <liw@iki.fi>
 
+    	* gw/urltrans.c: Made urltrans_get_pattern return an Octstr, instead
+	of a C string.
+
+	* gw/smsbox.c: Related changes.
+
+2000-12-04  Lars Wirzenius  <liw@iki.fi>
+
 	* gw/urltrans.[ch]: Change function call interfaces to use Octstr
 	instead of C strings.
 

@@ -22,21 +22,6 @@ char *trim_ends(char *str)
 }
 
 
-int count_occurences(char *str, char *pat)
-{
-    int count;
-    size_t len;
-
-    count = 0;
-    len = strlen(pat);
-    while ((str = strstr(str, pat)) != NULL) {
-        ++count;
-        str += len;
-    }
-    return count;
-}
-
-
 char *str_case_str(char *str, char *pat)
 {
     char *p, *s;
