@@ -312,7 +312,6 @@ void *wsp_http_thread(void *arg) {
 		type = octstr_create("text/plain");
 	} else {
 		http2_header_get_content_type(resp_headers, &type, &charset);
-		octstr_destroy(charset);
 		info(0, "WSP: Fetched <%s> (%s)", 
 			octstr_get_cstr(url), octstr_get_cstr(type));
 		status = 200; /* OK */
@@ -344,6 +343,7 @@ void *wsp_http_thread(void *arg) {
 				"Content of unsupported content:");
 			octstr_dump(resp_body, 0);
 		}
+		octstr_destroy(charset);
 	}
 	octstr_destroy(resp_body);
 	while ((os = list_extract_first(req_headers)) != NULL)

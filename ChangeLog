@@ -1,3 +1,8 @@
+2000-05-04  Richard Braakman  <dark@wapit.com>
+
+	* gw/wsp_http.c: In wsp_http_thread(), do not destroy charset
+	until after it is used by the converters.
+
 Thu May  4 18:35:24 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* Making *DEVELOPMENT* release 0.9. This is not stable, don't use
