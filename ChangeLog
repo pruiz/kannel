@@ -1,3 +1,7 @@
+2000-03-09    Derry Hamilton  <rasilon@tardis.ed.ac.uk>
+	
+	* Makefile.in:  Added -D_REENTRANT to CFLAGS
+	
 2000-03-09    <rpr@rpr.wapit.com>
 
 	* gwlib/octstr.c: fixed stupid error in octstr_recv
