@@ -263,11 +263,6 @@ Octstr *urltrans_get_pattern(URLTranslation *t, Msg *request)
     nextarg = 1;
     pos = 0;
     for (;;) {
-	/* hack to avoid running out of arguments
-	 */
-	if (nextarg >= num_words)
-	    nextarg = num_words - 1;
-	
     	while (pos < pattern_len) {
 	    c = octstr_get_char(t->pattern, pos);
 	    if (c == '%' && pos + 1 < pattern_len)
@@ -288,6 +283,8 @@ Octstr *urltrans_get_pattern(URLTranslation *t, Msg *request)
 	    break;
 
 	case 's':
+	    if (nextarg >= num_words)
+		break;
 	    enc = octstr_duplicate(list_get(word_list, nextarg));
 	    octstr_url_encode(enc);
 	    octstr_append(result, enc);
@@ -296,6 +293,8 @@ Octstr *urltrans_get_pattern(URLTranslation *t, Msg *request)
 	    break;
 
 	case 'S':
+	    if (nextarg >= num_words)
+		break;
 	    temp = list_get(word_list, nextarg);
 	    for (i = 0; i < octstr_len(temp); ++i) {
 		if (octstr_get_char(temp, i) == '*')

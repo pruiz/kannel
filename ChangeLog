@@ -1,3 +1,8 @@
+2001-04-12  Kalle Marjola  <rpr@wapit.com>
+
+	* gw/urltrans.c (urltrans_get_pattern): fixed that %s cannot cause
+	overflow if there is catch-all argument
+
 2001-04-11  Richard Braakman  <dark@wapit.com>
 
         * gw/urltrans.c: Slight simplification of strip_keyword().
