@@ -36,6 +36,7 @@ static int reconnect(SMSCConn *conn)
 	ret = smsc_reopen(wrap->smsc);
 	if (ret == 0) {
 	    conn->status = SMSCCONN_ACTIVE;
+	    conn->connect_time = time(NULL);
 	    return 0;
 	}
 	else if (ret == -2) {

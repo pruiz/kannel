@@ -346,7 +346,7 @@ void smsc2_cleanup(void)
 
 Octstr *smsc2_status(int xml)
 {
-    char tmp[512], tmp2[256];
+    char tmp[512], tmp2[256], tmp3[64];
     int i;
     SMSCConn *conn;
     StatusInfo info;
@@ -361,11 +361,25 @@ Octstr *smsc2_status(int xml)
     for(i=0; i < list_len(smsc_list); i++) {
         conn = list_get(smsc_list, i);
 	smscconn_info(conn, &info);
+
+	if (info.status == SMSCCONN_KILLED)
+	    continue;
 	
         strcat(tmp, "&nbsp;&nbsp;&nbsp;&nbsp;");
         strcat(tmp, octstr_get_cstr(smscconn_name(conn)));
-	sprintf(tmp2, " (online %lds, received %ld, sent %ld, failed to "
-		"send %ld, queued %ld messages)<br>", info.online,
+	switch(info.status) {
+	case SMSCCONN_ACTIVE:
+	    sprintf(tmp3, "online %lds", info.online);
+	    break;
+	case SMSCCONN_DISCONNECTED:
+	    sprintf(tmp3, "disconnected");
+	    break;
+	default:
+	    sprintf(tmp3, "connecting");
+	}
+	
+	sprintf(tmp2, " (%s, received %ld, sent %ld, failed to "
+		"send %ld, queued %ld messages)<br>", tmp3,
 		info.received, info.sent, info.failed, info.queued);
 	strcat(tmp, tmp2);
     }

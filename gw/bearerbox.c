@@ -566,8 +566,8 @@ Octstr *bb_print_status(int xml)
     }
     version = version_report_string("");
     sprintf(buf, "<p>%s</p><p>Status: uptime %ldd %ldh %ldm %lds, %s, %d threads</p>"
-	    "<p>WDP: received %ld (%ld still in queue), sent %ld (%ld still in queue)</p>"
-	    "<p>SMS: received %ld (%ld still in queue), sent %ld (%ld still in queue)</p>"
+	    "<p>WDP: received %ld (%ld queued), sent %ld (%ld queued)</p>"
+	    "<p>SMS: received %ld (%ld queued), sent %ld (%ld queued)</p>"
 	    "<p>",
 	    octstr_get_cstr(version),
 	    t/3600/24, t/3600%24, t/60%60, t%60, s,
@@ -580,7 +580,6 @@ Octstr *bb_print_status(int xml)
 	    list_len(incoming_sms),
 	    counter_value(outgoing_sms_counter),
 	    list_len(outgoing_sms));
-/*	    list_len(outgoing_sms) + smsc_outgoing_queue()); */
 
     octstr_destroy(version);
     ret = octstr_create(buf);
