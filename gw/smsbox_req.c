@@ -499,7 +499,6 @@ static int send_message(URLTranslation *trans, Msg *msg)
     if (h != NULL) hl = strlen(h); else hl = 0;
     if (f != NULL) fl = strlen(f); else fl = 0;
 
-#if 0	
     if (octstr_len(msg->smart_sms.msgdata) <= (sms_max_length - fl - hl)
 	|| max_msgs == 1) {
 
@@ -529,9 +528,6 @@ static int send_message(URLTranslation *trans, Msg *msg)
 	if (do_split_send(msg, max_msgs, trans) < 0)
 	    goto error;
     }
-#endif
-
-    if (do_split_send(msg, max_msgs, trans) < 0) goto error;
 
     return 0;
 

@@ -120,10 +120,18 @@ int tcpip_connect_to_server_with_port(char *hostname, int port, int our_port) {
         addr.sin_addr = *(struct in_addr *) hostinfo->h_addr;
 
 	if (our_port > 0) {
+	    int reuse;
+	    
 	    o_addr.sin_family = AF_INET;
 	    o_addr.sin_port = htons(our_port);
 	    o_addr.sin_addr.s_addr = htonl(INADDR_ANY);
 
+	    reuse = 1;
+	    if (setsockopt(s, SOL_SOCKET, SO_REUSEADDR, (char *) &reuse, 
+			   sizeof(reuse)) == -1) {
+		error(errno, "setsockopt failed before bind");
+		goto error;
+	    }
 	    if (bind(s, &o_addr, sizeof(o_addr)) == -1) {
 		error(0, "bind to local port %d failed", our_port);
 		goto error;

@@ -812,6 +812,7 @@ static int internal_emi_memorybuffer_has_rawmessage(SMSCenter *smsc,
 	if ( ( stx != NULL ) && ( etx != NULL ) && (stx < etx) ) {
 
 	    strncpy(tmpbuff, stx, etx-stx+1);
+	    tmpbuff[etx-stx+1] = '\0';
 	    if (auth)
 		sprintf(tmpbuff2, "/%c/%02i/", auth, type);
 	    else
@@ -819,8 +820,7 @@ static int internal_emi_memorybuffer_has_rawmessage(SMSCenter *smsc,
 		
 	    if( strstr(tmpbuff, tmpbuff2) != NULL ) {
 		
-		debug(0, "found message <%c/%02i>...", auth, type);
-		debug(0, "has_rawmessage: <%s>", tmpbuff);
+		debug(0, "found message <%c/%02i>...msg <%s>", auth, type, tmpbuff);
 		return 1;
 	    }
 
@@ -1067,7 +1067,7 @@ static int internal_emi_parse_msg_to_rawmessage(SMSCenter *smsc, Msg *msg, char 
 	if (msg->smart_sms.flag_8bit != 1) {
 	  /* skip the probably existing UDH */
 	  octstr_get_many_chars(msgtext, msg->smart_sms.msgdata, udh_len, octstr_len(msg->smart_sms.msgdata) - udh_len);
-	  msgtext[octstr_len(msg->smart_sms.msgdata)] = '\0';
+	  msgtext[octstr_len(msg->smart_sms.msgdata)-udh_len] = '\0';
 	  internal_emi_parse_iso88591_to_emi(msgtext, my_buffer2,
 					     octstr_len(msg->smart_sms.msgdata) - udh_len,
 					     smsc->alt_charset);	  
@@ -1077,7 +1077,7 @@ static int internal_emi_parse_msg_to_rawmessage(SMSCenter *smsc, Msg *msg, char 
 	  strcpy(mcl,"");
 	} else {
 	  octstr_get_many_chars(msgtext, msg->smart_sms.msgdata, udh_len, octstr_len(msg->smart_sms.msgdata) - udh_len);
-	  msgtext[octstr_len(msg->smart_sms.msgdata)] = '\0';
+	  msgtext[octstr_len(msg->smart_sms.msgdata) - udh_len] = '\0';
 	  internal_emi_parse_binary_to_emi(msgtext, my_buffer2, octstr_len(msg->smart_sms.msgdata) - udh_len);	  
 	  
 	  sprintf(snumbits,"%04d",(octstr_len(msg->smart_sms.msgdata)-udh_len)*8);
@@ -1179,12 +1179,13 @@ static int internal_emi_parse_iso88591_to_emi(char *from, char *to,
 
 	*to = '\0';
 
+	debug(0, "emi parsing <%s> to emi, length %d", from, length);
+	
 	for (ptr = from; length > 0; ptr++,length--) {
 		tmpchar = internal_char_iso_to_sms(*ptr, alt_charset);
 		sprintf(buf, "%02X", tmpchar);
 		strncat(to, buf, 2);
 	}
-
 	return 0;
 }
 

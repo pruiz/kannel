@@ -1,3 +1,13 @@
+1999-12-30    <rpr@rpr.wapit.com>
+
+	* gwlib/socket.c: added that missing reuseaddr to
+	connect_with_port
+
+	* gw/smsbox_req.c: oops, did not return all working code, now it
+	should work as it did earlier
+
+	* gw/smsc_emi.c: some little fixes to udh messages
+
 Wed Dec 29 22:06:22 1999  Lars Wirzenius  <liw@wapit.com>
 
 	* gw/wsp.c: Three bugs in Reply PDU fixed: status code should
