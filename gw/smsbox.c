@@ -890,6 +890,11 @@ static void http_queue_thread(void *arg)
             http_start_request(caller, method, req_url, req_headers, req_body, 
                                1, id, NULL);
         }
+        
+        msg_destroy(msg);
+        octstr_destroy(req_url);
+        http_destroy_headers(req_headers);
+        octstr_destroy(req_body);
     }
 }
 
