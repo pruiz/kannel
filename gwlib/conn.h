@@ -84,6 +84,9 @@ int conn_wait(Connection *conn, double seconds);
  */
 int conn_write(Connection *conn, Octstr *data);
 int conn_write_data(Connection *conn, unsigned char *data, long length);
+/* Write the length of the octstr as a standard network long, then
+ * write the octstr itself. */
+int conn_write_withlen(Connection *conn, Octstr *data);
 
 /* Input functions.  Each of these takes an open connection and
  * returns data if it's available, or NULL if it's not. */
@@ -98,6 +101,12 @@ Octstr *conn_read_fixed(Connection *conn, long length);
  * from the input buffer.  Otherwise return NULL.
  */
 Octstr *conn_read_line(Connection *conn);
+
+/* Read a standard network long giving the length of the following
+ * data, then read the data itself, and pack it into an Octstr and
+ * remove it from the input buffer.  Otherwise return NULL.
+ */
+Octstr *conn_read_withlen(Connection *conn);
 
 /* If the input buffer contains a packet delimited by the "startmark"
  * and "endmark" characters, then return that packet (including the marks)

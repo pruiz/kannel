@@ -137,9 +137,9 @@ static void unlocked_read(Connection *conn) {
 static Octstr *unlocked_get(Connection *conn, long length) {
 	Octstr *result = NULL;
 
-	gw_assert(unlocked_outbuf_len(conn) >= length);
-	result = octstr_copy(conn->outbuf, conn->outbufpos, length);
-	conn->outbufpos += length;
+	gw_assert(unlocked_inbuf_len(conn) >= length);
+	result = octstr_copy(conn->inbuf, conn->inbufpos, length);
+	conn->inbufpos += length;
 
 	return result;
 }
@@ -292,7 +292,7 @@ error_unlock:
 }
 
 int conn_write(Connection *conn, Octstr *data) {
-	long ret = 1;
+	int ret;
 
 	lock(conn);
 	octstr_append(conn->outbuf, data);
@@ -303,10 +303,24 @@ int conn_write(Connection *conn, Octstr *data) {
 }
 
 int conn_write_data(Connection *conn, unsigned char *data, long length) {
-	long ret;
+	int ret;
 
 	lock(conn);
 	octstr_append_data(conn->outbuf, data, length);
+	ret = unlocked_try_write(conn);
+	unlock(conn);
+
+	return ret;
+}
+
+int conn_write_withlen(Connection *conn, Octstr *data) {
+	int ret;
+	unsigned char lengthbuf[4];
+
+	encode_network_long(lengthbuf, octstr_len(data));
+	lock(conn);
+	octstr_append_data(conn->outbuf, lengthbuf, 4);
+	octstr_append(conn->outbuf, data);
 	ret = unlocked_try_write(conn);
 	unlock(conn);
 
@@ -356,6 +370,48 @@ Octstr *conn_read_line(Connection *conn) {
 	    octstr_get_char(result, octstr_len(result) - 1) == 13)
 		octstr_delete(result, octstr_len(result) - 1, 1);
 
+	unlock(conn);
+	return result;
+}
+
+Octstr *conn_read_withlen(Connection *conn) {
+	Octstr *result = NULL;
+	unsigned char lengthbuf[4];
+	long length;
+
+	lock(conn);
+
+retry:
+	/* First get the length. */
+	if (unlocked_inbuf_len(conn) < 4) {
+		unlocked_read(conn);
+		if (unlocked_inbuf_len(conn) < 4) {
+			unlock(conn);
+			return NULL;
+		}
+	}
+	octstr_get_many_chars(lengthbuf, conn->inbuf, conn->inbufpos, 4);
+	length = decode_network_long(lengthbuf);
+
+	if (length < 0) {
+		warning(0, __FUNCTION__ ": got negative length, skipping");
+		conn->inbufpos += 4;
+		goto retry;
+	}
+
+	/* Then get the data. */
+	if (unlocked_inbuf_len(conn) - 4 < length) {
+		unlocked_read(conn);
+		if (unlocked_inbuf_len(conn) - 4 < length) {
+			unlock(conn);
+			return NULL;
+		}
+	}
+
+	conn->inbufpos += 4;
+	result = unlocked_get(conn, length);
+
+	unlock(conn);
 	return result;
 }
 

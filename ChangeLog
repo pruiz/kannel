@@ -1,6 +1,11 @@
+2000-05-09  Richard Braakman  <dark@wapit.com>
+
+	* gwlib/conn.c, gwlib/conn.h: Added octstr_read_withlen and
+	octstr_write_withlen.  Also fixed errors in unlocked_get().
+
 2000-05-09  Derry Hamilton <rasilon@tardis.ed.ac.uk>
 
-	* gw/wapbox.c, configure.in, configure,util/start-stop-daemon.c:
+	* gw/wapbox.c, configure.in, configure, utils/start-stop-daemon.c:
 	Cleaned up SunOS definition
 
 2000-05-08  Derry Hamilton <rasilon@tardis.ed.ac.uk>
