@@ -1110,7 +1110,8 @@ void server_shutdown_ssl(void)
     gw_free(ssl_server_static_locks);
 }
 
-void use_global_client_certkey_file(Octstr *certkeyfile) 
+void use_global_client_certkey_file(Octstr *certkeyfile)
+{ 
     SSL_CTX_use_certificate_file(global_ssl_context, 
                                  octstr_get_cstr(certkeyfile), 
                                  SSL_FILETYPE_PEM);
