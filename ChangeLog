@@ -1,4 +1,26 @@
 2003-07-27  Stipe Tolj  <tolj@wapme-systems.de>
+    This is the new "rerouting feature" for bearerbox:
+    * gw/sms.[ch]: added sms_swap() routine to swap receiver/sender number in
+      bearerbox scope internally. Yet not used, but may be for internal 
+      rerouting of messages.
+    * gw/bb_boxc.c: renamed route_incoming_sms() to route_incoming_to_boxc()
+      to be more semantic in terms of the new internal rerouting abilities.
+    * gw/bb_smscconn.c: added route_incoming_to_smsc() routine that allows
+      to reroute MO messages to MT without leaving bearerbox scope. This is
+      intended to "connect" SMSCs that can not pass SMS via the lower network
+      layers, ie. SS7. By this mechanism SMPP or EMI/UCP is used to exchange
+      messages within physically uncompatible networks.
+    * gw/smscconn_p.h: added data structures needed to 'hold' the rerouting
+      configuration information, where the int is a flag indicating if all 
+      MO'ed msgs from this smsc-id are passed to MT routing, the Dict holds
+      the receiver number <-> smsc-id mapping and the Octstr holds the 
+      specific smsc-id rerouting information where all MOs are passed to.
+    * gw/smscconn.c: added init_reroute() to pupulate smsc-id connection
+      data for rerouting.
+    * gwlib/cfg.def: added rerouting config directives 'reroute', 
+      'reroute-smsc-id' and 'reroute-receiver' to multi-group 'smsc'.
+
+2003-07-27  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/wapbox.c, gw/wap-appl.c: re-organized Burno's 'wap-url-map' and 
       'wap-user-map' mapping functions to be more modularic in the new
       gw/wap-maps.[ch] files. Renamed also function calls, because they
