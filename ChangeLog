@@ -1,5 +1,11 @@
 1999-11-19    <rpr@rpr.wapit.com>
 
+	* gw/bearerbox.c: separated 'sendsms' to port of the internal SMS
+	Box, if any. And fixed number normalization, it failed in some
+	cases. (MG: does CIMD strip the first character in receiever number?) 
+	
+1999-11-19    <rpr@rpr.wapit.com>
+
 	* gw/smsbox_req.c: returned info about new service starting, fixed
 	some bugs
 

@@ -143,7 +143,7 @@ typedef struct bb_s {
 
 
 static BearerBox *bbox = NULL;
-
+static int http_sendsms_fd = -1;
 
 
 
@@ -458,6 +458,9 @@ static int normalize_number(char *dial_prefixes, Octstr **number)
 	return 0;
 
     t = official = dial_prefixes;
+
+    debug(0, "Normalizing <%s> with <%s>",octstr_get_cstr(*number),
+	  dial_prefixes);
     
     while(1) {
 
@@ -468,7 +471,7 @@ static int normalize_number(char *dial_prefixes, Octstr **number)
 		    nstr = octstr_create_limited(official, official_len);
 		    if (nstr == NULL)
 			goto error;
-		    if (octstr_insert_data(nstr, official_len - len + 1,
+		    if (octstr_insert_data(nstr, official_len,
 					   octstr_get_cstr(*number) + len,
 					   octstr_len(*number) - len) < 0)
 			goto error;
@@ -502,18 +505,11 @@ static void normalize_numbers(RQueueItem *msg, SMSCenter *from)
     sr = rr = 0;
     if (from != NULL) {
 	p = smsc_dial_prefix(from);
-	if(msg_type(msg->msg) == smart_sms) {
-		sr = normalize_number(p, &(msg->msg->smart_sms.sender));
-		rr = normalize_number(p, &(msg->msg->smart_sms.receiver));
-	}
+	sr = normalize_number(p, &(msg->msg->smart_sms.sender));
+	rr = normalize_number(p, &(msg->msg->smart_sms.receiver));
     }
-
-
-	if(msg_type(msg->msg) == smart_sms) {
-		if (sr == 0) sr = normalize_number(bbox->global_prefix, &(msg->msg->smart_sms.sender));
-		if (rr == 0) rr = normalize_number(bbox->global_prefix, &(msg->msg->smart_sms.receiver));
-	}
-
+    if (sr == 0) sr = normalize_number(bbox->global_prefix, &(msg->msg->smart_sms.sender));
+    if (rr == 0) rr = normalize_number(bbox->global_prefix, &(msg->msg->smart_sms.receiver));
 
     if (sr == -1 || rr == -1)
 	error(0, "Problems during number normalization");
@@ -562,7 +558,7 @@ static void *smscenter_thread(void *arg)
     us->status = BB_STATUS_OK;
     last_time = time(NULL);
 
-    info(0, "SMSCenter thread [%d] </%s>", us->id, smsc_name(us->smsc));
+    info(0, "SMSCenter thread [%d] <%s>", us->id, smsc_name(us->smsc));
     
     while(bbox->abort_program < 2) {
 	if (us->status == BB_STATUS_KILLED) break;
@@ -1143,15 +1139,7 @@ static char *http_admin_command(char *command, CGIArg *list)
     if (bbox->abort_program > 0)
 	return "The avalance has already started, too late to do anything";
 
-    if (strcasecmp(command, "/cgi-bin/sendsms") == 0) {
-	if (bbox->suspended != 0)
-	    return "Gateway is suspended";
-	else if (internal_smsbox() == NULL)
-	    return "No internal SMS BOX";
-	else
-	    return smsbox_req_sendsms(list);
-    }
-    else if (strcasecmp(command, "/cgi-bin/stop") == 0) {
+    if (strcasecmp(command, "/cgi-bin/stop") == 0) {
 	if (bbox->suspended != 0)
 	    return "Already suspended";
 	else {
@@ -1247,6 +1235,58 @@ static void http_start_thread()
 }
 
 
+/*---------------------------------------------------------
+ * internal sms box http sendsms
+ */
+
+static void *sendsms_thread(void *arg)
+{
+    int client;
+    char *path = NULL, *args = NULL, *client_ip = NULL;
+    char *answer;
+    CGIArg *arglist;
+    
+    client = httpserver_get_request(http_sendsms_fd, &client_ip, &path, &args);
+    bbox->accept_pending--;
+    
+    if (client == -1) {
+	error(0, "Failed to get request from client, killing thread");
+	return NULL;
+    }
+    /* print client information */
+
+    info(0, "smsbox: Get HTTP request < %s > from < %s >", path, client_ip);
+    
+    if (strcmp(path, "/cgi-bin/sendsms") == 0) {
+
+	arglist = cgiarg_decode_to_list(args);
+	answer = smsbox_req_sendsms(arglist);
+
+	cgiarg_destroy_list(arglist);
+    } else
+	answer = "unknown request";
+    info(0, "%s", answer);
+
+    if (httpserver_answer(client, answer) == -1)
+	error(0, "Error responding to client. Too bad.");
+
+    /* answer closes the socket */
+    free(path);
+    free(args);
+    free(client_ip);
+    return NULL;
+}
+
+
+static void sendsms_start_thread()
+{
+    bbox->accept_pending++;
+
+    (void)start_thread(1, sendsms_thread, NULL, 0);
+
+    debug(0, "Created a new HTTP adminstration thread");
+}
+
 
 
 /*------------------------------------------------------------
@@ -1310,7 +1350,6 @@ static void check_threads(void)
 	}
     }
     bbox->num_threads = num;
-    debug(0, "check_threads: %d active threads, %d killed", num, del);
 }
 
 
@@ -1426,7 +1465,7 @@ static void update_queue_watcher()
     if (c >= 120) {
 	char buf[1024];
 	print_queues(buf);
-	info(0, "\n%s", buf);
+	debug(0, "\n%s", buf);
 	c = 0;
     }
 }
@@ -1525,6 +1564,9 @@ static void main_program(void)
 	
 	FD_ZERO(&rf);
 	FD_SET(bbox->http_fd, &rf);
+	if (!bbox->abort_program && http_sendsms_fd >= 0)
+	    FD_SET(http_sendsms_fd, &rf);
+	    
 	FD_SET(bbox->wap_fd, &rf);
 	FD_SET(bbox->sms_fd, &rf);
 	FD_SET(0, &rf);
@@ -1543,6 +1585,10 @@ static void main_program(void)
 		new_bbt_wapbox();
 	    if (FD_ISSET(bbox->sms_fd, &rf))
 		new_bbt_smsbox();
+	    if (!bbox->abort_program && http_sendsms_fd >=0 &&
+		FD_ISSET(http_sendsms_fd, &rf))
+
+		sendsms_start_thread();
 
 	    sleep(1);	/* sleep for a while... work around this */
 	}
@@ -1782,12 +1828,18 @@ void create_internal_smsbox(Config *cfg)
     if (global_sender != NULL)
         info(0, "Internal SMS BOX global sender set as '%s'", global_sender);
     
-    if (sendsms_port != bbox->http_port)
-	warning(0, "Sendsms port <%d> different than HTTP-admin port <%d>, ignored",
-		sendsms_port, bbox->http_port);
-    else if (sendsms_port == 0)
-	warning(0, "No sendssms-port set in smsconf, but we use HTTP-admin port <%d>",
-		bbox->http_port);
+    if (sendsms_port != bbox->http_port) {
+	http_sendsms_fd = httpserver_setup(sendsms_port);
+	if (http_sendsms_fd < 0)
+	    error(0, "Failed to open sendsms HTTP socket <%d>, ignoring it",
+		  sendsms_port);
+	else
+	    info(0, "Set up sendsms service at port %d", sendsms_port);
+    }
+    else if (sendsms_port == 0) {
+	warning(0, "No sendssms-port set in smsconf, cannot send SMSes via HTTP");
+	http_sendsms_fd = -1;
+    }
     
     translations = urltrans_create();
     if (translations == NULL)
