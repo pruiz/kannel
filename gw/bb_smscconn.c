@@ -834,6 +834,7 @@ static int route_incoming_to_smsc(SMSCConn *conn, Msg *msg)
         Octstr *smsc = NULL;
         
         /* route by receiver number */
+        /* XXX implement wildcard matching too! */
         if ((smsc = dict_get(conn->reroute_by_receiver, 
                              msg->sms.receiver)) != NULL) {
             octstr_destroy(msg->sms.smsc_id);
