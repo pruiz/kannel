@@ -232,26 +232,6 @@ int octstr_get_char(Octstr *ostr, long pos) {
 }
 
 
-Octstr *octstr_cat_char(Octstr *ostr1, int ch) {
-	Octstr *ostr;
-	
-	seems_valid(ostr1);
-
-	ostr = octstr_create_empty();
-	ostr->len = ostr1->len + 1;
-	ostr->size = ostr->len + 1;
-	ostr->data = gw_malloc(ostr->size);
-	
-	if (ostr1->len > 0)
-		memcpy(ostr->data, ostr1->data, ostr1->len);
-	ostr->data[ostr->len-1] = ch;
-	ostr->data[ostr->len] = '\0';
-	
-	seems_valid(ostr);
-	return ostr;
-}
-
-
 void octstr_set_char(Octstr *ostr, long pos, int ch) {
 	seems_valid(ostr);
 	if (pos < ostr->len)
@@ -766,9 +746,11 @@ void octstr_append_cstr(Octstr *ostr, char *cstr) {
 
 
 void octstr_append_char(Octstr *ostr, int ch) {
-        unsigned char cha;
-	cha = (unsigned char) ch;
-	octstr_insert_data(ostr, ostr->len, &cha, 1);
+        unsigned char c = ch;
+
+	gw_assert(ch >= 0);
+	gw_assert(ch <= UCHAR_MAX);
+	octstr_insert_data(ostr, ostr->len, &c, 1);
 }
 
 

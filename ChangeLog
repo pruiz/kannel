@@ -1,3 +1,9 @@
+2000-04-20  Richard Braakman  <dark@wapit.com>
+
+	* gwlib/octstr.h, gwlib/octstr.c: Removed octstr_cat_char,
+	all callers to it really wanted octstr_append_char and have
+	been changed.
+
 2000-04-19  Tuomas Luttinen  <tuo@wapit.com>
 
 	* gw/wml_compiler.c: Now uses the struct to carry WML binary, the

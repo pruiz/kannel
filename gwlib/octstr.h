@@ -105,13 +105,6 @@ void octstr_set_char(Octstr *ostr, long pos, int ch);
 
 
 /*
- * Create a new octet string by catenating an existing one and one character. 
- * Return pointer to the new object.
- */
-Octstr *octstr_cat_char(Octstr *ostr1, int ch);
-
-
-/*
  * Copy bytes from octet string into array.
  */
 void octstr_get_many_chars(void *buf, Octstr *ostr, long pos, long len);
