@@ -353,24 +353,22 @@ int conn_wait(Connection *conn, double seconds) {
 		return -1;
 	}
 
-	if (ret & (POLLOUT | POLLIN)) {
-		/* If POLLOUT is on, then we must have wanted
-		 * to write something. */
-		if (ret & POLLOUT) {
-			lock_out(conn);
-			unlocked_write(conn);
-			unlock_out(conn);
-		}
+	/* If POLLOUT is on, then we must have wanted
+	 * to write something. */
+	if (ret & POLLOUT) {
+		lock_out(conn);
+		unlocked_write(conn);
+		unlock_out(conn);
+	}
 
-		/* Since we normally select for reading, we must
-		 * try to read here.  Otherwise, if the caller loops
-		 * around conn_wait without making conn_read* calls
-		 * in between, we will keep polling this same data. */
-		if (ret & POLLIN) {
-			lock_in(conn);
-			unlocked_read(conn);
-			unlock_in(conn);
-		}
+	/* Since we normally select for reading, we must
+	 * try to read here.  Otherwise, if the caller loops
+	 * around conn_wait without making conn_read* calls
+	 * in between, we will keep polling this same data. */
+	if (ret & POLLIN) {
+		lock_in(conn);
+		unlocked_read(conn);
+		unlock_in(conn);
 	}
 
 	return 0;
@@ -378,18 +376,46 @@ int conn_wait(Connection *conn, double seconds) {
 
 int conn_flush(Connection *conn) {
 	int ret;
+	int revents;
+	int fd;
 
 	lock_out(conn);
 	ret = unlocked_write(conn);
-	/* Return 0 or -1 directly.  If ret > 0, it's the number of bytes
-	 * written.  In that case, return 0 if everything was written or
-	 * 1 if there's still unflushed data. */
-	if (ret > 0) {
-		ret = unlocked_outbuf_len(conn) > 0;
+	if (ret < 0) {
+		unlock_out(conn);
+		return -1;
 	}
-	unlock_out(conn);
 
-	return ret;
+	while (unlocked_outbuf_len(conn) != 0) {
+		fd = conn->fd;
+
+		revents = gwthread_pollfd(fd, POLLOUT, -1.0);
+
+		if (revents < 0) {
+			if (errno == EINTR) {
+				lock_out(conn);
+				continue;
+			}
+			error(0, "conn_flush: poll failed on fd %d:", fd);
+			return -1;
+		}
+
+		if (revents & POLLNVAL) {
+			error(0, "conn_flush: fd %d not open.", fd);
+			return -1;
+		}
+
+		if (revents & (POLLOUT | POLLERR | POLLHUP)) {
+			lock_out(conn);
+			ret = unlocked_write(conn);
+			if (ret < 0) {
+				unlock_out(conn);
+				return -1;
+			}
+		}
+	}
+
+	return 0;
 }
 
 int conn_write(Connection *conn, Octstr *data) {

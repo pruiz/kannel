@@ -79,17 +79,18 @@ void conn_set_output_buffering(Connection *conn, unsigned int size);
  *   - The timeout expires
  *   - New data is available for reading
  *   - Some data queued for output is sent (if there was any)
- *   - Kannel changes its global status (not implemented yet)
+ *   - The thread is woken up via the wakeup interface
  * Return 1 if the timeout expired.  Return 0 otherwise, if the
  * connection is okay.  Return -1 if the connection is broken.
  * If the timeout is 0 seconds, check for the conditions above without
- * actually blocking.
+ * actually blocking.  If it is negative, block indefinitely.
  */
 int conn_wait(Connection *conn, double seconds);
 
-/* If there is data queued for sending, try to send it.  Return 1 if
- * this could be done immediately, or 0 if some data could not be sent.
- * Return -1 if the connection is broken. */
+/* Try to send all data currently queued for output.  Block until this
+ * is done, or until the thread is interrupted or woken up.  Return 0
+ * if it worked, 1 if there was an interruption, or -1 if the connection
+ * is broken. */
 int conn_flush(Connection *conn);
 
 /* Output functions.  Each of these takes an open connection and some

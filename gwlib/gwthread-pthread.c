@@ -414,11 +414,9 @@ int gwthread_pollfd(int fd, int events, double timeout) {
 	milliseconds = timeout * 1000;
 
 	ret = poll(pollfd, 2, milliseconds);
-	if (ret < 0 && (errno == EINTR || errno == EAGAIN)) {
-		return 0;
-	}
 	if (ret < 0) {
-		error(errno, "gwthread_pollfd: error in poll");
+		if (errno != EINTR)
+			error(errno, "gwthread_pollfd: error in poll");
 		return -1;
 	}
 	if (pollfd[0].revents) {

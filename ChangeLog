@@ -1,5 +1,16 @@
 2000-06-05  Richard Braakman  <dark@wapit.com>
 
+	* gwlib/conn.[ch]: Change conn_flush interface so that it can
+	block, and tries to send all queued output.  This makes it more
+	useful for threads that only want to do output and do not want
+	to wake up for input.
+
+	* gwlib/gwthread-pthread.c: Make gwthread_pollfd return -1 when
+	poll() fails with EINTR, instead of 0, so that 0 can be relied
+	on to mean timeout.
+	 
+2000-06-05  Richard Braakman  <dark@wapit.com>
+
 	* gwlib/conn.c: Implemented conn_open_tcp().
 	Fixed conn_read_withlen, which I broke a few days ago.
 
