@@ -574,15 +574,13 @@ SMSCenter *smsc_open(ConfigGroup *grp) {
 	if (smsc != NULL) {
 	    smsc->alt_charset = (alt_chars != NULL ? atoi(alt_chars) : 0);
 
-	    if (dial_prefix == NULL)
-		dial_prefix = "";
 	    sprintf(smsc->dial_prefix, "%.*s",
-		    (int) sizeof(smsc->dial_prefix), dial_prefix);
+		    (int) sizeof(smsc->dial_prefix),
+		    (dial_prefix == NULL) ? "" : dial_prefix);
 
-	    if (route_prefix == NULL)
-		route_prefix = "";
 	    sprintf(smsc->route_prefix, "%.*s",
-		    (int) sizeof(smsc->route_prefix), route_prefix);
+		    (int) sizeof(smsc->route_prefix),
+		    (route_prefix == NULL) ? "" : route_prefix);
 
 	    info(0, "Opened a new SMSC type %d", typeno);
 	}
@@ -612,12 +610,32 @@ int smsc_reopen(SMSCenter *smsc) {
 
 
 char *smsc_name(SMSCenter *smsc) {
-	return smsc->name;
+    return smsc->name;
 }
 
 
-int smsc_receiver(SMSCenter *smsc, char *number) {
-    return 2;		/* default */
+int smsc_receiver(SMSCenter *smsc, char *number)
+{
+    char *p, *b;
+
+    p = smsc->route_prefix;
+
+    while(*p != '\0') {
+	b = number;
+	for(b = number; *b != '\0'; b++, p++) {
+	    if (*p == ';' || *p == '\0') {
+		return 1;
+	    }
+	    if (*p != *b) break;
+	}
+	while(*p != '\0' && *p != ';')
+	    p++;
+	while(*p == ';') p++;
+    }
+    if (strstr(smsc->route_prefix, "default") != NULL)
+	return 2;		/* default */
+
+    return 0;
 }
 
 

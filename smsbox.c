@@ -76,6 +76,7 @@ static int 	socket_fd;
 
 static pthread_mutex_t 	socket_mutex;
 static sig_atomic_t 	abort_program = 0;
+static sig_atomic_t	req_threads = 0;
 
 /* Current list of URL translations. */
 
@@ -295,6 +296,8 @@ static void *request_thread(void *arg) {
     msg = arg;
     id = (unsigned long) pthread_self();
 
+    req_threads++;
+    
     if (octstr_len(msg->text) == 0 ||
 	strlen(msg->sender) == 0 ||
 	strlen(msg->receiver) == 0) {
@@ -341,11 +344,12 @@ static void *request_thread(void *arg) {
 	goto error;
 
     smsmessage_destruct(msg);
-    
+    req_threads--;
     return NULL;
 error:
     error(errno, "request_thread: failed");
     smsmessage_destruct(msg);
+    req_threads--;
     return NULL;
         
 }
@@ -380,15 +384,11 @@ static void new_request(char *buf)
 	    }
 	}
     }
-    debug(0, "constructing...");
-    
     msg = smsmessage_construct(sender, receiver, octstr_create(text));
     if (msg != NULL) {
 	msg->id = id;
-	debug(0, "Starting thread");
 	(void)start_thread(1, request_thread, msg, 0);
     }
-    debug(0, "Created a new request thread");
 }
 
 
@@ -473,10 +473,12 @@ int main(int argc, char **argv)
     Config *cfg;
     int cf_index;
     int ret;
+    int total = 0;
+    time_t t;
     
     cf_index = get_and_set_debugs(argc, argv, NULL);
 
-    info(0, "Gateway SMS BOX version %s starting", VERSION);
+    warning(0, "Gateway SMS BOX version %s starting", VERSION);
 
     setup_signal_handlers();
     cfg = config_from_file(argv[cf_index], "smsbox.conf");
@@ -501,7 +503,8 @@ int main(int argc, char **argv)
 	sleep(10);
     }
     info(0, "Connected to Bearer Box at %s port %d", bb_host, bb_port);
-    
+
+    t = time(NULL);
     while(!abort_program) {
 
 	ret = read_available(socket_fd);
@@ -520,10 +523,16 @@ int main(int argc, char **argv)
 
 /*	    if (write_to_socket(socket_fd, "A\n")<0)
  *		goto error;
- */    
+ */
+	    if (req_threads % 10 == 9) {
+		sprintf(buf, "H%d\n", req_threads);
+		if (write_to_socket(socket_fd, buf)<0)
+		    goto error;
+	    }
 	    ret = pthread_mutex_unlock(&socket_mutex);
 	    if (ret != 0) goto error;
-	    
+
+	    total++;
 	    new_request(linebuf);
 	}
 	else {
@@ -535,6 +544,7 @@ int main(int argc, char **argv)
 	ret = pthread_mutex_lock(&socket_mutex);
 	if (ret != 0) goto error;
     }
+    info(0, "Received %d requests", total);
     return 0;
 
 error:

@@ -991,7 +991,8 @@ static void write_pid_file(void)
 }
 
 
-static void signal_handler(int signum) {
+static void signal_handler(int signum)
+{
     if (signum == SIGINT) {
         error(0, "SIGINT received, aborting program...");
         bbox->abort_program = 1;
@@ -1002,14 +1003,15 @@ static void signal_handler(int signum) {
 }
 
 
-static void setup_signal_handlers(void) {
-        struct sigaction act;
+static void setup_signal_handlers(void)
+{
+    struct sigaction act;
 
-        act.sa_handler = signal_handler;
-        sigemptyset(&act.sa_mask);
-        act.sa_flags = 0;
-        sigaction(SIGINT, &act, NULL);
-        sigaction(SIGHUP, &act, NULL);
+    act.sa_handler = signal_handler;
+    sigemptyset(&act.sa_mask);
+    act.sa_flags = 0;
+    sigaction(SIGINT, &act, NULL);
+    sigaction(SIGHUP, &act, NULL);
 }
 
 
@@ -1053,25 +1055,25 @@ static void open_all_receivers(Config *cfg)
 
 int main(int argc, char **argv)
 {
-        int cf_index;
-	Config *cfg;
+    int cf_index;
+    Config *cfg;
         
-        cf_index = get_and_set_debugs(argc, argv, NULL);
+    cf_index = get_and_set_debugs(argc, argv, NULL);
 
-        info(0, "Gateway bearer box version %s starting", VERSION);
+    warning(0, "Gateway bearer box version %s starting", VERSION);
 
-        setup_signal_handlers();
-        cfg = config_from_file(argv[cf_index], "bearerbox.conf");
-        if (cfg == NULL)
-                panic(0, "No configuration, aborting.");
+    setup_signal_handlers();
+    cfg = config_from_file(argv[cf_index], "bearerbox.conf");
+    if (cfg == NULL)
+	panic(0, "No configuration, aborting.");
+    
+    init_bb(cfg);
+    open_all_receivers(cfg);
+    write_pid_file();
+    
+    main_program();
 
-        init_bb(cfg);
-	open_all_receivers(cfg);
-        write_pid_file();
-
-	main_program();
-
-	return 0;
+    return 0;
 }
 
 
