@@ -309,7 +309,7 @@ int cfg_read(Cfg *cfg)
               octstr_get_cstr(cfg->filename)); 
     } 
     stack = list_create(); 
-    list_insert(stack, 0, cfg->filename); 
+    list_insert(stack, 0, octstr_duplicate(cfg->filename)); 
 
     grp = NULL;
     lineno = 0;
