@@ -694,9 +694,10 @@ static char *wsp_state_to_string(WSPState state) {
 }
 
 
-/* XXX this function is not thread safe. --liw */
+/* XXX this function is not thread safe. --liw 
+ *     it is nowadays? --rpr */
 static long wsp_next_session_id(void) {
-	return counter_get(session_id_counter);
+	return counter_increase(session_id_counter);
 }
 
 

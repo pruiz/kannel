@@ -693,9 +693,10 @@ int smsc_close(SMSCenter *smsc)
     default:		/* Unknown SMSC type */
 	break;
     }
-    smsc->type = SMSC_TYPE_DELETED;
-    smscenter_unlock(smsc);
-
+    /*
+     smsc->type = SMSC_TYPE_DELETED;
+     smscenter_unlock(smsc);
+    */
     if (errors)
 	return -1;
 

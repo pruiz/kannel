@@ -26,7 +26,7 @@ static void *client_thread(void *arg) {
 	
 	succeeded = 0;
 	failed = 0;
-	while ((i = counter_get(counter)) < max_requests) {
+	while ((i = counter_increase(counter)) < max_requests) {
 		if ((i % 1000) == 0)
 			info(0, "Starting fetch %ld", i);
 		url = octstr_create(urls[i % num_urls]);

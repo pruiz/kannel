@@ -28,6 +28,12 @@ List *outgoing_sms;
 List *incoming_wdp;
 List *outgoing_wdp;
 
+Counter *incoming_sms_counter;
+Counter *outgoing_sms_counter;
+Counter *incoming_wdp_counter;
+Counter *outgoing_wdp_counter;
+
+
 
 /* this is not a list of items; instead it is used as
  * indicator to note how many threads we have.
@@ -97,13 +103,12 @@ static void signal_handler(int signum)
 
 	    /* shutdown smsc/udp is called by the http admin thread */
 	    
-	    mutex_unlock(status_mutex);
+            first_kill = time(NULL);
 	    
             warning(0, "Killing signal received, shutting down...");
-            first_kill = time(NULL);
+	    mutex_unlock(status_mutex);
         }
         else if (bb_status == BB_SHUTDOWN) {
-	    mutex_unlock(status_mutex);
 	    /*
              * we have to wait for a while as one SIGINT from keyboard
              * causes several signals - one for each thread?
@@ -112,6 +117,7 @@ static void signal_handler(int signum)
                 warning(0, "New killing signal received, killing neverthless...");
                 bb_status = BB_DEAD;
             }
+	    mutex_unlock(status_mutex);
         }
 	else
 	    mutex_unlock(status_mutex);
@@ -281,10 +287,10 @@ static int starter(Config *config)
     outgoing_wdp = list_create();
     incoming_wdp = list_create();
 
-    flow_threads = list_create();
-    core_threads = list_create();
-    suspended = list_create();
-    isolated = list_create();
+    outgoing_sms_counter = counter_create();
+    incoming_sms_counter = counter_create();
+    outgoing_wdp_counter = counter_create();
+    incoming_wdp_counter = counter_create();
     
     status_mutex = mutex_create();
 
@@ -316,9 +322,13 @@ static void empty_msg_lists(void)
 
 
     if (list_len(incoming_wdp) > 0 || list_len(outgoing_wdp) > 0)
-	debug("bb", 0, "Remaining WDP: %ld incoming, %ld outgoing",
+	warning(0, "Remaining WDP: %ld incoming, %ld outgoing",
 	      list_len(incoming_wdp), list_len(outgoing_wdp));
 
+    info(0, "Total WDP messages: received %ld, sent %ld",
+	 counter_value(incoming_wdp_counter),
+	 counter_value(outgoing_wdp_counter));
+    
     while((msg = list_extract_first(incoming_wdp))!=NULL)
 	msg_destroy(msg);
     while((msg = list_extract_first(outgoing_wdp))!=NULL)
@@ -327,11 +337,19 @@ static void empty_msg_lists(void)
     list_destroy(incoming_wdp);
     list_destroy(outgoing_wdp);
 
+    counter_destroy(incoming_wdp_counter);
+    counter_destroy(outgoing_wdp_counter);
+    
+    
     /* XXX we should record these so that they are not forever lost...
      */
     if (list_len(incoming_sms) > 0 || list_len(outgoing_sms) > 0)
 	debug("bb", 0, "Remaining SMS: %ld incoming, %ld outgoing",
 	      list_len(incoming_sms), list_len(outgoing_sms));
+
+    info(0, "Total SMS messages: received %ld, sent %ld",
+	 counter_value(incoming_sms_counter),
+	 counter_value(outgoing_sms_counter));
 
     while((msg = list_extract_first(incoming_sms))!=NULL)
 	msg_destroy(msg);
@@ -341,7 +359,10 @@ static void empty_msg_lists(void)
     list_destroy(incoming_sms);
     list_destroy(outgoing_sms);
     
+    counter_destroy(incoming_sms_counter);
+    counter_destroy(outgoing_sms_counter);
 }
+
 
 int main(int argc, char **argv)
 {
@@ -360,11 +381,19 @@ int main(int argc, char **argv)
     if (cfg == NULL)
         panic(0, "No configuration, aborting.");
 
+    flow_threads = list_create();
+    core_threads = list_create();
+    suspended = list_create();
+    isolated = list_create();
+    
+    list_add_producer(suspended);
     starter(cfg);
 
 
     sleep(1);	/* give time to threads to register themselves */
-    debug("bb", 0, "Start-up done, entering mainloop");
+
+    info(0, "MAIN: Start-up done, entering mainloop");
+    list_remove_producer(suspended);
     
     /* wait until flow threads exit */
 

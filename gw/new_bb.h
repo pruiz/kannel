@@ -41,6 +41,8 @@ int smsbox_restart(Config *config);
 
 int wapbox_start(Config *config);
 
+Octstr *boxc_status(void);
+
 /*---------------
  * bb_udp.c (UDP receiver/sender)
  */

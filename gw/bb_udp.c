@@ -28,6 +28,9 @@
 extern volatile sig_atomic_t bb_status;
 extern List *incoming_wdp;
 
+extern Counter *incoming_wdp_counter;
+extern Counter *outgoing_wdp_counter;
+
 extern List *flow_threads;
 extern List *suspended;
 extern List *isolated;
@@ -94,6 +97,7 @@ static void *udp_receiver(void *arg)
 	octstr_destroy(cliaddr);
 
 	list_produce(incoming_wdp, msg);
+	counter_increase(incoming_wdp_counter);
     }    
     list_remove_producer(incoming_wdp);
     debug("bb.thread", 0, "EXIT: udp_receiver");
@@ -144,6 +148,7 @@ static void *udp_sender(void *arg)
 	     */
 	    continue;
 
+	counter_increase(outgoing_wdp_counter);
 	msg_destroy(msg);
     }
     if (pthread_join(conn->receiver, NULL) != 0)

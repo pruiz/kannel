@@ -30,7 +30,7 @@ static void *check(void *arg) {
 	c = arg;
 	prev = -1;
 	for (i = 0; i < PER_THREAD; ++i) {
-		this = counter_get(c);
+		this = counter_increase(c);
 #if TRACE
 		if ((i % TRACE) == 0)
 			info(0, "%ld returned %ld, prev is %ld", 

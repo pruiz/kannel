@@ -33,6 +33,9 @@ extern List *incoming_wdp;
 extern List *incoming_sms;
 extern List *outgoing_sms;
 
+extern Counter *incoming_sms_counter;
+extern Counter *outgoing_sms_counter;
+
 extern List *flow_threads;
 extern List *suspended;
 extern List *isolated;
@@ -81,6 +84,7 @@ static void *sms_receiver(void *arg)
 	    list_produce(incoming_sms, msg);
 	    /* number normalization? in smsc..? */
 
+	    counter_increase(incoming_sms_counter);
 	    debug("bb.sms", 0, "smsc: new message received");
 	}
 	else
@@ -118,9 +122,12 @@ static void *sms_sender(void *arg)
 	tmp = rqi_new(R_MSG_CLASS_SMS, R_MSG_TYPE_MT);
 	tmp->msg = msg;
 	ret = smsc_send_message(conn->smsc, tmp, NULL);
-	
 	/* there should be implicit destroy in sending */
+	
+	counter_increase(outgoing_sms_counter);
     }
+    list_delete_equal(smsc_list, conn);
+
     debug("bb", 0, "sms_sender: done, waiting in join");
     
     if (pthread_join(conn->receiver, NULL) != 0)
@@ -155,7 +162,13 @@ static void *sms_router(void *arg)
 	    break;
 
 	gw_assert(msg_type(msg) == smart_sms);
-	
+
+	if (list_len(smsc_list) == 0) {
+	    warning(0, "No SMSCes to receive message, discarding it!");
+	    msg_destroy(msg);
+	    continue;
+	}
+	    
 	list_lock(smsc_list);
 	/* select in which list to add this */
 
@@ -294,5 +307,4 @@ int smsc_die(void)
     smsc_running = 0;
     return 0;
 }
-
 

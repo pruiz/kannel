@@ -15,8 +15,16 @@
 
 typedef struct Counter Counter;
 
+/* create a new counter object. PANIC if fails */
 Counter *counter_create(void);
+
+/* destroy it */
 void counter_destroy(Counter *counter);
-long counter_get(Counter *counter);
+
+/* return the current value of the counter and increase counter by one */
+long counter_increase(Counter *counter);
+
+/* return the current value of the counter */
+long counter_value(Counter *counter);
 
 #endif

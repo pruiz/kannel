@@ -58,10 +58,16 @@ error:
 	return NULL;
 }
 
+
 int fake_reopen(SMSCenter *smsc) {
-
-    fake_close(smsc);
-
+    if (smsc->socket == -1) {
+	    info(0, "trying to close already closed fake, ignoring");
+    }
+    else if (close(smsc->socket) == -1) {
+	error(errno, "Closing socket to server `%s' port `%d' failed.",
+	      smsc->hostname, smsc->port);
+	return -1;
+    }
     return fake_open_connection(smsc);
 }
 
@@ -79,6 +85,7 @@ int fake_close(SMSCenter *smsc) {
     smscenter_destruct(smsc);
     return 0;
 }
+
 
 
 int fake_pending_smsmessage(SMSCenter *smsc) {

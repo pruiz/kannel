@@ -30,7 +30,7 @@ void counter_destroy(Counter *counter) {
 	gw_free(counter);
 }
 
-long counter_get(Counter *counter) {
+long counter_increase(Counter *counter) {
 	long ret;
 	
 	mutex_lock(counter->lock);
@@ -39,6 +39,15 @@ long counter_get(Counter *counter) {
 		counter->n = 0;
 	else
 		++counter->n;
+	mutex_unlock(counter->lock);
+	return ret;
+}
+
+long counter_value(Counter *counter) {
+	long ret;
+	
+	mutex_lock(counter->lock);
+	ret = counter->n;
 	mutex_unlock(counter->lock);
 	return ret;
 }

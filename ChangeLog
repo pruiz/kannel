@@ -1,3 +1,18 @@
+2000-05-17    <Kalle Marjola <rpr@wapit.com>>
+
+	* gwlib/counter.c|h: renamed counter_get as counter_increase and
+	added function counter_value.
+
+	* test/test_*.c, gw/wsp.c: changed counter functions
+
+	* gw/smsc.c, gw/smsc_fake.c: started a project that smsc_close
+	will eventually free all memory it has reserved. Fake does this
+	already, rest do not, and close is a bit weird for those right
+	now.
+
+	* gw/bb_*.c: added counters for messages, fixed some timing
+	problems.
+
 2000-05-17  Tuomas Luttinen  <tuo@wapit.com>
 
 	* gw/wml_compiler.c: Now variables use the string table. Some fixing 
