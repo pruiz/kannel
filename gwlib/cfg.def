@@ -103,6 +103,7 @@ MULTI_GROUP(wap-push-user,
     OCTSTR(wap-push-user)
     OCTSTR(ppg-username)
     OCTSTR(ppg-password)
+    OCTSTR(country-prefix)
     OCTSTR(allowed-prefix)
     OCTSTR(denied-prefix)
     OCTSTR(white-list)
