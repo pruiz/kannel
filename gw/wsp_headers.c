@@ -355,7 +355,7 @@ HTTPHeader *unpack_headers(Octstr *headers)
     
     off = 0;
     first = prev = NULL;
-    
+
     while(off < octstr_len(headers)) {
 	byte = octstr_get_char(headers, off);
 	val = NULL;
