@@ -70,6 +70,8 @@ struct r_queue {
 
     int id_max;
     int queue_len;		/* items in queue */
+    int added;			/* total number of messages added */
+    time_t last_mod;		/* time of the last modification */
     pthread_mutex_t mutex;
 };
 
@@ -91,25 +93,16 @@ RQueue *rq_new(void);
 int rq_push_msg(RQueue *queue, RQueueItem *msg);
 
 /*
- * as above, but pushes to head 
+ * as above, but pushes to head (and does NOT increase 'added')
  */
 int rq_push_msg_head(RQueue *queue, RQueueItem *msg);
 
 /*
  * push an acknowledgement/NACK. It is pushed after last ACK/NACK
  * in the queue, and into head if there is none
+ * (does NOT increase 'added')
  */
 int rq_push_msg_ack(RQueue *queue, RQueueItem *msg);
-
-/*
- * remove a message from queue. You must first seek it via
- * external functiomns and give pointer both to message and
- * its previous message (if any)
- *
- * cannot fail. NOTE: queue mutex must be reserved beforehand, and it is
- * NOT released!
- */
-void rq_remove_msg(RQueue *queue, RQueueItem *msg, RQueueItem *prev);
 
 /*
  * pull a message from queue which has source or destination
@@ -127,8 +120,19 @@ RQueueItem *rq_pull_msg_class(RQueue *queue, int class);
 
 /*
  * return the current length of the queue, -1 on (mutex) error
+ * if total is set, puts the 'added' value into it
  */
-int rq_queue_len(RQueue *queue);
+int rq_queue_len(RQueue *queue, int *total);
+
+/*
+ * return the time_tag of the oldest message in the queue
+ */
+time_t rq_oldest_message(RQueue *queue);
+
+/*
+ * return the time_tag of the last modification
+ */
+time_t rq_last_mod(RQueue *queue);
 
 
 /*-------------------------------------------------------

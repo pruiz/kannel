@@ -340,7 +340,7 @@ static void *smscenter_thread(void *arg)
 	/* check for any new messages from SMSC
 	 */
 	if (bbox->abort_program == 0 &&
-	    rq_queue_len(bbox->request_queue) < bbox->max_queue) {
+	    rq_queue_len(bbox->request_queue, NULL) < bbox->max_queue) {
 
 	    msg = smsc_get_message(us->smsc);
 	    if (msg) {
@@ -692,7 +692,7 @@ static void *http_request_thread(void *arg)
     
     client = httpserver_get_request(bbox->http_fd, &client_ip, &path, &args);
     if (client == -1) {
-	error(0, "Failed to get request from client, killing thread");
+	error(0, "HTTP: Failed to get request from client, killing thread");
 	return NULL;
     }
 
@@ -700,7 +700,7 @@ static void *http_request_thread(void *arg)
     info(0, "%s", answer);
 
     if (httpserver_answer(client, answer) == -1)
-	error(0, "Error responding to client. Too bad.");
+	error(0, "HTTP: Error responding to client. Too bad.");
 
     /* answer closes the socket */
 
@@ -835,17 +835,23 @@ static void print_queues(char *buffer)
 {
     int ret;
     int rq, rp;
+    int totp, totq;
+    time_t trp, trq, now;
     
-    rq = rq_queue_len(bbox->request_queue);
-    rp = rq_queue_len(bbox->reply_queue);
-
+    rq = rq_queue_len(bbox->request_queue, &totq);
+    rp = rq_queue_len(bbox->reply_queue, &totp);
+    trq = rq_oldest_message(bbox->request_queue);
+    trp = rq_oldest_message(bbox->reply_queue);
+    now = time(NULL);
+    
     ret = pthread_mutex_lock(&bbox->mutex);
     if (ret != 0)
 	goto error;
 
-    sprintf(buffer, "Request queue length %d messages, mean %.1f\n"
-	    "Reply queue length %d messages, mean %.1f",
-	    rq, bbox->mean_req_ql, rp, bbox->mean_rep_ql);
+    sprintf(buffer,"Request queue length %d, mean %.1f, total %d messages, oldest %ds old\n"
+	    "Reply queue length %d, mean %.1f, total %d messages, oldest %ds old",
+	    rq, bbox->mean_req_ql, totq, (int)(now-trq),
+	    rp, bbox->mean_rep_ql, totp, (int)(now-trp));
 	    
     ret = pthread_mutex_unlock(&bbox->mutex);
     if (ret != 0)
@@ -869,13 +875,27 @@ static void update_queue_watcher()
     static int c = 0;
     int i, id, ret;
     int req, rep;
+    time_t limit;
     
-    req = rq_queue_len(bbox->request_queue);
-    rep = rq_queue_len(bbox->reply_queue);
+    req = rq_queue_len(bbox->request_queue, NULL);
+    rep = rq_queue_len(bbox->reply_queue, NULL);
 
-    if (bbox->abort_program == 1 && req == 0 && rep == 0)
-	bbox->abort_program = 2;		/* time to die... */
-	
+    if (bbox->abort_program == 1) {
+	/*
+	 * if we being terminated, check that no one has accessed
+	 * queues for a while. 3 seconds should be sufficient for
+	 * sms/wap boxes to handle messages. If it is not, too bad.
+	 *
+	 * note that if someone continuasly sends sms via HTTP
+	 * interface the program will never die. So we should send a
+	 * kill notification to boxes, too... TODO
+	 */
+	limit = time(NULL) - 2;
+	if (rq_last_mod(bbox->request_queue) < limit  ||
+	    rq_last_mod(bbox->reply_queue) < limit)
+
+	    bbox->abort_program = 2;     	/* time to die... */
+    }
     req_ql[index%10] = req;
     rep_ql[index%10] = rep;
     index++;
@@ -968,6 +988,7 @@ static void main_program(void)
     struct timeval tv;
     fd_set rf;
     int ret;
+    char buf[1024];
     time_t last, now, last_sec;
     int c = 0;
     
@@ -993,7 +1014,6 @@ static void main_program(void)
 
 	    c++;
 	    if (c == 10) {
-		char buf[1024];
 		print_threads(buf);
 		info(0, "Threads:\n%s", buf);
 		c = 0;
@@ -1030,9 +1050,13 @@ static void main_program(void)
 	    /* error */
 	    ;
     }
+    sleep(1);		/* some time for threads to die */
     check_threads();
     warning(0, "Bearer box terminating.. hopefully threads, too");
-    sleep(1);
+    print_threads(buf);
+    info(0, "Threads:\n%s", buf);
+    print_queues(buf);
+    info(0, "\n%s", buf);
 }
 
 

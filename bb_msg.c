@@ -32,6 +32,7 @@ RQueue *rq_new(void)
     pthread_mutex_init(&nr->mutex, NULL);
     nr->id_max = 1;
     nr->queue_len = 0;
+    nr->added = 0;
     return nr;
 }
 
@@ -59,6 +60,9 @@ int rq_push_msg(RQueue *queue, RQueueItem *msg)
 	queue->id_max = 1;
 
     queue->queue_len++;
+    queue->added++;
+    queue->last_mod = time(NULL);
+
     ret = pthread_mutex_unlock(&queue->mutex);
     if (ret != 0)
 	goto error;
@@ -92,6 +96,8 @@ int rq_push_msg_head(RQueue *queue, RQueueItem *msg)
 	queue->id_max = 1;
 
     queue->queue_len++;
+    queue->last_mod = time(NULL);
+
     ret = pthread_mutex_unlock(&queue->mutex);
     if (ret != 0)
 	goto error;
@@ -146,6 +152,8 @@ int rq_push_msg_ack(RQueue *queue, RQueueItem *msg)
 	queue->id_max = 1;
 
     queue->queue_len++;
+    queue->last_mod = time(NULL);
+
     ret = pthread_mutex_unlock(&queue->mutex);
     if (ret != 0)
 	goto error;
@@ -158,7 +166,15 @@ error:
 }
 
 
-void rq_remove_msg(RQueue *queue, RQueueItem *msg, RQueueItem *prev)
+/*
+ * remove a message from queue. You must first seek it via
+ * external functiomns and give pointer both to message and
+ * its previous message (if any)
+ *
+ * cannot fail. NOTE: queue mutex must be reserved beforehand, and it is
+ * NOT released!
+ */
+static void rq_remove_msg(RQueue *queue, RQueueItem *msg, RQueueItem *prev)
 {
     if (prev == NULL)
 	queue->first = msg->next;
@@ -168,6 +184,7 @@ void rq_remove_msg(RQueue *queue, RQueueItem *msg, RQueueItem *prev)
     if (msg == queue->last)
 	queue->last = prev;
     queue->queue_len--;
+    queue->last_mod = time(NULL);
 }
 
 
@@ -238,7 +255,7 @@ error:
 }
 
 
-int rq_queue_len(RQueue *queue)
+int rq_queue_len(RQueue *queue, int *total)
 {
     int ret;
     int retval;
@@ -248,6 +265,8 @@ int rq_queue_len(RQueue *queue)
 	goto error;
 
     retval = queue->queue_len;
+    if (total != NULL)
+	*total = queue->added;
 
     ret = pthread_mutex_unlock(&queue->mutex);
     if (ret != 0)
@@ -258,6 +277,57 @@ int rq_queue_len(RQueue *queue)
 error:
     error(ret, "Failed to inquire queue length");
     return -1;
+}
+
+
+time_t rq_oldest_message(RQueue *queue)
+{
+    time_t smallest;
+    RQueueItem *ptr;
+    int ret;
+    
+    ret = pthread_mutex_lock(&queue->mutex);
+    if (ret != 0)
+	goto error;
+
+    smallest = time(NULL);
+    ptr = queue->first;
+    while(ptr) {
+	if (ptr->time_tag < smallest)
+	    smallest = ptr->time_tag;
+	ptr = ptr->next;
+    }
+    ret = pthread_mutex_unlock(&queue->mutex);
+    if (ret != 0)
+	goto error;
+
+    return smallest;  
+    
+error:
+    error(ret, "Failed to mutex");
+    return time(NULL);
+}
+
+
+time_t rq_last_mod(RQueue *queue)
+{
+    int ret;
+    time_t val;
+    
+    ret = pthread_mutex_lock(&queue->mutex);
+    if (ret != 0) goto error;
+
+    val = queue->last_mod;
+
+    ret = pthread_mutex_unlock(&queue->mutex);
+    if (ret != 0)
+	goto error;
+
+    return val;  
+    
+error:
+    error(ret, "Failed to mutex");
+    return 0;
 }
 
 

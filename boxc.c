@@ -32,13 +32,13 @@ BOXC *boxc_open(int fd)
     if (fd < 0) {
 	nb->fd = fd;
     } else {
-	info(0, "Accepting the new client...");
+	info(0, "BOXC: Accepting the new client...");
 	
 	nb->fd = accept(fd, &client_addr, &client_addr_len);
 	if (nb->fd < 0)
 	    goto error;
 
-	info(0, "Client connected.");
+	info(0, "BOXC: Client connected.");
 
 	/* TODO: do the hand-shake, baby, yeah-yeah! */
     }
