@@ -168,7 +168,7 @@
 	by <ulink url="http://www.wapforum.org">Wap Forum</ulink>
 	as the first WAP 1.1 gateway in the world.</para>
 
-	<para>Greater quality recognization are the quantity of companies 
+	<para>Greater quality recognition are the quantity of companies 
 	using Kannel to successful connect to a variety of SMSC protocols 
 	in lots of countries.</para>
 
@@ -240,9 +240,9 @@
 	also compresses the WML pages into a more compact form, to
 	save on-the-air bandwidth and to further reduce the phone's
 	processing requirements. It also compiles WMLScript programs
-	into a bytecode format. Latest WAP specifications defines some 
-	aditional convertions that Kannel is starting to implement, like
-	multipart/form-data, multipart/mixed or MMS content convertion.</para>
+	into a byte-code format. Latest WAP specifications defines some 
+	additional conversions that Kannel is starting to implement, like
+	multipart/form-data, multipart/mixed or MMS content conversion.</para>
 	
 	<para>Kannel is not just a WAP gateway. It also works as an
 	SMS gateway.  Although WAP is the hot and technically superior
@@ -255,10 +255,10 @@
 <sect1>
 <title>Overview of WAP Push</title>
        <para>Previous chapter explained pull mode of operation: the phone
-       iniatiates the transaction. There is, however, situations when the
+       initiates the transaction. There is, however, situations when the
        server (called in this context a push initiator) should be the 
        initiator, for instance, when it must send a mail notification or a
-       stock quote. For this purpose Wapforum defined WAP Push.</para>
+       stock quote. For this purpose WAP Forum defined WAP Push.</para>
 
        <para>Push is an application level service, sitting on the top of
        existing WAP stack. It defines two protocols, OTA and PAP. OTA is
@@ -272,12 +272,12 @@
        user would surely not accept, for instance, interrupting of a voice 
        call. Instead it sends a specific XML document, either Service 
        Indication or Service Loading. These inform the user about the content 
-       becomed available, and it is displayed only when it is not interrupting 
+       become available, and it is displayed only when it is not interrupting 
        anything. It contains an URL specifying the service and a text for user 
        describing the content. Then the user can decide does he accept push or not.
        </para>
 
-       <para>The push content is sended to the phones over SMS, but the 
+       <para>The push content is send ed to the phones over SMS, but the 
        content is fetched by the phone over IP bearer, for instance CSD
        or GPRS. Because Push Proxy Gateway tokenises SI and SL documents, it 
        may fit one SMS message (if not, it is segmented for transfer). </para>
@@ -396,7 +396,7 @@
 
 	<listitem><para>C compiler and libraries for ANSI C, with normal
 		Unix extensions such as BSD sockets and related tools. 
-		(GNU's GCC toolchain is recommended)</para></listitem>
+		(GNU's GCC tool-chain is recommended)</para></listitem>
 
 	<listitem><para>The Gnome XML library (known as
 		gnome-xml and libxml), version 2.2.5 or newer. See <ulink
@@ -415,7 +415,7 @@
 		compiler (a pre-generated parser is included for those who just
 		want to compile Kannel).</para></listitem>
 
-	<listitem><para>DocBook processing tools: DocBook stylesheets,
+	<listitem><para>DocBook processing tools: DocBook style-sheets,
 		jade, jadetex, etc; see <filename>README</filename>, section
                 `Documentation', for more information (pre-formatted versions
                 of the documentation are available, and you can compile Kannel
@@ -429,7 +429,7 @@
 	
 	<para>Hardware requirements are fluffier. Some informal benchmarkings 
 	have shown that with a reasonably fast PC architecture (e.g. 400MHz 
-	Pentium II with 128MB RAM), SMS performance's botleneck is always on the
+	Pentium II with 128MB RAM), SMS performance's bottleneck is always on the
 	SMSC side, even for example with multiple connections summing a pipeline with 
 	400 msg/sec.  We haven't benchmarked Kannel yet on WAP side, so there are 
 	no hard numbers.</para>
@@ -558,12 +558,12 @@
 
 	<listitem><para><literal>--disable-docs (default is --enable-docs)</literal>
 
-	    Use this option if you don't have docbook installed and/or 
-	    you want to save some time and cpu cicles. 
+	    Use this option if you don't have DocBook installed and/or 
+	    you want to save some time and CPU cycles. 
 	    Pre-generated documentation is available on Kannel's site.
-	    Default behaviour is to build documentation, b.e., converting the User Guide and
+	    Default behavior is to build documentation, b.e., converting the User Guide and
 	    the Architecture Guide from the DocBook markup language to
-	    PostScript and HTML if docbook is available.
+	    PostScript and HTML if DocBook is available.
 	    </para></listitem>
 
 	<listitem><para><literal>--enable-drafts (default is --disable-drafts)</literal>
@@ -807,9 +807,9 @@
 	depending on if you used the RedHat 6.x or a 7.x or newer 
 	package.</para>
 
-	<para>In the Kannel documentation directory there is a html
+	<para>In the Kannel documentation directory there is a HTML
 	file called control.html. It is an example file that shows
-	how to use the Kannel http administration interface. It
+	how to use the Kannel HTTP administration interface. It
 	also has a template for sending SMS messages.</para>
 
 </sect2>
@@ -905,7 +905,7 @@
 	update-rc.d -f kannel remove
 	</userinput></screen>
 
-	<para>If you want to restore Kannel runing as a daemon, you 
+	<para>If you want to restore Kannel running as a daemon, you 
 	need to add a
 	symbolic link to the Kannel script from the runlevel you want
 	Kannel to run in. E.g. to run Kannel in default runlevel, 
@@ -933,10 +933,10 @@
 
 	<para>In the Kannel documentation directory there is a html
 	file called control.html. It is an example file that shows
-	how to use the Kannel http administration interface. It
+	how to use the Kannel HTTP administration interface. It
 	also has a template for sending SMS messages.</para>
 
-	<para>Aditionally to kannel-VERSION.deb, there's now an optional
+	<para>Additionally to kannel-VERSION.deb, there's now an optional
 	kannel-docs-VERSION.deb with documentation (userguide et al) and
 	a kannel-extras-VERSION.deb with contrib and test stuff.</para>
 
@@ -1150,7 +1150,7 @@ admin-password = f00bar
      <entry valign="bottom">
         The port number in which the bearerbox listens to HTTP
         administration commands. It is NOT the same as the HTTP
-        port of the local www server, just invent any port, but
+        port of the local HTTP server, just invent any port, but
         it must be over 1023 unless you are running Kannel as a
         root process (not recommended)
      </entry></row>
@@ -1159,8 +1159,8 @@ admin-password = f00bar
      <entry>bool</entry>
      <entry valign="bottom">
         If set to true a SSL-enabled administration HTTP server
-		  will be used instead of the default unsecure plain HTTP
-		  server. To access the administration pacges you will have
+		  will be used instead of the default insecure plain HTTP
+		  server. To access the administration pages you will have
 		  to use a HTTP client that is capable of talking to such
 		  a server. Use the "https://" scheme to access the
 		  secured HTTP server. Defaults to "no".
@@ -1186,7 +1186,7 @@ admin-password = f00bar
         These lists can be used to prevent connection from given IP 
   addresses. Each list can have several addresses, separated with    
   semicolons (';'). An asterisk ('*') can be used
-        as a wildcard in a place of any ONE number, so *.*.*.*
+        as a wild-card in a place of any ONE number, so *.*.*.*
         matches any IP.
      </entry></row>
     <row><entry><literal>admin-allow-ip</literal></entry></row>
@@ -1206,7 +1206,7 @@ admin-password = f00bar
 	     If set to true, the smsbox connection module will be SSL-enabled.
 		  Your smsboxes will have to connect using SSL to the bearerbox
 		  then. This is used to secure communication between bearerbox
-		  and smsboxes in case they are in seperate networks operated and
+		  and smsboxes in case they are in separate networks operated and
 		  the TCP communication is not secured on a lower network layer.
 		  Defaults to "no".
      </entry></row>
@@ -1224,7 +1224,7 @@ admin-password = f00bar
 	     If set to true, the wapbox connection module will be SSL-enabled.
 		  Your wapboxes will have to connect using SSL to the bearerbox
 		  then. This is used to secure communication between bearerbox
-		  and wapboxes in case they are in seperate networks operated and
+		  and wapboxes in case they are in separate networks operated and
 		  the TCP communication is not secured on a lower network layer.
 		  Defaults to "no".
      </entry></row>
@@ -1235,7 +1235,7 @@ admin-password = f00bar
         These lists can be used to prevent box connections from given IP 
         addresses. Each list can have several addresses, 
         separated with semicolons (';'). An asterisk ('*') can be used
-        as a wildcard in place of any ONE number, so *.*.*.*
+        as a wild-card in place of any ONE number, so *.*.*.*
         matches any IP.
      </entry></row>
     <row><entry><literal>box-allow-ip</literal></entry></row>
@@ -1270,7 +1270,7 @@ admin-password = f00bar
     <row><entry><literal>log-level</literal></entry>
      <entry>number 0..5</entry>
      <entry valign="bottom">
-        Minimum level of logfile events logged. 0 is for 'debug', 1
+        Minimum level of log-file events logged. 0 is for 'debug', 1
         'info', 2 'warning, 3 'error' and 4 'panic' (see Command Line
         Options)
      </entry></row>
@@ -1309,7 +1309,7 @@ admin-password = f00bar
         to ensure that SMS centers can handle them properly. 
         This is applied to 'sender' number when receiving SMS
         messages from SMS Center and for 'receiver' number when
-        receiving messages from SMSbox (either sendsms message or
+        receiving messages from smsbox (either sendsms message or
          reply to original message). Format is that first comes the
         unified prefix, then all prefixes which are replaced by the
         unified prefix, separated with comma (','). For example,
@@ -1385,7 +1385,7 @@ admin-password = f00bar
       A PEM encoded SSL certificate and private key file to be used
       with SSL client connections. This certificate is used for
   	   the HTTPS client side only, i.e. for SMS service requests to 
-		SSL-enabed HTTP servers. 
+		SSL-enabled HTTP servers. 
      </entry>
     </row>
   
@@ -1522,7 +1522,7 @@ white-list = "http://localhost/whitelist.txt"
   fine). To start the bearerbox, give the following command:
 
 	<screen><userinput>
-	./bearerbox -v 1 [conffile]
+	./bearerbox -v 1 [config-file]
 	</userinput></screen>
 
   The <option>-v 1</option> sets the logging level to
@@ -1530,7 +1530,7 @@ white-list = "http://localhost/whitelist.txt"
   debugging output (the default is <literal>DEBUG</literal>). Full
   explanation of Kannel command line arguments is below.</para>
 
-  <para><emphasis>[conffile]</emphasis> is the name of the
+  <para><emphasis>[config-file]</emphasis> is the name of the
   configuration file you are using with Kannel. The basic distribution
   packet comes with two sample configuration files,
   <literal>smskannel.conf</literal> and
@@ -1543,13 +1543,13 @@ white-list = "http://localhost/whitelist.txt"
   <para>After the bearer box, you can start the WAP box:
 
 	<screen><userinput>
-	./wapbox -v 1 [conffile]
+	./wapbox -v 1 [config-file]
 	</userinput></screen>
 
   or the SMS box:
 
 	<screen><userinput>
-	./smsbox -v 1 [conffile]
+	./smsbox -v 1 [config-file]
 	</userinput></screen>
 
   or both, of course. The order does not matter, except that you need
@@ -1585,15 +1585,15 @@ white-list = "http://localhost/whitelist.txt"
    <row><entry><literal>-F &lt;file-name&gt;</literal></entry>
         <entry morerows="1" valign="bottom">
               Log to file named file-name, too. Does not overrun or
-              affect any logfile defined in configuration file.
+              affect any log-file defined in configuration file.
         </entry></row>
    <row><entry><literal>--logfile &lt;file-name&gt;</literal></entry></row>
 
    <row><entry><literal>-V &lt;level&gt;</literal></entry>
         <entry morerows="1" valign="bottom">
-            Set verbosity level for that extra logfile (default 0,
+            Set verbosity level for that extra log-file (default 0,
             which means 'debug'). Does not affect verbosity level of
-            the logfile defined in configuration file, not verbosity
+            the log-file defined in configuration file, not verbosity
             level of the <literal>stdout</literal> output.
         </entry></row>
    <row><entry><literal>--fileverbosity &lt;level&gt;</literal></entry></row>
@@ -1647,7 +1647,7 @@ white-list = "http://localhost/whitelist.txt"
    <row><entry><literal>-P</literal></entry>
         <entry morerows="1" valign="bottom">
              Start watcher process. This process watch a child process and if child process
-             crached will restart them automaticaly.
+             crashed will restart them automatically.
         </entry></row>
    <row><entry><literal>--parachute</literal></entry></row>
 
@@ -1743,7 +1743,7 @@ commands never arrive nor can you restart it via WAP anymore.</para>
    <row><entry><literal>status or status.txt</literal></entry>
    <entry valign="bottom">
         Get the current status of the gateway in a text version. Tells the current 
-	state (see above) and total number of messages relied and queueing 
+	state (see above) and total number of messages relied and queuing 
 	in the system right now. Also lists the total number of smsbox
         and wapbox connections. No password required, unless
         <literal>status-password</literal> set, in which case either
@@ -1832,7 +1832,7 @@ commands never arrive nor can you restart it via WAP anymore.</para>
 
 	<row><entry><literal>loglevel</literal></entry>
    <entry valign="bottom">
-        Set Kannel log-level of log-files while running. This allowes
+        Set Kannel log-level of log-files while running. This allows
 		  you to change the current log-level of the log-files on the fly.
    </entry></row>
 
@@ -1987,9 +1987,9 @@ bearerbox-host = localhost
      <entry>bool</entry>
      <entry valign="bottom">
 	 If set wapbox will return a valid WML deck describing the 
-	 eror that occured while processing an WSP request. This may
+	 error that occurred while processing an WSP request. This may
 	 be used to have a smarter gateway and let the user know what
-	 happend actually.
+	 happened actually.
 	 </entry></row>
 
   </tbody>
@@ -2039,7 +2039,7 @@ bearerbox-host = localhost
 	 </para>
 
 	 <para>Kannel provides a RADIUS accounting proxy thread inside wapbox
-	 which holds a mapping table for the dynamicaly assigned (DHCP) IP 
+	 which holds a mapping table for the dynamically assigned (DHCP) IP 
 	 addresses of the WAP clients and their MSISDN numbers provided to the
 	 NAS device.
 	 </para>
@@ -2069,7 +2069,7 @@ our-port = 1646
 secret-nas = radius
 </programlisting>
 
-   This example does not forward any accouting packets to a remote 
+   This example does not forward any accounting packets to a remote 
 	RADIUS server. There is, however, multiple optional variables for 
 	the 'radius-acct' group.</para>
 
@@ -2116,7 +2116,7 @@ secret-nas = radius
      <entry valign="bottom">
 	    Specifies the remote RADIUS server to which we forward the 
 		 accounting packets. If none is given, then no forwarding of
-		 accouting packets is performed.
+		 accounting packets is performed.
      </entry></row>
 
    <row><entry><literal>our-port</literal></entry>
@@ -2137,7 +2137,7 @@ secret-nas = radius
    <row><entry><literal>nas-ports</literal></entry>
      <entry><literal>number</literal></entry>
      <entry valign="bottom">
-	    Specifies how many possible clients can connect simultaniously 
+	    Specifies how many possible clients can connect simultaneously 
 		 to the NAS. This value is used to initialize the mapping hash table.
 		 If does not require to be exact, because the table grows automatically
 		 if required. (defaults to 30)
@@ -2349,7 +2349,7 @@ secret-nas = radius
         to ensure that SMS centers can handle them properly. 
         This is applied to 'sender' number when receiving SMS
         messages from SMS Center and for 'receiver' number when
-        receiving messages from SMSbox (either sendsms message or
+        receiving messages from smsbox (either sendsms message or
         reply to original message). Format is that first comes the
         unified prefix, then all prefixes which are replaced by the
         unified prefix, separated with comma (','). For example,
@@ -2367,7 +2367,7 @@ secret-nas = radius
      <entry valign="bottom">
         As some SMS Centers do not follow the standards in character
         coding, an <literal>alt-charset</literal> character conversion is
-        presented. This directive acts different for specific SMSC tyles.
+        presented. This directive acts different for specific SMSC types.
 		  Please see your SMSC module type you want to use for more details.
      </entry></row>
 
@@ -2382,13 +2382,13 @@ secret-nas = radius
      <entry>filename</entry>
      <entry valign="bottom">
         A file in which to write a log of the given smsc output. Hence
- 		  this allows to log smsc specific entries to a seperate file.
+ 		  this allows to log smsc specific entries to a separate file.
      </entry></row>
 
     <row><entry><literal>log-level</literal></entry>
      <entry>number 0..5</entry>
      <entry valign="bottom">
-        Minimum level of logfile events logged. 0 is for 'debug', 1
+        Minimum level of log-file events logged. 0 is for 'debug', 1
         'info', 2 'warning, 3 'error' and 4 'panic' (see Command Line
         Options)
      </entry></row>
@@ -2398,7 +2398,7 @@ secret-nas = radius
       <entry valign="bottom">
 			Number of seconds to wait between single re-connection attempts.
 			Hence all SMSC modules should use this value for their 
-			re-connect behaviour. (Defaults to '10' seconds).
+			re-connect behavior. (Defaults to '10' seconds).
      </entry></row>
 
     <row><entry><literal>reroute</literal></entry>
@@ -2408,14 +2408,14 @@ secret-nas = radius
 			connection are passed internally	to the outbound routing functions. 
 			Hence this messages is not delivered to any connected box for 
 			processing. It is passed to the bearerbox routing as if it would
- 		   have orginated from an externally connected smsbox.
+ 		   have originated from an externally connected smsbox.
 			(Defaults to 'no').
      </entry></row>
 
     <row><entry><literal>reroute-smsc-id</literal></entry>
       <entry><literal>string</literal></entry>
       <entry valign="bottom">
-			Similiar to 'reroute'. Defines the explicite smsc-id 
+			Similar to 'reroute'. Defines the explicit smsc-id 
 			the MO message should be passed to for MT traffic. Hence all 
 			messages coming from the the configuration group smsc are passed
 			to the outbound queue of the specified smsc-id. This allows 
@@ -2426,7 +2426,7 @@ secret-nas = radius
     <row><entry><literal>reroute-receiver</literal></entry>
       <entry><literal>string</literal></entry>
       <entry valign="bottom">
-			Similiar to 'reroute'. Defines the explicite smsc-id routes 
+			Similar to 'reroute'. Defines the explicit smsc-id routes 
  		   for specific receiver numbers of messages that are coming from this
 			smsc connection.
 			Format is that first comes the smsc-id to route the message to, then 
@@ -2438,7 +2438,7 @@ secret-nas = radius
     <row><entry><literal>reroute-dlr</literal></entry>
       <entry><literal>boolean</literal></entry>
       <entry valign="bottom">
-                       Indicate whether DLR's should be reroutet too, if one of above reroute
+                       Indicate whether DLR's should be re-routed too, if one of above reroute
                        rules are enabled. Please note, that SMSC-Module should support DLR sending.
                        At time of writing none of SMSC-Module supports DLR sending.
       </entry></row>
@@ -2789,7 +2789,7 @@ smsc-password = bar
       <entry valign="bottom">
         Defines what kind of action should be taken if the the ack of 
 		  a message expires. The options for this value are:
-		  0x00 - disconnect/reconnect, (default) 0x01 - as is now, requeue, 
+		  0x00 - disconnect/reconnect, (default) 0x01 - as is now, re-queue, 
 		  but this could potentially result in the msg arriving twice
 		  0x02 - just carry on waiting (given that the wait-ack should never 
 		  expire this is the mst accurate)
@@ -2831,7 +2831,7 @@ smsc-password = bar
 	it with this variable. For example, if short number is 12345 and large account
 	is 0100100100101234 (IP+port), set my-number to 12345 and 
 	every message received will have that receiver. In addition, if you are bound
-	to the SMSC without an explicite login, use this configuration directive to 
+	to the SMSC without an explicit login, use this configuration directive to 
 	enable keep-alive (OP/31) operations. 
      </entry></row>
 
@@ -3036,8 +3036,8 @@ address-range = ""
       <entry valign="bottom">
       	Optional the maximum number of outstanding (i.e. acknowledged)
         SMPP operations between an ESME and SMSC. This number
-        is not specified explicity in the SMPP Protocol Specification
-        and will be goverened by the SMPP implementation on the SMSC.
+        is not specified explicitly in the SMPP Protocol Specification
+        and will be governed by the SMPP implementation on the SMSC.
         As a guideline it is recommended that no more than 10 (default)
         SMPP messages are outstanding at any time.
      </entry></row>
@@ -3045,8 +3045,8 @@ address-range = ""
     <row><entry><literal>reconnect-delay</literal></entry>
       <entry><literal>number</literal></entry>
       <entry valign="bottom">
-      Optional the time between attemps to connect an ESME to an SMSC 
-      having failed to connect initating or during an SMPP session. 
+      Optional the time between attempts to connect an ESME to an SMSC 
+      having failed to connect initiating or during an SMPP session. 
 		The default is 10 seconds.
      </entry></row>
 
@@ -3143,7 +3143,7 @@ address-range = ""
       <entry valign="bottom">
         Defines what kind of action should be taken if the ack of 
 		  a message expires. The options for this value are:
-		  0x00 - disconnect/reconnect, (default) 0x01 - as is now, requeue, 
+		  0x00 - disconnect/reconnect, (default) 0x01 - as is now, re-queue, 
 		  but this could potentially result in the msg arriving twice
 		  0x02 - just carry on waiting (given that the wait-ack should never 
 		  expire this is the mst accurate)
@@ -3360,8 +3360,8 @@ smsc-password = foo
     <row><entry><literal>reconnect-delay</literal></entry>
       <entry><literal>number</literal></entry>
       <entry valign="bottom">
-      Optional, the time between attemps to connect to an SMSC 
-      having failed to connect initating or during an session. 
+      Optional, the time between attempts to connect to an SMSC 
+      having failed to connect initiating or during an session. 
 		The default is 10 seconds.
      </entry></row>
 
@@ -3433,9 +3433,9 @@ pin = 2345
      <entry><literal>string</literal></entry>
      <entry valign="bottom">
         Modems from different manufacturers have slightly different
-        behaviour. We need to know what type of modem is used. Use "auto"
+        behavior. We need to know what type of modem is used. Use "auto"
         or omit parameter to have Kannel detect the modem type automatically.
-        (some types should not be autodetected like the Nokia Premicell).
+        (some types should not be auto-detected like the Nokia Premicell).
      </entry></row>
 
    <row><entry><literal>device (m)</literal></entry>
@@ -3491,15 +3491,15 @@ pin = 2345
     <row><entry><literal>sim-buffering</literal></entry>
       <entry><literal>boolean</literal></entry>
       <entry valign="bottom">
-        Whether to enable the so-called "SIM buffering behaviour" of the GSM module.
+        Whether to enable the so-called "SIM buffering behavior" of the GSM module.
                 if assigned a true value, the module will query the message storage memory
                 of the modem and will process and delete any messages found there. this does
-                not alter normal behaviour, but only add the capability of reading messages that
+                not alter normal behavior, but only add the capability of reading messages that
                 were stored in the memory for some reason. The type of memory to use can be
                 selected using the 'message-storage' parameter of the modem configuration.
                 Polling the memory is done at the same interval as keepalive (if set) or 60 seconds
                 (if not set).
-                NOTE: This behaviour is known to cause minor or major hicups for a few buggy modems.
+                NOTE: This behavior is known to cause minor or major hiccups for a few buggy modems.
                 Modems known to work with this setting are Wavecom WM02/M1200 and the Siemens M20.
      </entry></row>
 
@@ -3507,7 +3507,7 @@ pin = 2345
        <entry><literal>integer</literal></entry>
        <entry valign="bottom">
           Maximal error count for opening modem device or initializing of the modem before
-          <literal>reset-string</literal> will be executed. This is usefull when modem crashed and needs
+          <literal>reset-string</literal> will be executed. This is useful when modem crashed and needs
           hard reset. Default disabled.
        </entry></row>
 
@@ -3558,7 +3558,7 @@ pin = 2345
      	Second string to use to detect the modem. For example,
 	if the modem replies with "SIEMENS MODEM M20", 
 	<literal>detect-string</literal> could be "SIEMENS" 
-	and <literal>detect-strign2</literal> "M20"
+	and <literal>detect-string2</literal> "M20"
      </entry></row>
 
    <row><entry><literal>init-string</literal></entry>
@@ -3601,16 +3601,16 @@ pin = 2345
      <entry><literal>boolean</literal></entry>
      <entry valign="bottom">
      	Optional. Defaults to false. If the modem doesn't
-	support setting the SMSC directly on the pdu, enable
+	support setting the SMSC directly on the PDU, enable
 	this. (Default is to include a "00" at the beginning
 	of the PDU to say it's the default smsc, and remove
 	the "00" when receiving)
      </entry></row>
 
    <row><entry><literal>sendline-sleep</literal></entry>
-     <entry><literal>number (miliseconds)</literal></entry>
+     <entry><literal>number (milliseconds)</literal></entry>
      <entry valign="bottom">
-     	Optional, defaults to 100 miliseconds. The sleep time
+     	Optional, defaults to 100 milliseconds. The sleep time
 	after sending a AT command.
      </entry></row>
 
@@ -3620,8 +3620,8 @@ pin = 2345
      	Optional, defaults to "AT". If keepalive is activated
 	in AT2 group, this is the command to be sent. If your
 	modem supports it, for example, use "AT+CBC;+CSQ", and
-	see in logs the reply "+CBC: 0,64" (0=On batery, 64% 
-	full) and "+CSQ: 14,99" (0-31, 0-7: signal strenght and
+	see in logs the reply "+CBC: 0,64" (0=On battery, 64% 
+	full) and "+CSQ: 14,99" (0-31, 0-7: signal strength and
 	channel bit error rate; 99 for unknown). See 3GPP 27007.
      </entry></row>
 
@@ -3630,7 +3630,7 @@ pin = 2345
      <entry valign="bottom">
         Message storage memory type to enable for "SIM buffering".
                 Possible values are: "SM" - SIM card memory or "ME" -
-                Mobile equipment memory (may not be suppoerted by your
+                Mobile equipment memory (may not be supported by your
                 modem). check your modem's manual for more types.
                 By default, if the option is not set, no message storage command
                 will be sent to the modem and the modem's default message
@@ -3642,7 +3642,7 @@ pin = 2345
      <entry valign="bottom">
      	Optional, defaults to false. If enabled, Kannel
 	would send an AT+CMMS=2 if it have more than one
-	message on queue and hopefully will be quickier
+	message on queue and hopefully will be quicker
 	sending the messages.
      </entry></row>
 
@@ -3660,7 +3660,7 @@ pin = 2345
    while it is possible (and supported) to receive delivery reports on GSM 
    modems, it may not work for you. if you encounter problems, check that your 
    modem's init string (if not the default) is set to correctly allow the modem 
-   to send delivery reports using unsolicted notification (check your modem's 
+   to send delivery reports using unsolicited notification (check your modem's 
    manual). If the init-string is not set as si, some modems will store delivery 
    reports to SIM memory, to get at which you will need to enable sim-buffering. 
    finally your GSM network provider may not support delivery reports to mobile 
@@ -3769,7 +3769,7 @@ send-url = "http://localhost:20022"
    <row><entry><literal>no-sep</literal></entry>
    <entry><literal>boolean</literal></entry>
    <entry valign="bottom">
-      Represent udh and text as a numeric string containing the hexdump. For
+      Represent udh and text as a numeric string containing the hex-dump. For
       instance, text=%2b123 is represented as text=2b313233. 
    </entry></row>
 
@@ -3802,7 +3802,7 @@ send-url = "http://localhost:20022"
 
    </tbody></tgroup></informaltable>
 
-   <para>This module can be easily addopted to other HTTP-based interfaces.
+   <para>This module can be easily adopted to other HTTP-based interfaces.
    </para>
  
 </sect2>
@@ -3836,7 +3836,7 @@ send-url = "http://localhost:14000/cgi-bin/sendsms"
 	 </para>
 
 	 <para>This can be used to generate cycles or allow to connect smsbox users
-	 that pass messages and make them look like they orginated from an SMSC.
+	 that pass messages and make them look like they originated from an SMSC.
 	 </para>
 </sect2>
 
@@ -4074,7 +4074,7 @@ marked as "not tested" because the table is still new.</para>
    </row>
 
    <row>
-    <entry spanname="feature">Can set binfo / tarrif class</entry>
+    <entry spanname="feature">Can set binfo / tariff class</entry>
    </row>
    <row>
     <entry></entry>
@@ -4212,7 +4212,7 @@ marked as "not tested" because the table is still new.</para>
    </row>
 
    <row>
-    <entry spanname="feature">Can receive unicode messages</entry>
+    <entry spanname="feature">Can receive Unicode messages</entry>
    </row>
    <row>
     <entry></entry>
@@ -4446,7 +4446,7 @@ marked as "not tested" because the table is still new.</para>
 <sect1>
 <title>External delivery report (DLR) storage</title>
 
-   <para>Delivery reports are supported by default internaly, which
+   <para>Delivery reports are supported by default internally, which
 	means all DLRs are stored in the memory of the bearerbox process.
 	This is problematic if bearerbox crashes or you take the process
 	down in a controlled way, but there are still DLRs open. Therefore
@@ -4592,7 +4592,7 @@ max-connections = 1
   <para>In case you use different MySQL connections for several storage
   issues, i.e. one for DLR and another different one for sms-service you
   may use the <literal>include</literal> configuration statement to extract
-  the MySQL related configuration groups to a seperate <literal>mysql.conf
+  the MySQL related configuration groups to a separate <literal>mysql.conf
   </literal> file.
   </para>
 
@@ -4601,7 +4601,7 @@ max-connections = 1
 
 	<sect2>
 	<title>LibSDB DLR storage</title>
-	<para>To store DLR information into a LibSDB ressource (which is an
+	<para>To store DLR information into a LibSDB resource (which is an
 	abstraction	of a real database) you may use the
 	<literal>dlr-storage = sdb</literal> configuration directive in the
 	<literal>core</literal> group.
@@ -4609,10 +4609,10 @@ max-connections = 1
 	<para>In addition to that you must have a <literal>dlr-db</literal>
 	group defined that specifies the table field names that are used to the
 	DLR attributes and a <literal>sdb-connection</literal> group that
-	defines the LibSDB ressource itself.
+	defines the LibSDB resource itself.
 	</para>
 	<para>Here is the example configuration from
-	<literal>doc/examples/dlr-sdb.conf</literal> using a PostgreSQL ressource:
+	<literal>doc/examples/dlr-sdb.conf</literal> using a PostgreSQL resource:
 
 <programlisting>
 group = sdb-connection
@@ -4724,8 +4724,8 @@ field-boxc-id = boxc
         <sect2>
 	<title>DLR database field configuration</title>
 	<para>For external database storage of DLR information in relational
-	database management systems (RDMS) you will have tospecify which table
-	field are used to represend the stored data. This is done via the
+	database management systems (RDBMS) you will have to specify which table
+	field are used to represent the stored data. This is done via the
 	<literal>dlr-db</literal> group as follows:
 	</para>
 
@@ -4816,7 +4816,7 @@ field-boxc-id = boxc
      <entry valign="bottom">
         The table field that is used to store the smsbox connection id
 		  that has passed the message for delivery. This is required in 
-		  cases you want to garantee that DLR messages are routed back to
+		  cases you want to guarantee that DLR messages are routed back to
 		  the same smsbox conn instance. This is done via the smsbox routing.
 		  If you don't use smsbox routing simply add this field to your
 		  database table and keep it empty.
@@ -5049,13 +5049,13 @@ ssl-certkey-file
      <entry valign="bottom">
         If set, specifies how many retries should be performed for failing
         HTTP requests of sms-services. Defaults to 0, which means no retries
-        should be performed and hence no HTTP request queueing is done.
+        should be performed and hence no HTTP request queuing is done.
      </entry></row>
 
 	 <row><entry><literal>http-queue-delay</literal></entry>
      <entry>integer</entry>
      <entry valign="bottom">
-        If set, specifies how many seconds should pass within the HTTP queueing
+        If set, specifies how many seconds should pass within the HTTP queuing
         thread for retrying a failed HTTP request. Defaults to 10 sec. and is
         only obeyed if <literal>http-request-retry</literal> is set to a 
         non-zero value.
@@ -5109,7 +5109,7 @@ log-level = 0
   designed for the purpose of load-balancing via random assignment. 
   Which means, bearerbox holds all smsc connections and passes inbound
   message to one of the connected smsboxes. So you have a determined route
-  for outbound messages, but no determinated route for inbound messages.
+  for outbound messages, but no determined route for inbound messages.
   </para>
 
   <para>The smsbox routing solves this for the inbound direction. In
@@ -5117,7 +5117,7 @@ log-level = 0
   instance it should pass messages. I.e. if you implement our own boxes
   that pass messages to bearerbox and expect to receive messages defined
   on certain rules, like receiver number or smsc-id. This is the case
-  for EMI/UCP and SMPP proxys that can be written easly using smsbox
+  for EMI/UCP and SMPP proxies that can be written easily using smsbox
   routing facility.
   </para>
 
@@ -5126,7 +5126,7 @@ log-level = 0
   the message into Kannel message representation and inject the message to
   bearerbox as if it would be an smsbox. As you want to assign your clients
   shortcuts for certain networks or route any inbound traffic from a certain
-  smsc link connected to bearerbox, you need to seperate in the scope of 
+  smsc link connected to bearerbox, you need to separate in the scope of 
   bearerbox where the inbound message will be going to. An example may
   look like this:
 
@@ -5177,7 +5177,7 @@ shortcuts = "1111;2222;3333"
      <entry>word-list</entry>
      <entry valign="bottom">
         If set, specifies from which smsc-ids all inbound messages should
-		  be routed to this smsbox instance. List contains smsc-ids seperated
+		  be routed to this smsbox instance. List contains smsc-ids separated
 		  by semicolon (";"). This rule may be used to pull any smsc specific
 		  message stream to an smsbox instance.
      </entry></row>
@@ -5186,7 +5186,7 @@ shortcuts = "1111;2222;3333"
      <entry>number-list</entry>
      <entry valign="bottom">
         If set, specifies which receiver numbers for inbound messages should
-		  be routed to this smsbox instance. List contains numbers seperated
+		  be routed to this smsbox instance. List contains numbers separated
 		  by semicolon (";"). This rule may be used to pull receiver number
 		  specific message streams to an smsbox instance.
      </entry></row>
@@ -5308,7 +5308,7 @@ get-url = "http://%S"
      <entry valign="bottom">
         Requested URL. As above, but request is done as POST, not GET.
 	Always matches the keyword, regardless of pattern matching.
-	See notes on POST otherwhere.
+	See notes on POST other where.
 
      </entry></row>
 
@@ -5318,7 +5318,7 @@ get-url = "http://%S"
      <entry valign="bottom">
         Requested URL. As above, but request is done as XML POST.
 	Always matches the keyword, regardless of pattern matching.
-	See notes on POST otherwhere and <xref
+	See notes on POST other where and <xref
 	    linkend="postxml" endterm="postxml.title">
      </entry></row>
 
@@ -5717,14 +5717,14 @@ the sendsms-user or sms-service name
 
 <row><entry><literal>%c</literal></entry><entry>
 message coding: 0 (default, 7 bits), 1 (7 bits),
-2 (8 bits) or 3 (unicode)
+2 (8 bits) or 3 (Unicode)
 </entry></row>
 
 <row><entry><literal>%C</literal></entry><entry>
 message charset: for a "normal" message, it will 
-be "gsm" (coding=1), "binary" (coding=2) or 
-"UTF16-BE" (coding=3). If the message was sucessfully
-recoded from unicode, it will be "ISO-8859-1"
+be "GSM" (coding=1), "binary" (coding=2) or 
+"UTF16-BE" (coding=3). If the message was successfully
+recoded from Unicode, it will be "ISO-8859-1"
 </entry></row>
 
 <row><entry><literal>%u</literal></entry><entry>
@@ -6053,10 +6053,10 @@ text = "No action specified"
 
 	<para>There could be several <literal>da</literal> entries for <literal>sendsms-user
 	</literal> to enable multi-recipient messages. <literal>da</literal> doesn't make
-	sence in <literal>sms-service</literal>.</para>
+	sense in <literal>sms-service</literal>.</para>
 
 	<!--
-	<para><literal>ud</literal><note><para>DAVI: I still have to test binary and unicode
+	<para><literal>ud</literal><note><para>DAVI: I still have to test binary and Unicode
 	&#60;ud&#62; content</para></note></para>
 	-->
 	
@@ -6304,7 +6304,7 @@ forced-smsc = SOL
    devices that support the protocol you need to configure a <literal>
    sendsms-user</literal>.<literal>ota-setting</literal> group is not 
    necessary, you can send settings to the phone as a XML document, but
-   this method is perhaps more suitable for continous provisioning.
+   this method is perhaps more suitable for continuous provisioning.
    </para>
 
    <para>If you want to send multiple OTA configurations through the smsbox
@@ -6397,7 +6397,7 @@ forced-smsc = SOL
    <row><entry><literal>authentication</literal></entry>
      <entry><literal></literal></entry>
      <entry valign="bottom">
-       normal or secure. Indicates wether WTLS should be used 
+       normal or secure. Indicates whether WTLS should be used 
 		 or not. Defaults to normal.
      </entry></row>
 
@@ -6739,7 +6739,7 @@ the Kannel configuration, or 'Authorization failed' is returned.
 	 If given, the message will be encoded as a Message Waiting
 	 Indicator. The accepted values are 0,1,2 and 3 for activating the
 	 voice, fax, email and other indicator, or 4,5,6,7 for deactivating,
-	 respectivly.
+	 respectively.
 	 This option excludes the <literal>flash</literal> option.
      <footnote id="mwi-messages"><para>To set number of messages, use
 	 <literal>mwi=[0-3]&amp;coding=0&amp;udh=%04%01%02%&lt;XX&gt;%&lt;YY&gt;</literal>,
@@ -6763,7 +6763,7 @@ the Kannel configuration, or 'Authorization failed' is returned.
 	 try to send the message for this many minutes. If the destination
 	 mobile is off other situation that it cannot receive the sms, the
 	 smsc discards the message.
-	 Note: you must have your Kannel box time syncronized with the SMS Center.
+	 Note: you must have your Kannel box time synchronized with the SMS Center.
    </entry></row>
 
    <row><entry><literal>deferred</literal></entry>
@@ -6771,7 +6771,7 @@ the Kannel configuration, or 'Authorization failed' is returned.
    <entry valign="bottom">
          Optional. If given, the SMS center will postpone the message to be
 	 delivered at now plus this many minutes.
-	 Note: you must have your Kannel box time syncronized with the SMS Center.
+	 Note: you must have your Kannel box time synchronized with the SMS Center.
    </entry></row>
 
    <row><entry><literal>dlrmask</literal></entry>
@@ -6801,7 +6801,7 @@ the Kannel configuration, or 'Authorization failed' is returned.
    <entry><literal>string (url)</literal></entry>
    <entry valign="bottom">
 	   Optional. If <literal>dlr-mask</literal> is given, this is the url to
-	   be fetched. (Must be urlencoded)
+	   be fetched. (Must be url-encoded)
    </entry></row>
 
    <row><entry><literal>pid</literal></entry>
@@ -6832,7 +6832,7 @@ the Kannel configuration, or 'Authorization failed' is returned.
 	This field is logged as ACT in the log file so it allows you to do some
 	accounting on it if your front end uses the same username for all services
 	but wants to distinguish them in the log. In the case of a HTTP SMSC
-	type the account name is prepended with the servicename (username) and a colon (:)
+	type the account name is prepended with the service-name (username) and a colon (:)
 	and forwarded to the next instance of Kannel. This allows hierarchical accounting.
      </entry></row>
 
@@ -6952,7 +6952,7 @@ the Kannel configuration, or 'Authorization failed' is returned.
         Name or ID of the 'ota-setting' group in Kannel configuration
         that should be sent to the phone. This variable is optional.
         If it is not given the first 'ota-setting' group is sent. This
-        is unnecessary when a XML document is sended to the phone.
+        is unnecessary when a XML document is send to the phone.
    </entry></row>
 
    <row><entry><literal>username</literal></entry>
@@ -7132,14 +7132,14 @@ trusted-pi = false
              <row><entry><literal>ppg-deny-ip</literal></entry>
              <entry><emphasis>ip-list</emphasis></entry>
              <entry valign="bottom">
-             PPG will not accept pushes from these IPs. Wildcards are allowed.
+             PPG will not accept pushes from these IPs. Wild-cards are allowed.
              If this attribute is missing, no IP is denied <emphasis> by this
              list </emphasis>.
              </entry></row>
              <row><entry><literal>ppg-allow-ip</literal></entry>
              <entry><emphasis>ip-list</emphasis></entry>
              <entry valign="bottom">
-             PPG will accept pushes from these, and only these, IPs. Wildcards
+             PPG will accept pushes from these, and only these, IPs. Wild-cards
              are allowed. Adding this list means that IPs not mentioned are 
              denied, too.
              </entry></row>
@@ -7205,7 +7205,7 @@ trusted-pi = false
 <title>Configuring PPG user group variables</title>
 
       <para>In addition of pi lists similar to the core group, ppg 
-      configuration spesific to a certain user contains variables used for
+      configuration specific to a certain user contains variables used for
       authentication and enforcing restrictions to phone numbers pi may 
       contact. All variables are elaborated in table 7.2.</para>
 
@@ -7267,27 +7267,27 @@ allow-ip = 62.254.217.163
              <row><entry><literal>white-list</literal></entry>
              <entry><emphasis>url</emphasis></entry>
              <entry valign="bottom">
-             Defines an url wherefrom the whitelist can be fetched. White list
+             Defines an url where from the white-list can be fetched. White list
              itself contains list of phone numbers accepting pushes from this 
              pi.
              </entry></row>
              <row><entry><literal>black-list</literal></entry>
              <entry><emphasis>url</emphasis></entry>
              <entry valign="bottom">
-             Defines an url wherefrom the blacklist can be fetched. Blacklist 
+             Defines an url where from the blacklist can be fetched. Blacklist 
              itself contains list of phone number not accepting pushes from 
              this pi.
              </entry></row>
              <row><entry><literal>allow-ip</literal></entry>
              <entry><emphasis>ip-list</emphasis></entry>
              <entry valign="bottom">
-             Defines ips wherefrom this pi can do pushes. Adding this list 
-             means that ips not mentioned are denied.
+             Defines IPs where from this pi can do pushes. Adding this list 
+             means that IPs not mentioned are denied.
              </entry></row>
              <row><entry><literal>deny-ip</literal></entry>
              <entry><emphasis>ip-list</emphasis></entry>
              <entry valign="bottom">
-             Defines ips wherefrom this pi cannot do pushes. Ips not mentioned
+             Defines IPs where from this pi cannot do pushes. IPs not mentioned
              in either list are denied, too.
              </entry></row>
 	     <row><entry><literal>default-smsc</literal></entry>
@@ -7425,8 +7425,8 @@ smsbox-id = dlrbox
      <para>Push proxy gateway is started by simply typing, using separate 
      windows:
 	<screen><userinput>
-	gw/bearerbox [conffile]
-	gw/wapbox [conffile]
+	gw/bearerbox [config-file]
+	gw/wapbox [config-file]
 	</userinput></screen>
      You can, of course, use more complex command line options.</para>
 </sect1>
@@ -7439,9 +7439,9 @@ smsbox-id = dlrbox
      send-url to point to sendsms service.</para>
 </sect1>
 <sect1>
-<title>An example push (tokenised SI) document</title>
-       <para>HTTP SMSC generates a HTTP get request when it get a sendmessage 
-       event, expressed in unicode. The content gateway, or the sendsms 
+<title>An example push (tokenized SI) document</title>
+       <para>HTTP SMSC generates a HTTP get request when it get a send-message 
+       event, expressed in Unicode. The content gateway, or the sendsms 
        service must, of course, understand this URL. So here is an example,
        cgi variable text contains the url escaped form of a SI document. It is
        usable for testing prototype phones.
@@ -7519,7 +7519,7 @@ smsbox-id = dlrbox
        <para>Push content is a normal binary SM, so you can ask delivery 
        reports for them. These are useful for testing purposes (did the
        phone get the content at all, or did it just reject it.) Another
-       use is create fallback services for phones not supporting displaying
+       use is create fall-back services for phones not supporting displaying
        a specific push content. (MMS one being perhaps currently most
        obvious.) Generally speaking, this service is very similar to 
        smsbox one. See chapter Delivery Reports for details.</para>
@@ -7605,10 +7605,10 @@ http_header_add(push_headers, "X-Kannel-Smsbox-Id", "dlrbox"));
        %03Want+to+test+a+fetch%3F%00%01%01&amp;udh=%06%05%04%0B%84%23%F0
 </userinput></screen>
 
-       <para>Note that you can use all sms service escapes in dlrur, see
+       <para>Note that you can use all sms service escapes in dlrurl, see
        Parameters (Escape Codes) for details.</para>
 
-       <para> If you want to set dlr url for a spesific user, you must set
+       <para> If you want to set dlr url for a specific user, you must set
        configuration variable <literal>dlr-url</literal>in <literal>
        wap-push-user</literal>, if for entire ppg, <literal>default-dlr-url
        </literal> in group <literal>ppg</literal>. Value must naturally match
@@ -7617,7 +7617,7 @@ http_header_add(push_headers, "X-Kannel-Smsbox-Id", "dlrbox"));
 
 <sect1>
 <title>Routing WAP pushes to a specific smsc</title>
-       <para> This chapter explains how to route wap push to a spesific
+       <para> This chapter explains how to route wap push to a specific
        smsc. </para>
 
        <para> Smsc routing for wap pushes is similar to sms pushes. So,
@@ -7672,7 +7672,7 @@ http_header_add(push_headers, "X-Kannel-SMSC", "link0");
 		</para></listitem>
    </orderedlist>
 
-	That is why you can specify seperate certification files within
+	That is why you can specify separate certification files within
 	the core group to be used for the HTTP sides.</para>
 
 	<para>You can use one or both sides of the SSL support. There 
@@ -7703,7 +7703,7 @@ group = core
 admin-port-ssl = true
 ...
 ssl-server-cert-file = "filename"
-ssl-server-key-file = "filenane"
+ssl-server-key-file = "filename"
 </programlisting>
 	</sect1>	
 
@@ -7718,7 +7718,7 @@ ssl-server-key-file = "filenane"
 group = core
 ...
 ssl-server-cert-file = "filename"
-ssl-server-key-file = "filenane"
+ssl-server-key-file = "filename"
 
 group = smsbox
 ...
@@ -7772,7 +7772,7 @@ ssl-server-key-file = "/etc/kannel/key1.pem"
 	</note>
 
 	<para>When you deliver SMS to Kannel you have to indicate what kind of delivery report messages you
-	would like to receive back from the system. The delivery report types currrently implemented are:
+	would like to receive back from the system. The delivery report types currently implemented are:
 	<itemizedlist>
 	<listitem><para>1: delivery success</para></listitem>
 	<listitem><para>2: delivery failure</para></listitem>
@@ -7780,7 +7780,7 @@ ssl-server-key-file = "/etc/kannel/key1.pem"
 	<listitem><para>8: smsc submit</para></listitem>
 	<listitem><para>16: smsc reject</para></listitem>
 	</itemizedlist>
-	If you want multiple report types, you simply add the values togeter. For example if you want to get delivery success and/or failure
+	If you want multiple report types, you simply add the values together. For example if you want to get delivery success and/or failure
 	you set the <literal>dlr-mask</literal> value to 1+2. and so on. If you specify <literal>dlr-mask</literal> on the URL you pass on to
 	Kannel you also need to specify <literal>dlr-url</literal>. <literal>dlr-url</literal> should contain the URL to which
 	Kannel should place a HTTP requests once the delivery report is ready to be delivered back to your system.
@@ -7861,7 +7861,7 @@ ssl-server-key-file = "/etc/kannel/key1.pem"
 <title>Compiling fakesmsc</title>
 
      <para>The fake SMS center should compile at the same time as main
-     Kannel compiles. The outcoming binary,
+     Kannel compiles. The outcome binary,
      <literal>fakesmsc</literal>, is in <literal>test</literal>
      directory. The source code is quite simple and trivial, and is
      easily edited.</para>
@@ -7951,9 +7951,9 @@ test/fakesmsc -m 1 "100 500 udh %0eudh+stuff+here main+message"
 </programlisting>
 
     <para>For "text", the rest of the argument is taken as the literal
-    message. For "data", the next part must be the urlcoded version of
+    message. For "data", the next part must be the url-encoded version of
     the message. Space is coded as '+'. For "udh", the next 2 parts
-    are the UDH and main message. Both must be in urlcoded form.</para>
+    are the UDH and main message. Both must be in url-encoded form.</para>
 
     <para>If multiple messages are given, fakesmsc randomly chooses
     one for each sending.</para>
@@ -8053,10 +8053,10 @@ test/fakesmsc -m 1 "100 500 udh %0eudh+stuff+here main+message"
   &#60;/push-message&#62;
 &#60;/pap&#62;
       </programlisting>
-      Because the push content is sended to the phone over SMS, rigth value for
+      Because the push content is send to the phone over SMS, right value for
       <literal>network-required</literal> and <literal>bearer-required
       </literal> is true, for <literal>network</literal> GSM and for <literal>bearer
-      </literal> SMS. However, you can omit these values alltogether, if you use
+      </literal> SMS. However, you can omit these values altogether, if you use
       a phone number as an address. Address value is international phone number and
       it must start with plus. It is used here as an unique identifier, SMSC, or 
       sendsms script must transform it to an usable phone number.
@@ -8091,7 +8091,7 @@ test/fakesmsc -m 1 "100 500 udh %0eudh+stuff+here main+message"
       <para>
       Another example of push content is Service Loading. In principle, the phone
       should fetch immediately content from URL <literal>http://wap.iobox.fi
-      </literal> when it receives this document. This sounds quite unsecure, and
+      </literal> when it receives this document. This sounds quite insecure, and
       indeed, user invention is probably required before fetching.
 
       <programlisting>
@@ -8110,7 +8110,7 @@ test/fakesmsc -m 1 "100 500 udh %0eudh+stuff+here main+message"
        <para>PPG test environment contains, in addition of wapbox and 
        bearerbox, two test programs, <literal>test_ppg</literal> (simulating
        push initiator) and <literal>test_http_server</literal> (simulating 
-       a SMSC center accepting pushed content sended over SMS. You can find 
+       a SMSC center accepting pushed content send over SMS. You can find 
        both of these programs in <literal>test</literal> directory, and they 
        both are short and easily editable. </para>
 
@@ -8119,8 +8119,8 @@ test/fakesmsc -m 1 "100 500 udh %0eudh+stuff+here main+message"
        This explained in Chapter "Setting up push proxy gateway". Then issue 
        following commands, in Kannel's root directory and in separate windows:
 	<screen><userinput>
-	gw/bearerbox [conffile]
-	gw/wapbox [conffile]
+	gw/bearerbox [config-file]
+	gw/wapbox [config-file]
 	</userinput></screen>
        Of course you can use more complicated wapbox and bearerbox command
        line options, if necessary.</para>
@@ -8189,7 +8189,7 @@ test/fakesmsc -m 1 "100 500 udh %0eudh+stuff+here main+message"
              <row><entry><literal>-e</literal></entry>
              <entry><emphasis>string</emphasis></entry>
              <entry valign="bottom">
-             Use tranfer encoding when sending a push content. Only base64 is
+             Use transfer encoding when sending a push content. Only base64 is
              currently supported.
              </entry></row>
              <row><entry><literal>-b</literal></entry>
@@ -8230,19 +8230,19 @@ test/fakesmsc -m 1 "100 500 udh %0eudh+stuff+here main+message"
              <row><entry><literal>-d</literal></entry>
              <entry><emphasis>enumerated string</emphasis></entry>
              <entry valign="bottom">
-             Set delimiter to be used. Acceptable values are crlf anf
+             Set delimiter to be used. Acceptable values are crlf and
              lf. Default is <literal>crlf</literal>.
              </entry></row>
              <row><entry><literal>-p</literal></entry>
              <entry><emphasis>boolean</emphasis></entry>
              <entry valign="bottom">
-             If set, add an preamble (hardcoded one). Default
+             If set, add an preamble (hard-coded one). Default
              is off.
              </entry></row>
              <row><entry><literal>-E</literal></entry>
              <entry><emphasis>boolean</emphasis></entry>
              <entry valign="bottom">
-             if set, add an epilogue (hardcoded). Default is off.
+             if set, add an epilogue (hard-coded). Default is off.
              </entry></row>
              </tbody>
              </tgroup>
@@ -8258,8 +8258,8 @@ test/fakesmsc -m 1 "100 500 udh %0eudh+stuff+here main+message"
        (if it works properly) in error situations is dropping the offending
        message.</para>
        <para>Nokia Toolkit, instead, displays push headers, decompiles
-       tokenised documents and outputs debugging information. It is not,
-       of course, a carbon copy of a real phone. But it is still usefull
+       tokenized documents and outputs debugging information. It is not,
+       of course, a carbon copy of a real phone. But it is still useful
        for checking spec conformance of push servers.</para>
        <para>Toolkit runs on Windows, the first thing you must is to install
        a virtual machine (VMWare is one possibility) in the machine where
@@ -8267,7 +8267,7 @@ test/fakesmsc -m 1 "100 500 udh %0eudh+stuff+here main+message"
        gateway.</para>
        <para>Then start <literal>bearerbox</literal> and <literal>wapbox
        </literal> similar way as told before. You must set the correct client
-       address in the push document sended by <literal>test_ppg</literal>
+       address in the push document send by <literal>test_ppg</literal>
        program. Use IP address of our virtual machine (easiest way to get this
        is to ping your virtual machine name in the dos prompt window). Your
        bearer is in this case IP. An example pap document follows:</para> 
@@ -8361,7 +8361,7 @@ test/fakesmsc -m 1 "100 500 udh %0eudh+stuff+here main+message"
                <row><entry><literal>ssl-trusted-ca-file</literal></entry>
               <entry>filename</entry>
               <entry valign="bottom">
-              Mandatory paramenter for HTTPS connection.This file contains the 
+              Mandatory parameter for HTTPS connection.This file contains the 
               certificates test_ppg is willing to trust. If this directive is not set, 
               certificates are not validated and HTTPS would not be tested.
 	      </entry></row>
@@ -8525,7 +8525,7 @@ test/fakesmsc -m 1 "100 500 udh %0eudh+stuff+here main+message"
                 </programlisting>
                 The following table gives an overview over some regex-operators and their meaning, the POSIX Regular
                 Expressions manual page (regex(7)). Once again, the extended regex-syntax is used and the table is 
-                just meant as a means to give a quickstart to regular expressions, the next section features some more
+                just meant as a means to give a quick-start to regular expressions, the next section features some more
                 complex examples.
                 <informaltable>
                         <tgroup cols="2">
@@ -8609,7 +8609,7 @@ test/fakesmsc -m 1 "100 500 udh %0eudh+stuff+here main+message"
                     the semantic correctness cannot be automatically proofed.
                 </para>
                 <para>
-                Expressions that are not compileable, which means they are not valid POSIX regexes, force  Kannel
+                Expressions that are not compilable, which means they are not valid POSIX regexes, force  Kannel
                 to panic with a message like (note the missing "]")
 	<screen><computeroutput>
                 ERROR: gwlib/regex.c:106: gw_regex_comp_real: regex compilation `[hbo(g|ld)' failed: Invalid regular expression (Called from gw/urltrans.c:987:create_onetrans.)
@@ -8636,10 +8636,10 @@ test/fakesmsc -m 1 "100 500 udh %0eudh+stuff+here main+message"
         
         <sect2>
                 <title>Performance issues</title>
-                <para>While there is some overhead involved, the actual performance degradation is neglectible.
+                <para>While there is some overhead involved, the actual performance degradation is negligible.
                 At startup - e.g. when the configuration files are parsed - the regular expressions are pre-compiled
-                and stored in the pre-compiled fassion, thus future comparisons involve executing the expression on 
-                some string only. To be on the sure side, before using regexes extensivly some benchmarking should be
+                and stored in the pre-compiled fashion, thus future comparisons involve executing the expression on 
+                some string only. To be on the sure side, before using regexes extensively some benchmarking should be
                 performed, to verify that the loss of performance is acceptable.
                 </para>
         </sect2>
@@ -8667,10 +8667,10 @@ test/fakesmsc -m 1 "100 500 udh %0eudh+stuff+here main+message"
         </sect2>
         <sect2>
                 <title>Example 3: smsc-configuration</title>
-                <para>Only SMS messages originating from certain smscs (<literal>smsc-id</literal> is either 
+                <para>Only SMS messages originating from certain SMSCs (<literal>smsc-id</literal> is either 
                         "foo", "bar" or "blah")
                 are preferably forwarded to this smsc. 
-                Furthermore all smscs with an id containing "vodafone" must never
+                Furthermore all SMSCs with an id containing "vodafone" must never
                 be forwarded to the smsc. Not the missing anchors around "vodafone".</para>
                 <programlisting>
                 group=smsc
