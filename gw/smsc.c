@@ -624,7 +624,8 @@ SMSCenter *smsc_open(ConfigGroup *grp)
         break;
 
     case SMSC_TYPE_CIMD2:
-        if (host == NULL || portno == 0)
+        if (host == NULL || port == NULL || username == NULL ||
+            password == NULL)
             error(0, "Required field missing for CIMD 2 center.");
         else
             smsc = cimd2_open(host, portno, username, password,
@@ -640,8 +641,7 @@ SMSCenter *smsc_open(ConfigGroup *grp)
         break;
 
     case SMSC_TYPE_EMI_IP:
-        if (host == NULL || port == NULL || username == NULL ||
-            password == NULL)
+        if (host == NULL || portno == 0)
             error(0, "Required field missing for EMI IP center.");
         else
             smsc = emi_open_ip(host, portno, username, password,

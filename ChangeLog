@@ -1,3 +1,7 @@
+2000-11-24  Kalle Marjola  <rpr@wapit.com>
+
+	* gw/smsc.c: oops, did fix to wrong place, silly me
+
 2000-11-24  Lars Wirzenius  <liw@iki.fi>
 
 	* gwlib/gwmem-check.c: Add casts to avoid comparing pointers
