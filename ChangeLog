@@ -1,4 +1,11 @@
 2003-01-21  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/smsc/smpp_pdu.c: fixed a bug in smpp_pdu_unpack() when an PDU 
+      contains optional parameters with len < 0, octstr_copy() would 
+      definetly crash.
+    * gw/smsc/smsc_emi2.c: fixed double counter increase bug for incoming
+      messages.
+
+2003-01-21  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/smsc/smsc_http.c: added proxying of the smsc-id attribute to the
       attached smsbox instance. This allows spreading load from one smsbox
       to several bearerbox instances.
