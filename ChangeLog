@@ -1,4 +1,8 @@
 2002-02-07  Stipe Tolj  <tolj@wapme-systems.de>
+    * gwlib/octstr.c: removed unused variable from octstr_read_pipe() in 
+      order to make kannel-nag run happily.
+
+2002-02-07  Stipe Tolj  <tolj@wapme-systems.de>
     * doc/userguide/userguide.xml: added documentation for "exec" sms-service
     * gwlib/cfg.def: added "exec" translation type to sms-service multi
     * gwlib/octstr.[ch]: added function octstr_read_pipe() to read 
