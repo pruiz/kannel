@@ -68,9 +68,13 @@ CSDRouter *csdr_open(ConfigGroup *grp)
 	if(inet_aton(interface_name, &bindaddr) != 0) {
 		servaddr.sin_addr = bindaddr;
 		router->ip = strdup(interface_name);
-	} else {
+	} else if(strcmp(interface_name, "*") == 0) {
 		servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
 		router->ip = strdup("0.0.0.0");
+	} else {
+		error(0, "csdr_open: could not resolve interface <%s>",
+			interface_name);
+		goto error;
 	}
 
 	if(strcmp(wap_service, "wsp") == 0) {
