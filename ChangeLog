@@ -2,6 +2,7 @@
     * gw/wap-appl.c: general source code cleanup, no logic change.
     * gw/wapbox.c: cleaned up config_reload() to use reload_foobar() wrapper
       functions for various types.
+    * radius/radius_acct.c: fixed source code styling. Bruno: *grr*
 
 2003-07-24  Bruno Rodrigues  <bruno.rodrigues@litux.org>
     * gw/dlr.c, gwlib/cfg.def: panic if group is undefined, instead of 
