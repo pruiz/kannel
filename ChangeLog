@@ -1,3 +1,8 @@
+2000-09-21  Richard Braakman  <dark@wapit.com>
+
+	* gw/timers.c: In TimerHeap struct, rename "heap" field to "tab".
+	There's something confusing about heap->heap[index].
+
 2000-09-20  Richard Braakman  <dark@wapit.com>
 
 	* gw/wsp_headers.c: Try to skip over unknown code pages more

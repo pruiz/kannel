@@ -21,11 +21,11 @@
  * The array will be resized as needed.  The size field is the number
  * of elements for which space is reserved, and the len field is the
  * number of elements actually used.  The elements used will always be
- * at heap[0] through heap[len-1].
+ * at tab[0] through tab[len-1].
  */
 struct TimerHeap
 {
-    Timer **heap;
+    Timer **tab;
     long len;
     long size;
 };
@@ -142,7 +142,7 @@ void timers_shutdown(void)
         warning(0, "Timers shutting down with %ld active timers.",
                 timers->heap->len);
     while (timers->heap->len > 0)
-        gwtimer_stop(timers->heap->heap[0]);
+        gwtimer_stop(timers->heap->tab[0]);
 
     /* Kill timer thread */
     timers->stopping = 1;
@@ -207,7 +207,7 @@ void gwtimer_start(Timer *timer, int interval, WAPEvent *event)
         if (interval < timer->elapses && timer->index == 0)
             wakeup = 1;
         timer->elapses = interval;
-        gw_assert(timers->heap->heap[timer->index] == timer);
+        gw_assert(timers->heap->tab[timer->index] == timer);
         wakeup |= heap_adjust(timers->heap, timer->index);
 
         /* Then set its new event, if necessary. */
@@ -246,7 +246,7 @@ void gwtimer_stop(Timer *timer)
      */
     if (timer->elapses > 0) {
         timer->elapses = -1;
-        gw_assert(timers->heap->heap[timer->index] == timer);
+        gw_assert(timers->heap->tab[timer->index] == timer);
         heap_delete(timers->heap, timer->index);
     }
 
@@ -297,7 +297,7 @@ static TimerHeap *heap_create(void)
     TimerHeap *heap;
 
     heap = gw_malloc(sizeof(*heap));
-    heap->heap = gw_malloc(sizeof(heap->heap[0]));
+    heap->tab = gw_malloc(sizeof(heap->tab[0]));
     heap->size = 1;
     heap->len = 0;
 
@@ -309,7 +309,7 @@ static void heap_destroy(TimerHeap *heap)
     if (heap == NULL)
         return;
 
-    gw_free(heap->heap);
+    gw_free(heap->tab);
     gw_free(heap);
 }
 
@@ -324,11 +324,11 @@ static void heap_delete(TimerHeap *heap, long index)
 
     gw_assert(index >= 0);
     gw_assert(index < heap->len);
-    gw_assert(heap->heap[index]->index == index);
+    gw_assert(heap->tab[index]->index == index);
 
     last = heap->len - 1;
     heap_swap(heap, index, last);
-    heap->heap[last]->index = -1;
+    heap->tab[last]->index = -1;
     heap->len--;
     if (index != last)
         heap_adjust(heap, index);
@@ -342,11 +342,11 @@ static void heap_insert(TimerHeap *heap, Timer *timer)
 {
     heap->len++;
     if (heap->len > heap->size) {
-        heap->heap = gw_realloc(heap->heap,
-                                heap->len * sizeof(heap->heap[0]));
+        heap->tab = gw_realloc(heap->tab,
+                                heap->len * sizeof(heap->tab[0]));
         heap->size = heap->len;
     }
-    heap->heap[heap->len - 1] = timer;
+    heap->tab[heap->len - 1] = timer;
     timer->index = heap->len - 1;
     heap_adjust(heap, timer->index);
 }
@@ -367,11 +367,11 @@ static void heap_swap(TimerHeap *heap, long index1, long index2)
     if (index1 == index2)
         return;
 
-    t = heap->heap[index1];
-    heap->heap[index1] = heap->heap[index2];
-    heap->heap[index2] = t;
-    heap->heap[index1]->index = index1;
-    heap->heap[index2]->index = index2;
+    t = heap->tab[index1];
+    heap->tab[index1] = heap->tab[index2];
+    heap->tab[index2] = t;
+    heap->tab[index1]->index = index1;
+    heap->tab[index2]->index = index2;
 }
 
 /*
@@ -403,15 +403,15 @@ static int heap_adjust(TimerHeap *heap, long index)
     gw_assert(index < heap->len);
 
     /* Move to top? */
-    t = heap->heap[index];
-    parent = heap->heap[index / 2];
+    t = heap->tab[index];
+    parent = heap->tab[index / 2];
     if (t->elapses < parent->elapses) {
         /* This will automatically terminate when it reaches
          * the top, because in that t == parent. */
         do {
             heap_swap(heap, index, index / 2);
             index = index / 2;
-            parent = heap->heap[index / 2];
+            parent = heap->tab[index / 2];
         } while (t->elapses < parent->elapses);
         /* We're done.  Return 1 if we changed the top. */
         return index == 0;
@@ -424,18 +424,18 @@ static int heap_adjust(TimerHeap *heap, long index)
             return 0;   /* Already at bottom */
         if (child_index == heap->len - 1) {
             /* Only one child */
-            if (heap->heap[child_index]->elapses < t->elapses)
+            if (heap->tab[child_index]->elapses < t->elapses)
                 heap_swap(heap, index, child_index);
             break;
         }
 
         /* Find out which child elapses first */
-        if (heap->heap[child_index + 1]->elapses <
-            heap->heap[child_index]->elapses) {
+        if (heap->tab[child_index + 1]->elapses <
+            heap->tab[child_index]->elapses) {
             child_index++;
         }
 
-        if (heap->heap[child_index]->elapses < t->elapses) {
+        if (heap->tab[child_index]->elapses < t->elapses) {
             heap_swap(heap, index, child_index);
             index = child_index;
         } else {
@@ -488,7 +488,7 @@ static void watch_timers(void *arg)
         }
 
         /* Does the top timer elapse? */
-        top = set->heap->heap[0];
+        top = set->heap->tab[0];
         top_time = top->elapses;
         now = time(NULL);
         if (top_time <= now) {
