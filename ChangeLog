@@ -1,4 +1,9 @@
 2003-03-13  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/smsc/smpp_pdu.c: Alexander's patch for fixing optional SMPP 3.4 
+      parameter parsing. Thanks a lot.
+      [Msg-ID: <200303121404.42328.a.malysh@centrium.de>]
+
+2003-03-13  Stipe Tolj  <tolj@wapme-systems.de>
     * doc/userguide/userguide.xml: removed no-longer necessary 'force-sar'
       diretive, fixing BUG#7.
 
