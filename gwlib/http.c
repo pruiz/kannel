@@ -47,7 +47,8 @@ int httpserver_get_request(int socket, char **client_ip, char **path, char **arg
 	socklen_t len;
 	struct sockaddr_in cliaddr;
 	int connfd = 0;
-	char accept_ip[32];
+	char *accept_ip;
+	int   accept_port;
 
 	char *eol = NULL, *ptr = NULL;
 	int done_with_looping = 0;
@@ -66,10 +67,8 @@ int httpserver_get_request(int socket, char **client_ip, char **path, char **arg
 		goto error;
 	}
 
-	memset(accept_ip, 0, sizeof(accept_ip));
-	getnameinfo((struct sockaddr*)&cliaddr, len, accept_ip, sizeof(accept_ip), 
-		NULL, 0, NI_NUMERICHOST);
-	*client_ip = strdup(accept_ip);
+	if(gw_getnameinfo(&cliaddr, &accept_ip, &accept_port)==-1) goto error;
+	*client_ip = accept_ip;
 
 	gbsize = 1024;
 	growingbuff = malloc(gbsize);
