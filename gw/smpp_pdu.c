@@ -18,7 +18,7 @@ static unsigned long decode_integer(Octstr *os, long pos, int octets)
     unsigned long u;
     int i;
     
-    gw_assert(octstr_len(os) >= octets);
+    gw_assert(octstr_len(os) >= pos + octets);
 
     u = 0;
     for (i = 0; i < octets; ++i)
@@ -205,13 +205,9 @@ void smpp_pdu_dump(SMPP_PDU *pdu)
     #define INTEGER(name, octets) \
     	debug("sms.smpp", 0, "  %s: %lu = 0x%08lx", #name, p->name, p->name);
     #define NULTERMINATED(name, max_octets) \
-    	debug("sms.smpp", 0, "  %s:", #name); \
-	if (p->name != NULL) \
-	    octstr_dump(p->name, 4);
+	octstr_dump_short(p->name, 2, #name);
     #define OCTETS(name, field_giving_octets) \
-    	debug("sms.smpp", 0, "  %s:", #name); \
-	if (p->name != NULL) \
-	    octstr_dump(p->name, 4);
+        octstr_dump_short(p->name, 2, #name);
     #define PDU(name, id, fields) \
     	case id: { struct name *p = &pdu->u.name; fields } break;
     #include "smpp_pdu.def"

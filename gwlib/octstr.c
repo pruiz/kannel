@@ -1369,6 +1369,52 @@ void octstr_dump(Octstr *ostr, int level)
     debug("gwlib.octstr", 0, "%*sOctet string dump ends.", level, "");
 }
 
+void octstr_dump_short(Octstr *ostr, int level, const char *name)
+{
+    char buf[100];
+    char *p;
+    long i;
+    int c;
+
+    if (ostr == NULL) {
+        debug("gwlib.octstr", 0, "%*s%s: NULL", level, "", name);
+        return;
+    }
+
+    seems_valid(ostr);
+
+    if (ostr->len < 20) {
+        p = buf;
+        for (i = 0; i < ostr->len; i++) {
+            c = ostr->data[i];
+            if (c == '\n') {
+                *p++ = '\\';
+                *p++ = 'n';
+            } else if (!isprint(c)) {
+                break;
+            } else if (c == '"') {
+                *p++ = '\\';
+                *p++ = '"';
+            } else if (c == '\\') {
+                *p++ = '\\';
+                *p++ = '\\';
+            } else {
+                *p++ = c;
+            }
+        }
+        if (i == ostr->len) {
+            *p++ = 0;
+            /* We got through the loop without hitting nonprintable
+             * characters. */
+            debug("gwlib.octstr", 0, "%*s%s: \"%s\"", level, "", name, buf);
+            return;
+        }
+    }
+
+    debug("gwlib.octstr", 0, "%*s%s:", level, "", name);
+    octstr_dump(ostr, level + 1);
+}
+
 void octstr_url_encode(Octstr *ostr)
 {
     int i, n, newlen;

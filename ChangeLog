@@ -1,5 +1,14 @@
 2001-05-07  Richard Braakman  <dark@wapit.com>
 
+	* gwlib/octstr.[ch]: Added octstr_dump_short() for dumping octstrs
+	that are expected to be short printable strings.  The output is
+	much shorter for such strings, but the function can still handle
+	any kind of octstr.
+
+	* gwlib/smpp_pdu.c: Made smpp_pdu_dump() use octstr_dump_short().
+
+2001-05-07  Richard Braakman  <dark@wapit.com>
+
 	* Updated NEWS file.
 
 2001-05-07  Uoti Urpala  <uau@wapit.com>

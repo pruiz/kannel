@@ -429,6 +429,13 @@ int octstr_item_match(void *item, void *pattern);
 void octstr_dump(Octstr *ostr, int level);
 
 /*
+ * Write the contents of an octet string to the debug log.
+ * Keep it on one line if the octet string is short and printable,
+ * otherwise use a hex dump.
+ */
+void octstr_dump_short(Octstr *ostr, int level, const char *name);
+
+/*
  * decode url-encoded octstr in-place.
  * Return 0 if all went fine, or -1 if there was some garbage
  */
