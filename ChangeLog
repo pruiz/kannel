@@ -1,3 +1,8 @@
+2002-03-21  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/smsc_cgw.c: bug and stability fixes, patch contributed by
+      "Anders Lindh" <alindh@flyerone.com>
+      [Msg-ID: <002401c1d039$7a92f850$8078a8c0@alindh>]      
+
 2002-03-21  Bruno Rodrigues  <bruno.rodrigues@litux.org>
     * gw/smsbox.c: Fixed sms.service display in bearerbox_access.log: it were
       only displayed in get/post url, not in text
