@@ -1593,12 +1593,13 @@ int main(int argc, char **argv)
     write_pid_file();
     open_all_receivers(cfg);
 
-    
-    cfg = config_from_file(argv[cf_index+1], "smsbox.smsconf");
-    if (cfg == NULL)
-	info(0, "No internal SMS BOX");
-    else
-	error(0, "Internal SMS BOX not yet supported");
+    if (cf_index+1 < argc) {
+	cfg = config_from_file(argv[cf_index+1], "smsbox.smsconf");
+	if (cfg == NULL)
+	    info(0, "No internal SMS BOX");
+	else
+	    error(0, "Internal SMS BOX not yet supported");
+    }
     /* init_smsbox(cfg); */
     
     main_program();
