@@ -55,10 +55,10 @@ int httpserver_get_request(int socket, char **client_ip, char **path, char **arg
     char accept_ip[NI_MAXHOST];
 
     char *eol = NULL, *ptr = NULL;
-    int done_with_looping = 0;
-    int done_with_status = 0, tmpint = 0;
+    int done_with_looping = 0,  done_with_status = 0, request = -1;
+    int tmpint = 0, i = 0, k = 0;
 	
-    char *growingbuff = NULL, *newbuff = NULL;
+    char *growingbuff = NULL, *newbuff = NULL, temp[4]="\0\0\0\0";
     int gbsize = 0, readthisfar = 0;
 
     URL *url = NULL;
@@ -142,7 +142,7 @@ int httpserver_get_request(int socket, char **client_ip, char **path, char **arg
 		    *eol = '\r';
 		    done_with_status = 1;
 		    done_with_looping = 1;
-
+		    request = 1; /*designating GET*/
 		    debug("gwlib.http", 0, "http_get_request: continue");
 		    continue;
 		}
@@ -155,6 +155,7 @@ int httpserver_get_request(int socket, char **client_ip, char **path, char **arg
 		    *eol = '\r';
 		    done_with_status = 1;
 		    done_with_looping = 1;
+		    request = 2; /*designating POST*/
 		    continue;
 		}
 		
@@ -172,21 +173,50 @@ int httpserver_get_request(int socket, char **client_ip, char **path, char **arg
     } /* for */
 
 
+    debug("gwlib.http",0,"httpserver_get_request: rest of the request: \n%s",growingbuff);
 
-    
-    if(url->abs_path != NULL) *path = gw_strdup(url->abs_path);
-    else *path = NULL;
+    if( request == 2 ){/* POST */
+	eol = strstr(growingbuff,"Content-Length:");
+	/* advance to header value */
+	eol = eol+16;
+
+	/* get the content-length*/
+	while( *eol != '\r' && *eol != '\n' ){
+	    temp[i++] = *eol;
+	    eol++;
+	}
 	
-    if(url->query != NULL) *args = gw_strdup(url->query);
-    else *args = NULL;
+	i = atoi(temp);
+	
+	/* advance to start of data- cut off the whitespaces */
+	eol = strstr(growingbuff, "\r\n\r\n");
+	while(isspace(*eol))
+	    eol++;
+	
+	newbuff = gw_malloc(i);
 
-
-
+	for( k=0; k<i; k++ ){
+	    newbuff[k] = *eol;
+	    eol++;	
+	}
+	debug("gwlib.http",0,"httpserver_get_request: the query: \n%s",newbuff);
+	*args = gw_strdup(newbuff);
+	gw_free(newbuff);
+    }
+    else if( request == 1 ){/* GET */
+	if(url->abs_path != NULL) *path = gw_strdup(url->abs_path);
+	else *path = NULL;
+	
+	if(url->query != NULL) *args = gw_strdup(url->query);
+	else *args = NULL;
+    }
+    
+    
     
     internal_url_destroy(url);
     gw_free(growingbuff);
     return connfd;
-
+    
 
 
     
@@ -271,16 +301,21 @@ int http_get_u(char *urltext, char **type, char **data, size_t *size,  HTTPHeade
    /* Initializing... */
     /* ..request */
     if( (url = internal_url_create(urltext)) == NULL) {
-	error(errno, "http_get_u: creating URL failed");
+	error(errno, "http_get_u: Creating URL failed");
 	goto error;
     }
 
+    
     /* ..url */
     if( (request = httprequest_create(url, NULL)) == NULL) {
-	error(errno, "http_get_u: creating HTTPRequest failed");
+	error(errno, "http_get_u: Creating HTTPRequest failed");
+	internal_url_destroy(url);    
 	goto error;
     }
+    
     internal_url_destroy(url);    
+    
+    
 
 
 
@@ -288,7 +323,8 @@ int http_get_u(char *urltext, char **type, char **data, size_t *size,  HTTPHeade
     /* Adding useful stuff */
 
     if( request->method_type == POST ){
-	memset(tempbuffer, 0, strlen(tempbuffer));	temp = (int) strlen(*data);
+	memset(tempbuffer, 0, strlen(tempbuffer));
+	temp = (int) strlen(*data);
 	sprintf(tempbuffer, "%d", temp);
 	httprequest_add_header( request, "Content-Length", tempbuffer );
     } else {
@@ -296,14 +332,27 @@ int http_get_u(char *urltext, char **type, char **data, size_t *size,  HTTPHeade
 	/* data length zero */
 	httprequest_add_header(request, "Content-Length", "0" );
     }
-	
+    
     
     /* .. the common headers... */
     httprequest_add_header(request, "Host", request->url->host);
     httprequest_add_header(request, "Connection", "close");
-    /* httprequest_add_header(request, "Connection", "Keep-Alive");*/
     httprequest_add_header(request, "User-Agent", "Mozilla/2.0 (compatible; Open Source WAP Gateway)");
-
+    
+    /* ..username */
+    if(request->url->username != NULL) {
+	ptr = gw_malloc(1024);
+	sprintf(ptr, "%s:%s", request->url->username, request->url->password);
+	if( (authorization = internal_base6t4(ptr)) == NULL){
+	    error(errno, "http_get_u: internal_base6t4 failed");
+	    gw_free(ptr);
+	    goto error;
+	}
+	sprintf(ptr, "Basic %s", authorization);
+	httprequest_add_header(request, "Authorization", ptr);
+	gw_free(authorization);
+	gw_free(ptr);
+    }
     
     
     /* ..the user defined headers */
@@ -316,83 +365,116 @@ int http_get_u(char *urltext, char **type, char **data, size_t *size,  HTTPHeade
     
     
     
-    /* ..username */
-    if(request->url->username != NULL) {
-	ptr = gw_malloc(1024);
-	sprintf(ptr, "%s:%s", 
-		request->url->username, request->url->password);
-	authorization = internal_base6t4(ptr);
-	if(authorization == NULL) goto error;
-	sprintf(ptr, "Basic %s", authorization);
-	httprequest_add_header(request, "Authorization", ptr);
-	gw_free(authorization);
-	gw_free(ptr);
-    }
-    
 
+
+    
     for(;;) {
 	
-	debug("gwlib.http", 0, "HTTP: Making request using headers:");
+	debug("gwlib.http", 0, "http_get_u: Making request using headers:");
 	header_dump(request->baseheader);
 
 	/* Open connection, send request, get response. */
 	response = httprequest_execute(request);
-	if(response == NULL) goto error;
-    
+	if(response == NULL){
+	    error(errno, "http_get_u: Response failed");
+	    httprequest_destroy(request);
+	    goto error;
+	}
+	
 	/* Great, the server responded "200 OK" */
 	if(response->status == 200) break;
+       
 
-	       
-	/* We are redirected to another URL */
-	else if( (response->status == 301) || 
-		 (response->status == 302) || 
-		 (response->status == 303) ) {
-	    
-	    url = internal_url_create(httprequest_get_header_value(response, "Location"));
-	    if(url==NULL) goto error;
-	    httprequest_destroy(request);
-	    httprequest_destroy(response);
-	    
-	    /* Abort if we feel like we might be pushed around in 
-	       an endless loop. 10 is just an arbitrary number. */
-	    if(how_many_moves > 10) {
-		error(0, "http_get_u: too many redirects");
-		goto error;
-	    }
-	    how_many_moves++;
-	    
-	    /* let's create the request all over again */
-	    request = httprequest_create(url, NULL);
-	    internal_url_destroy(url);
-	    if(request == NULL) goto error;
-	    httprequest_add_header(request, "Host", request->url->host);
-	    httprequest_add_header(request, "Connection", "close");
-	    
-	    /*   ..the user defined headers */
-	    for(;;){
-		if(header == NULL)break;
-		httprequest_add_header(request, header->key, header->value);
-		header = header->next;
-	    }
-	    
-	} /* else-if ends*/
+	 /* We are redirected to another URL */
+	 else if( (response->status == 301) || 
+		  (response->status == 302) || 
+		  (response->status == 303) ) {
+
+	     url = internal_url_create(httprequest_get_header_value(response, "Location"));
+	     if(url==NULL){
+		 error(0,"http_get_u: missing 'Location' header in response");
+		 httprequest_destroy(response);
+		 httprequest_destroy(request);
+		 goto error;
+	     }
+
+	     httprequest_destroy(request);
+	     httprequest_destroy(response);
+
+	     /* Abort if we feel like we might be pushed around in 
+		an endless loop. 10 is just an arbitrary number. */
+	     if(how_many_moves > 10) {
+		 internal_url_destroy(url);
+		 error(0, "http_get_u: too many redirects");
+		 goto error;
+	     }
+	     how_many_moves++;
+
+	     /* let's create the request all over again */
+	     request = httprequest_create(url, NULL);
+	     internal_url_destroy(url);
+	     if(request == NULL) goto error;
+
+
+
+	     /* .. the common headers... */
+	     httprequest_add_header(request, "Host", request->url->host);
+	     httprequest_add_header(request, "Connection", "close");
+	     httprequest_add_header(request, "User-Agent", "Mozilla/2.0 (compatible; Open Source WAP Gateway)");
+
+
+	     /* ..username */
+	     if(request->url->username != NULL) {
+		 ptr = gw_malloc(1024);
+		 sprintf(ptr, "%s:%s", request->url->username, request->url->password);
+		 if( (authorization = internal_base6t4(ptr)) == NULL){
+		     error(errno, "http_get_u: internal_base6t4 failed");
+		     gw_free(ptr);
+		     goto error;
+		 }
+		 sprintf(ptr, "Basic %s", authorization);
+		 httprequest_add_header(request, "Authorization", ptr);
+		 gw_free(authorization);
+		 gw_free(ptr);
+	     }
+
+
+
+	     /* ..the user defined headers */
+	     for(;;){
+		 if(header == NULL)break;
+		 httprequest_add_header(request, header->key, header->value);
+		 header = header->next;
+	     }
+	     
+	     
+	 } /* redirection handling ends */
 	
 	
-        /* Server returned "404 Authorization Required" */
+	/* Server returned "404 Authorization Required" */
 	else if(response->status == 401) break;
+	
 	
 	/* Server returned "404 Not Found" */
 	else if(response->status == 404) break;
 	
+	
 	/* Server returned "501 Not Implemented" */
 	else if(response->status == 501) break;
 	
+	
 	/* If we haven't handled the response code this far, abort. */
 	else break;
-    
+	
     } /* for ends */
     
-    /* Check the content of the "Content-Type" header. */
+    httprequest_destroy(request);
+
+
+    
+    
+    
+/* Check the content of the "Content-Type" header. */
     if( (ptr = httprequest_get_header_value(response, "Content-Type")) != NULL ) {
 	*type = gw_strdup(ptr);
     } else {
@@ -409,17 +491,14 @@ int http_get_u(char *urltext, char **type, char **data, size_t *size,  HTTPHeade
 	*data = NULL;
 	*size = 0;
     }
-    
-    /* done, clean up */
-    httprequest_destroy(request);
+
     httprequest_destroy(response);
     return 0;
+
+
     
 error:
     error(errno, "http_get_u: failed");
-    internal_url_destroy(url);    
-    httprequest_destroy(request);
-    httprequest_destroy(response);
     return -1;
 }
 
@@ -464,9 +543,10 @@ int http_post(char *urltext, char **type, char **data, size_t *size,  HTTPHeader
       else {error(0, "http_post: coulnd get socketname");goto error;}
       httprequest_add_header(request, "Referer", name->);
       gethostname("localhost", MAXHOSTNAMELEN));
-    */    /*    httprequest_add_header(request, "Content-Type", );*/
+    */    
 
 
+    
     httprequest_add_header(request, "Connection", "Keep-Alive");
     httprequest_add_header(request, "User-Agent", "Mozilla/2.0 (compatible; Open Source WAP Gateway)");
     httprequest_add_header(request, "Host", request->url->host);
@@ -994,7 +1074,7 @@ HTTPRequest* httprequest_wrap(char *from, size_t size) {
 	memset(request->data, 0,  request->data_length);
 	
 	
-	debug("gwlib.http",0, "all shit:<%s>",ptr);	    
+
 	/* Convert RFC2616/3.6.1 chunked data to normal. */
 	for(;;){
 
@@ -1079,7 +1159,7 @@ char* httprequest_unwrap(HTTPRequest *request) {
 	switch(request->method_type){
 	    
 	case GET:
-	    method_used = gw_strdup("GET");
+	    method_used = "GET";
 	    if(request->url->query != NULL) 
 		sprintf(tmpbuff, "%s?%s", request->url->abs_path, request->url->query);
 	    else
@@ -1087,7 +1167,7 @@ char* httprequest_unwrap(HTTPRequest *request) {
 	    break;
 	    
 	case POST:
-	    method_used = gw_strdup("POST");
+	    method_used = "POST";
 	    sprintf(tmpbuff, "%s", request->url->abs_path);
 	    break;
 	    
