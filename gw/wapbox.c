@@ -348,9 +348,12 @@ int main(int argc, char **argv)
                      &wtp_initiator_dispatch_event,
                      &wap_appl_dispatch);
     wsp_unit_init(&dispatch_datagram, &wap_appl_dispatch);
+    wsp_push_client_init(&wsp_push_client_dispatch_event, 
+                         &wtp_resp_dispatch_event);
     
     wtp_initiator_init(&dispatch_datagram, &wsp_session_dispatch_event);
-    wtp_resp_init(&dispatch_datagram, &wsp_session_dispatch_event);
+    wtp_resp_init(&dispatch_datagram, &wsp_session_dispatch_event,
+                  &wsp_push_client_dispatch_event);
     wap_appl_init();
     
     bbsocket = connect_to_bearer_box();
@@ -386,6 +389,7 @@ int main(int argc, char **argv)
     gwthread_join_every(empty_queue_thread);
     wtp_initiator_shutdown();
     wtp_resp_shutdown();
+    wsp_push_client_shutdown();
     wsp_unit_shutdown();
     wsp_session_shutdown();
     list_destroy(queue, msg_destroy_item);
