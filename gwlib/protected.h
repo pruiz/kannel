@@ -12,6 +12,7 @@
 #ifndef PROTECTED_H
 #define PROTECTED_H
 
+#include <netdb.h>
 #include <time.h>
 
 void gwlib_protected_init(void);
@@ -19,5 +20,6 @@ void gwlib_protected_shutdown(void);
 struct tm gw_localtime(time_t t);
 struct tm gw_gmtime(time_t t);
 int gw_rand(void);
+int gw_gethostbyname(struct hostent *ret, const char *name);
 
 #endif

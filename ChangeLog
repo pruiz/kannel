@@ -1,3 +1,9 @@
+Sun Jun  4 01:03:55 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* gwlib/protected.[ch]: Added wrapper for gethostbyname.
+	
+	* gwlib/socket.c: Made use of wrapper.
+
 Sun Jun  4 00:52:22 2000  Lars Wirzenius  <liw@wapit.com>
 
 	* gwlib/protected.[ch]: Wrote thread-safe wrappers around 

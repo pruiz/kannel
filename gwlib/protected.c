@@ -12,6 +12,7 @@ enum {
 	LOCALTIME,
 	GMTIME,
 	RAND,
+	GETHOSTBYNAME,
 	NUM_LOCKS
 };
 
@@ -71,5 +72,22 @@ int gw_rand(void) {
 	lock(RAND);
 	ret = rand();
 	unlock(RAND);
+	return ret;
+}
+
+
+int gw_gethostbyname(struct hostent *ent, const char *name) {
+	int ret;
+	struct hostent *p;
+	
+	lock(GETHOSTBYNAME);
+	p = gethostbyname(name);
+	if (p == NULL)
+		ret = -1;
+	else {
+		ret = 0;
+		*ent = *p;
+	}
+	unlock(GETHOSTBYNAME);
 	return ret;
 }

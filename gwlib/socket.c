@@ -108,7 +108,7 @@ int tcpip_connect_to_server(char *hostname, int port) {
 int tcpip_connect_to_server_with_port(char *hostname, int port, int our_port) {
 	struct sockaddr_in addr;
 	struct sockaddr_in o_addr;
-	struct hostent *hostinfo;
+	struct hostent hostinfo;
 	int s;
 
 	s = socket(PF_INET, SOCK_STREAM, 0);
@@ -117,15 +117,14 @@ int tcpip_connect_to_server_with_port(char *hostname, int port, int our_port) {
 		goto error;
 	}
 
-	hostinfo = gethostbyname(hostname);
-	if (hostinfo == NULL) {
+	if (gw_gethostbyname(&hostinfo, hostname) == -1) {
 		error(errno, "gethostbyname failed");
 		goto error;
 	}
 
         addr.sin_family = AF_INET;
         addr.sin_port = htons(port);
-        addr.sin_addr = *(struct in_addr *) hostinfo->h_addr;
+        addr.sin_addr = *(struct in_addr *) hostinfo.h_addr;
 
 	if (our_port > 0) {
 	    int reuse;
@@ -396,7 +395,7 @@ int udp_bind(int port) {
 
 Octstr *udp_create_address(Octstr *host_or_ip, int port) {
 	struct sockaddr_in sa;
-	struct hostent *h;
+	struct hostent h;
 	
 	memset(&sa, 0, sizeof(sa));
 	sa.sin_family = AF_INET;
@@ -405,13 +404,12 @@ Octstr *udp_create_address(Octstr *host_or_ip, int port) {
 	if (strcmp(octstr_get_cstr(host_or_ip), "*") == 0) {
 		sa.sin_addr.s_addr = INADDR_ANY;
 	} else {
-		h = gethostbyname(octstr_get_cstr(host_or_ip));
-		if (h == NULL) {
+		if (gw_gethostbyname(&h, octstr_get_cstr(host_or_ip)) == -1) {
 			error(0, "Couldn't find the IP number of `%s'", 
 				octstr_get_cstr(host_or_ip));
 			return NULL;
 		}
-		sa.sin_addr = *(struct in_addr *) h->h_addr_list[0];
+		sa.sin_addr = *(struct in_addr *) h.h_addr_list[0];
 	}
 	
 	return octstr_create_from_data(&sa, sizeof(sa));
