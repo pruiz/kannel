@@ -129,24 +129,27 @@ static void httpsmsc_receiver(void *arg)
         if (client == NULL)
             break;
 
-        debug("smsc.http", 0, "Got request `%s'", octstr_get_cstr(url));
+        debug("smsc.http", 0, "HTTP[%s]: Got request `%s'", 
+              octstr_get_cstr(conn->id), octstr_get_cstr(url));
 
         if (connect_denied(conndata->allow_ip, ip)) {
-            info(0, "httpsmsc: connection `%s' tried from denied "
-                    "host %s, ignored", octstr_get_cstr(url),
-                    octstr_get_cstr(ip));
+            info(0, "HTTP[%s]: Connection `%s' tried from denied "
+                    "host %s, ignored", octstr_get_cstr(conn->id),
+                    octstr_get_cstr(url), octstr_get_cstr(ip));
             http_close_client(client);
         } else
             conndata->receive_sms(conn, client, headers, body, cgivars);
 
-        debug("smsc.http", 0, "destroying client information");
+        debug("smsc.http", 0, "HTTP[%s]: Destroying client information",
+              octstr_get_cstr(conn->id));
         octstr_destroy(url);
         octstr_destroy(ip);
         octstr_destroy(body);
         http_destroy_headers(headers);
         http_destroy_cgiargs(cgivars);
     }
-    debug("smsc.http", 0, "httpsmsc_receiver dying");
+    debug("smsc.http", 0, "HTTP[%s]: httpsmsc_receiver dying",
+          octstr_get_cstr(conn->id));
 
     conndata->shutdown = 1;
     http_close_port(conndata->port);
@@ -189,7 +192,8 @@ static void httpsmsc_send_cb(void *arg)
                      octstr_get_cstr(conn->id), conn->reconnect_delay);
             conn->status = SMSCCONN_RECONNECTING; 
             gwthread_sleep(conn->reconnect_delay);
-            debug("smsc.http.kannel", 0, "re-sending request");
+            debug("smsc.http.kannel", 0, "HTTP[%s]: Re-sending request",
+                  octstr_get_cstr(conn->id));
             conndata->send_sms(conn, msg);
             continue; 
         } 
@@ -211,7 +215,8 @@ static void httpsmsc_send_cb(void *arg)
         octstr_destroy(final_url);
         octstr_destroy(body);
     }
-    debug("smsc.http", 0, "httpsmsc_send_cb dying");
+    debug("smsc.http", 0, "HTTP[%s]: httpsmsc_send_cb dying",
+          octstr_get_cstr(conn->id));
     conndata->shutdown = 1;
 
     if (conndata->open_sends) {
@@ -294,7 +299,8 @@ static void kannel_send_sms(SMSCConn *conn, Msg *sms)
 	octstr_format_append(url, "&smsc=%S", sms->sms.smsc_id);
 
     headers = list_create();
-    debug("smsc.http.kannel", 0, "start request");
+    debug("smsc.http.kannel", 0, "HTTP[%s]: Start request",
+          octstr_get_cstr(conn->id));
     http_start_request(conndata->http_ref, HTTP_METHOD_GET, url, headers, 
                        NULL, 0, sms, NULL);
 
@@ -306,14 +312,18 @@ static void kannel_send_sms(SMSCConn *conn, Msg *sms)
 static void kannel_parse_reply(SMSCConn *conn, Msg *msg, int status,
 			       List *headers, Octstr *body)
 {
+    /* Test on three cases:
+     * 1. an smsbox reply of an remote kannel instance
+     * 2. an smsc_http response (if used for MT to MO looping)
+     * 3. an smsbox reply of partly sucessfull sendings */
     if ((status == HTTP_OK || status == HTTP_ACCEPTED) 
-        && octstr_case_compare(body, octstr_imm("Sent."))==0)
+        && (octstr_case_compare(body, octstr_imm("Sent.")) == 0 ||
+            octstr_case_compare(body, octstr_imm("Ok.")) == 0 || 
+            octstr_ncompare(body, octstr_imm("Result: OK"),10) == 0)) {
         bb_smscconn_sent(conn, msg);
-    else if ((status == HTTP_OK || status == HTTP_ACCEPTED) 
-        && octstr_ncompare(body, octstr_imm("Result: OK"),10) == 0)
-        bb_smscconn_sent(conn, msg);
-    else
-	bb_smscconn_send_failed(conn, msg, SMSCCONN_FAILED_MALFORMED);
+    } else {
+        bb_smscconn_send_failed(conn, msg, SMSCCONN_FAILED_MALFORMED);
+    }
 }
 
 static void kannel_receive_sms(SMSCConn *conn, HTTPClient *client,
@@ -328,8 +338,8 @@ static void kannel_receive_sms(SMSCConn *conn, HTTPClient *client,
 
     mclass = mwi = coding = validity = deferred = 0;
 
-    user = http_cgi_variable(cgivars, "user");
-    pass = http_cgi_variable(cgivars, "pass");
+    user = http_cgi_variable(cgivars, "username");
+    pass = http_cgi_variable(cgivars, "password");
     from = http_cgi_variable(cgivars, "from");
     to = http_cgi_variable(cgivars, "to");
     text = http_cgi_variable(cgivars, "text");
@@ -360,25 +370,29 @@ static void kannel_receive_sms(SMSCConn *conn, HTTPClient *client,
     if(tmp_string) {
 	sscanf(octstr_get_cstr(tmp_string),"%d", &deferred);
     }
-    debug("smsc.http.kannel", 0, "Received an HTTP request");
+    debug("smsc.http.kannel", 0, "HTTP[%s]: Received an HTTP request",
+          octstr_get_cstr(conn->id));
     
     if (user == NULL || pass == NULL ||
 	    octstr_compare(user, conndata->username) != 0 ||
 	    octstr_compare(pass, conndata->password) != 0) {
 
-	debug("smsc.http.kannel", 0, "Authorization failure");
-	retmsg = octstr_create("Authorization failed for sendsms");
+        error(0, "HTTP[%s]: Authorization failure",
+              octstr_get_cstr(conn->id));
+        retmsg = octstr_create("Authorization failed for sendsms");
     }
     else if (from == NULL || to == NULL || text == NULL) {
 	
-	debug("smsc.http.kannel", 0, "Insufficient args");
-	retmsg = octstr_create("Insufficient args, rejected");
+        error(0, "HTTP[%s]: Insufficient args",
+              octstr_get_cstr(conn->id));
+        retmsg = octstr_create("Insufficient args, rejected");
     }
     else {
 	Msg *msg;
 	msg = msg_create(sms);
 
-	debug("smsc.http.kannel", 0, "Constructing new SMS");
+	debug("smsc.http.kannel", 0, "HTTP[%s]: Constructing new SMS",
+          octstr_get_cstr(conn->id));
 	
 	msg->sms.sender = octstr_duplicate(from);
 	msg->sms.receiver = octstr_duplicate(to);
@@ -401,7 +415,8 @@ static void kannel_receive_sms(SMSCConn *conn, HTTPClient *client,
     }
     reply_headers = list_create();
     http_header_add(reply_headers, "Content-Type", "text/plain");
-    debug("smsc.http.kannel", 0, "sending reply");
+    debug("smsc.http.kannel", 0, "HTTP[%s]: Sending reply",
+          octstr_get_cstr(conn->id));
     http_send_reply(client, HTTP_OK, reply_headers, retmsg);
 
     octstr_destroy(retmsg);
@@ -616,7 +631,8 @@ static int httpsmsc_shutdown(SMSCConn *conn, int finish_sending)
 {
     ConnData *conndata = conn->data;
 
-    debug("httpsmsc_shutdown", 0, "httpsmsc: shutting down");
+    debug("httpsmsc_shutdown", 0, "HTTP[%s]: Shutting down",
+          octstr_get_cstr(conn->id));
     conn->why_killed = SMSCCONN_KILLED_SHUTDOWN;
     conndata->shutdown = 1;
 
@@ -633,11 +649,13 @@ int smsc_http_create(SMSCConn *conn, CfgGroup *cfg)
     int ssl = 0;   /* indicate if SSL-enabled server should be used */
 
     if (cfg_get_integer(&portno, cfg, octstr_imm("port")) == -1) {
-        error(0, "'port' invalid in smsc 'http' record.");
+        error(0, "HTTP[%s]: 'port' invalid in smsc 'http' record.",
+              octstr_get_cstr(conn->id));
         return -1;
     }
     if ((type = cfg_get(cfg, octstr_imm("system-type")))==NULL) {
-        error(0, "'type' missing in smsc 'http' record.");
+        error(0, "HTTP[%s]: 'type' missing in smsc 'http' record.",
+              octstr_get_cstr(conn->id));
         octstr_destroy(type);
         return -1;
     }
@@ -653,11 +671,13 @@ int smsc_http_create(SMSCConn *conn, CfgGroup *cfg)
     cfg_get_bool(&conndata->no_sep, cfg, octstr_imm("no-sep"));
 
     if (conndata->send_url == NULL)
-        panic(0, "Sending not allowed");
+        panic(0, "HTTP[%s]: Sending not allowed. No 'send-url' specified.",
+              octstr_get_cstr(conn->id));
 
     if (octstr_case_compare(type, octstr_imm("kannel")) == 0) {
         if (conndata->username == NULL || conndata->password == NULL) {
-            error(0, "username and password required for Kannel http smsc");
+            error(0, "HTTP[%s]: 'username' and 'password' required for Kannel http smsc",
+                  octstr_get_cstr(conn->id));
             goto error;
         }
         conndata->receive_sms = kannel_receive_sms;
@@ -666,7 +686,8 @@ int smsc_http_create(SMSCConn *conn, CfgGroup *cfg)
     }
     else if (octstr_case_compare(type, octstr_imm("brunet")) == 0) {
         if (conndata->username == NULL) {
-            error(0, "username required for Brunet http smsc");
+            error(0, "HTTP[%s]: 'username' required for Brunet http smsc",
+                  octstr_get_cstr(conn->id));
             goto error;
         }
         conndata->receive_sms = brunet_receive_sms;
@@ -677,8 +698,8 @@ int smsc_http_create(SMSCConn *conn, CfgGroup *cfg)
      * ADD NEW HTTP SMSC TYPES HERE
      */
     else {
-	error(0, "system-type '%s' unknown smsc 'http' record.",
-	      octstr_get_cstr(type));
+	error(0, "HTTP[%s]: system-type '%s' unknown smsc 'http' record.",
+          octstr_get_cstr(conn->id), octstr_get_cstr(type));
 
 	goto error;
     }	
@@ -708,13 +729,14 @@ int smsc_http_create(SMSCConn *conn, CfgGroup *cfg)
 	 gwthread_create(httpsmsc_send_cb, conn)) == -1)
 	goto error;
 
-    info(0, "httpsmsc '%s' initiated and ready", octstr_get_cstr(conn->name));
+    info(0, "HTTP[%s]: Initiated and ready", octstr_get_cstr(conn->id));
     
     octstr_destroy(type);
     return 0;
 
 error:
-    error(0, "Failed to create http smsc connection");
+    error(0, "HTTP[%s]: Failed to create http smsc connection",
+          octstr_get_cstr(conn->id));
 
     conn->data = NULL;
     conndata_destroy(conndata);
