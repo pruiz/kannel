@@ -1,3 +1,9 @@
+2001-12-12 Jörg Pommnitz <jpo@condat.de>
+    * gw/smsbox.c: fix charset handling for sendsms POST requests
+      and use octstr_case_compare when comparing Content-Types
+      (Quote RFC2045, page 12: Matching of media type and subtype
+      is ALWAYS case-insensitive).
+
 2001-12-11 Jörg Pommnitz <jpo@condat.de>
     * gwlib/octstr.c: libxml seems to dislike a conversion from utf-8 
       to utf-8, so this works around this problem.

@@ -498,8 +498,8 @@ static void url_result_thread(void *arg)
 	
     	if (status == HTTP_OK) {
 	    http_header_get_content_type(reply_headers, &type, &charset);
-	    if (octstr_compare(type, text_html) == 0 ||
-		octstr_compare(type, text_wml) == 0) {
+	    if (octstr_case_compare(type, text_html) == 0 ||
+		octstr_case_compare(type, text_wml) == 0) {
 		strip_prefix_and_suffix(reply_body,
 					urltrans_prefix(trans), 
 					urltrans_suffix(trans));
@@ -509,7 +509,7 @@ static void url_result_thread(void *arg)
 					  NULL, NULL, NULL, &mclass, &mwi, 
 					  &coding, &compress, &validity, 
 					  &deferred, &dlr_mask, &dlr_url);
-	    } else if (octstr_compare(type, text_plain) == 0) {
+	    } else if (octstr_case_compare(type, text_plain) == 0) {
 		replytext = octstr_duplicate(reply_body);
 		reply_body = NULL;
 		octstr_strip_blanks(replytext);
@@ -517,7 +517,7 @@ static void url_result_thread(void *arg)
 					  NULL, NULL, NULL, &mclass, &mwi, 
 					  &coding, &compress, &validity, 
 					  &deferred, &dlr_mask, &dlr_url);
-	    } else if (octstr_compare(type, octet_stream) == 0) {
+	    } else if (octstr_case_compare(type, octet_stream) == 0) {
 		replytext = octstr_duplicate(reply_body);
 		octets = 1;
 		reply_body = NULL;
@@ -1374,12 +1374,12 @@ static Octstr *smsbox_sendsms_post(List *headers, Octstr *body,
 	 */
 	http_header_get_content_type(headers, &type, &charset);
 
-	if (octstr_compare(type,
-			   octstr_imm("application/octet-stream")) == 0) {
+	if (octstr_case_compare(type,
+				octstr_imm("application/octet-stream")) == 0) {
 	    if (coding == DC_UNDEF)
 		coding = DC_8BIT; /* XXX Force UCS2 with DC Field */
-	} else if (octstr_compare(type,
-				octstr_imm("text/plain")) == 0) {
+	} else if (octstr_case_compare(type,
+				       octstr_imm("text/plain")) == 0) {
 	    if (coding == DC_UNDEF)
 		coding = DC_7BIT;
 	} else {
@@ -1387,11 +1387,6 @@ static Octstr *smsbox_sendsms_post(List *headers, Octstr *body,
 		  octstr_get_cstr(type));
 	    *status = 415;
 	    ret = octstr_create("Unsupported content-type, rejected");
-	}
-
-	if (charset_processing(charset, body, coding) == -1) {
-	    *status = 415;
-	    ret = octstr_create("Charset or body misformed, rejected");
 	}
 
 	if (ret == NULL)
