@@ -1,3 +1,7 @@
+2000-09-04  Derry Hamilton <rasilon@tardis.ed.ac.uk>
+	
+	* gw/wml_compiler.c: reformatted my earlier patch.
+
 2000-09-03  Lars Wirzenius  <liw@iki.fi>
 
 	* gw/wml_compiler.c: Removed unnecessary call to gw_assert:
