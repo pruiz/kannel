@@ -1,4 +1,4 @@
-2001-12-20  Stipe Tolj  <tolj@wapme-systems.de>
+2001-12-21  Stipe Tolj  <tolj@wapme-systems.de>
     * doc/userguide/userguide.xml: added documentation for the introduced
       configuration directives "smsbox-port-ssl" and "wapbox-port-ssl" in
       the core group.
