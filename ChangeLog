@@ -1,3 +1,10 @@
+2003-10-17  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/smsc/smsc_at.[ch]: adding +CMTI, MO support. Original patch submited 
+      by "Rene Kluwen" <rene.kluwen@chimit.nl> and revised by Alexander to fit
+      current cvs head tree. Thanks a lot for submission.
+      [Msg-ID: <031c01c29faf$5cb51660$1401a8c0@helena>]
+      [Msg-ID: <200310162237.01081.a.malysh@centrium.de>]
+
 2003-10-16  Stipe Tolj  <tolj@wapme-systems.de>
     * doc/userguide/userguide.xml: added sections about new sendsms CGI
       parameter 'binfo' and sms-service escape code '%B' used for proxying

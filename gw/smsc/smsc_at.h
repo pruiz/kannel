@@ -81,6 +81,7 @@ typedef struct PrivAT2data {
     int	sms_memory_poll_interval;
     int	sms_memory_capacity;
     int	sms_memory_usage;
+    List *pending_incoming_messages;
 } PrivAT2data;
 
 
@@ -304,6 +305,24 @@ static int swap_nibbles(unsigned char byte);
  * from an MSISDN number
  */
 static Octstr* at2_format_address_field(Octstr* msisdn);
+
+/*
+ * Check the pending_incoming_messages queue for CMTI notifications.
+ * Every notification is parsed and the messages are read (and deleted)
+ * accordingly.
+ */
+static void at2_read_pending_incoming_messages(PrivAT2data* privdata);
+
+/*
+ * Set the memory storage location of the modem by sending a +CPMS command
+ */
+static int at2_set_message_storage(PrivAT2data* privdata, Octstr* memory_name);
+
+/*
+ * Reads a message from selected memory location and deletes it afterwards.
+ * returns 0 on failure and 1 on success
+ */
+static int at2_read_delete_message(PrivAT2data* privdata, int message_number);
 
 #endif /* SMSC_AT2_H */
 

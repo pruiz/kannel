@@ -458,14 +458,7 @@ int	at2_init_device(PrivAT2data *privdata)
 
     if (privdata->sms_memory_poll_interval && privdata->modem->message_storage) {
         /* set message storage location for "SIM buffering" using the CPMS command */
-        Octstr *temp;
-        temp = octstr_create("AT+CPMS=");
-        octstr_append_char(temp, 34);
-        octstr_append(temp, privdata->modem->message_storage);
-        octstr_append_char(temp, 34);
-        ret = at2_send_modem_command(privdata, octstr_get_cstr(temp), 0, 0);
-        octstr_destroy(temp);
-        if (ret != 0)
+        if (at2_set_message_storage(privdata, privdata->modem->message_storage) != 0)
             return -1;
     }
 
@@ -534,6 +527,17 @@ int at2_wait_modem_command(PrivAT2data *privdata, time_t timeout, int gt_flag,
                       octstr_get_cstr(line));
                 ret = 1;
                 goto end;
+            }
+            if (octstr_search(line, octstr_imm("+CMTI:"), 0) != -1 || 
+                octstr_search(line, octstr_imm("+CDSI:"), 0) != -1) {
+		/*
+		   we received an incoming message indication
+		   put it in the pending_incoming_messages queue for later retrieval
+		*/
+                debug("bb.smsc.at2", 0, "AT2[%s]: +CMTI incoming SMS indication: %s", octstr_get_cstr(privdata->name), octstr_get_cstr(line));
+                list_append(privdata->pending_incoming_messages, line);
+                line = NULL;
+                continue;
             }
             if (octstr_search(line, octstr_imm("+CMT:"), 0) != -1 ||
 		octstr_search(line, octstr_imm("+CDS:"), 0) != -1 ||
@@ -612,11 +616,132 @@ end:
     return ret;
 }
 
+int at2_read_delete_message(PrivAT2data* privdata, int message_number)
+{
+    char cmd[20];
+    int message_count = 0;
+
+    sprintf(cmd, "AT+CMGR=%d", message_number);
+    /* read one message from memory */
+    at2_write_line(privdata, cmd);
+    if (at2_wait_modem_command(privdata, 0, 0, &message_count) != 0) {
+	debug("bb.smsc.at2", 0, "AT2[%s]: failed to get message %d.", 
+	    octstr_get_cstr(privdata->name), message_number);
+        return 0; /* failed to read the message - skip to next message */
+    }
+
+    /* no need to delete if no message collected */
+    if (!message_count) { 
+	debug("bb.smsc.at2", 0, "AT2[%s]: not deleted.", 
+	    octstr_get_cstr(privdata->name));
+        return 0;
+    }
+
+    sprintf(cmd, "AT+CMGD=%d", message_number); /* delete the message we just read */
+    /* 
+    * 3 seconds (default timeout of send_modem_command()) is not enough with some
+    * modems if the message is large, so we'll give it 7 seconds 
+    */
+    if (at2_send_modem_command(privdata, cmd, 7, 0) != 0) {  
+        /* 
+         * failed to delete the message, we'll just ignore it for now, 
+         * this is bad, since if the message really didn't get deleted
+         * we'll see it next time around. 
+         */                
+        error(2, "AT2[%s]: failed to delete message %d.",
+              octstr_get_cstr(privdata->name), message_number);
+    }
+
+    return 1;
+}
+
+/*
+ * This function loops through the pending_incoming_messages queue for CMTI
+ * notifications.
+ * Every notification is parsed and the messages are read (and deleted)
+ * accordingly.
+*/
+void at2_read_pending_incoming_messages(PrivAT2data* privdata)
+{
+    Octstr *current_storage = NULL;
+
+    if (privdata->modem->message_storage) {
+	    current_storage = octstr_duplicate(privdata->modem->message_storage);
+    }
+    while (list_len(privdata->pending_incoming_messages) > 0) {
+        int pos;
+        long location;
+        Octstr *cmti_storage = NULL, *line = NULL;
+        
+        line = list_extract_first(privdata->pending_incoming_messages);
+	/* message memory starts after the first quote in the string */
+        if ((pos = octstr_search_char(line, '"', 0)) != -1) {
+            /* grab memory storage name */
+            int next_quote = octstr_search_char(line, '"', ++pos);
+            if (next_quote == -1) { /* no second qoute - this line must be broken somehow */
+                O_DESTROY(line);
+                continue;
+	    }
+
+            /* store notification storage location for reference */
+            cmti_storage = octstr_copy(line, pos, next_quote - pos);
+        } else
+            /* reset pos for the next lookup which would start from the beginning if no memory
+             * location was found */
+            pos = 0; 
+
+        /* if no message storage is set in configuration - set now */
+        if (!privdata->modem->message_storage && cmti_storage) { 
+            info(2, "AT2[%s]: CMTI received, but no message-storage is set in confiuration."
+                "setting now to <%s>", octstr_get_cstr(privdata->name), octstr_get_cstr(cmti_storage));
+            privdata->modem->message_storage = octstr_duplicate(cmti_storage);
+            current_storage = octstr_duplicate(cmti_storage);
+            at2_set_message_storage(privdata, cmti_storage);
+	}
+
+        /* find the message id from the line, which should appear after the first comma */
+        if ((pos = octstr_search_char(line, ',', pos)) == -1) { /* this CMTI notification is probably broken */
+            error(2, "AT2[%s]: failed to find memory location in CMTI notification",
+                octstr_get_cstr(privdata->name));
+		O_DESTROY(line);
+		octstr_destroy(cmti_storage);
+            continue;
+        }
+
+        if ((pos = octstr_parse_long(&location, line, ++pos, 10)) == -1) {
+            /* there was an error parsing the message id. next! */
+            error(2, "AT2[%s]: error parsing memory location in CMTI notification",
+                octstr_get_cstr(privdata->name));
+		O_DESTROY(line);
+		octstr_destroy(cmti_storage);
+            continue;
+        }
+
+        /* check if we need to change storage location before issuing the read command */
+        if (!current_storage || (octstr_compare(current_storage, cmti_storage) != 0)) {
+	    octstr_destroy(current_storage);
+	    current_storage = octstr_duplicate(cmti_storage);
+            at2_set_message_storage(privdata, cmti_storage);
+	}
+        
+        if (!at2_read_delete_message(privdata, location)) {
+            error(1,"AT2[%s]: CMTI notification received, but no message found in memory!",
+                octstr_get_cstr(privdata->name));
+        }
+
+        
+        octstr_destroy(line);
+        octstr_destroy(cmti_storage);
+    }
+    /* set prefered message storage back to what configured */
+    if (current_storage && privdata->modem->message_storage && (octstr_compare(privdata->modem->message_storage, current_storage) != 0))
+	at2_set_message_storage(privdata, privdata->modem->message_storage);
+
+    octstr_destroy(current_storage);
+}
 
 void at2_read_sms_memory(PrivAT2data* privdata)
 {
-    char cmd[20];
-
     /* get memory status */
     if (at2_check_sms_memory(privdata) == -1) {
         debug("bb.smsc.at2", 0, "AT2[%s]: memory check error", octstr_get_cstr(privdata->name));
@@ -659,40 +784,15 @@ void at2_read_sms_memory(PrivAT2data* privdata)
          * loop till end of memory or collected enouch messages
          */
         for (i = 1; i <= privdata->sms_memory_capacity &&
-             message_count < privdata->sms_memory_usage; ++i) { 
-            int old_message_count = message_count;
-            sprintf(cmd, "AT+CMGR=%d", i);
-            /* read one message from memory */
-            at2_write_line(privdata, cmd);
-            if (at2_wait_modem_command(privdata, 0, 0, &message_count) != 0) {
-                debug("bb.smsc.at2", 0, "AT2[%s]: failed to get message %d.", 
-                      octstr_get_cstr(privdata->name), i);
-                continue; /* failed to read the message - skip to next message */
-            }
+            message_count < privdata->sms_memory_usage; ++i) { 
 
-            /* no need to delete if no message collected */
-            if (old_message_count == message_count) { 
-                debug("bb.smsc.at2", 0, "AT2[%s]: not deleted.", 
-                      octstr_get_cstr(privdata->name));
-                continue;
-            }
-
-            sprintf(cmd, "AT+CMGD=%d", i); /* delete the message we just read */
-            /* 
-             * 3 seconds is not enough with some modems if the message is large,
-             * so we'll give it 7 seconds 
-             */
-            if (at2_send_modem_command(privdata, cmd, 7, 0) != 0) {  
-                /* 
-                 * failed to delete the message, we'll just ignore it for now, 
-                 * this is bad, since if the message really didn't get deleted
-                 * we'll see it next time around. 
-                 */                
-                debug("bb.smsc.at2", 0, "AT2[%s]: failed to delete message %d.", 
-                      octstr_get_cstr(privdata->name), i);
-                continue; 
-
-            }
+	    /* if (meanwhile) there are pending CMTI notifications, process these first
+	     * to not let CMTI and sim buffering sit in each others way */
+	    while (list_len(privdata->pending_incoming_messages) > 0) {
+		    at2_read_pending_incoming_messages(privdata);
+	    }
+	    /* read the message and delete it */
+            message_count += at2_read_delete_message(privdata, i);
         }
     }
     /*
@@ -902,6 +1002,10 @@ reconnect:
         } else
             at2_wait_modem_command(privdata, 1, 0, NULL);
 
+	while (list_len(privdata->pending_incoming_messages) > 0) {
+		at2_read_pending_incoming_messages(privdata);
+	}
+
         if (privdata->keepalive &&
             idle_timeout + privdata->keepalive < time(NULL)) {
             if (at2_send_modem_command(privdata, 
@@ -934,6 +1038,7 @@ reconnect:
     octstr_destroy(privdata->name);
     octstr_destroy(privdata->configfile);
     list_destroy(privdata->outgoing_queue, NULL);
+    list_destroy(privdata->pending_incoming_messages, octstr_destroy_item);
     gw_free(conn->data);
     conn->data = NULL;
     conn->why_killed = SMSCCONN_KILLED_SHUTDOWN;
@@ -1020,6 +1125,7 @@ int smsc_at2_create(SMSCConn *conn, CfgGroup *cfg)
 
     privdata = gw_malloc(sizeof(PrivAT2data));
     privdata->outgoing_queue = list_create();
+    privdata->pending_incoming_messages = list_create();
 
     privdata->configfile = cfg_get_configfile(cfg);
 
@@ -2218,4 +2324,20 @@ Octstr* at2_format_address_field(Octstr* msisdn)
 
     O_DESTROY(temp);
     return out;	
+}
+
+int at2_set_message_storage(PrivAT2data* privdata, Octstr* memory_name)
+{
+    Octstr *temp;
+    int ret;
+
+    if (!memory_name || !privdata)
+        return -1;
+
+    temp = octstr_format("AT+CPMS=\"%S\"", memory_name);
+    ret = at2_send_modem_command(privdata, octstr_get_cstr(temp), 0, 0);
+    octstr_destroy(temp);
+    if (ret != 0)
+            return -1;
+    return 0;
 }
