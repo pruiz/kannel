@@ -680,8 +680,9 @@ static void handle_pdu(SMPP *smpp, Connection *conn, SMPP_PDU *pdu,
     Octstr *os; 
     Msg *msg, *dlrmsg = NULL; 
     long reason; 
-    resp = NULL;
     int cmd_stat;
+
+    resp = NULL;
  
     switch (pdu->type) { 
         case deliver_sm: 
