@@ -2222,7 +2222,12 @@ words not yet used by %s; e.g., if the message
 </entry></row>
 
 <row><entry><literal>%a</literal></entry><entry>
-all words of the SMS message, including the first one
+all words of the SMS message, including the first one, with spaces
+squeezed to one
+</entry></row>
+
+<row><entry><literal>%b</literal></entry><entry>
+the original SMS message, in a binary form
 </entry></row>
 
 <row><entry><literal>%t</literal></entry><entry>

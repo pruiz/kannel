@@ -1,5 +1,11 @@
 2001-02-14  Lars Wirzenius  <liw@iki.fi>
 
+	* gw/urltrans.c, doc/userguide/userguide.xml: Restored the
+	meaning of %a in sms-service, implemented and documented %b to
+	support binary data.
+
+2001-02-14  Lars Wirzenius  <liw@iki.fi>
+
 	* gw/smsbox.c, doc/userguide/userguide.xml: Implemented
 	X-Kannel-UDH header in responses to keyword fetches.
 

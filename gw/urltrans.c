@@ -328,6 +328,16 @@ Octstr *urltrans_get_pattern(URLTranslation *t, Msg *request)
 	break;
 
 	case 'a':
+	    for (j = 0; j < num_words; ++j) {
+		enc = octstr_create_urlcoded(list_get(word_list, j));
+		if (j > 0)
+		    octstr_append_char(result, '+');
+		octstr_append(result, enc);
+		octstr_destroy(enc);
+	    }
+	    break;
+
+	case 'b':
 	    enc = octstr_create_urlcoded(request->sms.msgdata);
 	    octstr_append(result, enc);
 	    octstr_destroy(enc);
