@@ -346,7 +346,7 @@ int cfg_read(Cfg *cfg)
                           octstr_get_cstr(loc->filename)); 
                 } else {     
              
-                    list_insert(stack, 0, octstr_duplicate(filename)); 
+                    list_insert(stack, 0, filename); 
                     debug("gwlib.cfg", 0, "Loading include file `%s' (on line %ld of file %s).",  
                           octstr_get_cstr(filename), loc->line_no,  
                           octstr_get_cstr(loc->filename)); 

@@ -1,3 +1,27 @@
+2002-03-17  Bruno Rodrigues  <bruno.rodrigues@litux.org>
+    * doc/modems.cfg: Changed T68 initstring
+    * doc/modems.cfg, gw/smsc_at2.c: Added broken boolean value to handle 
+      Ericsson T68 brokenness. Probably will be removed when I or somebody else
+      talk with Ericsson and understand what happened with that phone.
+      Behaviour: accept +CMT: without ","; compare the +CMT value with the 
+      the full string length, instead of ony the PDU part. (There's still 
+      missing the +CNMA response that I cannot send to this mobile)
+    * doc/userguide/userguide.xml, gw/smsc_at2.c: changed alt-dcs to boolean
+    * gw/smsc_at2.c: reset keepalive time when sending a message
+    * gw/smsc_at2.c: fix keepalive initialization when keepalive is not defined
+      in configuration
+    * gw/smsc_at2.c: fix panic when not autodetecting. I really thought that
+      octstr_destroy would set the octstr to null
+    * gw/smsc_at2.c: fix autodetect_modem to read every modem group (i=1)
+    * gw/smsc_at2.c: at2_read_modems won't output some debugs when using 
+      idnumber (autodetect), because at2_detect_modem do the output 
+    * gwlib/cfg.def: fix a small memory leak
+    * gw/smsc_at2.c: removed checks from cfg_get_bool, because it always sets 
+      the value to 0 or 1 
+    * gw/smsc_at2.c: fix parsing alphanumeric sender when receiving message
+    * gw/smsc_at2.c: activate +MMS (More Message to Send) when there's more
+      than one message to send
+
 2002-03-14  Bruno Rodrigues  <bruno.rodrigues@litux.org>
     * gwlib/cfg.[ch]: added cfg_get_configfile to return the config filename of
       the Cfg grp we are using; fixed a small glitch

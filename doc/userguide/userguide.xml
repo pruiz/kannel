@@ -2447,13 +2447,13 @@ pin = 2345
      </entry></row>
 
    <row><entry><literal>alt-dcs</literal></entry>
-     <entry><literal>0/1</literal></entry>
+     <entry><literal>boolean</literal></entry>
      <entry valign=bottom>
      	 When encoding DCS field internally, there are two formats
-	 with similar functionality. The 0x0X (alt-dcs = 0 or non-present)
-	 or the 0xFX (alt-dcs = 1).
+	 with similar functionality. The 0x0X (alt-dcs = false or non-present)
+	 or the 0xFX (alt-dcs = true).
 	 If you have a buggy modem (like Siemens M20) that don't like to 
-	 send binary messages, try setting alt-dcs to 1.
+	 send binary messages, try setting alt-dcs to true.
      </entry></row>
 
    </tbody></tgroup></informaltable>

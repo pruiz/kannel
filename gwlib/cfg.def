@@ -308,6 +308,7 @@ MULTI_GROUP(modems,
     OCTSTR(no-smsc)
     OCTSTR(sendline-sleep)
     OCTSTR(keepalive-cmd)
+    OCTSTR(broken)
 )
 
 #undef OCTSTR
