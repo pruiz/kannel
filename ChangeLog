@@ -1,3 +1,8 @@
+2002-04-15  Stipe Tolj <tolj@wapme-systems.de>
+    * gw/wap_push_pph_pushuser.c: fixed memory leaks in xxx_list_add() and 
+      xxx_authenticate() reported by Paul.
+      [Msg-ID: <000001c1e214$2ef53650$0300a8c0@anam.com>]
+
 2002-04-10  Bruno Rodrigues  <bruno.rodrigues@litux.org>
     * doc/modems.conf: added enable-mms info and enabled it on nokiaphone
     * doc/smsc_at2.[ch], gwlib/cfg.def, doc/userguide/userguide.xml: added 
