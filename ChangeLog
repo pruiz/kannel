@@ -1,3 +1,14 @@
+2002-05-03 Aarno Syvänen <aarno@wiral.com>
+    * checks/check_fakewap.sh: Do the test may times
+    * gw/wap-appl.c: Fixing no ppg configuration option: No references to
+      ppg lists.
+    * gw/wap-appl.h: Passing configuration data to the init function.
+    * gw/wap_push_ppg.c: Do not start anything when no ppg is configured
+    * gw/wapbox.c: Do not start any push threads, or set push variables when
+      no ppg option is set.
+    * gw/wap_push_ppg.c: Going down gracefully when HTTPClient is NULL. This
+      was noticed by Paul Keogh.
+
 2002-05-03  Bruno Rodrigues  <bruno.rodrigues@litux.org>
     * : The "where do you want me to post this?" patch
     * doc/userguide/userguide.xml: added kannel post headers (kannel->appl);
