@@ -1,3 +1,6 @@
+2003-01-29  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/smsc/smpp_pdu.c: added missed fix from Alexanders previous patch.
+
 2003-01-28  Stipe Tolj  <tolj@wapme-systems.de>
     * gw/smsbox.c: add debug info about ammount of outstanding HTTP reqeusts
       in the retry queue.
