@@ -1,3 +1,7 @@
+Mon Apr 17 20:25:19 2000  Lars Wirzenius  <liw@wapit.com>
+
+	* test/test_list.c: Fixed more pthread_t vs long warnings.
+
 2000-04-17 Sanna Seppanen <sanna@wapit.com>
 
 	* gwlib/octstr.h,c: Added octstr_get_digit_from(). Searches long int 

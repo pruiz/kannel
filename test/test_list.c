@@ -109,7 +109,8 @@ static void *consumer(void *arg) {
 #if TRACE
 		if ((i % TRACE) == 0)
 			info(0, "Got %ld: producer=%ld item=%ld index=%ld", 
-				i, item->producer, item->num, item->index);
+				i, (long) item->producer, item->num, 
+				item->index);
 #endif
 		received[item->index] = 1;
 		gw_free(item);
@@ -168,8 +169,8 @@ static void main_for_producer_and_consumer(void) {
 	while (list_len(list) > 0) {
 		item = list_get(list, 0);
 		list_delete(list, 0, 1);
-		warning(0, "main: %ld %ld %ld", item->producer, item->num,
-				item->index);
+		warning(0, "main: %ld %ld %ld", (long) item->producer, 
+				item->num, item->index);
 	}
 	info(0, "main ends");
 	
