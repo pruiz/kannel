@@ -1,3 +1,11 @@
+2003-06-23  Stipe Tolj  <tolj@wapme-systems.de>
+    * gw/smscconn[_p].[ch]: added 'throughput' MT message per sec. limitation
+      to abstraction layer.
+    * gw/smsc/smsc_emi2.c: moved 'throughput' from EMI2 specific directive to
+      abstracted directive to provide it to other SMSC client modules too.
+    * gw/smsc/smsc_smpp.c: added 'throughput' feature to SMPP client module.
+    * gwlib/cfg.def: moved all abstracted directives to the top of 'smsc' group
+
 2003-06-20  Stipe Tolj  <tolj@wapme-systems.de>
     * doc/userguide/userguide.xml: fixing jade compiler warnings?!
 
