@@ -1,4 +1,10 @@
 2005-04-07  Stipe Tolj  <stolj@wapme.de> 
+    * radius/radius_[acct|pdu].c: fixing bug #208, which caused a wrong 
+      computing of the MD5 authenticator of the NAS acct packet. Thanks a
+      lot to Vincenzo <morellov@tin.it> for bug report and also fix. This
+      was a very stupid interpretation of the RFC2866 by me.
+    
+2005-04-07  Stipe Tolj  <stolj@wapme.de> 
     * gwlib/http.c: fixing bug #213 breaking HTTP response handling when there
       has been a response header 'Content-Length: 0' given. Thanks to Jonathan
       for this report and provding also a patch for the problem.

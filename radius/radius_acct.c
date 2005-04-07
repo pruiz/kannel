@@ -241,6 +241,9 @@ static void proxy_thread(void *arg)
         Octstr *data, *rdata;
         Octstr *from_nas, *from_radius;
 
+        pdu = r = NULL;
+        data = rdata = from_nas = from_radius = NULL;
+        
         if (read_available(ss, 100000) < 1)
             continue;
 
@@ -254,7 +257,6 @@ static void proxy_thread(void *arg)
             continue;
         }
 
-
         tmp = udp_get_ip(from_nas);
         info(0, "RADIUS: Got data from NAS <%s:%d>",
              octstr_get_cstr(tmp), udp_get_port(from_nas));
@@ -262,11 +264,17 @@ static void proxy_thread(void *arg)
         octstr_dump(data, 0);
 
         /* unpacking the RADIUS PDU */
-        pdu = radius_pdu_unpack(data);
-        info(0, "RADIUS PDU type: %s", pdu->type_name);
+        if ((pdu = radius_pdu_unpack(data)) == NULL) {
+            warning(0, "RADIUS: Couldn't unpack PDU from NAS, ignoring.");
+            goto error;
+        }
+        info(0, "RADIUS: from NAS: PDU type: %s", pdu->type_name);
 
-        /* FIXME: XXX authenticator md5 check does not work?! */
-        //radius_authenticate_pdu(pdu, data, secret_nas);
+        /* authenticate the Accounting-Request packet */
+        if (radius_authenticate_pdu(pdu, &data, secret_nas) == 0) {
+            warning(0, "RADIUS: Authentication failed for PDU from NAS, ignoring.");
+            goto error;
+        }
 
         /* store to hash table if not present yet */
         mutex_lock(radius_mutex);
@@ -302,7 +310,7 @@ static void proxy_thread(void *arg)
                 error(0, "RADIUS: Couldn't receive from remote RADIUS <%s:%ld>.",
                       octstr_get_cstr(remote_host), remote_port);
             } else {
-                info(0, "RADIUS: Got data from remote RADIUS <%s:%d>",
+                info(0, "RADIUS: Got data from remote RADIUS <%s:%d>.",
                      octstr_get_cstr(udp_get_ip(from_radius)), udp_get_port(from_radius));
                 octstr_dump(data, 0);
 
@@ -316,6 +324,7 @@ static void proxy_thread(void *arg)
             error(0, "RADIUS: Couldn't send response data to NAS <%s:%d>.",
                   octstr_get_cstr(udp_get_ip(from_nas)), udp_get_port(from_nas));
 
+error:
         radius_pdu_destroy(pdu);
         radius_pdu_destroy(r);
 
