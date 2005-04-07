@@ -361,8 +361,8 @@ static void deduce_body_state(HTTPEntity *ent)
     Octstr *h = NULL;
 
     if (ent->expect_state == expect_no_body) {
-	ent->state = entity_done;
-	return;
+        ent->state = entity_done;
+        return;
     }
 
     ent->state = body_error;  /* safety net */
@@ -373,32 +373,34 @@ static void deduce_body_state(HTTPEntity *ent)
         if (octstr_str_compare(h, "chunked") != 0) {
             error(0, "HTTP: Unknown Transfer-Encoding <%s>",
                   octstr_get_cstr(h));
-	    ent->state = body_error;
+            ent->state = body_error;
         } else {
             ent->state = reading_chunked_body_len;
-	}
+        }
         octstr_destroy(h);
-	return;
+        return;
     }
 
     h = http_header_find_first(ent->headers, "Content-Length");
     if (h != NULL) {
         if (octstr_parse_long(&ent->expected_body_len, h, 0, 10) == -1 ||
             ent->expected_body_len < 0) {
-	    error(0, "HTTP: Content-Length header wrong: <%s>",
-		  octstr_get_cstr(h));
-	    ent->state = body_error;
+            error(0, "HTTP: Content-Length header wrong: <%s>",
+                  octstr_get_cstr(h));
+            ent->state = body_error;
+        } else if (ent->expected_body_len == 0) {
+            ent->state = entity_done;
         } else {
             ent->state = reading_body_with_length;
-	}
+        }
         octstr_destroy(h);
-	return;
+        return;
     }
 
     if (ent->expect_state == expect_body)
         ent->state = reading_body_until_eof;
     else
-	ent->state = entity_done;
+        ent->state = entity_done;
 }
 
 

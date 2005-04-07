@@ -1,3 +1,9 @@
+2005-04-07  Stipe Tolj  <stolj@wapme.de> 
+    * gwlib/http.c: fixing bug #213 breaking HTTP response handling when there
+      has been a response header 'Content-Length: 0' given. Thanks to Jonathan
+      for this report and provding also a patch for the problem.
+      [Msg-Id: <42541321.2080102@wirelessonenet.com>]
+
 2005-04-01  Stipe Tolj  <stolj@wapme.de> 
     * test/wapproxy.c: added option -p for UDP port of wapproxy to list to.
       Can be used to proxy WDP packets on the same machine/interface. 
