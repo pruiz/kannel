@@ -1,3 +1,8 @@
+2005-04-08  Stipe Tolj  <stolj@wapme.de>
+    * gwlib/md5.c: fixing bug #207, causing md5() to return corrupted values
+      since we assumed digest is a NULL-terminated C string, which is of
+      course not the case in gernal. Thanks to Vincenzo for reporting this.
+       
 2005-04-07  Stipe Tolj  <stolj@wapme.de> 
     * radius/radius_[acct|pdu].c: fixing bug #208, which caused a wrong 
       computing of the MD5 authenticator of the NAS acct packet. Thanks a

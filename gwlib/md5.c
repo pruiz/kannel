@@ -397,7 +397,7 @@ Octstr *md5(Octstr *data)
     md5_update(&context, octstr_get_cstr(data), octstr_len(data));
     md5_final(digest, &context);
 
-    enc = octstr_create(digest);
+    enc = octstr_create_from_data(digest, 16); 
 
     return enc; 
 }
