@@ -1,3 +1,12 @@
+2005-04-14  Alexander Malysh <amalysh at kannel.org>
+    * gw/smsbox.c, gw/wapbox.c, gwlib/cfg.def, gwlib/http.[ch], test/test_http.c,
+      test/test_xmlrpc.c, doc/userguide/userguide.xml: applied patch that adds
+      the 'http-proxy-exceptions-regex' option to the wapbox and smsbox config files.
+      This added to allow a regex like "^https" to skip the HTTP proxy for SSL connections.
+      Obviously it can also be used for more than just that.
+      Thanks to Jonathan Houser <jhouser at wirelessonenet.com>.
+      [Msg-Id: <425D26A4.80401@wirelessonenet.com>]
+
 2005-04-08  Stipe Tolj  <stolj@wapme.de>
     * gwlib/md5.c: fixing bug #207, causing md5() to return corrupted values
       since we assumed digest is a NULL-terminated C string, which is of

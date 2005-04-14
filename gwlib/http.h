@@ -265,7 +265,7 @@ void parse_dump(HTTPURLParse *p);
  * pending requests have been served.
  */
 void http_use_proxy(Octstr *hostname, int port, List *exceptions,
-    	    	    Octstr *username, Octstr *password);
+    	    	    Octstr *username, Octstr *password, Octstr *exceptions_regex);
 void http_close_proxy(void);
 
 

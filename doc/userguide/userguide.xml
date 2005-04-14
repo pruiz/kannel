@@ -1373,6 +1373,12 @@ admin-password = f00bar
          A list of excluded hosts from being used via a
          proxy. Separate each entry with space.
      </entry></row>
+
+    <row><entry><literal>http-proxy-exceptions-regex</literal></entry>
+     <entry>UNIX regular expression</entry>
+     <entry valign="bottom">
+         Same as http-proxy-exceptions but match against UNIX regular expression.
+     </entry></row>
     
     <row><entry><literal>http-proxy-username</literal></entry>
      <entry>username</entry>
@@ -4940,6 +4946,7 @@ http-proxy-host
 http-proxy-username
 http-proxy-password
 http-proxy-exceptions
+http-proxy-exceptions-regex
 ssl-certkey-file
 </programlisting>
    </para>

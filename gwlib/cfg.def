@@ -108,6 +108,7 @@ SINGLE_GROUP(core,
     OCTSTR(http-proxy-host)
     OCTSTR(http-proxy-port)
     OCTSTR(http-proxy-exceptions)
+    OCTSTR(http-proxy-exceptions-regex)
     OCTSTR(http-proxy-username)
     OCTSTR(http-proxy-password)
     OCTSTR(ssl-client-certkey-file)

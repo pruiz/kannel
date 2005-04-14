@@ -82,6 +82,7 @@
 #include <sys/socket.h>
 
 #include "gwlib.h"
+#include "gwlib/regex.h"
 
 /* comment this out if you don't want HTTP responses to be dumped */
 #define DUMP_RESPONSE 1
@@ -199,6 +200,7 @@ static int proxy_port = 0;
 static Octstr *proxy_username = NULL;
 static Octstr *proxy_password = NULL;
 static List *proxy_exceptions = NULL;
+static regex_t *proxy_exceptions_regex = NULL;
 
 
 static void proxy_add_authentication(List *headers)
@@ -232,7 +234,7 @@ static void proxy_shutdown(void)
 }
 
 
-static int proxy_used_for_host(Octstr *host)
+static int proxy_used_for_host(Octstr *host, Octstr *url)
 {
     int i;
 
@@ -250,13 +252,19 @@ static int proxy_used_for_host(Octstr *host)
         }
     }
 
+    if (proxy_exceptions_regex != NULL &&
+        gw_regex_matches(proxy_exceptions_regex, url) == MATCH) {
+            mutex_unlock(proxy_mutex);
+            return 0;
+    }
+
     mutex_unlock(proxy_mutex);
     return 1;
 }
 
 
 void http_use_proxy(Octstr *hostname, int port, List *exceptions,
-    	    	    Octstr *username, Octstr *password)
+    	    	    Octstr *username, Octstr *password, Octstr *exceptions_regex)
 {
     Octstr *e;
     int i;
@@ -278,6 +286,9 @@ void http_use_proxy(Octstr *hostname, int port, List *exceptions,
 	      octstr_get_cstr(e));
         gwlist_append(proxy_exceptions, octstr_duplicate(e));
     }
+    if (exceptions_regex != NULL &&
+        (proxy_exceptions_regex = gw_regex_comp(exceptions_regex, REG_EXTENDED)) == NULL)
+            panic(0, "Could not compile pattern '%s'", octstr_get_cstr(exceptions_regex));
     proxy_username = octstr_duplicate(username);
     proxy_password = octstr_duplicate(password);
     debug("gwlib.http", 0, "Using proxy <%s:%d>", 
@@ -300,7 +311,9 @@ void http_close_proxy(void)
     proxy_username = NULL;
     proxy_password = NULL;
     gwlist_destroy(proxy_exceptions, octstr_destroy_item);
+    gw_regex_destroy(proxy_exceptions_regex);
     proxy_exceptions = NULL;
+    proxy_exceptions_regex = NULL;
     mutex_unlock(proxy_mutex);
 }
 
@@ -1075,7 +1088,7 @@ static void handle_transaction(Connection *conn, void *data)
 
 #ifdef USE_KEEPALIVE 
     if (trans->persistent) {
-        if (proxy_used_for_host(trans->host))
+        if (proxy_used_for_host(trans->host, trans->url))
             conn_pool_put(trans->conn, proxy_hostname, proxy_port);
         else 
             conn_pool_put(trans->conn, trans->host, trans->port);
@@ -1464,7 +1477,7 @@ static Connection *get_connection(HTTPServer *trans)
         }
     }
 
-    if (proxy_used_for_host(trans->host)) {
+    if (proxy_used_for_host(trans->host, trans->url)) {
         host = proxy_hostname;
         port = proxy_port;
     } else {
@@ -1523,7 +1536,7 @@ static int send_request(HTTPServer *trans)
         http_add_basic_auth(trans->request_headers, trans->username,
                             trans->password);
 
-    if (proxy_used_for_host(trans->host)) {
+    if (proxy_used_for_host(trans->host, trans->url)) {
         proxy_add_authentication(trans->request_headers);
         request = build_request(http_method2name(trans->method),
                                 trans->url, trans->host, trans->port, 

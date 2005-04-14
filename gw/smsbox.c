@@ -3267,6 +3267,7 @@ static Cfg *init_smsbox(Cfg *cfg)
     List *http_proxy_exceptions = NULL;
     Octstr *http_proxy_username = NULL;
     Octstr *http_proxy_password = NULL;
+    Octstr *http_proxy_exceptions_regex = NULL;
     int ssl = 0;
     int lf, m;
 
@@ -3300,6 +3301,8 @@ static Cfg *init_smsbox(Cfg *cfg)
     	    	    	    octstr_imm("http-proxy-password"));
     http_proxy_exceptions = cfg_get_list(grp,
     	    	    	    octstr_imm("http-proxy-exceptions"));
+    http_proxy_exceptions_regex = cfg_get(grp,
+    	    	    	    octstr_imm("http-proxy-exceptions-regex"));
 
 #ifdef HAVE_LIBSSL
     conn_config_ssl(grp);
@@ -3455,12 +3458,13 @@ static Cfg *init_smsbox(Cfg *cfg)
     if (http_proxy_host != NULL && http_proxy_port > 0) {
     	http_use_proxy(http_proxy_host, http_proxy_port,
 		       http_proxy_exceptions, http_proxy_username,
-                       http_proxy_password);
+                       http_proxy_password, http_proxy_exceptions_regex);
     }
 
     octstr_destroy(http_proxy_host);
     octstr_destroy(http_proxy_username);
     octstr_destroy(http_proxy_password);
+    octstr_destroy(http_proxy_exceptions_regex);
     gwlist_destroy(http_proxy_exceptions, octstr_destroy_item);
 
     return cfg;

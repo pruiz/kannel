@@ -498,6 +498,7 @@ static void config_reload(int reload) {
     List *http_proxy_exceptions;
     Octstr *http_proxy_username;
     Octstr *http_proxy_password;
+    Octstr *http_proxy_exceptions_regex;
     int warn_map_url = 0;
 
     /* XXX TO-DO: if(reload) implement wapbox.suspend/mutex.lock */
@@ -527,14 +528,16 @@ static void config_reload(int reload) {
     http_proxy_username = cfg_get(grp, octstr_imm("http-proxy-username"));
     http_proxy_password = cfg_get(grp, octstr_imm("http-proxy-password"));
     http_proxy_exceptions = cfg_get_list(grp, octstr_imm("http-proxy-exceptions"));
+    http_proxy_exceptions_regex = cfg_get(grp, octstr_imm("http-proxy-exceptions-regex"));
     if (http_proxy_host != NULL && http_proxy_port > 0) {
         http_use_proxy(http_proxy_host, http_proxy_port, 
                        http_proxy_exceptions, http_proxy_username, 
-                       http_proxy_password);
+                       http_proxy_password, http_proxy_exceptions_regex);
     }
     octstr_destroy(http_proxy_host);
     octstr_destroy(http_proxy_username);
     octstr_destroy(http_proxy_password);
+    octstr_destroy(http_proxy_exceptions_regex);
     gwlist_destroy(http_proxy_exceptions, octstr_destroy_item);
 
     grp = cfg_get_single_group(cfg, octstr_imm("wapbox"));

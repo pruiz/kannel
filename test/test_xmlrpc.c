@@ -273,6 +273,7 @@ int main(int argc, char **argv)
     long proxy_port;
     Octstr *proxy_username;
     Octstr *proxy_password;
+    Octstr *exceptions_regex;
     char *p;
     long threads[MAX_THREADS];
     time_t start, end;
@@ -288,6 +289,7 @@ int main(int argc, char **argv)
     exceptions = gwlist_create();
     proxy_username = NULL;
     proxy_password = NULL;
+    exceptions_regex = NULL;
     num_threads = 0;
     file = 0;
     fp = NULL;
@@ -331,6 +333,10 @@ int main(int argc, char **argv)
                     gwlist_append(exceptions, octstr_create(p));
                     p = strtok(NULL, ":");
                 }
+                break;
+
+            case 'E':
+                exceptions_regex = octstr_create(optarg);
                 break;
 	
             case 'a':
@@ -383,11 +389,13 @@ int main(int argc, char **argv)
 
     if (proxy != NULL && proxy_port > 0) {
         http_use_proxy(proxy, proxy_port, exceptions,
-                       proxy_username, proxy_password);
+                       proxy_username, proxy_password,
+                       exceptions_regex);
     }
     octstr_destroy(proxy);
     octstr_destroy(proxy_username);
     octstr_destroy(proxy_password);
+    octstr_destroy(exceptions_regex);
     gwlist_destroy(exceptions, octstr_destroy_item);
     
     counter = counter_create();
