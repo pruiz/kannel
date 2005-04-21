@@ -55,7 +55,15 @@
  */ 
 
 /*
- * test_octstr_dump.c - reads a file and performs dumping.
+ * test_hmac.c - calculates the HMAC-SHA1 hash value
+ * 
+ * This algorithm is used in the OTA Prov architecture for bootstrap
+ * securtiy by means of a shared secret.
+ * 
+ * References:
+ *   - WAP-184-PROVBOOT-20010314a.pdf (Provisioning Bootstrap), WAP Forum 
+ *   - HMAC: Keyed-Hashing for Message Authentication”, Krawczyk, H., 
+ *     Bellare, M., and Canetti, R., RFC 2104
  *
  * Stipe Tolj <stolj@wapme.de>
  */
@@ -66,45 +74,54 @@
 
 #include "gwlib/gwlib.h"
 
+#ifdef HAVE_LIBSSL
+#include <openssl/hmac.h>
+#endif
+
+
 int main(int argc, char **argv)
 {
-    Octstr *data, *filename, *hex;
+    Octstr *data, *filename, *mac, *key;
+    unsigned char macbuf[EVP_MAX_MD_SIZE], *p;
+    int mac_len;
+#ifdef HAVE_LIBSSL
+    HMAC_CTX ctx;
+#endif
 
     gwlib_init();
 
     get_and_set_debugs(argc, argv, NULL);
 
-    filename = octstr_create(argv[1]);
+    key = octstr_create(argv[1]);    
+    filename = octstr_create(argv[2]);
     data = octstr_read_file(octstr_get_cstr(filename));
-
-    /* 
-     * We test if this is a text/plain file with hex values in it.
-     * Therefore copy the data and trail off any CR and LF from 
-     * beginning and end and test if the result is only hex chars.
-     * If yes, then convert to binary before dumping.
-     */
-    hex = octstr_duplicate(data);
-    octstr_strip_crlfs(hex);
-    if (octstr_is_all_hex(hex)) {
-        debug("",0,"Trying to converting from hex to binary.");
-        if (octstr_hex_to_binary(hex) == 0) {
-            FILE *f = fopen(argv[2], "w");
-            debug("",0,"Convertion was successfull. Writing binary content to file `%s'",
-                  argv[2]);
-            octstr_destroy(data);
-            data = octstr_duplicate(hex);
-            octstr_print(f, data);
-            fclose(f);
-        } else {
-            debug("",0,"Failed to convert from hex?!");
-        }
-    }                                      
 
     debug("",0,"Dumping file `%s':", octstr_get_cstr(filename));
     octstr_dump(data, 0);
 
+#ifdef HAVE_LIBSSL
+    HMAC_Init(&ctx, octstr_get_cstr(key), octstr_len(key), EVP_sha1());
+    p = HMAC(EVP_sha1(), octstr_get_cstr(key), octstr_len(key), 
+         octstr_get_cstr(data), octstr_len(data), 
+         macbuf, &mac_len);
+    HMAC_CTX_cleanup(&ctx);
+#else
+    macbuf[0] = 0;
+    mac_len = 0;
+    p = macbuf;
+    warning(0, "No SSL support. Can't calculate HMAC value.");
+#endif
+    
+    mac = octstr_create_from_data(p, mac_len);
+    octstr_binary_to_hex(mac, 0);
+    
+    debug("",0,"HMAC of file `%s' and key `%s' is:", 
+          octstr_get_cstr(filename), octstr_get_cstr(key));
+    octstr_dump(mac, 0);      
+
     octstr_destroy(data);
-    octstr_destroy(hex);
+    octstr_destroy(mac);
+    octstr_destroy(key);
     gwlib_shutdown();
     return 0;
 }

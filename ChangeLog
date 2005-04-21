@@ -1,3 +1,9 @@
+2005-04-21  Stipe Tolj  <stolj@wapme.de>
+    * test/test_octstr_dump.c: added binary dump to file for files that contain
+      hex values. Can be used to convert hex value blocks to binary files.
+    * test/test_hmac.c: added file that implements HMAC calculation via openssl
+      library. HMAC is used in authentication for OMA Prov documents.
+      
 2005-04-14  Alexander Malysh <amalysh at kannel.org>
     * gw/smsbox.c, gw/wapbox.c, gwlib/cfg.def, gwlib/http.[ch], test/test_http.c,
       test/test_xmlrpc.c, doc/userguide/userguide.xml: applied patch that adds
