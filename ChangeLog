@@ -1,3 +1,8 @@
+2005-04-22  Stipe Tolj  <stolj@wapme.de>
+    * test/test_hmac.c: fixed compiler error of the automatic compilation test, 
+      due to usage of HMAC_CTX_cleanup, whereas geodude still runs an openssl 
+      version with the deprecated "old" HMAC_cleanup.
+      
 2005-04-21  Stipe Tolj  <stolj@wapme.de>
     * test/test_octstr_dump.c: added binary dump to file for files that contain
       hex values. Can be used to convert hex value blocks to binary files.

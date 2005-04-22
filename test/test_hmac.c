@@ -104,7 +104,7 @@ int main(int argc, char **argv)
     p = HMAC(EVP_sha1(), octstr_get_cstr(key), octstr_len(key), 
          octstr_get_cstr(data), octstr_len(data), 
          macbuf, &mac_len);
-    HMAC_CTX_cleanup(&ctx);
+    HMAC_cleanup(&ctx);
 #else
     macbuf[0] = 0;
     mac_len = 0;
