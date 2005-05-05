@@ -1,4 +1,7 @@
 2005-05-05  Alexander Malysh <amalysh at kannel.org>
+    * gwlib/gwlib.c: fixed segfault while shutdown when memcheck used.
+
+2005-05-05  Alexander Malysh <amalysh at kannel.org>
     * gwlib/dbpool.c: drop 'inline' from function declaration. They can't
       inlined anyway but produce errors with strict ansi compilers.
 
