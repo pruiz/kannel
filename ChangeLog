@@ -1,4 +1,8 @@
 2005-05-05  Alexander Malysh <amalysh at kannel.org>
+    * gwlib/dbpool.c: drop 'inline' from function declaration. They can't
+      inlined anyway but produce errors with strict ansi compilers.
+
+2005-05-05  Alexander Malysh <amalysh at kannel.org>
     * configure.in, configure: fixed openssl detection for Mac OS X.
 
 2005-04-22  Stipe Tolj  <stolj@wapme.de>

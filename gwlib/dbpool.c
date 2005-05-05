@@ -331,7 +331,7 @@ unsigned int dbpool_check(DBPool *p)
     return n;
 }
 
-int inline dbpool_conn_select(DBPoolConn *conn, const Octstr *sql, List *binds, List **result)
+int dbpool_conn_select(DBPoolConn *conn, const Octstr *sql, List *binds, List **result)
 {
     if (sql == NULL || conn == NULL)
         return -1;
@@ -342,7 +342,7 @@ int inline dbpool_conn_select(DBPoolConn *conn, const Octstr *sql, List *binds, 
     return conn->pool->db_ops->select(conn->conn, sql, binds, result);
 }
 
-int inline dbpool_conn_update(DBPoolConn *conn, const Octstr *sql, List *binds)
+int dbpool_conn_update(DBPoolConn *conn, const Octstr *sql, List *binds)
 {
     if (sql == NULL || conn == NULL)
         return -1;
