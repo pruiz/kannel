@@ -1,4 +1,7 @@
 2005-05-06  Alexander Malysh <amalysh at kannel.org>
+    * gw/smsc/smsc_at.c: build fixes for strict compillers.
+
+2005-05-06  Alexander Malysh <amalysh at kannel.org>
     *  gwlib/octstr.h: fixed compiler warnings for strict compilers (e.g. HP-UX).
 
 2005-05-05  Alexander Malysh <amalysh at kannel.org>

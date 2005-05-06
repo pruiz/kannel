@@ -113,7 +113,7 @@ static int at2_open_device1(PrivAT2data *privdata)
 }
 
 
-int	at2_open_device(PrivAT2data *privdata)
+static int	at2_open_device(PrivAT2data *privdata)
 {
     struct termios tios;
     int ret;
@@ -134,7 +134,9 @@ int	at2_open_device(PrivAT2data *privdata)
     tios.c_oflag &= ~ONLCR; /* no NL to CR-NL mapping outgoing */
     tios.c_iflag |= IGNPAR; /* ignore parity */
     tios.c_iflag &= ~INPCK;
+#if defined(CRTSCTS)
     tios.c_cflag |= CRTSCTS; /* enable hardware flow control */
+#endif
     tios.c_cc[VSUSP] = 0; /* otherwhise we can not send CTRL Z */
 
     /*
@@ -160,7 +162,7 @@ int	at2_open_device(PrivAT2data *privdata)
 }
 
 
-void at2_close_device(PrivAT2data *privdata)
+static void at2_close_device(PrivAT2data *privdata)
 {
     info(0, "AT2[%s]: closing device", octstr_get_cstr(privdata->name));
     close(privdata->fd);
@@ -173,7 +175,7 @@ void at2_close_device(PrivAT2data *privdata)
 }
 
 
-void at2_read_buffer(PrivAT2data *privdata)
+static void at2_read_buffer(PrivAT2data *privdata)
 {
     char buf[MAX_READ + 1];
     int ret;
@@ -215,7 +217,7 @@ void at2_read_buffer(PrivAT2data *privdata)
 }
 
 
-Octstr *at2_wait_line(PrivAT2data *privdata, time_t timeout, int gt_flag)
+static Octstr *at2_wait_line(PrivAT2data *privdata, time_t timeout, int gt_flag)
 {
     Octstr *line;
     time_t end_time;
@@ -238,7 +240,7 @@ Octstr *at2_wait_line(PrivAT2data *privdata, time_t timeout, int gt_flag)
 }
 
 
-Octstr *at2_read_line(PrivAT2data *privdata, int gt_flag)
+static Octstr *at2_read_line(PrivAT2data *privdata, int gt_flag)
 {
     int	eol;
     int gtloc;
@@ -301,7 +303,7 @@ Octstr *at2_read_line(PrivAT2data *privdata, int gt_flag)
 }
 
 
-int at2_write_line(PrivAT2data *privdata, char *line)
+static int at2_write_line(PrivAT2data *privdata, char *line)
 {
     int count;
     int s = 0;
@@ -339,7 +341,7 @@ int at2_write_line(PrivAT2data *privdata, char *line)
 }
 
 
-int at2_write_ctrlz(PrivAT2data *privdata)
+static int at2_write_ctrlz(PrivAT2data *privdata)
 {
     int s;
     char *ctrlz = "\032" ;
@@ -368,7 +370,7 @@ int at2_write_ctrlz(PrivAT2data *privdata)
 }
       
 
-int at2_write(PrivAT2data *privdata, char *line)
+static int at2_write(PrivAT2data *privdata, char *line)
 {
     int count, data_written = 0, write_count = 0;
     int s = 0;
@@ -401,7 +403,7 @@ int at2_write(PrivAT2data *privdata, char *line)
 }
 
 
-void at2_flush_buffer(PrivAT2data *privdata)
+static void at2_flush_buffer(PrivAT2data *privdata)
 {
     at2_read_buffer(privdata);
     octstr_destroy(privdata->ilb);
@@ -409,7 +411,7 @@ void at2_flush_buffer(PrivAT2data *privdata)
 }
 
 
-int	at2_init_device(PrivAT2data *privdata)
+static int	at2_init_device(PrivAT2data *privdata)
 {
     int ret;
     Octstr *setpin;
@@ -585,14 +587,14 @@ int	at2_init_device(PrivAT2data *privdata)
 }
 
 
-int at2_send_modem_command(PrivAT2data *privdata, char *cmd, time_t timeout, int gt_flag)
+static int at2_send_modem_command(PrivAT2data *privdata, char *cmd, time_t timeout, int gt_flag)
 {
     at2_write_line(privdata, cmd);
     return at2_wait_modem_command(privdata, timeout, gt_flag, NULL);
 }
 
 
-int at2_wait_modem_command(PrivAT2data *privdata, time_t timeout, int gt_flag, 
+static int at2_wait_modem_command(PrivAT2data *privdata, time_t timeout, int gt_flag, 
                            int *output)
 {
     Octstr *line = NULL;
@@ -740,7 +742,7 @@ end:
     return ret;
 }
 
-int at2_read_delete_message(PrivAT2data* privdata, int message_number)
+static int at2_read_delete_message(PrivAT2data* privdata, int message_number)
 {
     char cmd[20];
     int message_count = 0;
@@ -785,7 +787,7 @@ int at2_read_delete_message(PrivAT2data* privdata, int message_number)
  * Every notification is parsed and the messages are read (and deleted)
  * accordingly.
 */
-void at2_read_pending_incoming_messages(PrivAT2data* privdata)
+static void at2_read_pending_incoming_messages(PrivAT2data* privdata)
 {
     Octstr *current_storage = NULL;
 
@@ -926,7 +928,7 @@ static int at2_read_sms_memory(PrivAT2data* privdata)
 }
 
 
-int at2_check_sms_memory(PrivAT2data *privdata)
+static int at2_check_sms_memory(PrivAT2data *privdata)
 {
     long values[4]; /* array to put response data in */
     int pos; /* position of parser in data stream */
@@ -994,7 +996,7 @@ int at2_check_sms_memory(PrivAT2data *privdata)
 }
 
 
-void at2_set_speed(PrivAT2data *privdata, int bps)
+static void at2_set_speed(PrivAT2data *privdata, int bps)
 {
     struct termios tios;
     int ret;
@@ -1050,7 +1052,7 @@ void at2_set_speed(PrivAT2data *privdata, int bps)
 }
 
 
-void at2_device_thread(void *arg)
+static void at2_device_thread(void *arg)
 {
     SMSCConn *conn = arg;
     PrivAT2data	*privdata = conn->data;
@@ -1200,7 +1202,7 @@ reconnect:
 }
 
 
-int at2_shutdown_cb(SMSCConn *conn, int finish_sending)
+static int at2_shutdown_cb(SMSCConn *conn, int finish_sending)
 {
     PrivAT2data *privdata = conn->data;
 
@@ -1230,7 +1232,7 @@ int at2_shutdown_cb(SMSCConn *conn, int finish_sending)
 }
 
 
-long at2_queued_cb(SMSCConn *conn)
+static long at2_queued_cb(SMSCConn *conn)
 {
     long ret;
     PrivAT2data *privdata = conn->data;
@@ -1247,7 +1249,7 @@ long at2_queued_cb(SMSCConn *conn)
 }
 
 
-void at2_start_cb(SMSCConn *conn)
+static void at2_start_cb(SMSCConn *conn)
 {
     PrivAT2data *privdata = conn->data;
 
@@ -1259,7 +1261,7 @@ void at2_start_cb(SMSCConn *conn)
     debug("smsc.at2", 0, "AT2[%s]: start called", octstr_get_cstr(privdata->name));
 }
 
-int at2_add_msg_cb(SMSCConn *conn, Msg *sms)
+static int at2_add_msg_cb(SMSCConn *conn, Msg *sms)
 {
     PrivAT2data *privdata = conn->data;
     Msg *copy;
@@ -1384,7 +1386,7 @@ error:
 }
 
 
-int at2_pdu_extract(PrivAT2data *privdata, Octstr **pdu, Octstr *line)
+static int at2_pdu_extract(PrivAT2data *privdata, Octstr **pdu, Octstr *line)
 {
     Octstr *buffer;
     long len = 0;
@@ -1453,14 +1455,14 @@ nomsg:
 }
 
 
-int at2_hexchar(int hexc)
+static int at2_hexchar(int hexc)
 {
     hexc = toupper(hexc) - 48;
     return (hexc > 9) ? hexc - 7 : hexc;
 }
 
 
-Msg *at2_pdu_decode(Octstr *data, PrivAT2data *privdata)
+static Msg *at2_pdu_decode(Octstr *data, PrivAT2data *privdata)
 {
     int type;
     Msg *msg = NULL;
@@ -1485,7 +1487,7 @@ Msg *at2_pdu_decode(Octstr *data, PrivAT2data *privdata)
 }
 
 
-Msg *at2_pdu_decode_deliver_sm(Octstr *data, PrivAT2data *privdata)
+static Msg *at2_pdu_decode_deliver_sm(Octstr *data, PrivAT2data *privdata)
 {
     int len, pos, i, ntype;
     int udhi, dcs, udhlen, pid;
@@ -1675,7 +1677,7 @@ msg_error:
     return NULL;
 }
 
-Msg *at2_pdu_decode_report_sm(Octstr *data, PrivAT2data *privdata)
+static Msg *at2_pdu_decode_report_sm(Octstr *data, PrivAT2data *privdata)
 {
    Msg* dlrmsg = NULL;
    Octstr *pdu, *msg_id, *tmpstr = NULL, *receiver = NULL;
@@ -1782,7 +1784,7 @@ error:
     return dlrmsg;
 }
 
-Octstr *at2_convertpdu(Octstr *pdutext)
+static Octstr *at2_convertpdu(Octstr *pdutext)
 {
     Octstr *pdu;
     int i;
@@ -1800,7 +1802,7 @@ Octstr *at2_convertpdu(Octstr *pdutext)
 static int at2_rmask[8] = { 0, 1, 3, 7, 15, 31, 63, 127 };
 static int at2_lmask[8] = { 0, 128, 192, 224, 240, 248, 252, 254 };
 
-void at2_decode7bituncompressed(Octstr *input, int len, Octstr *decoded, int offset)
+static void at2_decode7bituncompressed(Octstr *input, int len, Octstr *decoded, int offset)
 {
     unsigned char septet, octet, prevoctet;
     int i;
@@ -1844,7 +1846,7 @@ void at2_decode7bituncompressed(Octstr *input, int len, Octstr *decoded, int off
 }
 
 
-void at2_send_messages(PrivAT2data *privdata)
+static void at2_send_messages(PrivAT2data *privdata)
 {
     Msg *msg;
 
@@ -1859,7 +1861,7 @@ void at2_send_messages(PrivAT2data *privdata)
 }
 
 
-void at2_send_one_message(PrivAT2data *privdata, Msg *msg)
+static void at2_send_one_message(PrivAT2data *privdata, Msg *msg)
 {
     unsigned char command[500];
     int ret = -1;
@@ -1953,7 +1955,7 @@ void at2_send_one_message(PrivAT2data *privdata, Msg *msg)
 }
 
 
-Octstr* at2_pdu_encode(Msg *msg, PrivAT2data *privdata)
+static Octstr* at2_pdu_encode(Msg *msg, PrivAT2data *privdata)
 {
     /*
      * Message coding is done as a binary octet string,
@@ -2097,7 +2099,7 @@ error:
 }
 
 
-Octstr* at2_encode7bituncompressed(Octstr *source, int offset)
+static Octstr* at2_encode7bituncompressed(Octstr *source, int offset)
 {
     int LSBmask[8] = { 0x00, 0x01, 0x03, 0x07, 0x0F, 0x1F, 0x3F, 0x7F };
     int MSBmask[8] = { 0x00, 0x40, 0x60, 0x70, 0x78, 0x7C, 0x7E, 0x7F };
@@ -2133,7 +2135,7 @@ Octstr* at2_encode7bituncompressed(Octstr *source, int offset)
 }
 
 
-Octstr* at2_encode8bituncompressed(Octstr *input)
+static Octstr* at2_encode8bituncompressed(Octstr *input)
 {
     int len, i;
     Octstr* out = octstr_create("");
@@ -2149,13 +2151,13 @@ Octstr* at2_encode8bituncompressed(Octstr *input)
 }
 
 
-int at2_numtext(int num)
+static int at2_numtext(int num)
 {
     return (num > 9) ? (num + 55) : (num + 48);
 }
 
 
-int at2_detect_speed(PrivAT2data *privdata)
+static int at2_detect_speed(PrivAT2data *privdata)
 {
     int i;
     int autospeeds[] = { 
@@ -2184,7 +2186,7 @@ int at2_detect_speed(PrivAT2data *privdata)
     return 0;
 }
 
-int at2_test_speed(PrivAT2data *privdata, long speed) {
+static int at2_test_speed(PrivAT2data *privdata, long speed) {
 
     int res;
 
@@ -2206,7 +2208,7 @@ int at2_test_speed(PrivAT2data *privdata, long speed) {
 }
 
 
-int at2_detect_modem_type(PrivAT2data *privdata)
+static int at2_detect_modem_type(PrivAT2data *privdata)
 {
     int res;
     ModemDef *modem;
@@ -2314,7 +2316,7 @@ int at2_detect_modem_type(PrivAT2data *privdata)
 }
 
 
-ModemDef *at2_read_modems(PrivAT2data *privdata, Octstr *file, Octstr *id, int idnumber)
+static ModemDef *at2_read_modems(PrivAT2data *privdata, Octstr *file, Octstr *id, int idnumber)
 {
 
     Cfg *cfg;
@@ -2429,7 +2431,7 @@ ModemDef *at2_read_modems(PrivAT2data *privdata, Octstr *file, Octstr *id, int i
 }
 
 
-void at2_destroy_modem(ModemDef *modem)
+static void at2_destroy_modem(ModemDef *modem)
 {
     if (modem != NULL) {
         O_DESTROY(modem->id);
@@ -2446,13 +2448,13 @@ void at2_destroy_modem(ModemDef *modem)
 }
 
 
-int swap_nibbles(unsigned char byte)
+static int swap_nibbles(unsigned char byte)
 {
     return ( ( byte & 15 ) * 10 ) + ( byte >> 4 );
 }
 
 
-Octstr* at2_format_address_field(Octstr* msisdn)
+static Octstr* at2_format_address_field(Octstr* msisdn)
 {
     int ntype = PNT_UNKNOWN;
     Octstr* out = octstr_create("");
@@ -2497,7 +2499,7 @@ Octstr* at2_format_address_field(Octstr* msisdn)
 }
 
 
-int at2_set_message_storage(PrivAT2data* privdata, Octstr* memory_name)
+static int at2_set_message_storage(PrivAT2data* privdata, Octstr* memory_name)
 {
     Octstr *temp;
     int ret;
@@ -2513,7 +2515,7 @@ int at2_set_message_storage(PrivAT2data* privdata, Octstr* memory_name)
 }
 
 
-const char *at2_error_string(int code)
+static const char *at2_error_string(int code)
 {
     switch (code) {
     case 8:
