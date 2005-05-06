@@ -123,7 +123,7 @@ void octstr_shutdown(void);
 Octstr *octstr_create_real(const char *cstr, const char *file, long line,
                            const char *func);
 #define octstr_create(cstr) \
-    gw_claim_area(octstr_create_real((cstr), __FILE__, __LINE__, __func__))
+    (Octstr*)gw_claim_area(octstr_create_real((cstr), __FILE__, __LINE__, __func__))
 
 /*
  * Create an octet string from arbitrary binary data. The length of the
@@ -132,9 +132,9 @@ Octstr *octstr_create_real(const char *cstr, const char *file, long line,
 Octstr *octstr_create_from_data_real(const char *data, long len, const char *file,
                                      long line, const char *func);
 #define octstr_create_from_data(data, len) \
-    gw_claim_area(octstr_create_from_data_real((data), (len), __FILE__, __LINE__, __func__))
+    (Octstr*)gw_claim_area(octstr_create_from_data_real((data), (len), __FILE__, __LINE__, __func__))
 #define octstr_create_from_data_trace(data, len, file, line, func) \
-    gw_claim_area(octstr_create_from_data_real(data, len, file, line, func))
+    (Octstr*)gw_claim_area(octstr_create_from_data_real(data, len, file, line, func))
 
 
 /*
