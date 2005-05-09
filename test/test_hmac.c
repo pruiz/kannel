@@ -78,6 +78,9 @@
 #include <openssl/hmac.h>
 #endif
 
+#ifndef EVP_MAX_MD_SIZE
+#define EVP_MAX_MD_SIZE 1
+#endif
 
 int main(int argc, char **argv)
 {

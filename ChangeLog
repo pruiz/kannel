@@ -1,3 +1,6 @@
+2005-05-09  Alexander Malysh <amalysh at kannel.org>
+    * test/test_hmac.c: fixed build error when no openssl available.
+
 2005-05-06  Alexander Malysh <amalysh at kannel.org>
     * gw/smsc/smsc_at.c: build fixes for strict compillers.
 
