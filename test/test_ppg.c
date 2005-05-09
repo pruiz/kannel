@@ -81,7 +81,6 @@ static long max_pushes = 1;
 static int verbose = 1,
            use_hardcoded = 0,
            num_urls = 0,
-           wait = 0,
            use_headers = 0,
            use_config = 0,
            accept_binary = 0, 
@@ -669,7 +668,7 @@ static void push_thread(void *arg)
             if (i >= max_pushes)
 	            goto receive_rest;
             start_push(caller, i);
-            if (wait)
+            if (wait_seconds > 0)
                 gwthread_sleep(wait_seconds);
             ++in_queue;
         }
@@ -811,7 +810,6 @@ int main(int argc, char **argv)
 	    break; 
             
 	    case 'i': 
-	        wait = 1;
                 wait_seconds = atof(optarg);
 	    break;
 
