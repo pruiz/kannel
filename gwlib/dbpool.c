@@ -80,7 +80,7 @@
 #include "dbpool_pgsql.c"
 
 
-static inline void dbpool_conn_destroy(DBPoolConn *conn)
+static void dbpool_conn_destroy(DBPoolConn *conn)
 {
     gw_assert(conn != NULL);
 

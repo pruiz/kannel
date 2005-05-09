@@ -1,4 +1,9 @@
 2005-05-09  Alexander Malysh <amalysh at kannel.org>
+    * gwlib/conn.c, gwlib/dbpool.c, gwlib/gw-prioqueue.c, gwlib/gwmem-check.c,
+      gwlib/http.c, wap/wtls_pdu.h: changes that to make ISO strict compilers
+      happy. Mostly: 'inline' -> '__inline'.
+
+2005-05-09  Alexander Malysh <amalysh at kannel.org>
     * test/test_ppg.c: killled wait variable and use wait_seconds instead.
 
 2005-05-09  Alexander Malysh <amalysh at kannel.org>

@@ -167,7 +167,7 @@ static void unlocked_register_pollout(Connection *conn, int onoff);
 #define unlock_out(conn) unlock_out_real(conn, __FILE__, __LINE__, __func__)
 
 /* Lock a Connection's read direction, if the Connection is unclaimed */
-static void inline lock_in(Connection *conn)
+static void __inline lock_in(Connection *conn)
 {
     gw_assert(conn != NULL);
 
@@ -178,7 +178,7 @@ static void inline lock_in(Connection *conn)
 }
 
 /* Unlock a Connection's read direction, if the Connection is unclaimed */
-static void inline unlock_in_real(Connection *conn, char *file, int line, const char *func)
+static void __inline unlock_in_real(Connection *conn, char *file, int line, const char *func)
 {
     int ret;
     gw_assert(conn != NULL);
@@ -192,7 +192,7 @@ static void inline unlock_in_real(Connection *conn, char *file, int line, const 
 }
 
 /* Lock a Connection's write direction, if the Connection is unclaimed */
-static void inline lock_out(Connection *conn)
+static void __inline lock_out(Connection *conn)
 {
     gw_assert(conn != NULL);
 
@@ -203,7 +203,7 @@ static void inline lock_out(Connection *conn)
 }
 
 /* Unlock a Connection's write direction, if the Connection is unclaimed */
-static void inline unlock_out_real(Connection *conn, char *file, int line, const char *func)
+static void __inline unlock_out_real(Connection *conn, char *file, int line, const char *func)
 {
     int ret;
     gw_assert(conn != NULL);
@@ -217,13 +217,13 @@ static void inline unlock_out_real(Connection *conn, char *file, int line, const
 }
 
 /* Return the number of bytes in the Connection's output buffer */
-static long inline unlocked_outbuf_len(Connection *conn)
+static long __inline unlocked_outbuf_len(Connection *conn)
 {
     return octstr_len(conn->outbuf) - conn->outbufpos;
 }
 
 /* Return the number of bytes in the Connection's input buffer */
-static long inline unlocked_inbuf_len(Connection *conn)
+static long __inline unlocked_inbuf_len(Connection *conn)
 {
     return octstr_len(conn->inbuf) - conn->inbufpos;
 }
@@ -1112,7 +1112,7 @@ Octstr *conn_read_withlen(Connection *conn)
     Octstr *result = NULL;
     unsigned char lengthbuf[4];
     long length;
-    int try;
+    int try, retry;
 
     lock_in(conn);
 
@@ -1120,19 +1120,21 @@ Octstr *conn_read_withlen(Connection *conn)
         if (try > 1)
             unlocked_read(conn);
 
-retry:
-        /* First get the length. */
-        if (unlocked_inbuf_len(conn) < 4)
-            continue;
+        do {
+            retry = 0;
+            /* First get the length. */
+            if (unlocked_inbuf_len(conn) < 4)
+                continue;
 
-        octstr_get_many_chars(lengthbuf, conn->inbuf, conn->inbufpos, 4);
-        length = decode_network_long(lengthbuf);
+            octstr_get_many_chars(lengthbuf, conn->inbuf, conn->inbufpos, 4);
+            length = decode_network_long(lengthbuf);
 
-        if (length < 0) {
-            warning(0, "conn_read_withlen: got negative length, skipping");
-            conn->inbufpos += 4;
-            goto retry;
-         }
+            if (length < 0) {
+                warning(0, "conn_read_withlen: got negative length, skipping");
+                conn->inbufpos += 4;
+                retry = 1;
+             }
+        } while(retry == 1);
 
         /* Then get the data. */
         if (unlocked_inbuf_len(conn) - 4 < length)

@@ -194,12 +194,12 @@ static long total_size;
 
 /* Static functions */
 
-static inline void lock(void)
+static ___inline void lock(void)
 {
     mutex_lock(&gwmem_lock);
 }
 
-static inline void unlock(void)
+static ___inline void unlock(void)
 {
     mutex_unlock(&gwmem_lock);
 }
@@ -251,7 +251,7 @@ static int untouched(unsigned char *p, size_t bytes, long pattern)
 }
 
 /* Fill the end marker for this area */
-static inline void endmark(unsigned char *p, size_t size)
+static ___inline void endmark(unsigned char *p, size_t size)
 {
     fill(p + size, MARKER_SIZE, END_MARK_PATTERN);
 }

@@ -303,7 +303,7 @@ typedef struct cert_verify {
 
 typedef struct hello_request
 {
-	/* nothing here */
+	int dummy; /* nothing here */
 } HelloRequest;
 
 typedef struct client_hello
@@ -369,7 +369,7 @@ typedef struct finished {
 
 typedef struct server_hello_done
 {
-	/* nothing here */
+	int dummy; /* nothing here */
 } ServerHelloDone;
 		
 typedef struct cc
