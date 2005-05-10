@@ -1111,7 +1111,7 @@ Octstr *conn_read_withlen(Connection *conn)
 {
     Octstr *result = NULL;
     unsigned char lengthbuf[4];
-    long length;
+    long length = 0; /* for compiler please */
     int try, retry;
 
     lock_in(conn);

@@ -91,8 +91,8 @@ int main(int argc, char **argv)
     if ((regexp = gw_regex_comp(re, REG_EXTENDED|REG_ICASE)) == NULL)
         panic(0, "regex compilation failed!");
 
-    debug("regex",0,"RE: regex <%s> has %d subexpressions.",
-          octstr_get_cstr(re), regexp->re_nsub);
+    debug("regex",0,"RE: regex <%s> has %ld subexpressions.",
+          octstr_get_cstr(re), (long)regexp->re_nsub);
 
     /* execute */
     rc = gw_regex_exec(regexp, os, REGEX_MAX_SUB_MATCH, &pmatch[0], 0);

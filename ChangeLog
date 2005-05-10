@@ -1,3 +1,8 @@
+2005-05-10  Alexander Malysh <amalysh at kannel.org>
+    * gw/smsc/smsc_ois.c, gwlib/gwmem-check.c, test/test_regex.c: fixed coompiler
+      warnings.
+    * gwlib/conn.c: fixed typo '___inline' that cause build to fail.
+
 2005-05-09  Alexander Malysh <amalysh at kannel.org>
     * gwlib/conn.c, gwlib/dbpool.c, gwlib/gw-prioqueue.c, gwlib/gwmem-check.c,
       gwlib/http.c, wap/wtls_pdu.h: changes that to make ISO strict compilers

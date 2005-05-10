@@ -194,12 +194,12 @@ static long total_size;
 
 /* Static functions */
 
-static ___inline void lock(void)
+static __inline void lock(void)
 {
     mutex_lock(&gwmem_lock);
 }
 
-static ___inline void unlock(void)
+static __inline void unlock(void)
 {
     mutex_unlock(&gwmem_lock);
 }
@@ -251,7 +251,7 @@ static int untouched(unsigned char *p, size_t bytes, long pattern)
 }
 
 /* Fill the end marker for this area */
-static ___inline void endmark(unsigned char *p, size_t size)
+static __inline void endmark(unsigned char *p, size_t size)
 {
     fill(p + size, MARKER_SIZE, END_MARK_PATTERN);
 }
@@ -522,7 +522,7 @@ void *gw_check_malloc(size_t size, const char *filename, long lineno,
 
     p = malloc(size + 2 * MARKER_SIZE);
     if (p == NULL)
-        panic(errno, "Memory allocation of %d bytes failed.", size);
+        panic(errno, "Memory allocation of %ld bytes failed.", (long)size);
     p += MARKER_SIZE;
 
     lock();

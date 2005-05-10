@@ -1582,7 +1582,7 @@ static int ois_extract_msg_from_buffer(char *str, SMSCenter *smsc)
     int len;
     int count;
 
-    SAY2(8, "ois_extract_msg_from_buffer buflen=%d", smsc->buflen);
+    SAY2(8, "ois_extract_msg_from_buffer buflen=%ld", (long)smsc->buflen);
 
     str[0] = '\0';
 
@@ -1645,7 +1645,7 @@ static int ois_extract_line_from_buffer(char *str, SMSCenter *smsc)
 {
     int len;
 
-    SAY2(3, "ois_extract_line_from_buffer buflen=%d", smsc->buflen);
+    SAY2(3, "ois_extract_line_from_buffer buflen=%ld", (long)smsc->buflen);
 
     str[0] = '\0';
 
