@@ -1,3 +1,7 @@
+2005-05-28  Alexander Malysh <amalysh at kannel.org>
+    * gw/bb_store.c: fixed bug tthat caused bearerbox to consume 100% cpu time.
+      Hopefully fixed #230 (see Mantis).
+
 2005-05-10  Alexander Malysh <amalysh at kannel.org>
     * gw/smsc/smsc_ois.c, gwlib/gwmem-check.c, test/test_regex.c: fixed coompiler
       warnings.

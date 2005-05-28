@@ -206,8 +206,8 @@ static void store_dumper(void *arg)
 	    /* make sure that no new dump is done for a while unless
 	     * something happens */
 	    last_dict_mod = time(NULL) + 3600*24;
-	    gwthread_sleep(dump_frequency);
 	}
+        gwthread_sleep(dump_frequency);
     }
     store_dump();
     if (file != NULL)
