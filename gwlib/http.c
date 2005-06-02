@@ -1002,88 +1002,90 @@ static void handle_transaction(Connection *conn, void *data)
     }
 
     while (trans->state != transaction_done) {
+        
         switch (trans->state) {
-        case connecting:
-            debug("gwlib.http", 0, "Get info about connecting socket");
-            if (conn_get_connect_result(trans->conn) != 0) {
-                debug("gwlib.http", 0, "Socket not connected");
-                goto error;
-            }
+        
+            case connecting:
+                debug("gwlib.http", 0, "Get info about connecting socket");
+                if (conn_get_connect_result(trans->conn) != 0) {
+                    debug("gwlib.http", 0, "Socket not connected");
+                    goto error;
+                }
 
-            if ((rc = send_request(trans)) == 0) {
-                trans->state = reading_status;
-            } else {
-                debug("gwlib.http",0,"Failed while sending request");
-                goto error;
-            }
+                if ((rc = send_request(trans)) == 0) {
+                    trans->state = reading_status;
+                } else {
+                    debug("gwlib.http",0,"Failed while sending request");
+                    goto error;
+                }
             break;
 
-	case reading_status:
-	    ret = client_read_status(trans);
-	    if (ret < 0) {
-		/*
-		 * Couldn't read the status from the socket. This may mean 
-		 * that the socket had been closed by the server after an 
-		 * idle timeout, so we close the connection and try again, 
-		 * opening a new socket, but only once.
-		 */
-		if (trans->retrying) {
-                    debug("gwlib.http",0,"Failed while retrying");
-		    goto error;
-		} else {
-                    conn_unregister(trans->conn);
-		    conn_destroy(trans->conn);
-		    trans->conn = NULL;
-		    trans->retrying = 1;
-		    trans->state = request_not_sent;
-		    gwlist_produce(pending_requests, trans);
-		    return;
-		}
-	    } else if (ret == 0) {
-		/* Got the status, go read headers and body next. */
-		trans->state = reading_entity;
-		trans->response =
-		    entity_create(response_expectation(trans->method, trans->status));
-	    } else
-		return;
-	    break;
+            case reading_status:
+                ret = client_read_status(trans);
+                if (ret < 0) {
+                    /*
+                     * Couldn't read the status from the socket. This may mean 
+                     * that the socket had been closed by the server after an 
+                     * idle timeout, so we close the connection and try again, 
+                     * opening a new socket, but only once.
+                     */
+                    if (trans->retrying) {
+                        debug("gwlib.http", 0, "Failed while retrying");
+                        goto error;
+                    } else {
+                        conn_unregister(trans->conn);
+                        conn_destroy(trans->conn);
+                        trans->conn = NULL;
+                        trans->retrying = 1;
+                        trans->state = request_not_sent;
+                        gwlist_produce(pending_requests, trans);
+                        return;
+                    }
+                } else if (ret == 0) {
+                    /* Got the status, go read headers and body next. */
+                    trans->state = reading_entity;
+                    trans->response = entity_create(
+                        response_expectation(trans->method, trans->status));
+                } else
+                    return;
+                break;
 	    
-	case reading_entity:
-	    ret = entity_read(trans->response, conn);
-	    if (ret < 0) {
-	        debug("gwlib.http",0,"Failed reading entity");
-	        goto error;
-	    } else if (ret == 0 && 
+            case reading_entity:
+                ret = entity_read(trans->response, conn);
+                if (ret < 0) {
+                    debug("gwlib.http", 0, "Failed reading entity");
+                    goto error;
+                } else if (ret == 0 && 
                     http_status_class(trans->status) == HTTP_STATUS_PROVISIONAL) {
-                /* This was a provisional reply; get the real one now. */
-                trans->state = reading_status;
-                entity_destroy(trans->response);
-                trans->response = NULL;
-            } else if (ret == 0) {
-                trans->state = transaction_done;
-
+                    /* This was a provisional reply; get the real one now. */
+                    trans->state = reading_status;
+                    entity_destroy(trans->response);
+                    trans->response = NULL;
+                } else if (ret == 0) {
+                    trans->state = transaction_done;
 #ifdef DUMP_RESPONSE
-                /* Dump the response */
-                debug("gwlib.http", 0, "HTTP: Received response:");
-                h = build_response(trans->response->headers, trans->response->body);
-                octstr_dump(h, 0);
-                octstr_destroy(h);
+                    /* Dump the response */
+                    debug("gwlib.http", 0, "HTTP: Received response:");
+                    h = build_response(trans->response->headers, trans->response->body);
+                    octstr_dump(h, 0);
+                    octstr_destroy(h);
 #endif
-	    } else {
-                return;
-            }
-	    break;
+                } else {
+                    return;
+                }
+                break;
 
-	default:
-	    panic(0, "Internal error: Invalid HTTPServer state.");
-	}
-    }
+            default:
+                panic(0, "Internal error: Invalid HTTPServer state.");
+        
+        } /* switch */
+    } /* while */
 
     conn_unregister(trans->conn);
 
     h = http_header_find_first(trans->response->headers, "Connection");
     if (h != NULL && octstr_compare(h, octstr_imm("close")) == 0)
-	trans->persistent = 0;
+        trans->persistent = 0;
     octstr_destroy(h);
 
 #ifdef USE_KEEPALIVE 

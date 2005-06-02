@@ -1,3 +1,6 @@
+2005-06-02  Stipe Tolj  <stolj@wapme.de>
+    * gwlib/http.c: some code styling within handle_transaction. No logic change.
+
 2005-05-28  Alexander Malysh <amalysh at kannel.org>
     * gw/bb_store.c: fixed bug tthat caused bearerbox to consume 100% cpu time.
       Hopefully fixed #230 (see Mantis).
