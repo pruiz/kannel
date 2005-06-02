@@ -331,7 +331,7 @@ static void poller(void *arg)
         ret = gwthread_poll(set->pollinfo, set->entries, set->timeout);
 
         if (ret < 0) {
-	    if (errno != EINTR) {
+            if (errno != EINTR) {
                 error(errno, "Poller: can't handle error; sleeping 1 second.");
                 gwthread_sleep(1.0);
             }
@@ -354,11 +354,10 @@ static void poller(void *arg)
         }
         set->scanning = 0;
 
-	if (set->deleted_entries > 0)
-	    remove_deleted_entries(set);
+    if (set->deleted_entries > 0)
+        remove_deleted_entries(set);
     }
 }
-
 
 
 FDSet *fdset_create_real(long timeout)
