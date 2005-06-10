@@ -733,7 +733,38 @@ case "$host" in
     EXE_EXT=".exe"
     ;;
   *apple-darwin*) 
-    CFLAGS="$CFLAGS -DDARWIN=1" 
+	#
+	# MacOS X
+	# lets try to find the newest installed SDK for compilation
+	# so we know how to link against it
+	# the standard location /usr/include and /usr/lib are not good enough
+	# it wouldnt build i386 architecture on a ppc system
+	#
+	DONE=0
+	SDK=""
+	for E in "MacOSX10.4u.sdk" "MacOSX10.4.0.sdk" "MacOSX10.3.9.sdk" "MacOSX10.3.0.sdk" "MacOSX10.2.8.sdk" "MacOSX10.1.5.sdk"
+  	do 
+  		if  [ "$DONE" = 0 ]
+  		then
+			if [ -d "/Developer/SDKs/${E}" ]
+			then
+				DONE="1"
+				SDK="${E}"
+			fi
+		fi
+	done
+	if [ "$SDK" = "MacOSX10.4u.sdk" ]
+	then
+		ARCH="-arch ppc -arch i386"
+		echo "building for PPC and i386 architecture on MacOS X"
+	fi
+	
+	if [ "$SDK" ]
+	then
+	    CFLAGS="$CFLAGS -DDARWIN=1 -L/Developer/SDKs/${SDK}/usr/lib -I/Developer/SDKs/${SDK}/usr/include ${ARCH}" 
+	else
+	    CFLAGS="$CFLAGS -DDARWIN=1" 
+	fi
     LIBTOOL="libtool -static -o" 
     ;;
   *-linux-*)

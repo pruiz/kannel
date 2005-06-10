@@ -17,7 +17,9 @@
 #include <time.h>
 
 #define UUID_STR_LEN 36
+#ifndef	DARWIN
 typedef unsigned char uuid_t[16];
+#endif
 
 /* UUID Variant definitions */
 #define UUID_VARIANT_NCS 	0
