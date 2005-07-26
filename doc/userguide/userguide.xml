@@ -7335,11 +7335,6 @@ trusted-pi = false
              If no dlr url is given with the wappush HTTP request (see below), use
              this one as default route for all push messages.
              </entry></row>
-             <row><entry><literal>ppg-smsbox-id</literal></entry>
-             <entry><emphasis>string</emphasis></entry>
-             <entry valign="bottom">
-             All ppg delivery reports are handled by this smsbox..
-             </entry></row>
              <row><entry><literal>service-name</literal></entry>
              <entry><emphasis>string</emphasis></entry>
              <entry valign="bottom">

@@ -1,3 +1,6 @@
+2005-07-26 Aarno Syvanen <as@gni.ch>
+   * doc/userguide/userguide.xml: Removed a duplicate
+
 2005-06-10  Andreas Fink <andreas@fink.org>
    * gwlib/gw_uuid.h: uuid_t doesnt need to be defined on MacOS X. New compiler dislikes it
      configure, configure.in: Build changes to correctly build on XCode 2.1
