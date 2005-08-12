@@ -1,3 +1,8 @@
+2005-08-12  Alexander Malysh <amalysh at kannel.org>
+   * gw/wap-appl.c, gw/wml_compiler.c: applied charset-NG patch that generalize charset handling
+     in the WAP stack. Thanks to Paul P Komkoff.
+     [Msg-Id: <20050602143346.GA28202@stingr.stingr.net>]
+
 2005-07-26 Aarno Syvanen <as@gni.ch>
    * doc/userguide/userguide.xml: Removed a duplicate
 

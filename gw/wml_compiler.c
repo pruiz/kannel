@@ -335,7 +335,6 @@ int wml_compile(Octstr *wml_text, Octstr *charset, Octstr **wml_binary,
     xmlDocPtr pDoc = NULL;
     char *wml_c_text;
     wml_binary_t *wbxml = NULL;
-    Octstr *encoding = NULL;
 
     *wml_binary = octstr_create("");
     wbxml = wml_binary_create();
@@ -347,63 +346,32 @@ int wml_compile(Octstr *wml_text, Octstr *charset, Octstr **wml_binary,
        -- tuo */
     parse_entities(wml_text);
 
-    /* transcode from charset to UTF-8 */
-    if (charset && octstr_len(charset) && 
-        octstr_case_compare(charset, octstr_imm("UTF-8")) == -1) {
-        debug("wml_compile", 0, "WML compiler: Transcoding from <%s> to UTF-8", 
-              octstr_get_cstr(charset));
-        set_charset(wml_text, charset);
-    }
-
-    /* 
-     * If we did not set the character set encoding yet, then obviously
-     * there was no charset argument in the Content-Type HTTP reply header.
-     * We have to scan the xml preamble line for an explicite encoding
-     * definition to allow transcoding from UTF-8 to that charset after 
-     * libxml2 did all it's parsing magic. (Keep in mind libxml2 uses UTF-8
-     * as internal encoding.) -- Stipe
-     */
-
-    /* 
-     * We will trust the xml preamble encoding more then the HTTP header 
-     * charset definition.
-     */
-    if ((encoding = find_charset_encoding(wml_text)) != NULL) {
-        /* ok, we rely on the xml preamble encoding */
-    } else if (charset && octstr_len(charset) > 0) {
-        /* we had a HTTP response charset, use this */
-        encoding = octstr_duplicate(charset);
-    } else {
-        /* we had none, so use UTF-8 as default */
-        encoding = octstr_create("UTF-8");
-    }
-
     size = octstr_len(wml_text);
     wml_c_text = octstr_get_cstr(wml_text);
+    debug("ww",0, "given encoding: %s", octstr_get_cstr(charset));
 
     if (octstr_search_char(wml_text, '\0', 0) != -1) {    
         error(0, "WML compiler: Compiling error: "
                  "\\0 character found in the middle of the WML source.");
         ret = -1;
     } else {
-
         /* 
          * An empty octet string for the binary output is created, the wml 
          * source is parsed into a parsing tree and the tree is then compiled 
          * into binary.
          */
 
-        pDoc = xmlParseMemory(wml_c_text, size);
+        pDoc = xmlReadMemory(wml_c_text, size, NULL, octstr_get_cstr(charset), XML_PARSE_RECOVER | XML_PARSE_NONET);
        
         if (pDoc != NULL) {
             /* 
              * If we have a set internal encoding, then apply this information 
              * to the XML parsing tree document for later transcoding ability.
              */
-            if (encoding)
-                pDoc->charset = xmlParseCharEncoding(octstr_get_cstr(encoding));
+            if (charset)
+                pDoc->charset = xmlParseCharEncoding(octstr_get_cstr(charset));
 
-            ret = parse_document(pDoc, encoding, &wbxml, version);
+            ret = parse_document(pDoc, charset, &wbxml, version);
             wml_binary_output(*wml_binary, wbxml);
         } else {    
             error(0, "WML compiler: Compiling error: "
@@ -413,7 +381,6 @@ int wml_compile(Octstr *wml_text, Octstr *charset, Octstr **wml_binary,
     }
 
     wml_binary_destroy(wbxml);
-    octstr_destroy(encoding);
 
     if (pDoc) 
         xmlFreeDoc(pDoc);
