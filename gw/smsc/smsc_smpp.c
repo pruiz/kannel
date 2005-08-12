@@ -1475,6 +1475,7 @@ static int do_queue_cleanup(SMPP *smpp, long *pending_submits, int action)
                         smpp_msg_destroy(smpp_msg, 0);
                         (*pending_submits)--;
                     }
+                    break;
                 default:
                     error(0, "SMPP[%s] Unknown clenup action defined %xd.",
                              octstr_get_cstr(smpp->conn->id), action);
