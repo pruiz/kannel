@@ -125,22 +125,22 @@ case "$host" in
 	SDK=""
 	for E in "MacOSX10.4u.sdk" "MacOSX10.4.0.sdk" "MacOSX10.3.9.sdk" "MacOSX10.3.0.sdk" "MacOSX10.2.8.sdk" "MacOSX10.1.5.sdk"
   	do 
-  		if  [ "$DONE" = 0 ]
+  		if  [[ "$DONE" = 0 ]]
   		then
-			if [ -d "/Developer/SDKs/${E}" ]
+			if [[ -d "/Developer/SDKs/${E}" ]]
 			then
 				DONE="1"
 				SDK="${E}"
 			fi
 		fi
 	done
-	if [ "$SDK" = "MacOSX10.4u.sdk" ]
+	if [[ "$SDK" = "MacOSX10.4u.sdk" ]]
 	then
 		ARCH="-arch ppc -arch i386"
 		echo "building for PPC and i386 architecture on MacOS X"
 	fi
 	
-	if [ "$SDK" ]
+	if [[ "$SDK" ]]
 	then
 	    CFLAGS="$CFLAGS -DDARWIN=1 -L/Developer/SDKs/${SDK}/usr/lib -I/Developer/SDKs/${SDK}/usr/include ${ARCH}" 
 	else
