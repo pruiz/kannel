@@ -78,6 +78,7 @@
 #include <libxml/tree.h>
 #include <libxml/debugXML.h>
 #include <libxml/encoding.h>
+#include <libxml/parser.h>
 
 #include "gwlib/gwlib.h"
 #include "wml_compiler.h"

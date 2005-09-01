@@ -1,3 +1,7 @@
+2005-09-01  Alexander Malysh <amalysh at kannel.org>
+   * gw/wap-appl.c: fixed compiler warning.
+   * gw/wml_compiler.c: added 'libxml/parser.h' to includes because it cause build to fail.
+
 2005-08-20 Andreas Fink <andreas@fink.org>
    * gwlib/soket.h fixed socklen_t double definition on MacOS X 10.4
    * configure.in fixed incorrect brackets

@@ -704,12 +704,13 @@ static void normalize_charset(struct content * content, List* device_headers)
 {
     Octstr* charset;
 
-    if ((charset = find_charset_encoding(content->body)) == NULL)
+    if ((charset = find_charset_encoding(content->body)) == NULL) {
         if (octstr_len(content->charset) > 0) {
             charset = octstr_duplicate(content->charset);
         } else {
             charset = octstr_imm("UTF-8");
         }
+    }
 
     debug("wap-appl",0,"Normalizing charset from %s", octstr_get_cstr(charset));
 
