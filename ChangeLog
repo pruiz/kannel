@@ -1,3 +1,6 @@
+2005-09-02  Alexander Malysh <amalysh at kannel.org>
+   * gw/smsc/smpp_pdu.c: fixed length for the NULterminated TLV.
+
 2005-09-01  Alexander Malysh <amalysh at kannel.org>
    * gw/wap-appl.c: fixed compiler warning.
    * gw/wml_compiler.c: added 'libxml/parser.h' to includes because it cause build to fail.

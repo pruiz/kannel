@@ -216,7 +216,7 @@ Octstr *smpp_pdu_pack(SMPP_PDU *pdu)
         }
     #define TLV_NULTERMINATED(name, max_len) \
         if (p->name != NULL) { \
-            TL(name, (octstr_len(p->name) > max_len ? max_len : octstr_len(p->name))); \
+            TL(name, (octstr_len(p->name) > max_len ? max_len : octstr_len(p->name) + 1)); \
             NULTERMINATED(name, max_len) \
         }
     #define TLV_OCTETS(name, min_len, max_len) \
