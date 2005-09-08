@@ -355,10 +355,10 @@ int main(void) {
 AC_MSG_RESULT(Cross compiling - assuming suuported) ; AC_DEFINE(HAVE_SEMAPHORE)])
 
 dnl Check if we have libxml2 installed and which version it is.
-dnl Kannel requires currently at least version 2.2.7 of libxml2.
+dnl Kannel requires currently at least version 2.6.0 of libxml2.
 
 AC_CONFIG_SECTION([Checking for libxml2 support])
-xml_ver_required="2.2.7"
+xml_ver_required="2.6.0"
 AC_PATH_PROGS(XML_CONFIG, xml2-config xml-config, no)
 if test "$XML_CONFIG" = "no"; then
   AC_MSG_ERROR([You MUST have the libxml2 (aka gnome-xml) library installed])

@@ -1,3 +1,10 @@
+2005-09-08  Stipe Tolj  <stolj@wapme-group.de>
+   * gw/wml_compiler.c: source styling, no logic change.
+   * configure[.in]: changed required version of libxml2 to 2.6.0 due to
+     applied Paul's patch to gw/wml_compiler.c. Solves compiler warnings
+     and errors. Fixing build bug reported by Jarrod Hermer <jarrod@mybeat.net>.
+     [Msg-Id: <20050908093728.B109C5A44@ctb-mesg1.saix.net>]
+    
 2005-09-02  Alexander Malysh <amalysh at kannel.org>
    * gw/smsc/smpp_pdu.c: fixed length for the NULterminated TLV.
 

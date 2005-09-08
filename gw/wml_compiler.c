@@ -362,7 +362,8 @@ int wml_compile(Octstr *wml_text, Octstr *charset, Octstr **wml_binary,
          * into binary.
          */
 
-        pDoc = xmlReadMemory(wml_c_text, size, NULL, octstr_get_cstr(charset), XML_PARSE_RECOVER | XML_PARSE_NONET);
+        pDoc = xmlReadMemory(wml_c_text, size, NULL, octstr_get_cstr(charset), 
+                             XML_PARSE_RECOVER | XML_PARSE_NONET);
        
         if (pDoc != NULL) {
             /* 
