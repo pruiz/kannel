@@ -1916,14 +1916,51 @@ static void at2_send_one_message(PrivAT2data *privdata, Msg *msg)
 
             if (ret != 1) /* > only! */
                 continue;
+                
             /* 
-             * ok the > has been see now so we can send the PDU now and a 
+             * Ok the > has been see now so we can send the PDU now and a 
              * control Z but no CR or LF 
+             * 
+             * We will handle the 'nokiaphone' types a bit differently, since
+             * they have a generic error in accepting PDUs that are "too big".
+             * Which means, PDU that are longer then 18 bytes get truncated by
+             * the phone modems. We'll buffer the PDU output in a loop.
+             * All other types will get handled as used to be.
              */
-            sprintf(command, "%s%s", sc, octstr_get_cstr(pdu));
-            at2_write(privdata, command);
-            at2_write_ctrlz(privdata);
 
+            if (octstr_compare(privdata->modem->id, octstr_imm("nokiaphone")) != 0) {           
+            
+                sprintf(command, "%s%s", sc, octstr_get_cstr(pdu));
+                at2_write(privdata, command);
+                at2_write_ctrlz(privdata);
+            
+            } else {
+            
+                /* include the CTRL-Z in the PDU string */
+                sprintf(command, "%s%s%c", sc, octstr_get_cstr(pdu), 0x1A);
+       
+                /* chop PDU into 18-byte-at-a-time pieces to prevent choking 
+                 * of certain GSM Phones (e.g. Nokia 6310, 6230 etc.) */
+                if (strlen(command) > 18) {
+                    unsigned char chop[20];
+                    int len = strlen(command);
+                    int pos = 0;
+                    int ret = 18;
+
+                    while (pos < len) {
+                        if (pos + ret > len)
+                            ret = len - pos;
+                        memcpy(chop, command + pos, ret);
+                        pos += ret;
+                        chop[ret] = '\0';
+                        at2_write(privdata, chop);
+                        gwthread_sleep((double) 10/1000);
+                    }
+                } else {
+                    at2_write(privdata, command);
+                }
+            }               
+                
             /* wait 20 secs for modem command */
             ret = at2_wait_modem_command(privdata, 20, 0, &msg_id);
             debug("bb.smsc.at2", 0, "AT2[%s]: send command status: %d",

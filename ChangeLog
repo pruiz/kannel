@@ -1,4 +1,12 @@
 2005-09-14  Stipe Tolj  <stolj@wapme-group.de>
+   * gw/smsc/smsc_at.c: fixing a bug for 'nokiaphone' GSM modem types, where
+     PDUs longer then 18 bytes get truncated by the device if passed too fast.
+     We pass the PDU now in 18 byte chunks and delay to smoothly allow the
+     device to parse this. This is know for the Nokia phone GSM types.
+     Thanks to Ulrich Petri <upml@upcd.de> for the fix and patch.
+     [Msg-Id: <4326E76A.3040902@upcd.de>]
+
+2005-09-14  Stipe Tolj  <stolj@wapme-group.de>
    * gw/smsc/smsc_at.c: minor change in at_wait_modem_command to display the 
      sscanf() parsed error code string lateral only if we really found a int
      in the string returned from the device. No logic change. 
