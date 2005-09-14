@@ -1,3 +1,10 @@
+2005-09-14  Stipe Tolj  <stolj@wapme-group.de>
+   * gw/smsc/smsc_at.c: minor change in at_wait_modem_command to display the 
+     sscanf() parsed error code string lateral only if we really found a int
+     in the string returned from the device. No logic change. 
+     Thanks to Alex Judd <kannel@skywire.co.uk> for this hint.
+     [Msg-Id: <4326F4EB.5070302@skywire.co.uk>]
+     
 2005-09-08  Stipe Tolj  <stolj@wapme-group.de>
    * gw/wml_compiler.c: source styling, no logic change.
    * configure[.in]: changed required version of libxml2 to 2.6.0 due to

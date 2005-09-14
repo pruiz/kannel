@@ -595,7 +595,7 @@ static int at2_send_modem_command(PrivAT2data *privdata, char *cmd, time_t timeo
 
 
 static int at2_wait_modem_command(PrivAT2data *privdata, time_t timeout, int gt_flag, 
-                           int *output)
+                                  int *output)
 {
     Octstr *line = NULL;
     Octstr *line2 = NULL;
@@ -615,10 +615,10 @@ static int at2_wait_modem_command(PrivAT2data *privdata, time_t timeout, int gt_
     if (privdata->lines != NULL)
         octstr_destroy(privdata->lines);
     privdata->lines = octstr_create("");
+    
     while (time(&cur_time) <= end_time) {
         O_DESTROY(line);
-        line = at2_read_line(privdata, gt_flag);
-        if (line) {
+        if (line = at2_read_line(privdata, gt_flag)) {
             octstr_append(privdata->lines, line);
             octstr_append_cstr(privdata->lines, "\n");
 
@@ -642,27 +642,30 @@ static int at2_wait_modem_command(PrivAT2data *privdata, time_t timeout, int gt_
                 privdata->pin_ready = 1;
                 continue;
             }
-            if ( -1 != octstr_search(line, octstr_imm("+CMS ERROR"), 0)) {
+            if (octstr_search(line, octstr_imm("+CMS ERROR"), 0) != -1) {
                 int errcode;
-                sscanf(octstr_get_cstr(line), "+CMS ERROR: %d", &errcode);
-                error(0, "AT2[%s]: CMS ERROR: %s (%s)", octstr_get_cstr(privdata->name), 
-                      octstr_get_cstr(line), at2_error_string(errcode));
+                error(0, "AT2[%s]: CMS ERROR: %s", octstr_get_cstr(privdata->name), 
+                      octstr_get_cstr(line));
+                if (sscanf(octstr_get_cstr(line), "+CMS ERROR: %d", &errcode) == 1)
+                    error(0, "AT2[%s]: CMS ERROR: %s (%d)", octstr_get_cstr(privdata->name), 
+                          at2_error_string(errcode), errcode);
                 ret = 1;
                 goto end;
             }
             if (octstr_search(line, octstr_imm("+CMTI:"), 0) != -1 || 
                 octstr_search(line, octstr_imm("+CDSI:"), 0) != -1) {
-		/*
-		   we received an incoming message indication
-		   put it in the pending_incoming_messages queue for later retrieval
-		*/
-                debug("bb.smsc.at2", 0, "AT2[%s]: +CMTI incoming SMS indication: %s", octstr_get_cstr(privdata->name), octstr_get_cstr(line));
+                /* 
+                 * we received an incoming message indication
+                 * put it in the pending_incoming_messages queue for later retrieval 
+                 */
+                debug("bb.smsc.at2", 0, "AT2[%s]: +CMTI incoming SMS indication: %s", 
+                      octstr_get_cstr(privdata->name), octstr_get_cstr(line));
                 gwlist_append(privdata->pending_incoming_messages, line);
                 line = NULL;
                 continue;
             }
             if (octstr_search(line, octstr_imm("+CMT:"), 0) != -1 ||
-		octstr_search(line, octstr_imm("+CDS:"), 0) != -1 ||
+                octstr_search(line, octstr_imm("+CDS:"), 0) != -1 ||
                 ((octstr_search(line, octstr_imm("+CMGR:"), 0) != -1) && (cmgr_flag = 1)) ) {
                 line2 = at2_wait_line(privdata, 1, 0);
 
@@ -702,19 +705,25 @@ static int at2_wait_modem_command(PrivAT2data *privdata, time_t timeout, int gt_
                 continue;
             }
             if ((octstr_search(line, octstr_imm("+CMGS:"),0) != -1) && (output)) {
-		/* found response to a +CMGS command, read the message id and return it in output */
-		long temp;
-		if (octstr_parse_long(&temp, line, octstr_search(line, octstr_imm("+CMGS:"),0)+6,10) == -1)
-		    error(0,"AT2[%s]: got +CMGS but failed to read message id", octstr_get_cstr(privdata->name));
-		else
-		    *output = temp;
+                /* 
+                 * found response to a +CMGS command, read the message id 
+                 * and return it in output 
+                 */
+                long temp;
+                if (octstr_parse_long(&temp, line, octstr_search(line, octstr_imm("+CMGS:"), 0) + 6, 10) == -1)
+                    error(0, "AT2[%s]: Got +CMGS but failed to read message id", 
+                          octstr_get_cstr(privdata->name));
+                else
+                    *output = temp;
             }
-
-            if ( -1 != octstr_search(line, octstr_imm("ERROR"), 0)) {
+            /* finally check if we received a generic error */
+            if (octstr_search(line, octstr_imm("ERROR"), 0) != -1) {
                 int errcode;
-                sscanf(octstr_get_cstr(line), "ERROR: %d", &errcode);
-                error(0, "AT2[%s]: Error occurs: %s: %s (%d)", octstr_get_cstr(privdata->name),
-                      octstr_get_cstr(line), at2_error_string(errcode), errcode);
+                error(0, "AT2[%s]: Generic error: %s", octstr_get_cstr(privdata->name),
+                      octstr_get_cstr(line));
+                if (sscanf(octstr_get_cstr(line), "ERROR: %d", &errcode) == 1)
+                    error(0, "AT2[%s]: Generic error: %s (%d)", octstr_get_cstr(privdata->name), 
+                          at2_error_string(errcode), errcode);
                 ret = -1;
                 goto end;
             }
@@ -2661,7 +2670,7 @@ static const char *at2_error_string(int code)
     case 512:
         return "User abort";
     default:
-        return "error number not known to us. ask google and add it.";
+        return "Error number unknown. Ask google and add it.";
     }
 }
 
