@@ -92,6 +92,7 @@
 #include "dlr.h"
 #include "smsc_at.h"
 
+
 static int at2_open_device1(PrivAT2data *privdata)
 {
     info(0, "AT2[%s]: opening device", octstr_get_cstr(privdata->name));
@@ -100,8 +101,17 @@ static int at2_open_device1(PrivAT2data *privdata)
                  octstr_get_cstr(privdata->name));
         at2_close_device(privdata);
     }
-    privdata->fd = open(octstr_get_cstr(privdata->device), 
-                        O_RDWR | O_NONBLOCK | O_NOCTTY);
+    if (privdata->is_serial) {
+        privdata->fd = open(octstr_get_cstr(privdata->device),
+                            O_RDWR | O_NONBLOCK | O_NOCTTY);
+    } else {
+        if (octstr_str_compare(privdata->device, "rawtcp") == 0) {
+            privdata->fd = tcpip_connect_to_server(octstr_get_cstr(privdata->rawtcp_host),
+                                                   privdata->rawtcp_port, NULL); 
+        } else {
+            gw_assert(0);
+        }
+    }
     if (privdata->fd == -1) {
         error(errno, "AT2[%s]: open failed! ERRNO=%d", octstr_get_cstr(privdata->name), errno);
         privdata->fd = -1;
@@ -113,7 +123,7 @@ static int at2_open_device1(PrivAT2data *privdata)
 }
 
 
-static int	at2_open_device(PrivAT2data *privdata)
+static int at2_open_device(PrivAT2data *privdata)
 {
     struct termios tios;
     int ret;
@@ -121,6 +131,9 @@ static int	at2_open_device(PrivAT2data *privdata)
     if ((ret = at2_open_device1(privdata)) != 0)
         return ret;
 
+    if (!privdata->is_serial)
+        return 0;
+        
     tcgetattr(privdata->fd, &tios);
 
     kannel_cfmakeraw(&tios);
@@ -207,9 +220,8 @@ static void at2_read_buffer(PrivAT2data *privdata)
         return;
     }
 
-    if (ret == 0) {
+    if (ret == 0)
         return;
-    }
 
     s = read(privdata->fd, buf, count);
     if (s > 0)
@@ -269,7 +281,7 @@ static Octstr *at2_read_line(PrivAT2data *privdata, int gt_flag)
 
     eol = octstr_search_char(privdata->ilb, '\r', 0); /* looking for CR */
 
-    if ( (gtloc != -1) && ( (eol == -1) || (eol > gtloc) ) )
+    if ((gtloc != -1) && ((eol == -1) || (eol > gtloc)))
         eol = gtloc;
 
     if (eol == -1)
@@ -316,17 +328,18 @@ static int at2_write_line(PrivAT2data *privdata, char *line)
 
     count = octstr_len(linestr);
     while (count > data_written) {
-	errno = 0;
-	s = write(privdata->fd, octstr_get_cstr(linestr) + data_written, count - data_written);
-	if (s < 0 && errno == EAGAIN && write_count < RETRY_SEND) {
-	    gwthread_sleep(1);
-	    ++write_count;
+        errno = 0;
+        s = write(privdata->fd, octstr_get_cstr(linestr) + data_written, 
+                  count - data_written);
+        if (s < 0 && errno == EAGAIN && write_count < RETRY_SEND) {
+            gwthread_sleep(1);
+            ++write_count;
         } else if (s > 0) {
             data_written += s;
             write_count = 0;
-	} else
-	    break;
-    };
+        } else
+            break;
+    }
     O_DESTROY(linestr);
     if (s < 0) {
         error(errno, "AT2[%s]: Couldnot write to device.", 
@@ -349,14 +362,14 @@ static int at2_write_ctrlz(PrivAT2data *privdata)
     
     debug("bb.smsc.at2", 0, "AT2[%s]: --> ^Z", octstr_get_cstr(privdata->name));
     while (1) {
-	errno = 0;
-	s = write(privdata->fd, ctrlz, 1);
-	if (s < 0 && errno == EAGAIN && write_count < RETRY_SEND) {
-	    gwthread_sleep(1);
-	    ++write_count;
-	} else
-	    break;
-    };
+        errno = 0;
+        s = write(privdata->fd, ctrlz, 1);
+        if (s < 0 && errno == EAGAIN && write_count < RETRY_SEND) {
+            gwthread_sleep(1);
+            ++write_count;
+        } else
+            break;
+    }
     if (s < 0) {
         error(errno, "AT2[%s]: Couldnot write to device.", 
               octstr_get_cstr(privdata->name));
@@ -411,7 +424,7 @@ static void at2_flush_buffer(PrivAT2data *privdata)
 }
 
 
-static int	at2_init_device(PrivAT2data *privdata)
+static int at2_init_device(PrivAT2data *privdata)
 {
     int ret;
     Octstr *setpin;
@@ -751,6 +764,7 @@ end:
     return ret;
 }
 
+
 static int at2_read_delete_message(PrivAT2data* privdata, int message_number)
 {
     char cmd[20];
@@ -760,15 +774,15 @@ static int at2_read_delete_message(PrivAT2data* privdata, int message_number)
     /* read one message from memory */
     at2_write_line(privdata, cmd);
     if (at2_wait_modem_command(privdata, 0, 0, &message_count) != 0) {
-	debug("bb.smsc.at2", 0, "AT2[%s]: failed to get message %d.", 
-	    octstr_get_cstr(privdata->name), message_number);
+        debug("bb.smsc.at2", 0, "AT2[%s]: failed to get message %d.", 
+              octstr_get_cstr(privdata->name), message_number);
         return 0; /* failed to read the message - skip to next message */
     }
 
     /* no need to delete if no message collected */
     if (!message_count) { 
-	debug("bb.smsc.at2", 0, "AT2[%s]: not deleted.", 
-	    octstr_get_cstr(privdata->name));
+        debug("bb.smsc.at2", 0, "AT2[%s]: not deleted.", 
+              octstr_get_cstr(privdata->name));
         return 0;
     }
 
@@ -790,13 +804,14 @@ static int at2_read_delete_message(PrivAT2data* privdata, int message_number)
     return 1;
 }
 
+
 /*
  * This function loops through the pending_incoming_messages queue for CMTI
  * notifications.
  * Every notification is parsed and the messages are read (and deleted)
  * accordingly.
 */
-static void at2_read_pending_incoming_messages(PrivAT2data* privdata)
+static void at2_read_pending_incoming_messages(PrivAT2data *privdata)
 {
     Octstr *current_storage = NULL;
 
@@ -809,14 +824,14 @@ static void at2_read_pending_incoming_messages(PrivAT2data* privdata)
         Octstr *cmti_storage = NULL, *line = NULL;
         
         line = gwlist_extract_first(privdata->pending_incoming_messages);
-	/* message memory starts after the first quote in the string */
+        /* message memory starts after the first quote in the string */
         if ((pos = octstr_search_char(line, '"', 0)) != -1) {
             /* grab memory storage name */
             int next_quote = octstr_search_char(line, '"', ++pos);
             if (next_quote == -1) { /* no second qoute - this line must be broken somehow */
                 O_DESTROY(line);
                 continue;
-	    }
+            }
 
             /* store notification storage location for reference */
             cmti_storage = octstr_copy(line, pos, next_quote - pos);
@@ -828,52 +843,54 @@ static void at2_read_pending_incoming_messages(PrivAT2data* privdata)
         /* if no message storage is set in configuration - set now */
         if (!privdata->modem->message_storage && cmti_storage) { 
             info(2, "AT2[%s]: CMTI received, but no message-storage is set in confiuration."
-                "setting now to <%s>", octstr_get_cstr(privdata->name), octstr_get_cstr(cmti_storage));
+                 "setting now to <%s>", octstr_get_cstr(privdata->name), octstr_get_cstr(cmti_storage));
             privdata->modem->message_storage = octstr_duplicate(cmti_storage);
             current_storage = octstr_duplicate(cmti_storage);
             at2_set_message_storage(privdata, cmti_storage);
-	}
+        }
 
         /* find the message id from the line, which should appear after the first comma */
         if ((pos = octstr_search_char(line, ',', pos)) == -1) { /* this CMTI notification is probably broken */
             error(2, "AT2[%s]: failed to find memory location in CMTI notification",
-                octstr_get_cstr(privdata->name));
-		O_DESTROY(line);
-		octstr_destroy(cmti_storage);
+                  octstr_get_cstr(privdata->name));
+            O_DESTROY(line);
+            octstr_destroy(cmti_storage);
             continue;
         }
 
         if ((pos = octstr_parse_long(&location, line, ++pos, 10)) == -1) {
             /* there was an error parsing the message id. next! */
             error(2, "AT2[%s]: error parsing memory location in CMTI notification",
-                octstr_get_cstr(privdata->name));
-		O_DESTROY(line);
-		octstr_destroy(cmti_storage);
+                  octstr_get_cstr(privdata->name));
+            O_DESTROY(line);
+            octstr_destroy(cmti_storage);
             continue;
         }
 
         /* check if we need to change storage location before issuing the read command */
         if (!current_storage || (octstr_compare(current_storage, cmti_storage) != 0)) {
-	    octstr_destroy(current_storage);
-	    current_storage = octstr_duplicate(cmti_storage);
+            octstr_destroy(current_storage);
+            current_storage = octstr_duplicate(cmti_storage);
             at2_set_message_storage(privdata, cmti_storage);
-	}
+        }
         
         if (!at2_read_delete_message(privdata, location)) {
-            error(1,"AT2[%s]: CMTI notification received, but no message found in memory!",
-                octstr_get_cstr(privdata->name));
+            error(1, "AT2[%s]: CMTI notification received, but no message found in memory!",
+                  octstr_get_cstr(privdata->name));
         }
-
         
         octstr_destroy(line);
         octstr_destroy(cmti_storage);
     }
+    
     /* set prefered message storage back to what configured */
-    if (current_storage && privdata->modem->message_storage && (octstr_compare(privdata->modem->message_storage, current_storage) != 0))
-	at2_set_message_storage(privdata, privdata->modem->message_storage);
+    if (current_storage && privdata->modem->message_storage 
+        && (octstr_compare(privdata->modem->message_storage, current_storage) != 0))
+        at2_set_message_storage(privdata, privdata->modem->message_storage);
 
     octstr_destroy(current_storage);
 }
+
 
 static int at2_read_sms_memory(PrivAT2data* privdata)
 {
@@ -919,17 +936,18 @@ static int at2_read_sms_memory(PrivAT2data* privdata)
          * loop till end of memory or collected enouch messages
          */
         for (i = 1; i <= privdata->sms_memory_capacity &&
-            message_count < privdata->sms_memory_usage; ++i) { 
+             message_count < privdata->sms_memory_usage; ++i) { 
 
-	    /* if (meanwhile) there are pending CMTI notifications, process these first
-	     * to not let CMTI and sim buffering sit in each others way */
-	    while (gwlist_len(privdata->pending_incoming_messages) > 0) {
-		    at2_read_pending_incoming_messages(privdata);
-	    }
-	    /* read the message and delete it */
+            /* if (meanwhile) there are pending CMTI notifications, process these first
+             * to not let CMTI and sim buffering sit in each others way */
+            while (gwlist_len(privdata->pending_incoming_messages) > 0) {
+                at2_read_pending_incoming_messages(privdata);
+            }
+            /* read the message and delete it */
             message_count += at2_read_delete_message(privdata, i);
         }
     }
+    
     /*
     at2_send_modem_command(privdata, ModemTypes[privdata->modemid].init1, 0, 0);
     */
@@ -942,7 +960,7 @@ static int at2_check_sms_memory(PrivAT2data *privdata)
     long values[4]; /* array to put response data in */
     int pos; /* position of parser in data stream */
     int ret;
-    Octstr* search_cpms = NULL;
+    Octstr *search_cpms = NULL;
 
     /* select memory type and get report */
     if ((ret = at2_send_modem_command(privdata, "AT+CPMS?", 0, 0)) != 0) { 
@@ -1011,43 +1029,47 @@ static void at2_set_speed(PrivAT2data *privdata, int bps)
     int ret;
     int	speed;
 
+    if (!privdata->is_serial)
+        return;
+
     tcgetattr(privdata->fd, &tios);
 
     switch (bps) {
-    case 300:
-        speed = B300;
-        break;
-    case 1200:
-        speed = B1200;
-        break;
-    case 2400:
-        speed = B2400;
-        break;
-    case 4800:
-        speed = B4800;
-        break;
-    case 9600:
-        speed = B9600;
-        break;
-    case 19200:
-        speed = B19200;
-        break;
-    case 38400:
-        speed = B38400;
-        break;
+        case 300:
+            speed = B300;
+            break;
+        case 1200:
+            speed = B1200;
+            break;
+        case 2400:
+            speed = B2400;
+            break;
+        case 4800:
+            speed = B4800;
+            break;
+        case 9600:
+            speed = B9600;
+            break;
+        case 19200:
+            speed = B19200;
+            break;
+        case 38400:
+            speed = B38400;
+            break;
 #ifdef B57600
-    case 57600:
-        speed = B57600;
-        break;
+        case 57600:
+            speed = B57600;
+            break;
 #endif
 #ifdef B115200
-    case 115200:
-        speed = B115200;
-        break;
+        case 115200:
+            speed = B115200;
+            break;
 #endif
-    default:
-        speed = B9600;
+        default:
+            speed = B9600;
     }
+    
     cfsetospeed(&tios, speed);
     cfsetispeed(&tios, speed);
     ret = tcsetattr(privdata->fd, TCSANOW, &tios); /* apply changes now */
@@ -1088,20 +1110,19 @@ reconnect:
         }
 
         /* If modems->speed is defined, try to use it, else autodetect */
-        if (privdata->speed == 0 && privdata->modem != NULL && 
-	    privdata->modem->speed != 0) {
+        if (privdata->speed == 0 && privdata->modem != NULL && privdata->modem->speed != 0) {
 
-	    info(0, "AT2[%s]: trying to use speed <%ld> from modem definition",
-	         octstr_get_cstr(privdata->name), privdata->modem->speed);
-	    if(0 == at2_test_speed(privdata, privdata->modem->speed)) { 
-		privdata->speed = privdata->modem->speed;
-		info(0, "AT2[%s]: speed is %ld", 
-		     octstr_get_cstr(privdata->name), privdata->speed);
-	    } else {
-		info(0, "AT2[%s]: speed in modem definition don't work, will autodetect", 
-		     octstr_get_cstr(privdata->name));
-	    }
-	}
+            info(0, "AT2[%s]: trying to use speed <%ld> from modem definition",
+                 octstr_get_cstr(privdata->name), privdata->modem->speed);
+            if (at2_test_speed(privdata, privdata->modem->speed) == 0) { 
+                privdata->speed = privdata->modem->speed;
+            	info(0, "AT2[%s]: speed is %ld", 
+                     octstr_get_cstr(privdata->name), privdata->speed);
+            } else {
+                info(0, "AT2[%s]: speed in modem definition don't work, will autodetect", 
+                     octstr_get_cstr(privdata->name));
+            }
+        }
 
         if (privdata->speed == 0 && at2_detect_speed(privdata) == -1) {
             continue;
@@ -1117,16 +1138,15 @@ reconnect:
             continue;
         }
 
-        if (privdata->max_error_count > 0 && error_count > privdata->max_error_count &&
-             privdata->modem != NULL && privdata->modem->reset_string != NULL) {
+        if (privdata->max_error_count > 0 && error_count > privdata->max_error_count 
+            && privdata->modem != NULL && privdata->modem->reset_string != NULL) {
             error_count = 0;
             if (at2_send_modem_command(privdata,
                  octstr_get_cstr(privdata->modem->reset_string), 0, 0) != 0) {
                 error(0, "AT2[%s]: Reset of modem failed.", octstr_get_cstr(privdata->name));
                 at2_close_device(privdata);
                 continue;
-            }
-            else {
+            } else {
                 info(0, "AT2[%s]: Modem reseted.", octstr_get_cstr(privdata->name));
             }
         }
@@ -1136,8 +1156,7 @@ reconnect:
             at2_close_device(privdata);
             error_count++;
             continue;
-        }
-        else
+        } else
             error_count = 0;
 
         /* If we got here, then the device is opened */
@@ -1159,9 +1178,9 @@ reconnect:
         } else
             at2_wait_modem_command(privdata, 1, 0, NULL);
 
-	while (gwlist_len(privdata->pending_incoming_messages) > 0) {
-		at2_read_pending_incoming_messages(privdata);
-	}
+        while (gwlist_len(privdata->pending_incoming_messages) > 0) {
+            at2_read_pending_incoming_messages(privdata);
+        }
 
         if (privdata->keepalive &&
             idle_timeout + privdata->keepalive < time(NULL)) {
@@ -1247,12 +1266,11 @@ static long at2_queued_cb(SMSCConn *conn)
     PrivAT2data *privdata = conn->data;
 
     if (conn->status == SMSCCONN_DEAD) /* I'm dead, why would you care ? */
-	return -1;
+        return -1;
 
     ret = gw_prioqueue_len(privdata->outgoing_queue);
 
     /* use internal queue as load, maybe something else later */
-
     conn->load = ret;
     return ret;
 }
@@ -1286,6 +1304,7 @@ int smsc_at2_create(SMSCConn *conn, CfgGroup *cfg)
 {
     PrivAT2data	*privdata;
     Octstr *modem_type_string;
+    long portno;   /* has to be long because of cfg_get_integer */
 
     privdata = gw_malloc(sizeof(PrivAT2data));
     privdata->outgoing_queue = gw_prioqueue_create(sms_priority_compare);
@@ -1297,6 +1316,22 @@ int smsc_at2_create(SMSCConn *conn, CfgGroup *cfg)
     if (privdata->device == NULL) {
         error(0, "AT2[-]: 'device' missing in at2 configuration.");
         goto error;
+    }
+    
+    if (octstr_str_compare(privdata->device, "rawtcp") == 0) {
+        privdata->rawtcp_host = cfg_get(cfg, octstr_imm("host"));
+        if (privdata->rawtcp_host == NULL) {
+            error(0, "AT2[-]: 'host' missing in at2 rawtcp configuration.");
+            goto error;
+        }
+        if (cfg_get_integer(&portno, cfg, octstr_imm("port")) == -1) {
+            error(0, "AT2[-]: 'port' missing in at2 rawtcp configuration.");
+            goto error;
+        }
+        privdata->rawtcp_port = portno;
+        privdata->is_serial = 0;
+    } else {
+        privdata->is_serial = 1;
     }
 
     privdata->name = cfg_get(cfg, octstr_imm("smsc-id"));
@@ -1358,7 +1393,7 @@ int smsc_at2_create(SMSCConn *conn, CfgGroup *cfg)
     privdata->conn = conn;
     privdata->phase2plus = 0;
     privdata->validityperiod = cfg_get(cfg, octstr_imm("validityperiod"));
-    if (cfg_get_integer((long*)&privdata->max_error_count, cfg, octstr_imm("max-error-count")) == -1)
+    if (cfg_get_integer((long*) &privdata->max_error_count, cfg, octstr_imm("max-error-count")) == -1)
         privdata->max_error_count = -1;
 
     conn->data = privdata;
@@ -1406,25 +1441,25 @@ static int at2_pdu_extract(PrivAT2data *privdata, Octstr **pdu, Octstr *line)
     /* find the beginning of a message from the modem*/
 
     if ((pos = octstr_search(buffer, octstr_imm("+CDS:"), 0)) != -1) 
-	pos += 5;
+        pos += 5;
     else {
-	if ((pos = octstr_search(buffer, octstr_imm("+CMT:"), 0)) != -1)
-	    pos += 5;
-	else if ((pos = octstr_search(buffer, octstr_imm("+CMGR:"), 0)) != -1) {
-	    /* skip status field in +CMGR response */
-	    if ((pos = octstr_search(buffer, octstr_imm(","), pos + 6)) != -1) 
-		pos++;
-	    else
-		goto nomsg;
-	} else
-	    goto nomsg;
+        if ((pos = octstr_search(buffer, octstr_imm("+CMT:"), 0)) != -1)
+            pos += 5;
+        else if ((pos = octstr_search(buffer, octstr_imm("+CMGR:"), 0)) != -1) {
+            /* skip status field in +CMGR response */
+            if ((pos = octstr_search(buffer, octstr_imm(","), pos + 6)) != -1) 
+                pos++;
+            else
+                goto nomsg;
+        } else
+            goto nomsg;
 
-	/* skip the next comma in CMGR and CMT responses */
-	tmp = octstr_search(buffer, octstr_imm(","), pos);
-	if (! privdata->modem->broken && tmp == -1)
-	    goto nomsg;
-	if (tmp != -1)
-	    pos = tmp + 1;
+        /* skip the next comma in CMGR and CMT responses */
+        tmp = octstr_search(buffer, octstr_imm(","), pos);
+        if (!privdata->modem->broken && tmp == -1)
+            goto nomsg;
+        if (tmp != -1)
+            pos = tmp + 1;
     }
 
     /* read the message length */
@@ -1485,11 +1520,10 @@ static Msg *at2_pdu_decode(Octstr *data, PrivAT2data *privdata)
             msg = at2_pdu_decode_deliver_sm(data, privdata);
             break;
         case AT_STATUS_REPORT_SM:
-	    msg = at2_pdu_decode_report_sm(data, privdata);
-	    break;
+            msg = at2_pdu_decode_report_sm(data, privdata);
+            break;
 
             /* Add other message types here: */
-
     }
 
     return msg;
@@ -1609,7 +1643,8 @@ static Msg *at2_pdu_decode_deliver_sm(Octstr *data, PrivAT2data *privdata)
     len = octstr_get_char(pdu, pos);
     pos++;
 
-    debug("bb.smsc.at2", 0, "AT2[%s]: User data length read as (%d)", octstr_get_cstr(privdata->name), len);
+    debug("bb.smsc.at2", 0, "AT2[%s]: User data length read as (%d)", 
+          octstr_get_cstr(privdata->name), len);
 
     /* if there is a UDH */
     udhlen = 0;
@@ -1625,7 +1660,7 @@ static Msg *at2_pdu_decode_deliver_sm(Octstr *data, PrivAT2data *privdata)
         udhi = 0;
 
     debug("bb.smsc.at2", 0, "AT2[%s]: Udh decoding done len=%d udhi=%d udhlen=%d udh='%s'",
-          octstr_get_cstr(privdata->name), len, udhi, udhlen, (udh?octstr_get_cstr(udh):""));
+          octstr_get_cstr(privdata->name), len, udhi, udhlen, (udh ? octstr_get_cstr(udh) : ""));
 
     if (pos > octstr_len(pdu) || len < 0)
         goto msg_error;
@@ -1634,8 +1669,7 @@ static Msg *at2_pdu_decode_deliver_sm(Octstr *data, PrivAT2data *privdata)
     message = msg_create(sms);
     if (!dcs_to_fields(&message, dcs)) {
         /* XXX Should reject this message? */
-        debug("bb.smsc.at2", 0, "AT2[%s]: Invalid DCS",
-              octstr_get_cstr(privdata->name));
+        debug("bb.smsc.at2", 0, "AT2[%s]: Invalid DCS", octstr_get_cstr(privdata->name));
         dcs_to_fields(&message, 0);
     }
 
@@ -1677,8 +1711,7 @@ static Msg *at2_pdu_decode_deliver_sm(Octstr *data, PrivAT2data *privdata)
     return message;
     
 msg_error:
-    error(1,"AT2[%s]: Invalid DELIVER-SMS pdu !",
-	octstr_get_cstr(privdata->name));
+    error(1, "AT2[%s]: Invalid DELIVER-SMS pdu!", octstr_get_cstr(privdata->name));
     O_DESTROY(udh);
     O_DESTROY(origin);
     O_DESTROY(text);
@@ -1686,11 +1719,12 @@ msg_error:
     return NULL;
 }
 
+
 static Msg *at2_pdu_decode_report_sm(Octstr *data, PrivAT2data *privdata)
 {
-   Msg* dlrmsg = NULL;
-   Octstr *pdu, *msg_id, *tmpstr = NULL, *receiver = NULL;
-   int type, tp_mr, len, ntype, pos;
+    Msg *dlrmsg = NULL;
+    Octstr *pdu, *msg_id, *tmpstr = NULL, *receiver = NULL;
+    int type, tp_mr, len, ntype, pos;
 
     /*
      * parse the PDU.
@@ -1700,9 +1734,10 @@ static Msg *at2_pdu_decode_report_sm(Octstr *data, PrivAT2data *privdata)
     pdu = at2_convertpdu(data);
 
     /* Message reference */
-    tp_mr = octstr_get_char(pdu,1);
-    msg_id = octstr_format("%d",tp_mr);
-    debug("bb.smsc.at2",0,"AT2[%s]: got STATUS-REPORT for message <%d>:", octstr_get_cstr(privdata->name), tp_mr);
+    tp_mr = octstr_get_char(pdu, 1);
+    msg_id = octstr_format("%d", tp_mr);
+    debug("bb.smsc.at2", 0, "AT2[%s]: got STATUS-REPORT for message <%d>:", 
+          octstr_get_cstr(privdata->name), tp_mr);
     
     /* reciver address */
     len = octstr_get_char(pdu, 2);
@@ -1712,14 +1747,14 @@ static Msg *at2_pdu_decode_report_sm(Octstr *data, PrivAT2data *privdata)
     if ((ntype & 0xD0) == 0xD0) {
         /* Alphanumeric sender */
         receiver = octstr_create("");
-        tmpstr = octstr_copy(pdu, pos, (len+1)/2);
+        tmpstr = octstr_copy(pdu, pos, (len + 1) / 2);
         at2_decode7bituncompressed(tmpstr, (((len - 1) * 4 - 3) / 7) + 1, receiver, 0);
         octstr_destroy(tmpstr);
         debug("bb.smsc.at2", 0, "AT2[%s]: Alphanumeric receiver <%s>",
               octstr_get_cstr(privdata->name), octstr_get_cstr(receiver));
         pos += (len + 1) / 2;
     } else {
-	int i;
+        int i;
         receiver = octstr_create("");
         if ((ntype & 0x90) == 0x90) {
             /* International number */
@@ -1738,12 +1773,12 @@ static Msg *at2_pdu_decode_report_sm(Octstr *data, PrivAT2data *privdata)
     pos += 14; /* skip time stamps for now */
 
     if ((type = octstr_get_char(pdu, pos)) == -1 ) {
-	error(1,"AT2[%s]: STATUS-REPORT pdu too short to have TP-Status field !",
-	    octstr_get_cstr(privdata->name));
-	goto error;
+        error(1, "AT2[%s]: STATUS-REPORT pdu too short to have TP-Status field !",
+              octstr_get_cstr(privdata->name));
+        goto error;
     }
 
-	/* check DLR type:
+	/* Check DLR type:
 	 * 3GPP TS 23.040 defines this a bit mapped field with lots of options
 	 * most of which are not really intersting to us, as we are only interested
 	 * in one of three conditions : failed, held in SC for delivery later, or delivered successfuly
@@ -1772,13 +1807,15 @@ static Msg *at2_pdu_decode_report_sm(Octstr *data, PrivAT2data *privdata)
             tmpstr = octstr_create("Failed");
             break;
     }
-    /* Actually, the above implementation is not correct, as the reference says that implementations should consider
-     * any "reserved" values to be "failure", but most reserved values fall into one of the three categories. it will catch
-     * "reserved" values where the first 3 MSBits are not set as "Success" which may not be correct. */
+    /* Actually, the above implementation is not correct, as the reference 
+     * says that implementations should consider any "reserved" values to be 
+     * "failure", but most reserved values fall into one of the three 
+     * categories. It will catch "reserved" values where the first 3 MSBits 
+     * are not set as "Success" which may not be correct. */
 
     if ((dlrmsg = dlr_find(privdata->conn->id, msg_id, receiver, type)) == NULL) {
-	debug("bb.smsc.at2",1,"AT2[%s]: Received delivery notification but can't find that ID in the DLR storage",
-	    octstr_get_cstr(privdata->name));
+        debug("bb.smsc.at2", 1, "AT2[%s]: Received delivery notification but can't find that ID in the DLR storage",
+              octstr_get_cstr(privdata->name));
 	    goto error;
     }
 
@@ -1861,7 +1898,7 @@ static void at2_send_messages(PrivAT2data *privdata)
 
     do {
         if (privdata->modem->enable_mms && 
-			gw_prioqueue_len(privdata->outgoing_queue) > 1)
+            gw_prioqueue_len(privdata->outgoing_queue) > 1)
             at2_send_modem_command(privdata, "AT+CMMS=2", 0, 0);
 
         if ((msg = gw_prioqueue_remove(privdata->outgoing_queue)))
@@ -1894,17 +1931,17 @@ static void at2_send_one_message(PrivAT2data *privdata, Msg *msg)
         strcpy(sc, "00");
 
     if (msg_type(msg) == sms) {
-	Octstr* pdu;
+        Octstr *pdu;
 
-	if ((pdu = at2_pdu_encode(msg, privdata)) == NULL) {
-	    error(2, "AT2[%s]: Error encoding PDU!",octstr_get_cstr(privdata->name));
-	    return;
-	}	
+        if ((pdu = at2_pdu_encode(msg, privdata)) == NULL) {
+            error(2, "AT2[%s]: Error encoding PDU!",octstr_get_cstr(privdata->name));
+            return;
+        }	
 
         ret = -99;
         retries = RETRY_SEND;
         while ((ret != 0) && (retries-- > 0)) {
-	    int msg_id = -1;
+            int msg_id = -1;
             /* 
              * send the initial command and then wait for > 
              */
@@ -1969,19 +2006,19 @@ static void at2_send_one_message(PrivAT2data *privdata, Msg *msg)
             if (ret != 0) /* OK only */
                 continue;
 
-	    /* store DLR message if needed for SMSC generated delivery reports */
-	    if (DLR_IS_ENABLED_DEVICE(msg->sms.dlr_mask)) {
-		if (msg_id == -1)
-		    error(0,"AT2[%s]: delivery notification requested, but I have no message ID!",
-			octstr_get_cstr(privdata->name));
-		else {
+            /* store DLR message if needed for SMSC generated delivery reports */
+            if (DLR_IS_ENABLED_DEVICE(msg->sms.dlr_mask)) {
+                if (msg_id == -1)
+                    error(0,"AT2[%s]: delivery notification requested, but I have no message ID!",
+                          octstr_get_cstr(privdata->name));
+                else {
                     Octstr *dlrmsgid = octstr_format("%d", msg_id);
 
                     dlr_add(privdata->conn->id, dlrmsgid, msg);
 
-		    O_DESTROY(dlrmsgid);
-		}
-	    }
+                    O_DESTROY(dlrmsgid);
+                }
+            }
 
             bb_smscconn_sent(privdata->conn, msg, NULL);
         }
@@ -2001,14 +2038,13 @@ static void at2_send_one_message(PrivAT2data *privdata, Msg *msg)
 }
 
 
-static Octstr* at2_pdu_encode(Msg *msg, PrivAT2data *privdata)
+static Octstr *at2_pdu_encode(Msg *msg, PrivAT2data *privdata)
 {
     /*
      * Message coding is done as a binary octet string,
      * as per 3GPP TS 23.040 specification (GSM 03.40),
      */
     Octstr *pdu = NULL, *temp = NULL, *buffer = octstr_create("");
-     
     int len, setvalidity = 0;
 
     /* 
@@ -2017,11 +2053,11 @@ static Octstr* at2_pdu_encode(Msg *msg, PrivAT2data *privdata)
      * TP-RP , TP-UDHI, TP-SRR, TP-VPF(4), TP-VPF(3), TP-RD, TP-MTI(1), TP-MTI(0)
      */
     octstr_append_char(buffer,
-	((msg->sms.rpi > 0 ? 1 : 0) << 7) /* TP-RP */
-	| ((octstr_len(msg->sms.udhdata)  ? 1 : 0) << 6) /* TP-UDHI */
-	| ((DLR_IS_ENABLED_DEVICE(msg->sms.dlr_mask) ? 1 : 0) << 5) /* TP-SRR */
-	| 16 /* TP-VP(Rel)*/
-	| 1 /* TP-MTI: SUBMIT_SM */
+        ((msg->sms.rpi > 0 ? 1 : 0) << 7) /* TP-RP */
+        | ((octstr_len(msg->sms.udhdata)  ? 1 : 0) << 6) /* TP-UDHI */
+        | ((DLR_IS_ENABLED_DEVICE(msg->sms.dlr_mask) ? 1 : 0) << 5) /* TP-SRR */
+        | 16 /* TP-VP(Rel)*/
+        | 1 /* TP-MTI: SUBMIT_SM */
 	);
 
     /* message reference (0 for now) */
@@ -2029,20 +2065,20 @@ static Octstr* at2_pdu_encode(Msg *msg, PrivAT2data *privdata)
 
     /* destination address */
     if ((temp = at2_format_address_field(msg->sms.receiver)) == NULL)
-	goto error;
+        goto error;
     octstr_append(buffer, temp);
     O_DESTROY(temp);
 
     octstr_append_char(buffer, (msg->sms.pid == -1 ? 0 : msg->sms.pid) ); /* protocol identifier */
     octstr_append_char(buffer, fields_to_dcs(msg, /* data coding scheme */
-	(msg->sms.alt_dcs != -1 ? msg->sms.alt_dcs : privdata->conn->alt_dcs)));
+        (msg->sms.alt_dcs != -1 ? msg->sms.alt_dcs : privdata->conn->alt_dcs)));
 
     /* 
      * Validity-Period (TP-VP)
      * see GSM 03.40 section 9.2.3.12
      * defaults to 24 hours = 167 if not set 
      */
-    if ( msg->sms.validity >= 0) {
+    if (msg->sms.validity >= 0) {
         if (msg->sms.validity > 635040)
             setvalidity = 255;
         if (msg->sms.validity >= 50400 && msg->sms.validity <= 635040)
@@ -2108,7 +2144,7 @@ static Octstr* at2_pdu_encode(Msg *msg, PrivAT2data *privdata)
     octstr_append_char(buffer,len);
 
     if (octstr_len(msg->sms.udhdata)) /* udh */
-	octstr_append(buffer, msg->sms.udhdata);
+        octstr_append(buffer, msg->sms.udhdata);
 
     /* user data */
     if (msg->sms.coding == DC_8BIT || msg->sms.coding == DC_UCS2) {
@@ -2128,7 +2164,7 @@ static Octstr* at2_pdu_encode(Msg *msg, PrivAT2data *privdata)
         charset_latin1_to_gsm(msg->sms.msgdata);
         
         if ((temp = at2_encode7bituncompressed(msg->sms.msgdata, offset)) != NULL)
-	    octstr_append(buffer, temp);
+            octstr_append(buffer, temp);
         O_DESTROY(temp);
     }
 
@@ -2137,6 +2173,7 @@ static Octstr* at2_pdu_encode(Msg *msg, PrivAT2data *privdata)
     O_DESTROY(buffer);
 
     return pdu;
+
 error:
     O_DESTROY(temp);
     O_DESTROY(buffer);
@@ -2145,7 +2182,7 @@ error:
 }
 
 
-static Octstr* at2_encode7bituncompressed(Octstr *source, int offset)
+static Octstr *at2_encode7bituncompressed(Octstr *source, int offset)
 {
     int LSBmask[8] = { 0x00, 0x01, 0x03, 0x07, 0x0F, 0x1F, 0x3F, 0x7F };
     int MSBmask[8] = { 0x00, 0x40, 0x60, 0x70, 0x78, 0x7C, 0x7E, 0x7F };
@@ -2157,34 +2194,37 @@ static Octstr* at2_encode7bituncompressed(Octstr *source, int offset)
 
     /* start packing the septet stream into an octet stream */
     for (posS = 0, posT = 0; (source_chr = octstr_get_char(source, posS++)) != -1;) {
-	/* grab least significant bits from current septet and store them packed to the right */
-	target_chr |= (source_chr & LSBmask[i]) << iStore;
-	/* store current byte if last command filled it */
-	if (iStore != 0) {
-	    destRemain--;
-	    octstr_append_char(target, target_chr);
-	    target_chr = 0;
-	}
-	/* grab most significant bits from current septet and store them packed to the left */
-	target_chr |= (source_chr & MSBmask[7 - i]) >> (8 - iStore) % 8;
-	/* advance target bit index by 7 ( modulo 8 addition ) */
-	iStore = (--iStore < 0 ? 7 : iStore);
-	if (iStore != 0) /* if just finished packing 8 septets (into 7 octets) don't advance mask index */
-	    i = (++i > 7 ? 1 : i); 
+        /* grab least significant bits from current septet and 
+         * store them packed to the right */
+        target_chr |= (source_chr & LSBmask[i]) << iStore;
+        /* store current byte if last command filled it */
+        if (iStore != 0) {
+            destRemain--;
+            octstr_append_char(target, target_chr);
+            target_chr = 0;
+        }
+        /* grab most significant bits from current septet and 
+         * store them packed to the left */
+        target_chr |= (source_chr & MSBmask[7 - i]) >> (8 - iStore) % 8;
+        /* advance target bit index by 7 (modulo 8 addition ) */
+        iStore = (--iStore < 0 ? 7 : iStore);
+        /* if just finished packing 8 septets (into 7 octets) don't advance mask index */
+        if (iStore != 0) 
+            i = (++i > 7 ? 1 : i); 
     }
 
     /* don't forget to pack the leftovers ;-) */
     if (destRemain > 0)
-	octstr_append_char(target, target_chr);
+        octstr_append_char(target, target_chr);
 
     return target;
 }
 
 
-static Octstr* at2_encode8bituncompressed(Octstr *input)
+static Octstr *at2_encode8bituncompressed(Octstr *input)
 {
     int len, i;
-    Octstr* out = octstr_create("");
+    Octstr *out = octstr_create("");
 
     len = octstr_len(input);
 
@@ -2232,12 +2272,13 @@ static int at2_detect_speed(PrivAT2data *privdata)
     return 0;
 }
 
-static int at2_test_speed(PrivAT2data *privdata, long speed) {
 
+static int at2_test_speed(PrivAT2data *privdata, long speed) 
+{
     int res;
 
     if (at2_open_device(privdata) == -1)
-	return -1;
+        return -1;
 
     at2_set_speed(privdata, speed);
     /* send a return so the modem can detect the speed */
@@ -2245,9 +2286,10 @@ static int at2_test_speed(PrivAT2data *privdata, long speed) {
     res = at2_send_modem_command(privdata, "AT", 0, 0);
 
     if (res != 0)
-	res = at2_send_modem_command(privdata, "AT", 0, 0);
+        res = at2_send_modem_command(privdata, "AT", 0, 0);
     if (res != 0)
-	res = at2_send_modem_command(privdata, "AT", 0, 0);
+        res = at2_send_modem_command(privdata, "AT", 0, 0);
+        
     at2_close_device(privdata);
 
     return res;
@@ -2364,7 +2406,6 @@ static int at2_detect_modem_type(PrivAT2data *privdata)
 
 static ModemDef *at2_read_modems(PrivAT2data *privdata, Octstr *file, Octstr *id, int idnumber)
 {
-
     Cfg *cfg;
     List *grplist;
     CfgGroup *grp;
@@ -2500,11 +2541,11 @@ static int swap_nibbles(unsigned char byte)
 }
 
 
-static Octstr* at2_format_address_field(Octstr* msisdn)
+static Octstr *at2_format_address_field(Octstr *msisdn)
 {
     int ntype = PNT_UNKNOWN;
-    Octstr* out = octstr_create("");
-    Octstr* temp = octstr_duplicate(msisdn);
+    Octstr *out = octstr_create("");
+    Octstr *temp = octstr_duplicate(msisdn);
 
     octstr_strip_blanks(temp);
     /*
@@ -2545,7 +2586,7 @@ static Octstr* at2_format_address_field(Octstr* msisdn)
 }
 
 
-static int at2_set_message_storage(PrivAT2data* privdata, Octstr* memory_name)
+static int at2_set_message_storage(PrivAT2data *privdata, Octstr *memory_name)
 {
     Octstr *temp;
     int ret;

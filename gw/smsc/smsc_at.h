@@ -139,8 +139,11 @@ typedef struct PrivAT2data {
     int	sms_memory_capacity;
     int	sms_memory_usage;
     List *pending_incoming_messages;
-    int        max_error_count;
-} PrivAT2data;
+    int max_error_count;
+    Octstr *rawtcp_host;
+    int rawtcp_port;
+    int is_serial; /* false if device is rawtcp */ 
+ } PrivAT2data;
 
 
 /*
@@ -151,7 +154,6 @@ typedef struct PrivAT2data {
 /* 
 #define	at2_write_ctrlz(a) at2_write(a,"\032") 
 */
-
 
 /*
  * open the specified device using the serial line
@@ -189,9 +191,9 @@ static Octstr *at2_read_line(PrivAT2data *privdata, int gt_flag);
  * Writes a line out to the device and adds a carriage return/linefeed to it. 
  * Returns number of characters sent.
  */
-static int at2_write_line(PrivAT2data *privdata, char* line);
+static int at2_write_line(PrivAT2data *privdata, char *line);
 static int at2_write_ctrlz(PrivAT2data *privdata);
-static int at2_write(PrivAT2data *privdata, char* line);
+static int at2_write(PrivAT2data *privdata, char *line);
 
 /*
  * Clears incoming buffer
@@ -223,7 +225,7 @@ static int at2_send_modem_command(PrivAT2data *privdata, char *cmd, time_t timeo
  * Waits for the modem to send us something.
  */
 static int at2_wait_modem_command(PrivAT2data *privdata, time_t timeout, 
-                           int greaterflag, int* output);
+                           int greaterflag, int *output);
 
 /*
  * Sets the serial port speed on the device
@@ -297,17 +299,17 @@ static void at2_send_one_message(PrivAT2data *privdata, Msg *msg);
 /*
  * Encode a Msg into a PDU
  */
-static Octstr* at2_pdu_encode(Msg *msg, PrivAT2data *privdata);
+static Octstr *at2_pdu_encode(Msg *msg, PrivAT2data *privdata);
 
 /*
  * Encode 7bit uncompressed user data into an Octstr, prefixing with <offset> 0 bits
  */
-static Octstr* at2_encode7bituncompressed(Octstr *input, int offset);
+static Octstr *at2_encode7bituncompressed(Octstr *input, int offset);
 
 /*
  * Encode 8bit uncompressed user data into an Octstr
  */
-static Octstr* at2_encode8bituncompressed(Octstr *input);
+static Octstr *at2_encode8bituncompressed(Octstr *input);
 
 /*
  * Code a half-byte to its text hexa representation
@@ -347,7 +349,7 @@ static int at2_read_sms_memory(PrivAT2data *privdata);
 /*
  * Memory capacity and usage check
  */
-static int at2_check_sms_memory(PrivAT2data* privdata);
+static int at2_check_sms_memory(PrivAT2data *privdata);
 
 /*
  * This silly thing here will just translate a "swapped nibble" 
@@ -362,26 +364,25 @@ static int swap_nibbles(unsigned char byte);
  * creates a buffer with a valid PDU address field as per [GSM 03.40]
  * from an MSISDN number
  */
-static Octstr* at2_format_address_field(Octstr* msisdn);
+static Octstr *at2_format_address_field(Octstr *msisdn);
 
 /*
  * Check the pending_incoming_messages queue for CMTI notifications.
  * Every notification is parsed and the messages are read (and deleted)
  * accordingly.
  */
-static void at2_read_pending_incoming_messages(PrivAT2data* privdata);
+static void at2_read_pending_incoming_messages(PrivAT2data *privdata);
 
 /*
  * Set the memory storage location of the modem by sending a +CPMS command
  */
-static int at2_set_message_storage(PrivAT2data* privdata, Octstr* memory_name);
+static int at2_set_message_storage(PrivAT2data *privdata, Octstr *memory_name);
 
 /*
  * Reads a message from selected memory location and deletes it afterwards.
  * returns 0 on failure and 1 on success
  */
-static int at2_read_delete_message(PrivAT2data* privdata, int message_number);
-
+static int at2_read_delete_message(PrivAT2data *privdata, int message_number);
 
 /*
  * Return appropriate error string for the given error code.

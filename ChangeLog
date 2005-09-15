@@ -1,4 +1,11 @@
 2005-09-15  Stipe Tolj  <stolj@wapme-group.de>
+   * gw/smsc/smsc_at.[ch]: applied RAW TCP patch to support remote termnial 
+     server connections for devices. Also some inlined source code beauty.
+   * doc/userguide/userguide.xml: added variables for the RAW TCP mode.
+     Thanks to Stanislay Sinyagin <ssinyagin@yahoo.com> for the patch.
+     [Msg-Id: <20050914152140.76555.qmail@web51904.mail.yahoo.com>]
+     
+2005-09-15  Stipe Tolj  <stolj@wapme-group.de>
    * gw/smsc/smsc_at.c: fixing compiler warning. No logic change.
    
 2005-09-14  Stipe Tolj  <stolj@wapme-group.de>

@@ -3460,7 +3460,10 @@ pin = 2345
      <entry><literal>device-name</literal></entry>
      <entry valign="bottom">
           The device the modem is connected to, like <literal>/dev/ttyS0</literal>.
-     </entry></row>
+          When the device name is set to <literal>rawtcp</literal>, two other
+          variables are required in the configuration: <literal>host</literal>
+          and <literal>port</literal>. See the note below.
+      </entry></row>
 
    <row><entry><literal>speed</literal></entry>
      <entry><literal>serial speed in bps</literal></entry>
@@ -3527,6 +3530,20 @@ pin = 2345
           Maximal error count for opening modem device or initializing of the modem before
           <literal>reset-string</literal> will be executed. This is useful when modem crashed and needs
           hard reset. Default disabled.
+       </entry></row>
+       
+     <row><entry><literal>host</literal></entry>
+       <entry><literal>IP address</literal></entry>
+       <entry valign="bottom">
+          Hostname or IP address to connect in <literal>rawtcp</literal> mode. 
+          Required if <literal>device</literal> is set to <literal>rawtcp</literal>.
+       </entry></row>
+
+     <row><entry><literal>port</literal></entry>
+       <entry><literal>integer</literal></entry>
+       <entry valign="bottom">
+          TCP port to connect to on <literal>rawtcp-host</literal>.
+          Required if <literal>device</literal> is set to <literal>rawtcp</literal>.
        </entry></row>
 
    </tbody></tgroup></informaltable>
@@ -3683,6 +3700,14 @@ pin = 2345
    reports to SIM memory, to get at which you will need to enable sim-buffering. 
    finally your GSM network provider may not support delivery reports to mobile 
    units.</para>
+
+   <para><emphasis>About <literal>rawtcp</literal> mode:</emphasis>
+   This mode allows you to use a GSM modem connected to a remote terminal server,
+   such as Perle IOLAN DS1 or a Cisco router with reverse telnet. The teminal
+   server should support raw TCP mode. The driver is not tested in telnet mode.
+   It is recommended to use <literal>keepalive</literal> variable, in order to 
+   automatically reconnect in case of network connectivity problems.</para>
+
 
 </sect2>
 
