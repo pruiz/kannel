@@ -1,3 +1,6 @@
+2005-09-15  Stipe Tolj  <stolj@wapme-group.de>
+   * gw/smsc/smsc_at.c: fixing compiler warning. No logic change.
+   
 2005-09-14  Stipe Tolj  <stolj@wapme-group.de>
    * gw/smsc/smsc_at.c: fixing a bug for 'nokiaphone' GSM modem types, where
      PDUs longer then 18 bytes get truncated by the device if passed too fast.
