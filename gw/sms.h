@@ -67,7 +67,7 @@
  * 00abcdef
  *      bit 5 (a) indicates compressed text
  *      bit 4 (b) indicates Message Class value presence
- *      bits 3,2 (c,d) indicates Data Coding (00=7bit, 01=8bit, 10=UCS2)
+ *      bits 3,2 (c,d) indicates Data Coding (00=7bit, 01=8bit, 10=UCS-2)
  *      bits 1,0 (e,f) indicates Message Class, if bit 4(b) is active
  *
  * 11110abc
@@ -76,7 +76,7 @@
  *
  * 11abc0de
  *      bits 5,4 (a,b) indicates 00=discard message, 01=store message
- *                               10=store message and text is UCS2
+ *                               10=store message and text is UCS-2
  *      bit 3 (c) indicates indication active
  *      bits 1,0 (d,e) indicates indicator (00=voice mail, 01=fax,
  *                                          10=email, 11=other)

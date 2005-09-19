@@ -915,7 +915,7 @@ WsBool ws_bc_add_const_utf8_string(WsBc *bc, WsUInt16 *index_return,
     WsUInt16 i;
     WsBcConstant *nc;
 
-    /* Do we already have a suitable utf8 constant? */
+    /* Do we already have a suitable UFT-8 constant? */
     for (i = 0; i < bc->num_constants; i++) {
         if (bc->constants[i].type == WS_BC_CONST_TYPE_UTF8_STRING
             && bc->constants[i].u.v_string.len == len

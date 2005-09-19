@@ -2372,8 +2372,8 @@ octstr_recode (Octstr *tocode, Octstr *fromcode, Octstr *orig)
 	goto cleanup_and_exit;
     }
 
-    if ((octstr_case_compare(fromcode, octstr_imm ("utf-8")) != 0) &&
-	(octstr_case_compare(fromcode, octstr_imm ("utf8")) != 0)) {
+    if ((octstr_case_compare(fromcode, octstr_imm ("UTF-8")) != 0) &&
+	(octstr_case_compare(fromcode, octstr_imm ("UTF8")) != 0)) {
 	if (charset_to_utf8(orig, &octstr_utf8, fromcode) < 0) {
 	    resultcode = -1;
 	    goto cleanup_and_exit;
@@ -2382,8 +2382,8 @@ octstr_recode (Octstr *tocode, Octstr *fromcode, Octstr *orig)
 	octstr_utf8 = octstr_duplicate(orig);
     }
 
-    if ((octstr_case_compare(tocode, octstr_imm ("utf-8")) != 0) &&
-	(octstr_case_compare(tocode, octstr_imm ("utf8")) != 0)) {
+    if ((octstr_case_compare(tocode, octstr_imm ("UTF-8")) != 0) &&
+	(octstr_case_compare(tocode, octstr_imm ("UTF8")) != 0)) {
 	if (charset_from_utf8(octstr_utf8, &octstr_final, tocode) < 0) {
 	    resultcode = -1;
 	    goto cleanup_and_exit;

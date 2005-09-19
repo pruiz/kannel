@@ -978,7 +978,7 @@ static int ois_append_submission_options(char *raw, const Msg *msg)
     if (octstr_len(msg->sms.udhdata)) {
 	raw[0] |= (char) 0x02;
     }
-    if (msg->sms.coding == DC_8BIT) { /* XXX and UCS2? */
+    if (msg->sms.coding == DC_8BIT) { /* XXX and UCS-2? */
 	raw[0] |= (char) 0x10;
     }
     return 1;

@@ -1,3 +1,9 @@
+2005-09-20  Stipe Tolj  <stolj@wapme-group.de>
+   * doc/userguide/userguide.xml, gw/sms.[ch], gw/smsbox.c, gw/xml_shared.c,
+     gw/smsc/smsc_[cimd2|ois|oisd|soap].c, gwlib/http.h, gwlib/octstr.c, 
+     wmlscript/wsbc.c: fixing bug #252 where references to UTF-16[BE] and 
+     UCS-2 have been mis-spelled. No logic change.
+   
 2005-09-15  Stipe Tolj  <stolj@wapme-group.de>
    * gw/smsc/smsc_at.[ch]: applied RAW TCP patch to support remote termnial 
      server connections for devices. Also some inlined source code beauty.

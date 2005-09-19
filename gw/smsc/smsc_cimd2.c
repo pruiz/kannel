@@ -1598,7 +1598,7 @@ static Msg *cimd2_accept_message(struct packet *request, SMSCConn *conn)
      *   000xyyxx  Uncompressed text, yy indicates alphabet.
      *                   yy = 00, default alphabet
      *                   yy = 01, 8-bit data
-     *                   yy = 10, UCS2
+     *                   yy = 10, UCS-2
      *                   yy = 11, reserved
      *   1111xyxx  Data, y indicates alphabet.
      *                   y = 0, default alphabet

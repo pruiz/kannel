@@ -58,27 +58,47 @@
 
 #include "gwlib/gwlib.h"
 
-static void thread1(void *arg) {
+static void thread1(void *arg) 
+{
     pid_t pid;
 
 	debug("test", 0, "Sleeping");
     pid = getpid();
-    debug("test", 0, "Thread pid %ld", (long)pid);
+    debug("test", 0, "Thread1 pid %ld", (long)pid);
 
 	gwthread_sleep(600);
 	debug("test", 0, "Woke up");
 }
 
-int main(void) {
+static void thread2(void *arg) 
+{
     pid_t pid;
 
+    debug("test", 0, "Sleeping");
+    pid = getpid();
+    debug("test", 0, "Thread2 pid %ld", (long)pid);
+
+    gwthread_sleep(600);
+    debug("test", 0, "Woke up");
+}
+
+int main(void) 
+{
+    pid_t pid;
+    long t1, t2;
+    int ret;
+    
 	gwlib_init();
     pid = getpid();
     debug("test", 0, "Parent pid %ld", (long)pid);
-	gwthread_create(thread1, NULL);
+	t1 = gwthread_create(thread1, NULL);
+    t2 = gwthread_create(thread2, NULL);
 	sleep(1);
-	gwthread_wakeup_all();
+	gwthread_wakeup(t1);
+    ret = gwthread_cancel(t2);
+    debug("test", 0 ,"gwthread_cancel returns: %d", ret);
+    gwthread_wakeup_all();
 	gwthread_join_all();
 	gwlib_shutdown();
-    	return 0;
+   	return 0;
 }

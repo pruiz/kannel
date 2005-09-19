@@ -58,16 +58,20 @@
  * gw/wap-appl.c - wapbox application layer and push ota indication, response
  * and confirmation primitive implementation.
  *
- * This module implements indication and confirmation primitives of WAP-189-
- * PushOTA-20000217-a (hereafter called ota). 
- * In addition, WAP-200-WDP-20001212-a (wdp) is referred.
- * Wapbox application layer is not a Wapforum protocol. 
+ * This module implements various indication and confirmation primitives and 
+ * protocol mappings as defined in:
+ * 
+ *   WAP-189-PushOTA-20000217-a (hereafter called ota)
+ *   WAP-200-WDP-20001212-a (wdp)
+ *   WAP-248-UAProf-20011020-a (UAProf)
+ * 
+ * Wapbox application layer itself is not a WAP Forum protocol. 
  *
  * The application layer is reads events from its event queue, fetches the 
  * corresponding URLs and feeds back events to the WSP layer (pull). 
  *
  * In addition, the layer forwards WSP events related to push to the module 
- * wap_push_ppg and wsp, implementing indications, responses  and confirma-
+ * wap_push_ppg and wsp, implementing indications, responses and confirma-
  * tions of ota.
  *
  * Note that push header encoding and decoding are divided two parts:
@@ -633,6 +637,26 @@ static void add_msisdn(List *headers, WAPAddrTuple *addr_tuple,
 
     octstr_destroy(value);
     octstr_destroy(msisdn);
+}
+
+
+/* 
+ * Map WSP UAProf headers 'Profile', 'Profile-Diff' to W-HTTP headers
+ * 'X-WAP-Profile', 'X-WAP-Profile-Diff' according to WAP-248-UAProf-20011020-a,
+ * section 9.2.3.3.
+ */
+static void map_uaprof_headers(List *headers) 
+{
+    Octstr *os;
+    Octstr *version;
+    
+    version = http_header_value(headers, octstr_imm("Encoding-Version"));
+    os = octstr_format("WAP/%s %S (" GW_NAME "/%s)", 
+                       (version ? octstr_get_cstr(version) : "1.1"),
+                       get_official_name(), GW_VERSION);
+    http_header_add(headers, "Via", octstr_get_cstr(os));
+    octstr_destroy(os);
+    octstr_destroy(version);
 }
 
 

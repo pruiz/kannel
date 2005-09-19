@@ -857,14 +857,29 @@ static Octstr *parse_xml_tag(Octstr *body, Octstr *tag)
 static void xidris_parse_reply(SMSCConn *conn, Msg *msg, int status,
                                List *headers, Octstr *body)
 {
-    Octstr *code, *desc;
+    Octstr *code, *desc, *mid;
 
     if (status == HTTP_OK || status == HTTP_ACCEPTED) {
         /* now parse the XML document for error code */
         code = parse_xml_tag(body, octstr_imm("status"));
         desc = parse_xml_tag(body, octstr_imm("description"));
-        if (octstr_case_compare(code, octstr_imm("0")) == 0) {
+        
+        /* The following parsing assumes we get only *one* message id in the 
+         * response XML. Which is ok, since we garantee via previous concat
+         * splitting, that we only pass PDUs of 1 SMS size to SMSC. */
+        mid = parse_xml_tag(body, octstr_imm("message_id"));
+
+        if (octstr_case_compare(code, octstr_imm("0")) == 0 && mid != NULL) {
+            /* ensure the message id gets logged */
+            msg->sms.binfo = octstr_duplicate(mid);
+
+            /* SMSC ACK.. now we have the message id. */
+            if (DLR_IS_ENABLED_DEVICE(msg->sms.dlr_mask))
+                dlr_add(conn->id, mid, msg);
+
+            octstr_destroy(mid);
             bb_smscconn_sent(conn, msg, NULL);
+
         } else {
             error(0, "HTTP[%s]: Message not accepted. Status code <%s> "
                   "description `%s'.", octstr_get_cstr(conn->id),
@@ -887,6 +902,7 @@ static void xidris_receive_sms(SMSCConn *conn, HTTPClient *client,
 {
     ConnData *conndata = conn->data;
     Octstr *user, *pass, *from, *to, *text, *account, *binfo;
+    Octstr *state, *mid, *dest;
     Octstr *retmsg;
     int	mclass, mwi, coding, validity, deferred; 
     List *reply_headers;
@@ -895,13 +911,21 @@ static void xidris_receive_sms(SMSCConn *conn, HTTPClient *client,
     mclass = mwi = coding = validity = deferred = 0;
     retmsg = NULL;
 
+    /* generic values */
     user = http_cgi_variable(cgivars, "app_id");
     pass = http_cgi_variable(cgivars, "key");
+
+    /* MO specific values */
     from = http_cgi_variable(cgivars, "source_addr");
     to = http_cgi_variable(cgivars, "dest_addr");
     text = http_cgi_variable(cgivars, "message");
     account = http_cgi_variable(cgivars, "operator");
     binfo = http_cgi_variable(cgivars, "tariff");
+
+    /* DLR (callback) specific values */
+    state = http_cgi_variable(cgivars, "state");
+    mid = http_cgi_variable(cgivars, "message_id");
+    dest = http_cgi_variable(cgivars, "dest_addr");
 
     debug("smsc.http.xidris", 0, "HTTP[%s]: Received a request",
           octstr_get_cstr(conn->id));
@@ -913,6 +937,37 @@ static void xidris_receive_sms(SMSCConn *conn, HTTPClient *client,
               octstr_get_cstr(conn->id), octstr_get_cstr(user));
         retmsg = octstr_create("Authorization failed for MO submission.");
         status = HTTP_UNAUTHORIZED;
+    }
+    else if (state != NULL && mid != NULL && dest != NULL) {    /* a DLR message */
+        Msg *dlrmsg;
+        int dlrstat = -1;
+
+        if (octstr_compare(state, octstr_imm("DELIVRD")) == 0)
+            dlrstat = DLR_SUCCESS;
+        else if (octstr_compare(state, octstr_imm("ACCEPTD")) == 0)
+            dlrstat = DLR_BUFFERED;
+        else
+            dlrstat = DLR_FAIL;
+
+        dlrmsg = dlr_find(conn->id,
+            mid, /* smsc message id */
+            dest , /* destination */
+            dlrstat);
+
+        if (dlrmsg != NULL) {
+            dlrmsg->sms.msgdata = octstr_duplicate(mid);
+            dlrmsg->sms.sms_type = report_mo;
+            
+            ret = bb_smscconn_receive(conn, dlrmsg);
+            status = (ret == 0 ? HTTP_OK : HTTP_FORBIDDEN);
+        } else {
+            error(0,"HTTP[%s]: got DLR but could not find message or was not interested "
+                    "in it id<%s> dst<%s>, type<%d>",
+                octstr_get_cstr(conn->id), octstr_get_cstr(mid),
+                octstr_get_cstr(dest), dlrstat);
+            status = HTTP_OK;
+        }
+
     }
     else if (from == NULL || to == NULL || text == NULL) {
         error(0, "HTTP[%s]: Insufficient args.",
@@ -959,7 +1014,7 @@ static void xidris_receive_sms(SMSCConn *conn, HTTPClient *client,
 /*----------------------------------------------------------------
  * Wapme SMS Proxy
  *
- * Stipe Tolj <stolj@wapme.de>
+ * Stipe Tolj <tolj@wapme-systems.de>
  */
 
 static void wapme_smsproxy_send_sms(SMSCConn *conn, Msg *sms)

@@ -607,11 +607,11 @@ void http_add_basic_auth(List *headers, Octstr *username, Octstr *password);
  * field name.
  * 
  * Example:
- *    * assume to have "Content-Type: application/xml; charset=utf-8" 
+ *    * assume to have "Content-Type: application/xml; charset=UTF-8" 
  *    * within List *headers 
  *   value = http_header_value(headers, octstr_imm("Content-Type"))
  *   val = http_get_header_parameter(value, octstr_imm("charset"));
- * will return "utf-8" to lvalue.
+ * will return "UTF-8" to lvalue.
  */
 Octstr *http_get_header_parameter(Octstr *value, Octstr *parameter);
 

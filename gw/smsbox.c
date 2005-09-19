@@ -1663,7 +1663,7 @@ static void obey_request_thread(void *arg)
                  * text couldn't be recoded.
                  * We should use other function to do the recode or detect it using
                  * other method */
-                info(0, "MO message converted from UCS2 to ISO-8859-1");
+                info(0, "MO message converted from UCS-2 to ISO-8859-1");
                 octstr_destroy(msg->sms.msgdata);
                 msg->sms.msgdata = octstr_duplicate(text);
                 msg->sms.charset = octstr_create("ISO-8859-1");
@@ -1680,7 +1680,7 @@ static void obey_request_thread(void *arg)
                  * text couldn't be recoded.
                  * We should use other function to do the recode or detect it using
                  * other method */
-                info(0, "MO message converted from UCS2 to UTF-8");
+                info(0, "MO message converted from UCS-2 to UTF-8");
                 octstr_destroy(msg->sms.msgdata);
                 msg->sms.msgdata = octstr_duplicate(text);
                 msg->sms.charset = octstr_create("UTF-8");
@@ -2665,7 +2665,7 @@ static Octstr *smsbox_sendsms_post(List *headers, Octstr *body,
 	if (octstr_case_compare(type,
 				octstr_imm("application/octet-stream")) == 0) {
 	    if (coding == DC_UNDEF)
-		coding = DC_8BIT; /* XXX Force UCS2 with DC Field */
+		coding = DC_8BIT; /* XXX Force UCS-2 with DC Field */
 	} else if (octstr_case_compare(type,
 				       octstr_imm("text/plain")) == 0) {
 	    if (coding == DC_UNDEF)
@@ -3628,7 +3628,7 @@ int charset_processing (Octstr *charset, Octstr *body, int coding) {
 	    }
 	} else if (coding == DC_UCS2) {
 	    /*
-	     * For UCS2, convert to UTF-16BE
+	     * For UCS-2, convert to UTF-16BE
 	     */
 	    if (octstr_recode (octstr_imm ("UTF-16BE"), charset, body) < 0) {
 		resultcode = -1;

@@ -1420,8 +1420,8 @@ static long soap_parse_mo(SMSCConn *conn, Octstr *request, Octstr **response)
         } else {
     */
 
-    /* not gonna play this game - just convert from whatever alt_charset is set to, to UCS2
-        / * scan message for unicode chars (utf-8 encoded) * /
+    /* not gonna play this game - just convert from whatever alt_charset is set to, to UCS-2
+        / * scan message for unicode chars (UTF-8 encoded) * /
         pos = 0;
         while (pos < octstr_len(msg->sms.msgdata)) {
     	if (octstr_get_char(msg->sms.msgdata,pos) & 128)
@@ -1448,7 +1448,7 @@ static long soap_parse_mo(SMSCConn *conn, Octstr *request, Octstr **response)
              msg->sms.coding = DC_7BIT;
     */
 
-    /* if it's not binary, then assume unicode and convert from alt_charset to UCS2 */
+    /* if it's not binary, then assume unicode and convert from alt_charset to UCS-2 */
     /*        msg->sms.coding = DC_UCS2;
 
 

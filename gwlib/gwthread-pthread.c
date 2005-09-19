@@ -758,6 +758,21 @@ void gwthread_sleep(double seconds)
 }
 
 
+int gwthread_cancel(long thread)
+{
+    struct threadinfo *threadinfo;
+    
+    gw_assert(thread >= 0);
+    
+    threadinfo = THREAD(thread);
+    if (threadinfo == NULL || threadinfo->number != thread) {
+        return -1;
+    } else {
+        return pthread_cancel(threadinfo->self);
+    }
+}
+
+
 #ifndef BROKEN_PTHREADS
 
 /* Working pthreads */

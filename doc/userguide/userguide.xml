@@ -5138,7 +5138,7 @@ ssl-certkey-file
     <row><entry><literal>mo-recode</literal></entry>
      <entry>boolean</entry>
      <entry valign="bottom">
-        If enabled, Kannel will try to convert received messages with UCS2 charset
+        If enabled, Kannel will try to convert received messages with UCS-2 charset
 	to ISO-8859-1 or to UTF-8, simplifying external servers jobs. If Kannel is 
 	able to recode message, it will also change <literal>coding</literal> to 
 	<literal>7 bits</literal> and <literal>charset</literal> to 
@@ -5835,7 +5835,7 @@ and 4, 5, 6, 7 for deactivation respectively.
 <row><entry><literal>%C</literal></entry><entry>
 message charset: for a "normal" message, it will 
 be "GSM" (coding=1), "binary" (coding=2) or 
-"UTF16-BE" (coding=3). If the message was successfully
+"UTF-16BE" (coding=3). If the message was successfully
 recoded from Unicode, it will be "ISO-8859-1"
 </entry></row>
 
@@ -6094,7 +6094,7 @@ text = "No action specified"
 
    <row><entry><literal>%c (coding)</literal></entry>
    <entry><literal>X-Kannel-Coding</literal></entry>
-   <entry>1=7 Bits, 2=8 Bits, 3=UCS2</entry></row>
+   <entry>1=7 Bits, 2=8 Bits, 3=UCS-2</entry></row>
 
    <row><entry><literal>- (compress)</literal></entry>
    <entry><literal>X-Kannel-Compress</literal></entry>
@@ -6869,8 +6869,8 @@ the Kannel configuration, or 'Authorization failed' is returned.
    <entry><literal>string</literal></entry>
    <entry valign="bottom">
         Charset of text message. Used to convert to a format suitable for
-	7 bits or to UCS2. Defaults to ISO-8859-1 if coding is 7bits and
-	UTF16BE if coding is UCS2.
+	7 bits or to UCS-2. Defaults to ISO-8859-1 if coding is 7bits and
+	UTF-16BE if coding is UCS-2.
    </entry></row>
 
    <row><entry><literal>udh</literal></entry>
@@ -6932,7 +6932,7 @@ the Kannel configuration, or 'Authorization failed' is returned.
    <entry><literal>number</literal></entry>
    <entry valign="bottom">
          Optional. Sets the coding scheme bits in DCS field.
-	 Accepts values 0 to 2, for 7bit, 8bit or UCS2.
+	 Accepts values 0 to 2, for 7bit, 8bit or UCS-2.
 	 If unset, defaults to 7 bits unless a udh is defined, which sets
 	 coding to 8bits.
    </entry></row>

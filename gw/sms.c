@@ -98,7 +98,7 @@ int fields_to_dcs(Msg *msg, int mode)
 		if (msg->sms.coding == DC_7BIT)
 		    dcs |= 0xD0;	/* 7bit */
 		else
-		    dcs |= 0xE0;	/* UCS2 */
+		    dcs |= 0xE0;	/* UCS-2 */
 	    	/* XXX Shouldn't happen to have mwi and dc=DC_8BIT! */
 	}
     }

@@ -32,7 +32,7 @@
 		),
 		"charset" => array ( "Charset", 
 			"<input size=16 name=charset>", 
-			"(Optional) Charset (ex: ISO-8859-1, UTF16-BE, UTF8, etc). Defaults to ISO-8859-1 or UTF16BE with UNICODE",
+			"(Optional) Charset (ex: ISO-8859-1, UTF-16BE, UTF-8, etc). Defaults to ISO-8859-1 or UTF-16BE with UNICODE",
 		),
 		"udh" => array ( "User Data Header", 
 			"<textarea name=udh rows=2 cols=40></textarea>", 
