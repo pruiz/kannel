@@ -350,14 +350,16 @@ struct dlr_storage *dlr_init_oracle(Cfg *cfg)
         if (p != NULL && octstr_compare(p, id) == 0) {
             found = 1;
         }
-        if (p != NULL) octstr_destroy(p);
-        if (found == 1) break;
+        if (p != NULL) 
+            octstr_destroy(p);
+        if (found == 1) 
+            break;
     }
     gwlist_destroy(grplist, NULL);
 
     if (found == 0)
         panic(0, "DLR: ORACLE: connection settings for id '%s' are not specified!",
-           octstr_get_cstr(id));
+              octstr_get_cstr(id));
 
     username = cfg_get(grp, octstr_imm("username"));
     password = cfg_get(grp, octstr_imm("password"));

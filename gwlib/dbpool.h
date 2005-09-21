@@ -95,6 +95,7 @@ typedef struct DBPool DBPool;
 
 typedef struct {
     Octstr *host;
+    long port;
     Octstr *username;
     Octstr *password;
     Octstr *database;
@@ -104,9 +105,9 @@ typedef struct {
  * TODO Think how to get rid of it and have generic Conf struct
  */
 typedef struct {
-    Octstr *tnsname;
     Octstr *username;
     Octstr *password;
+    Octstr *tnsname;
 } OracleConf;
 
 typedef struct {
@@ -118,13 +119,13 @@ typedef struct {
 } SQLiteConf;
 
 typedef struct {
-    Octstr *pghost;
-    Octstr *pgport;
-    Octstr *pgoptions;
-    Octstr *pgtty;
-    Octstr *login;
+    Octstr *host;
+    long port;
+    Octstr *username;
     Octstr *password;
-    Octstr *dbName;
+    Octstr *database;
+    Octstr *options;    /* yet not used */
+    Octstr *tty;        /* yet not used */
 } PgSQLConf;
 
 

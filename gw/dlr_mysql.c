@@ -288,7 +288,7 @@ static void dlr_mysql_flush(void)
     octstr_destroy(sql);
 }
 
-static struct dlr_storage  handles = {
+static struct dlr_storage handles = {
     .type = "mysql",
     .dlr_add = dlr_mysql_add,
     .dlr_get = dlr_mysql_get,
@@ -299,11 +299,12 @@ static struct dlr_storage  handles = {
     .dlr_flush = dlr_mysql_flush
 };
 
-struct dlr_storage *dlr_init_mysql(Cfg* cfg)
+struct dlr_storage *dlr_init_mysql(Cfg *cfg)
 {
     CfgGroup *grp;
     List *grplist;
     Octstr *mysql_host, *mysql_user, *mysql_pass, *mysql_db, *mysql_id;
+    long mysql_port = 0;
     Octstr *p = NULL;
     long pool_size;
     DBConf *db_conf = NULL;
@@ -329,16 +330,16 @@ struct dlr_storage *dlr_init_mysql(Cfg* cfg)
      * and search for the one we are looking for
      */
 
-     grplist = cfg_get_multi_group(cfg, octstr_imm("mysql-connection"));
-     while (grplist && (grp = gwlist_extract_first(grplist)) != NULL) {
+    grplist = cfg_get_multi_group(cfg, octstr_imm("mysql-connection"));
+    while (grplist && (grp = gwlist_extract_first(grplist)) != NULL) {
         p = cfg_get(grp, octstr_imm("id"));
         if (p != NULL && octstr_compare(p, mysql_id) == 0) {
             goto found;
         }
         if (p != NULL) octstr_destroy(p);
-     }
-     panic(0, "DLR: MySQL: connection settings for id '%s' are not specified!",
-           octstr_get_cstr(mysql_id));
+    }
+    panic(0, "DLR: MySQL: connection settings for id '%s' are not specified!",
+          octstr_get_cstr(mysql_id));
 
 found:
     octstr_destroy(p);
@@ -349,12 +350,13 @@ found:
 
     if (!(mysql_host = cfg_get(grp, octstr_imm("host"))))
    	    panic(0, "DLR: MySQL: directive 'host' is not specified!");
-    if (!(mysql_user = cfg_get(grp, octstr_imm("mysql-username"))))
-   	    panic(0, "DLR: MySQL: directive 'mysql-username' is not specified!");
-    if (!(mysql_pass = cfg_get(grp, octstr_imm("mysql-password"))))
-   	    panic(0, "DLR: MySQL: directive 'mysql-password' is not specified!");
+    if (!(mysql_user = cfg_get(grp, octstr_imm("username"))))
+   	    panic(0, "DLR: MySQL: directive 'username' is not specified!");
+    if (!(mysql_pass = cfg_get(grp, octstr_imm("password"))))
+   	    panic(0, "DLR: MySQL: directive 'password' is not specified!");
     if (!(mysql_db = cfg_get(grp, octstr_imm("database"))))
    	    panic(0, "DLR: MySQL: directive 'database' is not specified!");
+    cfg_get_integer(&mysql_port, grp, octstr_imm("port"));  /* optional */
 
     /*
      * ok, ready to connect to MySQL
@@ -366,6 +368,7 @@ found:
     gw_assert(db_conf->mysql != NULL);
 
     db_conf->mysql->host = mysql_host;
+    db_conf->mysql->port = mysql_port;
     db_conf->mysql->username = mysql_user;
     db_conf->mysql->password = mysql_pass;
     db_conf->mysql->database = mysql_db;

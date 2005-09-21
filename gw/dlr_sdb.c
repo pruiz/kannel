@@ -390,16 +390,16 @@ struct dlr_storage *dlr_init_sdb(Cfg* cfg)
      * and search for the one we are looking for
      */
 
-     grplist = cfg_get_multi_group(cfg, octstr_imm("sdb-connection"));
-     while (grplist && (grp = gwlist_extract_first(grplist)) != NULL) {
+    grplist = cfg_get_multi_group(cfg, octstr_imm("sdb-connection"));
+    while (grplist && (grp = gwlist_extract_first(grplist)) != NULL) {
         p = cfg_get(grp, octstr_imm("id"));
         if (p != NULL && octstr_compare(p, sdb_id) == 0) {
             goto found;
         }
         if (p != NULL) octstr_destroy(p);
-     }
-     panic(0, "DLR: SDB: connection settings for id '%s' are not specified!",
-           octstr_get_cstr(sdb_id));
+    }
+    panic(0, "DLR: SDB: connection settings for id '%s' are not specified!",
+          octstr_get_cstr(sdb_id));
 
 found:
     octstr_destroy(p);

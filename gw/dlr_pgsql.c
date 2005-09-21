@@ -106,7 +106,8 @@ static inline int pgsql_update(const Octstr *sql)
     return ret;
 }
 
-static inline List* pgsql_select(const Octstr *sql)
+
+static inline List *pgsql_select(const Octstr *sql)
 {
     DBPoolConn *pc;
     List *ret = NULL;
@@ -128,11 +129,13 @@ static inline List* pgsql_select(const Octstr *sql)
     return ret;
 }
 
+
 static void dlr_pgsql_shutdown()
 {
     dbpool_destroy(pool);
     dlr_db_fields_destroy(fields);
 }
+
 
 static void dlr_pgsql_add(struct dlr_entry *entry)
 {
@@ -157,7 +160,8 @@ static void dlr_pgsql_add(struct dlr_entry *entry)
     dlr_entry_destroy(entry);
 }
 
-static struct dlr_entry* dlr_pgsql_get(const Octstr *smsc, const Octstr *ts, const Octstr *dst)
+
+static struct dlr_entry *dlr_pgsql_get(const Octstr *smsc, const Octstr *ts, const Octstr *dst)
 {
     struct dlr_entry *res = NULL;
     Octstr *sql;
@@ -210,6 +214,7 @@ static struct dlr_entry* dlr_pgsql_get(const Octstr *smsc, const Octstr *ts, con
     return res;
 }
 
+
 static void dlr_pgsql_remove(const Octstr *smsc, const Octstr *ts, const Octstr *dst)
 {
     Octstr *sql;
@@ -224,6 +229,7 @@ static void dlr_pgsql_remove(const Octstr *smsc, const Octstr *ts, const Octstr 
     pgsql_update(sql);
     octstr_destroy(sql);
 }
+
 
 static void dlr_pgsql_update(const Octstr *smsc, const Octstr *ts, const Octstr *dst, int status)
 {
@@ -265,6 +271,7 @@ static long dlr_pgsql_messages(void)
     return ret;
 }
 
+
 static void dlr_pgsql_flush(void)
 {
     Octstr *sql;
@@ -275,7 +282,8 @@ static void dlr_pgsql_flush(void)
     octstr_destroy(sql);
 }
 
-static struct dlr_storage  handles = {
+
+static struct dlr_storage handles = {
     .type = "pgsql",
     .dlr_add = dlr_pgsql_add,
     .dlr_get = dlr_pgsql_get,
@@ -286,11 +294,13 @@ static struct dlr_storage  handles = {
     .dlr_flush = dlr_pgsql_flush
 };
 
-struct dlr_storage *dlr_init_pgsql(Cfg* cfg)
+
+struct dlr_storage *dlr_init_pgsql(Cfg *cfg)
 {
     CfgGroup *grp;
     List *grplist;
     Octstr *pgsql_host, *pgsql_user, *pgsql_pass, *pgsql_db, *pgsql_id;
+    long pgsql_port = 0;
     Octstr *p = NULL;
     long pool_size;
     DBConf *db_conf = NULL;
@@ -316,16 +326,17 @@ struct dlr_storage *dlr_init_pgsql(Cfg* cfg)
      * and search for the one we are looking for
      */
 
-     grplist = cfg_get_multi_group(cfg, octstr_imm("pgsql-connection"));
-     while (grplist && (grp = gwlist_extract_first(grplist)) != NULL) {
+    grplist = cfg_get_multi_group(cfg, octstr_imm("pgsql-connection"));
+    while (grplist && (grp = gwlist_extract_first(grplist)) != NULL) {
         p = cfg_get(grp, octstr_imm("id"));
         if (p != NULL && octstr_compare(p, pgsql_id) == 0) {
             goto found;
         }
-        if (p != NULL) octstr_destroy(p);
-     }
-     panic(0, "DLR: PgSQL: connection settings for id '%s' are not specified!",
-           octstr_get_cstr(pgsql_id));
+        if (p != NULL) 
+            octstr_destroy(p);
+    }
+    panic(0, "DLR: PgSQL: connection settings for id '%s' are not specified!",
+          octstr_get_cstr(pgsql_id));
 
 found:
     octstr_destroy(p);
@@ -336,12 +347,13 @@ found:
 
     if (!(pgsql_host = cfg_get(grp, octstr_imm("host"))))
    	    panic(0, "DLR: PgSQL: directive 'host' is not specified!");
-    if (!(pgsql_user = cfg_get(grp, octstr_imm("username"))))
+    if (!(pqsql_user = cfg_get(grp, octstr_imm("username"))))
    	    panic(0, "DLR: PgSQL: directive 'username' is not specified!");
     if (!(pgsql_pass = cfg_get(grp, octstr_imm("password"))))
    	    panic(0, "DLR: PgSQL: directive 'password' is not specified!");
     if (!(pgsql_db = cfg_get(grp, octstr_imm("database"))))
    	    panic(0, "DLR: PgSQL: directive 'database' is not specified!");
+    cfg_get_integer(&pgsql_port, grp, octstr_imm("port"));  /* optional */
 
     /*
      * ok, ready to connect to the database
@@ -352,10 +364,11 @@ found:
     db_conf->pgsql = gw_malloc(sizeof(PgSQLConf));
     gw_assert(db_conf->pgsql != NULL);
 
-    db_conf->pgsql->pghost = pgsql_host;
-    db_conf->pgsql->login = pgsql_user;
+    db_conf->pgsql->host = pgsql_host;
+    db_conf->pgsql->port = pgsql_port;
+    db_conf->pgsql->username = pgsql_user;
     db_conf->pgsql->password = pgsql_pass;
-    db_conf->pgsql->dbName = pgsql_db;
+    db_conf->pgsql->database = pgsql_db;
 
     pool = dbpool_create(DBPOOL_PGSQL, db_conf, pool_size);
     gw_assert(pool != NULL);

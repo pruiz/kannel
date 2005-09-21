@@ -1,3 +1,17 @@
+2005-09-21  Stipe Tolj  <stolj@wapme-group.de>
+   Feature request #254 in order to set port values for mysql and pgsql 
+   database connection types. Used as DLR storage space.
+   * gwlib/cfg.def: added config directive 'port' to 'myqsl|pgsql-connection'
+     groups, changed mysql config directive names to 'username' and 
+     'password' to reflect the harmonization to others. (COMPATIBILITY BREAKER)
+   * gwlib/dbpool.[ch]: added port value to mysql and pgsql confs, also 
+     renamed internal pgsql variables to be more harmonized.
+   * gwlib/dbpool_[pgsql|myqsl].c: added port variable support and changed 
+     internal variable naming.
+   * gw/dlr_[sdb|oracle].c: source code layout fixes. No logic change.
+   * gw/dlr_[pgsql|mysql].c: added port variable support and minor source
+     layout changes.
+   
 2005-09-20  Stipe Tolj  <stolj@wapme-group.de>
    * doc/userguide/userguide.xml, gw/sms.[ch], gw/smsbox.c, gw/xml_shared.c,
      gw/smsc/smsc_[cimd2|ois|oisd|soap].c, gwlib/http.h, gwlib/octstr.c, 
@@ -306,7 +320,6 @@
       [Msg-ID: <4214F128.4090007@wirelessonenet.com>]
 
 2005-02-17  Stipe Tolj  <stolj@wapme.de> 
-
     * test/test_radius_pdu.c: some minor issues, like usage display
       etc.
 
@@ -509,27 +522,22 @@
       [Msg-Id: <1103539890.3803.309.camel@localhost.localdomain>]
 
 2004-12-15    <kmarjola@enpocket.com>
-
     * gw/bb_store.c: removed -Wall warnings
     * gw/smskannel.conf: resumed global-sender, otherwise make check
       does not work
 
 2004-12-13    <kmarjola@enpocket.com>
-
     * gw/bb_store.c: use Dict to make things much more faster. Also
       introduce 'store-dump-freq' to set up how often the situation
       is stored to file
     * gw/bearerbox.*, gwlib/cfg.def, doc/userguide/userguide.xml: 
       relevant changes
-
     * test/fakesmsc.c: update usage to reflect changed command line
       argument (-p to -r)
-
     * gw/smskannel.conf: updated to include much more explanations
       and fixed above thing
 	
 2004-11-30    <kmarjola@enpocket.com>
-
     * gwlib/conn.c: Bug fix: try not to read negative number of bytes
     * gwlib/http.c: Bug fix: close connection with bad content-length
 

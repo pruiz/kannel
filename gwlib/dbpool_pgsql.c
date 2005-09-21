@@ -73,26 +73,34 @@
     }
 
 
-static void* pgsql_open_conn(const DBConf *db_conf)
+static void *pgsql_open_conn(const DBConf *db_conf)
 {
     PGconn *conn = NULL;
     PgSQLConf *conf = db_conf->pgsql; /* make compiler happy */
     Octstr *tmp, *cs;
-
 
     /* sanity check */
     if (conf == NULL)
         return NULL;
 
     cs = octstr_create("");
-    add1(" host=%S", conf->pghost);
-    //add1(" port=%S", conf->pgport);
-    add1(" user=%S", conf->login);
+    add1(" host=%S", conf->host);
+    /* TODO: add hostaddr support via 'host' directive too.
+     * This needs an octstr_is_addr(Octstr *os) checking if a given string
+     * contains a valid IPv4 address. Obviously parsing on our own via gwlib
+     * functions or using regex. If found, insert hostaddr instead of host
+     * for the connection string. */
+    /* add1(" hostaddr=%S", conf->host); */
+    if (conf->port > 0) {   /* add only if user set a value */
+        octstr_append_cstr(cs, " port=");    
+        octstr_append_decimal(cs, conf->port);
+    }
+    add1(" user=%S", conf->username);
     add1(" password=%S", conf->password);
-    add1(" dbname=%S", conf->dbName);
+    add1(" dbname=%S", conf->database);
 
 #if 0
-    /* This is very bad to show password in the log file */
+    /* TODO: This is very bad to show password in the log file */
     info(0, "PGSQL: Using connection string: %s.", octstr_get_cstr(cs));
 #endif
 
@@ -105,12 +113,12 @@ static void* pgsql_open_conn(const DBConf *db_conf)
     gw_assert(conn != NULL);
 
     if (PQstatus(conn) == CONNECTION_BAD) {
-        error(0, "PGSQL: connection to database %s failed!", octstr_get_cstr(conf->dbName)); 
-	panic(0, "PGSQL: %s", PQerrorMessage(conn));
+        error(0, "PGSQL: connection to database '%s' failed!", octstr_get_cstr(conf->database)); 
+        panic(0, "PGSQL: %s", PQerrorMessage(conn));
         goto failed;
     }
 
-    info(0, "PGSQL: Connected to server at %s.", octstr_get_cstr(conf->pghost));
+    info(0, "PGSQL: Connected to server at '%s'.", octstr_get_cstr(conf->host));
 
     return conn;
 
@@ -136,7 +144,7 @@ static int pgsql_check_conn(void *conn)
         return -1;
 	
     if (PQstatus(conn) == CONNECTION_BAD) {    
-        error(0, "PGSQL: database check failed!");
+        error(0, "PGSQL: Database check failed!");
         error(0, "PGSQL: %s", PQerrorMessage(conn));
         return -1;
     }	
@@ -149,10 +157,10 @@ static void pgsql_conf_destroy(DBConf *db_conf)
 {
     PgSQLConf *conf = db_conf->pgsql;
 
-    octstr_destroy(conf->pghost);
-    octstr_destroy(conf->login);
+    octstr_destroy(conf->host);
+    octstr_destroy(conf->username);
     octstr_destroy(conf->password);
-    octstr_destroy(conf->dbName);
+    octstr_destroy(conf->database);
 
     gw_free(conf);
     gw_free(db_conf);
@@ -169,16 +177,16 @@ static int pgsql_update(void *theconn, const Octstr *sql, List *binds)
     if (res == NULL)
         return -1;
 
-    switch(PQresultStatus(res)) {
-    case PGRES_BAD_RESPONSE:
-    case PGRES_NONFATAL_ERROR:
-    case PGRES_FATAL_ERROR:
-	error(0, "PGSQL: %s", octstr_get_cstr(sql));
-	error(0, "PGSQL: %s", PQresultErrorMessage(res));
-	PQclear(res);
-        return -1;
-    default: /* for compiler please */
-        break;
+    switch (PQresultStatus(res)) {
+        case PGRES_BAD_RESPONSE:
+        case PGRES_NONFATAL_ERROR:
+        case PGRES_FATAL_ERROR:
+            error(0, "PGSQL: %s", octstr_get_cstr(sql));
+            error(0, "PGSQL: %s", PQresultErrorMessage(res));
+            PQclear(res);
+            return -1;
+        default: /* for compiler please */
+            break;
     }
     rows = atoi(PQcmdTuples(res));
     PQclear(res);
@@ -201,30 +209,31 @@ static int pgsql_select(void *theconn, const Octstr *sql, List *binds, List **li
     if (res == NULL)
         return -1;
 
-    switch(PQresultStatus(res)) {
-    case PGRES_EMPTY_QUERY:
-    case PGRES_BAD_RESPONSE:
-    case PGRES_NONFATAL_ERROR:
-    case PGRES_FATAL_ERROR:
-        error(0, "PGSQL: %s", PQresultErrorMessage(res));
-	PQclear(res);
-        return -1;
-    default: /* for compiler please */
-        break;
+    switch (PQresultStatus(res)) {
+        case PGRES_EMPTY_QUERY:
+        case PGRES_BAD_RESPONSE:
+        case PGRES_NONFATAL_ERROR:
+        case PGRES_FATAL_ERROR:
+            error(0, "PGSQL: %s", octstr_get_cstr(sql));
+            error(0, "PGSQL: %s", PQresultErrorMessage(res));
+            PQclear(res);
+            return -1;
+        default: /* for compiler please */
+            break;
     }
 
     nTuples = PQntuples(res);
     nFields = PQnfields(res);
     *list = gwlist_create();
     for (row_loop = 0; row_loop < nTuples; row_loop++) {
-	fields = gwlist_create();
+        fields = gwlist_create();
     	for (field_loop = 0; field_loop < nFields; field_loop++) {
             if (PQgetisnull(res, row_loop, field_loop))
                 gwlist_produce(fields, octstr_create(""));
             else 
-	        gwlist_produce(fields, octstr_create(PQgetvalue(res, row_loop, field_loop)));
-	}
-	gwlist_produce(*list, fields);
+                gwlist_produce(fields, octstr_create(PQgetvalue(res, row_loop, field_loop)));
+        }
+        gwlist_produce(*list, fields);
     }
     PQclear(res);
 
