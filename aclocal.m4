@@ -12,7 +12,7 @@ dnl in a whole complex if statement.
 dnl
 dnl AC_CHECK_VERSION(installed, required, [do-if-success], [do-if-tail])
 dnl
-dnl Written by Stipe Tolj <stolj@wapme.de> 
+dnl Written by Stipe Tolj <stolj@wapme-group.de> 
  
 AC_DEFUN(AC_CHECK_VERSION, 
 [ 
@@ -115,7 +115,7 @@ AC_DEFUN(AC_CVS_DATE,
 dnl Available from the GNU Autoconf Macro Archive at:
 dnl http://www.gnu.org/software/ac-archive/htmldoc/ac_caolan_func_which_gethostbyname_r.html
 dnl Modified by Alexander Malysh for Kannel Project.
-dnl
+
 AC_DEFUN(AC_FUNC_WHICH_GETHOSTBYNAME_R,
 [AC_CACHE_CHECK(for which type of gethostbyname_r, ac_cv_func_which_gethostname_r, [
 AC_TRY_COMPILE([
@@ -157,5 +157,37 @@ elif test $ac_cv_func_which_gethostname_r -eq 3; then
 elif test $ac_cv_func_which_gethostname_r -eq 0; then
   ac_cv_func_which_gethostname_r = no
 fi
+])
+
+
+dnl Creates a config.nice shell script that contains all given configure
+dnl options to the orginal configure call. Can be used to add further options
+dnl in additional re-configure calls. This is perfect while handling with a
+dnl large number of configure option switches. 
+dnl This macro is taken from PHP5 aclocal.m4, Stipe Tolj.
+
+AC_DEFUN([AC_CONFIG_NICE],
+[
+  test -f $1 && mv $1 $1.old
+  rm -f $1.old
+  cat >$1<<EOF
+#! /bin/sh
+#
+# Created by configure
+
+EOF
+
+  for var in CFLAGS CXXFLAGS CPPFLAGS LDFLAGS LIBS CC CXX; do
+    eval val=\$$var
+    if test -n "$val"; then
+      echo "$var='$val' \\" >> $1
+    fi
+  done
+
+  for arg in [$]0 "[$]@"; do
+    echo "'[$]arg' \\" >> $1
+  done
+  echo '"[$]@"' >> $1
+  chmod +x $1
 ])
 

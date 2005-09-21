@@ -69,6 +69,7 @@ AC_CONFIG_HEADER(gw-config.h)
 AC_SUBST(SHELL)
 AC_CONFIG_AUX_DIR(.)
 AC_SET_TERMINAL_SEQUENCES()
+AC_CONFIG_NICE(config.nice)
 
 dnl Check gateway version number.
 VERSION=`head -n 1 VERSION`
@@ -996,13 +997,20 @@ else
     AC_MSG_RESULT(searching)
     AC_CHECK_HEADERS(sqlite.h)
     LIBS="$LIBS -L/usr/local/lib"
-    AC_CHECK_LIB(sqlite, sqlite_open, [LIBS="$LIBS -lsqlite"]) 
+    AC_CHECK_LIB(sqlite, sqlite_open, 
+      [LIBS="$LIBS -lsqlite" 
+       AC_DEFINE(HAVE_SQLITE)
+       SQLITE="yes"], 
+      [AC_MSG_ERROR([Unable to find SQLite client libraries])]
+    )
     AC_PATH_PROGS(SQLITE, sqlite, no)
-    AC_MSG_CHECKING([sqlite version])
-    sqlite_version=`$SQLITE -version`
-    AC_MSG_RESULT([$sqlite_version])
-    AC_DEFINE(HAVE_SQLITE)
-    SQLITE="yes"
+    if test "$SQLITE" = "no"; then
+      AC_MSG_WARN([Unable to find sqlite in path for SQLite support])
+    else 
+      AC_MSG_CHECKING([sqlite version])
+      sqlite_version=`$SQLITE -version`
+      AC_MSG_RESULT([$sqlite_version])
+    fi
 fi
 ],[
   AC_MSG_RESULT(disabled)
@@ -1074,52 +1082,51 @@ else
     [  --with-pgsql-dir=DIR    where to look for PostgreSQL libs and header files
                           DIR points to the installation [/usr/local/pgsql] ],
     [
-    pgsqlloc=""
-    if test -d "$withval" ; then
-    pgsqlloc="$withval"
-    fi
+    	pgsqlloc=""
+    	if test -d "$withval" ; then
+    		pgsqlloc="$withval"
+    	fi
     ])
     
     AC_MSG_RESULT(searching)
     AC_PATH_PROG(PGSQL_CONFIG, pg_config, no, [$PATH:$pgsqlloc/bin:$pgsqlloc:/usr/lib/postgresql/bin])
     dnl check for PgSQL >= 7.2 style pg_config information
     if test "$PGSQL_CONFIG" = "no"; then
-    found=""
-    for loc in $pgsqlloc /usr /usr/local ; do
-    if test "x$found" = "x" ; then
-    AC_MSG_CHECKING([for PostgresSQL include files in])
-    AC_MSG_RESULT($loc)
-    AC_CHECK_FILE("$loc/include/postgresql/libpq-fe.h",
-            [CFLAGS="$CFLAGS -I$loc/include/postgresql"; LIBS="$LIBS -L$loc/lib/postgresql -lpq"]; found=1,
-            [AC_CHECK_FILE("$loc/include/pgsql/libpq-fe.h",
-            [CFLAGS="$CFLAGS -I$loc/include/pgsql"; LIBS="$LIBS -L$loc/lib/pgsql -lpq"]; found=1,
-            [AC_CHECK_FILE("$loc/pgsql/include/libpq-fe.h",
-            [CFLAGS="$CFLAGS -I$loc/pgsql/include"; LIBS="$LIBS -L$loc/pgsql/lib -lpq"]; found=1,
-            )]
-            )]
-    )
-    fi
-    done
-    if test "x$found" != "x1" ; then
-    AC_MSG_ERROR([Unable to find libpq-fe.h, please provide a --with-pgsql-dir=<dir> location])
-    fi
+    	found=""
+    	for loc in $pgsqlloc /usr /usr/local ; do
+    		if test "x$found" = "x" ; then
+    			AC_MSG_CHECKING([for PostgresSQL include files in])
+    			AC_MSG_RESULT($loc)
+    			AC_CHECK_FILE("$loc/include/postgresql/libpq-fe.h",
+            	  [CFLAGS="$CFLAGS -I$loc/include/postgresql"; LIBS="$LIBS -L$loc/lib/postgresql -lpq"]; found=1,
+            	  [AC_CHECK_FILE("$loc/include/pgsql/libpq-fe.h",
+            	    [CFLAGS="$CFLAGS -I$loc/include/pgsql"; LIBS="$LIBS -L$loc/lib/pgsql -lpq"]; found=1,
+            	    [AC_CHECK_FILE("$loc/pgsql/include/libpq-fe.h",
+            	    [CFLAGS="$CFLAGS -I$loc/pgsql/include"; LIBS="$LIBS -L$loc/pgsql/lib -lpq"]; found=1,
+                  )]
+                )])
+    		fi
+    	done
+    	if test "x$found" != "x1" ; then
+    		AC_MSG_ERROR([Unable to find libpq-fe.h, please provide a --with-pgsql-dir=<dir> location])
+    	fi
     else
-    dnl pg_config found
-    AC_MSG_CHECKING([PostgreSQL version])
-    pgsql_version=`$PGSQL_CONFIG --version`
-    AC_MSG_RESULT([$pgsql_version])
-    AC_MSG_CHECKING([PostgreSQL libs])
-    if $PGSQL_CONFIG --libdir &>/dev/null ; then
-    LIBS="$LIBS -L`$PGSQL_CONFIG --libdir`"
-    pg_libdir=`$PGSQL_CONFIG --libdir`
-    AC_MSG_RESULT([$pg_libdir])
-    fi
-    AC_MSG_CHECKING([PostgreSQL includes])
-    if $PGSQL_CONFIG --includedir &>/dev/null ; then
-    CFLAGS="$CFLAGS -I`$PGSQL_CONFIG --includedir`"
-    pg_incdir=`$PGSQL_CONFIG --includedir`
-    AC_MSG_RESULT([$pg_incdir])
-    fi
+    	dnl pg_config found
+    	AC_MSG_CHECKING([PostgreSQL version])
+    	pgsql_version=`$PGSQL_CONFIG --version`
+    	AC_MSG_RESULT([$pgsql_version])
+    	AC_MSG_CHECKING([PostgreSQL libs])
+    	if $PGSQL_CONFIG --libdir &>/dev/null ; then
+    		LIBS="$LIBS -L`$PGSQL_CONFIG --libdir`"
+    		pg_libdir=`$PGSQL_CONFIG --libdir`
+    		AC_MSG_RESULT([$pg_libdir])
+        fi
+        AC_MSG_CHECKING([PostgreSQL includes])
+        if $PGSQL_CONFIG --includedir &>/dev/null ; then
+            CFLAGS="$CFLAGS -I`$PGSQL_CONFIG --includedir`"
+            pg_incdir=`$PGSQL_CONFIG --includedir`
+            AC_MSG_RESULT([$pg_incdir])
+        fi
     fi
     
     AC_CHECK_HEADERS(postgresql/libpq-fe.h)

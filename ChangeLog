@@ -1,4 +1,11 @@
 2005-09-21  Stipe Tolj  <stolj@wapme-group.de>
+   * configure[.in], aclocal.m4, .cvsignore: added config.nice support to
+     the autoconf build system. This is taken from PHP5 to ease the handling
+     of configure option switches while doing re-configure calls, also
+     fixed sqlite client library handling. We now stop if the lib is not
+     present, otherwise we will run into linking stage errors afterwards.
+
+2005-09-21  Stipe Tolj  <stolj@wapme-group.de>
    Feature request #254 in order to set port values for mysql and pgsql 
    database connection types. Used as DLR storage space.
    * gwlib/cfg.def: added config directive 'port' to 'myqsl|pgsql-connection'
