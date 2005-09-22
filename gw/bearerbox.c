@@ -639,6 +639,7 @@ int main(int argc, char **argv)
 
     boxc_cleanup();
     smsc2_cleanup();
+    store_shutdown();
     empty_msg_lists();
     gwlist_destroy(flow_threads, NULL);
     gwlist_destroy(suspended, NULL);
@@ -687,7 +688,6 @@ int bb_shutdown(void)
     debug("bb", 0, "shutting down udp");
     udp_shutdown();
 #endif
-    store_shutdown();
     
     return 0;
 }

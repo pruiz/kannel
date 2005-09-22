@@ -1,3 +1,14 @@
+2005-09-22  Alexander Malysh <amalysh at kannel.org>
+   * gw/bb_store.c: changed writing to/from store file. Now we don't URL encode
+     the packed message that should give us a bit speedup.
+     Fixed races while loading of store file. We must read the whole store file
+     into private dictionary and then populate to the queues because at the same
+     time SMSCConns may run.
+   * gw/bearerbox.c: Fixed store file shutdown phase. It is wrong to shutdown
+     store file asynchronously while some SMSCConns or boxc connections still 
+     running. We must shutdown store file only when we made sure all producers
+     are down.
+
 2005-09-21  Stipe Tolj  <stolj@wapme-group.de>
    * configure[.in], aclocal.m4, .cvsignore: added config.nice support to
      the autoconf build system. This is taken from PHP5 to ease the handling

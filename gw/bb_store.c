@@ -84,13 +84,9 @@
 #include "bearerbox.h"
 #include "sms.h"
 
-
 /* passed from bearerbox core */
-
 extern List *incoming_sms;
 extern List *outgoing_sms;
-extern List *flow_threads;
-
 
 static FILE *file = NULL;
 static Octstr *filename = NULL;
@@ -105,46 +101,104 @@ static Dict *sms_dict = NULL;
 static int active = 1;
 static time_t last_dict_mod = 0;
 
+
+static void receive_msg(Msg *msg)
+{
+    if (msg_type(msg) != sms) {
+        error(0, "Found non sms message in dictionary!");
+        msg_dump(msg, 0);
+        msg_destroy(msg);
+        return;
+    }
+
+    switch(msg->sms.sms_type) {
+        case mo:
+        case report_mo:
+            gwlist_produce(incoming_sms, msg);
+            break;
+        case mt_push:
+        case mt_reply:
+        case report_mt:
+            gwlist_produce(outgoing_sms, msg);
+            break;
+        default:
+            error(0, "Found unknown message type in store file.");
+            msg_dump(msg, 0);
+            msg_destroy(msg);
+            break;
+    }
+}
+
+
 static void write_msg(Msg *msg)
 {
-    Octstr *pack, *line;
+    Octstr *pack;
+    unsigned char buf[4];
     
     pack = msg_pack(msg);
-    line = octstr_duplicate(pack);
-    octstr_url_encode(line);
+    encode_network_long(buf, octstr_len(pack));
+    octstr_insert_data(pack, 0, (char*)buf, 4);
 
-    octstr_print(file, line);
-    fprintf(file, "\n");
+    octstr_print(file, pack);
+    fflush(file);
 
     octstr_destroy(pack);
-    octstr_destroy(line);
-
 }
+
+
+static int read_msg(Msg **msg, Octstr *os, long *off)
+{
+    unsigned char buf[4];
+    long i;
+    Octstr *pack;
+
+    gw_assert(*off >= 0);
+    if (*off + 4 > octstr_len(os)) {
+        error(0, "Packet too short while unpacking Msg.");
+        return -1;
+    }
+
+    octstr_get_many_chars((char*)buf, os, *off, 4);
+    i = decode_network_long(buf);
+    *off  +=  4;
+    
+    pack = octstr_copy(os, *off, i);
+    *off += octstr_len(pack);
+    *msg = msg_unpack(pack);
+    octstr_destroy(pack);
+    
+    if (!*msg)
+        return -1;
+    
+    return 0;
+}
+
 
 static int open_file(Octstr *name)
 {
     file = fopen(octstr_get_cstr(name), "w");
     if (file == NULL) {
-	error(errno, "Failed to open '%s' for writing, cannot create store-file",
+        error(errno, "Failed to open '%s' for writing, cannot create store-file",
 	      octstr_get_cstr(name));
-	return -1;
+        return -1;
     }
     return 0;
 }
 
+
 static int rename_store(void)
 {
     if (rename(octstr_get_cstr(filename), octstr_get_cstr(bakfile)) == -1) {
-	if (errno != ENOENT) {
-	    error(errno, "Failed to rename old store '%s' as '%s'",
-	    octstr_get_cstr(filename), octstr_get_cstr(bakfile));
-	    return -1;
-	}
+        if (errno != ENOENT) {
+            error(errno, "Failed to rename old store '%s' as '%s'",
+            octstr_get_cstr(filename), octstr_get_cstr(bakfile));
+            return -1;
+        }
     }
     if (rename(octstr_get_cstr(newfile), octstr_get_cstr(filename)) == -1) {
-	error(errno, "Failed to rename new store '%s' as '%s'",
-	      octstr_get_cstr(newfile), octstr_get_cstr(filename));
-	return -1;
+        error(errno, "Failed to rename new store '%s' as '%s'",
+              octstr_get_cstr(newfile), octstr_get_cstr(filename));
+        return -1;
     }
     return 0;
 }
@@ -158,20 +212,20 @@ static int do_dump(void)
     long l;
 
     if (filename == NULL)
-	return 0;
+        return 0;
 
     /* create a new store-file and save all non-acknowledged
      * messages into it
      */
     if (open_file(newfile)==-1)
-	return -1;
+        return -1;
 
     sms_list = dict_keys(sms_dict);
     for (l=0; l < gwlist_len(sms_list); l++) {
-	key = gwlist_get(sms_list, l);
-	msg = dict_get(sms_dict, key);
-	if (msg)
-	    write_msg(msg);
+        key = gwlist_get(sms_list, l);
+        msg = dict_get(sms_dict, key);
+        if (msg != NULL)
+            write_msg(msg);
     }
     fflush(file);
     gwlist_destroy(sms_list, octstr_destroy_item);
@@ -183,8 +237,6 @@ static int do_dump(void)
 }
 
 
-
-
 /*
  * thread to write current store to file now and then, to prevent
  * it from becoming far too big (slows startup)
@@ -193,25 +245,24 @@ static void store_dumper(void *arg)
 {
     time_t now;
 
-    gwlist_add_producer(flow_threads);
-
     while(active) {
-	now = time(NULL);
-	/*
-	 * write store to file up to each N. second, providing
-	 * that something happened, of course
-	 */
-	if (now - last_dict_mod > dump_frequency) {
-	    store_dump();
-	    /* make sure that no new dump is done for a while unless
-	     * something happens */
-	    last_dict_mod = time(NULL) + 3600*24;
-	}
+        now = time(NULL);
+        /*
+         * write store to file up to each N. second, providing
+         * that something happened, of course
+         */
+        if (now - last_dict_mod > dump_frequency) {
+            store_dump();
+            /* make sure that no new dump is done for a while unless
+             * something happens
+             */
+            last_dict_mod = time(NULL) + 3600*24;
+        }
         gwthread_sleep(dump_frequency);
     }
     store_dump();
     if (file != NULL)
-	fclose(file);
+	   fclose(file);
     octstr_destroy(filename);
     octstr_destroy(newfile);
     octstr_destroy(bakfile);
@@ -222,8 +273,6 @@ static void store_dumper(void *arg)
     filename = newfile = bakfile = NULL;
     file_mutex = NULL;
     sms_dict = NULL;
-
-    gwlist_remove_producer(flow_threads);
 }
 
 
@@ -259,10 +308,10 @@ Octstr *store_status(int status_type)
     keys = dict_keys(sms_dict);
 
     for (l = 0; l < gwlist_len(keys); l++) {
-	key = gwlist_get(keys, l);
+        key = gwlist_get(keys, l);
         msg = dict_get(sms_dict, key);
-	if (msg == NULL)
-	    continue;
+        if (msg == NULL)
+            continue;
 
         if (msg_type(msg) == sms) {
 
@@ -298,13 +347,12 @@ Octstr *store_status(int status_type)
 
             uuid_unparse(msg->sms.id, id);
 
-            octstr_format_append(ret, frmt,
-                id,
-		(msg->sms.sms_type == mo ? "MO" :
-		 msg->sms.sms_type == mt_push ? "MT-PUSH" :
-		 msg->sms.sms_type == mt_reply ? "MT-REPLY" :
-		 msg->sms.sms_type == report_mo ? "DLR-MO" :
-		 msg->sms.sms_type == report_mt ? "DLR-MT" : ""),
+            octstr_format_append(ret, frmt, id,
+                (msg->sms.sms_type == mo ? "MO" :
+                 msg->sms.sms_type == mt_push ? "MT-PUSH" :
+                 msg->sms.sms_type == mt_reply ? "MT-REPLY" :
+                 msg->sms.sms_type == report_mo ? "DLR-MO" :
+                 msg->sms.sms_type == report_mt ? "DLR-MT" : ""),
                  tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday,
                  tm.tm_hour, tm.tm_min, tm.tm_sec,
                 (msg->sms.sender ? octstr_get_cstr(msg->sms.sender) : ""),
@@ -340,7 +388,7 @@ long store_messages(void)
 }
 
 
-static int store_to_dict(Msg *msg)
+static int store_to_dict(Msg *msg, Dict *store)
 {
     Msg *copy;
     Octstr *uuid_os;
@@ -354,39 +402,39 @@ static int store_to_dict(Msg *msg)
         time(&msg->sms.time);
 
     if (msg_type(msg) == sms) {
-	copy = msg_duplicate(msg);
-
+        copy = msg_duplicate(msg);
+        
         uuid_unparse(copy->sms.id, id);
         uuid_os = octstr_create(id);
-
-	dict_put(sms_dict, uuid_os, copy);
-	octstr_destroy(uuid_os);
-	last_dict_mod = time(NULL);
-    }
-    else if (msg_type(msg) == ack) {
-	uuid_unparse(msg->ack.id, id);
-	uuid_os = octstr_create(id);
-	copy = dict_remove(sms_dict, uuid_os);
-	octstr_destroy(uuid_os);
-	if (copy == NULL) {
-	    warning(0, "bb_store: get ACK of message not found "
-		    "from store, strange?");
-	} else {
-	    msg_destroy(copy);
-	    last_dict_mod = time(NULL);
-	}
+        
+        dict_put(store, uuid_os, copy);
+        octstr_destroy(uuid_os);
+        last_dict_mod = time(NULL);
+    } else if (msg_type(msg) == ack) {
+        uuid_unparse(msg->ack.id, id);
+        uuid_os = octstr_create(id);
+        copy = dict_remove(store, uuid_os);
+        octstr_destroy(uuid_os);
+        if (copy == NULL) {
+            warning(0, "bb_store: get ACK of message not found "
+        	       "from store, strange?");
+        } else {
+            msg_destroy(copy);
+            last_dict_mod = time(NULL);
+        }
     }
     else
-	return -1;
+        return -1;
     return 0;
 }
     
 int store_save(Msg *msg)
 {
     if (filename == NULL)
-	return 0;
-    if (store_to_dict(msg) == -1)
-	return -1;
+        return 0;
+
+    if (store_to_dict(msg, sms_dict) == -1)
+        return -1;
     
     /* write to file, too */
     mutex_lock(file_mutex);
@@ -402,6 +450,7 @@ int store_save(Msg *msg)
 int store_save_ack(Msg *msg, ack_status_t status)
 {
     Msg *mack;
+    int ret;
 
     /* only sms are handled */
     if (!msg || msg_type(msg) != sms)
@@ -418,10 +467,10 @@ int store_save_ack(Msg *msg, ack_status_t status)
     uuid_copy(mack->ack.id, msg->sms.id);
     mack->ack.nack = status;
 
-    store_save(mack);
+    ret = store_save(mack);
     msg_destroy(mack);
 
-    return 0;
+    return ret;
 }
 
 
@@ -429,116 +478,96 @@ int store_save_ack(Msg *msg, ack_status_t status)
 int store_load(void)
 {
     List *keys;
-    Octstr *store_file, *pack, *key;
-    Msg *msg, *copy;
+    Octstr *store_file, *key;
+    Msg *msg;
     int retval, msgs;
     long end, pos;
+    Dict *store_dict;
 
     if (filename == NULL)
-	return 0;
+        return 0;
 
     mutex_lock(file_mutex);
     if (file != NULL) {
-	fclose(file);
-	file = NULL;
+        fclose(file);
+        file = NULL;
     }
 
     store_file = octstr_read_file(octstr_get_cstr(filename));
     if (store_file != NULL)
-	info(0, "Loading store file `%s'", octstr_get_cstr(filename));
+        info(0, "Loading store file `%s'", octstr_get_cstr(filename));
     else {
-	store_file = octstr_read_file(octstr_get_cstr(newfile));
-	if (store_file != NULL)
-	    info(0, "Loading store file `%s'", octstr_get_cstr(newfile));
-	else {
-	    store_file = octstr_read_file(octstr_get_cstr(bakfile));
-	    if (store_file != NULL)
-		info(0, "Loading store file `%s'", octstr_get_cstr(bakfile));
-	    else {
-		info(0, "Cannot open any store file, starting a new one");
-		retval = open_file(filename);
-		mutex_unlock(file_mutex);
-		return retval;
-	    }
-	}
+        store_file = octstr_read_file(octstr_get_cstr(newfile));
+        if (store_file != NULL)
+            info(0, "Loading store file `%s'", octstr_get_cstr(newfile));
+        else {
+            store_file = octstr_read_file(octstr_get_cstr(bakfile));
+            if (store_file != NULL)
+        	       info(0, "Loading store file `%s'", octstr_get_cstr(bakfile));
+            else {
+                info(0, "Cannot open any store file, starting a new one");
+                retval = open_file(filename);
+                mutex_unlock(file_mutex);
+                return retval;
+            }
+        }
     }
 
     info(0, "Store-file size %ld, starting to unpack%s", octstr_len(store_file),
-	 octstr_len(store_file) > 10000 ? " (may take awhile)" : "");
+        octstr_len(store_file) > 10000 ? " (may take awhile)" : "");
 
 
     pos = 0;
     msgs = 0;
+    end = octstr_len(store_file);
+    
+    /*
+     * Create our private dictionary and load messages into it because
+     * it's possible to double delivery messages if one of following is true:
+     *  - sms_dict was not empty then we reinject messages into the queues
+     *  - when SMSCs running then at least one message could be double transmitted
+     */
+    store_dict = dict_create(1024, msg_destroy_item);
 
-    while ((end = octstr_search_char(store_file, '\n', pos)) != -1) {
-
-	pack = octstr_copy(store_file, pos, end-pos);
-	pos = end+1;
-
-	if (octstr_url_decode(pack) == -1) {
-	    debug("bb.store", 0, "Garbage at store-file, skipped");
-            octstr_destroy(pack);
-	    continue;
-	}
-
-	msg = msg_unpack(pack);
-	octstr_destroy(pack);
-	if (msg == NULL) {
-	    continue;
+    while (pos < end) {
+        if (read_msg(&msg, store_file, &pos) == -1) {
+            error(0, "Garbage at store-file, skipped.");
+            continue;
         }
-
-	if (msg_type(msg) == sms) {
-	    store_to_dict(msg);
-	    msgs++;
-	}
-	else if (msg_type(msg) == ack) {
-	    store_to_dict(msg);
-	} else {
-	    warning(0, "Strange message in store-file, discarded, "
-		    "dump follows:");
-	    msg_dump(msg, 0);
-	    msg_destroy(msg);
-	}
+        if (msg_type(msg) == sms) {
+            store_to_dict(msg, store_dict);
+            msgs++;
+        } else if (msg_type(msg) == ack) {
+            store_to_dict(msg, store_dict);
+        } else {
+            warning(0, "Strange message in store-file, discarded, "
+                "dump follows:");
+            msg_dump(msg, 0);
+            msg_destroy(msg);
+        }
     }
     octstr_destroy(store_file);
 
     info(0, "Retrieved %d messages, non-acknowledged messages: %ld",
-	 msgs, dict_key_count(sms_dict));
+        msgs, dict_key_count(store_dict));
 
-    /* now create a new sms_store out of messages left
-     */
+    /* now create a new sms_store out of messages left */
 
-    keys = dict_keys(sms_dict);
-    while((key = gwlist_extract_first(keys))!=NULL) {
-	msg = dict_get(sms_dict, key);
-
-	if (msg_type(msg) != sms) {
-	    error(0, "Found non sms message in dictionary!");
-	    msg_dump(msg, 0);
-	    msg_destroy(msg);
-	    continue;
-	}
-
-	if (msg->sms.sms_type == mo ||
-	    msg->sms.sms_type == report_mo) {
-	    copy = msg_duplicate(msg);
-	    gwlist_produce(incoming_sms, copy);
+    keys = dict_keys(store_dict);
+    while((key = gwlist_extract_first(keys)) != NULL) {
+        msg = dict_remove(store_dict, key);
+        if (store_to_dict(msg, sms_dict) != -1) {
+            receive_msg(msg);
+        } else {
+            error(0, "Found unknown message type in store file.");
+            msg_dump(msg, 0);
+            msg_destroy(msg);
         }
-	else if (msg->sms.sms_type == mt_push ||
-	    msg->sms.sms_type == mt_reply ||
-	    msg->sms.sms_type == report_mt) {
-	    copy = msg_duplicate(msg);
-	    gwlist_produce(outgoing_sms, copy);
-        }
-	else {
-	    msg_dump(msg, 0);
-	    dict_remove(sms_dict, key);
-	}
     }
     gwlist_destroy(keys, octstr_destroy_item);
+    dict_destroy(store_dict);
 
-    /* Finally, generate new store file out of left messages
-     */
+    /* Finally, generate new store file out of left messages */
     retval = do_dump();
 
     mutex_unlock(file_mutex);
@@ -556,13 +585,26 @@ int store_dump(void)
 	  dict_key_count(sms_dict));
     mutex_lock(file_mutex);
     if (file != NULL) {
-	fclose(file);
-	file = NULL;
+        fclose(file);
+        file = NULL;
     }
     retval = do_dump();
     mutex_unlock(file_mutex);
 
     return retval;
+}
+
+
+void store_shutdown(void)
+{
+    if (filename == NULL)
+        return;
+
+    active = 0;
+    gwthread_wakeup(cleanup_thread);
+    /* wait for cleanup thread */
+    if (cleanup_thread != -1)
+        gwthread_join(cleanup_thread);
 }
 
 
@@ -579,29 +621,19 @@ int store_init(const Octstr *fname, long dump_freq)
     newfile = octstr_format("%s.new", octstr_get_cstr(filename));
     bakfile = octstr_format("%s.bak", octstr_get_cstr(filename));
 
-    sms_dict = dict_create(201, msg_destroy_item);
+    sms_dict = dict_create(1024, msg_destroy_item);
 
     if (dump_freq > 0)
-	dump_frequency = dump_freq;
+        dump_frequency = dump_freq;
     else
-	dump_frequency = BB_STORE_DEFAULT_DUMP_FREQ;
+        dump_frequency = BB_STORE_DEFAULT_DUMP_FREQ;
 
     file_mutex = mutex_create();
     active = 1;
 
     if ((cleanup_thread = gwthread_create(store_dumper, NULL))==-1)
-	panic(0, "Failed to create a cleanup thread!");
+        panic(0, "Failed to create a cleanup thread!");
 
     return 0;
 }
 
-
-void store_shutdown(void)
-{
-    if (filename == NULL)
-	return;
-
-    active = 0;
-    gwthread_wakeup(cleanup_thread);
-
-}
