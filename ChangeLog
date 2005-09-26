@@ -1,4 +1,8 @@
 2005-09-26  Stipe Tolj  <stolj@wapme-group.de>
+   * configure[.in]: changed --with-sdb handling in order to break configure
+     process if the libSDB client library is not found.
+   
+2005-09-26  Stipe Tolj  <stolj@wapme-group.de>
    * Makefile.in: added removal of 'config.nice' for distclean target.
 
 2005-09-22  Alexander Malysh <amalysh at kannel.org>
