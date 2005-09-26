@@ -304,7 +304,7 @@ clean:
 	rm -f $(benchoutputs)
 
 distclean: clean
-	rm -f Makefile gw-config.h config.cache config.log config.status .depend gwlib/gw_uuid_types.h
+	rm -f Makefile gw-config.h config.cache config.log config.status config.nice .depend gwlib/gw_uuid_types.h
 
 nag:
 	utils/find-long-lines

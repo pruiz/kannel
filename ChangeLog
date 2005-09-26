@@ -1,3 +1,6 @@
+2005-09-26  Stipe Tolj  <stolj@wapme-group.de>
+   * Makefile.in: added removal of 'config.nice' for distclean target.
+
 2005-09-22  Alexander Malysh <amalysh at kannel.org>
    * gw/bb_store.c: changed writing to/from store file. Now we don't URL encode
      the packed message that should give us a bit speedup.
