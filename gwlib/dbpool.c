@@ -74,6 +74,7 @@
 #include "dbpool_mysql.c"
 #include "dbpool_oracle.c"
 #include "dbpool_sqlite.c"
+#include "dbpool_sqlite3.c"
 #include "dbpool_sdb.c"
 #include "dbpool_pgsql.c"
 
@@ -123,6 +124,11 @@ DBPool *dbpool_create(enum db_type db_type, DBConf *conf, unsigned int connectio
 #ifdef HAVE_SQLITE
         case DBPOOL_SQLITE:
             p->db_ops = &sqlite_ops;
+            break;
+#endif
+#ifdef HAVE_SQLITE3
+        case DBPOOL_SQLITE3:
+            p->db_ops = &sqlite3_ops;
             break;
 #endif
 #ifdef HAVE_SDB

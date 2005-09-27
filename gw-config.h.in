@@ -220,6 +220,9 @@
 /* Define if you have and want to use the SQLite database library (-lsqlite) */
 #undef HAVE_SQLITE
 
+/* Define if you have and want to use the SQLite3 database library (-lsqlite3) */
+#undef HAVE_SQLITE3
+
 /* Define version of used libSDB */
 #undef LIBSDB_VERSION
 

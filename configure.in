@@ -1019,6 +1019,38 @@ fi
 ])
 
 
+dnl Implement the --with-sqlite3 option. This will set HAVE_SQLITE3 in gw-config.h
+dnl accordingly and enable the usage of the libsqlite3 routines.
+
+AC_MSG_CHECKING([whether to compile with SQLite3 support])
+AC_ARG_WITH(sqlite3,
+[  --with-sqlite3          enable SQLite3 storage [disabled]], [
+if test "$withval" != yes; then
+    AC_MSG_RESULT(disabled)
+else
+    AC_MSG_RESULT(searching)
+    AC_CHECK_HEADERS(sqlite3.h)
+    LIBS="$LIBS -L/usr/local/lib"
+    AC_CHECK_LIB(sqlite3, sqlite3_open, 
+      [LIBS="$LIBS -lsqlite3" 
+       AC_DEFINE(HAVE_SQLITE3)
+       SQLITE3="yes"], 
+      [AC_MSG_ERROR([Unable to find SQLite3 client libraries])]
+    )
+    AC_PATH_PROGS(SQLITE3, sqlite3, no)
+    if test "$SQLITE3" = "no"; then
+      AC_MSG_WARN([Unable to find sqlite3 in path for SQLite3 support])
+    else 
+      AC_MSG_CHECKING([sqlite3 version])
+      sqlite3_version=`$SQLITE3 -version`
+      AC_MSG_RESULT([$sqlite3_version])
+    fi
+fi
+],[
+  AC_MSG_RESULT(disabled)
+])
+
+
 dnl Implement the --with-oracle option. This will set HAVE_ORACLE in gw-config.h
 dnl accordingly and enable the usage of the OCI routines.
 

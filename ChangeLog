@@ -1,4 +1,10 @@
 2005-09-27  Stipe Tolj  <stolj@wapme-group.de>
+   * gwlib/dlrpool_sqlite3.c, gwlib/dbpool.[ch]: added SQLite3 support for database 
+     pool constructs. This can be used to implement a DLR storage type for SQLite3.
+   * gw-config.h.in, configure[.in]: added SQLite3 support, this is only the 
+     configuration part, yet no DLR storage implemenation for this.
+
+2005-09-27  Stipe Tolj  <stolj@wapme-group.de>
    * gw/dlr_pgsql.c: fixed a typo from previous commit on this that broke 
      compilation. No logic change.
       

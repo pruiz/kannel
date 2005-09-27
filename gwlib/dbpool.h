@@ -57,7 +57,7 @@
 /*
  * dbpool.h - database pool functions
  *
- * Stipe Tolj <stolj@wapme.de>
+ * Stipe Tolj <stolj@wapme-group.de>
  * Alexander Malysh <a.malysh@centrium.de>
  */
 
@@ -66,13 +66,14 @@
 
 #if defined(HAVE_MYSQL) || defined(HAVE_SDB) || \
     defined(HAVE_ORACLE) || defined(HAVE_SQLITE) || \
-    defined(HAVE_PGSQL)
+    defined(HAVE_PGSQL) || defined(HAVE_SQLITE3)
 #define HAVE_DBPOOL 1
 #endif
 
 /* supported databases for connection pools */
 enum db_type {
-	DBPOOL_MYSQL, DBPOOL_SDB, DBPOOL_ORACLE, DBPOOL_SQLITE, DBPOOL_PGSQL
+	DBPOOL_MYSQL, DBPOOL_SDB, DBPOOL_ORACLE, DBPOOL_SQLITE, DBPOOL_PGSQL,
+    DBPOOL_SQLITE3
 };
 
 
@@ -119,6 +120,10 @@ typedef struct {
 } SQLiteConf;
 
 typedef struct {
+    Octstr *file;
+} SQLiteConf3;
+
+typedef struct {
     Octstr *host;
     long port;
     Octstr *username;
@@ -128,12 +133,12 @@ typedef struct {
     Octstr *tty;        /* yet not used */
 } PgSQLConf;
 
-
 typedef union {
     MySQLConf *mysql;
     SDBConf *sdb;
     OracleConf *oracle;
     SQLiteConf *sqlite;
+    SQLiteConf3 *sqlite3;
     PgSQLConf *pgsql;
 } DBConf;
 
