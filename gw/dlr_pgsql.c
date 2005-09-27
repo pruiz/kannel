@@ -347,7 +347,7 @@ found:
 
     if (!(pgsql_host = cfg_get(grp, octstr_imm("host"))))
    	    panic(0, "DLR: PgSQL: directive 'host' is not specified!");
-    if (!(pqsql_user = cfg_get(grp, octstr_imm("username"))))
+    if (!(pgsql_user = cfg_get(grp, octstr_imm("username"))))
    	    panic(0, "DLR: PgSQL: directive 'username' is not specified!");
     if (!(pgsql_pass = cfg_get(grp, octstr_imm("password"))))
    	    panic(0, "DLR: PgSQL: directive 'password' is not specified!");

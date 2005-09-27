@@ -1,3 +1,7 @@
+2005-09-27  Stipe Tolj  <stolj@wapme-group.de>
+   * gw/dlr_pgsql.c: fixed a typo from previous commit on this that broke 
+     compilation. No logic change.
+      
 2005-09-27  Alexander Malysh <amalysh at kannel.org>
    * gw/bb_store.c: fixed start sequence of store file. Now we don't allow using
      of store until store file was not loaded (all attempts to use store will block).
