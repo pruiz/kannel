@@ -100,6 +100,7 @@ static Dict *sms_dict = NULL;
 
 static int active = 1;
 static time_t last_dict_mod = 0;
+static List *loaded;
 
 
 static void receive_msg(Msg *msg)
@@ -388,7 +389,7 @@ long store_messages(void)
 }
 
 
-static int store_to_dict(Msg *msg, Dict *store)
+static int store_to_dict(Msg *msg)
 {
     Msg *copy;
     Octstr *uuid_os;
@@ -407,13 +408,13 @@ static int store_to_dict(Msg *msg, Dict *store)
         uuid_unparse(copy->sms.id, id);
         uuid_os = octstr_create(id);
         
-        dict_put(store, uuid_os, copy);
+        dict_put(sms_dict, uuid_os, copy);
         octstr_destroy(uuid_os);
         last_dict_mod = time(NULL);
     } else if (msg_type(msg) == ack) {
         uuid_unparse(msg->ack.id, id);
         uuid_os = octstr_create(id);
-        copy = dict_remove(store, uuid_os);
+        copy = dict_remove(sms_dict, uuid_os);
         octstr_destroy(uuid_os);
         if (copy == NULL) {
             warning(0, "bb_store: get ACK of message not found "
@@ -433,7 +434,10 @@ int store_save(Msg *msg)
     if (filename == NULL)
         return 0;
 
-    if (store_to_dict(msg, sms_dict) == -1)
+    /* block here until store not loaded */
+    gwlist_consume(loaded);
+
+    if (store_to_dict(msg) == -1)
         return -1;
     
     /* write to file, too */
@@ -482,7 +486,6 @@ int store_load(void)
     Msg *msg;
     int retval, msgs;
     long end, pos;
-    Dict *store_dict;
 
     if (filename == NULL)
         return 0;
@@ -521,56 +524,51 @@ int store_load(void)
     msgs = 0;
     end = octstr_len(store_file);
     
-    /*
-     * Create our private dictionary and load messages into it because
-     * it's possible to double delivery messages if one of following is true:
-     *  - sms_dict was not empty then we reinject messages into the queues
-     *  - when SMSCs running then at least one message could be double transmitted
-     */
-    store_dict = dict_create(1024, msg_destroy_item);
-
     while (pos < end) {
         if (read_msg(&msg, store_file, &pos) == -1) {
             error(0, "Garbage at store-file, skipped.");
             continue;
         }
         if (msg_type(msg) == sms) {
-            store_to_dict(msg, store_dict);
+            store_to_dict(msg);
             msgs++;
         } else if (msg_type(msg) == ack) {
-            store_to_dict(msg, store_dict);
+            store_to_dict(msg);
         } else {
             warning(0, "Strange message in store-file, discarded, "
                 "dump follows:");
             msg_dump(msg, 0);
-            msg_destroy(msg);
         }
+        msg_destroy(msg);
     }
     octstr_destroy(store_file);
 
     info(0, "Retrieved %d messages, non-acknowledged messages: %ld",
-        msgs, dict_key_count(store_dict));
+        msgs, dict_key_count(sms_dict));
 
     /* now create a new sms_store out of messages left */
 
-    keys = dict_keys(store_dict);
+    keys = dict_keys(sms_dict);
     while((key = gwlist_extract_first(keys)) != NULL) {
-        msg = dict_remove(store_dict, key);
-        if (store_to_dict(msg, sms_dict) != -1) {
+        msg = dict_remove(sms_dict, key);
+        if (store_to_dict(msg) != -1) {
             receive_msg(msg);
         } else {
             error(0, "Found unknown message type in store file.");
             msg_dump(msg, 0);
             msg_destroy(msg);
         }
+        octstr_destroy(key);
     }
     gwlist_destroy(keys, octstr_destroy_item);
-    dict_destroy(store_dict);
 
     /* Finally, generate new store file out of left messages */
     retval = do_dump();
 
     mutex_unlock(file_mutex);
+
+    /* allow using of store */
+    gwlist_remove_producer(loaded);
 
     return retval;
 }
@@ -605,6 +603,8 @@ void store_shutdown(void)
     /* wait for cleanup thread */
     if (cleanup_thread != -1)
         gwthread_join(cleanup_thread);
+
+    gwlist_destroy(loaded, NULL);
 }
 
 
@@ -630,6 +630,9 @@ int store_init(const Octstr *fname, long dump_freq)
 
     file_mutex = mutex_create();
     active = 1;
+
+    loaded = gwlist_create();
+    gwlist_add_producer(loaded);
 
     if ((cleanup_thread = gwthread_create(store_dumper, NULL))==-1)
         panic(0, "Failed to create a cleanup thread!");

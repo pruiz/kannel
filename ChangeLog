@@ -1,3 +1,8 @@
+2005-09-27  Alexander Malysh <amalysh at kannel.org>
+   * gw/bb_store.c: fixed start sequence of store file. Now we don't allow using
+     of store until store file was not loaded (all attempts to use store will block).
+     Also fixed some memory leaks.
+
 2005-09-26  Stipe Tolj  <stolj@wapme-group.de>
    * configure[.in]: changed --with-sdb handling in order to break configure
      process if the libSDB client library is not found.
