@@ -1,3 +1,10 @@
+2005-10-05  Stipe Tolj  <stolj@wapme-group.de>
+   * gw/wml_compiler.c: fixing bug #255 where we pass a NULL result from 
+     xmlDocGetRootElement() within parse_document() to the next functions and 
+     hence causing an segfault. Thanks a lot to Mindaugas Riauba <mind@bi.lt>
+     for the bug report and the fix suggestion.
+     [Msg-Id: <01ad01c5c807$8bca3ba0$f20214ac@bite.lt>]
+
 2005-10-04  Stipe Tolj  <stolj@wapme-group.de>
    * doc/examples/modems.conf: commenting 'no-smsc' value for Falcom GSM modems,
      this breaks the PDU string acceptance as far as we tested. Should be 'false'

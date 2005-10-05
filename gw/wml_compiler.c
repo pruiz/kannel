@@ -599,6 +599,13 @@ static int parse_document(xmlDocPtr document, Octstr *charset,
         parse_charset(charset) : parse_charset(octstr_imm("UTF-8"));
 
     node = xmlDocGetRootElement(document);
+    
+    if (node == NULL) {
+        error(0, "WML compiler: XML parsing failed, no document root element.");
+        error(0, "Most probably an error in the WML source.");
+        return -1;
+    }
+    
     string_table_build(node, wbxml);
 
     return parse_node(node, wbxml);
