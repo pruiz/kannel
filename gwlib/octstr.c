@@ -1560,13 +1560,13 @@ List *octstr_split(const Octstr *os, const Octstr *sep)
     pos = 0;
     seplen = octstr_len(sep);
 
-    while ((next = octstr_search(os, sep, pos)) != -1) {
-	gwlist_append(list, octstr_copy(os, pos, next - pos));
-	pos = next + seplen;
+    while ((next = octstr_search(os, sep, pos)) > 0) {
+        gwlist_append(list, octstr_copy(os, pos, next - pos));
+        pos = next + seplen;
     }
     
     if (pos < octstr_len(os))
-    	gwlist_append(list, octstr_copy(os, pos, octstr_len(os)));
+        gwlist_append(list, octstr_copy(os, pos, octstr_len(os)));
     
     return list;
 }

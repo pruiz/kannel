@@ -1,3 +1,9 @@
+2005-10-06  Stipe Tolj  <stolj@wapme-group.de>
+   * gwlib/octstr.c: fixed a critical bug in octstr_split() where we would loop 
+     infinetly inside the while clause cuasing octstr_search() to allocate 
+     memory. If a needle has len 0, then we obviously have an exit condition 
+     for the loop.
+  
 2005-10-05  Stipe Tolj  <stolj@wapme-group.de>
    * gw/wap_push_ppg.c: possibly fixing bug #144, initializing Octstr vars
      that are destroyed afterwards in case of a failed URL compare, waiting on 
