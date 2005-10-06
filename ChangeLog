@@ -1,4 +1,9 @@
 2005-10-05  Stipe Tolj  <stolj@wapme-group.de>
+   * gw/wap_push_ppg.c: possibly fixing bug #144, initializing Octstr vars
+     that are destroyed afterwards in case of a failed URL compare, waiting on 
+     Jonathan for feedback.
+   
+2005-10-05  Stipe Tolj  <stolj@wapme-group.de>
    * gw/wml_compiler.c: fixing bug #255 where we pass a NULL result from 
      xmlDocGetRootElement() within parse_document() to the next functions and 
      hence causing an segfault. Thanks a lot to Mindaugas Riauba <mind@bi.lt>

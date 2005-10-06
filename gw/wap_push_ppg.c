@@ -755,7 +755,7 @@ static void pap_request_thread(void *arg)
            *url,
            *ip,
            *not_found,
-           *username = NULL;
+           *username;
     int compiler_status,
         http_status;
     List *push_headers,                /* MIME headers themselves */
@@ -767,7 +767,8 @@ static void pap_request_thread(void *arg)
     HTTPClient *client;
     Octstr *dlr_url;
     
-    http_status = 0;                
+    http_status = 0;
+    url = ip = mime_content = username = NULL;                
   
     while (run_status == running && (p = gwlist_consume(pap_queue)) != NULL) {
 
