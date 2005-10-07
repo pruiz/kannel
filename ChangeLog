@@ -1,3 +1,8 @@
+2005-10-07  Stipe Tolj  <stolj@wapme-group.de>
+   * doc/examples/modems.conf: added modems group for Sony Ericsson T63x, 
+     found at Heny Junior's blog describing the use on a MacOS X system. 
+     [URL: http://henryjunior.com/blog/?p=12] 
+     
 2005-10-06  Stipe Tolj  <stolj@wapme-group.de>
    * gwlib/octstr.c: fixed a critical bug in octstr_split() where we would loop 
      infinetly inside the while clause cuasing octstr_search() to allocate 
