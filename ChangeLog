@@ -1,3 +1,7 @@
+2005-10-10  Stipe Tolj  <stolj@wapme-group.de>
+   * test/test_regex.c: added output of the sub-strings matching a regular
+     expression, just for the sake of readability.
+     
 2005-10-07  Stipe Tolj  <stolj@wapme-group.de>
    * doc/examples/modems.conf: added modems group for Sony Ericsson T63x, 
      found at Heny Junior's blog describing the use on a MacOS X system. 
