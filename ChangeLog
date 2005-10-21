@@ -1,3 +1,10 @@
+2005-10-21  Stipe Tolj  <stolj@wapme-group.de>
+   * doc/examples/dlr-mysql.conf: fixed the naming change from change set
+     2005-09-21, where the 'mysql-connection' group changed to use 'username'
+     and 'password' as login credentials instead of the mysql prefixes.
+     Thanks to Mike Harris <mikeh@mite.net> who pointed this out.
+     [Msg-Id: <200510201656.j9KGuqch027946@outmail.freedom2surf.net>]
+
 2005-10-10  Stipe Tolj  <stolj@wapme-group.de>
    * test/test_regex.c: added output of the sub-strings matching a regular
      expression, just for the sake of readability.
