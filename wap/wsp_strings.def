@@ -179,8 +179,11 @@ VNSTRING(WSP_1_4, "X-WAP-Security", WSP_HEADER_X_WAP_SECURITY)
 VNSTRING(WSP_1_4, "Cache-Control", WSP_HEADER_CACHE_CONTROL_V14)
 )
 
-/* Table 40. Content Type Assignments. These are defined by WINA, 
- * see http://www.wapforum.org/wina/wsp-content-type.htm 
+/* Table 40. Well Known WSP Content Type Codes Assignments. 
+ * These have been defined by WINA, 
+ * see http://www.wapforum.org/wina/wsp-content-type.htm
+ * Now they are maintained by OMNA,
+ * see http://www.openmobilealliance.org/tech/omna/index.htm
  */
 LINEAR(content_type,
 VSTRING(WSP_1_1, "*/*")
@@ -258,7 +261,45 @@ VSTRING(WSP_1_5, "application/vnd.oma.dd+xml")
 VSTRING(WSP_1_5, "application/vnd.oma.drm.message") 
 VSTRING(WSP_1_5, "application/vnd.oma.drm.content")
 VSTRING(WSP_1_5, "application/vnd.oma.drm.rights+xml") 
-VSTRING(WSP_1_5, "application/vnd.oma.drm.rights+wbxml") 
+VSTRING(WSP_1_5, "application/vnd.oma.drm.rights+wbxml")
+VSTRING(WSP_1_5, "application/vnd.wv.csp+xml")
+VSTRING(WSP_1_5, "application/vnd.wv.csp+wbxml")
+VSTRING(WSP_1_5, "application/vnd.syncml.ds.notification") 
+)
+
+/* Registered WSP Content Type Codes Assignments. 
+ * Now they are maintained by OMNA,
+ * see http://www.openmobilealliance.org/tech/omna/index.htm
+ */
+NUMBERED(content_type_registered,
+ASSIGN("application/vnd.uplanet.cacheop-wbxml", 0x0201)
+ASSIGN("application/vnd.uplanet.signal", 0x0202)
+ASSIGN("application/vnd.uplanet.alert-wbxml", 0x0203)
+ASSIGN("application/vnd.uplanet.list-wbxml", 0x0204)
+ASSIGN("application/vnd.uplanet.listcmd-wbxml", 0x0205)
+ASSIGN("application/vnd.uplanet.channel-wbxml", 0x0206)
+ASSIGN("application/vnd.uplanet.provisioning-status-uri", 0x0207)
+ASSIGN("x-wap.multipart/vnd.uplanet.header-set", 0x0208)
+ASSIGN("application/vnd.uplanet.bearer-choice-wbxml", 0x0209)
+ASSIGN("application/vnd.phonecom.mmc-wbxml", 0x020A)
+ASSIGN("application/vnd.nokia.syncset+wbxml", 0x020B)
+ASSIGN("image/x-up-wpng", 0x020C)
+ASSIGN("application/iota.mmc-wbxml", 0x0300)
+ASSIGN("application/iota.mmc-xml", 0x0301)
+ASSIGN("application/vnd.syncml+xml", 0x0302)
+ASSIGN("application/vnd.syncml+wbxml", 0x0303)
+ASSIGN("text/vnd.wap.emn+xml", 0x0304)
+ASSIGN("text/calendar", 0x0305)
+ASSIGN("application/vnd.omads-email+xml", 0x0306)
+ASSIGN("application/vnd.omads-file+xml", 0x0307)
+ASSIGN("application/vnd.omads-folder+xml", 0x0308)
+ASSIGN("text/directory;profile=vCard", 0x0309)
+ASSIGN("application/vnd.wap.emn+wbxml", 0x030A)
+ASSIGN("application/vnd.nokia.ipdc-purchase-response", 0x030B)
+ASSIGN("application/vnd.motorola.screen3+xml", 0x030C)
+ASSIGN("application/vnd.motorola.screen3+gzip", 0x030D)
+ASSIGN("application/vnd.cmcc.setting+wbxml", 0x030E)
+ASSIGN("application/vnd.cmcc.bombing+wbxml", 0x030F)
 )
 
 /* Table 42, Character Set Assignment (partial) */
@@ -283,12 +324,16 @@ ASSIGN("us-ascii", 3)
 ASSIGN("utf-8", 106)
 )
 
-/* Table 38, Well-Known Parameter Assignments */
+/* Table 38, Well-Known Parameter Assignments 
+ * Now defined by OMNA, see
+ * http://www.openmobilealliance.org/tech/omna/omna-wsp-header-param.htm
+ */
 NUMBERED(parameter,
 VASSIGN(WSP_1_1, "q", 0)
 VASSIGN(WSP_1_1, "charset", 1)
 VASSIGN(WSP_1_1, "level", 2)
 VASSIGN(WSP_1_1, "type", 3)
+VASSIGN(WSP_1_1, "uaprof", 4)
 VASSIGN(WSP_1_1, "name", 5)
 VASSIGN(WSP_1_1, "filename", 6)
 VASSIGN(WSP_1_1, "differences", 7)
@@ -553,9 +598,10 @@ STRING("ansi-136_ghost/r_data_gsm_isdn")
 )
 
 /*
- * Well known and reserver push application ids, from http://www.openmobile-
- * alliance.org/omna/omna-push-app-id.htm. Note that id strings does not contain
- * x-wap-application, this being default.
+ * Well known and registered push application ids, see
+ * http://www.openmobilealliance.org/tech/omna/omna-push-app-id.htm 
+ * Note that generic id strings do not contain the "x-wap-application" prefix,
+ * it's the default, otherwise an alternate is given.
  */
 NUMBERED(application_id,
 ASSIGN("*", 0x00)
@@ -569,6 +615,7 @@ ASSIGN("syncml.dm", 0x07)
 ASSIGN("drm.ua", 0x08)
 ASSIGN("emn.ua", 0x09)
 ASSIGN("wv.ua", 0x0A)
+ASSIGN("x-oma-application:ulp.ua", 0x10)
 ASSIGN("x-wap-microsoft:localcontent.ua", 0x8000)
 ASSIGN("x-wap-microsoft:IMclient.ua", 0x8001)
 ASSIGN("x-wap-docomo:imode.mail.ua", 0x8002)
@@ -581,9 +628,35 @@ ASSIGN("x-motorola:browser.ua", 0x8008)
 ASSIGN("x-motorola:splash.ua", 0x8009)
 ASSIGN("x-wap-nai:mvsw.command", 0x800B)
 ASSIGN("x-wap-openvawe:iota.ua", 0x8010)
-ASSIGN("x-wap-docomo: imode.mail2.ua", 0x9000)
-ASSIGN("x-oma-nec: otaprov.ua", 0x9001)
-ASSIGN("x-oma-nokia: call.ua", 0x9002)
+ASSIGN("x-wap-docomo:imode.mail2.ua", 0x9000)
+ASSIGN("x-oma-nec:otaprov.ua", 0x9001)
+ASSIGN("x-oma-nokia:call.ua", 0x9002)
+ASSIGN("x-oma-coremobility:sqa.ua", 0x9003)
+ASSIGN("x-oma-docomo:doja.jam.ua", 0x9004)
+ASSIGN("x-oma-nokia:sip.ua", 0x9010)
+ASSIGN("x-oma-vodafone:otaprov.ua", 0x9011)
+ASSIGN("x-hutchison:ad.ua", 0x9012)
+ASSIGN("x-oma-nokia:voip.ua", 0x9013)
+ASSIGN("x-oma-docomo:voice.ua", 0x9014)
+ASSIGN("x-oma-docomo:browser.ctl", 0x9015)
+ASSIGN("x-oma-docomo:dan.ua", 0x9016)
+ASSIGN("x-oma-nokia:vs.ua", 0x9017)
+ASSIGN("x-oma-nokia:voip.ext1.ua", 0x9018)
+ASSIGN("x-wap-vodafone:casting.ua", 0x9019)
+ASSIGN("x-oma-docomo:imode.data.ua", 0x901A)
+ASSIGN("x-oma-snapin:otaprov.ctl", 0x901B)
+ASSIGN("x-oma-nokia:vrs.ua", 0x901C)
+ASSIGN("x-oma-nokia:vrpg.ua", 0x901D)
+ASSIGN("x-oma-motorola:screen3.ua", 0x901E)
+ASSIGN("x-oma-docomo:device.ctl", 0x901F)
+ASSIGN("x-oma-nokia:msc.ua", 0x9020)
+ASSIGN("x-3gpp2:lcs.ua", 0x9021)
+ASSIGN("x-wap-vodafone:dcd.ua", 0x9022)
+ASSIGN("x-3gpp:mbms.service.announcement.ua", 0x9023)
+ASSIGN("x-oma-vodafone:dltmtbl.ua", 0x9024)
+ASSIGN("x-oma-vodafone:dvcctl.ua", 0x9025)
+ASSIGN("x-oma-cmcc:mail.ua", 0x9026)
+ASSIGN("x-oma-nokia:vmb.ua", 0x9027)
 )
 
 /**** More preprocessor magic ****/

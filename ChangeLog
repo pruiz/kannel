@@ -1,3 +1,9 @@
+2005-10-24  Stipe Tolj  <stolj@wapme-group.de>
+   * gw/wml_compiler.c: updating well known WBXML public identifier IDs and 
+     WBXML token array up to current Encoding-Version 1.5. NLC.
+   * wap/wsp_strings.def: updating well known content type tokens, added
+     registerd tokens now too for future use, updating push application IDs.  
+   
 2005-10-21  Stipe Tolj  <stolj@wapme-group.de>
    * doc/examples/dlr-mysql.conf: fixed the naming change from change set
      2005-09-21, where the 'mysql-connection' group changed to use 'username'
