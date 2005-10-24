@@ -1,4 +1,10 @@
 2005-10-24  Stipe Tolj  <stolj@wapme-group.de>
+   * wap/wsp_headers.c, check/check_date.c: re-interpretation of return value
+     for gwlib/date.c:date_parse_http(), we assume that the signed long is
+     negative only for those values beyond epoch time border, hence wrap to
+     unsigned for further processing.
+   
+2005-10-24  Stipe Tolj  <stolj@wapme-group.de>
    * gw/wml_compiler.c: updating well known WBXML public identifier IDs and 
      WBXML token array up to current Encoding-Version 1.5. NLC.
    * wap/wsp_strings.def: updating well known content type tokens, added

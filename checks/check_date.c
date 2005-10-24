@@ -95,11 +95,11 @@ static void check_reversible(void)
         }
 
         timeval = date_parse_http(date);
-        if (timeval < 0)
+        if (timeval == -1)
             warning(0, "Could not parse date \"%s\"", octstr_get_cstr(date));
         else {
             Octstr *newdate;
-            newdate = date_format_http(timeval);
+            newdate = date_format_http((unsigned long) timeval);
             if (octstr_compare(newdate, canondate) != 0) {
                 warning(0, "Date not reversible: \"%s\" becomes \"%s\"",
                         octstr_get_cstr(date), octstr_get_cstr(newdate));

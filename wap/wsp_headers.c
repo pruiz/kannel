@@ -2172,14 +2172,18 @@ int wsp_pack_date(Octstr *packed, Octstr *value)
 {
     long timeval;
 
+    /* If we get a negative timeval here, this means either
+     * we're beyond the time_t 32 bit int positive border for the 
+     * timestamp or we're really handling time before epoch. */
     timeval = date_parse_http(value);
-    if (timeval < 0) {
+    if (timeval == -1) {
         warning(0, "WSP headers: cannot decode date '%s'",
                 octstr_get_cstr(value));
         return -1;
     }
 
-    wsp_pack_long_integer(packed, timeval);
+    /* We'll assume that we don't package time before epoch. */
+    wsp_pack_long_integer(packed, (unsigned long) timeval);
     return 0;
 }
 
