@@ -1,3 +1,9 @@
+2005-10-25  Stipe Tolj  <stolj@wapme-group.de>
+   * wap/cookies.c: added TODO to reflect the need to unify the functions
+     wap/cookies.c:parse_http_date() and gwlib/date.c:date_http_parse(), these
+     are obviously doing "the same", except the return value, source code
+     indenting. NLC.
+  
 2005-10-24  Stipe Tolj  <stolj@wapme-group.de>
    * wap/wsp_headers.c, check/check_date.c: re-interpretation of return value
      for gwlib/date.c:date_parse_http(), we assume that the signed long is

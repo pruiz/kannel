@@ -495,6 +495,11 @@ static void cookie_destroy(void *p)
  * Returns: -1 on success, max-age sematic value on success.
  */
 
+/*
+ * TODO: This is obviously the same as gwlib/date.c:date_http_parse().
+ * Need to unify this to one pulic function.
+ */
+ 
 static const char* months[] = {
 	"Jan", "Feb", "Mar", "Apr", "May", "Jun",
     "Jul", "Aug", "Sep", "Oct", "Nov", "Dec", NULL
@@ -526,7 +531,6 @@ static int parse_http_date(const char *expires)
 	memset(&ti, 0, sizeof(struct tm));
 
 	/* Break up the Expires: header */
-
 	if (!(date = strchr(expires, '='))) {
 		error(0, "parse_http_date: Bogus expires type=value header (%s)", expires);
 		return -1;
@@ -537,7 +541,6 @@ static int parse_http_date(const char *expires)
 	}
 
 	/* Onto the date value */
-
 	if (!(p = strchr (date,' '))) {
 		error(0, "parse_http_date: Bogus date string (%s)", date);
 		return -1;
@@ -558,9 +561,8 @@ static int parse_http_date(const char *expires)
 		ti.tm_year -= 1900;
 
 	} else if (p[2] == '-') {
-		/* RFC 850 (normal HTTP) */
-
-		char  buf[MAX_HTTP_DATE_LENGTH];
+        /* RFC 850 (normal HTTP) */
+        char  buf[MAX_HTTP_DATE_LENGTH];
 
 		sscanf(p, "%s %d:%d:%d", buf, &ti.tm_hour, &ti.tm_min, &ti.tm_sec);
 		buf[2] = '\0';
@@ -579,7 +581,6 @@ static int parse_http_date(const char *expires)
 		}
 	} else {
 		/* RFC 822 */
-
 		sscanf(p,"%d %s %d %d:%d:%d",&ti.tm_mday, month, &ti.tm_year,
 			   &ti.tm_hour, &ti.tm_min, &ti.tm_sec);
 
@@ -587,7 +588,6 @@ static int parse_http_date(const char *expires)
          * since tm_year is years since 1900 and the year we parsed
 		 * is absolute, we need to subtract 1900 years from it
 		 */
-
 		ti.tm_year -= 1900;
 	}
 
@@ -605,7 +605,7 @@ static int parse_http_date(const char *expires)
 
 	if (rv == -1) {
 		error(0, "parse_http_date(): mktime() was unable to resolve date/time: %s", 
-			  asctime (&ti));
+			  asctime(&ti));
 		return -1;
 	}
 
@@ -615,15 +615,12 @@ static int parse_http_date(const char *expires)
      * If rv is valid, it should be some time in the (near) future. Normalise this to
 	 * a max-age semantic so we can use the same expiry mechanism 
 	 */
-
 	now = time(NULL);
 
 	if (rv - now < 0) {
-
 		/* This is bad - set the delta to 0 so we expire next time around */
-
 		error(0, "parse_http_date () Expiry time (%s) (delta=%ld) is in the past !", 
-			  asctime (&ti), rv-now);
+			  asctime(&ti), rv-now);
 		return 0;
 	}
 
