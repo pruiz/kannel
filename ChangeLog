@@ -1,3 +1,11 @@
+2005-10-26  Alexander Malysh <amalysh at kannel.org>
+   * gw/bb_smscconn.c: fixed memory leak when concatenated messages was sent through
+     kannel and one of splits failed due to broken connection to SMSC. In this case
+     we looped for ever consuming 100% CPU time and all available memory because 
+     message was duplicated in SMSC module and not destroyed in core. Now we check
+     whether link is OK and only then resend via the same SMSC otherwise fail as usual.
+     Thanks to Wilfried Goesgens for debug help.
+
 2005-10-25  Stipe Tolj  <stolj@wapme-group.de>
    * wap/cookies.c: added TODO to reflect the need to unify the functions
      wap/cookies.c:parse_http_date() and gwlib/date.c:date_http_parse(), these

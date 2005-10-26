@@ -163,9 +163,17 @@ static void handle_split(SMSCConn *conn, Msg *msg, long reason)
 {
     struct split_parts *split = msg->sms.split_parts;
     
-    /* if temporarely failed, try again immediately */
-    if (reason == SMSCCONN_FAILED_TEMPORARILY && smscconn_send(conn, msg) == 0)
+    /*
+     * If temporarely failed, try again immediately but only if connection active.
+     * Because if connection is not active we will loop for ever here consuming 100% CPU
+     * time due to internal queue cleanup in smsc module that call bb_smscconn_failed.
+     */
+    if (reason == SMSCCONN_FAILED_TEMPORARILY && smscconn_status(conn) == SMSCCONN_ACTIVE &&
+        smscconn_send(conn, msg) == 0) {
+        /* destroy this message because it will be duplicated in smsc module */
+        msg_destroy(msg);
         return;
+    }
     
     /*
      * if the reason is not a success and status is still success
