@@ -1,3 +1,7 @@
+2005-10-30  Stipe Tolj  <stolj@wapme-group.de>
+   * wap/wsp_strings.def: added missing byte code for Content-disposition 
+     value 'inline'.
+
 2005-10-26  Alexander Malysh <amalysh at kannel.org>
    * gw/bb_smscconn.c: fixed memory leak when concatenated messages was sent through
      kannel and one of splits failed due to broken connection to SMSC. In this case

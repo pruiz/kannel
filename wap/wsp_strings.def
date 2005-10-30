@@ -394,6 +394,7 @@ NSTRING("s-maxage", WSP_CACHE_CONTROL_S_MAXAGE)
 LINEAR(disposition,
 STRING("form-data")
 STRING("attachment")
+STRING("inline")
 )
 
 /* Table 41, ISO 639 Language Assignments */
