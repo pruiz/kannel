@@ -322,6 +322,7 @@ ASSIGN("iso-8859-9", 12)
 ASSIGN("shift_JIS", 17)
 ASSIGN("us-ascii", 3)
 ASSIGN("utf-8", 106)
+ASSIGN("utf-16", 1015)
 )
 
 /* Table 38, Well-Known Parameter Assignments 
