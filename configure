@@ -4622,10 +4622,10 @@ echo "configure:4621: checking mysql version" >&5
         echo "$ac_t""$mysql_version" 1>&6
                 MYSQL_LIBS=""
         if $MYSQL_CONFIG --libs_r &>/dev/null ; then
-            MYSQL_LIBS="$($MYSQL_CONFIG --libs_r)"
+            MYSQL_LIBS=`$MYSQL_CONFIG --libs_r`
             echo $ac_n "checking mysql reentrant libs""... $ac_c" 1>&6
 echo "configure:4628: checking mysql reentrant libs" >&5
-            echo "$ac_t"" $MYSQL_LIBS " 1>&6
+            echo "$ac_t""$MYSQL_LIBS" 1>&6
             echo $ac_n "checking for mysql_init in -lmysqlclient_r""... $ac_c" 1>&6
 echo "configure:4631: checking for mysql_init in -lmysqlclient_r" >&5
 ac_lib_var=`echo mysqlclient_r'_'mysql_init | sed 'y%./+-%__p_%'`
@@ -4669,10 +4669,10 @@ fi
 
         fi
         if test -z "$MYSQL_LIBS" ; then
-            MYSQL_LIBS="$($MYSQL_CONFIG --libs)"
+            MYSQL_LIBS=`$MYSQL_CONFIG --libs`
             echo $ac_n "checking mysql libs""... $ac_c" 1>&6
 echo "configure:4675: checking mysql libs" >&5
-            echo "$ac_t"" $MYSQL_LIBS " 1>&6
+            echo "$ac_t""$MYSQL_LIBS" 1>&6
             echo $ac_n "checking for mysql_init in -lmysqlclient""... $ac_c" 1>&6
 echo "configure:4678: checking for mysql_init in -lmysqlclient" >&5
 ac_lib_var=`echo mysqlclient'_'mysql_init | sed 'y%./+-%__p_%'`
@@ -4718,12 +4718,12 @@ fi
         echo $ac_n "checking mysql includes""... $ac_c" 1>&6
 echo "configure:4720: checking mysql includes" >&5
                 if $MYSQL_CONFIG --include &>/dev/null ; then
-            CFLAGS="$CFLAGS $($MYSQL_CONFIG --include)"
-            echo "$ac_t""$($MYSQL_CONFIG --include)" 1>&6
+            MYSQL_CFLAGS=`$MYSQL_CONFIG --include`
         else
-            CFLAGS="$CFLAGS $($MYSQL_CONFIG --cflags)"
-            echo "$ac_t""$($MYSQL_CONFIG --cflags)" 1>&6
+            MYSQL_CFLAGS=`$MYSQL_CONFIG --cflags`
         fi
+        CFLAGS="$CFLAGS $MYSQL_CFLAGS"
+        echo "$ac_t""$MYSQL_CFLAGS" 1>&6
     fi
     for ac_hdr in mysql/mysql.h mysql/mysql_version.h
 do

@@ -1,4 +1,9 @@
 2005-11-03  Stipe Tolj  <stolj@wapme-group.de>
+   * configure[.in]: fixing mysql section for the sake of sparc-solaris-10. 
+     Thanks to David Chkhartishvili <datoch@magtigsm.ge> for reporting this.
+     [Msg-Id: <4365C800.4080402@magtigsm.ge>]
+
+2005-11-03  Stipe Tolj  <stolj@wapme-group.de>
    * wap/wsp_strings.def: added additional charset code for UTF-16, since this
      is widely used in production environments.
      

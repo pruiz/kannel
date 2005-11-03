@@ -919,28 +919,28 @@ else
         dnl mysql-4.x style
         MYSQL_LIBS=""
         if $MYSQL_CONFIG --libs_r &>/dev/null ; then
-            MYSQL_LIBS="$($MYSQL_CONFIG --libs_r)"
+            MYSQL_LIBS=`$MYSQL_CONFIG --libs_r`
             AC_MSG_CHECKING([mysql reentrant libs])
-            AC_MSG_RESULT([ $MYSQL_LIBS ])
+            AC_MSG_RESULT([$MYSQL_LIBS])
             AC_CHECK_LIB(mysqlclient_r, mysql_init, [ LIBS="$LIBS $MYSQL_LIBS" ],
                 [ MYSQL_LIBS="" ], [ $MYSQL_LIBS ])
         fi
         if test -z "$MYSQL_LIBS" ; then
-            MYSQL_LIBS="$($MYSQL_CONFIG --libs)"
+            MYSQL_LIBS=`$MYSQL_CONFIG --libs`
             AC_MSG_CHECKING([mysql libs])
-            AC_MSG_RESULT([ $MYSQL_LIBS ])
+            AC_MSG_RESULT([$MYSQL_LIBS])
             AC_CHECK_LIB(mysqlclient, mysql_init, [ LIBS="$LIBS $MYSQL_LIBS" ],
                 [AC_MSG_ERROR([Unable to find MySQL client libraries])], [ $MYSQL_LIBS ])
         fi
         AC_MSG_CHECKING([mysql includes])
         dnl mysql-4.x style
         if $MYSQL_CONFIG --include &>/dev/null ; then
-            CFLAGS="$CFLAGS $($MYSQL_CONFIG --include)"
-            AC_MSG_RESULT([$($MYSQL_CONFIG --include)])
+            MYSQL_CFLAGS=`$MYSQL_CONFIG --include`
         else
-            CFLAGS="$CFLAGS $($MYSQL_CONFIG --cflags)"
-            AC_MSG_RESULT([$($MYSQL_CONFIG --cflags)])
+            MYSQL_CFLAGS=`$MYSQL_CONFIG --cflags`
         fi
+        CFLAGS="$CFLAGS $MYSQL_CFLAGS"
+        AC_MSG_RESULT([$MYSQL_CFLAGS])
     fi
     AC_CHECK_HEADERS(mysql/mysql.h mysql/mysql_version.h)
     AC_DEFINE(HAVE_MYSQL)
