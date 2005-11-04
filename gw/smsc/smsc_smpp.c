@@ -1055,26 +1055,24 @@ static Msg *handle_dlr(SMPP *smpp, SMPP_PDU *pdu)
             octstr_destroy(stat);
     }
 
-    tmp = octstr_format("0");
-    
     if (msgid != NULL) {
 
         /*
-            * Obey which SMPP msg_id type this SMSC is using, where we
-            * have the following semantics for the variable smpp_msg_id:
-            *
-            * bit 1: type for submit_sm_resp, bit 2: type for deliver_sm
-            *
-            * if bit is set value is hex otherwise dec
-            *
-            * 0x00 deliver_sm dec, submit_sm_resp dec
-            * 0x01 deliver_sm dec, submit_sm_resp hex
-            * 0x02 deliver_sm hex, submit_sm_resp dec
-            * 0x03 deliver_sm hex, submit_sm_resp hex
-            *
-            * Default behaviour is SMPP spec compliant, which means
-            * msg_ids should be C strings and hence non modified.
-            */
+         * Obey which SMPP msg_id type this SMSC is using, where we
+         * have the following semantics for the variable smpp_msg_id:
+         *
+         * bit 1: type for submit_sm_resp, bit 2: type for deliver_sm
+         *
+         * if bit is set value is hex otherwise dec
+         *
+         * 0x00 deliver_sm dec, submit_sm_resp dec
+         * 0x01 deliver_sm dec, submit_sm_resp hex
+         * 0x02 deliver_sm hex, submit_sm_resp dec
+         * 0x03 deliver_sm hex, submit_sm_resp hex
+         *
+         * Default behaviour is SMPP spec compliant, which means
+         * msg_ids should be C strings and hence non modified.
+         */
         if (smpp->smpp_msg_id_type == -1) {
             /* the default, C string */
             tmp = octstr_duplicate(msgid);
@@ -1092,7 +1090,8 @@ static Msg *handle_dlr(SMPP *smpp, SMPP_PDU *pdu)
             dlrstat);
 
         octstr_destroy(msgid);
-    }
+    } else
+        tmp = octstr_create("");
     
     if (dlrmsg != NULL) {
         /*

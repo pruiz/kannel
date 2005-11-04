@@ -1,3 +1,7 @@
+2005-11-04  Alexander Malysh <amalysh at kannel.org>
+   * gw/smsc/smsc_smpp.c: fixed memory leak in SMPP DLR handling. Bug #265.
+     Thanks to "ungod" for reporting this.
+
 2005-11-03  Stipe Tolj  <stolj@wapme-group.de>
    * configure[.in]: fixing mysql section for the sake of sparc-solaris-10. 
      Thanks to David Chkhartishvili <datoch@magtigsm.ge> for reporting this.
