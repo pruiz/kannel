@@ -1,3 +1,8 @@
+2005-11-08  Alexander Malysh <amalysh at kannel.org>
+   * doc/userguide/userguide.xml, gw/bb_smscconn.c, gw/msg-decl.h,
+     gwlib/cfg.def: Applied patch that adds configurable max retries and
+     resend frequency for the temporarily failed messages to the core.
+
 2005-11-04  Alexander Malysh <amalysh at kannel.org>
    * gw/smsc/smsc_smpp.c: fixed memory leak in SMPP DLR handling. Bug #265.
      Thanks to "ungod" for reporting this.

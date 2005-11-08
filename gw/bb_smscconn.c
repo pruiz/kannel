@@ -63,7 +63,10 @@
  * routing, writing actual access logs, handling failed messages etc.
  *
  * Kalle Marjola 2000 for project Kannel
+ * Alexander Malysh <amalysh at kannel.org> 2003, 2004, 2005
  */
+ 
+#include "gw-config.h"
 
 #include <errno.h>
 #include <stdlib.h>
@@ -116,6 +119,10 @@ static regex_t *white_list_regex;
 static regex_t *black_list_regex;
 
 static long router_thread = -1;
+
+/* message resend */
+static long sms_resend_frequency;
+static long sms_max_resend_retry;
 
 /*
  * Counter for catenated SMS messages. The counter that can be put into
@@ -264,11 +271,32 @@ void bb_smscconn_send_failed(SMSCConn *conn, Msg *sms, int reason, Octstr *reply
     }
     
     switch (reason) {
-
-    case SMSCCONN_FAILED_SHUTDOWN:
     case SMSCCONN_FAILED_TEMPORARILY:
-	gwlist_produce(outgoing_sms, sms);
-	break;
+        /*
+         * Check if SMSC link alive and if so increase resend_try and set resend_time.
+         * If SMSC link is not active don't increase resend_try and don't set resend_time
+         * because we don't want to delay messages because of connection broken.
+         */
+       if (conn && smscconn_status(conn) == SMSCCONN_ACTIVE) {
+            /*
+             * Check if sms_max_resend_retry set and this msg has exceeded a limit also
+             * honor "single shot" with sms_max_resend_retry set to zero.
+             */
+           if (sms_max_resend_retry >= 0 && sms->sms.resend_try >= sms_max_resend_retry) {
+               warning(0, "Maximum retries for message exceeded, discarding it!");
+               bb_smscconn_send_failed(NULL, sms, SMSCCONN_FAILED_DISCARDED, octstr_create("Retries Exceeded"));
+               break;
+           }
+           sms->sms.resend_try = (sms->sms.resend_try > 0 ? sms->sms.resend_try++ : 1);
+           time(&sms->sms.resend_time);
+       }
+       gwlist_produce(outgoing_sms, sms);
+       break;
+       
+    case SMSCCONN_FAILED_SHUTDOWN:
+        gwlist_produce(outgoing_sms, sms);
+        break;
+
     default:
 	/* write NACK to store file */
         store_save_ack(sms, ack_failed);
@@ -294,7 +322,9 @@ void bb_smscconn_send_failed(SMSCConn *conn, Msg *sms, int reason, Octstr *reply
                 bb_smscconn_receive(conn, dlrmsg);
             }
         }
-	msg_destroy(sms);
+
+        msg_destroy(sms);
+        break;
     }
 
     octstr_destroy(reply);
@@ -424,26 +454,39 @@ static void sms_router(void *arg)
     ret = 0;
     
     while(bb_status != BB_DEAD) {
-
 	if (newmsg == startmsg) {
-	    if (ret != 1) {
-		debug("bb.sms", 0, "sms_router: time to sleep"); 
-		gwthread_sleep(600.0);	/* hopefully someone wakes us up */
-		debug("bb.sms", 0, "sms_router: gwlist_len = %ld",
-		      gwlist_len(outgoing_sms));
-	    }
-	    startmsg = gwlist_consume(outgoing_sms);
-	    newmsg = NULL;
-	    msg = startmsg;
-	} else {
-	    newmsg = gwlist_consume(outgoing_sms);
-	    msg = newmsg;
-	}
-	/* debug("bb.sms", 0, "sms_router: handling message (%p vs %p)",
-	 *         newmsg, startmsg); */
-	
-	if (msg == NULL)
+            if (ret != 1) {
+                /*
+                 * In order to reduce amount of msgs to send we sleep only the half of frequency time
+                 * but at least 1 second.
+                 */
+                double sleep_time = (sms_resend_frequency / 2 > 1 ? sms_resend_frequency / 2 : sms_resend_frequency);
+                debug("bb.sms", 0, "sms_router: time to sleep %.2f secs.", sleep_time);
+                gwthread_sleep(sleep_time);
+                debug("bb.sms", 0, "sms_router: gwlist_len = %ld", gwlist_len(outgoing_sms));
+            }
+            startmsg = msg = gwlist_consume(outgoing_sms);
+            newmsg = NULL;
+        }
+        else {
+            newmsg = msg = gwlist_consume(outgoing_sms);
+        }
+
+        /* shutdown ? */
+        if (msg == NULL)
             break;
+
+        debug("bb.sms", 0, "sms_router: handling message (%p vs %p)",
+                  msg, startmsg);
+
+        /* handle delayed msgs */
+        if (msg->sms.resend_try > 0 && difftime(time(NULL), msg->sms.resend_time) < sms_resend_frequency &&
+            bb_status != BB_SHUTDOWN && bb_status != BB_DEAD) {
+            debug("bb.sms", 0, "re-queing SMS not-yet-to-be resent");
+            gwlist_produce(outgoing_sms, msg);
+            ret = 0;
+            continue;
+        }
 
 	ret = smsc2_rout(msg);
 	if (ret == -1) {
@@ -453,8 +496,6 @@ static void sms_router(void *arg)
         } else if (ret == 1) {
 	    newmsg = startmsg = NULL;
 	}
-
-
     }
     /* router has died, make sure that rest die, too */
 
@@ -511,6 +552,20 @@ int smsc2_start(Cfg *cfg)
             panic(0, "Could not compile pattern '%s'", octstr_get_cstr(os));
         octstr_destroy(os);
     }
+
+    if (cfg_get_integer(&sms_resend_frequency, grp,
+            octstr_imm("sms-resend-frequency")) == -1 || sms_resend_frequency <= 0) {
+        sms_resend_frequency = 60;
+    }
+    info(0, "Set SMS resend frequency to %ld seconds.", sms_resend_frequency);
+            
+    if (cfg_get_integer(&sms_max_resend_retry, grp,
+            octstr_imm("sms-max-resend-retry")) == -1) {
+        sms_max_resend_retry = -1;
+        info(0, "SMS resend retry set to unlimited.");
+    }
+    else
+        info(0, "SMS resent retry set to %ld.", sms_max_resend_retry);
 
     smsc_groups = cfg_get_multi_group(cfg, octstr_imm("smsc"));
     /*
@@ -903,7 +958,7 @@ int smsc2_rout(Msg *msg)
     if (gwlist_len(smsc_list) == 0) {
 	warning(0, "No SMSCes to receive message");
         gw_rwlock_unlock(&smsc_list_lock);
-	return SMSCCONN_FAILED_DISCARDED;
+	return -1;
     }
 
     s = gw_rand() % gwlist_len(smsc_list);

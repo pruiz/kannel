@@ -106,6 +106,8 @@ MSG(sms,
 		INTEGER(msg_left);
 		VOID(split_parts);
 		INTEGER(priority);
+                INTEGER(resend_try);
+                INTEGER(resend_time);
 	})
 
 MSG(ack,
