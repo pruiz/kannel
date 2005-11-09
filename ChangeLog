@@ -1,3 +1,8 @@
+2005-11-09  Stipe Tolj  <stolj@wapme-group.de>
+   * doc/userguide/userguide.xml: fixing default values for parameters within
+     the user's guide. Thanks to Dziugas Baltrunas <dziugas@gmail.com> for this.
+     [Msg-Id: <943470880511081236t74d1556me79aa8611611115b@mail.gmail.com>]
+
 2005-11-08  Alexander Malysh <amalysh at kannel.org>
    * doc/userguide/userguide.xml, gw/bb_smscconn.c, gw/msg-decl.h,
      gwlib/cfg.def: Applied patch that adds configurable max retries and

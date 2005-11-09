@@ -5833,8 +5833,7 @@ the sendsms-user or sms-service name
 </entry></row>
 
 <row><entry><literal>%c</literal></entry><entry>
-message coding: 0 (default, 7 bits), 1 (7 bits),
-2 (8 bits) or 3 (Unicode)
+message coding: 0 (default, 7 bits), 1 (8 bits) or 2 (Unicode)
 </entry></row>
 
 <row><entry><literal>%m</literal></entry><entry>
@@ -5850,8 +5849,8 @@ and 4, 5, 6, 7 for deactivation respectively.
 
 <row><entry><literal>%C</literal></entry><entry>
 message charset: for a "normal" message, it will 
-be "GSM" (coding=1), "binary" (coding=2) or 
-"UTF-16BE" (coding=3). If the message was successfully
+be "GSM" (coding=0), "binary" (coding=1) or 
+"UTF-16BE" (coding=2). If the message was successfully
 recoded from Unicode, it will be "ISO-8859-1"
 </entry></row>
 
@@ -6010,12 +6009,12 @@ text = "No action specified"
    <entry><literal>X-Kannel-Compress</literal></entry></row>
 
    <row><entry><literal>coding</literal></entry>
-   <entry><literal>X-Kannel-Coding</literal>. If unset, defaults to 1 
+   <entry><literal>X-Kannel-Coding</literal>. If unset, defaults to 0 
    (7 bits) if <literal>Content-Type</literal> is <literal>text/plain
    </literal>, <literal>text/html</literal> or 
    <literal>text/vnd.wap.wml</literal>. On 
    <literal>application/octet-stream</literal>, defaults to
-   8 bits (2). All other <literal>Content-Type</literal> values 
+   8 bits (1). All other <literal>Content-Type</literal> values 
    are rejected.</entry></row>
 
    <row><entry><literal>validity</literal></entry>
@@ -6110,7 +6109,7 @@ text = "No action specified"
 
    <row><entry><literal>%c (coding)</literal></entry>
    <entry><literal>X-Kannel-Coding</literal></entry>
-   <entry>1=7 Bits, 2=8 Bits, 3=UCS-2</entry></row>
+   <entry>0=7 Bits, 1=8 Bits, 2=UCS-2</entry></row>
 
    <row><entry><literal>- (compress)</literal></entry>
    <entry><literal>X-Kannel-Compress</literal></entry>
@@ -7006,14 +7005,14 @@ the Kannel configuration, or 'Authorization failed' is returned.
    <entry valign="bottom">
 	   Optional. Sets the PID value. (See ETSI Documentation).
 	   Ex: SIM Toolkit messages would use something like 
-	   <literal>&amp;pid=127&amp;coding=2&amp;alt-dcs=1&amp;mclass=3</literal>
+	   <literal>&amp;pid=127&amp;coding=1&amp;alt-dcs=1&amp;mclass=3</literal>
    </entry></row>
 
    <row><entry><literal>alt-dcs</literal></entry>
    <entry><literal>number</literal></entry>
    <entry valign="bottom">
 	   Optional. If unset, Kannel uses the alt-dcs defined on smsc configuration,
-	   or 0X per default. If equals to 1, uses FX. If equals to 2, force 0X.
+	   or 0X per default. If equals to 1, uses FX. If equals to 0, force 0X.
    </entry></row>
 
    <row><entry><literal>rpi</literal></entry>

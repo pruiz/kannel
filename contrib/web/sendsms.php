@@ -290,7 +290,7 @@
   }
 
   else if ( $mode == "SIEMENS") {
-    $fields['coding'] = "2";
+    $fields['coding'] = "1";
 
     #print_r($mmc_file_raw);exit;
     #move_uploaded_file($mmc_file_raw, "/tmp/siemens.tmp");
