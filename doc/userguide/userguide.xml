@@ -1479,7 +1479,7 @@ admin-password = f00bar
         </entry>   
      </row>
   
-     <row><entry><literal>sms-resend-frequency</literal></entry>
+     <row><entry><literal>sms-resend-freq</literal></entry>
         <entry>seconds</entry>
         <entry valign="bottom">
         Frequency for the SMS resend thread in which temporarily failed or queued messages will be resent.
@@ -1487,7 +1487,7 @@ admin-password = f00bar
         </entry>   
      </row>
 
-     <row><entry><literal>sms-max-resend-retry</literal></entry>
+     <row><entry><literal>sms-resend-retry</literal></entry>
         <entry>number</entry>
         <entry valign="bottom">
         Maximum retry attempts for the temporarily failed messages.

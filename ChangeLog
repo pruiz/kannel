@@ -1,3 +1,8 @@
+2005-11-10  Stipe Tolj  <stolj at kannel.org>
+   * doc/userguide/userguide.xml, gw/bb_smscconn.c, gwlib/cfg.def: veto'ed 
+     against naming convention for the 2 new config directives and changed them
+     to 'sms-resend-freq' and 'sms-resend-retry'.
+   
 2005-11-09  Stipe Tolj  <stolj@wapme-group.de>
    * doc/userguide/userguide.xml: fixing default values for parameters within
      the user's guide. Thanks to Dziugas Baltrunas <dziugas@gmail.com> for this.

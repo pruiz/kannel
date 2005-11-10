@@ -122,7 +122,7 @@ static long router_thread = -1;
 
 /* message resend */
 static long sms_resend_frequency;
-static long sms_max_resend_retry;
+static long sms_resend_retry;
 
 /*
  * Counter for catenated SMS messages. The counter that can be put into
@@ -279,12 +279,13 @@ void bb_smscconn_send_failed(SMSCConn *conn, Msg *sms, int reason, Octstr *reply
          */
        if (conn && smscconn_status(conn) == SMSCCONN_ACTIVE) {
             /*
-             * Check if sms_max_resend_retry set and this msg has exceeded a limit also
-             * honor "single shot" with sms_max_resend_retry set to zero.
+             * Check if sms_resend_retry set and this msg has exceeded a limit also
+             * honor "single shot" with sms_resend_retry set to zero.
              */
-           if (sms_max_resend_retry >= 0 && sms->sms.resend_try >= sms_max_resend_retry) {
+           if (sms_resend_retry >= 0 && sms->sms.resend_try >= sms_resend_retry) {
                warning(0, "Maximum retries for message exceeded, discarding it!");
-               bb_smscconn_send_failed(NULL, sms, SMSCCONN_FAILED_DISCARDED, octstr_create("Retries Exceeded"));
+               bb_smscconn_send_failed(NULL, sms, SMSCCONN_FAILED_DISCARDED, 
+                                       octstr_create("Retries Exceeded"));
                break;
            }
            sms->sms.resend_try = (sms->sms.resend_try > 0 ? sms->sms.resend_try++ : 1);
@@ -554,18 +555,17 @@ int smsc2_start(Cfg *cfg)
     }
 
     if (cfg_get_integer(&sms_resend_frequency, grp,
-            octstr_imm("sms-resend-frequency")) == -1 || sms_resend_frequency <= 0) {
+            octstr_imm("sms-resend-freq")) == -1 || sms_resend_frequency <= 0) {
         sms_resend_frequency = 60;
     }
     info(0, "Set SMS resend frequency to %ld seconds.", sms_resend_frequency);
             
-    if (cfg_get_integer(&sms_max_resend_retry, grp,
-            octstr_imm("sms-max-resend-retry")) == -1) {
-        sms_max_resend_retry = -1;
+    if (cfg_get_integer(&sms_resend_retry, grp, octstr_imm("sms-resend-retry")) == -1) {
+        sms_resend_retry = -1;
         info(0, "SMS resend retry set to unlimited.");
     }
     else
-        info(0, "SMS resent retry set to %ld.", sms_max_resend_retry);
+        info(0, "SMS resend retry set to %ld.", sms_resend_retry);
 
     smsc_groups = cfg_get_multi_group(cfg, octstr_imm("smsc"));
     /*

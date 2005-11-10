@@ -118,8 +118,8 @@ SINGLE_GROUP(core,
     OCTSTR(dlr-storage)
     OCTSTR(maximum-queue-length)
     OCTSTR(sms-incoming-queue-limit)
-    OCTSTR(sms-resend-frequency)
-    OCTSTR(sms-max-resend-retry)
+    OCTSTR(sms-resend-freq)
+    OCTSTR(sms-resend-retry)
 )
 
 
