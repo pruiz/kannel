@@ -93,7 +93,7 @@ static Octstr *filename = NULL;
 static Octstr *newfile = NULL;
 static Octstr *bakfile = NULL;
 static Mutex *file_mutex = NULL;
-static long cleanup_thread;
+static long cleanup_thread = -1;
 static long dump_frequency = 0;
 
 static Dict *sms_dict = NULL;
@@ -423,8 +423,7 @@ static int store_to_dict(Msg *msg)
             msg_destroy(copy);
             last_dict_mod = time(NULL);
         }
-    }
-    else
+    } else
         return -1;
     return 0;
 }
@@ -437,11 +436,14 @@ int store_save(Msg *msg)
     /* block here until store not loaded */
     gwlist_consume(loaded);
 
-    if (store_to_dict(msg) == -1)
+    /* lock file_mutex in order to have dict and file in sync */
+    mutex_lock(file_mutex);
+    if (store_to_dict(msg) == -1) {
+        mutex_unlock(file_mutex);
         return -1;
+    }
     
     /* write to file, too */
-    mutex_lock(file_mutex);
     write_msg(msg);
     fflush(file);
     mutex_unlock(file_mutex);
@@ -510,8 +512,7 @@ int store_load(void)
             else {
                 info(0, "Cannot open any store file, starting a new one");
                 retval = open_file(filename);
-                mutex_unlock(file_mutex);
-                return retval;
+                goto end;
             }
         }
     }
@@ -565,10 +566,15 @@ int store_load(void)
     /* Finally, generate new store file out of left messages */
     retval = do_dump();
 
+end:
     mutex_unlock(file_mutex);
 
     /* allow using of store */
     gwlist_remove_producer(loaded);
+
+    /* start dumper thread */
+    if ((cleanup_thread = gwthread_create(store_dumper, NULL))==-1)
+        panic(0, "Failed to create a cleanup thread!");
 
     return retval;
 }
@@ -633,9 +639,6 @@ int store_init(const Octstr *fname, long dump_freq)
 
     loaded = gwlist_create();
     gwlist_add_producer(loaded);
-
-    if ((cleanup_thread = gwthread_create(store_dumper, NULL))==-1)
-        panic(0, "Failed to create a cleanup thread!");
 
     return 0;
 }

@@ -1,3 +1,10 @@
+2005-11-11  Alexander Malysh <amalysh at kannel.org>
+   * gw/bb_store.c: fixed race condition when dumping into the new file but in the meantime
+     some messages will be store already in the Dictionary. Generylly means: synchronize
+     file and Dictionary contents.
+     Fixed #248.
+   * gw/bearerbox.c: added panic for the case store_init call fail.
+
 2005-11-10  Stipe Tolj  <stolj at kannel.org>
    * doc/userguide/userguide.xml, gw/bb_smscconn.c, gwlib/cfg.def: veto'ed 
      against naming convention for the 2 new config directives and changed them

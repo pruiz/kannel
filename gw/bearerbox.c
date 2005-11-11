@@ -397,7 +397,8 @@ static Cfg *init_bearerbox(Cfg *cfg)
     log = cfg_get(grp, octstr_imm("store-file"));
     /* initialize the store file */
     if (log != NULL) {
-        store_init(log, store_dump_freq);
+        if (store_init(log, store_dump_freq) == -1)
+            panic(0, "Could not start with store init failed.");
         octstr_destroy(log);
     }
 
