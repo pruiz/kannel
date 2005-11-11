@@ -1,4 +1,7 @@
 2005-11-11  Alexander Malysh <amalysh at kannel.org>
+   * gwlib/counter.c: allow calling counter_destroy with a NULL just for conviniece.
+
+2005-11-11  Alexander Malysh <amalysh at kannel.org>
    * gw/bb_store.c: fixed race condition when dumping into the new file but in the meantime
      some messages will be store already in the Dictionary. Generylly means: synchronize
      file and Dictionary contents.

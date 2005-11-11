@@ -109,6 +109,9 @@ Counter *counter_create(void)
 
 void counter_destroy(Counter *counter)
 {
+    if (counter == NULL)
+        return;
+
 #ifdef HAVE_PTHREAD_SPINLOCK_T
     pthread_spin_destroy(&counter->lock);
 #else
