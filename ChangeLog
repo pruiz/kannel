@@ -1,3 +1,8 @@
+2005-11-29  Stipe Tolj  <stolj at kannel.org>
+   * Makefile.in: adding 'install' target components for wap library, including
+     heaeders. Mainly this is a sync towards compatibility needs from Mbuni
+     MMS gateway project.
+
 2005-11-11  Alexander Malysh <amalysh at kannel.org>
    * gwlib/counter.c: allow calling counter_destroy with a NULL just for 
      convenience.
