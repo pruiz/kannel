@@ -1,3 +1,13 @@
+2005-12-07  Stipe Tolj  <stolj at kannel.org>
+   * doc/userguide/userguide.xml: add new 'remote-timeout' directive to RADIUS
+     accounting proxy section.
+   * gwlib/cfg.def: adding 'remote-timout' to 'radius-acct' group.
+   * radius/radius_acct.c: fixing blocking state if remote RADIUS does not
+     answer within pre-defined timeout. This ensures that the proxy operation
+     continues. Thanks to Deon van der Merwe <deonvandermerwe@gmail.com> for 
+     this fix and included patch.
+     [Msg-Id: <a9bcf42b0512070336x6e323b2eg9663a4e519abdd3e@mail.gmail.com]
+     
 2005-11-29  Stipe Tolj  <stolj at kannel.org>
    * Makefile.in: adding 'install' target components for wap library, including
      heaeders. Mainly this is a sync towards compatibility needs from Mbuni

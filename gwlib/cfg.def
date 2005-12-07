@@ -545,6 +545,7 @@ SINGLE_GROUP(radius-acct,
     OCTSTR(our-port)
     OCTSTR(remote-host)
     OCTSTR(remote-port)
+    OCTSTR(remote-timeout)
     OCTSTR(nas-ports)
     OCTSTR(secret-nas)
     OCTSTR(secret-radius)

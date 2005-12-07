@@ -2167,6 +2167,14 @@ secret-nas = radius
 		 will forward any packets to the remote-host. 
 		 (defaults according to RFC2866 to 1813)
      </entry></row>
+     
+   <row><entry><literal>remote-timeout</literal></entry>
+     <entry><literal>number</literal></entry>
+     <entry valign="bottom">
+	    Specifies the timeout value in milliseconds for waiting on a 
+	    response from the remote RADIUS server.
+		 (defaults to 40 msecs.)
+     </entry></row>
 
    <row><entry><literal>nas-ports</literal></entry>
      <entry><literal>number</literal></entry>
