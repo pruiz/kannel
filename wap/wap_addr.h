@@ -66,6 +66,7 @@
 
 typedef struct {
 	Octstr *address;
+    in_addr_t iaddr;
 	long port;
 } WAPAddr;
 
