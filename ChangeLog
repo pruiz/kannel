@@ -1,4 +1,8 @@
 2005-12-09  Stipe Tolj  <stolj at kannel.org>
+   * gwlib/mime.c: fixing MIME boundary parsing. Thanks to Paul Bagyenda
+     for reviewing and resolving this.
+     
+2005-12-09  Stipe Tolj  <stolj at kannel.org>
    Patchset to include OMA ProvCont OTA provisioning support.
    * configure[.in]: adding <openssl/hmac.h> scan required for OMA ProvCont
      HMAC computing.

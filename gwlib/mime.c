@@ -185,17 +185,17 @@ static Octstr *mime_entity_to_octstr_real(MIMEEntity *m, unsigned int level)
      * Check if we have an boundary parameter already in the 
      * Content-Type header. If no, add one, otherwise parse which one 
      * we should use.
-     * XXX this can be astracted as function in gwlib/http.[ch].
+     * XXX this can be abstracted as function in gwlib/http.[ch].
      */
     headers = http_header_duplicate(m->headers);
     value = http_header_value(headers, octstr_imm("Content-Type"));
     boundary = http_get_header_parameter(value, octstr_imm("boundary"));
     if (boundary == NULL) {
-      boundary = octstr_format("_MIME_boundary-%d-%ld_%c_%c_bd%d", 
-			random(), (long)time(NULL), 'A' + (random()%26), 
-			       'a'+(random() % 26), random());
-        octstr_append(value, octstr_imm("; boundary="));
-        octstr_append(value, boundary);
+        boundary = octstr_format("_boundary_%d_%ld_%c_%c_bd%d", 
+            random(), (long)time(NULL), 'A' + (random()%26), 
+            'a'+(random() % 26), random());
+        octstr_format_append(value, "; boundary=%S", boundary);
+
         http_header_remove_all(headers, "Content-Type");
         http_header_add(headers, "Content-Type", octstr_get_cstr(value));
         http_header_add(headers, "MIME-Version", "1.0");
@@ -326,15 +326,18 @@ static MIMEEntity *mime_something_to_entity(Octstr *mime, List *headers)
             /* we have still two linefeeds at the beginning and end that we 
              * need to remove, these are from the separator. 
              * We check if it is \n or \r\n?! */
-	    if (octstr_get_char(entity, 0) == '\r')
-		 octstr_delete(entity, 0, 2);	      
-	    else
-		 octstr_delete(entity, 0, 1);
+            if (octstr_get_char(entity, 0) == '\r')
+                octstr_delete(entity, 0, 2);	      
+            else
+                octstr_delete(entity, 0, 1);
 
-	    if (octstr_get_char(entity, octstr_len(entity) - 2) == '\r')
-		 octstr_delete(entity, octstr_len(entity) - 4, 4);
-	    else
-		 octstr_delete(entity, octstr_len(entity) - 2, 2);
+            if (octstr_get_char(entity, octstr_len(entity) - 2) == '\r' && 
+                octstr_get_char(entity, octstr_len(entity) - 4) == '\r')
+                octstr_delete(entity, octstr_len(entity) - 4, 4);
+            else if (octstr_get_char(entity, octstr_len(entity) - 2) == '\r')
+                octstr_delete(entity, octstr_len(entity) - 2, 2);
+            else
+                octstr_delete(entity, octstr_len(entity) - 1, 1);
 
 
             debug("mime.parse",0,"MIME multipart: Parsing entity:");
