@@ -59,6 +59,7 @@
  */
 
 #include <stdlib.h>
+#include <arpa/inet.h>
 
 #include "gwlib/gwlib.h"
 #include "wap_addr.h"

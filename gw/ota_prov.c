@@ -83,6 +83,8 @@
 #include "ota_prov_attr.h"
 #include "ota_compiler.h"
 
+#include "wap/wsp_headers.h"
+
 
 /***************************************************************************
  *

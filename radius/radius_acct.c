@@ -314,7 +314,7 @@ static void proxy_thread(void *arg)
                       octstr_get_cstr(remote_host), remote_port);
             } else 
             if (read_available(cs, remote_timeout) < 1) {
-                error(0, "RADIUS: Timeout for response from remote RADIUS <%s:%d>.",
+                error(0, "RADIUS: Timeout for response from remote RADIUS <%s:%ld>.",
                       octstr_get_cstr(remote_host), remote_port);
             } else 
             if (udp_recvfrom(cs, &data, &from_radius) == -1) {

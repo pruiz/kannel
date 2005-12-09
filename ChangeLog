@@ -1,4 +1,8 @@
 2005-12-09  Stipe Tolj  <stolj at kannel.org>
+  * gw/ota_prov.c, radius/radius_acct.c, wap/wap_addr.c: fixing compiler
+    warnings. NLC. 
+
+2005-12-09  Stipe Tolj  <stolj at kannel.org>
    * gwlib/mime.c: fixing MIME boundary parsing. Thanks to Paul Bagyenda
      for reviewing and resolving this.
      
