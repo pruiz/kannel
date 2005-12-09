@@ -1,3 +1,14 @@
+2005-12-09  Stipe Tolj  <stolj at kannel.org>
+   Patchset to include OMA ProvCont OTA provisioning support.
+   * configure[.in]: adding <openssl/hmac.h> scan required for OMA ProvCont
+     HMAC computing.
+   * gw/ota_[compiler|prov].[ch], gw/smsbox.c: adding OMA ProvCont support.      
+   * gw/xml_shared.[ch]: adding specific charset MIB enum codes used widely,
+     adding code_page integer to handle while WBXML compilation.
+   Thanks to Paul Bagyenda, Paul P Komkoff Jr and Edward C.A. Tromp for 
+   development of OMA ProvCont OTA support.
+   [URL: http://www.mbuni.org/downloads/1.0.0/mbuni-kannel-patch-full]
+   
 2005-12-08  Stipe Tolj  <stolj at kannel.org>
    * wap/wap_addr.[ch]: performance gain by using int compare rather then
      Octstr compare within wap_addr_same(). We need to call this at various

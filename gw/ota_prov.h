@@ -61,7 +61,10 @@
  * creation and manipulation for the sendota HTTP interface.
  *
  * Official Nokia and Ericsson WAP OTA configuration settings coded 
- * by Stipe Tolj <stolj@wapme.de>, Wapme Systems AG.
+ * by Stipe Tolj <stolj@kannel.org>, Wapme Systems AG.
+ *   
+ * Officual OMA ProvCont OTA provisioning coded 
+ * by Paul Bagyenda, digital solutions Ltd.
  * 
  * XML compiler by Aarno Syvänen <aarno@wiral.com>, Wiral Ltd.
  */
@@ -77,7 +80,7 @@
  * Return -2 when header error, -1 when compile error, 0 when no error
  */
 int ota_pack_message(Msg **msg, Octstr *ota_doc, Octstr *doc_type, 
-                     Octstr *from, Octstr *phone_number);
+                     Octstr *from, Octstr *phone_number, Octstr *sec, Octstr *pin);
 
 /*
  * Tokenizes a given 'ota-setting' group (without using the xml compiler) to

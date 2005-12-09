@@ -830,7 +830,8 @@ if test "x$ssllib" != "x" && test "x$sslinc" != "x"; then
     AC_CHECK_LIB(ssl, SSL_library_init,
     [ AC_CHECK_LIB(ssl, SSL_connect)
       AC_CHECK_HEADERS(openssl/x509.h openssl/rsa.h openssl/crypto.h \
-                       openssl/pem.h openssl/ssl.h openssl/err.h)
+                       openssl/pem.h openssl/ssl.h openssl/err.h \
+                       openssl/hmac.h)
       AC_MSG_CHECKING(whether the OpenSSL library is multithread-enabled)
       AC_TRY_RUN([
         #define OPENSSL_THREAD_DEFINES

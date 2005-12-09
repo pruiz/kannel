@@ -61,7 +61,10 @@
  * creation and manipulation for the sendota HTTP interface.
  *
  * Official Nokia and Ericsson WAP OTA configuration settings coded 
- * by Stipe Tolj <stolj@wapme.de>, Wapme Systems AG.
+ * by Stipe Tolj <stolj@kannel.org>, Wapme Systems AG.
+ * 
+ * Officual OMA ProvCont OTA provisioning coded 
+ * by Paul Bagyenda, digital solutions Ltd.
  * 
  * XML compiler by Aarno Syvänen <aarno@wiral.com>, Wiral Ltd.
  */
@@ -69,6 +72,10 @@
 #include <string.h>
 
 #include "gwlib/gwlib.h"
+
+#ifdef HAVE_LIBSSL
+#include <openssl/hmac.h>
+#endif
 
 #include "msg.h"
 #include "sms.h"
@@ -87,40 +94,98 @@
  * UDH here - SAR UDH is added when (or if) we split the message. This is our
  * *specific* WDP layer.
  */
-static void ota_pack_udh(Msg **msg)
+static void ota_pack_udh(Msg **msg, Octstr *doc_type)
 {
     (*msg)->sms.udhdata = octstr_create("");
-    octstr_append_from_hex((*msg)->sms.udhdata, "060504C34FC002");
-}
+    if (octstr_case_compare(doc_type, octstr_imm("oma-settings")) == 0) 
+        octstr_append_from_hex((*msg)->sms.udhdata, "0605040B840B84");    
+    else 
+        octstr_append_from_hex((*msg)->sms.udhdata, "060504C34FC002");    
+ }
 
 
 /*
  * Our WSP headers: Push Id, PDU type, headers, charset.
  */
-static int ota_pack_push_headers(Msg **msg, Octstr *mime_type)
+static int ota_pack_push_headers(Msg **msg, Octstr *mime_type, Octstr *sec, 
+                                 Octstr *pin, Octstr *ota_binary)
 {    
     (*msg)->sms.msgdata = octstr_create("");
     if (octstr_case_compare(mime_type, octstr_imm("settings")) == 0) {
+        
         /* PUSH ID, PDU type, header length, value length */
         octstr_append_from_hex((*msg)->sms.msgdata, "01062C1F2A");
         /* MIME type for settings */
         octstr_format_append((*msg)->sms.msgdata, "%s", 
                              "application/x-wap-prov.browser-settings");
         octstr_append_from_hex((*msg)->sms.msgdata, "00");
+        /* charset UTF-8 */
+        octstr_append_from_hex((*msg)->sms.msgdata, "81EA");
+
     } else if (octstr_case_compare(mime_type, octstr_imm("bookmarks")) == 0) {
+        
         /* PUSH ID, PDU type, header length, value length */
         octstr_append_from_hex((*msg)->sms.msgdata, "01062D1F2B");
         /* MIME type for bookmarks */
         octstr_format_append((*msg)->sms.msgdata, "%s", 
                              "application/x-wap-prov.browser-bookmarks");
         octstr_append_from_hex((*msg)->sms.msgdata, "00");
+        /* charset UTF-8 */
+        octstr_append_from_hex((*msg)->sms.msgdata, "81EA");
+
+    } else if (octstr_case_compare(mime_type, octstr_imm("oma-settings")) == 0) {
+        Octstr *hdr = octstr_create(""), *mac; 
+        unsigned char *p;
+        int mac_len;
+#ifdef HAVE_LIBSSL
+        unsigned char macbuf[EVP_MAX_MD_SIZE];
+#endif
+
+        /* PUSH ID, PDU type, header length, value length */
+        octstr_append_from_hex((*msg)->sms.msgdata, "0106");
+    
+        octstr_append_from_hex(hdr, "1f2db6"); /* Content type + other type + sec param */
+        wsp_pack_short_integer(hdr, 0x11);
+        if (octstr_case_compare(sec, octstr_imm("netwpin")) == 0)
+            wsp_pack_short_integer(hdr, 0x0);       
+        else if (octstr_case_compare(sec, octstr_imm("userpin")) == 0)
+            wsp_pack_short_integer(hdr, 0x01);          
+        else if (octstr_case_compare(sec, octstr_imm("usernetwpin")) == 0)
+            wsp_pack_short_integer(hdr, 0x02);          
+        else if (octstr_case_compare(sec, octstr_imm("userpinmac")) == 0)
+            wsp_pack_short_integer(hdr, 0x03); /* XXXX Although not quite supported now.*/          
+        else {
+            warning(0, "OMA ProvCont: Unknown SEC pin type '%s'.", octstr_get_cstr(sec));
+            wsp_pack_short_integer(hdr, 0x01);          
+        }
+        wsp_pack_short_integer(hdr, 0x12); /* MAC */
+
+#ifdef HAVE_LIBSSL
+        p = HMAC(EVP_sha1(), octstr_get_cstr(pin), octstr_len(pin), 
+                 octstr_get_cstr(ota_binary), octstr_len(ota_binary), 
+                 macbuf, &mac_len);
+#else
+        mac_len = 0;
+        p = "";
+        warning(0, "OMA ProvCont: No SSL Support, '%s' not supported!", octstr_get_cstr(mime_type));
+#endif
+        mac = octstr_create_from_data(p, mac_len);
+        octstr_binary_to_hex(mac, 1);
+    
+        octstr_append(hdr, mac);
+        octstr_append_from_hex(hdr, "00");
+    
+        octstr_append_uintvar((*msg)->sms.msgdata, octstr_len(hdr));
+        octstr_append((*msg)->sms.msgdata, hdr);
+    
+        octstr_destroy(hdr);
+        octstr_destroy(mac);
+        
     } else {
         warning(0, "Unknown MIME type in OTA request, type '%s' is unsupported.", 
                 octstr_get_cstr(mime_type));
         return 0;
     }
-    /* charset UTF-8 */
-    octstr_append_from_hex((*msg)->sms.msgdata, "81EA");
 
     return 1;
 }
@@ -132,17 +197,21 @@ static int ota_pack_push_headers(Msg **msg, Octstr *mime_type)
  */
 
 int ota_pack_message(Msg **msg, Octstr *ota_doc, Octstr *doc_type, 
-                     Octstr *from, Octstr *phone_number)
+                     Octstr *from, Octstr *phone_number, Octstr *sec, Octstr *pin)
 {
     Octstr *ota_binary;
 
     *msg = msg_create(sms);
     (*msg)->sms.sms_type = mt_push;
-    ota_pack_udh(msg);
-    if (!ota_pack_push_headers(msg, doc_type))
-        goto herror;
+
+    ota_pack_udh(msg, doc_type);
+
     if (ota_compile(ota_doc, octstr_imm("UTF-8"), &ota_binary) == -1)
         goto cerror;
+        
+    if (!ota_pack_push_headers(msg, doc_type, sec, pin, ota_binary))
+        goto herror;
+
     octstr_format_append((*msg)->sms.msgdata, "%S", ota_binary);
     (*msg)->sms.sender = octstr_duplicate(from);
     (*msg)->sms.receiver = octstr_duplicate(phone_number);
@@ -156,18 +225,25 @@ int ota_pack_message(Msg **msg, Octstr *ota_doc, Octstr *doc_type,
     octstr_destroy(ota_doc);
     octstr_destroy(doc_type);
     octstr_destroy(from);
+    octstr_destroy(sec);
+    octstr_destroy(pin);
     return 0;
 
 herror:
+    octstr_destroy(ota_binary);
     octstr_destroy(ota_doc);
     octstr_destroy(doc_type);
     octstr_destroy(from);
+    octstr_destroy(sec);
+    octstr_destroy(pin);
     return -2;
 
 cerror:
     octstr_destroy(ota_doc);
     octstr_destroy(doc_type);
     octstr_destroy(from);
+    octstr_destroy(sec);
+    octstr_destroy(pin);
     return -1;
 }
 

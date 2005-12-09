@@ -2832,20 +2832,28 @@ static Octstr *smsbox_req_sendota(List *list, Octstr *client_ip, int *status,
         
     /* check does we have an external XML source for configuration */
     if ((ota_doc = http_cgi_variable(list, "text")) != NULL) {
+        Octstr *sec, *pin;
         
         /*
          * We are doing the XML OTA compiler mode for this request
          */
         debug("sms", 0, "OTA service with XML document");
         ota_doc = octstr_duplicate(ota_doc);
-        if ((doc_type = http_cgi_variable(list, "type")) == NULL) {
-	    doc_type = octstr_format("%s", "settings");
-        } else {
-	    doc_type = octstr_duplicate(doc_type);
-        }
+        if ((doc_type = http_cgi_variable(list, "type")) == NULL)
+            doc_type = octstr_format("%s", "settings");
+        else 
+            doc_type = octstr_duplicate(doc_type);
+        if ((sec = http_cgi_variable(list, "sec")) == NULL)
+            sec = octstr_create("USERPIN");
+        else 
+            sec = octstr_duplicate(sec);
+        if ((pin = http_cgi_variable(list, "pin")) == NULL)
+            pin = octstr_create("12345");
+        else
+            pin = octstr_duplicate(pin);
 
         if ((ret = ota_pack_message(&msg, ota_doc, doc_type, from, 
-                                phonenumber)) < 0) {
+                                phonenumber, sec, pin)) < 0) {
             *status = HTTP_BAD_REQUEST;
             msg_destroy(msg);
             if (ret == -2)
@@ -2968,46 +2976,63 @@ static Octstr *smsbox_sendota_post(List *headers, Octstr *body,
 {
     Octstr *name, *val, *ret;
     Octstr *from, *to, *id, *user, *pass, *smsc;
-    Octstr *type, *charset, *doc_type, *ota_doc;
+    Octstr *type, *charset, *doc_type, *ota_doc, *sec, *pin;
     URLTranslation *t;
     Msg *msg;
     long l;
     int r;
 
     id = from = to = user = pass = smsc = NULL;
-    doc_type = ota_doc = NULL;
+    doc_type = ota_doc = sec = pin = NULL;
 
     /* 
      * process all special HTTP headers 
+     * 
+     * XXX can't we do this better? 
+     * Obviously http_header_find_first() does this
      */
     for (l = 0; l < gwlist_len(headers); l++) {
-    http_header_get(headers, l, &name, &val);
+        http_header_get(headers, l, &name, &val);
 
-	if (octstr_case_compare(name, octstr_imm("X-Kannel-OTA-ID")) == 0) {
-	    id = octstr_duplicate(val);
-	    octstr_strip_blanks(id);
-	}
-	else if (octstr_case_compare(name, octstr_imm("X-Kannel-From")) == 0) {
-	    from = octstr_duplicate(val);
-	    octstr_strip_blanks(from);
-	}
-	else if (octstr_case_compare(name, octstr_imm("X-Kannel-To")) == 0) {
-	    to = octstr_duplicate(val);
-	    octstr_strip_blanks(to);
-	}
-	else if (octstr_case_compare(name, octstr_imm("X-Kannel-Username")) == 0) {
-		user = octstr_duplicate(val);
-		octstr_strip_blanks(user);
-	}
-	else if (octstr_case_compare(name, octstr_imm("X-Kannel-Password")) == 0) {
-		pass = octstr_duplicate(val);
-		octstr_strip_blanks(pass);
-	}
-	else if (octstr_case_compare(name, octstr_imm("X-Kannel-SMSC")) == 0) {
-		smsc = octstr_duplicate(val);
-		octstr_strip_blanks(smsc);
-	}
+        if (octstr_case_compare(name, octstr_imm("X-Kannel-OTA-ID")) == 0) {
+            id = octstr_duplicate(val);
+            octstr_strip_blanks(id);
+        }
+        else if (octstr_case_compare(name, octstr_imm("X-Kannel-From")) == 0) {
+            from = octstr_duplicate(val);
+            octstr_strip_blanks(from);
+        }
+        else if (octstr_case_compare(name, octstr_imm("X-Kannel-To")) == 0) {
+            to = octstr_duplicate(val);
+            octstr_strip_blanks(to);
+        }
+        else if (octstr_case_compare(name, octstr_imm("X-Kannel-Username")) == 0) {
+            user = octstr_duplicate(val);
+            octstr_strip_blanks(user);
+        }
+        else if (octstr_case_compare(name, octstr_imm("X-Kannel-Password")) == 0) {
+            pass = octstr_duplicate(val);
+            octstr_strip_blanks(pass);
+        }
+        else if (octstr_case_compare(name, octstr_imm("X-Kannel-SMSC")) == 0) {
+            smsc = octstr_duplicate(val);
+            octstr_strip_blanks(smsc);
+        }
+        else if (octstr_case_compare(name, octstr_imm("X-Kannel-SEC")) == 0) {
+            sec = octstr_duplicate(val);
+            octstr_strip_blanks(sec);
+        }
+        else if (octstr_case_compare(name, octstr_imm("X-Kannel-PIN")) == 0) {
+            pin = octstr_duplicate(val);
+            octstr_strip_blanks(pin);
+        }
     }
+
+    /* apply defaults */
+    if (!sec)
+        sec =  octstr_imm("USERPIN");
+    if (!pin)
+        pin = octstr_imm("1234");
 
     /* check the username and password */
     t = authorise_username(user, pass, client_ip);
@@ -3024,12 +3049,16 @@ static Octstr *smsbox_sendota_post(List *headers, Octstr *body,
 
     if (urltrans_faked_sender(t) != NULL) {
         from = octstr_duplicate(urltrans_faked_sender(t));
-    } else if (from != NULL && octstr_len(from) > 0) {
-    } else if (urltrans_default_sender(t) != NULL) {
+    } 
+    else if (from != NULL && octstr_len(from) > 0) {
+    } 
+    else if (urltrans_default_sender(t) != NULL) {
         from = octstr_duplicate(urltrans_default_sender(t));
-    } else if (global_sender != NULL) {
+    } 
+    else if (global_sender != NULL) {
         from = octstr_duplicate(global_sender);
-    } else {
+    } 
+    else {
         *status = HTTP_BAD_REQUEST;
         ret = octstr_create("Sender missing and no global set, rejected");
         goto error;
@@ -3048,6 +3077,10 @@ static Octstr *smsbox_sendota_post(List *headers, Octstr *body,
              octstr_imm("application/x-wap-prov.browser-bookmarks")) == 0) {
 	    doc_type = octstr_format("%s", "bookmarks");
     }
+    else if (octstr_case_compare(type, 
+             octstr_imm("text/vnd.wap.connectivity-xml")) == 0) {
+        doc_type = octstr_format("%s", "oma-settings");
+    }
 
     if (doc_type == NULL) {
 	    error(0, "%s got weird content type %s", octstr_get_cstr(sendota_url),
@@ -3062,7 +3095,7 @@ static Octstr *smsbox_sendota_post(List *headers, Octstr *body,
 	     */
 	    ota_doc = octstr_duplicate(body);
 
-	    if ((r = ota_pack_message(&msg, ota_doc, doc_type, from, to)) < 0) {
+        if ((r = ota_pack_message(&msg, ota_doc, doc_type, from, to, sec, pin)) < 0) {
 		*status = HTTP_BAD_REQUEST;
 		msg_destroy(msg);
 		if (r == -2) {

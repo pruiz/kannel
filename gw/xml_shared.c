@@ -71,7 +71,7 @@
 struct charset_t {
     char *charset; 
     char *nro;
-    unsigned char MIBenum;
+    unsigned int MIBenum;
 };
 
 charset_t character_sets[] = {
@@ -84,6 +84,15 @@ charset_t character_sets[] = {
     { "ISO", "8859-7", 10 },
     { "ISO", "8859-8", 11 },
     { "ISO", "8859-9", 12 },
+    { "WINDOWS", "1250", 2250 },
+    { "WINDOWS", "1251", 2251 },
+    { "WINDOWS", "1252", 2252 },
+    { "WINDOWS", "1253", 2253 },
+    { "WINDOWS", "1254", 2254 },
+    { "WINDOWS", "1255", 2255 },
+    { "WINDOWS", "1256", 2256 },
+    { "WINDOWS", "1257", 2257 },
+    { "WINDOWS", "1258", 2258 },
     { "UTF", "8", 106 },
     { NULL }
 };
@@ -177,11 +186,15 @@ int only_blanks(const char *text)
  * Parses the character set of the document. 
  */
 
-int parse_charset(Octstr *charset)
+int parse_charset(Octstr *os)
 {
+    Octstr *charset = NULL;
     Octstr *number = NULL;
     int i, j, cut = 0, ret = 0;
 
+    gw_assert(os != NULL);
+    charset = octstr_duplicate(os);
+    
     /* The charset might be in lower case, so... */
     octstr_convert_range(charset, 0, octstr_len(charset), toupper);
 
@@ -190,33 +203,32 @@ int parse_charset(Octstr *charset)
      * The cutting.
      */
     if ((cut = octstr_search_char(charset, '_', 0)) > 0) {
-	number = octstr_copy(charset, cut + 1, 
-			     (octstr_len(charset) - (cut + 1)));
-	octstr_truncate(charset, cut);
-    } else if ((cut = octstr_search_char(charset, '-', 0)) > 0) {
-	number = octstr_copy(charset, cut + 1, 
-			     (octstr_len(charset) - (cut + 1)));
-	octstr_truncate(charset, cut);
+        number = octstr_copy(charset, cut + 1, (octstr_len(charset) - (cut + 1)));
+        octstr_truncate(charset, cut);
+    } 
+    else if ((cut = octstr_search_char(charset, '-', 0)) > 0) {
+        number = octstr_copy(charset, cut + 1, (octstr_len(charset) - (cut + 1)));
+        octstr_truncate(charset, cut);
     }
 
     /* And table search. */
     for (i = 0; character_sets[i].charset != NULL; i++)
-	if (octstr_str_compare(charset, character_sets[i].charset) == 0) {
-	    for (j = i; 
-		 octstr_str_compare(charset, character_sets[j].charset) == 0; 
-		 j++)
-		if (octstr_str_compare(number, character_sets[j].nro) == 0) {
-		    ret = character_sets[j].MIBenum;
-		    break;
-		}
-	    break;
-	}
+        if (octstr_str_compare(charset, character_sets[i].charset) == 0) {
+            for (j = i; octstr_str_compare(charset, 
+                                           character_sets[j].charset) == 0; j++)
+                if (octstr_str_compare(number, character_sets[j].nro) == 0) {
+                    ret = character_sets[j].MIBenum;
+                    break;
+                }
+            break;
+        }
 
     /* UTF-8 is the default value */
     if (character_sets[i].charset == NULL)
-	ret = character_sets[i-1].MIBenum;
+        ret = character_sets[i-1].MIBenum;
 
     octstr_destroy(number);
+    octstr_destroy(charset);
 
     return ret;
 }

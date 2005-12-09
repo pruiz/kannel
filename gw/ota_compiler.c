@@ -55,11 +55,28 @@
  */ 
 
 /*
- * ota_compiler.c: Tokenizes an ota settings or bookmarks document. DTD is 
- * defined in Over The Air Settings Specification  (hereafter called ota), 
- * chapter 6. (See http://www.americas.nokia.com/messaging/default.asp)
- *
- * By Aarno Syvänen for Wiral Ltd
+ * ota_compiler.c: Tokenizes OTA provisioning documents 
+ * 
+ * This compiler handles the following OTA config formats:
+ * 
+ *   - Nokia/Ericsson OTA settings specificaion. DTD is defined in 
+ *     Over The Air Settings Specification (hereafter called OTA), chapter 6. 
+ *     (See http://www.americas.nokia.com/messaging/default.asp)
+ * 
+ *   - OMA OTA client provisionig content specification, as defined in
+ *     document OMA-WAP-ProvCont-V1.1-20050428-C.pdf. (hereafter called OMA)
+ *     (See http://www.openmobilealliance.com/release_program/cp_v1_1.htm)
+ * 
+ * Histrorically the Nokia/Ericsson OTA config format was the first scratch 
+ * in allowing remote WAP profile configuration via SMS bearer. While the WAP
+ * Forum transfered into the Open Mobile Alliance (OMA), the technical working
+ * groups addopted the provisioning concept to a more generic OTA provisioning
+ * concept. The OMA client provisioning specs v1.1 are part of the WAP 2.0 
+ * protocol stack. 
+ * 
+ * Aarno Syvänen for Wiral Ltd
+ * Stipe Tolj <stolj@kannel.org> for Wapme Systems AG
+ * Paul Bagyenda for digital solutions Ltd.
  */
 
 #include <ctype.h>
@@ -94,15 +111,18 @@ struct ota_3table_t {
     char *name;
     char *value;
     unsigned char token;
+    unsigned char code_page;
 };
 
 typedef struct ota_3table_t ota_3table_t;
 
 /*
- * Elements from tag code page zero. These are defined in ota, chapter 8.1.
+ * Elements from tag code page zero. These are defined in OTA, chapter 8.1
+ * and OMA, chapter 7.1.
  */
 
 static ota_2table_t ota_elements[] = {
+    { "WAP-PROVISIONINGDOC", 0x05 },
     { "CHARACTERISTIC-LIST", 0x05 },
     { "CHARACTERISTIC", 0x06 },
     { "PARM", 0x07 }
@@ -178,6 +198,180 @@ static ota_3table_t ota_attributes[] = {
 
 #define NUMBER_OF_ATTRIBUTES sizeof(ota_attributes)/sizeof(ota_attributes[0])
 
+/*
+ * Defines OMA ProvCont WBXML tokens, see chapter 7.
+ */
+
+static ota_3table_t oma_ota_attributes[] = {
+    { "VERSION", "INLINE", 0x45 },
+    { "VERSION", "1.0", 0x46 },
+    { "TYPE", "INLINE", 0x50 },
+    { "TYPE", "PXLOGICAL", 0x51 },
+    { "TYPE", "PXPHYSICAL", 0x52 },
+    { "TYPE", "PORT", 0x53 },
+    { "TYPE", "VALIDITY", 0x54 },
+    { "TYPE", "NAPDEF", 0x55 },
+    { "TYPE", "BOOTSTRAP", 0x56 },
+    { "TYPE", "VENDORCONFIG", 0x57 },
+    { "TYPE", "PXAUTHINFO", 0x59 },
+    { "TYPE", "NAPAUTHINFO", 0x5A },
+    { "TYPE", "ACCESS", 0x5B },
+    { "TYPE", "CLIENTIDENTITY", 0x58 },
+    { "TYPE", "APPLICATION", 0x55, 1 },
+    { "TYPE", "APPADDR", 0x56, 1 },
+    { "TYPE", "APPAUTH", 0x57, 1 },
+    { "TYPE", "RESOURCE", 0x59, 1 },
+    { "NAME", "INLINE", 0x5 },
+    { "VALUE", "INLINE", 0x6 },     
+    { "NAME", "NAME", 0x7 },
+    { "NAME", "NAP-ADDRESS", 0x8 },
+    { "NAME", "NAP-ADDRTYPE", 0x9 },
+    { "NAME", "CALLTYPE", 0xA },
+    { "NAME", "VALIDUNTIL", 0xB },
+    { "NAME", "AUTHTYPE", 0xC },
+    { "NAME", "AUTHNAME", 0xD },
+    { "NAME", "AUTHSECRET", 0xE },
+    { "NAME", "LINGER", 0xF },
+    { "NAME", "BEARER", 0x10 },
+    { "NAME", "NAPID", 0x11 },
+    { "NAME", "COUNTRY", 0x12 },
+    { "NAME", "NETWORK", 0x13 },
+    { "NAME", "INTERNET", 0x14 },
+    { "NAME", "PROXY-ID", 0x15 },
+    { "NAME", "PROXY-PROVIDER-ID", 0x16 },
+    { "NAME", "DOMAIN", 0x17 },
+    { "NAME", "PROVURL", 0x18 },
+    { "NAME", "PXAUTH-TYPE", 0x19 },
+    { "NAME", "PXAUTH-ID", 0x1A },
+    { "NAME", "PXAUTH-PW", 0x1B },
+    { "NAME", "STARTPAGE", 0x1C },
+    { "NAME", "BASAUTH-ID", 0x1D },
+    { "NAME", "BASAUTH-PW", 0x1E },
+    { "NAME", "PUSHENABLED", 0x1F },
+    { "NAME", "PXADDR", 0x20 },
+    { "NAME", "PXADDRTYPE", 0x21 },
+    { "NAME", "TO-NAPID", 0x22 },
+    { "NAME", "PORTNBR", 0x23 },
+    { "NAME", "SERVICE", 0x24 },
+    { "NAME", "LINKSPEED", 0x25 },
+    { "NAME", "DNLINKSPEED", 0x26 },
+    { "NAME", "LOCAL-ADDR", 0x27 },
+    { "NAME", "LOCAL-ADDRTYPE", 0x28 },
+    { "NAME", "CONTEXT-ALLOW", 0x29 },
+    { "NAME", "TRUST", 0x2A },
+    { "NAME", "MASTER", 0x2B },
+    { "NAME", "SID", 0x2C },
+    { "NAME", "SOC", 0x2D },
+    { "NAME", "WSP-VERSION", 0x2E },
+    { "NAME", "PHYSICAL-PROXY-ID", 0x2F },
+    { "NAME", "CLIENT-ID", 0x30 },
+    { "NAME", "DELIVERY-ERR-SDU", 0x31 },
+    { "NAME", "DELIVERY-ORDER", 0x32 },
+    { "NAME", "TRAFFIC-CLASS", 0x33 },
+    { "NAME", "MAX-SDU-SIZE", 0x34 },
+    { "NAME", "MAX-BITRATE-UPLINK", 0x35 },
+    { "NAME", "MAX-BITRATE-DNLINK", 0x36 },
+    { "NAME", "RESIDUAL-BER", 0x37 },
+    { "NAME", "SDU-ERROR-RATIO", 0x38 },
+    { "NAME", "TRAFFIC-HANDL-PRIO", 0x39 },
+    { "NAME", "TRANSFER-DELAY", 0x3A },
+    { "NAME", "GUARANTEED-BITRATE-UPLINK", 0x3B },
+    { "NAME", "GUARANTEED-BITRATE-DNLINK", 0x3C },
+    { "NAME", "PXADDR-FQDN", 0x3D },
+    { "NAME", "PROXY-PW", 0x3E },
+    { "NAME", "PPGAUTH-TYPE", 0x3F },
+    { "NAME", "PULLENABLED", 0x47 },
+    { "NAME", "DNS-ADDR", 0x48 },
+    { "NAME", "MAX-NUM-RETRY", 0x49 },
+    { "NAME", "FIRST-RETRY-TIMEOUT", 0x4A },
+    { "NAME", "REREG-THRESHOLD", 0x4B },
+    { "NAME", "T-BIT", 0x4C },
+    { "NAME", "AUTH-ENTITY", 0x4E },
+    { "NAME", "SPI", 0x4F },
+    { "NAME", "AACCEPT", 0x2E, 1 },
+    { "NAME", "AAUTHDATA", 0x2F, 1 },
+    { "NAME", "AAUTHLEVEL", 0x30, 1 },
+    { "NAME", "AAUTHNAME", 0x31, 1 },
+    { "NAME", "AAUTHSECRET", 0x32, 1 },
+    { "NAME", "AAUTHTYPE", 0x33, 1 },
+    { "NAME", "ADDR", 0x34, 1 },
+    { "NAME", "ADDRTYPE", 0x35, 1 },
+    { "NAME", "APPID", 0x36, 1 },
+    { "NAME", "APROTOCOL", 0x37, 1 },
+    { "NAME", "PROVIDER-ID", 0x38, 1 },
+    { "NAME", "TO-PROXY", 0x39, 1 },
+    { "NAME", "URI", 0x3A, 1 },
+    { "NAME", "RULE", 0x3B, 1 },
+    { "VALUE", "IPV4", 0x85 },
+    { "VALUE", "IPV6", 0x86 },
+    { "VALUE", "E164", 0x87 },
+    { "VALUE", "ALPHA", 0x88 },
+    { "VALUE", "APN", 0x89 },
+    { "VALUE", "SCODE", 0x8A },
+    { "VALUE", "TETRA-ITSI", 0x8B },
+    { "VALUE", "MAN", 0x8C },
+    { "VALUE", "APPSRV", 0x8D, 1 },
+    { "VALUE", "OBEX", 0x8E, 1 },
+    { "VALUE", "ANALOG-MODEM", 0x90 },
+    { "VALUE", "V.120", 0x91 },
+    { "VALUE", "V.110", 0x92 },
+    { "VALUE", "X.31", 0x93 },
+    { "VALUE", "BIT-TRANSPARENT", 0x94 },
+    { "VALUE", "DIRECT-ASYNCHRONOUS-DATA-SERVICE", 0x95 },
+    { "VALUE", "PAP", 0x9A },
+    { "VALUE", "CHAP", 0x9B },
+    { "VALUE", "HTTP-BASIC", 0x9C },
+    { "VALUE", "HTTP-DIGEST", 0x9D },
+    { "VALUE", "WTLS-SS", 0x9E },
+    { "VALUE", "MD5", 0x9F },
+    { "VALUE", "GSM-USSD", 0xA2 },
+    { "VALUE", "GSM-SMS", 0xA3 },
+    { "VALUE", "ANSI-136-GUTS", 0xA4 },
+    { "VALUE", "IS-95-CDMA-SMS", 0xA5 },
+    { "VALUE", "IS-95-CDMA-CSD", 0xA6 },
+    { "VALUE", "IS-95-CDMA-PACKET", 0xA7 },
+    { "VALUE", "ANSI-136-CSD", 0xA8 },
+    { "VALUE", "ANSI-136-GPRS", 0xA9 },
+    { "VALUE", "GSM-CSD", 0xAA },
+    { "VALUE", "GSM-GPRS", 0xAB },
+    { "VALUE", "AMPS-CDPD", 0xAC },
+    { "VALUE", "PDC-CSD", 0xAD },
+    { "VALUE", "PDC-PACKET", 0xAE },
+    { "VALUE", "IDEN-SMS", 0xAF },
+    { "VALUE", "IDEN-CSD", 0xB0 },
+    { "VALUE", "IDEN-PACKET", 0xB1 },
+    { "VALUE", "FLEX/REFLEX", 0xB2 },
+    { "VALUE", "PHS-SMS", 0xB3 },
+    { "VALUE", "PHS-CSD", 0xB4 },
+    { "VALUE", "TETRA-SDS", 0xB5 },
+    { "VALUE", "TETRA-PACKET", 0xB6 },
+    { "VALUE", "ANSI-136-GHOST", 0xB7 },
+    { "VALUE", "MOBITEX-MPAK", 0xB8 },
+    { "VALUE", "CDMA2000-1X-SIMPLE-IP", 0xB9 },
+    { "VALUE", "CDMA2000-1X-MOBILE-IP", 0xBA },
+    { "VALUE", "AUTOBAUDING", 0xC5 },
+    { "VALUE", "CL-WSP", 0xCA },
+    { "VALUE", "CO-WSP", 0xCB },
+    { "VALUE", "CL-SEC-WSP", 0xCC },
+    { "VALUE", "CO-SEC-WSP", 0xCD },
+    { "VALUE", "CL-SEC-WTA", 0xCE },
+    { "VALUE", "CO-SEC-WTA", 0xCF },
+    { "VALUE", "OTA-HTTP-TO", 0xD0 },
+    { "VALUE", "OTA-HTTP-TLS-TO", 0xD1 },
+    { "VALUE", "OTA-HTTP-PO", 0xD2 },
+    { "VALUE", "OTA-HTTP-TLS-PO", 0xD3 },
+    { "VALUE", ",", 0x90, 1 },
+    { "VALUE", "HTTP-", 0x91, 1 },
+    { "VALUE", "BASIC", 0x92, 1 },
+    { "VALUE", "DIGEST", 0x93, 1 },
+    { "VALUE", "AAA", 0xE0 },
+    { "VALUE", "HA", 0xE1 },
+};
+
+#define OMA_VALUE_TAG 0x06
+
+#define NUMBER_OF_OMA_ATTRIBUTES sizeof(oma_ota_attributes)/sizeof(oma_ota_attributes[0])
+
 #include "xml_definitions.h"
 
 /****************************************************************************
@@ -186,7 +380,7 @@ static ota_3table_t ota_attributes[] = {
  */
 
 static int parse_document(xmlDocPtr document, Octstr *charset, 
-			  simple_binary_t **ota_binary);
+                          simple_binary_t **ota_binary);
 static int parse_node(xmlNodePtr node, simple_binary_t **otabxml);    
 static int parse_element(xmlNodePtr node, simple_binary_t **otabxml);
 static int parse_attribute(xmlAttrPtr attr, simple_binary_t **otabxml); 
@@ -247,8 +441,17 @@ static int parse_document(xmlDocPtr document, Octstr *charset,
 {
     xmlNodePtr node;
 
-    (*otabxml)->wbxml_version = 0x01; /* WBXML Version number 1.1  */
-    (*otabxml)->public_id = 0x01; /* Public id for an unknown document type */
+    if (document->intSubset && document->intSubset->ExternalID 
+        && strcmp(document->intSubset->ExternalID, "-//WAPFORUM//DTD PROV 1.0//EN") == 0) {
+        /* OMA ProvCont */
+        (*otabxml)->wbxml_version = 0x03; /* WBXML Version number 1.3  */
+        (*otabxml)->public_id = 0x0B; /* Public id for this kind of doc */  
+    } else {
+        /* OTA */
+        (*otabxml)->wbxml_version = 0x01; /* WBXML Version number 1.1  */
+        (*otabxml)->public_id = 0x01; /* Public id for an unknown document type */
+    }
+    (*otabxml)->code_page = 0;
     
     charset = octstr_create("UTF-8");
     (*otabxml)->charset = parse_charset(charset);
@@ -347,7 +550,7 @@ static int parse_element(xmlNodePtr node, simple_binary_t **otabxml)
 
     i = 0;
     while (i < NUMBER_OF_ELEMENTS) {
-        if (octstr_compare(name, octstr_imm(ota_elements[i].name)) == 0)
+        if (octstr_case_compare(name, octstr_imm(ota_elements[i].name)) == 0)
             break;
         ++i;
     }
@@ -405,7 +608,8 @@ static int parse_attribute(xmlAttrPtr attr, simple_binary_t **otabxml)
            *valueos,
            *nameos;
     unsigned char ota_hex;
-    size_t i;
+    size_t i, limit;
+    ota_3table_t *alist;
 
     name = octstr_create(attr->name);
 
@@ -417,34 +621,53 @@ static int parse_attribute(xmlAttrPtr attr, simple_binary_t **otabxml)
     if (value == NULL)
         goto error;
 
+    /* OMA has it's own dedicated public ID, so use this */        
+    if ((*otabxml)->public_id == 0x0B) { 
+        alist = oma_ota_attributes;
+        limit = NUMBER_OF_OMA_ATTRIBUTES;
+    } else {
+        alist = ota_attributes;
+        limit = NUMBER_OF_ATTRIBUTES;
+    }
+
     i = 0;
     valueos = NULL;
     nameos = NULL;
-    while (i < NUMBER_OF_ATTRIBUTES) {
-	nameos = octstr_imm(ota_attributes[i].name);
-        if (octstr_compare(name, nameos) == 0) {
-	    if (ota_attributes[i].value != NULL) {
-                valueos = octstr_imm(ota_attributes[i].value);
+    while (i < limit) {
+        nameos = octstr_imm(alist[i].name);
+        if (octstr_case_compare(name, nameos) == 0) {
+            if (alist[i].value != NULL) {
+                valueos = octstr_imm(alist[i].value);
             }
-            if (octstr_compare(value, valueos) == 0) {
-	        break;
+            if (octstr_case_compare(value, valueos) == 0) {
+                break;
             }
             if (octstr_compare(valueos, octstr_imm("INLINE")) == 0) {
-	        break;
+                break;
             }
         }
        ++i;
     }
 
-    if (i == NUMBER_OF_ATTRIBUTES) {
+    if (i == limit) {
         warning(0, "unknown attribute %s in OTA source", 
                 octstr_get_cstr(name));
         warning(0, "its value being %s", octstr_get_cstr(value));
         goto error;
     }
 
-    ota_hex = ota_attributes[i].token;
+    ota_hex = alist[i].token;
     if (!use_inline_string(valueos)) {
+        /* Switch code page. */
+        if (alist[i].code_page != (*otabxml)->code_page) { 
+            output_char(0, otabxml);
+            output_char(alist[i].code_page, otabxml);
+            (*otabxml)->code_page = alist[i].code_page;
+        }
+        /* if OMA add value tag */
+        if ((*otabxml)->public_id == 0x0B && name 
+            && octstr_case_compare(name, octstr_imm("value")) == 0)
+            output_char(OMA_VALUE_TAG, otabxml);
         output_char(ota_hex, otabxml);
     } else {
         output_char(ota_hex, otabxml);
