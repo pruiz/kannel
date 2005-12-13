@@ -152,6 +152,7 @@ SINGLE_GROUP(wapbox,
     OCTSTR(http-interface-name)
     OCTSTR(concatenation)
     OCTSTR(max-messages)
+    OCTSTR(wml-strict)
 )
 
 

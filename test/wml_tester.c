@@ -70,13 +70,14 @@
 typedef enum { NORMAL_OUT, SOURCE_OUT, BINARY_OUT } output_t;
 
 static void help(void) {
-    info(0, "Usage: wml_tester [-hsbz] [-n number] [-f file] "
+    info(0, "Usage: wml_tester [-hsbzr] [-n number] [-f file] "
 	 "[-c charset] file.wml\n"
 	 "where\n"
 	 "  -h  this text\n"
 	 "  -s  output also the WML source, cannot be used with b\n"
 	 "  -b  output only the compiled binary, cannot be used with s\n"
 	 "  -z  insert a '\\0'-character in the middle of the input\n"
+     "  -r  run XML parser in relaxed mode to recover from errors\n"
 	 "  -n number   the number of times the compiling is done\n"
 	 "  -f file     direct the output into a file\n"
 	 "  -c charset  character set as given by the http");
@@ -99,15 +100,14 @@ int main(int argc, char **argv)
     Octstr *wml_text = NULL;
     Octstr *charset = NULL;
     Octstr *wml_binary = NULL;
-
-    int i, ret = 0, opt, file = 0, zero = 0, numstatus = 0;
+    int i, ret = 0, opt, file = 0, zero = 0, numstatus = 0, wml_strict = 1;
     long num = 0;
 
     /* You can give an wml text file as an argument './wml_tester main.wml' */
 
     gwlib_init();
 
-    while ((opt = getopt(argc, argv, "hsbzn:f:c:")) != EOF) {
+    while ((opt = getopt(argc, argv, "hsbzrn:f:c:")) != EOF) {
 	switch (opt) {
 	case 'h':
 	    help();
@@ -131,6 +131,9 @@ int main(int argc, char **argv)
 	case 'z':
 	    zero = 1;
 	    break;
+    case 'r':
+        wml_strict = 0;
+        break;
 	case 'n':
 	    numstatus = octstr_parse_long(&num, octstr_imm(optarg), 0, 0);
 	    if (numstatus == -1) { 
@@ -166,7 +169,7 @@ int main(int argc, char **argv)
 
     if (outputti == BINARY_OUT)
 	 log_set_output_level(GW_PANIC);
-    wml_init();
+    wml_init(wml_strict);
 
     while (optind < argc) {
 	wml_text = octstr_read_file(argv[optind]);

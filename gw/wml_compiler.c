@@ -79,6 +79,7 @@
 #include <libxml/debugXML.h>
 #include <libxml/encoding.h>
 #include <libxml/parser.h>
+#include <libxml/xmlerror.h>
 
 #include "gwlib/gwlib.h"
 #include "wml_compiler.h"
@@ -238,6 +239,8 @@ List *wml_attr_values_list;
 
 List *wml_URL_values_list;
 
+int wml_xml_parser_opt;
+
 
 /***********************************************************************
  * Declarations of internal functions. These are defined at the end of
@@ -341,6 +344,23 @@ static void string_table_output(Octstr *ostr, wml_binary_t **wbxml);
 
 
 /***********************************************************************
+ * Generic error message formater for libxml2 related errors
+ */
+
+static void xml_error(void)
+{
+    xmlErrorPtr err = xmlGetLastError();
+    Octstr *msg = octstr_format("%s", err->message);
+
+    /* replace annoying line feeds */    
+    octstr_replace(msg, octstr_imm("\n"), octstr_imm(" "));
+    error(0,"XML error: code: %d, level: %d, line: %d, %s",
+          err->code, err->level, err->line, octstr_get_cstr(msg));
+    octstr_destroy(msg);
+}
+
+
+/***********************************************************************
  * Implementations of the functions declared in wml_compiler.h.
  */
 
@@ -369,7 +389,8 @@ int wml_compile(Octstr *wml_text, Octstr *charset, Octstr **wml_binary,
 
     size = octstr_len(wml_text);
     wml_c_text = octstr_get_cstr(wml_text);
-    debug("ww",0, "given encoding: %s", octstr_get_cstr(charset));
+    
+    debug("wml_compile",0, "WML: Given charset: %s", octstr_get_cstr(charset));
 
     if (octstr_search_char(wml_text, '\0', 0) != -1) {    
         error(0, "WML compiler: Compiling error: "
@@ -381,10 +402,10 @@ int wml_compile(Octstr *wml_text, Octstr *charset, Octstr **wml_binary,
          * source is parsed into a parsing tree and the tree is then compiled 
          * into binary.
          */
-
+         
         pDoc = xmlReadMemory(wml_c_text, size, NULL, octstr_get_cstr(charset), 
-                             XML_PARSE_RECOVER | XML_PARSE_NONET);
-       
+                             wml_xml_parser_opt);
+        
         if (pDoc != NULL) {
             /* 
              * If we have a set internal encoding, then apply this information 
@@ -397,7 +418,8 @@ int wml_compile(Octstr *wml_text, Octstr *charset, Octstr **wml_binary,
             wml_binary_output(*wml_binary, wbxml);
         } else {    
             error(0, "WML compiler: Compiling error: "
-                     "libxml returned a NULL pointer");
+                     "libxml2 returned a NULL pointer");
+            xml_error();
             ret = -1;
         }
     }
@@ -415,7 +437,7 @@ int wml_compile(Octstr *wml_text, Octstr *charset, Octstr **wml_binary,
  * Initialization: makes up the hash tables for the compiler.
  */
 
-void wml_init()
+void wml_init(int wml_xml_strict)
 {
     int i = 0, len = 0;
     wml_hash_t *temp = NULL;
@@ -452,6 +474,11 @@ void wml_init()
 	temp = hash_create(wml_URL_values[i].text, wml_URL_values[i].token);
 	gwlist_append(wml_URL_values_list, temp);
     }
+    
+    /* Strict XML parsing. */
+    wml_xml_parser_opt = wml_xml_strict ? 
+            (XML_PARSE_NOERROR | XML_PARSE_NONET) :
+            (XML_PARSE_RECOVER | XML_PARSE_NOERROR | XML_PARSE_NONET);
 }
 
 
@@ -623,6 +650,7 @@ static int parse_document(xmlDocPtr document, Octstr *charset,
     if (node == NULL) {
         error(0, "WML compiler: XML parsing failed, no document root element.");
         error(0, "Most probably an error in the WML source.");
+        xml_error();
         return -1;
     }
     
@@ -660,7 +688,7 @@ static int parse_element(xmlNodePtr node, wml_binary_t **wbxml)
 	    if (check_do_elements(node) == -1) {
 		add_end_tag = -1;
 		error(0, "WML compiler: Two or more do elements with same"
-		      " name in a card or template element.");
+		         " name in a card or template element.");
 	    }
 	/* A conformance patch: if variable in setvar has a bad name, it's
 	   ignored. */

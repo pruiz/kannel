@@ -2025,6 +2025,19 @@ bearerbox-host = localhost
 	 be used to have a smarter gateway and let the user know what
 	 happened actually.
 	 </entry></row>
+	 
+	 <row><entry><literal>wml-strict</literal></entry>
+     <entry>bool</entry>
+     <entry valign="bottom">
+	 If set wapbox will use a strict policy in XML parsing the WML
+	 deck. If not set it will be more relaxing and let the XML parser
+	 recover from parsing errors. This has mainly impacts in how smart
+	 the WML deck and it's character set encoding can be addopted, even
+	 while you used an encoding that does not fit the XML preamble.
+	 BEWARE: This may be a vulnerability in your wapbox for large bogus 
+	 WML input. Therefore this defaults to 'yes', strict parsing.
+	 is assimed.
+	 </entry></row>
 
   </tbody>
   </tgroup>

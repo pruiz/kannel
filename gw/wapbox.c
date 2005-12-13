@@ -104,6 +104,9 @@ static Counter *sequence_counter = NULL;
 static long timer_freq = DEFAULT_TIMER_FREQ;
 static Octstr *config_filename;
 
+/* use strict XML parsing or relaxed */
+static int wml_xml_strict = 1;
+
 /* smart error messaging related globals */
 int wsp_smart_errors = 0;
 Octstr *device_home = NULL;
@@ -561,10 +564,18 @@ static void config_reload(int reload) {
 
     /* 
      * users may define 'smart-errors' to have WML decks returned with
-     * error information instread of signaling using the HTTP reply codes
+     * error information instead of signaling using the HTTP reply codes
      */
     cfg_get_bool(&new_bool, grp, octstr_imm("smart-errors"));
     reload_bool(reload, octstr_imm("smart error messaging"), &wsp_smart_errors, &new_bool);
+
+    /* decide if our XML parser within WML compiler is strict or relaxed */
+    cfg_get_bool(&new_bool, grp, octstr_imm("wml-strict"));
+    reload_bool(reload, octstr_imm("XML within WML has to be strict"), 
+                &wml_xml_strict, &new_bool);
+    if (!wml_xml_strict)
+        warning(0, "'wml-strict' config directive has been set to no, "
+                   "this may make you vulnerable against XML bogus input.");
 
     if (cfg_get_bool(&new_bool, grp, octstr_imm("concatenation")) == 1)
         reload_bool(reload, octstr_imm("concatenation"), &concatenation, &new_bool);
@@ -720,7 +731,7 @@ int main(int argc, char **argv)
                           cfg);
     }
 		
-    wml_init();
+    wml_init(wml_xml_strict);
     
     if (bearerbox_host == NULL)
     	bearerbox_host = octstr_create(BB_DEFAULT_HOST);

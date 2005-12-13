@@ -1,3 +1,23 @@
+2005-12-13  Stipe Tolj  <stolj at kannel.org>
+  * gw/wml_compiler.[ch], gw/wapbox.c, test/wml_tester.c: fixing major 
+    showstopperlong bug #260, causing wapbox to block under the following
+    condition: user request a text/vnd.wap.wml document of considerable
+    size with bogus XML content in it. The wml_compiler() call used to
+    handle the XML parsing in relaxed style, which means passing 
+    XML_PARSE_RECOVER as bit mask to libxml2's parsing function would let
+    the bogus XML content pass and afterwards our whole arsenal of WML
+    mangling would hit that XML tree, obviously causing CPU to hit 99%
+    and block other incoming requests. Actually this bug was introduced
+    by revision 1.120, which applied Paul P Komkoff's charset-NG patch.
+    The behaviour can be configured via the 'wml-strict' boolean config
+    directive of 'wapbox' group. Default is yes.
+  * gwlib/cfg.def: adding 'wml-strict' to 'wapbox' group. Setting to 'yes'
+    enables the strict XML pendantic parsing, setting to 'no' will have
+    libxml2 to parse more relaxing and try to recover from errors, but(!)
+    also possibly block on too large bogus input.
+  * doc/userguide/userguide.xml: adding 'wml-strict' section to 'wapbox'
+    group documentation.
+    
 2005-12-09  Stipe Tolj  <stolj at kannel.org>
   * gw/ota_prov.c, radius/radius_acct.c, wap/wap_addr.c: fixing compiler
     warnings. NLC. 

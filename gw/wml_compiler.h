@@ -96,8 +96,16 @@ int wml_compile(Octstr *wml_text,
 /*
  * A function to initialize the wml compiler for use. Allocates memory 
  * for the tables wml compiler uses.
+ * 
+ * The passed boolean defines if our internal wml_compiler will be forcing
+ * libxml2 parser to be strict, hence not to recover from XML parsing
+ * errors, or if we let the parset be relax and recover from errors.
+ * 
+ * Beware that a related XML parsing mode is considered to be a vulnerability
+ * to your wapbox if huge WML/XML bogus is injected and the wml_compiler
+ * runs all his string sorting/matching things on this.
  */
-void wml_init(void);
+void wml_init(int wml_xml_strict);
 
 /*
  * A function for shutting down the wml_compiler. Frees the memory used 
