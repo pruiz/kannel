@@ -3204,6 +3204,13 @@ address-range = ""
 		  expire this is the mst accurate)
      </entry></row>
 
+   <row><entry><literal>validityperiod</literal></entry>
+     <entry><literal>integer</literal></entry>
+     <entry valign="bottom">
+     	 How long the message will be valid, i.e., how long the SMSC will try
+     	 try to send the message to the recipient. Defined in minutes.
+     </entry></row>
+
    </tbody></tgroup></informaltable>
 
 </sect2>

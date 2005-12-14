@@ -1,4 +1,5 @@
 2005-12-14  Stipe Tolj  <stolj at kannel.org>
+  * doc/userguide/userguide.xml: added 'validityperiod' to SMPP section.
   * gw/smsc/smsc_smpp.c: added 'validityperiod' handling inside smsc
     group. This now allows general validity period setting inside the smpp
     smsc group. Priority order is: message specific value given via sendsms
