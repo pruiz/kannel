@@ -154,6 +154,7 @@ typedef struct {
     long max_pending_submits;
     int version;
     int priority;       /* set default priority for messages */    
+    int validityperiod;    
     time_t throttling_err_time;
     int smpp_msg_id_type;  /* msg id in C string, hex or decimal */
     int autodetect_addr;
@@ -208,8 +209,8 @@ static SMPP *smpp_create(SMSCConn *conn, Octstr *host, int transmit_port,
     	    	    	 Octstr *address_range,
                          int source_addr_ton, int source_addr_npi,  
                          int dest_addr_ton, int dest_addr_npi, 
-                         int enquire_link_interval,
-                         int max_pending_submits, int version, int priority,
+                         int enquire_link_interval, int max_pending_submits, 
+                         int version, int priority, int validity,
                          Octstr *my_number, int smpp_msg_id_type, 
                          int autodetect_addr, Octstr *alt_charset, 
                          Octstr *service_type, long connection_timeout,
@@ -244,6 +245,7 @@ static SMPP *smpp_create(SMSCConn *conn, Octstr *host, int transmit_port,
     smpp->quitting = 0; 
     smpp->version = version;
     smpp->priority = priority;
+    smpp->validityperiod = validity;
     smpp->conn = conn; 
     smpp->throttling_err_time = 0;
     smpp->smpp_msg_id_type = smpp_msg_id_type;    
@@ -571,7 +573,8 @@ static long smpp_status_to_smscconn_failure_reason(long status)
 static SMPP_PDU *msg_to_pdu(SMPP *smpp, Msg *msg)
 {
     SMPP_PDU *pdu;
-
+    int validity;
+    
     pdu = smpp_pdu_create(submit_sm,
     	    	    	  counter_increase(smpp->message_id_counter));
 
@@ -716,9 +719,11 @@ static SMPP_PDU *msg_to_pdu(SMPP *smpp, Msg *msg)
 
     /*
      * check for validity and defered settings
+     * were message value has higher priiority then smsc config group value
      */
-    if (msg->sms.validity >= 0) {
-        struct tm tm = gw_gmtime(time(NULL) + msg->sms.validity * 60);
+    validity = msg->sms.validity >= 0 ? msg->sms.validity : smpp->validityperiod;
+    if (validity >= 0) {
+        struct tm tm = gw_gmtime(time(NULL) + validity * 60);
         pdu->u.submit_sm.validity_period = octstr_format("%02d%02d%02d%02d%02d%02d000+",
                 tm.tm_year % 100, tm.tm_mon + 1, tm.tm_mday,
                 tm.tm_hour, tm.tm_min, tm.tm_sec);
@@ -1753,6 +1758,7 @@ int smsc_smpp_create(SMSCConn *conn, CfgGroup *grp)
     long max_pending_submits;
     long version;
     long priority;
+    long validity;
     long smpp_msg_id_type;
     int autodetect_addr;
     Octstr *alt_charset;
@@ -1854,6 +1860,12 @@ int smsc_smpp_create(SMSCConn *conn, CfgGroup *grp)
     else if (priority < 0 || priority > 3)
         panic(0, "SMPP: Invalid value for priority directive in configuraton (allowed range 0-3).");
 
+    /* check for message validity period */
+    if (cfg_get_integer(&validity, grp, octstr_imm("validityperiod")) == -1)
+        validity = -1;
+    else if (validity < 0)
+        panic(0, "SMPP: Invalid value for validity period (allowed value >= 0).");
+
     /* set the msg_id type variable for this SMSC */
     if (cfg_get_integer(&smpp_msg_id_type, grp, octstr_imm("msg-id-type")) == -1) {
         /* 
@@ -1886,7 +1898,7 @@ int smsc_smpp_create(SMSCConn *conn, CfgGroup *grp)
     	    	       username, password, address_range,
                        source_addr_ton, source_addr_npi, dest_addr_ton,  
                        dest_addr_npi, enquire_link_interval, 
-                       max_pending_submits, version, priority, my_number, 
+                       max_pending_submits, version, priority, validity, my_number, 
                        smpp_msg_id_type, autodetect_addr, alt_charset, 
                        service_type, connection_timeout, wait_ack, wait_ack_action); 
  

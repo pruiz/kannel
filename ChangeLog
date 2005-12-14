@@ -1,3 +1,11 @@
+2005-12-14  Stipe Tolj  <stolj at kannel.org>
+  * gw/smsc/smsc_smpp.c: added 'validityperiod' handling inside smsc
+    group. This now allows general validity period setting inside the smpp
+    smsc group. Priority order is: message specific value given via sendsms
+    interface and then smsc config value.
+    Thanks to Hillel <hillel@ecommunicate.co.za> for this idea.
+    [Msg-Id: <LBEAKAELDENCIDOPBLGCOEKGDAAA.hillel@ecommunicate.co.za>]
+    
 2005-12-13  Stipe Tolj  <stolj at kannel.org>
   * gw/wml_compiler.[ch], gw/wapbox.c, test/wml_tester.c: fixing major 
     showstopperlong bug #260, causing wapbox to block under the following
