@@ -1,3 +1,9 @@
+2005-11-11  Alexander Malysh <amalysh at kannel.org>
+  * gw/smsc/smsc_smpp.c: Implemented data_sm handling for MO. Also
+    rearranged code to avoid code duplication.
+    Replaced dump_pdu with macros in order to save function call.
+    With this commit #216 fixed.
+
 2005-12-14  Stipe Tolj  <stolj at kannel.org>
   * doc/userguide/userguide.xml: added 'validityperiod' to SMPP section.
   * gw/smsc/smsc_smpp.c: added 'validityperiod' handling inside smsc
