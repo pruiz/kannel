@@ -1,4 +1,8 @@
-2005-11-11  Alexander Malysh <amalysh at kannel.org>
+2005-12-22  Stipe Tolj  <stolj at kannel.org>
+  * gw/wml_compiler.c: fixing bug #283, which caused a segfault while
+    passing NULL'ed arguments to strcmp(). Thanks to Mindaugas for report.
+
+2005-12-18  Alexander Malysh <amalysh at kannel.org>
   * gw/smsc/smsc_smpp.c: Implemented data_sm handling for MO. Also
     rearranged code to avoid code duplication.
     Replaced dump_pdu with macros in order to save function call.

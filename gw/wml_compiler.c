@@ -1535,28 +1535,28 @@ static int check_do_elements(xmlNodePtr node)
     name_list = gwlist_create();
 
     if ((child = node->children) != NULL) {
-	while (child != NULL) {
-	    if (strcmp(child->name, "do") == 0) {
-		name = get_do_element_name(child);
+        while (child != NULL) {
+            if (child->name && strcmp(child->name, "do") == 0) {
+                name = get_do_element_name(child);
 
-		if (name == NULL) {
-		    error(0, "WML compiler: no name or type in a do element");
-		    return -1;
-		}
+                if (name == NULL) {
+                    error(0, "WML compiler: no name or type in a do element");
+                    return -1;
+                }
 
-		for (i = 0; i < gwlist_len(name_list); i ++)
-		    if (octstr_compare(gwlist_get(name_list, i), name) == 0) {
-			octstr_destroy(name);
-			status = -1;
-			break;
-		    }
-		if (status != -1)
-		    gwlist_append(name_list, name);
-		else
-		    break;
-	    }
-	    child = child->next;
-	}
+                for (i = 0; i < gwlist_len(name_list); i ++)
+                    if (octstr_compare(gwlist_get(name_list, i), name) == 0) {
+                        octstr_destroy(name);
+                        status = -1;
+                        break;
+                    }
+                if (status != -1)
+                    gwlist_append(name_list, name);
+                else
+                    break;
+            }
+            child = child->next;
+        }
     }
 
     gwlist_destroy(name_list, octstr_destroy_item);
@@ -1578,23 +1578,23 @@ static var_esc_t check_variable_name(xmlNodePtr node)
     var_esc_t ret = FAILED;
 
     if ((attr = node->properties) != NULL) {
-	while (attr != NULL) {
-	    if (strcmp(attr->name, "name") == 0) {
-		name = create_octstr_from_node(attr->children);
-		break;
-	    }
-	    attr = attr->next;
-	}
+        while (attr != NULL) {
+            if (attr->name && strcmp(attr->name, "name") == 0) {
+                name = create_octstr_from_node(attr->children);
+                break;
+            }
+            attr = attr->next;
+        }
     }
 
     if (attr == NULL) {
-	error(0, "WML compiler: no name in a setvar element");
-	return FAILED;
+        error(0, "WML compiler: no name in a setvar element");
+        return FAILED;
     }
 
     ret = check_variable_syntax(name, NOESC);
-
     octstr_destroy(name);
+    
     return ret;
 }
 
@@ -1612,24 +1612,24 @@ static Octstr *get_do_element_name(xmlNodePtr node)
     xmlAttrPtr attr; 
 
     if ((attr = node->properties) != NULL) {
-	while (attr != NULL) {
-	    if (strcmp(attr->name, "name") == 0) {
-		name = create_octstr_from_node(attr->children);
-		break;
-	    }
-	    attr = attr->next;
-	}
+        while (attr != NULL) {
+            if (attr->name && strcmp(attr->name, "name") == 0) {
+                name = create_octstr_from_node(attr->children);
+                break;
+            }
+            attr = attr->next;
+        }
 
-	if (attr == NULL) {
-	    attr = node->properties;
-	    while (attr != NULL) {
-		if (strcmp(attr->name, "type") == 0) {
-		    name = create_octstr_from_node(attr->children);
-		    break;
-		}
-		attr = attr->next;
-	    }
-	}
+        if (attr == NULL) {
+            attr = node->properties;
+            while (attr != NULL) {
+                if (attr->name && strcmp(attr->name, "type") == 0) {
+                    name = create_octstr_from_node(attr->children);
+                    break;
+                }
+                attr = attr->next;
+            }
+        }
     }
 
     return name;
