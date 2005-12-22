@@ -349,10 +349,15 @@ static void string_table_output(Octstr *ostr, wml_binary_t **wbxml);
 
 static void xml_error(void)
 {
-    xmlErrorPtr err = xmlGetLastError();
-    Octstr *msg = octstr_format("%s", err->message);
-
+    xmlErrorPtr err; 
+    Octstr *msg;
+    
+    /* we should have an error, but be more sensitive */
+    if ((err = xmlGetLastError()) == NULL)
+        return;
+        
     /* replace annoying line feeds */    
+    msg = octstr_format("%s", err->message);
     octstr_replace(msg, octstr_imm("\n"), octstr_imm(" "));
     error(0,"XML error: code: %d, level: %d, line: %d, %s",
           err->code, err->level, err->line, octstr_get_cstr(msg));

@@ -1,4 +1,11 @@
 2005-12-22  Stipe Tolj  <stolj at kannel.org>
+  * gw/wml_compiler.c: fixing bug #282, which caused a segfault while
+    trying to access the xmlErrorPtr type, but libxml2's xmlGetLastError()
+    didn't provide any data for it. Which means the libxml2 parsing broke,
+    but we don't get any valid xmlGetError() values?! Thanks to Mindaugas
+    again for reporting this issue and provide also the fix.
+    
+2005-12-22  Stipe Tolj  <stolj at kannel.org>
   * gw/wml_compiler.c: fixing bug #283, which caused a segfault while
     passing NULL'ed arguments to strcmp(). Thanks to Mindaugas for report.
 
