@@ -94,34 +94,17 @@
 
 struct wml_externalid_t {
     char *string;
-    char value;
+    unsigned long value;
 };
 
 typedef struct wml_externalid_t wml_externalid_t;
 
-static wml_externalid_t wml_externalid[] = {
-    { "-//WAPFORUM//DTD WML 1.0//EN", 0x02 },           /* WML 1.0 */
-    { "-//WAPFORUM//DTD WTA 1.0//EN", 0x03 },           /* DEPRECATED - WTA Event 1.0 */
-    { "-//WAPFORUM//DTD WML 1.1//EN", 0x04 },           /* WML 1.1 */
-    { "-//WAPFORUM//DTD SI 1.0//EN", 0x05 },            /* Service Indication 1.0 */
-    { "-//WAPFORUM//DTD SL 1.0//EN", 0x06 },            /* Service Loading 1.0 */
-    { "-//WAPFORUM//DTD CO 1.0//EN", 0x07 },            /* Cache Operation 1.0 */
-    { "-//WAPFORUM//DTD CHANNEL 1.1//EN", 0x08 },       /* Channel 1.1 */
-    { "-//WAPFORUM//DTD WML 1.2//EN", 0x09 },           /* WML 1.2 */
-    { "-//WAPFORUM//DTD WML 1.3//EN", 0x0A },           /* WML 1.3 */
-    { "-//WAPFORUM//DTD PROV 1.0//EN", 0x0B },          /* Provisioning 1.0 */
-    { "-//WAPFORUM//DTD WTA-WML 1.2//EN", 0x0C },       /* WTA-WML 1.2 */
-    { "-//WAPFORUM//DTD EMN 1.0//EN", 0x0D },           /* Email Notification 1.0 WAP-297 */
-    { "-//OMA//DTD DRMREL 1.0//EN", 0x0E },             /* DRM REL 1.0 */
-    { "-//WIRELESSVILLAGE//DTD CSP 1.0//EN", 0x0F },    /* Wireless Village CSP DTD v1.0 */
-    { "-//WIRELESSVILLAGE//DTD CSP 1.1//EN", 0x10 },    /* Wireless Village CSP DTD v1.1 */
-    { "-//OMA//DTD WV-CSP 1.2//EN", 0x11 },             /* OMA IMPS - CSP protocol DTD v1.2 */
-    { "-//OMA//DTD IMPS-CSP 1.3//EN", 0x12 }            /* This document type is used to carry OMA 
-                                                         * IMPS 1.3 primitives and the information 
-                                                         * elements within. */
-};
+#define NUMBERED(name, strings) \
+    static const wml_externalid_t name##_strings[] = { strings };
+#define ASSIGN(string, number) { string, number },
+#include "wbxml_tokens.def"
 
-#define NUMBER_OF_WML_EXTERNALID sizeof(wml_externalid)/sizeof(wml_externalid[0])
+#define NUMBER_OF_WML_EXTERNALID ((long) sizeof(public_ids_strings)/sizeof(public_ids_strings[0]))
 
 struct wbxml_version_t {
     char *string;
@@ -175,7 +158,7 @@ typedef struct {
 
 typedef struct {
     unsigned char wbxml_version;
-    unsigned char wml_public_id;
+    unsigned long wml_public_id;
     unsigned long character_set;
     unsigned long string_table_length;
     List *string_table;
@@ -625,8 +608,8 @@ static int parse_document(xmlDocPtr document, Octstr *charset,
         warning(0, "WBXML: WML without ExternalID, assuming 1.1");
     } else {
         for (i = 0; i < NUMBER_OF_WML_EXTERNALID; i++) {
-            if (octstr_compare(externalID, octstr_imm(wml_externalid[i].string)) == 0) {
-                (*wbxml)->wml_public_id = wml_externalid[i].value;
+            if (octstr_compare(externalID, octstr_imm(public_ids_strings[i].string)) == 0) {
+                (*wbxml)->wml_public_id = public_ids_strings[i].value;
                 debug("parse_document",0,"WBXML: WML with ExternalID <%s>",
                       octstr_get_cstr(externalID));
                 break;
@@ -1331,7 +1314,7 @@ static void wml_binary_destroy(wml_binary_t *wbxml)
 static void wml_binary_output(Octstr *ostr, wml_binary_t *wbxml)
 {
     octstr_append_char(ostr, wbxml->wbxml_version);
-    octstr_append_char(ostr, wbxml->wml_public_id);
+    octstr_append_uintvar(ostr, wbxml->wml_public_id);
     octstr_append_uintvar(ostr, wbxml->character_set);
     octstr_append_uintvar(ostr, wbxml->string_table_length);
 

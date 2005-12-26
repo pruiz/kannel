@@ -1,3 +1,10 @@
+2005-12-26  Stipe Tolj  <stolj at kannel.org>
+  * gw/wml_compiler.c, gw/wbxml_tokens.def: added registered public IDs
+    for external WML IDs as defined by OMA. Moved array to .def file to
+    use pre-processor macro magic. We would need to re-write the WML
+    definition from gw/wml_compiler.c and gw/wml_definitions.h to use
+    the more generic pre-processor magic as for wap/wsp_strings.[ch|def].
+    
 2005-12-22  Stipe Tolj  <stolj at kannel.org>
   * gw/wml_compiler.c: fixing bug #282, which caused a segfault while
     trying to access the xmlErrorPtr type, but libxml2's xmlGetLastError()
