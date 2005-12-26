@@ -1,4 +1,11 @@
 2005-12-26  Stipe Tolj  <stolj at kannel.org>
+  * doc/userguide/userguide.xml: fixing documentation references for the
+    change from 'mysql-[username|password]' to '[username|password]' in the
+    'mysql-connection' group. Thanks to Hillel <hillel@ecommunicate.co.za>
+    for pointing to this missed issue.
+    [Msg-Id: <LBEAKAELDENCIDOPBLGCCECDDBAA.hillel@ecommunicate.co.za>]
+        
+2005-12-26  Stipe Tolj  <stolj at kannel.org>
   * gw/wml_compiler.c, gw/wbxml_tokens.def: added registered public IDs
     for external WML IDs as defined by OMA. Moved array to .def file to
     use pre-processor macro magic. We would need to re-write the WML

@@ -4618,8 +4618,8 @@ marked as "not tested" because the table is still new.</para>
 group = mysql-connection
 id = mydlr
 host = localhost
-mysql-username = foo
-mysql-password = bar
+username = foo
+password = bar
 database = dlr
 max-connections = 1
 
@@ -4681,13 +4681,13 @@ field-boxc-id = boxc
         Hostname or IP of a server running a MySQL database to connect to.
      </entry></row>
 
-    <row><entry><literal>mysql-username (m)</literal></entry>
+    <row><entry><literal>username (m)</literal></entry>
      <entry>username</entry>
      <entry valign="bottom">
         User name for connecting to MySQL database.
      </entry></row>
 
-    <row><entry><literal>mysql-password (m)</literal></entry>
+    <row><entry><literal>password (m)</literal></entry>
      <entry>password</entry>
      <entry valign="bottom">
         Password for connecting to MySQL database.
@@ -4716,8 +4716,8 @@ field-boxc-id = boxc
 group = mysql-connection
 id = dlr-db
 host = localhost
-mysql-username = foo
-mysql-password = bar
+username = foo
+password = bar
 database = dlr
 max-connections = 1
 </programlisting>
