@@ -817,8 +817,8 @@ int conn_register_real(Connection *conn, FDSet *fdset,
 void conn_unregister(Connection *conn)
 {
     gw_assert(conn != NULL);
-
-    if (conn->fd < 0)
+    
+    if (conn == NULL || conn->fd < 0)
         return;
 
     /* We need both locks to update the registration information */

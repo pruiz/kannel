@@ -422,37 +422,36 @@ enum {
  */
 static void dispatch_datagram(WAPEvent *dgram)
 {
-    Msg *msg,
-        *part;
+    Msg *msg, *part;
     List *sms_datagrams;
     static unsigned long msg_sequence = 0L;   /* Used only by this function */
 
     msg = part = NULL;
-
-    gw_assert(dgram);
     sms_datagrams = NULL;
-      
-    if (dgram->type != T_DUnitdata_Req) {
-        warning(0, "dispatch_datagram received event of unexpected type.");
-        wap_event_dump(dgram);
-    } else {
-        if (dgram->u.T_DUnitdata_Req.address_type == ADDR_IPV4) {
-	    msg = pack_ip_datagram(dgram);
-            write_to_bearerbox(msg);
-        } else {
-            msg_sequence = counter_increase(sequence_counter) & 0xff;
-            msg = pack_sms_datagram(dgram);
-            sms_datagrams = sms_split(msg, NULL, NULL, NULL, NULL, concatenation, 
-                                      msg_sequence, max_messages, MAX_SMS_OCTETS);
-            debug("wap",0,"WDP (wapbox): delivering %ld segments to bearerbox",
-                  gwlist_len(sms_datagrams));
-            while ((part = gwlist_extract_first(sms_datagrams)) != NULL) {
-	            write_to_bearerbox(part);
-            }
 
-            gwlist_destroy(sms_datagrams, NULL);
-            msg_destroy(msg);
+    if (dgram == NULL) {
+        error(0, "WDP: dispatch_datagram received empty datagram, ignoring.");
+    } 
+    else if (dgram->type != T_DUnitdata_Req) {
+        warning(0, "WDP: dispatch_datagram received event of unexpected type.");
+        wap_event_dump(dgram);
+    } 
+    else if (dgram->u.T_DUnitdata_Req.address_type == ADDR_IPV4) {
+	   msg = pack_ip_datagram(dgram);
+       write_to_bearerbox(msg);
+    } else {
+        msg_sequence = counter_increase(sequence_counter) & 0xff;
+        msg = pack_sms_datagram(dgram);
+        sms_datagrams = sms_split(msg, NULL, NULL, NULL, NULL, concatenation, 
+                                  msg_sequence, max_messages, MAX_SMS_OCTETS);
+        debug("wap",0,"WDP (wapbox): delivering %ld segments to bearerbox",
+              gwlist_len(sms_datagrams));
+        while ((part = gwlist_extract_first(sms_datagrams)) != NULL) {
+	       write_to_bearerbox(part);
         }
+
+        gwlist_destroy(sms_datagrams, NULL);
+        msg_destroy(msg);
     }
 
     wap_event_destroy(dgram);
