@@ -1,3 +1,12 @@
+2005-12-29  Stipe Tolj  <stolj at kannel.org>
+  * gwlib/conn.c: fixing bug #284 which causes core dump while NULL is passed
+    for conn in conn_unregsiter(). This "may" be a more general problem as it
+    seems that this may be a racecondition. Need to observe more.
+  * gw/wapbox.c: fixing bug #284 which causes wapbox to core dump in
+    dispatch_datagram while a NULL value is given. We need to react smoothly
+    by discarding the "failing" WDP/UDP datagram and continue operations.
+    Thanks to Mindaugas for reporting the bugs.
+        
 2005-12-26  Stipe Tolj  <stolj at kannel.org>
   * doc/userguide/userguide.xml: fixing documentation references for the
     change from 'mysql-[username|password]' to '[username|password]' in the
