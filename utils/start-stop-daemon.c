@@ -668,11 +668,12 @@ check(int pid)
 {
 #if defined(OSLinux)
 	if (execname && !pid_is_exec(pid, &exec_stat))
+        return;
 #elif defined(OSHURD)
     /* I will try this to see if it works */
 	if (execname && !pid_is_cmd(pid, execname))
-#endif
 		return;
+#endif
 	if (userspec && !pid_is_user(pid, user_id))
 		return;
 	if (cmdname && !pid_is_cmd(pid, cmdname))

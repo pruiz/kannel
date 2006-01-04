@@ -1,3 +1,7 @@
+2006-01-04  Stipe Tolj  <stolj at kannel.org>
+  * utils/start-stop-daemon.c: fixing bug #287 for Solaris platform.
+    Thanks to aivars.kalvans@tietoenator.com for the report and patch.
+
 2005-12-29  Stipe Tolj  <stolj at kannel.org>
   * gwlib/conn.c: fixing bug #284 which causes core dump while NULL is passed
     for conn in conn_unregsiter(). This "may" be a more general problem as it
