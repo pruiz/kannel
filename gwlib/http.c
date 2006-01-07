@@ -719,7 +719,7 @@ static HTTPServer *server_create(HTTPCaller *caller, int method, Octstr *url,
     trans->password = NULL;
     trans->retrying = 0;
     trans->follow_remaining = follow_remaining;
-    trans->certkeyfile = certkeyfile;
+    trans->certkeyfile = octstr_duplicate(certkeyfile);
     trans->ssl = 0;
     return trans;
 }

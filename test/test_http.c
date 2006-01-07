@@ -492,6 +492,7 @@ int main(int argc, char **argv)
     info(0, "%ld requests in %f seconds, %f requests/s.",
          (max_requests * num_threads), run_time, (max_requests * num_threads) / run_time);
     
+    octstr_destroy(ssl_client_certkey_file);
     octstr_destroy(auth_username);
     octstr_destroy(auth_password);
     octstr_destroy(extra_headers);

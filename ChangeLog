@@ -1,3 +1,11 @@
+2006-01-07  Stipe Tolj  <stolj at kannel.org>
+  * checks/check_http.sh: fixing this check, shell variable assignment
+  * gwlib/http.c: server_create() needs to duplicate the certkeyfile Octstr, 
+    otherwise our server will respond one time and the next request is causing
+    a PANIC due to a octstr_destroy() on a non-present variable.
+  * test/test_http.c: need to destroy the global ssl_client_certkey_file 
+    Octstr after we did all requests.
+  
 2006-01-04  Stipe Tolj  <stolj at kannel.org>
   * utils/start-stop-daemon.c: fixing bug #287 for Solaris platform.
     Thanks to aivars.kalvans@tietoenator.com for the report and patch.

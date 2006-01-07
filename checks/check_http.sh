@@ -47,7 +47,8 @@ fi
 if test "$ssl_enabled" = "yes"
 then
     echo -n ' checking SSL connections, too...'
-    test/test_http -r $times -s -c $ssl_clientcert $url_ssl > check_https.log 2>&1 ret=$?
+    test/test_http -r $times -s -c $ssl_clientcert $url_ssl > check_https.log 2>&1 
+    ret=$?
 else
     test/test_http -r 1 -s -c $ssl_clientcert $quiturl_ssl >> check_https.log 2>&1
     rm -f check_https.log
