@@ -7,13 +7,14 @@
 set -e 
 #set -x
  
-times=2 
+times=2
+host=127.0.0.1 
 port="8040" 
 port_ssl="8041" 
-url="http://localhost:$port/foo.txt" 
-url_ssl="https://localhost:$port_ssl/foo.txt" 
-quiturl="http://localhost:$port/quit" 
-quiturl_ssl="https://localhost:$port_ssl/quit" 
+url="http://$host:$port/foo.txt" 
+url_ssl="https://$host:$port_ssl/foo.txt" 
+quiturl="http://$host:$port/quit" 
+quiturl_ssl="https://$host:$port_ssl/quit" 
 ssl_cert="gw/cert.pem" 
 ssl_key="gw/key.pem" 
 ssl_clientcert="/tmp/clientcert.pem" 

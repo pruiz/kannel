@@ -7,6 +7,7 @@ set -e
 times=10
 interval=0
 loglevel=0
+host=127.0.0.1
 
 gw/bearerbox -v $loglevel gw/smskannel.conf > check_httpsmsc_kannel_sbb.log 2>&1 &
 sbbpid=$!
@@ -16,7 +17,7 @@ cbbpid=$!
 
 sleep 2
 
-test/fakesmsc -i $interval -m $times '123 234 text relay nop' \
+test/fakesmsc -H $host -i $interval -m $times '123 234 text relay nop' \
     > check_httpsmsc_kannel_fake.log 2>&1 &
 
 sleep 1

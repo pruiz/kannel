@@ -8,13 +8,14 @@ set -e
 times=10
 interval=0
 loglevel=0
+host=127.0.0.1
 
 gw/bearerbox -v $loglevel gw/smskannel.conf > check_fakesmsc_bb.log 2>&1 &
 bbpid=$!
 
 sleep 2
 
-test/fakesmsc -i $interval -m $times '123 234 text nop' \
+test/fakesmsc -H $host -i $interval -m $times '123 234 text nop' \
     > check_fakesmsc.log 2>&1 &
 
 sleep 1

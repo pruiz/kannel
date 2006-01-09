@@ -5,6 +5,7 @@
 set -e
 #set -x
 
+host=127.0.0.1
 times=10
 port=8040
 url="http://localhost:$port/hello.wml"
@@ -25,7 +26,7 @@ wappid=$!
 
 sleep 2
 
-test/fakewap -m $times $url > check_fake.log 2>&1
+test/fakewap -g $host -m $times $url > check_fake.log 2>&1
 ret=$?
 
 test/test_http -qv 4 http://localhost:$port/quit

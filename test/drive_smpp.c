@@ -482,7 +482,7 @@ int main(int argc, char **argv)
     smsc_system_id = octstr_create("kannel_smpp");
     smsc_source_addr = octstr_create("123456");
     message_id_counter = counter_create();
-    bearerbox_host = octstr_create("localhost");
+    bearerbox_host = octstr_create("127.0.0.1");
     port_for_smsbox = 13001;
     max_to_esme = 1;
     num_to_esme = counter_create();
