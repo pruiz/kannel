@@ -1,3 +1,8 @@
+2006-01-09 Aarno Syvanen <as at gni dot ch>
+  * test/iptestppg.txt, test/smstestppg.txt: Removed deiiver-before-timestamp
+  * field from push control document used by check_ppg.sh. Checks should
+  * certainly work without editing.
+
 2006-01-07  Stipe Tolj  <stolj at kannel.org>
   * checks/check_http.sh: fixing this check, shell variable assignment
   * gwlib/http.c: server_create() needs to duplicate the certkeyfile Octstr, 
