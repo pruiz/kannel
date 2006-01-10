@@ -1,7 +1,12 @@
 2006-01-10  Stipe Tolj  <stolj at kannel.org>
+  * gw/dlr_[mysql|pgsql].c: reverting to previous revisions due to Alex's veto
+    for breaking existing installations with behaviour change in last commits.
+    We need to resolve this in a different way.
+    
+2006-01-10  Stipe Tolj  <stolj at kannel.org>
   * gw/dlr_[mysql|pgsql].c: adding 'field_dst' to the the DLR manipluation and
     selection crieria for MySQL and PostgreSQL support. 
-    Thanks to Vicent Chavanis <vincent@telemaque.fr> for a patch.
+    Thanks to Vincent Chavanis <vincent@telemaque.fr> for a patch.
     [Msg-Id: <0fb901c61531$cac92b00$9600a8c0@vince>]
 
 2006-01-09  Stipe Tolj  <stolj at kannel.org>
