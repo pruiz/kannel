@@ -1,3 +1,7 @@
+2006-01-10  Alexander Malysh <amalysh at kannel.org>
+  * gw/smsc/smpp_pdu.[ch]: commited patch that add all known error codes up
+    to SMPPv5. Thanks to Peter Christensen for provided patch.
+
 2006-01-10  Stipe Tolj  <stolj at kannel.org>
   * gw/dlr_[mysql|pgsql].c: reverting to previous revisions due to Alex's veto
     for breaking existing installations with behaviour change in last commits.
