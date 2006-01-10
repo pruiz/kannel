@@ -152,10 +152,10 @@ static void dlr_mysql_add(struct dlr_entry *entry)
                         octstr_get_cstr(fields->field_serv), octstr_get_cstr(fields->field_url),
                         octstr_get_cstr(fields->field_mask), octstr_get_cstr(fields->field_boxc),
                         octstr_get_cstr(fields->field_status),
-                        octstr_get_cstr(entry->smsc), octstr_get_cstr(entry->timestamp), octstr_get_cstr(entry->source),
-                        octstr_get_cstr(entry->destination), octstr_get_cstr(entry->service), octstr_get_cstr(entry->url),
+                        octstr_get_cstr(entry->smsc), octstr_get_cstr(entry->timestamp), 
+                        octstr_get_cstr(entry->source), octstr_get_cstr(entry->destination), 
+                        octstr_get_cstr(entry->service), octstr_get_cstr(entry->url),
                         entry->mask, octstr_get_cstr(entry->boxc_id), 0);
-
 
     mysql_update(sql);
 
@@ -170,13 +170,14 @@ static struct dlr_entry* dlr_mysql_get(const Octstr *smsc, const Octstr *ts, con
     MYSQL_RES *result;
     MYSQL_ROW row;
 
-    sql = octstr_format("SELECT %s, %s, %s, %s, %s, %s FROM %s WHERE %s='%s' AND %s='%s';",
+    sql = octstr_format("SELECT %s, %s, %s, %s, %s, %s FROM %s WHERE %s='%s' AND %s='%s' AND %s='%s';",
                         octstr_get_cstr(fields->field_mask), octstr_get_cstr(fields->field_serv),
                         octstr_get_cstr(fields->field_url), octstr_get_cstr(fields->field_src),
                         octstr_get_cstr(fields->field_dst), octstr_get_cstr(fields->field_boxc),
-                        octstr_get_cstr(fields->table), octstr_get_cstr(fields->field_smsc),
-                        octstr_get_cstr(smsc), octstr_get_cstr(fields->field_ts), octstr_get_cstr(ts));
-
+                        octstr_get_cstr(fields->table), 
+                        octstr_get_cstr(fields->field_smsc), octstr_get_cstr(smsc), 
+                        octstr_get_cstr(fields->field_ts), octstr_get_cstr(ts),
+                        octstr_get_cstr(fields->field_dst), octstr_get_cstr(dst));
 
     result = mysql_select(sql);
     octstr_destroy(sql);
@@ -219,10 +220,11 @@ static void dlr_mysql_remove(const Octstr *smsc, const Octstr *ts, const Octstr 
     Octstr *sql;
 
     debug("dlr.mysql", 0, "removing DLR from database");
-    sql = octstr_format("DELETE FROM %s WHERE %s='%s' AND %s='%s' LIMIT 1;",
-                        octstr_get_cstr(fields->table), octstr_get_cstr(fields->field_smsc),
-                        octstr_get_cstr(smsc), octstr_get_cstr(fields->field_ts), octstr_get_cstr(ts));
-
+    sql = octstr_format("DELETE FROM %s WHERE %s='%s' AND %s='%s' AND %s='%s' LIMIT 1;",
+                        octstr_get_cstr(fields->table), 
+                        octstr_get_cstr(fields->field_smsc), octstr_get_cstr(smsc), 
+                        octstr_get_cstr(fields->field_ts), octstr_get_cstr(ts),
+                        octstr_get_cstr(fields->field_dst), octstr_get_cstr(dst));
 
     mysql_update(sql);
 
@@ -234,11 +236,12 @@ static void dlr_mysql_update(const Octstr *smsc, const Octstr *ts, const Octstr 
     Octstr *sql;
 
     debug("dlr.mysql", 0, "updating DLR status in database");
-    sql = octstr_format("UPDATE %s SET %s=%d WHERE %s='%s' AND %s='%s' LIMIT 1;",
+    sql = octstr_format("UPDATE %s SET %s=%d WHERE %s='%s' AND %s='%s' AND %s='%s' LIMIT 1;",
                         octstr_get_cstr(fields->table),
                         octstr_get_cstr(fields->field_status), status,
                         octstr_get_cstr(fields->field_smsc), octstr_get_cstr(smsc),
-                        octstr_get_cstr(fields->field_ts), octstr_get_cstr(ts));
+                        octstr_get_cstr(fields->field_ts), octstr_get_cstr(ts),
+                        octstr_get_cstr(fields->field_dst), octstr_get_cstr(dst));
 
     mysql_update(sql);
 

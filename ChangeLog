@@ -1,3 +1,9 @@
+2006-01-10  Stipe Tolj  <stolj at kannel.org>
+  * gw/dlr_[mysql|pgsql].c: adding 'field_dst' to the the DLR manipluation and
+    selection crieria for MySQL and PostgreSQL support. 
+    Thanks to Vicent Chavanis <vincent@telemaque.fr> for a patch.
+    [Msg-Id: <0fb901c61531$cac92b00$9600a8c0@vince>]
+
 2006-01-09  Stipe Tolj  <stolj at kannel.org>
   * checks/check_[fakesmsc,fakewap,http,httpsmsc_kannel,ppg,sendsms].sh,
     gw/[other_sms,push,sms,wap]kannel.conf, test/drive_smpp.[c,conf]:
