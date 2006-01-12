@@ -57,6 +57,7 @@ url="http://$host:$sendsmsport/cgi-bin/sendsms?from=123&to=234&\
 text=&username=$username&password=$password"
 
 test/test_http $url >> check_sendsms.log 2>&1
+sleep 1
 
 if grep 'WARNING:|ERROR:|PANIC:' check_sendsms*.log >/dev/null ||
    [ 1 -ne `grep -c '<123 234 text <Empty reply from service provider>' \
@@ -72,6 +73,7 @@ url="http://$host:$sendsmsport/cgi-bin/sendsms?from=&to=234&\
 text=test&username=$username&password=$password"
 
 test/test_http $url >> check_sendsms.log 2>&1
+sleep 1
 
 if grep 'WARNING:|ERROR:|PANIC:' check_sendsms*.log >/dev/null ||
    [ 1 -ne `grep -c '<'$global_sender' 234 text test>' check_sendsms_smsc.log` ]
@@ -86,6 +88,7 @@ url="http://$host:$sendsmsport/cgi-bin/sendsms?from=123&to=&\
 text=&username=$username&password=$password"
 
 test/test_http $url >> check_sendsms.log 2>&1
+sleep 1
 
 if grep 'WARNING:|ERROR:|PANIC:' check_sendsms*.log >/dev/null ||
    [ 1 -ne `grep -c 'got empty <to> cgi variable' check_sendsms_sms.log` ]
@@ -100,6 +103,7 @@ url="http://$host:$sendsmsport/cgi-bin/sendsms?from=123&to=234&\
 text=&username=&password=$password"
 
 test/test_http $url >> check_sendsms.log 2>&1
+sleep 1
 
 if grep 'WARNING:|ERROR:|PANIC:' check_sendsms*.log >/dev/null ||
    [ 1 -ne `grep -c '<Authorization failed for sendsms>' \

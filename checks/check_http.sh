@@ -1,4 +1,4 @@
-#!/bin/bash 
+#!/bin/sh 
 # 
 # Use `test/test_http{,_server}' to test gwlib/http.c. 
 # Incuding the SSL client and server componentes, if, of course, SSL has been

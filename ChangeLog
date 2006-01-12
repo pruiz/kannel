@@ -1,3 +1,9 @@
+2006-01-12  Stipe Tolj  <stolj at kannel.org>
+  * checks/check_http.sh: use /bin/sh instead of /bin/bash for the sake of
+    platforms that don't come with a standard bash, ie. FreeBSD.
+  * checks/check_sendsms.sh: add sleep time after URL calls in order to give
+    the boxes chance to write to the log before our tests run.
+  
 2006-01-10  Alexander Malysh <amalysh at kannel.org>
   * gw/smsc/smpp_pdu.[ch]: commited patch that add all known error codes up
     to SMPPv5. Thanks to Peter Christensen for provided patch.
