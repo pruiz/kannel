@@ -79,7 +79,8 @@
  * Unfortunately some platforms base va_list an an array type
  * which makes passing of the &args a bit tricky 
  */
-#if defined(__linux__) && (defined(__powerpc__) || defined(__s390__) || defined(__x86_64))
+#if (defined(__linux__) && (defined(__powerpc__) || defined(__s390__) || defined(__x86_64))) || \
+    (defined(__FreeBSD__) && defined(__amd64__))
 #define VARGS(x)   (x)
 #define VALPARM(y) va_list y
 #define VALST(z)   (z)

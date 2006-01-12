@@ -1,4 +1,9 @@
 2006-01-12  Stipe Tolj  <stolj at kannel.org>
+  * gwlib/octstr.c: adding support for the va_list handling on FreeBSD AMD64.
+    Thanks to Cesar Gutierrez Corea <cgcorea@gmail.com> for provided support.
+    [Msg-Id: <A948E691-FCE1-4CBD-A18D-DDFD71320CAA@gmail.com>]
+ 
+2006-01-12  Stipe Tolj  <stolj at kannel.org>
   * checks/check_http.sh: use /bin/sh instead of /bin/bash for the sake of
     platforms that don't come with a standard bash, ie. FreeBSD.
   * checks/check_sendsms.sh: add sleep time after URL calls in order to give
