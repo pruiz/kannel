@@ -1840,6 +1840,9 @@ static void io_thread(void *arg)
             gwthread_sleep(smpp->conn->reconnect_delay);
         }
     }
+    mutex_lock(smpp->conn->flow_mutex);
+    smpp->conn->status = SMSCCONN_DEAD;
+    mutex_unlock(smpp->conn->flow_mutex);
 }
 
 

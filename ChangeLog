@@ -1,3 +1,8 @@
+2006-01-19  Alexander Malysh <amalysh at kannel.org>
+  * gw/smsc/smsc_smpp.c: fixed bug that SMSCConn status was not set to DEAD when
+    io_thread terminates.
+    Thanks to Peter Christensen for pointing to this and partially patch.
+
 2006-01-13  Stipe Tolj  <stolj at kannel.org>
   * configure[.in]: reverting changes from Andreas in rev 1.154 for setting
     both (i386 and ppc) architecture flags for darwin (MacOS X). This causes
