@@ -3177,6 +3177,17 @@ address-range = ""
 		  should be presented for this directive.
      </entry></row>
 
+     <row><entry><literal>alt-addr-charset</literal></entry>
+        <entry><literal>string</literal></entry>
+        <entry valign="bottom">
+            Defines which character encoding is used for alphanumeric addresses.
+            When set to <literal>GSM</literal>, addresses are converted into the
+            GSM 03.38 charset (Since @ is translated into 0x00 which will break
+			the SMPP PDU, @ replaced with ?). If set to another value,
+            <literal>iconv()</literal> is used.
+            (Defaults to windows-1252)
+        </entry></row>
+
     <row><entry><literal>connection-timeout</literal></entry>
       <entry><literal>number (seconds)</literal></entry>
       <entry valign="bottom">

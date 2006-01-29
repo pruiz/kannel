@@ -365,6 +365,7 @@ MULTI_GROUP(smsc,
     OCTSTR(denied-prefix-regex)
     OCTSTR(preferred-prefix-regex)
     OCTSTR(max-error-count)
+    OCTSTR(alt-addr-charset)
 )
 
 

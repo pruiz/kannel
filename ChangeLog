@@ -1,3 +1,10 @@
+2006-01-29  Alexander Malysh <amalysh at kannel.org>
+  * doc/userguide/userguide.xml, gw/smsc/smsc_smpp.c, gwlib/cfg.def: applied
+    patch from Peter Christensen that adds new config option 'alt-addr-charset'
+    which make it possible to define charset for the alphanumeric source address.
+    Patch was modified by me to match Kannel coding style.
+    [Msg-Id: <43D0C806.2020907@coolsystems.dk>]
+
 2006-01-19  Alexander Malysh <amalysh at kannel.org>
   * gw/smsc/smsc_smpp.c: fixed bug that SMSCConn status was not set to DEAD when
     io_thread terminates.

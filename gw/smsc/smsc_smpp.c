@@ -78,6 +78,8 @@
 #include "sms.h"
 #include "dlr.h"
 
+#define SMPP_DEFAULT_CHARSET	"windows-1252"
+
 /*
  * Select these based on whether you want to dump SMPP PDUs as they are
  * sent and received or not. Not dumping should be the default in at least
@@ -156,6 +158,7 @@ typedef struct {
     int smpp_msg_id_type;  /* msg id in C string, hex or decimal */
     int autodetect_addr;
     Octstr *alt_charset;
+    Octstr *alt_addr_charset;
     long connection_timeout;
     long wait_ack;
     int wait_ack_action;
@@ -209,7 +212,7 @@ static SMPP *smpp_create(SMSCConn *conn, Octstr *host, int transmit_port,
                          int enquire_link_interval, int max_pending_submits, 
                          int version, int priority, int validity,
                          Octstr *my_number, int smpp_msg_id_type, 
-                         int autodetect_addr, Octstr *alt_charset, 
+                         int autodetect_addr, Octstr *alt_charset, Octstr *alt_addr_charset,
                          Octstr *service_type, long connection_timeout,
                          long wait_ack, int wait_ack_action) 
 { 
@@ -248,6 +251,7 @@ static SMPP *smpp_create(SMSCConn *conn, Octstr *host, int transmit_port,
     smpp->smpp_msg_id_type = smpp_msg_id_type;    
     smpp->autodetect_addr = autodetect_addr;
     smpp->alt_charset = octstr_duplicate(alt_charset);
+    smpp->alt_addr_charset = octstr_duplicate(alt_addr_charset);
     smpp->connection_timeout = connection_timeout;
     smpp->wait_ack = wait_ack;
     smpp->wait_ack_action = wait_ack_action;
@@ -271,6 +275,7 @@ static void smpp_destroy(SMPP *smpp)
         octstr_destroy(smpp->address_range); 
         octstr_destroy(smpp->my_number);
         octstr_destroy(smpp->alt_charset);
+        octstr_destroy(smpp->alt_addr_charset);
         gw_free(smpp); 
     } 
 } 
@@ -325,7 +330,7 @@ static int read_pdu(SMPP *smpp, Connection *conn, long *len, SMPP_PDU **pdu)
 }
 
 
-static long convert_addr_from_pdu(Octstr *id, Octstr *addr, long ton, long npi)
+static long convert_addr_from_pdu(Octstr *id, Octstr *addr, long ton, long npi, Octstr *alt_addr_charset)
 {
     long reason = SMPP_ESME_ROK;
     
@@ -378,6 +383,13 @@ static long convert_addr_from_pdu(Octstr *id, Octstr *addr, long ton, long npi)
             reason = SMPP_ESME_RINVSRCADR;
             goto error;
         }
+        if (alt_addr_charset) {
+            if (octstr_str_case_compare(alt_addr_charset, "gsm") == 0)
+		charset_gsm_to_latin1(addr);
+            else if (charset_convert(addr, octstr_get_cstr(alt_addr_charset), SMPP_DEFAULT_CHARSET) != 0)
+                error(0, "Failed to convert address from charset <%s> to <%s>, leave as is.",
+                    octstr_get_cstr(alt_addr_charset), SMPP_DEFAULT_CHARSET);
+        }
         break;
     default: /* otherwise don't touch addr, user should handle it */
         break;
@@ -414,7 +426,7 @@ static Msg *pdu_to_msg(SMPP *smpp, SMPP_PDU *pdu, long *reason)
     ton = pdu->u.deliver_sm.source_addr_ton;
     npi = pdu->u.deliver_sm.source_addr_npi;
     /* check source addr */
-    if ((*reason = convert_addr_from_pdu(smpp->conn->id, pdu->u.deliver_sm.source_addr, ton, npi)) != SMPP_ESME_ROK)
+    if ((*reason = convert_addr_from_pdu(smpp->conn->id, pdu->u.deliver_sm.source_addr, ton, npi, smpp->alt_addr_charset)) != SMPP_ESME_ROK)
         goto error;
     msg->sms.sender = pdu->u.deliver_sm.source_addr;
     pdu->u.deliver_sm.source_addr = NULL;
@@ -435,7 +447,7 @@ static Msg *pdu_to_msg(SMPP *smpp, SMPP_PDU *pdu, long *reason)
     ton = pdu->u.deliver_sm.dest_addr_ton;
     npi = pdu->u.deliver_sm.dest_addr_npi;
     /* check destination addr */
-    if ((*reason = convert_addr_from_pdu(smpp->conn->id, pdu->u.deliver_sm.destination_addr, ton, npi)) != SMPP_ESME_ROK)
+    if ((*reason = convert_addr_from_pdu(smpp->conn->id, pdu->u.deliver_sm.destination_addr, ton, npi, smpp->alt_addr_charset)) != SMPP_ESME_ROK)
         goto error;
     msg->sms.receiver = pdu->u.deliver_sm.destination_addr;
     pdu->u.deliver_sm.destination_addr = NULL;
@@ -574,7 +586,7 @@ static Msg *data_sm_to_msg(SMPP *smpp, SMPP_PDU *pdu, long *reason)
     ton = pdu->u.data_sm.source_addr_ton;
     npi = pdu->u.data_sm.source_addr_npi;
     /* check source addr */
-    if ((*reason = convert_addr_from_pdu(smpp->conn->id, pdu->u.data_sm.source_addr, ton, npi)) != SMPP_ESME_ROK)
+    if ((*reason = convert_addr_from_pdu(smpp->conn->id, pdu->u.data_sm.source_addr, ton, npi, smpp->alt_addr_charset)) != SMPP_ESME_ROK)
         goto error;
     msg->sms.sender = pdu->u.data_sm.source_addr;
     pdu->u.data_sm.source_addr = NULL;
@@ -595,7 +607,7 @@ static Msg *data_sm_to_msg(SMPP *smpp, SMPP_PDU *pdu, long *reason)
     ton = pdu->u.data_sm.dest_addr_ton;
     npi = pdu->u.data_sm.dest_addr_npi;
     /* check destination addr */
-    if ((*reason = convert_addr_from_pdu(smpp->conn->id, pdu->u.data_sm.destination_addr, ton, npi)) != SMPP_ESME_ROK)
+    if ((*reason = convert_addr_from_pdu(smpp->conn->id, pdu->u.data_sm.destination_addr, ton, npi, smpp->alt_addr_charset)) != SMPP_ESME_ROK)
         goto error;
     msg->sms.receiver = pdu->u.data_sm.destination_addr;
     pdu->u.data_sm.destination_addr = NULL;
@@ -747,6 +759,15 @@ static SMPP_PDU *msg_to_pdu(SMPP *smpp, Msg *msg)
             if (!octstr_check_range(pdu->u.submit_sm.source_addr, 1, 256, gw_isdigit)) {
                 pdu->u.submit_sm.source_addr_ton = GSM_ADDR_TON_ALPHANUMERIC; /* alphanum */
                 pdu->u.submit_sm.source_addr_npi = GSM_ADDR_NPI_UNKNOWN;    /* short code */
+                if (smpp->alt_addr_charset) {
+                    if (octstr_str_case_compare(smpp->alt_addr_charset, "gsm") == 0) {
+                        /* @ would break PDU if converted into GSM*/
+                        octstr_replace(pdu->u.submit_sm.source_addr, octstr_imm("@"), octstr_imm("?"));
+                        charset_latin1_to_gsm(pdu->u.submit_sm.source_addr);
+                    } else if (charset_convert(pdu->u.submit_sm.source_addr, SMPP_DEFAULT_CHARSET, octstr_get_cstr(smpp->alt_addr_charset)) != 0)
+                        error(0, "Failed to convert source_addr from charset <%s> to <%s>, will send as is.",
+                                SMPP_DEFAULT_CHARSET, octstr_get_cstr(smpp->alt_addr_charset));
+                }
             } else {
                /* numeric sender address with + in front -> international (remove the +) */
                octstr_delete(pdu->u.submit_sm.source_addr, 0, 1);
@@ -756,6 +777,15 @@ static SMPP_PDU *msg_to_pdu(SMPP *smpp, Msg *msg)
             if (!octstr_check_range(pdu->u.submit_sm.source_addr,0, 256, gw_isdigit)) {
                 pdu->u.submit_sm.source_addr_ton = GSM_ADDR_TON_ALPHANUMERIC;
                 pdu->u.submit_sm.source_addr_npi = GSM_ADDR_NPI_UNKNOWN;
+                if (smpp->alt_addr_charset) {
+                    if (octstr_str_case_compare(smpp->alt_addr_charset, "gsm") == 0) {
+                        /* @ would break PDU if converted into GSM */
+                        octstr_replace(pdu->u.submit_sm.source_addr, octstr_imm("@"), octstr_imm("?")); 
+                        charset_latin1_to_gsm(pdu->u.submit_sm.source_addr);
+                    } else if (charset_convert(pdu->u.submit_sm.source_addr, SMPP_DEFAULT_CHARSET, octstr_get_cstr(smpp->alt_addr_charset)) != 0)
+                        error(0, "Failed to convert source_addr from charset <%s> to <%s>, will send as is.",
+                                SMPP_DEFAULT_CHARSET, octstr_get_cstr(smpp->alt_addr_charset));
+                }
             }
         }
     }
@@ -1939,9 +1969,10 @@ int smsc_smpp_create(SMSCConn *conn, CfgGroup *grp)
     long smpp_msg_id_type;
     int autodetect_addr;
     Octstr *alt_charset;
+    Octstr *alt_addr_charset;
     long connection_timeout, wait_ack, wait_ack_action;
 
-    my_number = alt_charset = NULL;
+    my_number = alt_addr_charset = alt_charset = NULL;
     transceiver_mode = 0;
     autodetect_addr = 1;
  
@@ -2056,6 +2087,7 @@ int smsc_smpp_create(SMSCConn *conn, CfgGroup *grp)
 
     /* check for an alternative charset */
     alt_charset = cfg_get(grp, octstr_imm("alt-charset"));
+    alt_addr_charset = cfg_get(grp, octstr_imm("alt-addr-charset"));
     
     /* check for connection timeout */
     if (cfg_get_integer(&connection_timeout, grp, octstr_imm("connection-timeout")) == -1)
@@ -2076,7 +2108,7 @@ int smsc_smpp_create(SMSCConn *conn, CfgGroup *grp)
                        source_addr_ton, source_addr_npi, dest_addr_ton,  
                        dest_addr_npi, enquire_link_interval, 
                        max_pending_submits, version, priority, validity, my_number, 
-                       smpp_msg_id_type, autodetect_addr, alt_charset, 
+                       smpp_msg_id_type, autodetect_addr, alt_charset, alt_addr_charset,
                        service_type, connection_timeout, wait_ack, wait_ack_action); 
  
     conn->data = smpp; 
@@ -2098,6 +2130,7 @@ int smsc_smpp_create(SMSCConn *conn, CfgGroup *grp)
     octstr_destroy(my_number); 
     octstr_destroy(smsc_id);
     octstr_destroy(alt_charset); 
+    octstr_destroy(alt_addr_charset);
     octstr_destroy(service_type);
 
     conn->status = SMSCCONN_CONNECTING; 
