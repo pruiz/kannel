@@ -200,12 +200,13 @@ static ota_3table_t ota_attributes[] = {
 
 /*
  * Defines OMA ProvCont WBXML tokens, see chapter 7.
+ * Value 'INLINE' has to be always last in attribute group, since this
+ * is a break condition within a while loop.
  */
 
 static ota_3table_t oma_ota_attributes[] = {
-    { "VERSION", "INLINE", 0x45 },
     { "VERSION", "1.0", 0x46 },
-    { "TYPE", "INLINE", 0x50 },
+    { "VERSION", "INLINE", 0x45 },  
     { "TYPE", "PXLOGICAL", 0x51 },
     { "TYPE", "PXPHYSICAL", 0x52 },
     { "TYPE", "PORT", 0x53 },
@@ -221,8 +222,7 @@ static ota_3table_t oma_ota_attributes[] = {
     { "TYPE", "APPADDR", 0x56, 1 },
     { "TYPE", "APPAUTH", 0x57, 1 },
     { "TYPE", "RESOURCE", 0x59, 1 },
-    { "NAME", "INLINE", 0x5 },
-    { "VALUE", "INLINE", 0x6 },     
+    { "TYPE", "INLINE", 0x50 },
     { "NAME", "NAME", 0x7 },
     { "NAME", "NAP-ADDRESS", 0x8 },
     { "NAME", "NAP-ADDRTYPE", 0x9 },
@@ -302,6 +302,7 @@ static ota_3table_t oma_ota_attributes[] = {
     { "NAME", "TO-PROXY", 0x39, 1 },
     { "NAME", "URI", 0x3A, 1 },
     { "NAME", "RULE", 0x3B, 1 },
+    { "NAME", "INLINE", 0x5 },
     { "VALUE", "IPV4", 0x85 },
     { "VALUE", "IPV6", 0x86 },
     { "VALUE", "E164", 0x87 },
@@ -366,6 +367,7 @@ static ota_3table_t oma_ota_attributes[] = {
     { "VALUE", "DIGEST", 0x93, 1 },
     { "VALUE", "AAA", 0xE0 },
     { "VALUE", "HA", 0xE1 },
+    { "VALUE", "INLINE", 0x6 },     
 };
 
 #define OMA_VALUE_TAG 0x06
@@ -384,7 +386,6 @@ static int parse_document(xmlDocPtr document, Octstr *charset,
 static int parse_node(xmlNodePtr node, simple_binary_t **otabxml);    
 static int parse_element(xmlNodePtr node, simple_binary_t **otabxml);
 static int parse_attribute(xmlAttrPtr attr, simple_binary_t **otabxml); 
-static int use_inline_string(Octstr *valueos);      
 
 /***************************************************************************
  *
@@ -474,22 +475,22 @@ static int parse_node(xmlNodePtr node, simple_binary_t **otabxml)
     
     /* Call for the parser function of the node type. */
     switch (node->type) {
-    case XML_ELEMENT_NODE:
-	status = parse_element(node, otabxml);
-	break;
-    case XML_TEXT_NODE:
-    case XML_COMMENT_NODE:
-    case XML_PI_NODE:
-	/* Text nodes, comments and PIs are ignored. */
-	break;
-	/*
-	 * XML has also many other node types, these are not needed with 
-	 * OTA. Therefore they are assumed to be an error.
-	 */
-    default:
-	error(0, "OTA compiler: Unknown XML node in the OTA source.");
-	return -1;
-	break;
+        case XML_ELEMENT_NODE:
+            status = parse_element(node, otabxml);
+            break;
+        case XML_TEXT_NODE:
+        case XML_COMMENT_NODE:
+        case XML_PI_NODE:
+            /* Text nodes, comments and PIs are ignored. */
+            break;
+        /*
+         * XML has also many other node types, these are not needed with 
+         * OTA. Therefore they are assumed to be an error.
+         */
+        default:
+            error(0, "OTA compiler: Unknown XML node in the OTA source.");
+            return -1;
+            break;
     }
 
     /* 
@@ -497,30 +498,26 @@ static int parse_node(xmlNodePtr node, simple_binary_t **otabxml)
      * children. The status for it is returned by parse_element.
      */
     switch (status) {
-    case 0:
-
-	if (node->children != NULL)
-	    if (parse_node(node->children, otabxml) == -1)
-		return -1;
-	break;
-    case 1:
-	if (node->children != NULL)
-	    if (parse_node(node->children, otabxml) == -1)
-		return -1;
-	parse_end(otabxml);
-	break;
-
-    case -1: /* Something went wrong in the parsing. */
-	return -1;
-    default:
-	warning(0,"OTA compiler: undefined return value in a parse function.");
-	return -1;
-	break;
+        case 0:
+            if (node->children != NULL && parse_node(node->children, otabxml) == -1)
+                return -1;
+            break;
+        case 1:
+            if (node->children != NULL && parse_node(node->children, otabxml) == -1)
+                return -1;
+            parse_end(otabxml);
+            break;
+        case -1: /* Something went wrong in the parsing. */
+            return -1;
+            break;
+        default:
+            warning(0,"OTA compiler: Undefined return value in a parse function.");
+            return -1;
+            break;
     }
 
-    if (node->next != NULL)
-	if (parse_node(node->next, otabxml) == -1)
-	    return -1;
+    if (node->next != NULL && parse_node(node->next, otabxml) == -1)
+        return -1;
 
     return 0;
 }
@@ -537,8 +534,7 @@ static int parse_element(xmlNodePtr node, simple_binary_t **otabxml)
 {
     Octstr *name;
     size_t i;
-    unsigned char status_bits,
-             ota_hex;
+    unsigned char status_bits, ota_hex;
     int add_end_tag;
     xmlAttrPtr attribute;
 
@@ -562,33 +558,31 @@ static int parse_element(xmlNodePtr node, simple_binary_t **otabxml)
     if (i != NUMBER_OF_ELEMENTS) {
         ota_hex = ota_elements[i].token;
         if ((status_bits = element_check_content(node)) > 0) {
-	    ota_hex = ota_hex | status_bits;
-	    
-	    if ((status_bits & WBXML_CONTENT_BIT) == WBXML_CONTENT_BIT)
-	        add_end_tag = 1;
+            ota_hex = ota_hex | status_bits;
+            if ((status_bits & WBXML_CONTENT_BIT) == WBXML_CONTENT_BIT)
+                add_end_tag = 1;
         }
         output_char(ota_hex, otabxml);
     } else {
-        warning(0, "unknown tag %s in OTA source", octstr_get_cstr(name));
+        warning(0, "OTA compiler: Unknown tag '%s' in OTA source", octstr_get_cstr(name));
         ota_hex = WBXML_LITERAL;
         if ((status_bits = element_check_content(node)) > 0) {
-	    ota_hex = ota_hex | status_bits;
-	    /* If this node has children, the end tag must be added after 
-	       them. */
-	    if ((status_bits & WBXML_CONTENT_BIT) == WBXML_CONTENT_BIT)
-		add_end_tag = 1;
-	}
-	output_char(ota_hex, otabxml);
+            ota_hex = ota_hex | status_bits;
+            /* If this node has children, the end tag must be added after them. */
+            if ((status_bits & WBXML_CONTENT_BIT) == WBXML_CONTENT_BIT)
+                add_end_tag = 1;
+        }
+        output_char(ota_hex, otabxml);
         output_octet_string(octstr_duplicate(name), otabxml);
     }
 
     if (node->properties != NULL) {
-	attribute = node->properties;
-	while (attribute != NULL) {
-	    parse_attribute(attribute, otabxml);
-	    attribute = attribute->next;
-	}
-	parse_end(otabxml);
+        attribute = node->properties;
+        while (attribute != NULL) {
+            parse_attribute(attribute, otabxml);
+            attribute = attribute->next;
+        }
+        parse_end(otabxml);
     }
 
     octstr_destroy(name);
@@ -603,10 +597,7 @@ static int parse_element(xmlNodePtr node, simple_binary_t **otabxml)
  */
 static int parse_attribute(xmlAttrPtr attr, simple_binary_t **otabxml)
 {
-    Octstr *name,
-           *value,
-           *valueos,
-           *nameos;
+    Octstr *name, *value, *valueos, *nameos;
     unsigned char ota_hex;
     size_t i, limit;
     ota_3table_t *alist;
@@ -614,9 +605,9 @@ static int parse_attribute(xmlAttrPtr attr, simple_binary_t **otabxml)
     name = octstr_create(attr->name);
 
     if (attr->children != NULL)
-	value = create_octstr_from_node(attr->children);
+        value = create_octstr_from_node(attr->children);
     else 
-	value = NULL;
+        value = NULL;
 
     if (value == NULL)
         goto error;
@@ -650,14 +641,15 @@ static int parse_attribute(xmlAttrPtr attr, simple_binary_t **otabxml)
     }
 
     if (i == limit) {
-        warning(0, "unknown attribute %s in OTA source", 
-                octstr_get_cstr(name));
-        warning(0, "its value being %s", octstr_get_cstr(value));
+        warning(0, "OTA compiler: Unknown attribute '%s' in OTA source, "
+                   "with value '%s'.", 
+                octstr_get_cstr(name), octstr_get_cstr(value));
         goto error;
     }
 
     ota_hex = alist[i].token;
-    if (!use_inline_string(valueos)) {
+    /* if not inline used */
+    if (octstr_compare(valueos, octstr_imm("INLINE")) != 0) {
         /* Switch code page. */
         if (alist[i].code_page != (*otabxml)->code_page) { 
             output_char(0, otabxml);
@@ -683,14 +675,3 @@ error:
     octstr_destroy(value);
     return -1;
 }
-
-static int use_inline_string(Octstr *valueos)
-{
-    return octstr_compare(valueos, octstr_imm("INLINE")) == 0;
-}
-
-
-
-
-
-

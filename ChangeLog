@@ -1,3 +1,9 @@
+2006-02-04  Stipe Tolj  <stolj at kannel.org>
+  * gw/ota_compiler.c: fixed OMA compilation, due to mis-ordered array of 
+    parameter attributes which caused all attributes to be inlined.
+    Thanks to Tomas Varaneckas <tomas.varaneckas@metasite.net> for report.
+    [Msg-Id: <43E071A8.40302@metasite.net>]
+
 2006-01-29  Alexander Malysh <amalysh at kannel.org>
   * doc/userguide/userguide.xml, gw/smsc/smsc_smpp.c, gwlib/cfg.def: applied
     patch from Peter Christensen that adds new config option 'alt-addr-charset'
