@@ -1,4 +1,7 @@
 2006-02-04  Stipe Tolj  <stolj at kannel.org>
+  * gw/pushkannel.conf: remove trailing newlines. NLC.
+  
+2006-02-04  Stipe Tolj  <stolj at kannel.org>
   * gw/ota_compiler.c: fixed OMA compilation, due to mis-ordered array of 
     parameter attributes which caused all attributes to be inlined.
     Thanks to Tomas Varaneckas <tomas.varaneckas@metasite.net> for report.
