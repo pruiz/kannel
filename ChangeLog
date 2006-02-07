@@ -1,3 +1,7 @@
+2006-02-07  Alexander Malysh <amalysh at kannel.org>
+  * gw/smsc/smsc_smpp.c: fixed typo deliver_sm -> data_sm.
+    Thanks to Stipe for pointing to this.
+
 2006-02-04  Stipe Tolj  <stolj at kannel.org>
   * gw/pushkannel.conf: remove trailing newlines. NLC.
   
