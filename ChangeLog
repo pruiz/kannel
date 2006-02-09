@@ -1,4 +1,8 @@
 2006-02-09  Stipe Tolj  <stolj at kannel.org>
+  * gw/wapbox.c: fixing bug #305, where wapbox did not react on SIGTERM. 
+    Now SIGINT and SIGTERM will cause wapbox to shutdown.
+    
+2006-02-09  Stipe Tolj  <stolj at kannel.org>
   * wap/cookies.c: fixing bug #304, which caused segfault via octstr_append()
     called from set_cookies(), which should be a race-condition. Now the 
     cookies list is protected via a permanent lock before we either cycle in

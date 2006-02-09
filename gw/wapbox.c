@@ -272,8 +272,9 @@ static void signal_handler(int signum)
     
     switch (signum) {
         case SIGINT:
+        case SIGTERM:
             if (program_status != shutting_down) {
-                error(0, "SIGINT received, let's die.");
+                error(0, "SIGINT or SIGTERM received, let's die.");
                 program_status = shutting_down;
                 break;
             }
