@@ -1,3 +1,9 @@
+2006-02-09  Stipe Tolj  <stolj at kannel.org>
+  * wap/cookies.c: fixing bug #304, which caused segfault via octstr_append()
+    called from set_cookies(), which should be a race-condition. Now the 
+    cookies list is protected via a permanent lock before we either cycle in
+    the list or delete/append items. Thanks to Mindaugas for reporting.
+
 2006-02-07  Alexander Malysh <amalysh at kannel.org>
   * gw/smsc/smsc_smpp.c: fixed typo deliver_sm -> data_sm.
     Thanks to Stipe for pointing to this.
