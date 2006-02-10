@@ -1,3 +1,12 @@
+2006-02-10  Alexander Malysh <amalysh at kannel.org>
+  * gwlib/http.c: replaced not needed enums with defines. Some whitespaces fixes.
+    Fixes for GCC4 warnings.
+    Fixed function conn_pool_get where retry was not reseted.
+    Fixed check_pool_conn where we now do explicit conn_unregister (it could be a cause
+    for dealocks). 
+    Fixed start_client_threads where no error handling was present when create of
+    write_request_thread fail.
+
 2006-02-09  Stipe Tolj  <stolj at kannel.org>
   * gw/wapbox.c: fixing bug #305, where wapbox did not react on SIGTERM. 
     Now SIGINT and SIGTERM will cause wapbox to shutdown.

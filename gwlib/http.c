@@ -647,7 +647,7 @@ static FDSet *client_fdset = NULL;
  * Maximum number of HTTP redirections to follow. Making this infinite
  * could cause infinite looping if the redirections loop.
  */
-enum { HTTP_MAX_FOLLOW = 5 };
+#define HTTP_MAX_FOLLOW 5
 
 
 /*
@@ -783,13 +783,13 @@ static Connection *conn_pool_get(Octstr *host, int port, int ssl, Octstr *certke
     Octstr *key;
     List *list = NULL;
     Connection *conn = NULL;
-    int retry = 0;
+    int retry;
 
     do {
-        mutex_lock(conn_pool_lock);
+        retry = 0;
         key = conn_pool_key(host, port);
+        mutex_lock(conn_pool_lock);
         list = dict_get(conn_pool, key);
-        octstr_destroy(key);
         if (list != NULL)
             conn = gwlist_extract_first(list);
         mutex_unlock(conn_pool_lock);
@@ -809,11 +809,14 @@ static Connection *conn_pool_get(Octstr *host, int port, int ssl, Octstr *certke
              */
             conn_wait(conn, 0);
             if (conn_eof(conn) || conn_error(conn)) {
+                debug("gwlib.http", 0, "HTTP:conn_pool_get: Server closed connection, destroying it <%s><%p><fd:%d>.",
+                      octstr_get_cstr(key), conn, conn_get_id(conn));
                 conn_destroy(conn);
                 retry = 1;
                 conn = NULL;
             }
         }
+        octstr_destroy(key);
     } while(retry == 1);
     
     if (conn == NULL) {
@@ -853,9 +856,9 @@ static void check_pool_conn(Connection *conn, void *data)
              * ok, connection was still within pool. So it's
              * safe to destroy this connection.
              */
-            debug("gwlib.http", 0, "HTTP: Server closed connection, destroying it <%s><%p>.",
-                  octstr_get_cstr(key), conn);
-            /* implicit conn_unregister */
+            debug("gwlib.http", 0, "HTTP: Server closed connection, destroying it <%s><%p><fd:%d>.",
+                  octstr_get_cstr(key), conn, conn_get_id(conn));
+            conn_unregister(conn);
             conn_destroy(conn);
         }
         /*
@@ -873,9 +876,9 @@ static void conn_pool_put(Connection *conn, Octstr *host, int port)
 {
     Octstr *key;
     List *list;
-    
-    mutex_lock(conn_pool_lock);
+
     key = conn_pool_key(host, port);
+    mutex_lock(conn_pool_lock);
     list = dict_get(conn_pool, key);
     if (list == NULL) {
     	list = gwlist_create();
@@ -1364,7 +1367,7 @@ HTTPURLParse *parse_url(Octstr *url)
     /* we have a port, but no path. */
     else if (slash == -1) {
         host_len = colon - prefix_len;
-        if (octstr_parse_long(&(p->port), url, colon + 1, 10) == -1) {
+        if (octstr_parse_long((long*) &(p->port), url, colon + 1, 10) == -1) {
             error(0, "URL <%s> has malformed port number.",
                   octstr_get_cstr(url));
             http_urlparse_destroy(p);
@@ -1384,7 +1387,7 @@ HTTPURLParse *parse_url(Octstr *url)
     /* we have both, path and port. */
     else if (colon < slash) {
         host_len = colon - prefix_len;
-        if (octstr_parse_long(&(p->port), url, colon + 1, 10) == -1) {
+        if (octstr_parse_long((long*) &(p->port), url, colon + 1, 10) == -1) {
             error(0, "URL <%s> has malformed port number.",
                   octstr_get_cstr(url));
             http_urlparse_destroy(p);
@@ -1516,7 +1519,7 @@ static int send_request(HTTPServer *trans)
          * connection for more than a single request.
          */
         http_header_remove_all(trans->request_headers, "Content-Length");
-        sprintf(buf, "%ld", octstr_len(trans->request_body));
+        snprintf(buf, sizeof(buf), "%ld", octstr_len(trans->request_body));
         http_header_add(trans->request_headers, "Content-Length", buf);
     } 
     /* 
@@ -1626,8 +1629,12 @@ static void start_client_threads(void)
 	mutex_lock(client_thread_lock);
 	if (!client_threads_are_running) {
 	    client_fdset = fdset_create_real(HTTP_CLIENT_TIMEOUT);
-	    gwthread_create(write_request_thread, NULL);
-	    client_threads_are_running = 1;
+	    if (gwthread_create(write_request_thread, NULL) == -1) {
+                error(0, "HTTP: Could not start client write_request thread.");
+                fdset_destroy(client_fdset);
+                client_threads_are_running = 0;
+            } else
+                client_threads_are_running = 1;
 	}
 	mutex_unlock(client_thread_lock);
     }
@@ -1679,17 +1686,17 @@ void *http_receive_result(HTTPCaller *caller, int *status, Octstr **final_url,
     *status = trans->status;
     
     if (trans->status >= 0) {
-	*final_url = trans->url;
-	*headers = trans->response->headers;
-	*body = trans->response->body;
+        *final_url = trans->url;
+        *headers = trans->response->headers;
+        *body = trans->response->body;
 
-	trans->url = NULL;
-	trans->response->headers = NULL;
-	trans->response->body = NULL;
+        trans->url = NULL;
+        trans->response->headers = NULL;
+        trans->response->body = NULL;
     } else {
-	*final_url = NULL;
-	*headers = NULL;
-	*body = NULL;
+       *final_url = NULL;
+       *headers = NULL;
+       *body = NULL;
     }
 
     server_destroy(trans);
@@ -1779,8 +1786,7 @@ static HTTPClient *client_create(int port, Connection *conn, Octstr *ip)
     	      octstr_get_cstr(ip), SSL_get_cipher_version(conn_get_ssl(conn)));
     else
 #endif    
-    debug("gwlib.http", 0, "HTTP: Creating HTTPClient for `%s'.",
-    	  octstr_get_cstr(ip));
+        debug("gwlib.http", 0, "HTTP: Creating HTTPClient for `%s'.", octstr_get_cstr(ip));
     p = gw_malloc(sizeof(*p));
     p->port = port;
     p->conn = conn;
@@ -1984,9 +1990,9 @@ static void port_put_request(HTTPClient *client)
     mutex_lock(port_mutex);
     key = port_key(client->port);
     p = dict_get(port_collection, key);
+    octstr_destroy(key);
     gw_assert(p != NULL);
     gwlist_produce(p->clients_with_requests, client);
-    octstr_destroy(key);
     mutex_unlock(port_mutex);
 }
 
@@ -2018,7 +2024,7 @@ static HTTPClient *port_get_request(int port)
 /*
  * Maximum number of servers (ports) we have open at the same time.
  */
-enum { MAX_SERVERS = 32 };
+#define MAX_SERVERS 32
 
 
 /*
@@ -2178,7 +2184,7 @@ static void server_thread(void *dummy)
     int *portno;
     struct server *p;
     struct sockaddr_in addr;
-    int addrlen;
+    socklen_t addrlen;
     Connection *conn;
     HTTPClient *client;
     int ret;
@@ -3190,7 +3196,7 @@ List *http_header_split_auth_value(Octstr *value)
             gwlist_delete(result, i, 1);
             octstr_destroy(element);
         } else {
-            unsigned char semicolon = ';';
+            char semicolon = ';';
             octstr_insert_data(element, pos, &semicolon, 1);
             auth_scheme = element;
             i++;
@@ -3365,7 +3371,7 @@ void http_init(void)
 #endif /* HAVE_LIBSSL */
     proxy_init();
     client_init();
-    conn_pool_init();   
+    conn_pool_init();
     port_init();
     server_init();
 #ifdef HAVE_LIBSSL
