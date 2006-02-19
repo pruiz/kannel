@@ -1,3 +1,7 @@
+2006-02-19  Stipe Tolj  <stolj at kannel.org>
+  * doc/userguide/userguide.xml: added missing 'access-log-<foobar>' config
+    directives to wapbox group. Thanks to Roberto Carlos Navas for the hint.
+
 2006-02-10  Alexander Malysh <amalysh at kannel.org>
   * gwlib/http.c: replaced not needed enums with defines. Some whitespaces fixes.
     Fixes for GCC4 warnings.

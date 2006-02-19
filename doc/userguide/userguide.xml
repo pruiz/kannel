@@ -2017,6 +2017,30 @@ bearerbox-host = localhost
 	 to 'none'.
      </entry></row>
 
+    <row><entry><literal>access-log</literal></entry>
+     <entry>filename</entry>
+     <entry valign="bottom">
+        A file containing all requested URLs from clients while wapbox operation,
+        including client IP, HTTP server User-Agent string, HTTP reponse code, 
+        size of reply.
+     </entry></row>
+
+    <row><entry><literal>access-log-clean</literal></entry>
+     <entry>boolean</entry>
+     <entry valign="bottom">
+        Indicates if <literal>access-log</literal> will contain standard 'markers', 
+		  which means the 'Log begins', 'Log ends' markers and the prefixed
+		  timestamp. This config directive should be set to 'true' if a custom 
+		  logging format is desired without a prefixed default timestamp. 
+     </entry></row>
+
+    <row><entry><literal>access-log-time</literal></entry>
+     <entry>string</entry>
+     <entry valign="bottom">
+          Determine which timezone we use for access logging. Use 'gmt' for GMT time, 
+          anything else will use local time. Default is local time.
+     </entry></row>
+
 	 <row><entry><literal>smart-errors</literal></entry>
      <entry>bool</entry>
      <entry valign="bottom">
