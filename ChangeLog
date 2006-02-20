@@ -1,3 +1,7 @@
+2006-02-20  Stipe Tolj  <stolj at kannel.org>
+  * wap/cookies.c: reverting to previous revision, the new locking seems to 
+    cause a deadlock situation. Need to resolve this seperately.
+
 2006-02-19  Stipe Tolj  <stolj at kannel.org>
   * doc/userguide/userguide.xml: added missing 'access-log-<foobar>' config
     directives to wapbox group. Thanks to Roberto Carlos Navas for the hint.

@@ -115,27 +115,25 @@ int get_cookies(List *headers, const WSPMachine *sm)
 	Cookie *cookie = NULL;
 	long pos = 0;
 
-    /* 
+	/* 
      * This can happen if the user aborts while the HTTP request is pending from the server.
-     * In that case, the session machine is destroyed and is not available to this function
-     * for cookie caching.
-     */
+	 * In that case, the session machine is destroyed and is not available to this function
+	 * for cookie caching.
+	 */
 
-    if (sm == NULL) {
-        info(0, "WSP: No session machine for cookie retrieval");
-        return 0;
-    }
+	if (sm == NULL) {
+		info (0, "No session machine for cookie retrieval");
+		return 0;
+	}
 
 	for (pos = 0; pos < gwlist_len(headers); pos++) {
-        header = gwlist_get(headers, pos);
-		/* 
-        debug("wap.wsp.http",0,"WSP: Examining header '%s'", octstr_get_cstr(header)); 
-        */
-		if (strncasecmp("set-cookie", octstr_get_cstr(header), 10) == 0) {		
-			debug("wap.wsp.http",0,"WSP: Caching cookie '%s'", octstr_get_cstr(header));
+		header = gwlist_get(headers, pos);
+		/* debug ("wap.wsp.http", 0, "get_cookies: Examining header (%s)", octstr_get_cstr (header)); */
+		if (strncasecmp ("set-cookie", octstr_get_cstr (header),10) == 0) {		
+			debug ("wap.wsp.http", 0, "Caching cookie (%s)", octstr_get_cstr (header));
 
-			if ((value = get_header_value(header)) == NULL) {
-				error(0, "WSP: Cookie: No value in header '%s'", octstr_get_cstr(header));
+			if ((value = get_header_value (header)) == NULL) {
+				error (0, "get_cookies: No value in (%s)", octstr_get_cstr(header));
 				continue;
 			}
 
@@ -144,18 +142,19 @@ int get_cookies(List *headers, const WSPMachine *sm)
 
 				/* Check to see if this cookie is already present */
 				if (have_cookie(sm->cookies, cookie) == 1) {
-					debug("wap.wsp.http",0,"WSP: Cookie present");
+					debug("wap.wsp.http", 0, "parse_cookie: Cookie present");
 					      cookie_destroy(cookie);
 					continue;
 				} else {
 					add_cookie_to_cache(sm, cookie);
-					debug("wap.wsp.http",0,"WSP: Cookie: Added '%s'", 
-						  octstr_get_cstr(cookie->name));
+					debug("wap.wsp.http", 0, "get_cookies: Added (%s)", 
+						  octstr_get_cstr(cookie -> name));
 				}
 			}
 		}
 	}
 
+	debug("wap.wsp.http", 0, "get_cookies: End");
 	return 0;
 }
 
@@ -164,25 +163,21 @@ int set_cookies(List *headers, WSPMachine *sm)
 {
 	Cookie *value = NULL;
 	Octstr *cookie = NULL;
-    int n;
 	long pos = 0;
 
 	if (headers == NULL || sm == NULL) {
-		error (0, "WSP: Cookies: Null argument(s) - no headers, WSPMachine or both");
+		error (0, "set_cookies: Null argument(s) - no headers, WSPMachine or both");
 		return -1;
 	}
 
 	/* Expire cookies that have timed out */
 	expire_cookies(sm->cookies);
 
-    /* Lock the list and continue */
-    gwlist_lock(sm->cookies);
-    
 	/* Walk through the cookie cache, adding the cookie to the request headers */
-	if ((n = gwlist_len(sm->cookies)) > 0) {
-		debug("wap.wsp.http", 0, "WSP: %d cookies in cache", n);
+	if (gwlist_len(sm->cookies) > 0) {
+		debug("wap.wsp.http", 0, "set_cookies: Cookies in cache");
 
-		for (pos = 0; pos < n; pos++) {
+		for (pos = 0; pos < gwlist_len(sm->cookies); pos++) {
 			value = gwlist_get(sm->cookies, pos);
 
 			cookie = octstr_create("Cookie: ");
@@ -202,13 +197,11 @@ int set_cookies(List *headers, WSPMachine *sm)
 			}
 
 			gwlist_append(headers, cookie);
-			debug("wap.wsp.http", 0, "WSP: Cookies: Added '%s'", octstr_get_cstr (cookie));
+			debug("wap.wsp.http", 0, "set_cookies: Added (%s)", octstr_get_cstr (cookie));
 		}
 	} else
-		debug("wap.wsp.http", 0, "WSP: No cookies in cache");
+		debug("wap.wsp.http", 0, "set_cookies: No cookies in cache");
 
-    gwlist_unlock(sm->cookies);
-    
 	return 0;
 }
 
@@ -354,9 +347,7 @@ static void add_cookie_to_cache(const WSPMachine *sm, Cookie *value)
 	gw_assert(sm->cookies != NULL);
 	gw_assert(value != NULL);
 
-    gwlist_lock(sm->cookies);
 	gwlist_append(sm->cookies, value);
-    gwlist_unlock(sm->cookies);
 
 	return;
 }
@@ -373,17 +364,16 @@ static int have_cookie(List *cookies, Cookie *cookie)
     long pos = 0;
 
     if (cookies == NULL || cookie == NULL) {
-        error(0, "WSP: Cookies: Null argument(s) - no Cookie list, Cookie or both");
+        error(0, "have_cookie: Null argument(s) - no Cookie list, Cookie or both");
         return 0;
     }
 
     /* Walk through the cookie cache, comparing cookie */
-    gwlist_lock(cookies);
 	while (pos < gwlist_len(cookies)) {
         value = gwlist_get(cookies, pos);
 
         /* octstr_compare() now only returns 0 on an exact match or if both args are 0 */
-        debug ("wap.wsp.http",0,"WSP: Cookie: Comparing name (%s:%s), path (%s:%s), domain (%s:%s)",
+        debug ("wap.wsp.http", 0, "have_cookie: Comparing name (%s:%s), path (%s:%s), domain (%s:%s)",
                octstr_get_cstr(cookie->name), octstr_get_cstr(value->name),
                octstr_get_cstr(cookie->path), octstr_get_cstr(value->path),
                octstr_get_cstr(cookie->domain), octstr_get_cstr(value->domain));
@@ -404,19 +394,18 @@ static int have_cookie(List *cookies, Cookie *cookie)
 
             /* Discard the new cookie also if max-age is 0 - set if expiry date is up */
             if (cookie->max_age == 0) {
-                debug("wap.wsp.http",0,"WSP: Cookie: Discarding expired cookie '%s'",
+                debug("wap.wsp.http", 0, "have_cookie: Discarding expired cookie (%s)",
                       octstr_get_cstr(cookie->name));
                 return 1;
             }
 
-            debug("wap.wsp.http",0,"WSP: Cookie: Updating cached cookie '%s'", 
+            debug("wap.wsp.http", 0, "have_cookie: Updating cached cookie (%s)", 
                   octstr_get_cstr (cookie->name));
             break;
         } else {
             pos++;
         }
     }
-    gwlist_unlock(cookies);
 
     return 0;
 }
