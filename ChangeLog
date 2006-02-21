@@ -1,3 +1,9 @@
+2006-02-21  Stipe Tolj  <stolj at kannel.org>
+  * test/fakesmsc.c: fixing option switches '-r' to '-z' for number randomization, 
+    which clashed with the '-r' for port specify'ing.
+    Thanks to Ngurah Bagus <storymasterq@gmail.com> for the report.
+    [Msg-Id: <9100e92b0602202241we1e9facr94e9ed1d349e5046@mail.gmail.com>]
+
 2006-02-21  Alexander Malysh <amalysh at kannel.org>
   * gwlib/http.c: remove retry within http.c in client code. That is a bad idea
     to do any retries in http.c module because it's just library that should just
