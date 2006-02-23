@@ -1,4 +1,8 @@
 2006-02-23  Stipe Tolj  <stolj at kannel.org>
+  * gw/wap-appl.c: fixing a bug causing wapbox to panic while we handle PPG
+    related S_Suspend_Ind type PDU but no PPG is used at all.
+  
+2006-02-23  Stipe Tolj  <stolj at kannel.org>
   * wap/wtp.c: fixing bug #310, causing wapbox to panic while gwlist_append()
     produces an assertion error if a malformed WTP datagram is tried to be
     processes and we try to send an RcvError PDU deducing the TID value from

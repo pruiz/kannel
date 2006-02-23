@@ -359,7 +359,7 @@ static void main_thread(void *arg)
 
     case S_Suspend_Ind:
 	    sid = ind->u.S_Suspend_Ind.session_id;
-        if (wap_push_ppg_have_push_session_for_sid(sid)) 
+        if (have_ppg && wap_push_ppg_have_push_session_for_sid(sid)) 
             indicate_push_suspend(ind);
 	    wap_event_destroy(ind);
 	    break;
