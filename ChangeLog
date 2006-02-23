@@ -1,4 +1,10 @@
 2006-02-23  Stipe Tolj  <stolj at kannel.org>
+  * wap/wtp.c: fixing bug #310, causing wapbox to panic while gwlist_append()
+    produces an assertion error if a malformed WTP datagram is tried to be
+    processes and we try to send an RcvError PDU deducing the TID value from
+    the WTP datagram, causing us to push the WAPEvent into a wrong list.
+    
+2006-02-23  Stipe Tolj  <stolj at kannel.org>
   * gwlib/octstr.[ch]: adding a more flexible octstr_dump() call via a variadic
     macro call. Allowing a third argument specifying the log-level of the 
     Octstr dump. Ie. octstr_dump(ost, 0, GW_ERROR) will dump in ERROR log level.

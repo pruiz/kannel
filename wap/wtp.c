@@ -139,7 +139,8 @@ List *wtp_unpack_wdp_datagram(WAPEvent *datagram)
         wap_event_assert(event);
         gwlist_append(events, event);
     } else {
-        warning(0, "WTP: dropping unhandled datagram");
+        warning(0, "WTP: Dropping unhandled datagram data:");
+        octstr_dump(datagram->u.T_DUnitdata_Ind.user_data, 0, GW_WARNING);
     }
 
     return events;
@@ -356,12 +357,14 @@ WAPEvent *unpack_wdp_datagram_real(WAPEvent *datagram)
     pdu = wtp_pdu_unpack(data);
 
     /*
-     * wtp_pdu_unpack returned NULL, we build a rcv error event. 
+     * wtp_pdu_unpack returned NULL, we have send here a rcv error event,
+     * but now we silently drop the packet. Because we can't figure out
+     * in the pack_error() call if the TID value and hence the direction
+     * inditation is really for initiator or responder. 
      */
     if (pdu == NULL) {
-        error(0, "WTP: cannot unpack pdu, creating an error pdu");
-        event = pack_error(datagram);
-        return event;
+        error(0, "WTP: cannot unpack pdu, dropping packet.");
+        return NULL;
     }   		
 
     event = NULL;
