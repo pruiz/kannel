@@ -1,4 +1,8 @@
 2006-02-23  Stipe Tolj  <stolj at kannel.org>
+  * gw/wap-appl.c: apply higher log-level usage for octstr_dump() in 
+    decode_bearer_indication() and check_application_headers(). NLC.
+  
+2006-02-23  Stipe Tolj  <stolj at kannel.org>
   * gw/wap-appl.c: fixing a bug causing wapbox to panic while we handle PPG
     related S_Suspend_Ind type PDU but no PPG is used at all.
   
