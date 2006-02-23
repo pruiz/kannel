@@ -535,9 +535,15 @@ int octstr_item_case_match(void *item, void *pattern);
 
 
 /*
- * Print debugging information about octet string.
+ * Print debugging information about octet string. This is abstracted to the
+ * various log levels we have: GW_DEBUG, GW_INFO, GW_WARNING, GW_ERROR
+ * 
+ * If a third parameter in the argument list is given, we will dump the
+ * octstr in that log level instead of the default GW_DEBUG level.
  */
-void octstr_dump(const Octstr *ostr, int level);
+void octstr_dump_real(const Octstr *ostr, int level, ...);
+#define octstr_dump(ostr, level, ...) \
+    octstr_dump_real(ostr, level, ##__VA_ARGS__)
 
 
 /*

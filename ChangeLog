@@ -1,3 +1,15 @@
+2006-02-23  Stipe Tolj  <stolj at kannel.org>
+  * gwlib/octstr.[ch]: adding a more flexible octstr_dump() call via a variadic
+    macro call. Allowing a third argument specifying the log-level of the 
+    Octstr dump. Ie. octstr_dump(ost, 0, GW_ERROR) will dump in ERROR log level.
+    The variadic macro will allow the current usage without a third parameter 
+    and hence doesn't require mass patching of existing code. This more flexible
+    octstr_dump() is intended to be used for higher log level runs, where we
+    still want to dump particular data in case we run into warnings or errors.
+    Running in debug log level for real-life production systems in order to get
+    full data dumps is not suitable for a long period, so this allows a shorted
+    log level with reduced log sizes, but octstr_dumps where we need.
+  
 2006-02-21  Stipe Tolj  <stolj at kannel.org>
   * test/fakesmsc.c: fixing option switches '-r' to '-z' for number randomization, 
     which clashed with the '-r' for port specify'ing.
