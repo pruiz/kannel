@@ -302,7 +302,7 @@ static int unlocked_try_write(Connection *conn)
 /* Read whatever data is currently available, up to an internal maximum. */
 static void unlocked_read(Connection *conn)
 {
-    unsigned char buf[4096];
+    char buf[4096];
     long len;
 
     if (conn->inbufpos > 0) {
@@ -488,14 +488,15 @@ Connection *conn_open_tcp_nb_with_port(Octstr *host, int port, int our_port,
 
 int conn_is_connected(Connection *conn)
 {
-  if (conn->connected == yes) return 0;
-  return -1;
+  return conn->connected == yes ? 0 : -1;
 }
 
 int conn_get_connect_result(Connection *conn)
 {
-  int err,len;
-  len = sizeof(len);
+  int err;
+  socklen_t len;
+
+  len = sizeof(err);
   if (getsockopt(conn->fd, SOL_SOCKET, SO_ERROR, &err, &len) < 0) {
     return -1;
   }
@@ -816,9 +817,12 @@ int conn_register_real(Connection *conn, FDSet *fdset,
 
 void conn_unregister(Connection *conn)
 {
-    gw_assert(conn != NULL);
+    FDSet *set = NULL;
+    int fd;
     
-    if (conn == NULL || conn->fd < 0)
+    gw_assert(conn != NULL);
+
+    if (conn->fd < 0)
         return;
 
     /* We need both locks to update the registration information */
@@ -826,7 +830,8 @@ void conn_unregister(Connection *conn)
     lock_in(conn);
 
     if (conn->registered) {
-        fdset_unregister(conn->registered, conn->fd);
+        set = conn->registered;
+        fd = conn->fd;
         conn->registered = NULL;
         conn->callback = NULL;
         /* call data destroyer */
@@ -1001,7 +1006,7 @@ int conn_write(Connection *conn, Octstr *data)
     return ret;
 }
 
-int conn_write_data(Connection *conn, unsigned char *data, long length)
+int conn_write_data(Connection *conn, char *data, long length)
 {
     int ret;
 
@@ -1053,7 +1058,7 @@ Octstr *conn_read_fixed(Connection *conn, long length)
     Octstr *result = NULL;
 
     if (length < 1)
-	return NULL;
+        return NULL;
 
     /* See if the data is already available.  If not, try a read(),
      * then see if we have enough data after that.  If not, give up. */
@@ -1247,6 +1252,8 @@ void openssl_init_locks(void)
 void openssl_shutdown_locks(void)
 {
     int c, maxlocks = CRYPTO_num_locks();
+
+    gw_assert(ssl_static_locks != NULL);
 
     /* remove call-back from the locks */
     CRYPTO_set_locking_callback(NULL);
