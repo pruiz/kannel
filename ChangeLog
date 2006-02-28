@@ -1,4 +1,4 @@
-2006-02-28  Stipe Tolj  <stolj at kannel.org>
+2006-02-28  Alexander Malysh <amalysh at kannel.org>
   * gwlib/conn.c: fixed deadlock when first thread made conn_unregister call
     and the FDSet thread at the same time called conn_callback
     function. Then the first thread locked [in|out] lock and wait for unregister

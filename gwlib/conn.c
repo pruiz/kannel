@@ -845,6 +845,10 @@ void conn_unregister(Connection *conn)
 
     unlock_in(conn);
     unlock_out(conn);
+    
+    /* now unregister from FDSet */
+    if (set != NULL)
+        fdset_unregister(set, fd);
 }
 
 int conn_wait(Connection *conn, double seconds)
