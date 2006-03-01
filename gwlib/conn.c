@@ -302,7 +302,7 @@ static int unlocked_try_write(Connection *conn)
 /* Read whatever data is currently available, up to an internal maximum. */
 static void unlocked_read(Connection *conn)
 {
-    char buf[4096];
+    unsigned char buf[4096];
     long len;
 
     if (conn->inbufpos > 0) {
@@ -822,7 +822,7 @@ void conn_unregister(Connection *conn)
     
     gw_assert(conn != NULL);
 
-    if (conn->fd < 0)
+    if (conn == NULL || conn->fd < 0)
         return;
 
     /* We need both locks to update the registration information */
@@ -1010,7 +1010,7 @@ int conn_write(Connection *conn, Octstr *data)
     return ret;
 }
 
-int conn_write_data(Connection *conn, char *data, long length)
+int conn_write_data(Connection *conn, unsigned char *data, long length)
 {
     int ret;
 

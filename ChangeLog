@@ -1,3 +1,7 @@
+2006-03-01  Stipe Tolj  <stolj at kannel.org>
+  * gwlib/conn.c: fixing compiler issues from Alex's previous commit. 
+    Thanks to Rene for pointing out the CVS HEAD didn't compile.
+
 2006-02-28  Alexander Malysh <amalysh at kannel.org>
   * gwlib/conn.c: fixed deadlock when first thread made conn_unregister call
     and the FDSet thread at the same time called conn_callback
