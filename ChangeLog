@@ -1,4 +1,12 @@
 2006-03-05  Alexander Malysh <amalysh at kannel.org>
+  * gwlib/conn.[ch]: added new function 'use_global_trusted_ca_file' that
+    allow setting of global trusted ca w/o a need to call conn_config_ssl.
+  * gwlib/mime.[ch]: hide MIMEEntity struct and don't allow direct values
+    manipulation. Manipulation allowed only through access functions.
+    Thanks to Paul Bagyenda <bagyenda at dsmagic.com> for provided patch.
+    [Msg-Id: <963281CE-055B-4254-96D6-9DDE6FAC8F30@dsmagic.com>]
+
+2006-03-05  Alexander Malysh <amalysh at kannel.org>
   * gwlib/http.[ch]: allows http_receive_result to be non blocking if requested.
     This allow us to start only one thread for http client side.
 

@@ -73,6 +73,12 @@
 #include "gwlib/gwlib.h"
 #include "gwlib/mime.h"
 
+struct MIMEEntity {
+    List *headers;
+    List *multiparts;
+    Octstr *body;
+    struct MIMEEntity *start;   /* in case multipart/related */
+};
 
 /********************************************************************
  * Creation and destruction routines.
@@ -109,6 +115,7 @@ void mime_entity_destroy(MIMEEntity *e)
   
     gw_free(e);
 }    
+
 
 
 /********************************************************************
@@ -149,6 +156,40 @@ static int read_mime_headers(ParseContext *context, List *headers)
     return 0;
 }
 
+/* This function checks that there is a boundary parameter in the headers
+ * for a multipart MIME object. If not, it is inserted and passed back to caller
+ * in the variable boundary_elem.
+ */
+static void fix_boundary_element(List *headers, Octstr **boundary_elem)
+{
+     /* 
+      * Check if we have an boundary parameter already in the 
+      * Content-Type header. If no, add one, otherwise parse which one 
+      * we should use.
+      * XXX this can be abstracted as function in gwlib/http.[ch].
+      */
+     Octstr *value = http_header_value(headers, octstr_imm("Content-Type"));
+     Octstr *boundary = value ? http_get_header_parameter(value, octstr_imm("boundary")) :
+	  NULL;
+     if (boundary == NULL) {
+	  boundary = octstr_format("_boundary_%d_%ld_%c_%c_bd%d", 
+				   random(), (long)time(NULL), 'A' + (random()%26), 
+				   'a'+(random() % 26), random());
+	  octstr_format_append(value, "; boundary=%S", boundary);
+	  
+	  http_header_remove_all(headers, "Content-Type");
+	  http_header_add(headers, "Content-Type", octstr_get_cstr(value));
+	  http_header_add(headers, "MIME-Version", "1.0");
+     }
+     if (value)
+	  octstr_destroy(value);
+     if (boundary_elem)
+	  *boundary_elem = boundary;
+     else if (boundary)
+	  octstr_destroy(boundary);
+}
+
+
 
 /********************************************************************
  * Mapping function from other data types, mainly Octstr and HTTP.
@@ -156,7 +197,7 @@ static int read_mime_headers(ParseContext *context, List *headers)
 
 static Octstr *mime_entity_to_octstr_real(MIMEEntity *m, unsigned int level)
 {
-    Octstr *mime, *value, *boundary;
+    Octstr *mime, *boundary = NULL;
     List *headers;
     long i;
 
@@ -181,26 +222,9 @@ static Octstr *mime_entity_to_octstr_real(MIMEEntity *m, unsigned int level)
         goto finished;
     }
 
-    /* 
-     * Check if we have an boundary parameter already in the 
-     * Content-Type header. If no, add one, otherwise parse which one 
-     * we should use.
-     * XXX this can be abstracted as function in gwlib/http.[ch].
-     */
+    /* This call ensures boundary exists, and returns it */
+    fix_boundary_element(m->headers, &boundary);
     headers = http_header_duplicate(m->headers);
-    value = http_header_value(headers, octstr_imm("Content-Type"));
-    boundary = http_get_header_parameter(value, octstr_imm("boundary"));
-    if (boundary == NULL) {
-        boundary = octstr_format("_boundary_%d_%ld_%c_%c_bd%d", 
-            random(), (long)time(NULL), 'A' + (random()%26), 
-            'a'+(random() % 26), random());
-        octstr_format_append(value, "; boundary=%S", boundary);
-
-        http_header_remove_all(headers, "Content-Type");
-        http_header_add(headers, "Content-Type", octstr_get_cstr(value));
-        http_header_add(headers, "MIME-Version", "1.0");
-    }
-    octstr_destroy(value);
 
     /* headers */
     for (i = 0; i < gwlist_len(headers); i++) {
@@ -252,7 +276,6 @@ Octstr *mime_entity_to_octstr(MIMEEntity *m)
 
     return mime;
 }
-
 
 /*
  * This routine is used for mime_[http|octstr]_to_entity() in order to
@@ -409,6 +432,9 @@ List *mime_entity_headers(MIMEEntity *m)
 
     gw_assert(m != NULL && m->headers != NULL);
 
+    /* Need a fixup before hand over. */
+    fix_boundary_element(m->headers,NULL);
+
     headers = http_header_duplicate(m->headers);
 
     return headers;
@@ -422,6 +448,10 @@ Octstr *mime_entity_body(MIMEEntity *m)
     MIMEEntity *e;
 
     gw_assert(m != NULL && m->headers != NULL);
+
+    /* For non-multipart, return body directly. */
+    if (mime_entity_num_parts(m) == 0)
+	 return octstr_duplicate(m->body);
 
     os = mime_entity_to_octstr(m);
     context = parse_context_create(os);
@@ -446,6 +476,115 @@ Octstr *mime_entity_body(MIMEEntity *m)
     return body;
 }
 
+/* Make a copy of a mime object. recursively. */
+MIMEEntity *mime_entity_duplicate(MIMEEntity *e)
+{
+     MIMEEntity *copy = mime_entity_create();
+     int i, n;
+     
+     mime_replace_headers(copy, e->headers);
+     copy->body = e->body ? octstr_duplicate(e->body) : NULL;
+     
+     for (i = 0, n = gwlist_len(e->multiparts); i < n; i++)
+	  gwlist_append(copy->multiparts, 
+			mime_entity_duplicate(gwlist_get(e->multiparts, i)));
+     return copy;
+}
+
+
+/* Replace top-level MIME headers: Old ones removed completetly */
+void mime_replace_headers(MIMEEntity *e, List *headers)
+{
+     gw_assert(e != NULL);
+     gw_assert(headers != NULL);
+
+     http_destroy_headers(e->headers);
+     e->headers = http_header_duplicate(headers);
+}
+
+
+/* Get number of body parts. Returns 0 if this is not
+ * a multipart object.
+ */
+int mime_entity_num_parts(MIMEEntity *e)
+{
+     gw_assert(e != NULL);
+     return e->multiparts ? gwlist_len(e->multiparts) : 0;
+}
+
+
+/* Append  a new part to list of body parts. Copy is made
+ * Note that if it was not multipart, this action makes it so!
+ */ 
+void mime_entity_add_part(MIMEEntity *e, MIMEEntity *part)
+{
+     gw_assert(e != NULL);
+     gw_assert(part != NULL);
+     
+     gwlist_append(e->multiparts, mime_entity_duplicate(part));
+}
+
+
+/* Get part i in list of body parts. Copy is made*/ 
+MIMEEntity *mime_entity_get_part(MIMEEntity *e, int i)
+{
+     MIMEEntity *m;
+     gw_assert(e != NULL);
+     gw_assert(i >= 0);
+     gw_assert(i < gwlist_len(e->multiparts));
+
+     m = gwlist_get(e->multiparts, i);
+     gw_assert(m);
+     return mime_entity_duplicate(m);
+}
+
+
+/* Remove part i in list of body parts. */ 
+void mime_entity_remove_part(MIMEEntity *e, int i)
+{
+     MIMEEntity *m;
+
+     gw_assert(e != NULL);
+     gw_assert(i >= 0);
+     gw_assert(i < gwlist_len(e->multiparts));
+     
+     
+     m = gwlist_get(e->multiparts, i);
+     gwlist_delete(e->multiparts, i, 1);
+     
+     mime_entity_destroy(m);
+}
+
+/* Replace part i in list of body parts.  Old one will be deleted */ 
+void mime_entity_replace_part(MIMEEntity *e, int i, MIMEEntity *newpart)
+{
+
+     MIMEEntity *m;
+     
+     gw_assert(e != NULL);
+     gw_assert(i >= 0);
+     gw_assert(i < gwlist_len(e->multiparts));
+     
+     m = gwlist_get(e->multiparts, i);
+     gwlist_delete(e->multiparts, i, 1);
+     gwlist_insert(e->multiparts, i, mime_entity_duplicate(newpart));
+
+     mime_entity_destroy(m);
+}
+
+/* Change body element of non-multipart entity.
+ * We don't check that object is multi part. Result is just that 
+ * body will be ignored.
+ */
+void mime_entity_set_body(MIMEEntity *e, Octstr *body)
+{
+     gw_assert(e != NULL);
+     gw_assert(body != NULL);
+
+     if (e->body)
+	  octstr_destroy(e->body);
+     e->body = octstr_duplicate(body);
+}
 
 /********************************************************************
  * Routines for debugging purposes.

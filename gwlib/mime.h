@@ -93,17 +93,41 @@
 
 /* Define an generic MIME entity structure to be 
  * used for MIME multipart parsing. */
-typedef struct MIMEEntity {
-    List *headers;
-    List *multiparts;
-    Octstr *body;
-    struct MIMEEntity *start;   /* in case multipart/related */
-} MIMEEntity;
+typedef struct MIMEEntity MIMEEntity;
 
 
 /* create and destroy MIME multipart entity */
 MIMEEntity *mime_entity_create(void);
 void mime_entity_destroy(MIMEEntity *e);
+
+/* make a copy of a MIME object. */
+MIMEEntity *mime_entity_duplicate(MIMEEntity *e);
+
+
+/* Replace top-level MIME headers: Old ones removed completetly */
+void mime_replace_headers(MIMEEntity *e, List *headers);
+
+
+/* Get number of body parts. Returns 0 if this is not
+ * a multipart object.
+ */
+int mime_entity_num_parts(MIMEEntity *e);
+
+/* Append  a new part to list of body parts. Copy is made*/ 
+void mime_entity_add_part(MIMEEntity *e, MIMEEntity *part);
+
+/* Get part i in list of body parts. Copy is made*/ 
+MIMEEntity *mime_entity_get_part(MIMEEntity *e, int i);
+
+/* Replace part i in list of body parts.  Old one will be deleted */ 
+void mime_entity_replace_part(MIMEEntity *e, int i, MIMEEntity *newpart);
+
+/* Remove part i in list of body parts. */ 
+void mime_entity_remove_part(MIMEEntity *e, int i);
+
+/* Change body element of non-multipart entity. */
+void mime_entity_set_body(MIMEEntity *e, Octstr *body);
+
 
 /*
  * Parse the given Octstr that contains a normative text representation
