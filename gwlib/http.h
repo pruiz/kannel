@@ -352,9 +352,12 @@ void http_start_request(HTTPCaller *caller, int method, Octstr *url,
  * (the one passed to http_start request if non-NULL) or NULL if
  * http_caller_signal_shutdown has been called and there are no queued results.
  */
-void *http_receive_result(HTTPCaller *caller, int *status, Octstr **final_url,
-    	    	    	 List **headers, Octstr **body);
+void *http_receive_result_real(HTTPCaller *caller, int *status, Octstr **final_url,
+    	    	    	 List **headers, Octstr **body, int blocking);
 
+/* old compatibility mode, always blocking */
+#define http_receive_result(caller, status, final_url, headers, body) \
+    http_receive_result_real(caller, status, final_url, headers, body, 1);
 
 /***********************************************************************
  * HTTP server interface.

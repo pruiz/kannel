@@ -1,4 +1,8 @@
 2006-03-05  Alexander Malysh <amalysh at kannel.org>
+  * gwlib/http.[ch]: allows http_receive_result to be non blocking if requested.
+    This allow us to start only one thread for http client side.
+
+2006-03-05  Alexander Malysh <amalysh at kannel.org>
   * configure, configure.in, gw-config.h.in, gwlib/conn.c, gwlib/gw-prioqueue.c,
     gwlib/gwmem-check.c, gwlib/http.c: replaced '__inline' which is GCC extention
     with 'inline' and added configure check whether compiler supports inline.

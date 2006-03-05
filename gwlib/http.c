@@ -1656,13 +1656,16 @@ void http_start_request(HTTPCaller *caller, int method, Octstr *url, List *heade
 }
 
 
-void *http_receive_result(HTTPCaller *caller, int *status, Octstr **final_url,
-    	    	    	 List **headers, Octstr **body)
+void *http_receive_result_real(HTTPCaller *caller, int *status, Octstr **final_url,
+    	    	    	 List **headers, Octstr **body, int blocking)
 {
     HTTPServer *trans;
     void *request_id;
 
-    trans = gwlist_consume(caller);
+    if (blocking == 0)
+        trans = gwlist_extract_first(caller);
+    else
+        trans = gwlist_consume(caller);
     if (trans == NULL)
     	return NULL;
 
