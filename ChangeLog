@@ -1,3 +1,9 @@
+2006-03-05  Alexander Malysh <amalysh at kannel.org>
+  * configure, configure.in, gw-config.h.in, gwlib/conn.c, gwlib/gw-prioqueue.c,
+    gwlib/gwmem-check.c, gwlib/http.c: replaced '__inline' which is GCC extention
+    with 'inline' and added configure check whether compiler supports inline.
+    This should fix #307.
+
 2006-03-01  Stipe Tolj  <stolj at kannel.org>
   * gwlib/conn.c: fixing compiler issues from Alex's previous commit. 
     Thanks to Rene for pointing out the CVS HEAD didn't compile.

@@ -82,13 +82,13 @@ struct gw_prioqueue {
 };
 
 
-static void __inline queue_lock(gw_prioqueue_t *queue)
+static void inline queue_lock(gw_prioqueue_t *queue)
 {
     mutex_lock(queue->mutex);
 }
 
 
-static void __inline queue_unlock(gw_prioqueue_t *queue)
+static void inline queue_unlock(gw_prioqueue_t *queue)
 {
     mutex_unlock(queue->mutex);
 }

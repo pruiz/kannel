@@ -170,6 +170,9 @@ AC_PROG_LEX
 AC_PATH_PROG(CONVERT, convert)
 AC_PATH_PROG(PERL, perl)
 
+dnl Check whether compiler supports inline
+AC_C_INLINE
+
 dnl Check for word sizes.
 
 AC_CHECK_SIZEOF(short, 2)

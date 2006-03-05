@@ -167,7 +167,7 @@ static void unlocked_register_pollout(Connection *conn, int onoff);
 #define unlock_out(conn) unlock_out_real(conn, __FILE__, __LINE__, __func__)
 
 /* Lock a Connection's read direction, if the Connection is unclaimed */
-static void __inline lock_in(Connection *conn)
+static void inline lock_in(Connection *conn)
 {
     gw_assert(conn != NULL);
 
@@ -178,7 +178,7 @@ static void __inline lock_in(Connection *conn)
 }
 
 /* Unlock a Connection's read direction, if the Connection is unclaimed */
-static void __inline unlock_in_real(Connection *conn, char *file, int line, const char *func)
+static void inline unlock_in_real(Connection *conn, char *file, int line, const char *func)
 {
     int ret;
     gw_assert(conn != NULL);
@@ -192,7 +192,7 @@ static void __inline unlock_in_real(Connection *conn, char *file, int line, cons
 }
 
 /* Lock a Connection's write direction, if the Connection is unclaimed */
-static void __inline lock_out(Connection *conn)
+static void inline lock_out(Connection *conn)
 {
     gw_assert(conn != NULL);
 
@@ -203,7 +203,7 @@ static void __inline lock_out(Connection *conn)
 }
 
 /* Unlock a Connection's write direction, if the Connection is unclaimed */
-static void __inline unlock_out_real(Connection *conn, char *file, int line, const char *func)
+static void inline unlock_out_real(Connection *conn, char *file, int line, const char *func)
 {
     int ret;
     gw_assert(conn != NULL);
@@ -217,13 +217,13 @@ static void __inline unlock_out_real(Connection *conn, char *file, int line, con
 }
 
 /* Return the number of bytes in the Connection's output buffer */
-static long __inline unlocked_outbuf_len(Connection *conn)
+static long inline unlocked_outbuf_len(Connection *conn)
 {
     return octstr_len(conn->outbuf) - conn->outbufpos;
 }
 
 /* Return the number of bytes in the Connection's input buffer */
-static long __inline unlocked_inbuf_len(Connection *conn)
+static long inline unlocked_inbuf_len(Connection *conn)
 {
     return octstr_len(conn->inbuf) - conn->inbufpos;
 }

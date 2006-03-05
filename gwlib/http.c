@@ -769,7 +769,7 @@ static void conn_pool_shutdown(void)
 }
 
 
-static __inline Octstr *conn_pool_key(Octstr *host, int port)
+static inline Octstr *conn_pool_key(Octstr *host, int port)
 {
     return octstr_format("%S:%d", host, port);
 }
