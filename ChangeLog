@@ -1,4 +1,9 @@
 2006-03-14  Alexander Malysh <amalysh at kannel.org>
+  * gw/heartbeat.c: fixed #320 that heartbeat_stop crashed when no heartbeat
+    at all is activated.
+    Thanks to Rene Kluwen <rene.kluwen at chimit.nl> for provided patch.
+
+2006-03-14  Alexander Malysh <amalysh at kannel.org>
   * gw/smsc/smpp_pdu.def: fixed #317. SMPP v3.4 defines that validity_period
     and schedule_delivery_time unused in deliver_sm but SMPP v3.3 states that
     parameters for the deliver_sm are the same as for submit_sm. So make length

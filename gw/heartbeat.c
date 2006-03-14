@@ -77,7 +77,7 @@ struct hb_info {
 };
 
 /* List of struct hb_info. */
-static List *heartbeats;
+static List *heartbeats = NULL;
 
 /*
  * Look for a hb_info in a list, by thread number.
@@ -161,6 +161,13 @@ void heartbeat_stop(long hb_thread)
 {
     List *matching_info;
     struct hb_info *info;
+
+    /*
+     * First, check if there are heartbeats to stop.
+     * If not, do not continue, otherwise this function will crash
+     */
+    if (heartbeats == NULL)
+        return;
 
     if (hb_thread == ALL_HEARTBEATS) {
         while (NULL != (info = gwlist_extract_first(heartbeats))) {
