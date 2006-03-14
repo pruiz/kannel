@@ -277,6 +277,38 @@ Octstr *mime_entity_to_octstr(MIMEEntity *m)
     return mime;
 }
 
+static Octstr *get_start_param(Octstr *content_type)
+{
+     Octstr *start;
+     int len;
+
+     if (!content_type)
+	  return NULL;
+
+     start = http_get_header_parameter(content_type, octstr_imm("start"));
+     if (start && (len = octstr_len(start)) > 0 &&
+	 octstr_get_char(start, 0) == '"' && octstr_get_char(start, len-1) == '"') {
+	  octstr_delete(start, 0, 1);
+	  octstr_delete(start, len-2, 1);
+     }
+     
+     return start;  
+}
+
+static int cid_matches(List *headers, Octstr *start)
+{
+     Octstr *cid = http_header_value(headers, octstr_imm("Content-ID"));
+     int ret;
+     if (start != NULL && cid != NULL  && 
+	 octstr_compare(start, cid) == 0) 
+	  ret = 1;
+     else 
+	  ret = 0;
+     if (cid)
+	  octstr_destroy(cid);
+     return ret;
+}
+
 /*
  * This routine is used for mime_[http|octstr]_to_entity() in order to
  * reduce code duplication. Basically the only difference is how the headers
@@ -318,7 +350,7 @@ static MIMEEntity *mime_something_to_entity(Octstr *mime, List *headers)
      */
     value = http_header_value(e->headers, octstr_imm("Content-Type"));
     boundary = http_get_header_parameter(value, octstr_imm("boundary"));
-    start = http_get_header_parameter(value, octstr_imm("start"));
+    start = get_start_param(value);
 
     /* Beware that we need *unquoted* strings to compare against in the
      * following parsing sections. */
@@ -326,12 +358,6 @@ static MIMEEntity *mime_something_to_entity(Octstr *mime, List *headers)
         octstr_get_char(boundary, 0) == '"' && octstr_get_char(boundary, len-1) == '"') {
         octstr_delete(boundary, 0, 1);
         octstr_delete(boundary, len-2, 1);
-
-    }
-    if (start && (len = octstr_len(start)) > 0 &&
-        octstr_get_char(start, 0) == '"' && octstr_get_char(start, len-1) == '"') {
-        octstr_delete(start, 0, 1);
-        octstr_delete(start, len-2, 1);
 
     }
 
@@ -344,7 +370,6 @@ static MIMEEntity *mime_something_to_entity(Octstr *mime, List *headers)
         octstr_append(seperator, boundary);
         while ((entity = parse_get_seperated_block(context, seperator)) != NULL) {
             MIMEEntity *m;
-            Octstr *cid = NULL;
 
             /* we have still two linefeeds at the beginning and end that we 
              * need to remove, these are from the separator. 
@@ -372,14 +397,12 @@ static MIMEEntity *mime_something_to_entity(Octstr *mime, List *headers)
 
             /* check if this entity is our start entity (in terms of related)
              * and set our start pointer to it */
-            if (start != NULL && 
-                (cid = http_header_value(m->headers, octstr_imm("Content-ID"))) != NULL &&
-                octstr_compare(start, cid) == 0) {
+            if (cid_matches(m->headers, start)) {
                 /* set only if none has been set before */
                 e->start = (e->start == NULL) ? m : e->start;
             }
 
-            octstr_destroy(cid);
+
             octstr_destroy(entity);
         }
         /* ok, we parsed all blocks, we expect to see now the end boundary */
@@ -491,7 +514,6 @@ MIMEEntity *mime_entity_duplicate(MIMEEntity *e)
      return copy;
 }
 
-
 /* Replace top-level MIME headers: Old ones removed completetly */
 void mime_replace_headers(MIMEEntity *e, List *headers)
 {
@@ -500,6 +522,7 @@ void mime_replace_headers(MIMEEntity *e, List *headers)
 
      http_destroy_headers(e->headers);
      e->headers = http_header_duplicate(headers);
+     e->start = NULL; /* clear it, since header change means it could have changed.*/
 }
 
 
@@ -551,7 +574,8 @@ void mime_entity_remove_part(MIMEEntity *e, int i)
      
      m = gwlist_get(e->multiparts, i);
      gwlist_delete(e->multiparts, i, 1);
-     
+     if (m == e->start) e->start = NULL;
+
      mime_entity_destroy(m);
 }
 
@@ -568,6 +592,7 @@ void mime_entity_replace_part(MIMEEntity *e, int i, MIMEEntity *newpart)
      m = gwlist_get(e->multiparts, i);
      gwlist_delete(e->multiparts, i, 1);
      gwlist_insert(e->multiparts, i, mime_entity_duplicate(newpart));
+     if (m == e->start) e->start = NULL;
 
      mime_entity_destroy(m);
 }
@@ -584,6 +609,49 @@ void mime_entity_set_body(MIMEEntity *e, Octstr *body)
      if (e->body)
 	  octstr_destroy(e->body);
      e->body = octstr_duplicate(body);
+}
+
+/* Returns (copy of) the 'start' element of a multi-part entity. */
+MIMEEntity *mime_multipart_start_elem(MIMEEntity *e)
+{
+     gw_assert(e != NULL);
+     
+    /* If e->start element is not yet set, set it as follows:
+     * - if content type is not set, then set it to NULL
+     * - if the start element is not set but this is a multipart object, set
+     *   it to first multipart element, else set it to null
+     * - if the start element of the content type is set, find a matching object
+     *    and set e->start accordingly.
+     * Finally, return a copy of it.
+     */
+     if (!e->start) {
+	  Octstr *ctype = http_header_value(e->headers, octstr_imm("Content-Type"));
+	  Octstr *start = get_start_param(ctype);
+	  int i;
+	  
+	  if (!ctype)
+	       e->start = NULL;
+	  else if (!start) {
+	       if (gwlist_len(e->multiparts) > 0) 
+		    e->start = gwlist_get(e->multiparts, 0); 
+	       else 
+		    e->start = NULL;
+	  } else 
+	       for (i = 0; i < gwlist_len(e->multiparts); i++) {
+		    MIMEEntity *x = gwlist_get(e->multiparts, i);
+		    if (cid_matches(x->headers, start)) {
+			 e->start = x;
+			 break;
+		    }
+	       }
+	  
+	  if (ctype)
+	       octstr_destroy(ctype);
+	  if (start)
+	       octstr_destroy(start);
+     }
+     
+     return (e->start) ? mime_entity_duplicate(e->start) : NULL;
 }
 
 /********************************************************************

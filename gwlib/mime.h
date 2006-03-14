@@ -128,6 +128,8 @@ void mime_entity_remove_part(MIMEEntity *e, int i);
 /* Change body element of non-multipart entity. */
 void mime_entity_set_body(MIMEEntity *e, Octstr *body);
 
+/* Returns (copy of) the 'start' element of a multi-part entity. */
+MIMEEntity *mime_multipart_start_elem(MIMEEntity *e);
 
 /*
  * Parse the given Octstr that contains a normative text representation
