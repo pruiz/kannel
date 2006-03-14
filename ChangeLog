@@ -1,4 +1,11 @@
 2006-03-14  Alexander Malysh <amalysh at kannel.org>
+  * gw/smsc/smpp_pdu.def: fixed #317. SMPP v3.4 defines that validity_period
+    and schedule_delivery_time unused in deliver_sm but SMPP v3.3 states that
+    parameters for the deliver_sm are the same as for submit_sm. So make length
+    of validity_period and schedule_delivery_time 17 as for submit_sm. It doesn't
+    break SMPP v3.4 clients because these values are NULTERMINATED.
+
+2006-03-14  Alexander Malysh <amalysh at kannel.org>
   * gwlib/mime.[ch]: minimal additional patch for the mime module, to allow
     client/user access to the start element.
     Thanks to Paul Bagyenda <bagyenda at dsmagic.com> for provided patch.
