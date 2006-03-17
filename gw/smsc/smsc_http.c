@@ -137,6 +137,7 @@ typedef struct conndata {
     long open_sends;
     Octstr *username;   /* if needed */
     Octstr *password;   /* as said */
+    Octstr *system_id;	/* api id for clickatell */
     int no_sender;      /* ditto */
     int no_coding;      /* this, too */
     int no_sep;         /* not to mention this */
@@ -162,6 +163,7 @@ static void conndata_destroy(ConnData *conndata)
     octstr_destroy(conndata->username);
     octstr_destroy(conndata->password);
     octstr_destroy(conndata->proxy);
+    octstr_destroy(conndata->system_id);
 
     gw_free(conndata);
 }
@@ -503,6 +505,239 @@ static void kannel_receive_sms(SMSCConn *conn, HTTPClient *client,
     debug("smsc.http.kannel", 0, "HTTP[%s]: Sending reply",
           octstr_get_cstr(conn->id));
     http_send_reply(client, HTTP_ACCEPTED, reply_headers, retmsg);
+
+    octstr_destroy(retmsg);
+    http_destroy_headers(reply_headers);
+}
+
+
+/*----------------------------------------------------------------
+ * Clickatell - http://api.clickatell.com/
+ *
+ * Rene Kluwen <rene.kluwen@chimit.nl>
+ */
+
+/* MT related function */
+static void clickatell_send_sms(SMSCConn *conn, Msg *sms)
+{
+    ConnData *conndata = conn->data;
+    Octstr *url;
+    List *headers;
+
+    /* form the basic URL */
+    url = octstr_format("%S/sendmsg?to=%E&from=%E&api_id=%E&user=%E&password=%E",
+        conndata->send_url, sms->sms.receiver, sms->sms.sender, conndata->system_id, conndata->username, conndata->password);
+    
+    /* 
+     * We use &binfo=<foobar> from sendsms interface to encode
+     * additional paramters. If a mandatory value is not set,
+     * a default value is applied
+     */
+    if (octstr_len(sms->sms.binfo)) {
+        octstr_url_decode(sms->sms.binfo);
+        octstr_format_append(url, "&%S", sms->sms.binfo);
+    }
+
+    /* add UDH header */
+    if (octstr_len(sms->sms.udhdata)) {
+        octstr_format_append(url, "&data=%H", sms->sms.msgdata);
+        octstr_format_append(url, "&udh=%H", sms->sms.udhdata);
+    } else {
+        octstr_format_append(url, "&text=%E", sms->sms.msgdata);
+    }
+
+    if (DLR_IS_ENABLED_DEVICE(sms->sms.dlr_mask))
+	octstr_format_append(url, "&callback=3&deliv_ack=1");
+
+    headers = http_create_empty_headers();
+    debug("smsc.http.clickatell", 0, "HTTP[%s]: Sending request <%s>",
+          octstr_get_cstr(conn->id), octstr_get_cstr(url));
+
+    /* 
+     * Clickatell requires optionally an SSL-enabled HTTP client call, this is handled
+     * transparently by the Kannel HTTP layer module.
+     */
+    http_start_request(conndata->http_ref, HTTP_METHOD_GET, url, headers, NULL, 0, sms, NULL);
+
+    octstr_destroy(url);
+    http_destroy_headers(headers);
+}
+
+
+/*
+ * Parse a line in the format: ID: XXXXXXXXXXXXXXXXXX
+ * and return a Dict with the 'ID' as key and the value as value,
+ * otherwise return NULL if a parsing error occures.
+ */
+static Dict *clickatell_parse_body(Octstr *body)
+{
+    Dict *param = NULL;
+    List *words = NULL;
+    long len;
+    Octstr *word, *value;
+
+    words = octstr_split_words(body);
+    if ((len = gwlist_len(words)) > 1) {
+	word = gwlist_extract_first(words);
+	if (octstr_compare(word, octstr_imm("ID:")) == 0) {
+	    value = gwlist_extract_first(words);
+	    param = dict_create(4, NULL);
+	    dict_put(param, octstr_imm("ID"), value);
+	} else if (octstr_compare(word, octstr_imm("ERR:")) == 0) {
+	    value = gwlist_extract_first(words);
+	    param = dict_create(4, NULL);
+	    dict_put(param, octstr_imm("ERR"), value);
+	}
+        octstr_destroy(word);
+    }
+    gwlist_destroy(words, (void(*)(void *)) octstr_destroy);
+
+    return param;
+}
+
+
+static void clickatell_parse_reply(SMSCConn *conn, Msg *msg, int status,
+                               List *headers, Octstr *body)
+{
+    if (status == HTTP_OK || status == HTTP_ACCEPTED) {
+        Dict *param;
+        Octstr *status, *msgid;
+
+        if ((param = clickatell_parse_body(body)) != NULL &&
+            (msgid = dict_get(param, octstr_imm("ID"))) != NULL &&
+            msgid != NULL) {
+
+            /* SMSC ACK.. now we have the message id. */
+            if (DLR_IS_ENABLED_DEVICE(msg->sms.dlr_mask))
+                dlr_add(conn->id, msgid, msg);
+
+            bb_smscconn_sent(conn, msg, NULL);
+
+        } else {
+            error(0, "HTTP[%s]: Message was malformed or error was returned. SMSC response `%s'.",
+                  octstr_get_cstr(conn->id), octstr_get_cstr(body));
+            bb_smscconn_send_failed(conn, msg, SMSCCONN_FAILED_MALFORMED, octstr_duplicate(body));
+        }
+        dict_destroy(param);
+
+    } else {
+        error(0, "HTTP[%s]: Message was rejected. SMSC reponse `%s'.",
+              octstr_get_cstr(conn->id), octstr_get_cstr(body));
+        bb_smscconn_send_failed(conn, msg,
+	            SMSCCONN_FAILED_REJECTED, octstr_duplicate(body));
+    }
+}
+
+/* MO related function */
+static void clickatell_receive_sms(SMSCConn *conn, HTTPClient *client,
+                               List *headers, Octstr *body, List *cgivars)
+{
+    ConnData *conndata = conn->data;
+    List *reply_headers;
+    int ret;
+    Octstr *apimsgid, *status, *timestamp, *retmsg, *dest, *charge;
+    Octstr *api_id, *from, *to, *text, *charset, *udh;
+    int httpstatus = HTTP_UNAUTHORIZED, dlrstat;
+    Msg *dlrmsg, *momsg;
+    struct tm tm;
+
+    /* dlr parameters */
+    apimsgid = http_cgi_variable(cgivars, "apiMsgId");
+    status = http_cgi_variable(cgivars, "status");
+    /* timestamp is for both DLR & MO */
+    timestamp = http_cgi_variable(cgivars, "timestamp");
+    dest = http_cgi_variable(cgivars, "to");
+    charge = http_cgi_variable(cgivars, "charge");
+    /* MO parameters */
+    api_id = http_cgi_variable(cgivars, "api_id");
+    from = http_cgi_variable(cgivars, "from");
+    to = http_cgi_variable(cgivars, "to");
+    text = http_cgi_variable(cgivars, "text");
+    charset = http_cgi_variable(cgivars, "charset");
+    udh = http_cgi_variable(cgivars, "udh");
+
+    debug("smsc.http.clickatell", 0, "HTTP[%s]: Received a request",
+          octstr_get_cstr(conn->id));
+ 
+    if (api_id != NULL && from != NULL && to != NULL && timestamp != NULL && text != NULL && charset != NULL && udh != NULL) {
+	/* we received an MO message */
+	info(0, "Received MO message from %s: <%s>", octstr_get_cstr(from), octstr_get_cstr(text));
+	momsg = msg_create(sms);
+	momsg->sms.sms_type = mo;
+	momsg->sms.sender = octstr_duplicate(from);
+	momsg->sms.receiver = octstr_duplicate(to);
+	momsg->sms.msgdata = octstr_duplicate(text);
+	momsg->sms.charset = octstr_duplicate(charset);
+	momsg->sms.binfo = octstr_duplicate(api_id);
+	if (octstr_len(udh) > 0) {
+	    momsg->sms.udhdata = octstr_duplicate(udh);
+	}
+        strptime(octstr_get_cstr(timestamp), "%Y-%m-%d %H:%M:%S", &tm);
+        momsg->sms.time = gw_mktime(&tm);
+ 
+	/* note: implicit msg_destroy */
+	ret = bb_smscconn_receive(conn, momsg);
+	retmsg = octstr_create("Thanks");
+    } else if (apimsgid == NULL || status == NULL || timestamp == NULL || dest == NULL) {
+        error(0, "HTTP[%s]: Insufficient args.",
+              octstr_get_cstr(conn->id));
+        retmsg = octstr_create("Insufficient arguments, rejected.");
+    } else {
+	switch (atoi(octstr_get_cstr(status))) {
+	case  1: /* message unknown */
+	case  5: /* error with message */
+	case  6: /* user cancelled message */
+	case  7: /* error delivering message */
+	case  9: /* routing error */
+	case 10: /* message expired */
+	    dlrstat = 2; /* delivery failure */
+	    break;
+	case  2: /* message queued */
+	case  3: /* delivered */
+	case 11: /* message queued for later delivery */
+	    dlrstat = 4; /* message buffered */
+	    break;
+	case  4: /* received by recipient */
+	case  8: /* OK */
+	    dlrstat = 1; /* message received */
+	    break;
+	default: /* unknown status code */
+	    dlrstat = 16; /* smsc reject */
+	    break;
+	}
+        dlrmsg = dlr_find(conn->id,
+            apimsgid, /* smsc message id */
+            dest , /* destination */
+            dlrstat);
+
+        if (dlrmsg != NULL) {
+            /* dlrmsg->sms.msgdata = octstr_duplicate(apimsgid); */
+            dlrmsg->sms.sms_type = report_mo;
+	    dlrmsg->sms.time = atoi(octstr_get_cstr(timestamp));
+	    if (charge) {
+		/* unsure if smsbox relays the binfo field to dlrs.
+		   But it is here in case they will start to do it. */
+		dlrmsg->sms.binfo = octstr_duplicate(charge);
+	    }
+            
+            ret = bb_smscconn_receive(conn, dlrmsg);
+            httpstatus = (ret == 0 ? HTTP_OK : HTTP_FORBIDDEN);
+            retmsg = octstr_create("Sent");
+        } else {
+            error(0,"HTTP[%s]: got DLR but could not find message or was not interested "
+                    "in it id<%s> dst<%s>, type<%d>",
+            octstr_get_cstr(conn->id), octstr_get_cstr(apimsgid),
+            octstr_get_cstr(dest), dlrstat);
+            httpstatus = HTTP_OK;
+            retmsg = octstr_create("Thanks");
+        }
+    }
+
+    reply_headers = gwlist_create();
+    http_header_add(reply_headers, "Content-Type", "text/plain");
+    debug("smsc.http.clickatell", 0, "HTTP[%s]: Sending reply `%s'.",
+          octstr_get_cstr(conn->id), octstr_get_cstr(retmsg));
+    http_send_reply(client, httpstatus, reply_headers, retmsg);
 
     octstr_destroy(retmsg);
     http_destroy_headers(reply_headers);
@@ -1135,6 +1370,7 @@ int smsc_http_create(SMSCConn *conn, CfgGroup *cfg)
     conndata->send_url = cfg_get(cfg, octstr_imm("send-url"));
     conndata->username = cfg_get(cfg, octstr_imm("smsc-username"));
     conndata->password = cfg_get(cfg, octstr_imm("smsc-password"));
+    conndata->system_id = cfg_get(cfg, octstr_imm("system-id"));
     cfg_get_bool(&conndata->no_sender, cfg, octstr_imm("no-sender"));
     cfg_get_bool(&conndata->no_coding, cfg, octstr_imm("no-coding"));
     cfg_get_bool(&conndata->no_sep, cfg, octstr_imm("no-sep"));
@@ -1188,6 +1424,11 @@ int smsc_http_create(SMSCConn *conn, CfgGroup *cfg)
         conndata->receive_sms = kannel_receive_sms; /* emulate sendsms interface */
         conndata->send_sms = wapme_smsproxy_send_sms;
         conndata->parse_reply = wapme_smsproxy_parse_reply;
+    }
+    else if (octstr_case_compare(type, octstr_imm("clickatell")) == 0) {
+	conndata->receive_sms = clickatell_receive_sms;
+	conndata->send_sms = clickatell_send_sms;
+	conndata->parse_reply = clickatell_parse_reply;
     }
     /*
      * ADD NEW HTTP SMSC TYPES HERE

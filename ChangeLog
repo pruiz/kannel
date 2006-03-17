@@ -1,4 +1,8 @@
-2006-03-14  Alexander Malysh <amalysh at kannel.org>
+2006-03-17  Alexander Malysh <amalysh at kannel.org>
+  * gw/smsc/smsc_http.c: Feature add #322. Added Clickatell HTTP interface.
+    Thanks to Rene Kluwen <rene.kluwen at chimit.nl> for provided patch.
+
+2006-03-17  Alexander Malysh <amalysh at kannel.org>
   * gwlib/octstr.c: Fixed #323.
     Thanks to Rene Kluwen <rene.kluwen at chimit.nl> for provided patch.
 
