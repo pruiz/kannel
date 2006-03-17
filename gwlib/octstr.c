@@ -2308,7 +2308,7 @@ static void convert(Octstr *os, struct format *format, const char **fmt,
     case 'S':
         new = octstr_duplicate(va_arg(VALST(args), Octstr *));
         if (!new)
-            new = octstr_imm("(null)");
+            new = octstr_create("(null)");
         if (format->has_prec)
             octstr_truncate(new, format->prec);
         break;
@@ -2316,7 +2316,7 @@ static void convert(Octstr *os, struct format *format, const char **fmt,
     case 'E':
         new = octstr_duplicate(va_arg(VALST(args), Octstr *));
         if (!new)
-            new = octstr_imm("(null)");
+            new = octstr_create("(null)");
         octstr_url_encode(new);
         /*
          * note: we use blind truncate - encoded character can get cut half-way.
@@ -2328,7 +2328,7 @@ static void convert(Octstr *os, struct format *format, const char **fmt,
     case 'H':
         new = octstr_duplicate(va_arg(VALST(args), Octstr *));
         if (!new)
-            new = octstr_imm("(null)");
+            new = octstr_create("(null)");
         /* upper case */
         octstr_binary_to_hex(new, 1);
         if (format->has_prec)
@@ -2336,7 +2336,7 @@ static void convert(Octstr *os, struct format *format, const char **fmt,
         break;
 
     case '%':
-    	new = octstr_imm("%");
+    	new = octstr_create("%");
     	break;
 
     default:
