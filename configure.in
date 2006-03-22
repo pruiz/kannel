@@ -218,8 +218,8 @@ AC_TRY_COMPILE(, [char *func = __func__;],
 dnl Checks for library functions.
 
 AC_CHECK_FUNCS(gettimeofday select socket strdup getopt_long localtime_r gmtime_r backtrace srandom)
-AC_CHECK_FUNC(getopt, , LIBOBJS="$LIBOBJS utils/attgetopt.o")
-AC_SUBST(LIBOBJS)
+AC_CHECK_FUNC(getopt, , LIBOBJ="$LIBOBJ utils/attgetopt.o")
+AC_SUBST(LIBOBJ)
 
 dnl Check if we have reentrant gethostbyname and which one
 AC_CHECK_FUNC(gethostbyname_r, [ AC_FUNC_WHICH_GETHOSTBYNAME_R ], [

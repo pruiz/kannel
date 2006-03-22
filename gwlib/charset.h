@@ -76,8 +76,8 @@
 #ifndef CHARSET_H
 #define CHARSET_H
 
-#include <libxml2/libxml/encoding.h>
-#include <libxml2/libxml/tree.h>
+#include <libxml/encoding.h>
+#include <libxml/tree.h>
 
 /*
  * Initialize the charset subsystem.
