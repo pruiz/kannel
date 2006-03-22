@@ -1,4 +1,7 @@
-
+2006-03-22  Stipe Tolj  <stolj at kannel.org>
+  * configure[.in], gwlib/charset.h: reverting Andreas commit regarding
+    libxml2 header due to -1 veto vote by Alex and Stipe.
+  
 2006-03-17  Alexander Malysh <amalysh at kannel.org>
   * gw/smsc/smsc_http.c: Feature add #322. Added Clickatell HTTP interface.
     Thanks to Rene Kluwen <rene.kluwen at chimit.nl> for provided patch.
