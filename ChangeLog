@@ -1,3 +1,9 @@
+2006-03-22 Andreas Fink <andreas@fink.org>
+  * gwlib/charset.h:
+    changed libxml include from libxml/*.h to libxml2/libxml/*.h
+    this will make it work on systems where /usr/include/libxml2 is not in
+    the search path automatically.
+
 2006-03-17  Alexander Malysh <amalysh at kannel.org>
   * gw/smsc/smsc_http.c: Feature add #322. Added Clickatell HTTP interface.
     Thanks to Rene Kluwen <rene.kluwen at chimit.nl> for provided patch.
