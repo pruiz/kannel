@@ -1,3 +1,7 @@
+2006-03-13  Alexander Malysh <amalysh at kannel.org>
+  * configure.in: added AC_C_INLINE check again. That was wrongly reverted
+    with a last commit from Stipe.
+
 2006-03-22  Stipe Tolj  <stolj at kannel.org>
   * configure[.in], gwlib/charset.h: reverting Andreas commit regarding
     libxml2 header due to -1 veto vote by Alex and Stipe.
