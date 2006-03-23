@@ -921,7 +921,7 @@ static void smsboxc_run(void *arg)
 
     gwlist_add_producer(flow_threads);
     gwthread_wakeup(MAIN_THREAD_ID);
-    port = (int)arg;
+    port = (int) *((long *)arg);
     
     fd = make_server_socket(port, NULL); 
     /* XXX add interface_name if required */
@@ -977,7 +977,7 @@ static void wapboxc_run(void *arg)
 
     gwlist_add_producer(flow_threads);
     gwthread_wakeup(MAIN_THREAD_ID);
-    port = (int)arg;
+    port = (int) *((long*)arg);
     
     fd = make_server_socket(port, NULL);
     	/* XXX add interface_name if required */
@@ -1137,7 +1137,7 @@ int smsbox_start(Cfg *cfg)
     if ((sms_dequeue_thread = gwthread_create(sms_to_smsboxes, NULL)) == -1)
  	    panic(0, "Failed to start a new thread for smsbox routing");
 
-    if (gwthread_create(smsboxc_run, (void *)smsbox_port) == -1)
+    if (gwthread_create(smsboxc_run, &smsbox_port) == -1)
 	    panic(0, "Failed to start a new thread for smsbox connections");
 
     return 0;
@@ -1192,7 +1192,7 @@ int wapbox_start(Cfg *cfg)
     if (gwthread_create(wdp_to_wapboxes, NULL) == -1)
  	    panic(0, "Failed to start a new thread for wapbox routing");
  
-    if (gwthread_create(wapboxc_run, (void *)wapbox_port) == -1)
+    if (gwthread_create(wapboxc_run, &wapbox_port) == -1)
 	    panic(0, "Failed to start a new thread for wapbox connections");
 
     wapbox_running = 1;

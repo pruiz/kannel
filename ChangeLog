@@ -1,4 +1,8 @@
-2006-03-13  Alexander Malysh <amalysh at kannel.org>
+2006-03-23  Alexander Malysh <amalysh at kannel.org>
+  * gw/bb_boxc.c: fixed compiler warning in function when using 64bit system.
+    Thanks to Vincent CHAVANIS <vincent at telemaque.fr> for pointing to this.
+
+2006-03-23  Alexander Malysh <amalysh at kannel.org>
   * configure.in: added AC_C_INLINE check again. That was wrongly reverted
     with a last commit from Stipe.
 
