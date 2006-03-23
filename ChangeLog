@@ -1,4 +1,9 @@
 2006-03-23  Alexander Malysh <amalysh at kannel.org>
+  * gwlib/http.c: fixed non conformance to RFC when client sends wrong request
+    we just closed socket. With this change we return HTTP 400 Bad request error.
+    Thanks to Dziugas Baltrunas <dziugas at gmail.com> fo pointing to this.
+
+2006-03-23  Alexander Malysh <amalysh at kannel.org>
   * gw/bb_boxc.c: fixed compiler warning in function when using 64bit system.
     Thanks to Vincent CHAVANIS <vincent at telemaque.fr> for pointing to this.
 

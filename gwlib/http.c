@@ -2097,8 +2097,18 @@ static void receive_request(Connection *conn, void *data)
 	    ret = parse_request_line(&client->method, &client->url,
                                      &client->use_version_1_0, line);
 	    octstr_destroy(line);
-	    if (ret == -1)
-	    	goto error;
+            /* client sent bad request? */
+	    if (ret == -1) {
+                /*
+                 * mark client as not persistent in order to destroy connection
+                 * afterwards
+                 */
+                client->persistent_conn = 0;
+                /* unregister connection, http_send_reply handle this */
+                conn_unregister(conn);
+                http_send_reply(client, HTTP_BAD_REQUEST, NULL, NULL);
+                return;
+            }
    	    /*
 	     * RFC2616 (4.3) says we should read a message body if there
 	     * is one, even on GET requests.
