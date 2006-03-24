@@ -72,25 +72,26 @@ typedef enum {
     WSP_1_3 = 3, 
     WSP_1_4 = 4,
     WSP_1_5 = 5,
+    WSP_1_6 = 6,
 } wsp_encoding;
 
 /* See Table 35 of the WSP standard */
 enum wsp_abort_values {
-	WSP_ABORT_PROTOERR = 0xe0,
-	WSP_ABORT_DISCONNECT = 0xe1,
-	WSP_ABORT_SUSPEND = 0xe2,
-	WSP_ABORT_RESUME = 0xe3,
-	WSP_ABORT_CONGESTION = 0xe4,
-	WSP_ABORT_CONNECTERR = 0xe5,
-	WSP_ABORT_MRUEXCEEDED = 0xe6,
-	WSP_ABORT_MOREXCEEDED = 0xe7,
-	WSP_ABORT_PEERREQ = 0xe8,
-	WSP_ABORT_NETERR = 0xe9,
-	WSP_ABORT_USERREQ = 0xea,
-        WSP_ABORT_USERRFS = 0xeb,
-        WSP_ABORT_USERPND = 0xec,
-        WSP_ABORT_USERDCR = 0xed,
-        WSP_ABORT_USERDCU = 0xee
+    WSP_ABORT_PROTOERR = 0xe0,
+    WSP_ABORT_DISCONNECT = 0xe1,
+    WSP_ABORT_SUSPEND = 0xe2,
+    WSP_ABORT_RESUME = 0xe3,
+    WSP_ABORT_CONGESTION = 0xe4,
+    WSP_ABORT_CONNECTERR = 0xe5,
+    WSP_ABORT_MRUEXCEEDED = 0xe6,
+    WSP_ABORT_MOREXCEEDED = 0xe7,
+    WSP_ABORT_PEERREQ = 0xe8,
+    WSP_ABORT_NETERR = 0xe9,
+    WSP_ABORT_USERREQ = 0xea,
+    WSP_ABORT_USERRFS = 0xeb,
+    WSP_ABORT_USERPND = 0xec,
+    WSP_ABORT_USERDCR = 0xed,
+    WSP_ABORT_USERDCU = 0xee
 };
 
 

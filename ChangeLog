@@ -1,3 +1,6 @@
+2006-03-24  Stipe Tolj  <stolj at kannel.org>
+  * wap/wsp.h, wap/wsp_strings.def: adding new WSP 1.6 headers. NLC.
+
 2006-03-23  Alexander Malysh <amalysh at kannel.org>
   * gwlib/http.c: fixed non conformance to RFC when client sends wrong request
     we just closed socket. With this change we return HTTP 400 Bad request error.

@@ -177,6 +177,8 @@ VNSTRING(WSP_1_4, "Profile-Warning", WSP_HEADER_PROFILE_WARNING_V14)
 VNSTRING(WSP_1_4, "Content-Disposition", WSP_HEADER_CONTENT_DISPOSITION_V14)
 VNSTRING(WSP_1_4, "X-WAP-Security", WSP_HEADER_X_WAP_SECURITY)
 VNSTRING(WSP_1_4, "Cache-Control", WSP_HEADER_CACHE_CONTROL_V14)
+VNSTRING(WSP_1_5, "X-Wap-Loc-Invocation", WSP_HEADER_X_WAP_LOC_INVOCATION)
+VNSTRING(WSP_1_5, "X-Wap-Loc-Delivery", WSP_HEADER_X_WAP_LOC_DELIVERY)
 )
 
 /* Table 40. Well Known WSP Content Type Codes Assignments. 
@@ -264,7 +266,9 @@ VSTRING(WSP_1_5, "application/vnd.oma.drm.rights+xml")
 VSTRING(WSP_1_5, "application/vnd.oma.drm.rights+wbxml")
 VSTRING(WSP_1_5, "application/vnd.wv.csp+xml")
 VSTRING(WSP_1_5, "application/vnd.wv.csp+wbxml")
-VSTRING(WSP_1_5, "application/vnd.syncml.ds.notification") 
+VSTRING(WSP_1_5, "application/vnd.syncml.ds.notification")
+VSTRING(WSP_1_6, "audio/*")
+VSTRING(WSP_1_6, "video/*") 
 )
 
 /* Registered WSP Content Type Codes Assignments. 
@@ -300,6 +304,8 @@ ASSIGN("application/vnd.motorola.screen3+xml", 0x030C)
 ASSIGN("application/vnd.motorola.screen3+gzip", 0x030D)
 ASSIGN("application/vnd.cmcc.setting+wbxml", 0x030E)
 ASSIGN("application/vnd.cmcc.bombing+wbxml", 0x030F)
+ASSIGN("application/vnd.docomo.pf", 0x0310)
+ASSIGN("application/vnd.docomo.ub", 0x0311)
 )
 
 /* Table 42, Character Set Assignment (partial) */
@@ -553,6 +559,7 @@ ASSIGN("DELETE", 0x43)
 ASSIGN("TRACE", 0x44)
 ASSIGN("POST", 0x60)
 ASSIGN("PUT", 0x61)
+ASSIGN("DATA", 0x80)
 )
 
 /* Connection-value tokens, from section 8.4.2.16 */
