@@ -1,4 +1,14 @@
 2006-03-28  Alexander Malysh <amalysh at kannel.org>
+  * gw/smsbox.c: applied patch fixes race condition for the case when
+    immediate-sendsms-reply=false (which is default). In this case we
+    put uuid into store dictionary after we sent message to bearerbox.
+    Then another thread which does read_from_bearerbox tried to delete
+    not yet existant uuid from store dirctionary which leads to stale
+    sendsms clients.
+    Thanks to Dziugas Baltrunas <dziugas at gmail.com> for patch.
+    [Msg-Id: <943470880603231203hd97b1e5nffff4c8b2c455358@mail.gmail.com>]
+
+2006-03-28  Alexander Malysh <amalysh at kannel.org>
   * gw/smsc/smsc_http.c: patch sets the smsc_id in incoming messages.
     Otherwise, they are unable to be routed (smsbox_list empty).
     Thanks to Rene Kluwen <rene.kluwen at chimit.nl>.

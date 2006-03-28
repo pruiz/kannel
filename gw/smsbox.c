@@ -1963,7 +1963,7 @@ static Octstr* store_uuid(Msg *msg)
 
 
 static Octstr *smsbox_req_handle(URLTranslation *t, Octstr *client_ip,
-				 Octstr **stored_uuid,
+				 HTTPClient *client,
 				 Octstr *from, Octstr *to, Octstr *text, 
 				 Octstr *charset, Octstr *udh, Octstr *smsc,
 				 int mclass, int mwi, int coding, int compress, 
@@ -1974,6 +1974,7 @@ static Octstr *smsbox_req_handle(URLTranslation *t, Octstr *client_ip,
 {				     
     Msg *msg = NULL;
     Octstr *newfrom, *returnerror, *receiv;
+    Octstr *stored_uuid = NULL;
     List *failed_id, *allowed, *denied;
     int no_recv, ret = 0, i;
     long del;
@@ -2297,6 +2298,11 @@ static Octstr *smsbox_req_handle(URLTranslation *t, Octstr *client_ip,
      */
     failed_id = gwlist_create();
 
+    if (!immediate_sendsms_reply) {
+        stored_uuid = store_uuid(msg);
+        dict_put(client_dict, stored_uuid, client);
+    }
+
     while ((receiv = gwlist_extract_first(allowed)) != NULL) {
 
 	O_DESTROY(msg->sms.receiver);
@@ -2318,13 +2324,6 @@ static Octstr *smsbox_req_handle(URLTranslation *t, Octstr *client_ip,
 	             udh == NULL ? ( text == NULL ? "" : octstr_get_cstr(text) ) : "<< UDH >>");
         }
     }
-    /* Store id if needed for a delayed HTTP reply */
-
-    if (!immediate_sendsms_reply) {
-	*stored_uuid = store_uuid(msg);
-    }
-    
-
 
     msg_destroy(msg);
     gwlist_destroy(receiver, octstr_destroy_item);
@@ -2382,6 +2381,8 @@ error:
     octstr_destroy(from);
     *status = HTTP_INTERNAL_SERVER_ERROR;
     returnerror = octstr_create("Sending failed.");
+    if (!immediate_sendsms_reply)
+        dict_remove(client_dict, stored_uuid);
 
     /* 
      * Append all receivers to the returned body in case this is
@@ -2394,6 +2395,8 @@ error:
         }
     }
 
+    if (stored_uuid)
+        octstr_destroy(stored_uuid);
     octstr_destroy(receiv); 
     gwlist_destroy(failed_id, octstr_destroy_item);
     gwlist_destroy(denied, octstr_destroy_item);
@@ -2475,7 +2478,7 @@ static URLTranslation *authorise_user(List *list, Octstr *client_ip)
  * Args: args contains the CGI parameters
  */
 static Octstr *smsbox_req_sendsms(List *args, Octstr *client_ip, int *status,
-				  Octstr **stored_uuid)
+				  HTTPClient *client)
 {
     URLTranslation *t = NULL;
     Octstr *tmp_string;
@@ -2573,7 +2576,7 @@ static Octstr *smsbox_req_sendsms(List *args, Octstr *client_ip, int *status,
 	return octstr_create("Empty receiver number not allowed, rejected");
     }
 
-    return smsbox_req_handle(t, client_ip, stored_uuid, from, to, text, charset, udh,
+    return smsbox_req_handle(t, client_ip, client, from, to, text, charset, udh,
 			     smsc, mclass, mwi, coding, compress, validity, 
 			     deferred, status, dlr_mask, dlr_url, account,
 			     pid, alt_dcs, rpi, NULL, binfo, priority);
@@ -2587,7 +2590,7 @@ static Octstr *smsbox_req_sendsms(List *args, Octstr *client_ip, int *status,
  */
 static Octstr *smsbox_sendsms_post(List *headers, Octstr *body,
 				   Octstr *client_ip, int *status,
-				   Octstr **stored_uuid)
+				   HTTPClient *client)
 {
     URLTranslation *t = NULL;
     Octstr *user, *pass, *ret, *type;
@@ -2683,7 +2686,7 @@ static Octstr *smsbox_sendsms_post(List *headers, Octstr *body,
 	}
 
 	if (ret == NULL)
-	    ret = smsbox_req_handle(t, client_ip, stored_uuid, from, to, body, charset,
+	    ret = smsbox_req_handle(t, client_ip, client, from, to, body, charset,
 				    udh, smsc, mclass, mwi, coding, compress, 
 				    validity, deferred, status, dlr_mask, 
 				    dlr_url, account, pid, alt_dcs, rpi, tolist,
@@ -2794,10 +2797,12 @@ static Octstr *smsbox_xmlrpc_post(List *headers, Octstr *body,
  * Args: list contains the CGI parameters
  */
 static Octstr *smsbox_req_sendota(List *list, Octstr *client_ip, int *status,
-				  Octstr **stored_uuid)
+				  HTTPClient *client)
 {
     Octstr *id, *from, *phonenumber, *smsc, *ota_doc, *doc_type, *account;
     CfgGroup *grp;
+    Octstr *returnerror;
+    Octstr *stored_uuid = NULL;
     List *grplist;
     Octstr *p;
     URLTranslation *t;
@@ -2949,21 +2954,29 @@ send:
     info(0, "%s <%s> <%s>", octstr_get_cstr(sendota_url), 
     	 id ? octstr_get_cstr(id) : "<default>", octstr_get_cstr(phonenumber));
 
+    if (!immediate_sendsms_reply) {
+        stored_uuid = store_uuid(msg);
+        dict_put(client_dict, stored_uuid, client);
+    }
+
     ret = send_message(t, msg); 
-    msg_destroy(msg);
 
     if (ret == -1) {
         error(0, "sendota_request: failed");
         *status = HTTP_INTERNAL_SERVER_ERROR;
-        return octstr_create("Sending failed.");
-    }
-    else if (!immediate_sendsms_reply) {
-	*stored_uuid = store_uuid(msg);
+        returnerror = octstr_create("Sending failed.");
+        dict_remove(client_dict, stored_uuid);
+    } else {
+        *status = HTTP_ACCEPTED;
+        returnerror = octstr_create("Sent.");
     }
 
-    
-    *status = HTTP_ACCEPTED;
-    return octstr_create("Sent.");
+    msg_destroy(msg);
+
+    if (stored_uuid)
+        octstr_destroy(stored_uuid);
+
+    return returnerror;
 }
 
 
@@ -2977,11 +2990,12 @@ send:
  */
 static Octstr *smsbox_sendota_post(List *headers, Octstr *body,
                                    Octstr *client_ip, int *status,
-				   Octstr **stored_uuid)
+				   HTTPClient *client)
 {
     Octstr *name, *val, *ret;
     Octstr *from, *to, *id, *user, *pass, *smsc;
     Octstr *type, *charset, *doc_type, *ota_doc, *sec, *pin;
+    Octstr *stored_uuid = NULL;
     URLTranslation *t;
     Msg *msg;
     long l;
@@ -3130,20 +3144,30 @@ static Octstr *smsbox_sendota_post(List *headers, Octstr *body,
 	    info(0, "%s <%s> <%s>", octstr_get_cstr(sendota_url), 
 		 id ? octstr_get_cstr(id) : "XML", octstr_get_cstr(to));
     
+
+        if (!immediate_sendsms_reply) {
+            stored_uuid = store_uuid(msg);
+            dict_put(client_dict, stored_uuid, client);
+        }
+
 	    r = send_message(t, msg); 
-	    msg_destroy(msg);
 
 	    if (r == -1) {
-		error(0, "sendota_request: failed");
-		*status = HTTP_INTERNAL_SERVER_ERROR;
-		ret = octstr_create("Sending failed.");
-	    }
-	    else if (!immediate_sendsms_reply) {
-		*stored_uuid = store_uuid(msg);
+            error(0, "sendota_request: failed");
+            *status = HTTP_INTERNAL_SERVER_ERROR;
+            ret = octstr_create("Sending failed.");
+            if (!immediate_sendsms_reply) 
+                dict_remove(client_dict, stored_uuid);
+       } else  {
+            *status = HTTP_ACCEPTED;
+            ret = octstr_create("Sent.");
 	    }
 
-	    *status = HTTP_ACCEPTED;
-	    ret = octstr_create("Sent.");
+       msg_destroy(msg);
+
+        if (stored_uuid)
+            octstr_destroy(stored_uuid);
+
 	}
     }    
     
@@ -3162,9 +3186,6 @@ static void sendsms_thread(void *arg)
     Octstr *ip, *url, *body, *answer;
     List *hdrs, *args;
     int status;
-    Octstr *stored_uuid;
-
-    stored_uuid = NULL;
     
     for (;;) {
     	client = http_accept_request(sendsms_port, &ip, &url, &hdrs, &body, 
@@ -3188,9 +3209,9 @@ static void sendsms_thread(void *arg)
 	 * related routine handle the checking
 	 */
 	if (body == NULL)
-	    answer = smsbox_req_sendsms(args, ip, &status, &stored_uuid);
+	    answer = smsbox_req_sendsms(args, ip, &status, client);
 	else
-	    answer = smsbox_sendsms_post(hdrs, body, ip, &status, &stored_uuid);
+	    answer = smsbox_sendsms_post(hdrs, body, ip, &status, client);
     }
     /* XML-RPC */
     else if (octstr_compare(url, xmlrpc_url) == 0)
@@ -3208,9 +3229,9 @@ static void sendsms_thread(void *arg)
     else if (octstr_compare(url, sendota_url) == 0)
     {
 	if (body == NULL)
-            answer = smsbox_req_sendota(args, ip, &status, &stored_uuid);
+            answer = smsbox_req_sendota(args, ip, &status, client);
         else
-            answer = smsbox_sendota_post(hdrs, body, ip, &status, &stored_uuid);
+            answer = smsbox_sendota_post(hdrs, body, ip, &status, client);
     }
     /* add aditional URI compares here */
     else {
@@ -3227,12 +3248,10 @@ static void sendsms_thread(void *arg)
 	octstr_destroy(body);
 	http_destroy_cgiargs(args);
 
-	if (immediate_sendsms_reply || status != HTTP_ACCEPTED || stored_uuid == NULL)
+	if (immediate_sendsms_reply || status != HTTP_ACCEPTED)
 	  http_send_reply(client, status, sendsms_reply_hdrs, answer);
 	else {
 	  debug("sms.http", 0, "Delayed reply - wait for bearerbox");
-	  dict_put(client_dict, stored_uuid, client);
-	  octstr_destroy(stored_uuid);
 	}
 	octstr_destroy(answer);
     }
