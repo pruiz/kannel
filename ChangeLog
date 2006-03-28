@@ -1,4 +1,10 @@
 2006-03-28  Alexander Malysh <amalysh at kannel.org>
+  * gw/smsc/smsc_http.c: patch sets the smsc_id in incoming messages.
+    Otherwise, they are unable to be routed (smsbox_list empty).
+    Thanks to Rene Kluwen <rene.kluwen at chimit.nl>.
+    [Msg-Id: <AFEHKJODIBGCKGHIDIPHIEBJCBAA.rene.kluwen@chimit.nl>]
+
+2006-03-28  Alexander Malysh <amalysh at kannel.org>
   * gw/shared.[ch], gw/smsbox.c, gw/wapbox.c, utils/mtbatch.c: changed
     call interface to read_from_box so that we can set timeout and
     differentiate error from timeout. See #321.

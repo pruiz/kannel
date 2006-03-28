@@ -669,6 +669,7 @@ static void clickatell_receive_sms(SMSCConn *conn, HTTPClient *client,
 	momsg->sms.msgdata = octstr_duplicate(text);
 	momsg->sms.charset = octstr_duplicate(charset);
 	momsg->sms.binfo = octstr_duplicate(api_id);
+        momsg->sms.smsc_id = octstr_duplicate(conn->id);
 	if (octstr_len(udh) > 0) {
 	    momsg->sms.udhdata = octstr_duplicate(udh);
 	}
