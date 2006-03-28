@@ -113,13 +113,13 @@ void close_connection_to_bearerbox(void);
 
 
 /*
- * Receive Msg from bearerbox. Unblock the call when the given
- * timeout for conn_wait() is reached. Use a negative value, 
- * ie. -1 for an infinite blocking, hence no timeout applies. 
- * Return NULL if connection broke or timed out.
+ * Receive and store Msg from bearerbox into msg. Unblock the call when
+ *  the given timeout for conn_wait() is reached. Use a negative value,
+ * ie. -1 for an infinite blocking, hence no timeout applies.
+ * Return 0 if Msg received ; -1 if error occurs; 1 if timedout.
  */
-Msg *read_from_bearerbox_real(Connection *conn, double seconds);
-Msg *read_from_bearerbox(double seconds);
+int read_from_bearerbox_real(Connection *conn, Msg **msg, double seconds);
+int read_from_bearerbox(Msg **msg, double seconds);
 
 
 /*

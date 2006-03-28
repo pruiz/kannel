@@ -189,13 +189,13 @@ void connect_to_bearerbox(Octstr *host, int port, int ssl, Octstr *our_host)
 void close_connection_to_bearerbox_real(Connection *conn)
 {
     conn_destroy(conn);
-    conn = NULL;
 }
 
 
 void close_connection_to_bearerbox(void)
 {
     close_connection_to_bearerbox_real(bb_conn);
+    bb_conn = NULL;
 }
 
 
@@ -242,13 +242,13 @@ int deliver_to_bearerbox(Msg *msg)
 }
                                            
 
-Msg *read_from_bearerbox_real(Connection *conn, double seconds)
+int read_from_bearerbox_real(Connection *conn, Msg **msg, double seconds)
 {
     int ret;
     Octstr *pack;
-    Msg *msg;
 
     pack = NULL;
+    *msg = NULL;
     while (program_status != shutting_down) {
         pack = conn_read_withlen(conn);
         gw_claim_area(pack);
@@ -256,41 +256,43 @@ Msg *read_from_bearerbox_real(Connection *conn, double seconds)
             break;
 
         if (conn_error(conn)) {
-            info(0, "Error reading from bearerbox, disconnecting.");
-            return NULL;
+            error(0, "Error reading from bearerbox, disconnecting.");
+            return -1;
         }
         if (conn_eof(conn)) {
-            info(0, "Connection closed by the bearerbox.");
-            return NULL;
+            error(0, "Connection closed by the bearerbox.");
+            return -1;
         }
 
         ret = conn_wait(conn, seconds);
         if (ret < 0) {
             error(0, "Connection to bearerbox broke.");
-            return NULL;
+            return -1;
         }
         else if (ret == 1) {
-            info(0, "Connection to bearerbox timed out after %.2f seconds.", seconds);
-            return NULL;
+            /* debug("gwlib.gwlib", 0, "Connection to bearerbox timed out after %.2f seconds.", seconds); */
+            return 1;
         }
     }
-    
-    if (pack == NULL)
-        return NULL;
 
-    msg = msg_unpack(pack);
+    if (pack == NULL)
+        return -1;
+
+    *msg = msg_unpack(pack);
     octstr_destroy(pack);
 
-    if (msg == NULL)
+    if (*msg == NULL) {
         error(0, "Failed to unpack data!");
+        return -1;
+    }
 
-    return msg;
+    return 0;
 }
 
 
-Msg *read_from_bearerbox(double seconds)
+int read_from_bearerbox(Msg **msg, double seconds)
 {
-    return read_from_bearerbox_real(bb_conn, seconds);
+    return read_from_bearerbox_real(bb_conn, msg, seconds);
 }
 
 

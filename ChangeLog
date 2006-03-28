@@ -1,10 +1,15 @@
+2006-03-28  Alexander Malysh <amalysh at kannel.org>
+  * gw/shared.[ch], gw/smsbox.c, gw/wapbox.c, utils/mtbatch.c: changed
+    call interface to read_from_box so that we can set timeout and
+    differentiate error from timeout. See #321.
+
 2006-03-24  Stipe Tolj  <stolj at kannel.org>
   * wap/wsp.h, wap/wsp_strings.def: adding new WSP 1.6 headers. NLC.
 
 2006-03-23  Alexander Malysh <amalysh at kannel.org>
   * gwlib/http.c: fixed non conformance to RFC when client sends wrong request
     we just closed socket. With this change we return HTTP 400 Bad request error.
-    Thanks to Dziugas Baltrunas <dziugas at gmail.com> fo pointing to this.
+    Thanks to Dziugas Baltrunas <dziugas at gmail.com> for pointing to this.
 
 2006-03-23  Alexander Malysh <amalysh at kannel.org>
   * gw/bb_boxc.c: fixed compiler warning in function when using 64bit system.

@@ -141,9 +141,14 @@ static void read_messages_from_bearerbox(void *arg)
     total_s = total_f = total_ft = total_b = 0;
     start = t = time(NULL);
     while (program_status != shutting_down) {
+        int ret;
         /* block infinite for reading messages */
-        msg = read_from_bearerbox(INFINITE_TIME);
-        if (msg == NULL)
+        ret = read_from_bearerbox(&msg, INFINITE_TIME);
+        if (ret == -1)
+            break;
+        else if (ret == 1) /* timeout */
+            continue;
+        else if (msg == NULL) /* just to be sure, may not happens */
             break;
 
         if (msg_type(msg) == admin) {

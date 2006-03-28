@@ -749,11 +749,16 @@ int main(int argc, char **argv)
 
     while (program_status != shutting_down) {
 	WAPEvent *dgram;
+        int ret;
 
-    /* block infinite for reading messages */
-	msg = read_from_bearerbox(INFINITE_TIME);
-	if (msg == NULL)
-	    break;
+        /* block infinite for reading messages */
+        ret = read_from_bearerbox(&msg, INFINITE_TIME);
+        if (ret == -1)
+            break;
+        else if (ret == 1) /* timeout */
+            continue;
+        else if (msg == NULL) /* just to be sure, may not happens */
+            break;
 	if (msg_type(msg) == admin) {
 	    if (msg->admin.command == cmd_shutdown) {
 		info(0, "Bearerbox told us to die");

@@ -224,14 +224,19 @@ static void read_messages_from_bearerbox(void)
     time_t start, t;
     int secs;
     int total = 0;
+    int ret;
     Msg *msg;
 
     start = t = time(NULL);
     while (program_status != shutting_down) {
-    /* block infinite for reading messages */
-	msg = read_from_bearerbox(INFINITE_TIME);
-	if (msg == NULL)
-	    break;
+        /* block infinite for reading messages */
+        ret = read_from_bearerbox(&msg, INFINITE_TIME);
+        if (ret == -1)
+            break;
+        else if (ret == 1) /* timeout */
+            continue;
+        else if (msg == NULL) /* just to be sure, may not happens */
+            break;
 
 	if (msg_type(msg) == admin) {
 	    if (msg->admin.command == cmd_shutdown) {
