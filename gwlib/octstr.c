@@ -2583,7 +2583,7 @@ int octstr_symbolize(Octstr *ostr)
 
 void octstr_delete_matching(Octstr *haystack, Octstr *needle)
 {
-    int p = -1;
+    int p = 0;
     long len;
 
     seems_valid(haystack);
@@ -2591,9 +2591,8 @@ void octstr_delete_matching(Octstr *haystack, Octstr *needle)
     gw_assert(!haystack->immutable);
     len = octstr_len(needle);
 
-    while ((p = octstr_search(haystack, needle, p + 1)) != -1) {
+    while ((p = octstr_search(haystack, needle, p)) != -1) {
         octstr_delete(haystack, p, len);
-        p -= len;
     }
 }
  

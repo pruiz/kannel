@@ -1,3 +1,7 @@
+2006-04-01  Alexander Malysh <amalysh at kannel.org>
+  * gwlib/octstr.c: fixed octstr_delete_matching. Don't know how it
+    worked before?!?
+
 2006-03-28  Alexander Malysh <amalysh at kannel.org>
   * gw/smsbox.c: applied patch fixes race condition for the case when
     immediate-sendsms-reply=false (which is default). In this case we
