@@ -1,4 +1,10 @@
 2006-04-01  Alexander Malysh <amalysh at kannel.org>
+  * gw/bb_smscconn.c, gw/smsbox.c, gw/smscconn.c, gw/urltrans.c,
+  * gw/wap_push_ppg_pushuser.c gwlib/http.c gwlib/regex.[ch]: get rid of
+    gw_regex_matches function because we already have gw_regex_match_pre with
+    the same functionality. Additionally fixed coding style mess in gw/urltrans.c.
+
+2006-04-01  Alexander Malysh <amalysh at kannel.org>
   * gwlib/octstr.c: fixed octstr_delete_matching. Don't know how it
     worked before?!?
 

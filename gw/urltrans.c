@@ -1241,87 +1241,74 @@ static int check_allowed_translation(URLTranslation *t,
     const int IS_ALLOWED = 0;
     const int NOT_ALLOWED = -1;
 
-	/* if smsc_id set and accepted_smsc exist, accept
-	 * translation only if smsc id is in accept string
-	 */
-	if (smsc && t->accepted_smsc) {
-        if (!gwlist_search(t->accepted_smsc, smsc, octstr_item_match))              
-            return NOT_ALLOWED;
-    };
-    if (smsc && t->accepted_smsc_regex)
-        if (gw_regex_matches( t->accepted_smsc_regex, smsc) == NO_MATCH)
-            return NOT_ALLOWED;
-
-	/* Have allowed for sender */
-	if (t->allowed_prefix && ! t->denied_prefix &&
-        (does_prefix_match(t->allowed_prefix, sender) != 1))
-            return NOT_ALLOWED;
-
-    if (t->allowed_prefix_regex && ! t->denied_prefix_regex) 
-        if (gw_regex_matches( t->allowed_prefix_regex, sender) == NO_MATCH)
-            return NOT_ALLOWED;
-
-	/* Have denied for sender */
-	if (t->denied_prefix && ! t->allowed_prefix &&
-    (does_prefix_match(t->denied_prefix, sender) == 1))
-    return NOT_ALLOWED;
-
-    if (t->denied_prefix_regex && ! t->allowed_prefix_regex)
-        if (gw_regex_matches( t->denied_prefix_regex, sender) == NO_MATCH)
-            return NOT_ALLOWED;
-
-	/* Have allowed for receiver */
-	if (t->allowed_recv_prefix && ! t->denied_recv_prefix &&
-    (does_prefix_match(t->allowed_recv_prefix, receiver) != 1))
-    return NOT_ALLOWED;
-
-    if (t->allowed_receiver_prefix_regex && ! t->denied_receiver_prefix_regex)
-    if (gw_regex_matches( t->allowed_receiver_prefix_regex, receiver) == NO_MATCH)
+    /* if smsc_id set and accepted_smsc exist, accept
+     * translation only if smsc id is in accept string
+     */
+    if (smsc && t->accepted_smsc && !gwlist_search(t->accepted_smsc, smsc, octstr_item_match))
         return NOT_ALLOWED;
 
-	/* Have denied for receiver */
-	if (t->denied_recv_prefix && ! t->allowed_recv_prefix &&
-    (does_prefix_match(t->denied_recv_prefix, receiver) == 1))
-    return NOT_ALLOWED;
-
-    if (t->denied_receiver_prefix_regex && ! t->allowed_receiver_prefix_regex)
-    if (gw_regex_matches( t->denied_receiver_prefix_regex, receiver) == NO_MATCH)
+    if (smsc && t->accepted_smsc_regex && gw_regex_match_pre( t->accepted_smsc_regex, smsc) == 0)
         return NOT_ALLOWED;
 
-	if (t->white_list &&
-	    numhash_find_number(t->white_list, sender) < 1) {
-    *reject = 1;
-    return NOT_ALLOWED;
-    }
+    /* Have allowed for sender */
+    if (t->allowed_prefix && !t->denied_prefix && does_prefix_match(t->allowed_prefix, sender) != 1)
+        return NOT_ALLOWED;
 
-    if (t->white_list_regex) 
-    if (gw_regex_matches( t->white_list_regex, sender) == NO_MATCH) {
+    if (t->allowed_prefix_regex && !t->denied_prefix_regex && gw_regex_match_pre(t->allowed_prefix_regex, sender) == 0)
+        return NOT_ALLOWED;
+
+    /* Have denied for sender */
+    if (t->denied_prefix && !t->allowed_prefix && does_prefix_match(t->denied_prefix, sender) == 1)
+        return NOT_ALLOWED;
+
+    if (t->denied_prefix_regex && !t->allowed_prefix_regex && gw_regex_match_pre(t->denied_prefix_regex, sender) == 1)
+        return NOT_ALLOWED;
+
+    /* Have allowed for receiver */
+    if (t->allowed_recv_prefix && !t->denied_recv_prefix && does_prefix_match(t->allowed_recv_prefix, receiver) != 1)
+        return NOT_ALLOWED;
+
+    if (t->allowed_receiver_prefix_regex && !t->denied_receiver_prefix_regex &&
+        gw_regex_match_pre(t->allowed_receiver_prefix_regex, receiver) == 0)
+        return NOT_ALLOWED;
+
+    /* Have denied for receiver */
+    if (t->denied_recv_prefix && !t->allowed_recv_prefix && does_prefix_match(t->denied_recv_prefix, receiver) == 1)
+        return NOT_ALLOWED;
+
+    if (t->denied_receiver_prefix_regex && !t->allowed_receiver_prefix_regex &&
+        gw_regex_match_pre(t->denied_receiver_prefix_regex, receiver) == 0)
+        return NOT_ALLOWED;
+
+    if (t->white_list && numhash_find_number(t->white_list, sender) < 1) {
         *reject = 1;
         return NOT_ALLOWED;
-	}   
-
-	if (t->black_list &&
-	    numhash_find_number(t->black_list, sender) == 1) {
-    *reject = 1;
-    return NOT_ALLOWED;
     }
 
-    if (t->black_list_regex) 
-    if (gw_regex_matches(t->black_list_regex, sender) == MATCH) {
+    if (t->white_list_regex && gw_regex_match_pre(t->white_list_regex, sender) == 0) {
         *reject = 1;
         return NOT_ALLOWED;
-	}   
+    }   
 
-	/* Have allowed and denied */
-	if (t->denied_prefix && t->allowed_prefix &&
-	   (does_prefix_match(t->allowed_prefix, sender) != 1) &&
-    (does_prefix_match(t->denied_prefix, sender) == 1) )
-    return NOT_ALLOWED;
+    if (t->black_list && numhash_find_number(t->black_list, sender) == 1) {
+        *reject = 1;
+        return NOT_ALLOWED;
+    }
 
-    if (t->denied_prefix_regex && t->allowed_prefix_regex
-    && (gw_regex_matches(t->allowed_prefix_regex, sender) == NO_MATCH)
-    && (gw_regex_matches(t->denied_prefix_regex, sender) == MATCH))
-    return NOT_ALLOWED;
+    if (t->black_list_regex && gw_regex_match_pre(t->black_list_regex, sender) == 1) {
+        *reject = 1;
+        return NOT_ALLOWED;
+    }   
+
+    /* Have allowed and denied */
+    if (t->denied_prefix && t->allowed_prefix && does_prefix_match(t->allowed_prefix, sender) != 1 &&
+        does_prefix_match(t->denied_prefix, sender) == 1)
+        return NOT_ALLOWED;
+
+    if (t->denied_prefix_regex && t->allowed_prefix_regex &&
+        gw_regex_match_pre(t->allowed_prefix_regex, sender) == 0 &&
+        gw_regex_match_pre(t->denied_prefix_regex, sender) == 1)
+        return NOT_ALLOWED;
 
     return IS_ALLOWED;
 };

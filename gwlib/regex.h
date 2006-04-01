@@ -85,11 +85,6 @@
  */
 #define REGEX_MAX_SUB_MATCH 10
 
-enum {
-    MATCH = 1,
-    NO_MATCH = -1
-};
-
 
 /*
  * Destroy a previously compiled regular expression.
@@ -192,12 +187,6 @@ Octstr *gw_regex_subst_pre_real(const regex_t *preg, const Octstr *os, const Oct
 #define gw_regex_subst_pre(preg, os, rule) \
     gw_regex_subst_pre_real(preg, os, rule, __FILE__, __LINE__, __func__)
 
-
-/*
- * checks whether or not a given Oct-string matches the regular expression.
- * returns MATCH on match otherwise NO_MATCH
- */
-int gw_regex_matches(const regex_t *preg, const Octstr *os);
 
 #endif
 #endif  /* REGEX_H */

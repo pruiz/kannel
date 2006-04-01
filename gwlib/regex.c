@@ -345,17 +345,5 @@ Octstr *gw_regex_subst_pre_real(const regex_t *preg, const Octstr *os, const Oct
     return result;
 }
 
-int gw_regex_matches(const regex_t *preg, const Octstr *os)
-{
-    size_t n = 1;
-    regmatch_t p[10];
-
-    gw_assert(os != NULL && preg != NULL);
-    
-    debug("", 0, "exec regex on string: %s", octstr_get_cstr(os));
-    return
-        (gw_regex_exec(preg, os, n, p, 0) == 0) ? MATCH : NO_MATCH;
-}
-
 #endif  /* HAVE_REGEX || HAVE_PCRE */
 

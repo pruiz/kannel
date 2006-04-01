@@ -252,8 +252,7 @@ static int proxy_used_for_host(Octstr *host, Octstr *url)
         }
     }
 
-    if (proxy_exceptions_regex != NULL &&
-        gw_regex_matches(proxy_exceptions_regex, url) == MATCH) {
+    if (proxy_exceptions_regex != NULL && gw_regex_match_pre(proxy_exceptions_regex, url)) {
             mutex_unlock(proxy_mutex);
             return 0;
     }

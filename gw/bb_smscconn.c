@@ -356,7 +356,7 @@ long bb_smscconn_receive(SMSCConn *conn, Msg *sms)
         return SMSCCONN_FAILED_REJECTED;
     }
 
-    if (white_list_regex && (gw_regex_matches(white_list_regex, sms->sms.sender) == NO_MATCH)) {
+    if (white_list_regex && gw_regex_match_pre(white_list_regex, sms->sms.sender) == 0) {
         info(0, "Number <%s> is not in white-list, message discarded",
              octstr_get_cstr(sms->sms.sender));
         bb_alog_sms(conn, sms, "REJECTED - not white-regex-listed SMS");
@@ -373,7 +373,7 @@ long bb_smscconn_receive(SMSCConn *conn, Msg *sms)
 	return SMSCCONN_FAILED_REJECTED;
     }
 
-    if (black_list_regex && (gw_regex_matches(black_list_regex, sms->sms.sender) == NO_MATCH)) {
+    if (black_list_regex && gw_regex_match_pre(black_list_regex, sms->sms.sender) == 0) {
         info(0, "Number <%s> is not in black-list, message discarded",
              octstr_get_cstr(sms->sms.sender));
         bb_alog_sms(conn, sms, "REJECTED - black-regex-listed SMS");

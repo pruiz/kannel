@@ -911,7 +911,7 @@ static int prefix_allowed(WAPPushUser *u, Octstr *number)
 
     /* note: country-prefix _must_be included in the pattern */
     if (u->denied_prefix_regex != NULL) 
-        if (gw_regex_matches(u->denied_prefix_regex, number) == MATCH)
+        if (gw_regex_match_pre(u->denied_prefix_regex, number) == 1)
             goto denied;
 
     if (u->allowed_prefix_regex == NULL && u->allowed_prefix == NULL) 
@@ -932,7 +932,7 @@ static int prefix_allowed(WAPPushUser *u, Octstr *number)
 
     /* note: country-prefix _must_ be included in the pattern */
     if (u->allowed_prefix_regex != NULL) 
-        if (gw_regex_matches(u->allowed_prefix_regex, number) == MATCH)
+        if (gw_regex_match_pre(u->allowed_prefix_regex, number) == 1)
             goto allowed;
 
 /*
@@ -968,7 +968,7 @@ static int whitelisted(WAPPushUser *u, Octstr *number)
         result = numhash_find_number(u->white_list, number);
 
     if ((result == 0) && (u->white_list_regex != NULL))
-        result = (gw_regex_matches(u->white_list_regex, number) == MATCH) ? 1 : 0;
+        result = gw_regex_match_pre(u->white_list_regex, number);
 
     return result;
 }
@@ -981,7 +981,7 @@ static int blacklisted(WAPPushUser *u, Octstr *number)
         result = numhash_find_number(u->black_list, number);
 
     if ((result == 0) && (u->black_list_regex != NULL))
-        result = (gw_regex_matches(u->black_list_regex, number) == MATCH) ? 1 : 0;
+        result = gw_regex_match_pre(u->black_list_regex, number);
 
     return result;
 }

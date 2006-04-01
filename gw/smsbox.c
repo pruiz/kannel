@@ -2040,7 +2040,7 @@ static Octstr *smsbox_req_handle(URLTranslation *t, Octstr *client_ip,
         }
 
         if (urltrans_white_list_regex(t) &&
-                gw_regex_matches(urltrans_white_list_regex(t), receiv) == NO_MATCH) {
+                gw_regex_match_pre(urltrans_white_list_regex(t), receiv) == 0) {
             info(0, "Number <%s> is not in white-list-regex, message discarded",
                  octstr_get_cstr(receiv));
             gwlist_append_unique(denied, receiv, octstr_item_match);
@@ -2058,7 +2058,7 @@ static Octstr *smsbox_req_handle(URLTranslation *t, Octstr *client_ip,
         }
 
         if (urltrans_black_list_regex(t) &&
-                gw_regex_matches(urltrans_black_list_regex(t), receiv) == MATCH) {
+                gw_regex_match_pre(urltrans_black_list_regex(t), receiv) == 1) {
             info(0, "Number <%s> is in black-list-regex, message discarded",
                  octstr_get_cstr(receiv));
             gwlist_append_unique(denied, receiv, octstr_item_match);
@@ -2077,7 +2077,7 @@ static Octstr *smsbox_req_handle(URLTranslation *t, Octstr *client_ip,
         }
 
         if (white_list_regex &&
-            gw_regex_matches(white_list_regex, receiv) == NO_MATCH) {
+            gw_regex_match_pre(white_list_regex, receiv) == 0) {
             info(0, "Number <%s> is not in global white-list-regex, message discarded",
                  octstr_get_cstr(receiv));
             gwlist_append_unique(denied, receiv, octstr_item_match);
@@ -2095,7 +2095,7 @@ static Octstr *smsbox_req_handle(URLTranslation *t, Octstr *client_ip,
         }
 
         if (black_list_regex &&
-            gw_regex_matches(black_list_regex, receiv) == MATCH) {
+            gw_regex_match_pre(black_list_regex, receiv) == 1) {
             info(0, "Number <%s> is in global black-list-regex, message discarded",
                  octstr_get_cstr(receiv));
             gwlist_append_unique(denied, receiv, octstr_item_match);

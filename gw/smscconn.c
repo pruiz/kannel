@@ -431,11 +431,11 @@ int smscconn_usable(SMSCConn *conn, Msg *msg)
         if (msg->sms.smsc_id == NULL)
             return -1;
         
-        if (gw_regex_matches(conn->allowed_smsc_id_regex, msg->sms.smsc_id) == NO_MATCH) 
+        if (gw_regex_match_pre(conn->allowed_smsc_id_regex, msg->sms.smsc_id) == 0) 
             return -1;
     }
     else if (conn->denied_smsc_id_regex && msg->sms.smsc_id != NULL) {
-        if (gw_regex_matches(conn->denied_smsc_id_regex, msg->sms.smsc_id) == MATCH) 
+        if (gw_regex_match_pre(conn->denied_smsc_id_regex, msg->sms.smsc_id) == 1) 
             return -1;
     }
 
@@ -445,7 +445,7 @@ int smscconn_usable(SMSCConn *conn, Msg *msg)
 	return -1;
     
     if (conn->allowed_prefix_regex && ! conn->denied_prefix_regex) {
-        if (gw_regex_matches(conn->allowed_prefix_regex, msg->sms.receiver) == NO_MATCH)
+        if (gw_regex_match_pre(conn->allowed_prefix_regex, msg->sms.receiver) == 0)
             return -1;
     }
 
@@ -455,7 +455,7 @@ int smscconn_usable(SMSCConn *conn, Msg *msg)
 	return -1;
 
     if (conn->denied_prefix_regex && ! conn->allowed_prefix_regex) {
-        if (gw_regex_matches(conn->denied_prefix_regex, msg->sms.receiver) == MATCH)
+        if (gw_regex_match_pre(conn->denied_prefix_regex, msg->sms.receiver) == 1)
             return -1;
     }
 
@@ -466,8 +466,8 @@ int smscconn_usable(SMSCConn *conn, Msg *msg)
 	return -1;
 
     if (conn->allowed_prefix_regex && conn->denied_prefix_regex) {
-        if ((gw_regex_matches(conn->allowed_prefix_regex, msg->sms.receiver) == NO_MATCH)
-            && (gw_regex_matches(conn->denied_prefix_regex, msg->sms.receiver) == MATCH))
+        if (gw_regex_match_pre(conn->allowed_prefix_regex, msg->sms.receiver) == 0 &&
+            gw_regex_match_pre(conn->denied_prefix_regex, msg->sms.receiver) == 1)
             return -1;
     }
     
@@ -481,9 +481,9 @@ int smscconn_usable(SMSCConn *conn, Msg *msg)
 	if (does_prefix_match(conn->preferred_prefix, msg->sms.receiver) == 1)
 	    return 1;
 
-    if (conn->preferred_prefix_regex) {
-        if (gw_regex_matches(conn->preferred_prefix_regex, msg->sms.receiver) == MATCH)
-            return 1;
+    if (conn->preferred_prefix_regex &&
+        gw_regex_match_pre(conn->preferred_prefix_regex, msg->sms.receiver) == 1) {
+        return 1;
     }
         
     return 0;
