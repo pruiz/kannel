@@ -484,7 +484,7 @@ Msg *ota_tokenize_settings(CfgGroup *grp, Octstr *from, Octstr *receiver)
         octstr_append_char(msg->sms.msgdata, WBXML_TOK_TYPE_URL);
         octstr_append_char(msg->sms.msgdata, WBXML_TOK_VALUE);
         octstr_append_char(msg->sms.msgdata, WBXML_TOK_STR_I);
-        octstr_append(msg->sms.msgdata, octstr_duplicate(url));
+        octstr_append(msg->sms.msgdata, url);
         octstr_append_char(msg->sms.msgdata, WBXML_TOK_END_STR_I);
         octstr_append_char(msg->sms.msgdata, WBXML_TOK_END);
     }
@@ -503,7 +503,7 @@ Msg *ota_tokenize_settings(CfgGroup *grp, Octstr *from, Octstr *receiver)
         octstr_append_char(msg->sms.msgdata, WBXML_TOK_NAME_NAME);
         octstr_append_char(msg->sms.msgdata, WBXML_TOK_VALUE);
         octstr_append_char(msg->sms.msgdata, WBXML_TOK_STR_I);
-        octstr_append(msg->sms.msgdata, octstr_duplicate(desc));
+        octstr_append(msg->sms.msgdata, desc);
         octstr_append_char(msg->sms.msgdata, WBXML_TOK_END_STR_I);
         octstr_append_char(msg->sms.msgdata, WBXML_TOK_END);
     }

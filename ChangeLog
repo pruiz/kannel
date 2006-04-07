@@ -1,3 +1,8 @@
+2006-04-07  Alexander Malysh <amalysh at kannel.org>
+  * gw/ota_prov.c: fixed memory leaks.
+    Thanks to Rene Kluwen <rene.kluwen at chimit.nl> for provided patch.
+    [Msg-Id: <AFEHKJODIBGCKGHIDIPHCEELCBAA.rene.kluwen@chimit.nl>]
+
 2006-04-01  Alexander Malysh <amalysh at kannel.org>
   * gw/bb_smscconn.c, gw/smsbox.c, gw/smscconn.c, gw/urltrans.c,
   * gw/wap_push_ppg_pushuser.c gwlib/http.c gwlib/regex.[ch]: get rid of
