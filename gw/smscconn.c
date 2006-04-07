@@ -151,7 +151,6 @@ SMSCConn *smscconn_create(CfgGroup *grp, int start_as_stopped)
     SMSCConn *conn;
     Octstr *smsc_type;
     int ret;
-    double throughput;
     Octstr *allowed_smsc_id_regex;
     Octstr *denied_smsc_id_regex;
     Octstr *allowed_prefix_regex;
@@ -218,10 +217,10 @@ SMSCConn *smscconn_create(CfgGroup *grp, int start_as_stopped)
             panic(0, "Could not compile pattern '%s'", octstr_get_cstr(preferred_prefix_regex));
 
     if ((tmp = cfg_get(grp, octstr_imm("throughput"))) != NULL) {
-        if (octstr_parse_double(&throughput, tmp, 0) == -1)
+        if (octstr_parse_double(&conn->throughput, tmp, 0) == -1)
             conn->throughput = 0;
         octstr_destroy(tmp);
-        info(0, "Set throughput to %.3f for smsc id <%s>", throughput, octstr_get_cstr(conn->id));
+        info(0, "Set throughput to %.3f for smsc id <%s>", conn->throughput, octstr_get_cstr(conn->id));
     }
 
     /* configure the internal rerouting rules for this smsc id */

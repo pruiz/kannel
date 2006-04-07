@@ -1,4 +1,8 @@
 2006-04-07  Alexander Malysh <amalysh at kannel.org>
+  * gw/smscconn.c: fix for prev. patch that throughput was not set.
+    Thanks to Vincent Chavanis <vincent at telemaque.fr> for pointing to this.
+
+2006-04-07  Alexander Malysh <amalysh at kannel.org>
   * gw/smscconn.c, gw/smscconn_p.h, gw/smsc/smsc_emi.c, gw/smsc/smsc_fake.c,
     gw/smsc/smsc_http.c, gw/smsc/smsc_smasi.c, gw/smsc/smsc_smpp.c: applied patch
     that changes throughput from interger to double for more precise throughput
