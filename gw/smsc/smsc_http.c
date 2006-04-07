@@ -1308,7 +1308,7 @@ static int httpsmsc_send(SMSCConn *conn, Msg *msg)
     Msg *sms = msg_duplicate(msg);
     double delay = 0;
 
-    if (conn->throughput) {
+    if (conn->throughput > 0) {
         delay = 1.0 / conn->throughput;
     }
 
@@ -1316,7 +1316,7 @@ static int httpsmsc_send(SMSCConn *conn, Msg *msg)
     conndata->send_sms(conn, sms);
 
     /* obey throughput speed limit, if any */
-    if (conn->throughput)
+    if (conn->throughput > 0)
         gwthread_sleep(delay);
 
     return 0;

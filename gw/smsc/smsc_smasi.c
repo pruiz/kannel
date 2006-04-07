@@ -872,7 +872,7 @@ static void send_messages(SMASI *smasi, Connection *conn,
 
     if (*pending_submits == -1) return;
 
-    if (smasi->conn->throughput) {
+    if (smasi->conn->throughput > 0) {
         delay = 1.0 / smasi->conn->throughput;
     }
 
@@ -894,7 +894,7 @@ static void send_messages(SMASI *smasi, Connection *conn,
         smasi_pdu_destroy(pdu);
 
         /* obey throughput speed limit, if any */
-        if (smasi->conn->throughput)
+        if (smasi->conn->throughput > 0)
             gwthread_sleep(delay);
 
         ++(*pending_submits);

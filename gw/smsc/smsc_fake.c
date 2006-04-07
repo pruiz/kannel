@@ -243,7 +243,7 @@ static void main_connection_loop(SMSCConn *conn, Connection *client)
     Msg	*msg;
     double delay = 0;
 
-    if (conn->throughput) {
+    if (conn->throughput > 0) {
         delay = 1.0 / conn->throughput;
     }
 
@@ -297,7 +297,7 @@ static void main_connection_loop(SMSCConn *conn, Connection *client)
             }
 
             /* obey throughput speed limit, if any */
-            if (conn->throughput) {
+            if (conn->throughput > 0) {
                 gwthread_sleep(delay);
             }
         }

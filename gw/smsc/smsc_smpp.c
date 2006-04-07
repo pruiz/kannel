@@ -1013,7 +1013,7 @@ static void send_messages(SMPP *smpp, Connection *conn, long *pending_submits)
             /*
              * obey throughput speed limit, if any.
              */
-            if (smpp->conn->throughput)
+            if (smpp->conn->throughput > 0)
                 gwthread_sleep(delay);
         }
         else { /* write error occurs */
