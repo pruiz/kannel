@@ -1,3 +1,9 @@
+2006-04-19  Alexander Malysh <amalysh at kannel.org>
+  * gw/smsc/smsc_http.c: We need to refresh the connect time when status
+    is changing to SMSCCONN_ACTIVE otherwise connect time has no sense.
+    Thanks to Vincent Chavanis <vincent at telemaque.fr> for provided patch.
+    [Msg-Id: <0eda01c66398$5bc7fe10$9600a8c0@vince>]
+
 2006-04-07  Alexander Malysh <amalysh at kannel.org>
   * gw/smscconn.c: fix for prev. patch that throughput was not set.
     Thanks to Vincent Chavanis <vincent at telemaque.fr> for pointing to this.

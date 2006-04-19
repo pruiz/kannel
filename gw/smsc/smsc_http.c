@@ -271,6 +271,7 @@ static void httpsmsc_send_cb(void *arg)
             /* we received a response, so this link is considered online again */
             if (status && conn->status != SMSCCONN_ACTIVE) {
                 conn->status = SMSCCONN_ACTIVE;
+                time(&conn->connect_time);
             }
             conndata->parse_reply(conn, msg, status, headers, body);
         }
