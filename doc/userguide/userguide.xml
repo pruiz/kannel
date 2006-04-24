@@ -5938,6 +5938,14 @@ forwarding of an operator ID from aggregator SMSCs to the application
 layer, hence the smsbox HTTP calling instance.
 </entry></row>
 
+<row><entry><literal>%f</literal></entry><entry>
+Originating SMSC of incoming message. The value is set if
+the AT driver is used to receive a SMS on a gsm modem.
+The value of %f will contain the number of the SMSC sending
+the SMS to the SIM card. Other SMSC types than AT do not
+set this field so it will be empty.
+</entry></row>
+
 </tbody>
 </tgroup>
 </table>

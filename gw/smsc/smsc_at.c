@@ -92,6 +92,8 @@
 #include "dlr.h"
 #include "smsc_at.h"
 
+static Octstr 			*gsm2number(Octstr *pdu);
+static unsigned char	nibble2hex(unsigned char b);
 
 static int at2_open_device1(PrivAT2data *privdata)
 {
@@ -613,6 +615,7 @@ static int at2_wait_modem_command(PrivAT2data *privdata, time_t timeout, int gt_
     Octstr *line = NULL;
     Octstr *line2 = NULL;
     Octstr *pdu = NULL;
+    Octstr	*smsc_number = NULL;
     int ret;
     time_t end_time;
     time_t cur_time;
@@ -629,6 +632,7 @@ static int at2_wait_modem_command(PrivAT2data *privdata, time_t timeout, int gt_
         octstr_destroy(privdata->lines);
     privdata->lines = octstr_create("");
     
+    smsc_number = octstr_create("");
     while (time(&cur_time) <= end_time) {
         O_DESTROY(line);
         if ((line = at2_read_line(privdata, gt_flag))) {
@@ -689,8 +693,7 @@ static int at2_wait_modem_command(PrivAT2data *privdata, time_t timeout, int gt_
                     octstr_append_cstr(line, "\n");
                     octstr_append(line, line2);
                     O_DESTROY(line2);
-                    at2_pdu_extract(privdata, &pdu, line);
-
+                    at2_pdu_extract(privdata, &pdu, line, smsc_number);
                     if (pdu == NULL) {
                         error(0, "AT2[%s]: got +CMT but pdu_extract failed", 
                               octstr_get_cstr(privdata->name));
@@ -701,6 +704,7 @@ static int at2_wait_modem_command(PrivAT2data *privdata, time_t timeout, int gt_
                         msg = at2_pdu_decode(pdu, privdata);
                         if (msg != NULL) {
                             msg->sms.smsc_id = octstr_duplicate(privdata->conn->id);
+                            msg->sms.smsc_number = octstr_duplicate(smsc_number);
                             bb_smscconn_receive(privdata->conn, msg);
                         } else {
                             error(0, "AT2[%s]: could not decode PDU to a message.",
@@ -753,9 +757,11 @@ static int at2_wait_modem_command(PrivAT2data *privdata, time_t timeout, int gt_
     O_DESTROY(line);
     O_DESTROY(line2);
     O_DESTROY(pdu);
+	O_DESTROY(smsc_number);
     return -1; /* timeout */
 
 end:
+	O_DESTROY(smsc_number);
     octstr_append(privdata->lines, line);
     octstr_append_cstr(privdata->lines, "\n");
     O_DESTROY(line);
@@ -1430,13 +1436,15 @@ error:
 }
 
 
-static int at2_pdu_extract(PrivAT2data *privdata, Octstr **pdu, Octstr *line)
+static int at2_pdu_extract(PrivAT2data *privdata, Octstr **pdu, Octstr *line, Octstr *smsc_number)
 {
     Octstr *buffer;
     long len = 0;
     int pos = 0;
     int tmp;
-
+	Octstr *numtmp;
+	Octstr *tmp2;
+	
     buffer = octstr_duplicate(line);
     /* find the beginning of a message from the modem*/
 
@@ -1471,12 +1479,22 @@ static int at2_pdu_extract(PrivAT2data *privdata, Octstr **pdu, Octstr *line)
     while (isspace(octstr_get_char(buffer, pos)))
         pos++;
 
+	octstr_truncate(smsc_number,0);
+
     /* skip the SMSC address on some modem types */
     if (!privdata->modem->no_smsc) {
         tmp = at2_hexchar(octstr_get_char(buffer, pos)) * 16
               + at2_hexchar(octstr_get_char(buffer, pos + 1));
         if (tmp < 0)
             goto nomsg;
+       
+        numtmp = octstr_create_from_data(octstr_get_cstr(buffer)+pos+2,tmp * 2);	/* we now have the hexchars of the SMSC in GSM encoding */
+		octstr_hex_to_binary(numtmp);
+		tmp2 = gsm2number(numtmp);
+		debug("bb.smsc.at2", 0, "AT2[%s]: received message from SMSC: %s", octstr_get_cstr(privdata->name), octstr_get_cstr(tmp2));
+		octstr_destroy(numtmp);
+		octstr_append(smsc_number,tmp2);
+		octstr_destroy(tmp2);
         pos += 2 + tmp * 2;
     }
 
@@ -1498,6 +1516,66 @@ nomsg:
     return 0;
 }
 
+static unsigned char	nibble2hex(unsigned char b)
+{
+	if(b < 0x0A)
+		return '0'+ b;
+	else
+		return 'A'+ b - 0x0A;
+}
+
+static Octstr *gsm2number(Octstr *pdu)
+{
+    Octstr *tmp = NULL;
+    unsigned char c;
+	unsigned char a;
+	unsigned char b;
+	int ton;
+	int npi;
+    int len;
+	int pos;
+
+	pos=0;
+    len = octstr_len(pdu);
+	
+    ton = octstr_get_char(pdu,pos++);
+    npi = ton & 0x0F;
+    ton =  (ton >> 4) & 0x07;
+
+	switch(ton)
+	{
+	case 0: /* unknown */
+		tmp = octstr_create("");
+		break;
+	case 1: /* international */
+		tmp = octstr_create("+");
+		break;
+	case 2: /* national */
+		tmp = octstr_create("0");
+		break;
+	case 3: /* network-specific */
+	default:
+		tmp = octstr_create("");
+		break;
+	}
+	while(--len)
+	{
+	    c = octstr_get_char(pdu,pos++);
+		a =  c & 0x0F;
+		b =  ((c & 0xF0) >> 4);
+	
+		if((b == 0x0F) && (len < 2))
+		{
+			octstr_append_char(tmp, nibble2hex(a));
+		}
+		else
+		{
+			octstr_append_char(tmp, nibble2hex(a));
+			octstr_append_char(tmp, nibble2hex(b));
+		}
+	}
+	return tmp;
+}
 
 static int at2_hexchar(int hexc)
 {

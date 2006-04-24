@@ -252,7 +252,7 @@ int smsc_at2_create(SMSCConn *conn, CfgGroup *cfg);
 /*
  * Extracts the first PDU in the string
  */
-static int at2_pdu_extract(PrivAT2data *privdata, Octstr **pdu, Octstr *buffer);
+static int at2_pdu_extract(PrivAT2data *privdata, Octstr **pdu, Octstr *line, Octstr *smsc_number);
 
 /*
  * Get the numeric value of the text hex

@@ -1,3 +1,8 @@
+2006-04-24 Andreas Fink <andreas@fink.org>
+  * gw/smsc/smsc_at.c, gw/msg.h, gw/smsbox.c, gw/urltrans.c
+    added new parameter %f to show the SMSC number from which an incoming sms
+    is arriving. Only valid for AT.
+
 2006-04-19  Alexander Malysh <amalysh at kannel.org>
   * gw/smsc/smsc_http.c: We need to refresh the connect time when status
     is changing to SMSCCONN_ACTIVE otherwise connect time has no sense.

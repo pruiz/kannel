@@ -658,6 +658,14 @@ Octstr *urltrans_get_pattern(URLTranslation *t, Msg *request)
         octstr_destroy(enc);
         break;
 
+    case 'f':  /* smsc number*/
+	    if (octstr_len(request->sms.smsc_number)) {
+            enc = octstr_duplicate(request->sms.smsc_number);
+            octstr_url_encode(enc);
+            octstr_append(result, enc);
+            octstr_destroy(enc);
+        }
+        break;
 
 	/* XXX sms.parameters not present in here:
 	 *   * pid - will we receive this ? 
