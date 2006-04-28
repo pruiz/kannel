@@ -1,4 +1,8 @@
 2006-04-28  Alexander Malysh <amalysh at kannel.org>
+  * gwlib/list.h: added example to the comment how to use gwlist_sort function.
+    Thanks to Wilfried Goesgens <w.goesgens at chaosindustries.de> for patch.
+
+2006-04-28  Alexander Malysh <amalysh at kannel.org>
   * gw/smsbox.c: fixed memory leak.
     Thanks to Rafael <rafael at atgcaribbean.com> for patch.
     [Msg-Id: <44510365.8070000@atgcaribbean.com>]
