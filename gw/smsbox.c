@@ -2342,6 +2342,7 @@ static Octstr *smsbox_req_handle(URLTranslation *t, Octstr *client_ip,
     octstr_destroy(newfrom);
     *status = HTTP_ACCEPTED;
     returnerror = octstr_create("Sent.");
+    octstr_destroy(stored_uuid);
 
     /* 
      * Append all denied receivers to the returned body in case this is
@@ -2395,8 +2396,7 @@ error:
         }
     }
 
-    if (stored_uuid)
-        octstr_destroy(stored_uuid);
+    octstr_destroy(stored_uuid);
     octstr_destroy(receiv); 
     gwlist_destroy(failed_id, octstr_destroy_item);
     gwlist_destroy(denied, octstr_destroy_item);
@@ -2972,9 +2972,7 @@ send:
     }
 
     msg_destroy(msg);
-
-    if (stored_uuid)
-        octstr_destroy(stored_uuid);
+    octstr_destroy(stored_uuid);
 
     return returnerror;
 }
@@ -3164,9 +3162,7 @@ static Octstr *smsbox_sendota_post(List *headers, Octstr *body,
 	    }
 
        msg_destroy(msg);
-
-        if (stored_uuid)
-            octstr_destroy(stored_uuid);
+       octstr_destroy(stored_uuid);
 
 	}
     }    
