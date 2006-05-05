@@ -1,3 +1,8 @@
+2006-05-05  Alexander Malysh <amalysh at kannel.org>
+  * gw/smsc/smsc_smpp.c: fixed #337. We must set RECONNECT status on connection
+    before we put local queued messages into global queue.
+    Thanks to <pch at coolsystems.dk> for patch.
+
 2006-04-28  Alexander Malysh <amalysh at kannel.org>
   * gwlib/list.h: added example to the comment how to use gwlist_sort function.
     Thanks to Wilfried Goesgens <w.goesgens at chaosindustries.de> for patch.

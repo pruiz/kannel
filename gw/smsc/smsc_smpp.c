@@ -1831,6 +1831,10 @@ static void io_thread(void *arg)
             conn_destroy(conn);
             conn = NULL;
         }
+        /* set reconnect status */
+        mutex_lock(smpp->conn->flow_mutex);
+        smpp->conn->status = SMSCCONN_RECONNECTING;
+        mutex_unlock(smpp->conn->flow_mutex);
         /*
          * Put all queued messages back into global queue,so if
          * we have another link running then messages will be delivered
@@ -1864,9 +1868,6 @@ static void io_thread(void *arg)
         if (!smpp->quitting) {
             error(0, "SMPP[%s]: Couldn't connect to SMS center (retrying in %ld seconds).",
                   octstr_get_cstr(smpp->conn->id), smpp->conn->reconnect_delay);
-            mutex_lock(smpp->conn->flow_mutex);
-            smpp->conn->status = SMSCCONN_RECONNECTING;
-            mutex_unlock(smpp->conn->flow_mutex);
             gwthread_sleep(smpp->conn->reconnect_delay);
         }
     }
