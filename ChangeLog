@@ -1,3 +1,9 @@
+2006-05-08  Stipe Tolj  <stolj at kannel.org>
+  * Makefile.in: adding installing of all .h and .def files in the install 
+    target, including the gw directory. This is required if external modules
+    implementing own functionality will use gwlib and gw functions that are
+    installed to the system.
+
 2006-05-05  Alexander Malysh <amalysh at kannel.org>
   * gw/smsc/smsc_smpp.c: fixed #337. We must set RECONNECT status on connection
     before we put local queued messages into global queue.
