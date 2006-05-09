@@ -195,7 +195,7 @@ int store_save_ack(Msg *msg, ack_status_t status);
  * might take a while, depending on store size
  * Return -1 if something fails (bb can then PANIC normally)
  */
-int store_load(void);
+int store_load(void(*receive_msg)(Msg*));
 
 /* dump currently non-acknowledged messages into file. This is done
  * automatically now and then, but can be forced. Return -1 if file

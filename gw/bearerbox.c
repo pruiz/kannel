@@ -536,6 +536,27 @@ static void empty_msg_lists(void)
 }
 
 
+static void dispatch_into_queue(Msg *msg)
+{
+    gw_assert(msg != NULL),
+    gw_assert(msg_type(msg) == sms);
+
+    switch (msg->sms.sms_type) {
+        case mt_push:
+        case mt_reply:
+        case report_mt:
+            gwlist_append(outgoing_sms, msg);
+            break;
+        case mo:
+        case report_mo:
+            gwlist_append(incoming_sms, msg);
+            break;
+        default:
+            panic(0, "Not handled sms_type within store!");
+    }
+}
+
+
 int main(int argc, char **argv)
 {
     int cf_index;
@@ -579,22 +600,23 @@ int main(int argc, char **argv)
 
     gwthread_sleep(5.0); /* give time to threads to register themselves */
 
-    if (store_load()== -1)
-	panic(0, "Cannot start with store-file failing");
+    if (store_load(dispatch_into_queue) == -1)
+        panic(0, "Cannot start with store-file failing");
     
     info(0, "MAIN: Start-up done, entering mainloop");
     if (bb_status == BB_SUSPENDED) {
-	info(0, "Gateway is now SUSPENDED by startup arguments");
+        info(0, "Gateway is now SUSPENDED by startup arguments");
     } else if (bb_status == BB_ISOLATED) {
-	info(0, "Gateway is now ISOLATED by startup arguments");
-	gwlist_remove_producer(suspended);
+        info(0, "Gateway is now ISOLATED by startup arguments");
+        gwlist_remove_producer(suspended);
     } else {
-	smsc2_resume();
-	gwlist_remove_producer(suspended);	
-	gwlist_remove_producer(isolated);
+        smsc2_resume();
+        gwlist_remove_producer(suspended);	
+        gwlist_remove_producer(isolated);
     }
 
-    while(bb_status != BB_SHUTDOWN && bb_status != BB_DEAD && gwlist_producer_count(flow_threads) > 0) {
+    while (bb_status != BB_SHUTDOWN && bb_status != BB_DEAD && 
+           gwlist_producer_count(flow_threads) > 0) {
         /* debug("bb", 0, "Main Thread: going to sleep."); */
         /*
          * Not infinite sleep here, because we should notice
@@ -619,7 +641,7 @@ int main(int argc, char **argv)
 
         if (bb_todo & BB_CHECKLEAKS) {
             warning(0, "SIGQUIT received, reporting memory usage.");
-	    gw_check_leaks();
+            gw_check_leaks();
             bb_todo = bb_todo & ~BB_CHECKLEAKS;
         }
     }
@@ -631,8 +653,8 @@ int main(int argc, char **argv)
     bb_shutdown();
 
     /* wait until flow threads exit */
-    while(gwlist_consume(flow_threads)!=NULL)
-	;
+    while (gwlist_consume(flow_threads) != NULL)
+    ;
 
     info(0, "All flow threads have died, killing core");
     bb_status = BB_DEAD;
@@ -658,7 +680,6 @@ int main(int argc, char **argv)
 
     return 0;
 }
-
 
 
 /*----------------------------------------------------------------

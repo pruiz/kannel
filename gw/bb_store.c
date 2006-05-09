@@ -84,10 +84,6 @@
 #include "bearerbox.h"
 #include "sms.h"
 
-/* passed from bearerbox core */
-extern List *incoming_sms;
-extern List *outgoing_sms;
-
 static FILE *file = NULL;
 static Octstr *filename = NULL;
 static Octstr *newfile = NULL;
@@ -101,34 +97,6 @@ static Dict *sms_dict = NULL;
 static int active = 1;
 static time_t last_dict_mod = 0;
 static List *loaded;
-
-
-static void receive_msg(Msg *msg)
-{
-    if (msg_type(msg) != sms) {
-        error(0, "Found non sms message in dictionary!");
-        msg_dump(msg, 0);
-        msg_destroy(msg);
-        return;
-    }
-
-    switch(msg->sms.sms_type) {
-        case mo:
-        case report_mo:
-            gwlist_produce(incoming_sms, msg);
-            break;
-        case mt_push:
-        case mt_reply:
-        case report_mt:
-            gwlist_produce(outgoing_sms, msg);
-            break;
-        default:
-            error(0, "Found unknown message type in store file.");
-            msg_dump(msg, 0);
-            msg_destroy(msg);
-            break;
-    }
-}
 
 
 static void write_msg(Msg *msg)
@@ -275,7 +243,6 @@ static void store_dumper(void *arg)
     file_mutex = NULL;
     sms_dict = NULL;
 }
-
 
 
 /*------------------------------------------------------*/
@@ -452,7 +419,6 @@ int store_save(Msg *msg)
 }
 
 
-
 int store_save_ack(Msg *msg, ack_status_t status)
 {
     Msg *mack;
@@ -480,8 +446,7 @@ int store_save_ack(Msg *msg, ack_status_t status)
 }
 
 
-
-int store_load(void)
+int store_load(void(*receive_msg)(Msg*))
 {
     List *keys;
     Octstr *store_file, *key;
@@ -550,7 +515,7 @@ int store_load(void)
     /* now create a new sms_store out of messages left */
 
     keys = dict_keys(sms_dict);
-    while((key = gwlist_extract_first(keys)) != NULL) {
+    while ((key = gwlist_extract_first(keys)) != NULL) {
         msg = dict_remove(sms_dict, key);
         if (store_to_dict(msg) != -1) {
             receive_msg(msg);
@@ -578,7 +543,6 @@ end:
 
     return retval;
 }
-
 
 
 int store_dump(void)
@@ -642,4 +606,3 @@ int store_init(const Octstr *fname, long dump_freq)
 
     return 0;
 }
-

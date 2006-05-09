@@ -1,3 +1,9 @@
+2006-05-09  Stipe Tolj  <stolj at kannel.org>
+  * gw/bb_store.c, gw/bearerbox.[ch]: detach the two queues 'incoming_sms' and
+    'outgoing_sms' from the binding of bb_store.c. Now we pass a dispatcher
+    function as argument to store_load() in order to let it access local scoped
+    variables in the callers space.
+
 2006-05-08  Stipe Tolj  <stolj at kannel.org>
   * Makefile.in: adding installing of all .h and .def files in the install 
     target, including the gw directory. This is required if external modules
