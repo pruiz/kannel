@@ -1973,9 +1973,13 @@ static Octstr *smsbox_req_handle(URLTranslation *t, Octstr *client_ip,
 				 List *receiver, Octstr *binfo, int priority)
 {				     
     Msg *msg = NULL;
-    Octstr *newfrom, *returnerror, *receiv;
+    Octstr *newfrom = NULL;
+    Octstr *returnerror = NULL;
+    Octstr *receiv;
     Octstr *stored_uuid = NULL;
-    List *failed_id, *allowed, *denied;
+    List *failed_id = NULL;
+    List *allowed = NULL;
+    List *denied = NULL;
     int no_recv, ret = 0, i;
     long del;
 
@@ -1996,11 +2000,11 @@ static Octstr *smsbox_req_handle(URLTranslation *t, Octstr *client_ip,
      */
     if (udh != NULL && (octstr_len(udh) != octstr_get_char(udh, 0) + 1)) {
         returnerror = octstr_create("UDH field misformed, rejected");
-        goto fielderror2;
+        goto field_error;
     }
     if (udh != NULL && octstr_len(udh) > MAX_SMS_OCTETS) {
         returnerror = octstr_create("UDH field is too long, rejected");
-        goto fielderror2;
+        goto field_error;
     }
 
     /*
@@ -2114,6 +2118,12 @@ static Octstr *smsbox_req_handle(URLTranslation *t, Octstr *client_ip,
         del = gwlist_delete_matching(allowed, receiv, octstr_item_match);
     }
 
+    /* have all receivers been denied by list rules?! */
+    if (gwlist_len(allowed) == 0) {
+        returnerror = octstr_create("Number(s) has/have been denied by white- and/or black-lists.");
+        goto field_error;
+    }
+
     if (urltrans_faked_sender(t) != NULL) {
 	/* discard previous from */
 	newfrom = octstr_duplicate(urltrans_faked_sender(t));
@@ -2125,7 +2135,7 @@ static Octstr *smsbox_req_handle(URLTranslation *t, Octstr *client_ip,
 	newfrom = octstr_duplicate(global_sender);
     } else {
 	returnerror = octstr_create("Sender missing and no global set, rejected");
-	goto fielderror2;
+	goto field_error;
     }
 
     info(0, "sendsms sender:<%s:%s> (%s) to:<%s> msg:<%s>",
@@ -2150,7 +2160,7 @@ static Octstr *smsbox_req_handle(URLTranslation *t, Octstr *client_ip,
 	    msg->sms.account = account ? octstr_duplicate(account) : NULL;
 	} else {
 	    returnerror = octstr_create("Account field misformed, rejected");
-	    goto fielderror;
+	    goto field_error;
 	}
     }
     msg->sms.msgdata = text ? octstr_duplicate(text) : octstr_create("");
@@ -2162,7 +2172,7 @@ static Octstr *smsbox_req_handle(URLTranslation *t, Octstr *client_ip,
     if(octstr_len(dlr_url)) {
 	if(octstr_len(dlr_url) < 8) { /* http(s):// */
 	    returnerror = octstr_create("DLR-URL field misformed, rejected");
-	    goto fielderror;
+	    goto field_error;
 	} else {
 	    Octstr *tmp;
 	    tmp = octstr_copy(dlr_url, 0, 7);
@@ -2174,7 +2184,7 @@ static Octstr *smsbox_req_handle(URLTranslation *t, Octstr *client_ip,
 		if(octstr_case_compare(tmp, octstr_imm("https://")) != 0) {
 		    returnerror = octstr_create("DLR-URL field misformed, rejected");
 		    O_DESTROY(tmp);
-		    goto fielderror;
+		    goto field_error;
 		}
 #ifdef HAVE_LIBSSL
 		msg->sms.dlr_url = octstr_duplicate(dlr_url);
@@ -2193,49 +2203,49 @@ static Octstr *smsbox_req_handle(URLTranslation *t, Octstr *client_ip,
 
     if ( dlr_mask < -1 || dlr_mask > 31 ) { /* 00011111 */
 	returnerror = octstr_create("DLR-Mask field misformed, rejected");
-	goto fielderror;
+	goto field_error;
     }
     msg->sms.dlr_mask = dlr_mask;
     
     if ( mclass < -1 || mclass > 3 ) {
 	returnerror = octstr_create("MClass field misformed, rejected");
-	goto fielderror;
+	goto field_error;
     }
     msg->sms.mclass = mclass;
     
     if ( pid < -1 || pid > 255 ) {
 	returnerror = octstr_create("PID field misformed, rejected");
-	goto fielderror;
+	goto field_error;
     }
     msg->sms.pid = pid;
 
     if ( rpi < -1 || rpi > 2) {
 	returnerror = octstr_create("RPI field misformed, rejected");
-	goto fielderror;
+	goto field_error;
     }
     msg->sms.rpi = rpi;
     
     if ( alt_dcs < -1 || alt_dcs > 1 ) {
 	returnerror = octstr_create("Alt-DCS field misformed, rejected");
-	goto fielderror;
+	goto field_error;
     }
     msg->sms.alt_dcs = alt_dcs;
     
     if ( mwi < -1 || mwi > 7 ) {
 	returnerror = octstr_create("MWI field misformed, rejected");
-	goto fielderror;
+	goto field_error;
     }
     msg->sms.mwi = mwi;
 
     if ( coding < -1 || coding > 2 ) {
 	returnerror = octstr_create("Coding field misformed, rejected");
-	goto fielderror;
+	goto field_error;
     }
     msg->sms.coding = coding;
 
     if ( compress < -1 || compress > 1 ) {
 	returnerror = octstr_create("Compress field misformed, rejected");
-	goto fielderror;
+	goto field_error;
     }
     msg->sms.compress = compress;
 
@@ -2250,19 +2260,19 @@ static Octstr *smsbox_req_handle(URLTranslation *t, Octstr *client_ip,
 
     if ( validity < -1 ) {
 	returnerror = octstr_create("Validity field misformed, rejected");
-	goto fielderror;
+	goto field_error;
     }
     msg->sms.validity = validity;
 
     if ( deferred < -1 ) {
 	returnerror = octstr_create("Deferred field misformed, rejected");
-	goto fielderror;
+	goto field_error;
     }
     msg->sms.deferred = deferred;
     
     if (priority != SMS_PARAM_UNDEFINED && (priority < 0 || priority > 3)) {
         returnerror = octstr_create("Priority field misformed, rejected");
-        goto fielderror;
+        goto field_error;
     }
     msg->sms.priority = priority;
 
@@ -2285,7 +2295,7 @@ static Octstr *smsbox_req_handle(URLTranslation *t, Octstr *client_ip,
 
     if (charset_processing(charset, msg->sms.msgdata, msg->sms.coding) == -1) {
 	returnerror = octstr_create("Charset or body misformed, rejected");
-	goto fielderror;
+	goto field_error;
     }
 
     msg->sms.receiver = NULL;
@@ -2325,24 +2335,11 @@ static Octstr *smsbox_req_handle(URLTranslation *t, Octstr *client_ip,
         }
     }
 
-    msg_destroy(msg);
-    gwlist_destroy(receiver, octstr_destroy_item);
-    gwlist_destroy(allowed, octstr_destroy_item);
-
-    /* have all receivers been denied by list rules?! */
-    if (no_recv == gwlist_len(denied)) {
-        returnerror = octstr_create("Number(s) has/have been denied by white- and/or black-lists.");
-        goto fielderror2;
-    }
-
     if (gwlist_len(failed_id) > 0)
-	goto error;
+	goto transmit_error;
     
-    gwlist_destroy(failed_id, octstr_destroy_item);
-    octstr_destroy(newfrom);
     *status = HTTP_ACCEPTED;
     returnerror = octstr_create("Sent.");
-    octstr_destroy(stored_uuid);
 
     /* 
      * Append all denied receivers to the returned body in case this is
@@ -2353,8 +2350,7 @@ static Octstr *smsbox_req_handle(URLTranslation *t, Octstr *client_ip,
         while ((receiv = gwlist_extract_first(denied)) != NULL) {
             octstr_format_append(returnerror, " %s", octstr_get_cstr(receiv));
         }
-    }               
-    gwlist_destroy(denied, octstr_destroy_item);  
+    }
 
     /*
      * Append number of splits to returned body. 
@@ -2363,25 +2359,30 @@ static Octstr *smsbox_req_handle(URLTranslation *t, Octstr *client_ip,
     if (ret > 1) 
         octstr_format_append(returnerror, " Message splits: %d", ret);
 
-    return returnerror;
-    
-
-fielderror:
+cleanup:
+    octstr_destroy(stored_uuid);
+    gwlist_destroy(failed_id, NULL);
+    gwlist_destroy(allowed, NULL);
+    gwlist_destroy(denied, NULL);
+    gwlist_destroy(receiver, octstr_destroy_item);
     octstr_destroy(newfrom);
     msg_destroy(msg);
 
-fielderror2:
-    alog("send-SMS request failed - %s",
-         octstr_get_cstr(returnerror));
-
-    *status = HTTP_BAD_REQUEST;
     return returnerror;
+    
 
-error:
+field_error:
+    alog("send-SMS request failed - %s",
+            octstr_get_cstr(returnerror));
+    *status = HTTP_BAD_REQUEST;
+
+    goto cleanup;
+
+transmit_error:
     error(0, "sendsms_request: failed");
-    octstr_destroy(from);
     *status = HTTP_INTERNAL_SERVER_ERROR;
     returnerror = octstr_create("Sending failed.");
+
     if (!immediate_sendsms_reply)
         dict_remove(client_dict, stored_uuid);
 
@@ -2396,11 +2397,7 @@ error:
         }
     }
 
-    octstr_destroy(stored_uuid);
-    octstr_destroy(receiv); 
-    gwlist_destroy(failed_id, octstr_destroy_item);
-    gwlist_destroy(denied, octstr_destroy_item);
-    return returnerror;
+    goto cleanup;
 }
 
 

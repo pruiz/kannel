@@ -1,4 +1,10 @@
 2006-05-09  Alexander Malysh <amalysh at kannel.org>
+  * gw/smsbox.c: applied patch which resolved a number of memory leaks and
+    potential segmentation faults in the smsbox_req_handle.
+    Thanks to Peter Christensen <pch at coolsystems.dk> for provided patch.
+    [Msg-Id: <445DFAFC.6030807@coolsystems.dk>]
+
+2006-05-09  Alexander Malysh <amalysh at kannel.org>
   * doc/userguide/userguide.xml,gw/smsc/smsc_smpp.c,gwlib/cfg.def: added new
     SMPP config options 'bind-addr-ton' and 'bind-addr-npi' in order to be able
     to define bind settings that some SMSCs require.
