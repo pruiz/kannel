@@ -1,4 +1,11 @@
 2006-05-09  Stipe Tolj  <stolj at kannel.org>
+  * Makefile.in: make sure we do NOT link in object files from the progs itself,
+    they contain int/void main(), and we don't want that inside the libgw.a in
+    order to allow users re-usage of the code inside the lib. Otherwise we would
+    get a 'duplicate define main()' link error, if an external module tries to
+    link against libgw.a after a successfull install.
+    
+2006-05-09  Stipe Tolj  <stolj at kannel.org>
   * gw/bb_store.c, gw/bearerbox.[ch]: detach the two queues 'incoming_sms' and
     'outgoing_sms' from the binding of bb_store.c. Now we pass a dispatcher
     function as argument to store_load() in order to let it access local scoped

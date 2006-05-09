@@ -121,7 +121,7 @@ binprogs = $(binsrcs:.c=) gw-config
 sbinprogs = $(sbinsrcs:.c=)
 
 gwsrcs = $(wildcard gw/*.c) $(wildcard gw/smsc/*.c)
-gwobjs = $(gwsrcs:.c=.o)
+gwobjs = $(filter-out $(progobjs),$(gwsrcs:.c=.o))
 
 libsrcs = $(wildcard gwlib/*.c) $(LIBSRCS)
 libobjs = $(libsrcs:.c=.o) $(LIBOBJS)
