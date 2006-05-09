@@ -1,3 +1,8 @@
+2006-05-09  Alexander Malysh <amalysh at kannel.org>
+  * doc/userguide/userguide.xml,gw/smsc/smsc_smpp.c,gwlib/cfg.def: added new
+    SMPP config options 'bind-addr-ton' and 'bind-addr-npi' in order to be able
+    to define bind settings that some SMSCs require.
+
 2006-05-09  Stipe Tolj  <stolj at kannel.org>
   * Makefile.in: make sure we do NOT link in object files from the progs itself,
     they contain int/void main(), and we don't want that inside the libgw.a in

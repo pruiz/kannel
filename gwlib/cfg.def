@@ -345,6 +345,8 @@ MULTI_GROUP(smsc,
     OCTSTR(source-addr-npi)
     OCTSTR(dest-addr-ton)
     OCTSTR(dest-addr-npi)
+    OCTSTR(bind-addr-ton)
+    OCTSTR(bind-addr-npi)
     OCTSTR(service-type)
     OCTSTR(source-addr-autodetect)
     OCTSTR(enquire-link-interval)

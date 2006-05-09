@@ -3166,6 +3166,20 @@ address-range = ""
 		(Defaults to 1).
      </entry></row>
 
+    <row><entry><literal>bind-addr-ton</literal></entry>
+      <entry><literal>number</literal></entry>
+      <entry valign="bottom">
+      Optional, bind address TON setting for the link.
+		(Defaults to 0).
+     </entry></row>
+
+    <row><entry><literal>bind-addr-npi</literal></entry>
+      <entry><literal>number</literal></entry>
+      <entry valign="bottom">
+      Optional, bind address NPI setting for the link.
+		(Defaults to 0).
+     </entry></row>
+
    <row><entry><literal>msg-id-type</literal></entry>
      <entry><literal>number</literal></entry>
      <entry valign="bottom">

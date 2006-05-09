@@ -146,6 +146,8 @@ typedef struct {
     int source_addr_npi; 
     int dest_addr_ton; 
     int dest_addr_npi;
+    long bind_addr_ton;
+    long bind_addr_npi;
     int transmit_port; 
     int receive_port; 
     int quitting; 
@@ -255,6 +257,8 @@ static SMPP *smpp_create(SMSCConn *conn, Octstr *host, int transmit_port,
     smpp->connection_timeout = connection_timeout;
     smpp->wait_ack = wait_ack;
     smpp->wait_ack_action = wait_ack_action;
+    smpp->bind_addr_ton = 0;
+    smpp->bind_addr_npi = 0;
  
     return smpp; 
 } 
@@ -1054,6 +1058,8 @@ static Connection *open_transmitter(SMPP *smpp)
     bind->u.bind_transmitter.interface_version = smpp->version;
     bind->u.bind_transmitter.address_range =  
     	octstr_duplicate(smpp->address_range); 
+    bind->u.bind_transmitter.addr_ton = smpp->bind_addr_ton;
+    bind->u.bind_transmitter.addr_npi = smpp->bind_addr_npi;
     send_pdu(conn, smpp->conn->id, bind); 
     smpp_pdu_destroy(bind); 
  
@@ -1080,14 +1086,16 @@ static Connection *open_transceiver(SMPP *smpp)
  
     bind = smpp_pdu_create(bind_transceiver, 
                            counter_increase(smpp->message_id_counter)); 
-    bind->u.bind_transmitter.system_id = octstr_duplicate(smpp->username); 
-    bind->u.bind_transmitter.password = octstr_duplicate(smpp->password); 
+    bind->u.bind_transceiver.system_id = octstr_duplicate(smpp->username); 
+    bind->u.bind_transceiver.password = octstr_duplicate(smpp->password); 
     if (smpp->system_type == NULL) 
-        bind->u.bind_transmitter.system_type = octstr_create("VMA"); 
+        bind->u.bind_transceiver.system_type = octstr_create("VMA"); 
     else    
-        bind->u.bind_transmitter.system_type = octstr_duplicate(smpp->system_type); 
-    bind->u.bind_transmitter.interface_version = smpp->version;
-    bind->u.bind_transmitter.address_range = octstr_duplicate(smpp->address_range); 
+        bind->u.bind_transceiver.system_type = octstr_duplicate(smpp->system_type); 
+    bind->u.bind_transceiver.interface_version = smpp->version;
+    bind->u.bind_transceiver.address_range = octstr_duplicate(smpp->address_range); 
+    bind->u.bind_transceiver.addr_ton = smpp->bind_addr_ton;
+    bind->u.bind_transceiver.addr_npi = smpp->bind_addr_npi;
     send_pdu(conn, smpp->conn->id, bind); 
     smpp_pdu_destroy(bind); 
  
@@ -1124,6 +1132,8 @@ static Connection *open_receiver(SMPP *smpp)
     bind->u.bind_receiver.interface_version = smpp->version;
     bind->u.bind_receiver.address_range =
         octstr_duplicate(smpp->address_range);
+    bind->u.bind_receiver.addr_ton = smpp->bind_addr_ton;
+    bind->u.bind_receiver.addr_npi = smpp->bind_addr_npi;
     send_pdu(conn, smpp->conn->id, bind);
     smpp_pdu_destroy(bind);
 
@@ -2112,6 +2122,9 @@ int smsc_smpp_create(SMSCConn *conn, CfgGroup *grp)
                        smpp_msg_id_type, autodetect_addr, alt_charset, alt_addr_charset,
                        service_type, connection_timeout, wait_ack, wait_ack_action); 
  
+    cfg_get_integer(&smpp->bind_addr_ton, grp, octstr_imm("bind-addr-ton"));
+    cfg_get_integer(&smpp->bind_addr_npi, grp, octstr_imm("bind-addr-npi"));
+
     conn->data = smpp; 
     conn->name = octstr_format("SMPP:%S:%d/%d:%S:%S",  
     	    	    	       host, port, 
