@@ -1,4 +1,14 @@
 2006-05-11  Alexander Malysh <amalysh at kannel.org>
+  * gw/smsc/smsc_at.c: Added sanity check on digits before calling the
+    octstr_append_char. smsc_at does not check the digits of the address
+    field in the function at2_format_address_field. So, if the recipient's
+    address contains a non-numeric string (e.g. 'Info Service'), and that's
+    quite possible, the octstr assertion crashes the bearerbox during
+    octstr_append_char.
+    Thanks to Andrija Petrovic <andrija.petrovic at software888.com> for
+    provided patch.
+
+2006-05-11  Alexander Malysh <amalysh at kannel.org>
   * gw/smsc/smsc_http.c:
     - Returning HTTP_OK status code 200 when receiving an MO from clickatell
     - Returning HTTP_BAD_REQUEST status code 400 is sent when "Insufficient 

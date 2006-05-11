@@ -2649,14 +2649,21 @@ static Octstr *at2_format_address_field(Octstr *msisdn)
 			    );
 
     /* grab the digits from the MSISDN and encode as swapped semi-octets */
-    while (octstr_len(temp)) {
+    while (out != NULL && octstr_len(temp) >= 0) {
 	int digit1, digit2;
 	/* get the first two digit */
 	digit1 = octstr_get_char(temp,0) - 48;
-	if ((digit2 = octstr_get_char(temp,1) - 48) < 0)
+        digit2 = octstr_get_char(temp,1) - '0';
+        if (digit2 < 0)
 	    digit2 = 0x0F;
-	octstr_append_char(out, (digit2 << 4) | digit1);
-	octstr_delete(temp, 0, 2);
+        if(digit1 >= 0 && digit1 < 16 && digit2 < 16) {
+            octstr_append_char(out, (digit2 << 4) | digit1);
+        }
+        else {
+            O_DESTROY(out);
+            out = NULL;
+        }
+        octstr_delete(temp, 0, 2);
     }
 
     O_DESTROY(temp);
