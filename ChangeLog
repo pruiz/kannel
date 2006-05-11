@@ -1,3 +1,12 @@
+2006-05-11  Alexander Malysh <amalysh at kannel.org>
+  * gw/smsc/smsc_http.c:
+    - Returning HTTP_OK status code 200 when receiving an MO from clickatell
+    - Returning HTTP_BAD_REQUEST status code 400 is sent when "Insufficient 
+      arguments, rejected"
+    - fixed compiler warnings about unused variables
+    - changed info to debug about "received mo"
+    Thanks to Vincent CHAVANIS <vincent at telemaque.fr> for patch.
+
 2006-05-09  Alexander Malysh <amalysh at kannel.org>
   * gw/smsbox.c: applied patch which resolved a number of memory leaks and
     potential segmentation faults in the smsbox_req_handle.

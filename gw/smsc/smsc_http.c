@@ -602,7 +602,7 @@ static void clickatell_parse_reply(SMSCConn *conn, Msg *msg, int status,
 {
     if (status == HTTP_OK || status == HTTP_ACCEPTED) {
         Dict *param;
-        Octstr *status, *msgid;
+        Octstr *msgid;
 
         if ((param = clickatell_parse_body(body)) != NULL &&
             (msgid = dict_get(param, octstr_imm("ID"))) != NULL &&
@@ -633,7 +633,6 @@ static void clickatell_parse_reply(SMSCConn *conn, Msg *msg, int status,
 static void clickatell_receive_sms(SMSCConn *conn, HTTPClient *client,
                                List *headers, Octstr *body, List *cgivars)
 {
-    ConnData *conndata = conn->data;
     List *reply_headers;
     int ret;
     Octstr *apimsgid, *status, *timestamp, *retmsg, *dest, *charge;
@@ -662,7 +661,8 @@ static void clickatell_receive_sms(SMSCConn *conn, HTTPClient *client,
  
     if (api_id != NULL && from != NULL && to != NULL && timestamp != NULL && text != NULL && charset != NULL && udh != NULL) {
 	/* we received an MO message */
-	info(0, "Received MO message from %s: <%s>", octstr_get_cstr(from), octstr_get_cstr(text));
+	debug("smsc.http.clickatell", 0, "HTTP[%s]: Received MO message from %s: <%s>",
+            octstr_get_cstr(conn->id), octstr_get_cstr(from), octstr_get_cstr(text));
 	momsg = msg_create(sms);
 	momsg->sms.sms_type = mo;
 	momsg->sms.sender = octstr_duplicate(from);
@@ -679,10 +679,12 @@ static void clickatell_receive_sms(SMSCConn *conn, HTTPClient *client,
  
 	/* note: implicit msg_destroy */
 	ret = bb_smscconn_receive(conn, momsg);
+        httpstatus = HTTP_OK;
 	retmsg = octstr_create("Thanks");
     } else if (apimsgid == NULL || status == NULL || timestamp == NULL || dest == NULL) {
         error(0, "HTTP[%s]: Insufficient args.",
               octstr_get_cstr(conn->id));
+        httpstatus = HTTP_BAD_REQUEST;
         retmsg = octstr_create("Insufficient arguments, rejected.");
     } else {
 	switch (atoi(octstr_get_cstr(status))) {
