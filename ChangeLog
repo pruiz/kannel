@@ -1,3 +1,9 @@
+2006-05-14  Stipe Tolj  <stolj at kannel.org>
+  * gw/bb_smscconn.c: fixing bug #341, causing not to obey 'sms-resend-retry'
+    for messages that are temporary failing.
+    Thanks to Martin Conte <reflejo@gmail.com> for provided patch.
+    [Msg-Id: <92cf04420605130116h7ea562aew7c2ec7ded92dfb1e@mail.gmail.com>]
+
 2006-05-11  Alexander Malysh <amalysh at kannel.org>
   * gw/smsc/smsc_at.c: Added sanity check on digits before calling the
     octstr_append_char. smsc_at does not check the digits of the address

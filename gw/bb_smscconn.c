@@ -288,7 +288,7 @@ void bb_smscconn_send_failed(SMSCConn *conn, Msg *sms, int reason, Octstr *reply
                                        octstr_create("Retries Exceeded"));
                break;
            }
-           sms->sms.resend_try = (sms->sms.resend_try > 0 ? sms->sms.resend_try++ : 1);
+           sms->sms.resend_try = (sms->sms.resend_try > 0 ? sms->sms.resend_try + 1 : 1);
            time(&sms->sms.resend_time);
        }
        gwlist_produce(outgoing_sms, sms);
