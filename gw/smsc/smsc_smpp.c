@@ -506,9 +506,9 @@ static Msg *pdu_to_msg(SMPP *smpp, SMPP_PDU *pdu, long *reason)
              * unless it was specified binary, ie. UDH indicator was detected
              */
             if (smpp->alt_charset && msg->sms.coding != DC_8BIT) {
-                if (charset_convert(msg->sms.msgdata, octstr_get_cstr(smpp->alt_charset), "ISO-8859-1") != 0)
+                if (charset_convert(msg->sms.msgdata, octstr_get_cstr(smpp->alt_charset), SMPP_DEFAULT_CHARSET) != 0)
                     error(0, "Failed to convert msgdata from charset <%s> to <%s>, will leave as is.",
-                             octstr_get_cstr(smpp->alt_charset), "ISO-8859-1");
+                             octstr_get_cstr(smpp->alt_charset), SMPP_DEFAULT_CHARSET);
                 msg->sms.coding = DC_7BIT;
             } else { /* assume GSM 03.38 7-bit alphabet */
                 charset_gsm_to_latin1(msg->sms.msgdata);
@@ -656,9 +656,9 @@ static Msg *data_sm_to_msg(SMPP *smpp, SMPP_PDU *pdu, long *reason)
              * unless it was specified binary, ie. UDH indicator was detected
              */
             if (smpp->alt_charset && msg->sms.coding != DC_8BIT) {
-                if (charset_convert(msg->sms.msgdata, octstr_get_cstr(smpp->alt_charset), "ISO-8859-1") != 0)
+                if (charset_convert(msg->sms.msgdata, octstr_get_cstr(smpp->alt_charset), SMPP_DEFAULT_CHARSET) != 0)
                     error(0, "Failed to convert msgdata from charset <%s> to <%s>, will leave as is.",
-                             octstr_get_cstr(smpp->alt_charset), "ISO-8859-1");
+                             octstr_get_cstr(smpp->alt_charset), SMPP_DEFAULT_CHARSET);
                 msg->sms.coding = DC_7BIT;
             } else { /* assume GSM 03.38 7-bit alphabet */
                 charset_gsm_to_latin1(msg->sms.msgdata);
@@ -879,10 +879,10 @@ static SMPP_PDU *msg_to_pdu(SMPP *smpp, Msg *msg)
             /*
              * convert to the given alternative charset
              */
-            if (charset_convert(pdu->u.submit_sm.short_message, "ISO-8859-1",
+            if (charset_convert(pdu->u.submit_sm.short_message, SMPP_DEFAULT_CHARSET,
                                 octstr_get_cstr(smpp->alt_charset)) != 0)
                 error(0, "Failed to convert msgdata from charset <%s> to <%s>, will send as is.",
-                             "ISO-8859-1", octstr_get_cstr(smpp->alt_charset));
+                             SMPP_DEFAULT_CHARSET, octstr_get_cstr(smpp->alt_charset));
         }
     }
 

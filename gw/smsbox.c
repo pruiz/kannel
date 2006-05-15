@@ -3671,9 +3671,9 @@ int charset_processing (Octstr *charset, Octstr *body, int coding) {
 
 	if (coding == DC_7BIT) {
 	    /*
-	     * For 7 bit, convert to ISO-8859-1
+         * For 7 bit, convert to WINDOWS-1252
 	     */
-	    if (octstr_recode (octstr_imm ("ISO-8859-1"), charset, body) < 0) {
+        if (charset_convert (body, octstr_get_cstr(charset), "WINDOWS-1252") < 0) {
 		resultcode = -1;
 	    }
 	} else if (coding == DC_UCS2) {

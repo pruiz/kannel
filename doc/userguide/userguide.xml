@@ -5232,10 +5232,10 @@ ssl-certkey-file
      <entry>boolean</entry>
      <entry valign="bottom">
         If enabled, Kannel will try to convert received messages with UCS-2 charset
-	to ISO-8859-1 or to UTF-8, simplifying external servers jobs. If Kannel is 
+	to WINDOWS-1252 or to UTF-8, simplifying external servers jobs. If Kannel is 
 	able to recode message, it will also change <literal>coding</literal> to 
 	<literal>7 bits</literal> and <literal>charset</literal> to 
-	<literal>iso-8859-1</literal> or to <literal>utf-8</literal>. 
+	<literal>windows-1252</literal> or to <literal>utf-8</literal>. 
      </entry></row>
 
     <row><entry><literal>http-request-retry</literal></entry>
@@ -5928,7 +5928,7 @@ and 4, 5, 6, 7 for deactivation respectively.
 message charset: for a "normal" message, it will 
 be "GSM" (coding=0), "binary" (coding=1) or 
 "UTF-16BE" (coding=2). If the message was successfully
-recoded from Unicode, it will be "ISO-8859-1"
+recoded from Unicode, it will be "WINDOWS-1252"
 </entry></row>
 
 <row><entry><literal>%u</literal></entry><entry>
@@ -6969,7 +6969,7 @@ the Kannel configuration, or 'Authorization failed' is returned.
    <entry><literal>string</literal></entry>
    <entry valign="bottom">
         Charset of text message. Used to convert to a format suitable for
-	7 bits or to UCS-2. Defaults to ISO-8859-1 if coding is 7bits and
+	7 bits or to UCS-2. Defaults to WINDOWS-1252 if coding is 7bits and
 	UTF-16BE if coding is UCS-2.
    </entry></row>
 

@@ -1,3 +1,13 @@
+2006-05-15  Alexander Malysh <amalysh at kannel.org>
+  * doc/userguide/userguide.xml, gw/smsbox.c, gw/smsc/smsc_smpp.c: applied
+    patch that changes internal charset from iso-8859-1 to windows-1252.
+    This patch changes not the whole kannel to use windows-1252 but we
+    want to change to UTF-8 as internal charset anyway and this patch could
+    be seen as a temporarely workaround that allows sending/receiving of euro
+    sign.
+    Thanks to Peter Christensen <pch at coolsystems.dk> for the patch.
+    [Msg-Id: <4461EA8F.5040806@coolsystems.dk>]
+
 2006-05-14  Stipe Tolj  <stolj at kannel.org>
   * gw/bb_smscconn.c: fixing bug #341, causing not to obey 'sms-resend-retry'
     for messages that are temporary failing.
