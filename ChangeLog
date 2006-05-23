@@ -1,4 +1,9 @@
 2006-05-15  Alexander Malysh <amalysh at kannel.org>
+  * gw/smsc/smsc_at.c: fixed wrong condition for octstr_len(temp).
+    Thanks to Andrija Petrovic <andrija.petrovic at software888.com> for patch.
+    [Msg-Id: <446B1C5B.50500@software888.com>]
+
+2006-05-15  Alexander Malysh <amalysh at kannel.org>
   * doc/userguide/userguide.xml, gw/smsbox.c, gw/smsc/smsc_smpp.c: applied
     patch that changes internal charset from iso-8859-1 to windows-1252.
     This patch changes not the whole kannel to use windows-1252 but we

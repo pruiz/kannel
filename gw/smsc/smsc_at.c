@@ -2649,7 +2649,7 @@ static Octstr *at2_format_address_field(Octstr *msisdn)
 			    );
 
     /* grab the digits from the MSISDN and encode as swapped semi-octets */
-    while (out != NULL && octstr_len(temp) >= 0) {
+    while (out != NULL && octstr_len(temp) > 0) {
 	int digit1, digit2;
 	/* get the first two digit */
 	digit1 = octstr_get_char(temp,0) - 48;
