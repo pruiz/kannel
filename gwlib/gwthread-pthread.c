@@ -97,6 +97,8 @@ struct new_thread_args
     gwthread_func_t *func;
     void *arg;
     struct threadinfo *ti;
+    /* signals already started thread to die */
+    int failed;
 };
 
 /* The index is the external thread number modulo the table size; the
@@ -126,7 +128,7 @@ static pthread_key_t tsd_key;
 
 static pthread_mutex_t threadtable_lock;
 
-static void lock(void)
+static void inline lock(void)
 {
     int ret;
 
@@ -136,7 +138,7 @@ static void lock(void)
     }
 }
 
-static void unlock(void)
+static void inline unlock(void)
 {
     int ret;
 
@@ -171,19 +173,24 @@ static long fill_threadinfo(pthread_t id, const char *name,
 
     gw_assert(active_threads < THREADTABLE_SIZE);
 
+    /* initialize to default values */
     ti->self = id;
     ti->name = name;
     ti->func = func;
     ti->pid = -1;
+    ti->wakefd_recv = -1;
+    ti->wakefd_send = -1;
+    ti->joiners = NULL;
+    ti->number = -1;
 
     if (pipe(pipefds) < 0) {
-        panic(errno, "cannot allocate wakeup pipe for new thread");
+        error(errno, "cannot allocate wakeup pipe for new thread");
+        return -1;
     }
     ti->wakefd_recv = pipefds[0];
     ti->wakefd_send = pipefds[1];
     socket_set_blocking(ti->wakefd_recv, 0);
     socket_set_blocking(ti->wakefd_send, 0);
-    ti->joiners = NULL;
 
     /* Find a free table entry and claim it. */
     first_try = next_threadnumber;
@@ -191,8 +198,9 @@ static long fill_threadinfo(pthread_t id, const char *name,
         ti->number = next_threadnumber++;
         /* Check if we looped all the way around the thread table. */
         if (ti->number == first_try + THREADTABLE_SIZE) {
-            panic(0, "Cannot have more than %d active threads",
-                  THREADTABLE_SIZE);
+            error(0, "Cannot have more than %d active threads", THREADTABLE_SIZE);
+            ti->number = -1;
+            return -1;
         }
     } while (THREAD(ti->number) != NULL);
     THREAD(ti->number) = ti;
@@ -240,23 +248,16 @@ static void delete_threadinfo(void)
 
     threadinfo = getthreadinfo();
     gwlist_destroy(threadinfo->joiners, NULL);
-    close(threadinfo->wakefd_recv);
-    close(threadinfo->wakefd_send);
-    THREAD(threadinfo->number) = NULL;
-    active_threads--;
+    if (threadinfo->wakefd_recv != -1)
+        close(threadinfo->wakefd_recv);
+    if (threadinfo->wakefd_send != -1)
+        close(threadinfo->wakefd_send);
+    if (threadinfo->number != -1) {
+        THREAD(threadinfo->number) = NULL;
+        active_threads--;
+    }
     gw_assert(threadinfo != &mainthread);
     gw_free(threadinfo);
-}
-
-static void create_threadinfo_main(void)
-{
-    int ret;
-
-    fill_threadinfo(pthread_self(), "main", NULL, &mainthread);
-    ret = pthread_setspecific(tsd_key, &mainthread);
-    if (ret != 0) {
-        panic(ret, "gwthread-pthread: pthread_setspecific failed");
-    }
 }
 
 void gwthread_init(void)
@@ -276,7 +277,13 @@ void gwthread_init(void)
     }
     active_threads = 0;
 
-    create_threadinfo_main();
+    /* create main thread info */
+    if (fill_threadinfo(pthread_self(), "main", NULL, &mainthread) == -1)
+        panic(0, "gwthread-pthread: unable to fill main threadinfo.");
+
+    ret = pthread_setspecific(tsd_key, &mainthread);
+    if (ret != 0)
+        panic(ret, "gwthread-pthread: pthread_setspecific failed");
 }
 
 /* Note that the gwthread library can't shut down completely, because
@@ -326,6 +333,15 @@ static void *new_thread(void *arg)
     /* Make sure we don't start until our parent has entered
      * our thread info in the thread table. */
     lock();
+    /* check for initialization errors */
+    if (p->failed) {
+        /* Must free p before signaling our exit, otherwise there is
+        * a race with gw_check_leaks at shutdown. */
+        gw_free(p);
+        delete_threadinfo();
+        unlock();
+        return NULL;
+    }
     unlock();
 
     /* This has to be done here, because pthread_setspecific cannot
@@ -430,6 +446,7 @@ static long spawn_thread(gwthread_func_t *func, const char *name, void *arg)
     p->func = func;
     p->arg = arg;
     p->ti = gw_malloc(sizeof(*(p->ti)));
+    p->failed = 0;
 
     /* Lock the thread table here, so that new_thread can block
      * on that lock.  That way, the new thread won't start until
@@ -452,13 +469,18 @@ static long spawn_thread(gwthread_func_t *func, const char *name, void *arg)
     }
     ret = pthread_detach(id);
     if (ret != 0) {
-        warning(ret, "Could not detach new thread.");
+        error(ret, "Could not detach new thread.");
     }
 
     new_thread_id = fill_threadinfo(id, name, func, p->ti);
+    if (new_thread_id == -1)
+        p->failed = 1;
     unlock();
     
-    debug("gwlib.gwthread", 0, "Started thread %ld (%s)", new_thread_id, name);
+    if (new_thread_id != -1)
+        debug("gwlib.gwthread", 0, "Started thread %ld (%s)", new_thread_id, name);
+    else
+        debug("gwlib.gwthread", 0, "Failed to start thread (%s)", name);
 
     return new_thread_id;
 }

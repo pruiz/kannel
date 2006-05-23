@@ -1,4 +1,8 @@
-2006-05-15  Alexander Malysh <amalysh at kannel.org>
+2006-05-23  Alexander Malysh <amalysh at kannel.org>
+  * gwlib/gwthread-pthread.c: don't panic if new thread could not be started.
+    This bug easy triggered when process runs out of file descriptors.
+
+2006-05-23  Alexander Malysh <amalysh at kannel.org>
   * gw/smsc/smsc_at.c: fixed wrong condition for octstr_len(temp).
     Thanks to Andrija Petrovic <andrija.petrovic at software888.com> for patch.
     [Msg-Id: <446B1C5B.50500@software888.com>]
