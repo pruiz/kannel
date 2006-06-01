@@ -1232,6 +1232,7 @@ static Msg *handle_dlr(SMPP *smpp, Octstr *destination_addr, Octstr *short_messa
         else if (stat != NULL && (octstr_compare(stat, octstr_imm("ACCEPTD")) == 0 ||
                         octstr_compare(stat, octstr_imm("ACKED")) == 0 ||
                         octstr_compare(stat, octstr_imm("BUFFRED")) == 0 ||
+                        octstr_compare(stat, octstr_imm("BUFFERD")) == 0 ||                        
                         octstr_compare(stat, octstr_imm("ENROUTE")) == 0))
             dlrstat = DLR_BUFFERED;
         else

@@ -1,3 +1,9 @@
+2006-06-01  Stipe Tolj  <stolj at kannel.org>
+  * gw/smsc/smsc_smpp.c: adding possible alternative for DLR message
+    state string for state 'buffered'.
+    Thanks to Tom Sommer <mail@tomsommer.dk> for providing a patch.
+    [Msg-Id: <20558.62.242.67.218.1148906304.squirrel@webmail.dreamcoder.dk>]
+
 2006-05-23  Alexander Malysh <amalysh at kannel.org>
   * gwlib/gwthread-pthread.c: don't panic if new thread could not be started.
     This bug easy triggered when process runs out of file descriptors.
