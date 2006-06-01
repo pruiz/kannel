@@ -1,4 +1,12 @@
 2006-06-01  Stipe Tolj  <stolj at kannel.org>
+  * gw/smsc/smsc_smpp.c: fixing bug #345, causing long overflow on 32 bit
+    systems while processing message id values from submit_sm_resp PDU that
+    are in hex representation.
+    Thanks a lot to Ady Wicalsono <ady.wicaksono@infokom.net> for report 
+    and provided solution via patch in bug database.
+    [Msg-Id: <446C4175.6090802@infokom.net>]
+    
+2006-06-01  Stipe Tolj  <stolj at kannel.org>
   * gw/smsc/smsc_smpp.c: adding possible alternative for DLR message
     state string for state 'buffered'.
     Thanks to Tom Sommer <mail@tomsommer.dk> for providing a patch.
