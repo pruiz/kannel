@@ -1,4 +1,11 @@
 2006-06-03  Alexander Malysh <amalysh at kannel.org>
+  * gwlib/xmlrpc.c: various fixes:
+    - write <string></string> tags for empty string
+    - extra chars in string should be replaced with http entities
+    - don't panic if i in xmlrpc_get_param bigger as count of method call
+      params
+
+2006-06-03  Alexander Malysh <amalysh at kannel.org>
   * configure, configure.in: switched to autoconf 2.5 and added check
     for large file support.
 

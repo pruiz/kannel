@@ -62,7 +62,7 @@
  *
  * Kalle Marjola 2001 for project Kannel
  * Stipe Tolj <stolj@wapme.de>
- * Robert Ga³ach <robert.galach@my.tenbit.pl> 
+ * Robert Gaach <robert.galach@my.tenbit.pl> 
  */
  
 #include <libxml/xmlmemory.h>
@@ -994,11 +994,15 @@ Octstr *xmlrpc_scalar_print(XMLRPCScalar *scalar, int level)
         case xr_string:
             if (scalar->s_str == NULL) {
 #ifdef XR_ENABLE_EMPTY_STRING_VALUES
-                os = octstr_create("");
+                os = octstr_format("%*s<string></string>\n", 
+                                   level, "");
 #endif
             } else {
+                Octstr *tmp = octstr_duplicate(scalar->s_str);
+                octstr_convert_to_html_entities(tmp);
                 os = octstr_format("%*s<string>%S</string>\n", 
-                                   level, "", scalar->s_str);
+                                   level, "", tmp);
+                octstr_destroy(tmp);
             }
             break;
         case xr_date:
@@ -1073,7 +1077,7 @@ XMLRPCValue *xmlrpc_get_param(XMLRPCDocument *xrdoc, int i)
     if (xrdoc == NULL)
         return NULL;
     if (xrdoc->d_type == xr_methodcall && xrdoc->methodcall != NULL) 
-        return gwlist_get(xrdoc->methodcall->params, i);
+        return gwlist_len(xrdoc->methodcall->params) > i ? gwlist_get(xrdoc->methodcall->params, i) : NULL;
     else if (xrdoc->d_type == xr_methodresponse && xrdoc->methodresponse != NULL
              && i == 0)
         return xrdoc->methodresponse->param;
@@ -1262,7 +1266,7 @@ Octstr *xmlrpc_print_array(List *v_array,  int level)
     if (v_array == NULL)
         return NULL;
     
-    body = octstr_format("%*s<array>\n%*s<data>", level, "", level+2, "");
+    body = octstr_format("%*s<array>\n%*s<data>\n", level, "", level+2, "");
 
     for(i = 0; i < gwlist_len(v_array); i++) {
         element = gwlist_get(v_array, i);
