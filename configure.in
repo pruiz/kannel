@@ -62,7 +62,7 @@ dnl
 
 dnl initialization
 
-AC_PREREQ(2.13)
+AC_PREREQ(2.5)
 
 AC_INIT(gw/alt_charsets.h)
 AC_CONFIG_HEADER(gw-config.h)
@@ -101,6 +101,16 @@ docdir='${prefix}/share/doc/kannel'
 dnl Checks system type.
 AC_CONFIG_SECTION([Running system checks])
 AC_CANONICAL_HOST
+
+dnl Checks for programs.
+
+AC_PROG_CC
+AC_PROG_INSTALL
+AC_PROG_RANLIB
+AC_PROG_YACC
+AC_PROG_LEX
+AC_PATH_PROG(CONVERT, convert)
+AC_PATH_PROG(PERL, perl)
 
 dnl Apply system specific rules.
 dnl Executable extension for systems that need one, i.e. Cygwin
@@ -160,18 +170,18 @@ AC_ARG_WITH(libs,
 [  --with-libs=FLAGS       use FLAGS for extra libraries],
 LIBS="$LIBS $withval")
 
-dnl Checks for programs.
-
-AC_PROG_CC
-AC_PROG_INSTALL
-AC_PROG_RANLIB
-AC_PROG_YACC
-AC_PROG_LEX
-AC_PATH_PROG(CONVERT, convert)
-AC_PATH_PROG(PERL, perl)
-
 dnl Check whether compiler supports inline
 AC_C_INLINE
+
+dnl Check for how to do large files
+
+AC_SYS_LARGEFILE(CFLAGS)
+if test ${ac_cv_sys_file_offset_bits} != no ; then
+    CFLAGS="$CFLAGS -D_FILE_OFFSET_BITS=${ac_cv_sys_file_offset_bits}"
+fi
+if test ${ac_cv_sys_large_files} != "no" ; then
+    CFLAGS="$CFLAGS -D_LARGE_FILES=${ac_cv_sys_large_files}"
+fi
 
 dnl Check for word sizes.
 
@@ -218,8 +228,7 @@ AC_TRY_COMPILE(, [char *func = __func__;],
 dnl Checks for library functions.
 
 AC_CHECK_FUNCS(gettimeofday select socket strdup getopt_long localtime_r gmtime_r backtrace srandom)
-AC_CHECK_FUNC(getopt, , LIBOBJS="$LIBOBJS utils/attgetopt.o")
-AC_SUBST(LIBOBJS)
+AC_CHECK_FUNC(getopt, [], [AC_LIBOBJ([utils/attgetopt])])
 
 dnl Check if we have reentrant gethostbyname and which one
 AC_CHECK_FUNC(gethostbyname_r, [ AC_FUNC_WHICH_GETHOSTBYNAME_R ], [

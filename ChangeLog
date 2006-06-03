@@ -1,3 +1,7 @@
+2006-06-03  Alexander Malysh <amalysh at kannel.org>
+  * configure, configure.in: switched to autoconf 2.5 and added check
+    for large file support.
+
 2006-06-01  Stipe Tolj  <stolj at kannel.org>
   * gw/smsc/smsc_smpp.c: fixing bug #345, causing long overflow on 32 bit
     systems while processing message id values from submit_sm_resp PDU that
