@@ -433,7 +433,7 @@ static WTPInitMachine *init_machine_find_or_create(WAPEvent *event)
     break;
 
     case TimerTO_R:
-        mid = event->u.TimerTO_A.handle;
+        mid = event->u.TimerTO_R.handle;
     break;
 
     default:
