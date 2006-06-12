@@ -316,7 +316,7 @@ static List *expand_file(Octstr *file, int forward)
     List *lines; 
     List *expand; 
     long lineno; 
-    CfgLoc *loc; 
+    CfgLoc *loc = NULL; 
  
     os = octstr_read_file(octstr_get_cstr(file)); 
     if (os == NULL) 
@@ -326,15 +326,29 @@ static List *expand_file(Octstr *file, int forward)
     lineno = 0; 
     expand = gwlist_create(); 
               
-    while ((line = gwlist_extract_first(lines)) != NULL) { 
-        ++lineno; 
-        loc = cfgloc_create(file); 
-        loc->line_no = lineno; 
-        loc->line = line; 
-        if (forward) 
-            gwlist_append(expand, loc); 
-        else 
-            gwlist_insert(expand, 0, loc); 
+    while ((line = gwlist_extract_first(lines)) != NULL) {
+    	if (loc == NULL) {
+            ++lineno; 
+            loc = cfgloc_create(file); 
+            loc->line_no = lineno;
+            loc->line = octstr_create("");
+            if (forward) 
+                gwlist_append(expand, loc); 
+            else 
+                gwlist_insert(expand, 0, loc);
+        }
+        /* check for escape and then add to existing loc */
+        if (octstr_get_char(line, octstr_len(line) - 1) == '\\') {
+            octstr_delete(line, octstr_len(line) - 1, 1);
+            octstr_append(loc->line, line); 
+            /* check for second escape */
+            if (octstr_get_char(line, octstr_len(line) - 1) == '\\')
+                loc = NULL;
+        } else {
+            octstr_append(loc->line, line);
+            loc = NULL;
+        }
+        octstr_destroy(line);
     } 
     
     /* 
