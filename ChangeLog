@@ -1,3 +1,10 @@
+2006-06-13  Stipe Tolj  <stolj at kannel.org>
+  * gw/smsc/smsc_smpp.c: fixing bug report #334, actually this is a
+    feature to auto-detect if we have hex values for the message id
+    in submit_sm_resp vs. DLR messages via a if OR statement.
+    Thanks to Martin Conte <reflejo@gmail.com> for this patch.
+    [Msg-Id: <92cf04420606040932k3ae8b166of0d111f9e825f4ca@mail.gmail.com>]
+    
 2006-06-12  Stipe Tolj  <stolj at kannel.org>
   * doc/userguide/userguide.xml: adding a paragraph descibing the new 
     line wrap delimiter '\' (backslash).

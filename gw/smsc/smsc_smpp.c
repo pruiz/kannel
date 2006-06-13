@@ -1264,7 +1264,8 @@ static Msg *handle_dlr(SMPP *smpp, Octstr *destination_addr, Octstr *short_messa
             /* the default, C string */
             tmp = octstr_duplicate(msgid);
         } else {
-            if (smpp->smpp_msg_id_type & 0x02) {
+            if ((smpp->smpp_msg_id_type & 0x02) || 
+                (!octstr_check_range(msgid, 0, octstr_len(msgid), gw_isdigit))) {
                 tmp = octstr_format("%lu", strtoll(octstr_get_cstr(msgid), NULL, 16));
             } else {
                 tmp = octstr_format("%lu", strtoll(octstr_get_cstr(msgid), NULL, 10));
@@ -1480,7 +1481,9 @@ static void handle_pdu(SMPP *smpp, Connection *conn, SMPP_PDU *pdu,
                     /* the default, C string */
                     tmp = octstr_duplicate(pdu->u.submit_sm_resp.message_id);
                 } else {
-                    if (smpp->smpp_msg_id_type & 0x01) {
+                    if ((smpp->smpp_msg_id_type & 0x01) || 
+                       (!octstr_check_range(pdu->u.submit_sm_resp.message_id, 0, 
+                            octstr_len(pdu->u.submit_sm_resp.message_id), gw_isdigit))) {
                         tmp = octstr_format("%lu", strtoll(  /* hex */
                             octstr_get_cstr(pdu->u.submit_sm_resp.message_id), NULL, 16));
                     } else {
