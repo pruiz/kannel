@@ -73,6 +73,7 @@ typedef struct CfgGroup CfgGroup;
 Cfg *cfg_create(Octstr *filename);
 void cfg_destroy(Cfg *cfg);
 int cfg_read(Cfg *cfg);
+void cfg_add_hooks(void *allowed, void *single);
 
 CfgGroup *cfg_get_single_group(Cfg *cfg, Octstr *name);
 List *cfg_get_multi_group(Cfg *cfg, Octstr *name);

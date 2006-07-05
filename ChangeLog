@@ -1,4 +1,14 @@
 2006-07-05  Stipe Tolj  <stolj at kannel.org>
+  * gwlib/cfg.[ch]: adding support for hooking config group definition files
+    as our own gwlib/cfg.def from external add-on modules to the core via
+    cfg_add_hooks(), taking two function arguments within the local scope of
+    the external module, representing the is_allowed_in_group() and 
+    is_single_group() from the core. In the local scope the external .def
+    file is included as we do in the core. The purpose of this cfg_add_hooks()
+    function is to allow add-on modules to use seamlessly the core's cfg.c
+    code for semantical config checks at startup.
+    
+2006-07-05  Stipe Tolj  <stolj at kannel.org>
   * gwlib/http.c: fixing bug #326, which causes panic in check_pool_conn() 
     when using HTTP/1.1 keep-alive connections, hence the dict_get() lookup
     returned a NULL and we pass this list untested to gwlib_delete_equal()
