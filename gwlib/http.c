@@ -848,7 +848,7 @@ static void check_pool_conn(Connection *conn, void *data)
         List *list;
         mutex_lock(conn_pool_lock);
         list = dict_get(conn_pool, key);
-        if (gwlist_delete_equal(list, conn) > 0) {
+        if (list != NULL && gwlist_delete_equal(list, conn) > 0) {
             /*
              * ok, connection was still within pool. So it's
              * safe to destroy this connection.

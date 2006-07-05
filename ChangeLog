@@ -1,3 +1,9 @@
+2006-07-05  Stipe Tolj  <stolj at kannel.org>
+  * gwlib/http.c: fixing bug #326, which causes panic in check_pool_conn() 
+    when using HTTP/1.1 keep-alive connections, hence the dict_get() lookup
+    returned a NULL and we pass this list untested to gwlib_delete_equal()
+    which causes the panic. Thanks a lot to Vincent and Martin on solving.
+
 2006-06-13  Stipe Tolj  <stolj at kannel.org>
   * gw/smsc/smsc_smpp.c: fixing bug report #334, actually this is a
     feature to auto-detect if we have hex values for the message id
