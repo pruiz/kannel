@@ -451,139 +451,143 @@ const char *smpp_error_to_string(enum SMPP_ERROR_MESSAGES error)
 {
     switch (error) {
         case SMPP_ESME_ROK:
-	    return "OK";
+            return "OK";
         case SMPP_ESME_RINVMSGLEN:
-	    return "Message Length is invalid";
+            return "Message Length is invalid";
         case SMPP_ESME_RINVCMDLEN:
-	    return "Command Length is invalid";
+            return "Command Length is invalid";
         case SMPP_ESME_RINVCMDID:
-	    return "Invalid Command ID";
+            return "Invalid Command ID";
         case SMPP_ESME_RINVBNDSTS:
-	    return "Incorrect BIND Status for given command";
+            return "Incorrect BIND Status for given command";
         case SMPP_ESME_RALYNBD:
-	    return "ESME Already in Bound State";
-	case SMPP_ESME_RINVPRTFLG:
-	    return "Invalid Priority Flag";
+            return "ESME Already in Bound State";
+        case SMPP_ESME_RINVPRTFLG:
+            return "Invalid Priority Flag";
         case SMPP_ESME_RINVREGDLVFLG:
-	    return "Invalid Registered Delivery Flag";
+            return "Invalid Registered Delivery Flag";
         case SMPP_ESME_RSYSERR:
-	    return "System Error";
+            return "System Error";
         case SMPP_ESME_RINVSRCADR:
-	    return "Invalid Source Address";
+            return "Invalid Source Address";
         case SMPP_ESME_RINVDSTADR:
-	    return "Invalid Destination Address";
+            return "Invalid Destination Address";
         case SMPP_ESME_RBINDFAIL:
-	    return "Bind Failed";
+            return "Bind Failed";
         case SMPP_ESME_RINVPASWD:
-	    return "Invalid Password";
+            return "Invalid Password";
         case SMPP_ESME_RINVSYSID:
-	    return "Invalid System ID";
-	case SMPP_ESME_RCANCELFAIL:
-	    return "Cancel SM Failed";
-	case SMPP_ESME_RREPLACEFAIL:
-	    return "Replace SM Failed";
+            return "Invalid System ID";
+        case SMPP_ESME_RCANCELFAIL:
+            return "Cancel SM Failed";
+        case SMPP_ESME_RREPLACEFAIL:
+            return "Replace SM Failed";
         case SMPP_ESME_RMSGQFUL:
-	    return "Message Queue Full";
-	case SMPP_ESME_RINVSERTYP:
-	    return "Invalid Service Type";
-	case SMPP_ESME_RINVNUMDESTS:
-	    return "Invalid number of destinations";
-	case SMPP_ESME_RINVDLNAME:
-	    return "Invalid Distribution List Name";
-	case SMPP_ESME_RINVDESTFLAG:
-	    return "Destination flag is invalid";
-	case SMPP_ESME_RINVSUBREP:
-	    return "Submit w/replace not supported/allowed";
+            return "Message Queue Full";
+        case SMPP_ESME_RINVSERTYP:
+            return "Invalid Service Type";
+        case SMPP_ESME_RINVNUMDESTS:
+            return "Invalid number of destinations";
+        case SMPP_ESME_RINVDLNAME:
+            return "Invalid Distribution List Name";
+        case SMPP_ESME_RINVDESTFLAG:
+            return "Destination flag is invalid";
+        case SMPP_ESME_RINVSUBREP:
+            return "Submit w/replace not supported/allowed";
         case SMPP_ESME_RINVESMCLASS:
-	    return "Invalid esm_class field data";
-	case SMPP_ESME_RCNTSUBDL:
-	    return "Cannot Submit to Distribution List";
-	case SMPP_ESME_RSUBMITFAIL:
-	    return "Submit failed";
+            return "Invalid esm_class field data";
+        case SMPP_ESME_RCNTSUBDL:
+            return "Cannot Submit to Distribution List";
+        case SMPP_ESME_RSUBMITFAIL:
+            return "Submit failed";
         case SMPP_ESME_RINVSRCTON:
-	    return "Invalid Source address TON"; 
-	case SMPP_ESME_RINVSRCNPI:
-	    return "Invalid Source address NPI";
-	case SMPP_ESME_RINVDSTTON:
-	    return "Invalid Destination address TON";
-	case SMPP_ESME_RINVDSTNPI:
-	    return "Invalid Destination address NPI";
-	case SMPP_ESME_RINVSYSTYP:
-	    return "Invalid system_type field";
-	case SMPP_ESME_RINVREPFLAG:
-	    return "Invalid replace_if_present flag";
-	case SMPP_ESME_RINVNUMMSGS:
-	    return "Invalid number of messages";
+            return "Invalid Source address TON"; 
+        case SMPP_ESME_RINVSRCNPI:
+            return "Invalid Source address NPI";
+        case SMPP_ESME_RINVDSTTON:
+            return "Invalid Destination address TON";
+        case SMPP_ESME_RINVDSTNPI:
+            return "Invalid Destination address NPI";
+        case SMPP_ESME_RINVSYSTYP:
+            return "Invalid system_type field";
+        case SMPP_ESME_RINVREPFLAG:
+            return "Invalid replace_if_present flag";
+        case SMPP_ESME_RINVNUMMSGS:
+            return "Invalid number of messages";
         case SMPP_ESME_RTHROTTLED:
-	    return "Throttling error";
+            return "Throttling error";
         case SMPP_ESME_RINVSCHED:
-	    return "Invalid Scheduled Delivery Time";
+            return "Invalid Scheduled Delivery Time";
         case SMPP_ESME_RINVEXPIRY:
-	    return "Invalid message validity period";
-	case SMPP_ESME_RINVDFTMSGID:
-	    return "Predefined Message ID is Invalid or specific predefined message was not found";
+            return "Invalid message validity period";
+        case SMPP_ESME_RINVDFTMSGID:
+            return "Predefined Message ID is Invalid or specific predefined message was not found";
         case SMPP_ESME_RX_T_APPN:
-	    return "ESME Receiver Temporary App Error Code";
+            return "ESME Receiver Temporary App Error Code";
         case SMPP_ESME_RX_P_APPN:
-	    return "ESME Receiver Permanent App Error Code";
+            return "ESME Receiver Permanent App Error Code";
         case SMPP_ESME_RX_R_APPN:
-	    return "ESME Receiver Reject Message Error Code";
-	case SMPP_ESME_RQUERYFAIL:
-	    return "query_sm request failed";
-	case SMPP_ESME_RINVTLVSTREAM:
-	    return "Error in optional part of the PDU Body";
-	case SMPP_ESME_RTLVNOTALLWD:
-	    return "TLV not allowed";
-	case SMPP_ESME_RINVTLVLEN:
-	    return "Invalid Parameter Length";
-	case SMPP_ESME_RMISSINGTLV:
-	    return "Expected TLV missing";
-	case SMPP_ESME_RINVTLVVAL:
-	    return "Invalid TLV value";
-	case SMPP_ESME_RDELIVERYFAILURE:
-	    return "Transaction Delivery Failure";
-	case SMPP_ESME_RUNKNOWNERR:
-	    return "Unknown Error";
-	case SMPP_ESME_RSERTYPUNAUTH:
-	    return "ESME Not authorized to use specified service_type";
-	case SMPP_ESME_RPROHIBITED:
-	    return "ESME Prohibited from using specified operation";
-	case SMPP_ESME_RSERTYPUNAVAIL:
-	    return "Specified service_type is unavailable";
-	case SMPP_ESME_RSERTYPDENIED:
-	    return "Specified service_type is denied";
-	case SMPP_ESME_RINVDCS:
-	    return "Invalid Data Coding Scheme";
-	case SMPP_ESME_RINVSRCADDRSUBUNIT:
-	    return "Source Address Sub unit is invalid";
-	case SMPP_ESME_RINVDSTADDRSUBUNIT:
-	    return "Destination Address Sub unit is invalid";
-	case SMPP_ESME_RINVBCASTFREQINT:
-	    return "Broadcast Frequency Interval is invalid";
-	case SMPP_ESME_RINVBCASTALIAS_NAME:
-	    return "Broadcast Alias Name is invalid";
-	case SMPP_ESME_RINVBCASTAREAFMT:
-	    return "Broadcast Area Format is invalid";
-	case SMPP_ESME_RINVNUMBCAST_AREAS:
-	    return "Number of Broadcast Areas is invalid";
-	case SMPP_ESME_RINVBCASTCNTTYPE:
-	    return "Broadcast Content Type is invalid";
-	case SMPP_ESME_RINVBCASTMSGCLASS:
-	    return "Broadcast Message Class is invalid";
-	case SMPP_ESME_RBCASTFAIL:
-	    return "broadcast_sm operation failed";
-	case SMPP_ESME_RBCASTQUERYFAIL:
-	    return "broadcast_query_sm operation failed";
-	case SMPP_ESME_RBCASTCANCELFAIL:
-	    return "broadcast_cancel_sm operation failed";
-	case SMPP_ESME_RINVBCAST_REP:
-	    return "Number of Repeated Broadcasts is invalid";
-	case SMPP_ESME_RINVBCASTSRVGRP:
-	    return "Broadcast Service Group is invalid";
-	case SMPP_ESME_RINVBCASTCHANIND:
-	    return "Broadcast Channel Indicator is invalid";
+            return "ESME Receiver Reject Message Error Code";
+        case SMPP_ESME_RQUERYFAIL:
+            return "query_sm request failed";
+        case SMPP_ESME_RINVTLVSTREAM:
+            return "Error in optional part of the PDU Body";
+        case SMPP_ESME_RTLVNOTALLWD:
+            return "TLV not allowed";
+        case SMPP_ESME_RINVTLVLEN:
+            return "Invalid Parameter Length";
+        case SMPP_ESME_RMISSINGTLV:
+            return "Expected TLV missing";
+        case SMPP_ESME_RINVTLVVAL:
+            return "Invalid TLV value";
+        case SMPP_ESME_RDELIVERYFAILURE:
+            return "Transaction Delivery Failure";
+        case SMPP_ESME_RUNKNOWNERR:
+            return "Unknown Error";
+        case SMPP_ESME_RSERTYPUNAUTH:
+            return "ESME Not authorized to use specified service_type";
+        case SMPP_ESME_RPROHIBITED:
+            return "ESME Prohibited from using specified operation";
+        case SMPP_ESME_RSERTYPUNAVAIL:
+            return "Specified service_type is unavailable";
+        case SMPP_ESME_RSERTYPDENIED:
+            return "Specified service_type is denied";
+        case SMPP_ESME_RINVDCS:
+            return "Invalid Data Coding Scheme";
+        case SMPP_ESME_RINVSRCADDRSUBUNIT:
+            return "Source Address Sub unit is invalid";
+        case SMPP_ESME_RINVDSTADDRSUBUNIT:
+            return "Destination Address Sub unit is invalid";
+        case SMPP_ESME_RINVBCASTFREQINT:
+            return "Broadcast Frequency Interval is invalid";
+        case SMPP_ESME_RINVBCASTALIAS_NAME:
+            return "Broadcast Alias Name is invalid";
+        case SMPP_ESME_RINVBCASTAREAFMT:
+            return "Broadcast Area Format is invalid";
+        case SMPP_ESME_RINVNUMBCAST_AREAS:
+            return "Number of Broadcast Areas is invalid";
+        case SMPP_ESME_RINVBCASTCNTTYPE:
+            return "Broadcast Content Type is invalid";
+        case SMPP_ESME_RINVBCASTMSGCLASS:
+            return "Broadcast Message Class is invalid";
+        case SMPP_ESME_RBCASTFAIL:
+            return "broadcast_sm operation failed";
+        case SMPP_ESME_RBCASTQUERYFAIL:
+            return "broadcast_query_sm operation failed";
+        case SMPP_ESME_RBCASTCANCELFAIL:
+            return "broadcast_cancel_sm operation failed";
+        case SMPP_ESME_RINVBCAST_REP:
+            return "Number of Repeated Broadcasts is invalid";
+        case SMPP_ESME_RINVBCASTSRVGRP:
+            return "Broadcast Service Group is invalid";
+        case SMPP_ESME_RINVBCASTCHANIND:
+            return "Broadcast Channel Indicator is invalid";
 
-	default:
-	    return "Unknown/Reserved";
+        default:
+            /* tell the user that we have a vendor-specific beast here */
+            if (error >= 0x0400 && error <= 0x04FF)
+                return "Vendor-specific error, please refer to your SMPP provider";
+            else
+                return "Unknown/Reserved";
     }
 }

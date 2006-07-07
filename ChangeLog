@@ -1,3 +1,8 @@
+2006-07-07  Stipe Tolj  <stolj at kannel.org>
+  * gw/smsc/smpp_pdu.c: added a new string for smpp_error_to_string() 
+    indicating that we have a value in the vendor-specific range. NLC.
+  * gw/smsc/smsc_http.c: changed email reference. NLC.
+
 2006-07-05  Stipe Tolj  <stolj at kannel.org>
   * gwlib/cfg.[ch]: adding support for hooking config group definition files
     as our own gwlib/cfg.def from external add-on modules to the core via

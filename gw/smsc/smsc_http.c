@@ -1253,7 +1253,7 @@ static void xidris_receive_sms(SMSCConn *conn, HTTPClient *client,
 /*----------------------------------------------------------------
  * Wapme SMS Proxy
  *
- * Stipe Tolj <tolj@wapme-systems.de>
+ * Stipe Tolj <stolj@kannel.org>
  */
 
 static void wapme_smsproxy_send_sms(SMSCConn *conn, Msg *sms)
