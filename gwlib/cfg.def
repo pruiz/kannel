@@ -243,6 +243,8 @@ SINGLE_GROUP(configuration,
 SINGLE_GROUP(smsbox,
     OCTSTR(smsbox-id)
     OCTSTR(bearerbox-host)
+    OCTSTR(bearerbox-port)
+    OCTSTR(bearerbox-port-ssl)
     OCTSTR(sendsms-port)
     OCTSTR(sendsms-port-ssl)
     OCTSTR(sendsms-interface)    

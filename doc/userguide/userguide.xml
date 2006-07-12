@@ -5112,6 +5112,24 @@ ssl-certkey-file
         The machine in which the bearerbox is. 
      </entry></row>
 
+   <row><entry><literal>bearerbox-port (o)</literal></entry>
+     <entry>port-number</entry>
+     <entry valign="bottom">
+        This is the port number to which smsbox will connect bearerbox.
+        If not given <literal>smsbox-port</literal> from core group used.
+     </entry></row>
+	  
+   <row><entry><literal>bearerbox-port-ssl (o)</literal></entry>
+     <entry>bool</entry>
+     <entry valign="bottom">
+         If set to true, the smsbox connection will be SSL-enabled.
+	 Your smsbox will connect using SSL to the bearerbox
+	 then. This is used to secure communication between bearerbox
+	 and smsboxes in case they are in separate networks operated and
+	 the TCP communication is not secured on a lower network layer.
+         If not given <literal>smsbox-port-ssl</literal> from core group used.
+     </entry></row>
+
    <row><entry><literal>smsbox-id (o)</literal></entry>
      <entry>string</entry>
      <entry valign="bottom">

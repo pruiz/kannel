@@ -3335,8 +3335,7 @@ static Cfg *init_smsbox(Cfg *cfg)
 
     grp = cfg_get_single_group(cfg, octstr_imm("core"));
     
-    if (cfg_get_integer(&bb_port, grp, octstr_imm("smsbox-port")) == -1)
-	panic(0, "Missing or bad 'smsbox-port' in core group");
+    cfg_get_integer(&bb_port, grp, octstr_imm("smsbox-port"));
 #ifdef HAVE_LIBSSL
     cfg_get_bool(&bb_ssl, grp, octstr_imm("smsbox-port-ssl"));
 #endif /* HAVE_LIBSSL */
@@ -3372,6 +3371,11 @@ static Cfg *init_smsbox(Cfg *cfg)
 	octstr_destroy(bb_host);
 	bb_host = p;
     }
+    cfg_get_integer(&bb_port, grp, octstr_imm("bearerbox-port"));
+#ifdef HAVE_LIBSSL
+    if (cfg_get_bool(&ssl, grp, octstr_imm("bearerbox-port-ssl")) != -1)
+        bb_ssl = ssl;
+#endif /* HAVE_LIBSSL */
 
     cfg_get_bool(&mo_recode, grp, octstr_imm("mo-recode"));
     if(mo_recode < 0)
