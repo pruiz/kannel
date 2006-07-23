@@ -57,7 +57,7 @@
 /*
  * dbpool_sqlite3.c - implement SQLite3 operations for generic database connection pool
  *
- * Stipe Tolj <stolj@wapme-group.de>
+ * Stipe Tolj <st@tolj.org>
  */
 
 #ifdef HAVE_SQLITE3
@@ -66,7 +66,7 @@
 static void *sqlite3_open_conn(const DBConf *db_conf)
 {
     sqlite3 *db = NULL;
-    SQLiteConf3 *conf = db_conf->sqlite3; /* make compiler happy */
+    SQLite3Conf *conf = db_conf->sqlite3; /* make compiler happy */
     char *errmsg = 0;
 
     /* sanity check */
@@ -123,7 +123,7 @@ static int sqlite3_check_conn(void *conn)
 
 static void sqlite3_conf_destroy(DBConf *db_conf)
 {
-    SQLiteConf *conf = db_conf->sqlite3;
+    SQLite3Conf *conf = db_conf->sqlite3;
 
     octstr_destroy(conf->file);
 

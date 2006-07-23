@@ -1,4 +1,8 @@
 2006-07-23  Stipe Tolj  <stolj at kannel.org>
+  * gwlib/dbpool.h, gwlib/dbpool_sqlite3.c: fixing naming scheme to reflect 
+    the sqlite3 version.
+    
+2006-07-23  Stipe Tolj  <stolj at kannel.org>
   * gwlib/cfg.def: add multi-group 'sqlite3-connection' to be used for various
     usage of sqlite3 support of dbpool.
 

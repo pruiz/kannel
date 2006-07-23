@@ -121,7 +121,7 @@ typedef struct {
 
 typedef struct {
     Octstr *file;
-} SQLiteConf3;
+} SQLite3Conf;
 
 typedef struct {
     Octstr *host;
@@ -138,7 +138,7 @@ typedef union {
     SDBConf *sdb;
     OracleConf *oracle;
     SQLiteConf *sqlite;
-    SQLiteConf3 *sqlite3;
+    SQLite3Conf *sqlite3;
     PgSQLConf *pgsql;
 } DBConf;
 
