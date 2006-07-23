@@ -1,3 +1,7 @@
+2006-07-23  Stipe Tolj  <stolj at kannel.org>
+  * gwlib/cfg.def: add multi-group 'sqlite3-connection' to be used for various
+    usage of sqlite3 support of dbpool.
+
 2006-07-12  Alexander Malysh <amalysh at kannel.org>
   * doc/userguide/userguide.xml, gw/smsbox.c, gwlib/cfg.def: applied patch
     that adds two new config options to smsbox group: bearerbox-port and

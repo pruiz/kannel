@@ -530,6 +530,13 @@ MULTI_GROUP(pgsql-connection,
     OCTSTR(max-connections)
 )
 
+
+MULTI_GROUP(sqlite3-connection,
+    OCTSTR(id)
+    OCTSTR(database)
+    OCTSTR(max-connections)
+)
+
  
 SINGLE_GROUP(dlr-db,
     OCTSTR(id)
