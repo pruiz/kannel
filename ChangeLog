@@ -1,3 +1,15 @@
+2006-08-28  Stipe Tolj  <stolj at kannel.org>
+  * gwlib/semaphore.c: type fixes. NLC. Thanks to Vincent for the catch.
+    [Msg-Id: <02c201c6ca8f$ce465e10$9600a8c0@vince>]
+  
+2006-08-28  Stipe Tolj  <stolj at kannel.org>
+  * gwlib/cfg.def, doc/userguide/userguide.xml, gw/smsbox.c: adding config 
+    directive 'max-pending-requests' for smsbox group to control the
+    outbound requests stream generated from smsbox towards HTTP application
+    servers. Thanks to Giulio Harding <giulio.harding@mnetcorporation.com> for
+    doing detailed analysis and problem report. Patch provided by Alex.
+    [Msg-Id: <op.tesvz1fpran2ed@ppc.local>]
+
 2006-07-23  Stipe Tolj  <stolj at kannel.org>
   * gwlib/dbpool.h, gwlib/dbpool_sqlite3.c: fixing naming scheme to reflect 
     the sqlite3 version.

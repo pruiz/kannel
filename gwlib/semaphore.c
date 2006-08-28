@@ -89,7 +89,7 @@ Semaphore *semaphore_create(long n)
 
 #ifdef HAVE_SEMAPHORE
     if (sem_init(&semaphore->sem, 0, (unsigned int) n) != 0)
-        panic(errno, "Couldnot initialize semaphore.");
+        panic(errno, "Could not initialize semaphore.");
 #else
     semaphore->list = gwlist_create();
     gwlist_add_producer(semaphore->list);
@@ -106,7 +106,7 @@ void semaphore_destroy(Semaphore *semaphore)
     if (semaphore != NULL) {
 #ifdef HAVE_SEMAPHORE
         if (sem_destroy(&semaphore->sem) != 0)
-            panic(errno, "Destroing semaphore while some threads are waiting.");
+            panic(errno, "Destroying semaphore while some threads are waiting.");
 #else
 	gwlist_destroy(semaphore->list, NULL);
 #endif
