@@ -5312,6 +5312,13 @@ ssl-certkey-file
         expressions for details.
         </entry>   
      </row>
+     <row><entry><literal>max-pending-requests</literal></entry>   
+        <entry>number of messages</entry>
+        <entry valign="bottom">
+        Maximum number of pending MO or DLR messages that are handled in parallel.
+        (Default: 512)
+        </entry>
+     </row>
 
   </tbody>
   </tgroup>

@@ -273,6 +273,7 @@ SINGLE_GROUP(smsbox,
     OCTSTR(white-list-regex)
     OCTSTR(black-list-regex)
     OCTSTR(immediate-sendsms-reply)
+    OCTSTR(max-pending-requests)
 )
 
 
