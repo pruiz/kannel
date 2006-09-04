@@ -1,3 +1,9 @@
+2006-09-03  Stipe Tolj  <stolj at kannel.org>
+  * gw/other_smskannel.conf: fixed deprecated option for fakesmsc's port
+    to -r instead of old -p. Thanks to Tiago PC <tpcordeiro@gmail.com>
+    for reporting this.
+    [Msg-Id: <2055f52c0609041159w72da5467g23ca3bb1da6f17dd@mail.gmail.com>]
+
 2006-08-28  Stipe Tolj  <stolj at kannel.org>
   * gwlib/semaphore.c: type fixes. NLC. Thanks to Vincent for the catch.
     [Msg-Id: <02c201c6ca8f$ce465e10$9600a8c0@vince>]
