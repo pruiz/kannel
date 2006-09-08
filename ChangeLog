@@ -1,3 +1,8 @@
+2006-09-09  Stipe Tolj  <stolj at kannel.org>
+  * gw/smsbox.c: fixing POST XML handling, where sender address was not
+    parsed from the XML. Thanks to Francesco Emmi for the patch.
+    [Msg-Id: <44FCB05F.9010004@tolj.org>]
+
 2006-09-03  Stipe Tolj  <stolj at kannel.org>
   * gw/other_smskannel.conf: fixed deprecated option for fakesmsc's port
     to -r instead of old -p. Thanks to Tiago PC <tpcordeiro@gmail.com>

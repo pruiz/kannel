@@ -688,6 +688,13 @@ static void get_x_kannel_from_xml(int requesttype , Octstr **type, Octstr **body
 	O_DESTROY(tmp);
     }
 
+    get_tag(*body, octstr_imm("oa"), &tmp, 0, 0);
+    if(tmp) {
+       /* sender address */
+        get_tag(tmp, octstr_imm("number"), from, 0, 0);
+        O_DESTROY(tmp);
+    }
+
     if(requesttype == mt_push) {
 	/* to (da/number) Multiple tags */ 
 	*tolist = gwlist_create();
@@ -852,7 +859,6 @@ static void get_x_kannel_from_xml(int requesttype , Octstr **type, Octstr **body
 	O_DESTROY(tmp);
     }
 
-    O_DESTROY(*body);
     if(text)
 	*body = text;
     else
