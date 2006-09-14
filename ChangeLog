@@ -2,7 +2,11 @@
   * test/test_store_dump.c: adding a simple test tool to msg_dump() the
     contents of a store-file.
   * test/test_list.c: adding a simple List object tester.
-  
+  * test/test_http_server.c: add a URI /mmsc to act as a MM1 interface HTTP
+    server and reply with a M-Send.conf PDU when MMS client is sending a 
+    HTTP POST with the M-Send.req PDU. Only for testing and capturing purposes.
+  * test/test_conn.c: add generic connection type tester.
+    
 2006-09-09  Stipe Tolj  <stolj at kannel.org>
   * gw/smsbox.c: fixing POST XML handling, where sender address was not
     parsed from the XML. Thanks to Francesco Emmi for the patch.

@@ -177,7 +177,27 @@ static void client_thread(void *arg)
             gwlist_append(resph, redirect_header);
             status = HTTP_FOUND; /* will provide 302 */
             octstr_destroy(uri);
-        } 
+        } else if (octstr_compare(url, octstr_imm("/mmsc")) == 0) {
+            /* fake a M-Send.conf PDU which is using MMSEncapsulation as body */
+            gwlist_destroy(resph, octstr_destroy_item);
+            octstr_destroy(reply_body);
+            reply_type = octstr_create("Content-Type: application/vnd.wap.mms-message");
+            reply_body = octstr_create("");
+            octstr_append_from_hex(reply_body, 
+                "8c81"              /* X-Mms-Message-Type: m-send-conf */
+                "98632d3862343300"  /* X-Mms-Transaction-ID: c-8b43 */
+                "8d90"              /* X-Mms-MMS-Version: 1.0 */
+                "9280"              /* Response-status: Ok */
+                "8b313331373939353434393639383434313731323400"
+            );                      /* Message-Id: 13179954496984417124 */
+            resph = gwlist_create();
+            gwlist_append(resph, reply_type);
+            /* safe the M-Send.req body into a temporary file */
+            pid_t pid = getpid();
+            FILE *f = fopen(octstr_get_cstr(octstr_format("/tmp/mms-body.%ld.%ld", pid, n)), "w");
+            octstr_print(f, body);
+            fclose(f);
+        }        
             
         if (verbose) {
             debug("test.http", 0, "request headers were");
@@ -244,6 +264,11 @@ static void help(void) {
     info(0, "  /redirect/ - respond with HTTP 302 and the location /redirect/<pid>");
     info(0, "    where <pid> is the process id. if a cgivar loop=<something> is given");
     info(0, "    then HTTP reponses will end up in a loop.");
+    info(0, "  /mmsc - fake a MMSC HTTP interface for M-Send.req PDUs send by a");
+    info(0, "    mobile MMS-capable device, responds with a M-Send.conf PDU and");
+    info(0, "    saves the M-Send.req body to a file /tmp/mms-body.<pid>.<n> in");
+    info(0, "    MMSEncapsulation encoded binary format");
+     
 }
 
 static void sigterm(int signo) {
