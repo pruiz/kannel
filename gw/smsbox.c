@@ -1818,6 +1818,8 @@ static void obey_request_thread(void *arg)
                 msg->sms.sender = NULL;
                 reply_msg->sms.receiver = msg->sms.receiver;
                 msg->sms.receiver = NULL;
+                reply_msg->sms.smsc_id = msg->sms.smsc_id;
+                msg->sms.smsc_id = NULL;
                 reply_msg->sms.msgdata = reply;
                 reply_msg->sms.time = time(NULL);	/* set current time */
 

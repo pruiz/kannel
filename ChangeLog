@@ -1,3 +1,8 @@
+2006-09-19  Stipe Tolj  <stolj at kannel.org>
+  * gw/smsbox.c: make sure we duplicate the smsc-id value for any reply msg
+    struct passing back to bearerbox for MT transport. This would otherwise
+    break certain routing setups where smsc-ids are needed.
+
 2006-09-14  Stipe Tolj  <stolj at kannel.org>
   * test/test_store_dump.c: adding a simple test tool to msg_dump() the
     contents of a store-file.
