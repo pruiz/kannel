@@ -1,4 +1,10 @@
 2006-09-24  Stipe Tolj  <stolj at kannel.org>
+  * test/test_http_server.c: fix compiler error for gcc 2.95.x due to a non
+    first declaration of variables inside a if block.
+    Thanks to Ben Suffolk <ben@vanilla.net> for reporting and patching.
+    [Msg-Id: <9D37D8D9-ABA6-45B9-AB54-F687A46952BA@vanilla.net>]
+    
+2006-09-24  Stipe Tolj  <stolj at kannel.org>
   * gw/bb_store.c: fix the "never dump store" behaviour in store_dumper().
     The if condition garantees that we don't need to dump the store if nothing
     happened while we have been sleeping, but it arrises a problem when we are

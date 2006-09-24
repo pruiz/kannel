@@ -179,6 +179,8 @@ static void client_thread(void *arg)
             octstr_destroy(uri);
         } else if (octstr_compare(url, octstr_imm("/mmsc")) == 0) {
             /* fake a M-Send.conf PDU which is using MMSEncapsulation as body */
+            pid_t pid = getpid();
+            FILE *f;
             gwlist_destroy(resph, octstr_destroy_item);
             octstr_destroy(reply_body);
             reply_type = octstr_create("Content-Type: application/vnd.wap.mms-message");
@@ -193,8 +195,7 @@ static void client_thread(void *arg)
             resph = gwlist_create();
             gwlist_append(resph, reply_type);
             /* safe the M-Send.req body into a temporary file */
-            pid_t pid = getpid();
-            FILE *f = fopen(octstr_get_cstr(octstr_format("/tmp/mms-body.%ld.%ld", pid, n)), "w");
+            f = fopen(octstr_get_cstr(octstr_format("/tmp/mms-body.%ld.%ld", pid, n)), "w");
             octstr_print(f, body);
             fclose(f);
         }        
