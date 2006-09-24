@@ -213,25 +213,36 @@ static int do_dump(void)
 static void store_dumper(void *arg)
 {
     time_t now;
+    int busy = 0;
 
-    while(active) {
+    while (active) {
         now = time(NULL);
         /*
          * write store to file up to each N. second, providing
-         * that something happened, of course
+         * that something happened or if we are constantly busy.
          */
-        if (now - last_dict_mod > dump_frequency) {
+        if (now - last_dict_mod > dump_frequency || busy) {
             store_dump();
-            /* make sure that no new dump is done for a while unless
-             * something happens
+            /* 
+             * make sure that no new dump is done for a while unless
+             * something happens. This moves the trigger in the future
+             * and allows the if statement to pass if nothing happened
+             * in the mean time while sleeping. The busy flag is needed
+             * to garantee we do dump in case we are constantly busy
+             * and hence the difference between now and last dict
+             * operation is less then dump frequency, otherwise we
+             * would never dump. This is for constant high load.
              */
             last_dict_mod = time(NULL) + 3600*24;
+            busy = 0;
+        } else {
+            busy = (now - last_dict_mod) > 0;
         }
         gwthread_sleep(dump_frequency);
     }
     store_dump();
     if (file != NULL)
-	   fclose(file);
+       fclose(file);
     octstr_destroy(filename);
     octstr_destroy(newfile);
     octstr_destroy(bakfile);

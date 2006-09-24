@@ -1,3 +1,16 @@
+2006-09-24  Stipe Tolj  <stolj at kannel.org>
+  * gw/bb_store.c: fix the "never dump store" behaviour in store_dumper().
+    The if condition garantees that we don't need to dump the store if nothing
+    happened while we have been sleeping, but it arrises a problem when we are
+    under constant high load: we would never dump the store. In case the
+    difference between now and last dict operation is constantly lower then
+    the dump frequency, then we never enter the if conditioned block and hence
+    never dump, resulting in the effect that we never remove "old" messages
+    from the store that have been ACKed and are removed while the new dump
+    is generated. Now we introduce a busy flag that garantees that we do
+    dump in case we're under constant load, but not if we really haven't
+    done anything.
+    
 2006-09-19  Stipe Tolj  <stolj at kannel.org>
   * gw/smsbox.c: make sure we duplicate the smsc-id value for any reply msg
     struct passing back to bearerbox for MT transport. This would otherwise
