@@ -8,10 +8,125 @@ mailing list).
 
 Changes since version 1.4.0: 
 
+[*** Beware that the version move from 1.4.0 to 1.4.1 contains more then 200 
+changesets, with major bugfixes and improvemnts. Following is a summary of the 
+main issues. For a complete and detailed set of changes please refer to the 
+specific ChangeLog in the doc/ directory of the distribution. ***]
+
 Compatibility breakers:
 
   * Format for wapbox's access-log format changed to include the MSISDN of
     a client as second argument after client IP and before method.
+
+  * fakesmsc uses now -r to specify the remote port on bearerbox side. Option
+    -p is generally reserved for pid file creation.
+
+  * sendsms now obeys bearerbox's reply before indicating result to HTTP 
+    caller. This breaks any application layer clients that rely on the HTTP
+    body response of sendsms. To enforce the old behaviour use config
+    directive 'immediate-sendsms-reply = true' in smsbox group.
+    
+  * DLR via MySQL uses now also 'username' and 'password' for the 
+    mysql-connection group in order to harmonize the config names.
+
+New features:
+
+  * Added config directive 'store-dump-freq' to core group to define the
+    fequency of the store-file dumping mechanism.
+    
+  * Added backtrace support for Linux. In case of PANIC, we get a backtrace
+    of the called routines to make debugging easier.
+    
+  * Added some new modem groups to doc/examples/modems.conf.
+  
+  * Added more WTAI functions to support.
+  
+  * Added RAW TCP support for remote termnial servers for AT modem devices.
+  
+  * Added 'config.nice' support while configure time, to allow "remembering" 
+    the used configure flags and options.
+    
+  * Added OMA ProvCont support via OTA messages.
+  
+  * Added SyncML support via OTA messages.
+  
+  * Added directive 'wml-strict' to wapbox group. 
+  
+  * SMPP data_sm PDUs are supported now for MO messages.
+  
+  * SMPP added config directives 'bind-addr-ton' and 'bind-addr-npi' to allow
+    setting values for bind_receiver and/or bind_transmitter PDUs.
+  
+  * Added support for WSP 1.6 headers.
+
+  * Added automatic support for large files, via compiler directives.      
+
+  * Added config line delimiter via \ (backslash). This allows wrapping config
+    lines to several lines.
+ 
+  * Added support for hooking config group definition files as our own 
+    gwlib/cfg.def from external add-on modules to the core. Main intention is 
+    to provide a installed Kannel without the need of patching the source for
+    any modules that use Kannel's gwlib and gw libs.
+    
+  * Added config directives 'bearerbox-port' and 'bearerbox-port-ssl' to 
+    smsbox group, in order to not need any core group reading of external
+    modules, ie. sqlbox.
+
+  * Added config directive 'max-pending-requests' for smsbox group to control 
+    the outbound requests stream generated from smsbox towards HTTP 
+    application servers.
+
+Bugfixes:
+
+  * Fixed several bugs in TCP connection handling.
+  
+  * Fixed several bugs in HTTP communication layer.
+  
+  * Fixed segfaults on x86_64 (Intel Xeon) platforms.
+  
+  * SMPP validity and defer time are set in UTC, several improvements and 
+    error checks added.
+  
+  * Fixed several 'make check' issues.
+  
+  * MySQL support fixed, where certain function prototype names clashed
+    with our own gwlist structure.
+    
+  * DLR support for PostgreSQL fixed for LIMIT clause usage.
+
+  * WSP empty header values fixed.
+
+  * WDP fix to discard truncated datagrams without PANIC.
+  
+  * WAP Cookie handling fixed, charset handling generalized.
+  
+  * AT driver fixes and improvements.
+  
+  * RADIUS bug fixed in MD5 computing for authentication towards NAS.
+
+  * MacOS X support improved for configure process.
+  
+  * store-file fixes and improvements.
+  
+  * WML compiler fix, causing sefault.
+  
+  * Fixed memory leaks for concat message handling.
+  
+  * MIME parsing and handling fixed.
+  
+  * FreeBSD AMD64 architecture support fixed.
+  
+  * Fixed wapbox signal handling for shutdown.
+  
+  * WTP SAR race condition and handling fixed.
+  
+  * Fixed memory leaks in smsbox.
+  
+  * sendsms POST XML handling fixed, where sender address was not parsed.
+  
+  * smsbox reply handling fixed, to copy the originating smsc-id value
+    in the reply messages.
 
 
 Changes since version 1.3.2: 
