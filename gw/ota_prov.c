@@ -101,7 +101,9 @@ static void ota_pack_udh(Msg **msg, Octstr *doc_type)
     (*msg)->sms.udhdata = octstr_create("");
     if (octstr_case_compare(doc_type, octstr_imm("oma-settings")) == 0) 
         octstr_append_from_hex((*msg)->sms.udhdata, "0605040B840B84");    
-    else 
+    else if (octstr_case_compare(doc_type, octstr_imm("syncsettings")) == 0) {
+        octstr_append_from_hex((*msg)->sms.udhdata, "060504C34CC002");
+    } else 
         octstr_append_from_hex((*msg)->sms.udhdata, "060504C34FC002");    
  }
 
@@ -134,6 +136,10 @@ static int ota_pack_push_headers(Msg **msg, Octstr *mime_type, Octstr *sec,
         octstr_append_from_hex((*msg)->sms.msgdata, "00");
         /* charset UTF-8 */
         octstr_append_from_hex((*msg)->sms.msgdata, "81EA");
+
+    } else if (octstr_case_compare(mime_type, octstr_imm("syncsettings")) == 0) {
+
+        octstr_append_from_hex((*msg)->sms.msgdata, "3406060502020b81EA"); 
 
     } else if (octstr_case_compare(mime_type, octstr_imm("oma-settings")) == 0) {
         Octstr *hdr = octstr_create(""), *mac; 

@@ -122,6 +122,7 @@ typedef struct ota_3table_t ota_3table_t;
  */
 
 static ota_2table_t ota_elements[] = {
+    { "SYNCSETTINGS", 0x15 },
     { "WAP-PROVISIONINGDOC", 0x05 },
     { "CHARACTERISTIC-LIST", 0x05 },
     { "CHARACTERISTIC", 0x06 },
@@ -129,6 +130,34 @@ static ota_2table_t ota_elements[] = {
 };
 
 #define NUMBER_OF_ELEMENTS sizeof(ota_elements)/sizeof(ota_elements[0])
+
+/*
+ * SYNCSETTINGS tags are defined in OTA specs 7.0, chapter 11.1
+ */
+
+static ota_2table_t ota_syncsettings_elements[] = {
+    { "Version", 0x58 },
+    { "HostAddr", 0x50 },
+    { "Port", 0x52 },
+    { "RemoteDB", 0x54 },
+    { "CTType", 0x4E },
+    { "CTVer", 0x4F },
+    { "URI", 0x56 },
+    { "Name", 0x51 },
+    { "Auth", 0x47 },
+    { "AuthLevel", 0x48 },
+    { "AuthScheme", 0x49 },
+    { "Username", 0x57 },
+    { "Cred", 0x4D },
+    { "ConRef", 0x4B },
+    { "ConType", 0x4E },
+    { "Bearer", 0x4A },
+    { "AddrType", 0x46 },
+    { "Addr", 0x45 },
+    { "RefID", 0x53 }
+};
+
+#define NUMBER_OF_SYNCSETTINGS_ELEMENTS sizeof(ota_syncsettings_elements)/sizeof(ota_syncsettings_elements[0])
 
 /*
  * Attribute names and values from code page zero. These are defined in ota,
@@ -523,6 +552,70 @@ static int parse_node(xmlNodePtr node, simple_binary_t **otabxml)
 }
 
 /*
+ * Parse only valid syncsettings tags. Output element tags as binary
+ *  tokens. If the element has CDATA content, output it.
+ * Returns:      1, add an end tag (element node has no children)
+ *               0, do not add an end tag (it has children)
+ *              -1, an error occurred
+ */
+static int parse_ota_syncsettings(xmlNodePtr node, simple_binary_t **otabxml)
+{
+    xmlNodePtr childNode;
+    Octstr *name, *content;
+    unsigned char status_bits, ota_hex;
+    int add_end_tag;
+    size_t i;
+
+    name = NULL;
+    content = NULL;
+    name = octstr_create(node->name);
+    if (octstr_len(name) == 0) {
+        goto error;
+    }
+
+    i = 0;
+    while (i < NUMBER_OF_SYNCSETTINGS_ELEMENTS) {
+        if (octstr_case_compare(name, octstr_imm(ota_syncsettings_elements[i].name)) == 0)
+            break;
+        ++i;
+    }
+
+    if (i == NUMBER_OF_SYNCSETTINGS_ELEMENTS) {
+        goto error;
+    }
+
+    ota_hex = ota_syncsettings_elements[i].token;
+    output_char(ota_syncsettings_elements[i].token, otabxml);
+
+    /* if the node has CDATA content output it. 
+     * Else expect child tags */
+    if (!only_blanks(node->children->content)) {
+        content = octstr_create(node->children->content);
+        parse_inline_string(content, otabxml);
+    }
+
+    add_end_tag = 0;
+    if ((status_bits = element_check_content(node)) > 0) {
+        ota_hex = ota_hex | status_bits;
+        /* If this node has children, the end tag must be added after them. */
+        if ((status_bits & WBXML_CONTENT_BIT) == WBXML_CONTENT_BIT) {
+            add_end_tag = 1;
+        }
+    }
+
+    octstr_destroy(content);
+    octstr_destroy(name);
+    return add_end_tag;
+
+    error:
+        warning(0, "OTA compiler: Unknown tag '%s' in OTA SyncSettings source",
+                octstr_get_cstr(name));
+        octstr_destroy(content);
+        octstr_destroy(name);
+        return -1;
+}
+
+/*
  * Parse an element node. Check if there is a token for an element tag; if not
  * output the element as a string, else output the token. After that, call 
  * attribute parsing functions
@@ -535,8 +628,18 @@ static int parse_element(xmlNodePtr node, simple_binary_t **otabxml)
     Octstr *name;
     size_t i;
     unsigned char status_bits, ota_hex;
-    int add_end_tag;
+    int add_end_tag, syncstat;
     xmlAttrPtr attribute;
+
+    /* if compiling a syncsettings document there's no need to
+       continue with the parsing of ota or oma tags. */
+    syncstat = -1;
+    if (octstr_search_char((**otabxml).binary, 0x55, 0) == 0) {
+        syncstat = parse_ota_syncsettings(node, otabxml);
+        if (syncstat >= 0) {
+            return syncstat;
+        }
+    }
 
     name = octstr_create(node->name);
     if (octstr_len(name) == 0) {

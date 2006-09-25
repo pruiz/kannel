@@ -1,3 +1,10 @@
+2006-09-25  Stipe Tolj  <stolj at kannel.org>
+  * gw/ota_prov.c, gw/ota_compiler: adding support for SyncML settings via OTA
+    provisioning according to Nokia/Ericsson OTA spec.
+  * doc/userguide/userguide.xml: adding section about SyncML OTA.
+    Patch provided by Adrian Silva <adrian.silva@visualtis.com>, thanks a lot.
+    [Msg-Id: <xolvenqajju.fsf@wealtheow.visual-secure.com>]
+
 2006-09-24  Stipe Tolj  <stolj at kannel.org>
   * test/test_http_server.c: fix compiler error for gcc 2.95.x due to a non
     first declaration of variables inside a if block.

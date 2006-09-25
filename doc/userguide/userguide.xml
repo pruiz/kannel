@@ -7200,29 +7200,7 @@ the Kannel configuration, or 'Authorization failed' is returned.
 		 be compiled to as OTA message.</para>
 
 <sect3>
-<title>GET method for the OTA HTTP interface</title>
-														  
-		 <para>An example URL (OTA configuration defined in the Kannel 
-		 configuration file):
-	
-	<screen><userinput>
-	http://smsbox.host.name:13013/cgi-bin/sendota?
-	    otaid=myconfig&amp;username=foo&amp;password=bar&amp;to=0123456
-	</userinput></screen>
-
-       URL containing XML document looks like this (you must URL encode it before sending
-       it over HTTP): 
-
-	<screen><userinput>
-	http://smsbox.host.name:13013/cgi-bin/sendota?
-	    username=foo&amp;password=bar&amp;to=0123456&amp;
-	    text=MyURLEncodedXMLdocument&amp;type=settings
-	</userinput></screen>
-       
-       You can send either settings or bookmark, set CGI variable type accordingly. 
-       Default for this variable is settings. 
-       </para>
-
+<title>OTA settings and bookmark documents</title>
 
        <para>
        Here is an example XML document (this one contains CSD settings for logging
@@ -7268,10 +7246,88 @@ the Kannel configuration, or 'Authorization failed' is returned.
 &#60;/CHARACTERISTIC-LIST&#62;
 </programlisting>
 
-       Document type definition (DTD) for these documents is not available ,
-       from Internet, you must supply it as a file. Kannel gw directory contains 
-       an example, <literal>settings.dtd</literal>.
+       Document type definition (DTD) for these documents is not
+       available from Internet, you must supply it as a file. Kannel
+       gw directory contains an
+       example, <literal>settings.dtd</literal>.
 
+       </para>
+</sect3>
+
+<sect3>
+<title>OTA syncsettings documents</title>
+
+	<para>Used for the provisioning of sync configuration to
+	  SyncMl enabled handsets. Best supported by sonyericcsson
+	  terminals.
+	</para>
+
+	<para>Sample syncsettings documents to set contacts, connection data
+	  and authentication:
+
+<programlisting>
+&#60;SyncSettings&#62;
+&#60;Version&#62;1.0&#60;/Version&#62;
+&#60;HostAddr&#62;http://syncml.server.com&#60;/HostAddr&#62;
+&#60;RemoteDB&#62;
+  &#60;CTType&#62;text/x-vcard&#60;/CTType&#62;
+  &#60;CTVer&#62;2.1&#60;/CTVer&#62;
+  &#60;URI&#62;contact&#60;/URI&#62;
+  &#60;Name&#62;Address Book&#60;/Name&#62;
+&#60;/RemoteDB&#62;
+&#60;Name&#62;Synchonization&#60;/Name&#62;
+&#60;Auth&#62;
+  &#60;AuthLevel&#62;1&#60;/AuthLevel&#62;
+  &#60;AuthScheme&#62;1&#60;/AuthScheme&#62;
+  &#60;Username&#62;yourusername&#60;/Username&#62;
+  &#60;Cred&#62;passwordbase64encoded&#60;/Cred&#62;
+&#60;/Auth&#62;
+&#60;/SyncSettings&#62;
+</programlisting>
+
+</para>
+
+</sect3>
+
+<sect3>
+<title>OMA provisioning content</title>
+
+	<para>OMA provisioning allows the configuration of a wider
+	  range of settings than previously available in OTA
+	  terminals. Refer to OMA-WAP-ProvCont-v1_1-20021112-C (at
+	  http://www.openmobilealliance.org/tech/docs/) for details.
+	</para>
+
+	<para>A shared secret (i.e. a pin or the phone IMSI) can be
+	  used to authenticate the settings. Defaults are 'userpin'
+	  and '1234' a. See the cgi variables 'sec' and 'pin' for
+	  available authentication options.
+	</para>
+
+</sect3>
+<sect3>
+<title>GET method for the OTA HTTP interface</title>
+														  
+		 <para>An example URL (OTA configuration defined in the Kannel 
+		 configuration file):
+	
+	<screen><userinput>
+	http://smsbox.host.name:13013/cgi-bin/sendota?
+	    otaid=myconfig&amp;username=foo&amp;password=bar&amp;to=0123456
+	</userinput></screen>
+
+       URL containing XML document looks like this (you must URL encode it before sending
+       it over HTTP): 
+
+	<screen><userinput>
+	http://smsbox.host.name:13013/cgi-bin/sendota?
+	    username=foo&amp;password=bar&amp;to=0123456&amp;
+	    text=MyURLEncodedXMLdocument&amp;type=settings
+	</userinput></screen>
+       
+       You can send either settings, bookmark, syncsettings, or
+       oma-settings, set CGI variable type accordingly.  Default for
+       this variable is settings.
        </para>
 
  <table frame="none">
@@ -7338,8 +7394,21 @@ the Kannel configuration, or 'Authorization failed' is returned.
    <row><entry><literal>type</literal></entry>
    <entry><literal>string</literal></entry>
    <entry valign="bottom">
-       Type of the XML document, either "settings" or "bookmarks". Default is 
-       "settings".
+       Type of the XML document, supported values are "settings",
+       "bookmarks", "syncsettings", and "oma-settings". Default is "settings".
+   </entry></row>
+
+   <row><entry><literal>sec</literal></entry>
+   <entry><literal>string</literal></entry>
+   <entry valign="bottom">
+       Security model used to authenticate oma-settings. One of:
+       "userpin", "netwpin", "usernetwpin", or "userpinmac".
+   </entry></row>
+
+   <row><entry><literal>pin</literal></entry>
+   <entry><literal>number</literal></entry>
+   <entry valign="bottom">
+     Authentication token.
    </entry></row>
 
   </tbody>
