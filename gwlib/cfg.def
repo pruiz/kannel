@@ -387,6 +387,8 @@ MULTI_GROUP(sms-service,
     OCTSTR(exec)
     OCTSTR(accepted-smsc)
     OCTSTR(accepted-smsc-regex)
+    OCTSTR(accepted-account)
+    OCTSTR(accepted-account-regex)
     OCTSTR(forced-smsc)
     OCTSTR(default-smsc)
     OCTSTR(faked-sender)

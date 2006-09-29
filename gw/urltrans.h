@@ -166,9 +166,12 @@ int urltrans_add_cfg(URLTranslationList *trans, Cfg *cfg);
  *
  * If 'smsc' is set, only accept translation with no 'accepted-smsc' set or
  * with matching smsc in that list.
+ *
+ * If 'account' is set, only accept translation with no 'accepted-account' set or
+ * with matching account in that list.
  */
 URLTranslation *urltrans_find(URLTranslationList *trans, Octstr *text, 
-    	    	    	      Octstr *smsc, Octstr *sender, Octstr *receiver);
+    	    	    	      Octstr *smsc, Octstr *sender, Octstr *receiver, Octstr *account);
 
 /*
  * Find the translation that corresponds to a given name

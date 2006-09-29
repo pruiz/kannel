@@ -102,6 +102,8 @@ struct URLTranslation {
     Octstr *footer;	/* string to be appended to each SMS */
     List *accepted_smsc; /* smsc id's allowed to use this service. If not set,
 			    all messages can use this service */
+    List *accepted_account; /* account id's allowed to use this service. If not set,
+			    all messages can use this service */
     
     Octstr *name;	/* Translation name */
     Octstr *username;	/* send sms username */
@@ -130,6 +132,7 @@ struct URLTranslation {
 
     regex_t *keyword_regex;       /* the compiled regular expression for the keyword*/
     regex_t *accepted_smsc_regex;
+    regex_t *accepted_account_regex;
     regex_t *allowed_prefix_regex;
     regex_t *denied_prefix_regex;
     regex_t *allowed_receiver_prefix_regex;
@@ -159,12 +162,12 @@ static URLTranslation *create_onetrans(CfgGroup *grp);
 static void destroy_onetrans(void *ot);
 static URLTranslation *find_translation(URLTranslationList *trans, 
 					List *words, Octstr *smsc,
-					Octstr *sender, Octstr *receiver, int *reject);
+					Octstr *sender, Octstr *receiver, int *reject, Octstr *account);
 static URLTranslation *find_default_translation(URLTranslationList *trans,
 						Octstr *smsc, Octstr *sender, Octstr *receiver,
-						int *reject);
+						int *reject, Octstr *account);
 static URLTranslation *find_black_list_translation(URLTranslationList *trans,
-						Octstr *smsc);
+						Octstr *smsc, Octstr *account);
 
 
 /***********************************************************************
@@ -273,7 +276,7 @@ int urltrans_add_cfg(URLTranslationList *trans, Cfg *cfg)
 
 
 URLTranslation *urltrans_find(URLTranslationList *trans, Octstr *text,
-			      Octstr *smsc, Octstr *sender, Octstr *receiver) 
+			      Octstr *smsc, Octstr *sender, Octstr *receiver, Octstr *account) 
 {
     List *words;
     URLTranslation *t = NULL;
@@ -282,16 +285,16 @@ URLTranslation *urltrans_find(URLTranslationList *trans, Octstr *text,
     /* do not panic if text == NULL */
     if (text != NULL) {
         words = octstr_split_words(text);
-        t = find_translation(trans, words, smsc, sender, receiver, &reject);
+        t = find_translation(trans, words, smsc, sender, receiver, &reject, account);
         gwlist_destroy(words, octstr_destroy_item);
     }
     
     if (reject)
-	t = find_black_list_translation(trans, smsc);
+	t = find_black_list_translation(trans, smsc, account);
     if (t == NULL) {
-	t = find_default_translation(trans, smsc, sender, receiver, &reject);
+	t = find_default_translation(trans, smsc, sender, receiver, &reject, account);
 	if (reject)
-	    t = find_black_list_translation(trans, smsc);
+	    t = find_black_list_translation(trans, smsc, account);
     }
     return t;
 }
@@ -874,10 +877,11 @@ static URLTranslation *create_onetrans(CfgGroup *grp)
 {
     URLTranslation *ot;
     Octstr *aliases, *url, *post_url, *post_xml, *text, *file, *exec;
-    Octstr *accepted_smsc, *forced_smsc, *default_smsc;
+    Octstr *accepted_smsc, *accepted_account, *forced_smsc, *default_smsc;
     Octstr *grpname, *sendsms_user, *sms_service;
     int is_sms_service;
     Octstr *accepted_smsc_regex;
+    Octstr *accepted_account_regex;
     Octstr *allowed_prefix_regex;
     Octstr *denied_prefix_regex;
     Octstr *allowed_receiver_prefix_regex;
@@ -921,6 +925,7 @@ static URLTranslation *create_onetrans(CfgGroup *grp)
     ot->password = NULL;
     ot->omit_empty = 0;
     ot->accepted_smsc = NULL;
+    ot->accepted_account = NULL;
     ot->forced_smsc = NULL;
     ot->default_smsc = NULL;
     ot->allow_ip = NULL;
@@ -933,6 +938,7 @@ static URLTranslation *create_onetrans(CfgGroup *grp)
     ot->black_list = NULL;
     ot->keyword_regex = NULL;
     ot->accepted_smsc_regex = NULL;
+    ot->accepted_account_regex = NULL;
     ot->allowed_prefix_regex = NULL;
     ot->denied_prefix_regex = NULL;
     ot->allowed_receiver_prefix_regex = NULL;
@@ -1019,11 +1025,22 @@ static URLTranslation *create_onetrans(CfgGroup *grp)
 	    ot->accepted_smsc = octstr_split(accepted_smsc, octstr_imm(";"));
 	    octstr_destroy(accepted_smsc);
 	}
+	accepted_account = cfg_get(grp, octstr_imm("accepted-account"));
+	if (accepted_account != NULL) {
+	    ot->accepted_account = octstr_split(accepted_account, octstr_imm(";"));
+	    octstr_destroy(accepted_account);
+	}
         accepted_smsc_regex = cfg_get(grp, octstr_imm("accepted-smsc-regex"));
         if (accepted_smsc_regex != NULL) { 
             if ( (ot->accepted_smsc_regex = gw_regex_comp(accepted_smsc_regex, REG_EXTENDED)) == NULL)
             panic(0, "Could not compile pattern '%s'", octstr_get_cstr(accepted_smsc_regex));
             octstr_destroy(accepted_smsc_regex);
+        }
+        accepted_account_regex = cfg_get(grp, octstr_imm("accepted-account-regex"));
+        if (accepted_account_regex != NULL) { 
+            if ( (ot->accepted_account_regex = gw_regex_comp(accepted_account_regex, REG_EXTENDED)) == NULL)
+            panic(0, "Could not compile pattern '%s'", octstr_get_cstr(accepted_account_regex));
+            octstr_destroy(accepted_account_regex);
         }
 
 	cfg_get_bool(&ot->assume_plain_text, grp, 
@@ -1187,6 +1204,7 @@ static void destroy_onetrans(void *p)
 	octstr_destroy(ot->header);
 	octstr_destroy(ot->footer);
 	gwlist_destroy(ot->accepted_smsc, octstr_destroy_item);
+	gwlist_destroy(ot->accepted_account, octstr_destroy_item);
 	octstr_destroy(ot->name);
 	octstr_destroy(ot->username);
 	octstr_destroy(ot->password);
@@ -1202,6 +1220,7 @@ static void destroy_onetrans(void *p)
 	numhash_destroy(ot->black_list);
         if (ot->keyword_regex != NULL) gw_regex_destroy(ot->keyword_regex);
         if (ot->accepted_smsc_regex != NULL) gw_regex_destroy(ot->accepted_smsc_regex);
+        if (ot->accepted_account_regex != NULL) gw_regex_destroy(ot->accepted_account_regex);
         if (ot->allowed_prefix_regex != NULL) gw_regex_destroy(ot->allowed_prefix_regex);
         if (ot->denied_prefix_regex != NULL) gw_regex_destroy(ot->denied_prefix_regex);
         if (ot->allowed_receiver_prefix_regex != NULL) gw_regex_destroy(ot->allowed_receiver_prefix_regex);
@@ -1244,7 +1263,7 @@ static int check_num_args(URLTranslation *t, List *words)
  * reject will be set to 1 is a number is rejected due to white/black-lists.
  */
 static int check_allowed_translation(URLTranslation *t, 
-                  Octstr *smsc, Octstr *sender, Octstr *receiver, int *reject)
+                  Octstr *smsc, Octstr *sender, Octstr *receiver, int *reject, Octstr *account)
 {
     const int IS_ALLOWED = 0;
     const int NOT_ALLOWED = -1;
@@ -1256,6 +1275,15 @@ static int check_allowed_translation(URLTranslation *t,
         return NOT_ALLOWED;
 
     if (smsc && t->accepted_smsc_regex && gw_regex_match_pre( t->accepted_smsc_regex, smsc) == 0)
+        return NOT_ALLOWED;
+
+    /* if account_id set and accepted_account exist, accept
+     * translation only if smsc id is in accept string
+     */
+    if (account && t->accepted_account && !gwlist_search(t->accepted_account, account, octstr_item_match))
+        return NOT_ALLOWED;
+
+    if (account && t->accepted_account_regex && gw_regex_match_pre( t->accepted_account_regex, account) == 0)
         return NOT_ALLOWED;
 
     /* Have allowed for sender */
@@ -1364,7 +1392,7 @@ static List* get_matching_translations(URLTranslationList *trans, Octstr *word)
  * Find the appropriate translation 
  */
 static URLTranslation *find_translation(URLTranslationList *trans, 
-                    List *words, Octstr *smsc, Octstr *sender, Octstr *receiver, int *reject)
+                    List *words, Octstr *smsc, Octstr *sender, Octstr *receiver, int *reject, Octstr *account)
 {
     Octstr *keyword;
     int i, n;
@@ -1389,7 +1417,7 @@ static URLTranslation *find_translation(URLTranslationList *trans,
     for (i = 0; i < gwlist_len(list); ++i) {
         t = gwlist_get(list, i);
 
-        if (check_allowed_translation(t, smsc, sender, receiver, reject) == 0
+        if (check_allowed_translation(t, smsc, sender, receiver, reject, account) == 0
             && check_num_args(t, words) == 0)
 	    break;
 
@@ -1408,7 +1436,7 @@ static URLTranslation *find_translation(URLTranslationList *trans,
 
 static URLTranslation *find_default_translation(URLTranslationList *trans,
 						Octstr *smsc, Octstr *sender, Octstr *receiver,
-						int *reject)
+						int *reject, Octstr *account)
 {
     URLTranslation *t;
     int i;
@@ -1421,7 +1449,7 @@ static URLTranslation *find_default_translation(URLTranslationList *trans,
     for (i = 0; i < gwlist_len(list); ++i) {
 	t = gwlist_get(list, i);
 
-    if (check_allowed_translation(t, smsc, sender, receiver, reject) == 0)
+    if (check_allowed_translation(t, smsc, sender, receiver, reject, account) == 0)
         break;
 
 	    t = NULL;
@@ -1434,7 +1462,7 @@ static URLTranslation *find_default_translation(URLTranslationList *trans,
 }
 
 static URLTranslation *find_black_list_translation(URLTranslationList *trans,
-						Octstr *smsc)
+						Octstr *smsc, Octstr *account)
 {
     URLTranslation *t;
     int i;
@@ -1446,6 +1474,12 @@ static URLTranslation *find_black_list_translation(URLTranslationList *trans,
 	t = gwlist_get(list, i);
 	if (smsc && t->accepted_smsc) {
 	    if (!gwlist_search(t->accepted_smsc, smsc, octstr_item_match)) {
+		t = NULL;
+		continue;
+	    }
+	}
+	if (account && t->accepted_account) {
+	    if (!gwlist_search(t->accepted_account, account, octstr_item_match)) {
 		t = NULL;
 		continue;
 	    }

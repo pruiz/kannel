@@ -5605,6 +5605,19 @@ get-url = "http://%S"
         is "RL;SON", accept messages which originate from SMSC with
         ID set as 'RL' or 'SON'
      </entry></row>
+   
+   <row><entry><literal>accepted-account</literal></entry>
+     <entry>id-list</entry>
+     <entry valign="bottom">
+        Accept ONLY SMS messages arriving with a matching ACCOUNT field.
+        <footnote><para>Even if this service is denied,
+	Kannel still searches for other service which accepts the message,
+	or default service.</para></footnote>
+        Separate multiple entries with ';'. For example, if 
+         <literal>accepted-account</literal>
+        is "FOO;BAR", accept messages which originate with the ACCOUNT
+        field set as 'FOO' or 'BAR'
+     </entry></row>
 
    <row><entry><literal>allowed-prefix</literal></entry>
      <entry><literal>prefix-list</literal></entry>
@@ -5788,6 +5801,18 @@ get-url = "http://%S"
         <entry>POSIX regular expression</entry>
         <entry valign="bottom">
         Accept only SMS messages arriving from SMSCs with a matching ID.
+        <footnote><para>Even if this service is denied,
+	Kannel still searches for other service which accepts the message,
+	or default service.</para></footnote>
+        See section on regular 
+        expressions for details.
+        </entry>   
+     </row>
+
+     <row><entry><literal>accepted-account-regex</literal></entry>
+        <entry>POSIX regular expression</entry>
+        <entry valign="bottom">
+        Accept ONLY SMS messages arriving with a matching ACCOUNT field.
         <footnote><para>Even if this service is denied,
 	Kannel still searches for other service which accepts the message,
 	or default service.</para></footnote>

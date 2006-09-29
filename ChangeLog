@@ -1,4 +1,16 @@
 2006-09-29  Stipe Tolj  <stolj at kannel.org>
+    * doc/userguide/userguide.xml: section on new 'accepted-account' and
+      'accepted-account-regex' config directives for sms-service group.
+	* gwlib/cfg.def: adding 'accepted-account' and 'accepted-account-regex' 
+	  config directives for sms-service group.
+    * gw/smsbox.c, gw/urltrans.[ch]: adding service routing based on account
+      field. This allows routing of MO messages depending on the account set
+      by an aggregative SMSC provider.
+      Patchset submited by Alejandro Guerrieri <alejandro.guerrieri@gmail.com>
+      [Msg-Id: <cd6a81510607212039g1f805f25jaba5ef4249922aa5@mail.gmail.com>]
+      [Msg-Id: <cd6a81510607231933h2554dd44i9450f507bcb9f470@mail.gmail.com>]
+      
+2006-09-29  Stipe Tolj  <stolj at kannel.org>
     * gw/smsc/smsc_fake.c: add TODO comment to add a SMPP DLR payload text
       for a DLR returned back via fake module.
     * gw/smsc/smsc_smpp.c: obey charset more closely in msg_to_pdu(), where
