@@ -276,6 +276,7 @@ static void main_connection_loop(SMSCConn *conn, Connection *client)
                                       msg->sms.receiver, /* destination */
                                       dlrstat);
                     if (dlrmsg != NULL) {
+                        /* XXX TODO: Provide a SMPP DLR text in msgdata */
                         bb_smscconn_receive(conn, dlrmsg);
                     } else {
                         error(0,"smsc_fale: got DLR but could not find message or was not interested in it");

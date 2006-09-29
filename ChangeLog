@@ -1,4 +1,15 @@
 2006-09-29  Stipe Tolj  <stolj at kannel.org>
+    * gw/smsc/smsc_fake.c: add TODO comment to add a SMPP DLR payload text
+      for a DLR returned back via fake module.
+    * gw/smsc/smsc_smpp.c: obey charset more closely in msg_to_pdu(), where
+      we don't call charset_latin1_to_gsm() if charset flag of msg struct
+      carries the "GSM-03.38" indication. This is not yet used by smsbox, but
+      may be used by external modules before we have a clean transition to
+      UTF-8 as internal charset and target charset indication via msg struct's
+      charset value. Also ensures now that we write a "FAILED DLR SMS" 
+      access-log entry if we receive a DLR, but can't find it via handle_dlr().
+    
+2006-09-29  Stipe Tolj  <stolj at kannel.org>
     * gwlib/http.h: remove semicolon ';' from #define of http_receive_result(),
       otherwise the macro is not usable in regular expressions in the code.
       Thanks to Paul for pointing this out.

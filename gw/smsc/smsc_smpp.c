@@ -872,13 +872,18 @@ static SMPP_PDU *msg_to_pdu(SMPP *smpp, Msg *msg)
          *  c) data_coding 0x00: assume GSM 03.38 charset if alt-charset is not defined
          */
         if ((pdu->u.submit_sm.data_coding & 0xF0) ||
-            (!smpp->alt_charset && pdu->u.submit_sm.data_coding == 0)) {
-            charset_latin1_to_gsm(pdu->u.submit_sm.short_message);
+            (pdu->u.submit_sm.data_coding == 0 && !smpp->alt_charset)) {
+            if (msg->sms.charset != NULL &&
+                octstr_case_compare(msg->sms.charset, octstr_imm("GSM-03.38")) != 0)
+                charset_latin1_to_gsm(pdu->u.submit_sm.short_message);
         }
         else if (pdu->u.submit_sm.data_coding == 0 && smpp->alt_charset) {
             /*
              * convert to the given alternative charset
              */
+            if (msg->sms.charset != NULL && 
+                octstr_case_compare(msg->sms.charset, octstr_imm("GSM-03.38")) == 0)
+                charset_gsm_to_latin1(pdu->u.submit_sm.short_message);
             if (charset_convert(pdu->u.submit_sm.short_message, SMPP_DEFAULT_CHARSET,
                                 octstr_get_cstr(smpp->alt_charset)) != 0)
                 error(0, "Failed to convert msgdata from charset <%s> to <%s>, will send as is.",
@@ -1351,10 +1356,16 @@ static void handle_pdu(SMPP *smpp, Connection *conn, SMPP_PDU *pdu,
                       octstr_get_cstr(smpp->conn->id));
                 dlrmsg = handle_dlr(smpp, pdu->u.data_sm.source_addr, NULL, pdu->u.data_sm.message_payload,
                                     pdu->u.data_sm.receipted_message_id, pdu->u.data_sm.message_state);
-                if (dlrmsg != NULL)
+                if (dlrmsg != NULL) {
+                    /* passing DLR to upper layer */
                     reason = bb_smscconn_receive(smpp->conn, dlrmsg);
-                else
+                } else {
+                    /* no DLR will be passed, but we write an access-log entry */
                     reason = SMSCCONN_SUCCESS;
+                    msg = data_sm_to_msg(smpp, pdu, &reason);
+                    bb_alog_sms(smpp->conn, msg, "FAILED DLR SMS");
+                    msg_destroy(msg);
+                }
                 resp->u.data_sm_resp.command_status = smscconn_failure_reason_to_smpp_status(reason);
            } else { /* MO message */
                 msg = data_sm_to_msg(smpp, pdu, &reason);
