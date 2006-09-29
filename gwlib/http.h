@@ -357,7 +357,7 @@ void *http_receive_result_real(HTTPCaller *caller, int *status, Octstr **final_u
 
 /* old compatibility mode, always blocking */
 #define http_receive_result(caller, status, final_url, headers, body) \
-    http_receive_result_real(caller, status, final_url, headers, body, 1);
+    http_receive_result_real(caller, status, final_url, headers, body, 1)
 
 /***********************************************************************
  * HTTP server interface.

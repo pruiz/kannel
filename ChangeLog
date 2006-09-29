@@ -1,2 +1,8 @@
+2006-09-29  Stipe Tolj  <stolj at kannel.org>
+    * gwlib/http.h: remove semicolon ';' from #define of http_receive_result(),
+      otherwise the macro is not usable in regular expressions in the code.
+      Thanks to Paul for pointing this out.
+      [Msg-Id: <100C7857-7696-4A6F-B5E4-B5B4D1735E00@dsmagic.com>] 
+     
 2006-09-25  Stipe Tolj  <stolj at kannel.org>
     * Making stable release 1.4.1.
