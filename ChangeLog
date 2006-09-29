@@ -1,4 +1,8 @@
 2006-09-29  Stipe Tolj  <stolj at kannel.org>
+    * test/test_urltrans.c: modified argument list for urltrans_find(), 
+      according to previous patchset commit.
+    
+2006-09-29  Stipe Tolj  <stolj at kannel.org>
     * doc/userguide/userguide.xml: section on new 'accepted-account' and
       'accepted-account-regex' config directives for sms-service group.
 	* gwlib/cfg.def: adding 'accepted-account' and 'accepted-account-regex' 

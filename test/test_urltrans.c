@@ -121,7 +121,7 @@ int main(int argc, char **argv) {
 	while (repeats-- > 0) {
 		for (i = optind + 1; i < argc; ++i) {
 			url = octstr_create(argv[i]);
-			t = urltrans_find(list, url, NULL, NULL, NULL);
+			t = urltrans_find(list, url, NULL, NULL, NULL, NULL);
 			info(0, "type = %d", urltrans_type(t));
 			octstr_destroy(url);
 		}
