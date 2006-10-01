@@ -190,6 +190,16 @@ URLTranslation *urltrans_find_username(URLTranslationList *trans,
     	    	    	    	       Octstr *name);
 
 
+/* 
+ * Return the populated URL octstr from the given pattern containing
+ * the escape codes with values from the Msg.
+ * urtrans_get_pattern() uses this internally, but we want to provide
+ * this function also to the external calling space for use of the
+ * defined escape codes for Msg values.
+ */
+Octstr *urltrans_fill_escape_codes(Octstr *pattern, Msg *request);
+
+
 /*
  * Return a pattern given contents of an SMS message. Find the appropriate
  * translation pattern and fill in the missing parts from the contents of

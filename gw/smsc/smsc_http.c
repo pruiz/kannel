@@ -106,7 +106,7 @@
  *  password = YYY
  *  
  * Kalle Marjola for Project Kannel 2001
- * Stipe Tolj <stolj@wapme.de>
+ * Stipe Tolj <st@tolj.org>
  * Alexander Malysh <amalysh at kannel.org>
  * Tobias Weber <weber@wapme.de>
  */
@@ -125,6 +125,7 @@
 #include "msg.h"
 #include "sms.h"
 #include "dlr.h"
+#include "urltrans.h"
 
 typedef struct conndata {
     HTTPCaller *http_ref;
@@ -143,6 +144,14 @@ typedef struct conndata {
     int no_sep;         /* not to mention this */
     Octstr *proxy;      /* proxy a constant string */
 
+    /* The following are compiled regex for the 'generic' type for handling 
+     * success, permanent failure and temporary failure. For types that use
+     * simple HTTP body parsing, these may be used also for other types,
+     * ie. for our own Kannel reply parsing. */
+    regex_t *success_regex;   
+    regex_t *permfail_regex;
+    regex_t *tempfail_regex;
+
     /* callback functions set by HTTP-SMSC type */
     void (*send_sms) (SMSCConn *conn, Msg *msg);
     void (*parse_reply) (SMSCConn *conn, Msg *msg, int status,
@@ -158,6 +167,12 @@ static void conndata_destroy(ConnData *conndata)
         return;
     if (conndata->http_ref)
         http_caller_destroy(conndata->http_ref);
+    if (conndata->success_regex)
+        gw_regex_destroy(conndata->success_regex);
+    if (conndata->permfail_regex)
+        gw_regex_destroy(conndata->permfail_regex);
+    if (conndata->tempfail_regex)
+        gw_regex_destroy(conndata->tempfail_regex);
     octstr_destroy(conndata->allow_ip);
     octstr_destroy(conndata->send_url);
     octstr_destroy(conndata->username);
@@ -1276,7 +1291,6 @@ static void wapme_smsproxy_send_sms(SMSCConn *conn, Msg *sms)
 
     octstr_destroy(url);
     http_destroy_headers(headers);
-
 }
 
 static void wapme_smsproxy_parse_reply(SMSCConn *conn, Msg *msg, int status,
@@ -1299,6 +1313,97 @@ static void wapme_smsproxy_parse_reply(SMSCConn *conn, Msg *msg, int status,
  * can act transparently. So there is no need for an explicite implementation
  * here.
  */
+
+
+/*----------------------------------------------------------------
+ * (Semi-)generic HTTP interface
+ *
+ * This 'generic' type will handle the 'send-url' directive in the 
+ * group the same way the 'sms-service' for smsbox does, via 
+ * URLTranslation. Response interpretation is based on the three
+ * regex value that match against the reponse body. The HTTP reponse
+ * code is not obeyed.
+ * 
+ * It handles mainly MT messages, due to the fact that MO traffic
+ * can't be abstracted in a universal way. Therefor we use the
+ * Kannel sendsms interface layout as generic fallback. So if your
+ * SMSC provider needs to send MO messages, he needs to implement
+ * the Kannel sendsms HTTP interface variables.
+ * 
+ * Example config group:
+ * 
+ *  group = smsc
+ *  smsc = http
+ *  system-type = generic
+ *  send-url = "http://<foobar>/<uri>?from=%P&to=%p&text=%b"
+ *  status-success-regex = "ok"
+ *  status-permfail-regex = "failure"
+ *  status-tempfail-regex = "retry later"
+ * 
+ * Note that neither 'smsc-username' nor 'smsc-password' is required,
+ * since they are coded into the the 'send-url' value directly. 
+ * 
+ * Stipe Tolj <st@tolj.org>
+ */
+
+static void generic_send_sms(SMSCConn *conn, Msg *sms)
+{
+    ConnData *conndata = conn->data;
+    Octstr *url;
+    List *headers;
+
+    /* We use the escape code population function from our
+     * URLTranslation module to fill in the appropriate values
+     * into the URL scheme. */
+    url = urltrans_fill_escape_codes(conndata->send_url, sms);
+
+    headers = gwlist_create();
+    debug("smsc.http.generic", 0, "HTTP[%s]: Sending request <%s>",
+          octstr_get_cstr(conn->id), octstr_get_cstr(url));
+    http_start_request(conndata->http_ref, HTTP_METHOD_GET, url, headers, 
+                       NULL, 0, sms, NULL);
+
+    octstr_destroy(url);
+    http_destroy_headers(headers);
+}
+
+static void generic_parse_reply(SMSCConn *conn, Msg *msg, int status,
+                                List *headers, Octstr *body)
+{
+    ConnData *conndata = conn->data;
+    size_t n_match = 1;
+    regmatch_t p_match[10];
+    
+    /* 
+     * Our generic type checks only content on the HTTP reponse body.
+     * We use the pre-compiled regex to match against the states.
+     * This is the most generic criteria (at the moment). 
+     */
+    if ((conndata->success_regex != NULL) && 
+        (gw_regex_exec(conndata->success_regex, body, n_match, p_match, 0) == 0)) {
+        bb_smscconn_sent(conn, msg, NULL);
+    } 
+    else if ((conndata->permfail_regex != NULL) &&        
+        (gw_regex_exec(conndata->permfail_regex, body, n_match, p_match, 0) == 0)) {
+        error(0, "HTTP[%s]: Message not accepted.", octstr_get_cstr(conn->id));
+        bb_smscconn_send_failed(conn, msg,
+            SMSCCONN_FAILED_MALFORMED, octstr_duplicate(body));
+    }
+    else if ((conndata->tempfail_regex != NULL) &&        
+        (gw_regex_exec(conndata->tempfail_regex, body, n_match, p_match, 0) == 0)) {
+        warning(0, "HTTP[%s]: Message temporary not accepted, will retry.", 
+                octstr_get_cstr(conn->id));
+        bb_smscconn_send_failed(conn, msg,
+            SMSCCONN_FAILED_TEMPORARILY, octstr_duplicate(body));
+    }
+    else {
+        error(0, "HTTP[%s]: Message was rejected. SMSC reponse was:",
+              octstr_get_cstr(conn->id));
+        octstr_dump(body, 0);
+        bb_smscconn_send_failed(conn, msg,
+            SMSCCONN_FAILED_REJECTED, octstr_create("REJECTED"));
+    }
+}
 
 
 /*-----------------------------------------------------------------
@@ -1355,6 +1460,7 @@ int smsc_http_create(SMSCConn *conn, CfgGroup *cfg)
     Octstr *type;
     long portno;   /* has to be long because of cfg_get_integer */
     int ssl = 0;   /* indicate if SSL-enabled server should be used */
+    Octstr *os;
 
     if (cfg_get_integer(&portno, cfg, octstr_imm("port")) == -1) {
         error(0, "HTTP[%s]: 'port' invalid in smsc 'http' record.",
@@ -1369,6 +1475,8 @@ int smsc_http_create(SMSCConn *conn, CfgGroup *cfg)
     }
     conndata = gw_malloc(sizeof(ConnData));
     conndata->http_ref = NULL;
+    conndata->success_regex = 
+        conndata->permfail_regex = conndata->tempfail_regex = NULL;
 
     conndata->allow_ip = cfg_get(cfg, octstr_imm("connect-allow-ip"));
     conndata->send_url = cfg_get(cfg, octstr_imm("send-url"));
@@ -1415,12 +1523,7 @@ int smsc_http_create(SMSCConn *conn, CfgGroup *cfg)
         conndata->parse_reply = xidris_parse_reply;
     }
     else if (octstr_case_compare(type, octstr_imm("wapme")) == 0) {
-        if (conndata->send_url == NULL) {
-            error(0, "HTTP[%s]: 'send-url' required for Wapme http smsc",
-                  octstr_get_cstr(conn->id));
-            goto error;
-        }
-        else if (conndata->username == NULL || conndata->password == NULL) {
+        if (conndata->username == NULL || conndata->password == NULL) {
             error(0, "HTTP[%s]: 'username' and 'password' required for Wapme http smsc",
                   octstr_get_cstr(conn->id));
             goto error;
@@ -1430,9 +1533,38 @@ int smsc_http_create(SMSCConn *conn, CfgGroup *cfg)
         conndata->parse_reply = wapme_smsproxy_parse_reply;
     }
     else if (octstr_case_compare(type, octstr_imm("clickatell")) == 0) {
-	conndata->receive_sms = clickatell_receive_sms;
-	conndata->send_sms = clickatell_send_sms;
-	conndata->parse_reply = clickatell_parse_reply;
+        /* no required data checks here? */
+        conndata->receive_sms = clickatell_receive_sms;
+        conndata->send_sms = clickatell_send_sms;
+        conndata->parse_reply = clickatell_parse_reply;
+    }
+    else if (octstr_case_compare(type, octstr_imm("generic")) == 0) {
+        /* we need at least the criteria for a successfull sent */
+        if ((os = cfg_get(cfg, octstr_imm("status-success-regex"))) == NULL) {
+            error(0, "HTTP[%s]: 'status-success-regex' required for generic http smsc",
+                  octstr_get_cstr(conn->id));
+            goto error;
+        }
+        conndata->receive_sms = kannel_receive_sms; /* emulate sendsms interface */
+        conndata->send_sms = generic_send_sms;
+        conndata->parse_reply = generic_parse_reply;
+
+        /* pre-compile regex expressions */
+        if (os != NULL) {   /* this is implicite due to the above if check */
+            if ((conndata->success_regex = gw_regex_comp(os, REG_EXTENDED)) == NULL)
+                panic(0, "Could not compile regex pattern '%s'", octstr_get_cstr(os));
+            octstr_destroy(os);
+        }
+        if ((os = cfg_get(cfg, octstr_imm("status-permfail-regex"))) != NULL) {
+            if ((conndata->permfail_regex = gw_regex_comp(os, REG_EXTENDED)) == NULL)
+                panic(0, "Could not compile regex pattern '%s'", octstr_get_cstr(os));
+            octstr_destroy(os);
+        }
+        if ((os = cfg_get(cfg, octstr_imm("status-tempfail-regex"))) != NULL) {
+            if ((conndata->tempfail_regex = gw_regex_comp(os, REG_EXTENDED)) == NULL)
+                panic(0, "Could not compile regex pattern '%s'", octstr_get_cstr(os));
+            octstr_destroy(os);
+        }
     }
     /*
      * ADD NEW HTTP SMSC TYPES HERE

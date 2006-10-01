@@ -1,3 +1,16 @@
+2006-10-01  Stipe Tolj  <stolj at kannel.org>
+    * doc/userguide/userguide.xml: updating SMSC HTTP section for new
+      'generic' system-type regex directives and a group example.
+    * gwlib/cfg.def: adding 'status-[success|tempfail|permfail]-regex'
+      to smsc group for 'generic' system-type of SMSC HTTP.
+    * gw/urltranc.[ch]: adding urltrans_fill_escape_codes() to make the
+      msg struct internal values available via the escape code function.
+    * gw/smsc/smsc_http.c: adding the new 'generic' system-type to allow
+      the usage of the escape code sequenced in send-url and regex parsing
+      of HTTP response. This new system-type may handle a lot of existing
+      properitary HTTP APIs of SMS gateway aggregators without the need to
+      code and add the explicite HTTP API to this module.
+
 2006-09-29  Stipe Tolj  <stolj at kannel.org>
     * test/test_urltrans.c: modified argument list for urltrans_find(), 
       according to previous patchset commit.

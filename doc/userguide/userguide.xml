@@ -44,11 +44,11 @@
 		<firstname>Stipe</firstname>
 		<surname>Tolj</surname>
 		<affiliation>
-			<jobtitle>Chief Technology Scientist</jobtitle>
-			<orgname>Wapme Systems AG</orgname>
+			<jobtitle>System Architect</jobtitle>
+			<orgname>Tolj System Architecture</orgname>
 			<address> 
-				<email>stolj@wapme.de</email>
-				<otheraddr>http://www.wapme.de</otheraddr>
+				<email>stolj@kannel.org</email>
+				<otheraddr>http://www.kannel.org</otheraddr>
 			</address>
 		</affiliation>
 	</author>
@@ -3900,7 +3900,7 @@ send-url = "http://localhost:20022"
      <entry><literal>string</literal></entry>
      <entry valign="bottom">
         Type of HTTP connection. Currently supported are: 'kannel', 
-		  'brunet', 'xidris', 'wapme'.
+		  'brunet', 'xidris', 'wapme', 'clickatell' and 'generic'.
      </entry></row>
 
    <row><entry><literal>send-url (m)</literal></entry>
@@ -3955,13 +3955,58 @@ send-url = "http://localhost:20022"
      <entry valign="bottom">
        Password for username, if needed.
      </entry></row>
+     
+   <row><entry><literal>status-success-regex (o)</literal></entry>
+     <entry><literal>POSIX regular expression</literal></entry>
+     <entry valign="bottom">
+       Regular expression for system-type 'generic' to match against HTTP 
+       response body conent, indicating a successfull submission. 
+     </entry></row>
+     
+   <row><entry><literal>status-permfail-regex (o)</literal></entry>
+     <entry><literal>POSIX regular expression</literal></entry>
+     <entry valign="bottom">
+       Regular expression for system-type 'generic' to match against HTTP 
+       response body conent, indicating a permanent failure. 
+     </entry></row>
 
-   </tbody></tgroup></informaltable>
+   <row><entry><literal>status-tempfail-regex (o)</literal></entry>
+     <entry><literal>POSIX regular expression</literal></entry>
+     <entry valign="bottom">
+       Regular expression for system-type 'generic' to match against HTTP 
+       response body conent, indicating a temporary failure. 
+     </entry></row>
+    
 
-   <para>This module can be easily adopted to other HTTP-based interfaces.
+   <para>For a generic HTTP-based relay, the system-type 'generic' can be used.
+   It can use the escape codes known from sms-service's get-url config
+   directives in the send-url string to indicate the HTTP API calling style of 
+   the remote HTTP server, and the 3 HTTP body response parsing regular 
+   expressions 'status-success-regex' for successfull acknowledge, 
+   'status-permfail-regex' for permanent failure and 'status-tempfail-regex' 
+   for temporary failure. An example for a 'generic' group looks like this:
    </para>
+
+<programlisting>
+group = smsc
+smsc = http
+system-type = generic
+port = 13015
+send-url = "http://<foobar>/<uri>?from=%P&to=%p&text=%b"
+status-success-regex = "ok"
+status-permfail-regex = "failure"
+status-tempfail-regex = "retry later"
  
+</programlisting>
+
+  <para>Beware that this generic HTTP system-type is for MT only. We don't
+  provide a way for the MO side too. For MO traffic we simply expect the
+  remote HTTP caller to use Kannel's sendsms HTTP API on the given port to 
+  inject MO messages.
+  </para> 
+  
 </sect2>
+
 
 <sect2>
 <title>MT to MO direction switching</title>
