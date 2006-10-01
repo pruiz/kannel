@@ -1,4 +1,7 @@
 2006-10-01  Stipe Tolj  <stolj at kannel.org>
+    * doc/userguide/userguide.xml: fix typo delete in XML structure.
+    
+2006-10-01  Stipe Tolj  <stolj at kannel.org>
     * doc/userguide/userguide.xml: updating SMSC HTTP section for new
       'generic' system-type regex directives and a group example.
     * gwlib/cfg.def: adding 'status-[success|tempfail|permfail]-regex'

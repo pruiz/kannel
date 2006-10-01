@@ -3977,6 +3977,7 @@ send-url = "http://localhost:20022"
        response body conent, indicating a temporary failure. 
      </entry></row>
     
+   </tbody></tgroup></informaltable>
 
    <para>For a generic HTTP-based relay, the system-type 'generic' can be used.
    It can use the escape codes known from sms-service's get-url config
@@ -3996,7 +3997,6 @@ send-url = "http://<foobar>/<uri>?from=%P&to=%p&text=%b"
 status-success-regex = "ok"
 status-permfail-regex = "failure"
 status-tempfail-regex = "retry later"
- 
 </programlisting>
 
   <para>Beware that this generic HTTP system-type is for MT only. We don't
