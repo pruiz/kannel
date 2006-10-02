@@ -1,4 +1,8 @@
 2006-10-02  Stipe Tolj  <stolj at kannel.org>
+    * doc/userguide/userguide.xml: fix once again URL in example of 'generic'
+      in order not to use '&' char.
+    
+2006-10-02  Stipe Tolj  <stolj at kannel.org>
     * doc/userguide/userguide.xml: fix URL in example of 'generic'
       system-type of smsc http group. Obviously brakets indicate an
       XML tag and jade doesn't like this.

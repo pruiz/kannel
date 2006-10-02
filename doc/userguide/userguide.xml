@@ -3993,7 +3993,7 @@ group = smsc
 smsc = http
 system-type = generic
 port = 13015
-send-url = "http://www.foobar.com/mt.php?from=%P&to=%p&text=%b"
+send-url = "http://www.foobar.com/mt.php?from=%P&amp;to=%p&amp;text=%b"
 status-success-regex = "ok"
 status-permfail-regex = "failure"
 status-tempfail-regex = "retry later"
