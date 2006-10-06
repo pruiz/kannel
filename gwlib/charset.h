@@ -60,13 +60,13 @@
  * This header defines some utility functions for converting between
  * character sets.  Approximations are made when necessary, so avoid
  * needless conversions.
- * 
- * Currently only GSM and Latin-1 are supported with Kannel specific 
- * functions. This module contains also wrappers for libxml2 character 
- * set conversion functions that work either from or to UTF-8. More 
- * about libxml2's character set support on the header file 
- * <libxml/encoding.h> or the implementation file encoding.c. Short 
- * version: it has a few basic character set supports built in; for 
+ *
+ * Currently only GSM and Latin-1 are supported with Kannel specific
+ * functions. This module contains also wrappers for libxml2 character
+ * set conversion functions that work either from or to UTF-8. More
+ * about libxml2's character set support on the header file
+ * <libxml/encoding.h> or the implementation file encoding.c. Short
+ * version: it has a few basic character set supports built in; for
  * the rest iconv is used.
  *
  * Richard Braakman
@@ -89,21 +89,23 @@ void charset_init(void);
  */
 void charset_shutdown(void);
 
-/* Convert a string in the GSM default character set (GSM 03.38)
- * to ISO-8859-1.  A series of Greek characters (codes 16, 18-26)
- * are not representable and are converted to '?' characters.
- * GSM default is a 7-bit alphabet.  Characters with the 8th bit
- * set are left unchanged. */
-void charset_gsm_to_latin1(Octstr *gsm);
+/**
+ * Convert octet string in GSM format to UTF-8.
+ * Every GSM character can be represented with unicode, hence nothing will
+ * be lost. Escaped charaters will be translated into appropriate UTF-8 character.
+ */
+void charset_gsm_to_utf8(Octstr *ostr);
 
-/* Convert a string in the ISO-8859-1 character set to the GSM 
- * default character set (GSM 03.38).  A large number of characters
- * are not representable.  Approximations are made in some cases
- * (accented characters to their unaccented versions, for example),
- * and the rest are converted to '?' characters. */
-void charset_latin1_to_gsm(Octstr *latin1);
+/**
+ * Convert octet string in UTF-8 format to GSM 03.38.
+ * Because not all UTF-8 charater can be converted to GSM 03.38 non
+ * convertable character replaces with NRP character (see define above).
+ * Special characters will be formed into escape sequences.
+ * Incomplete UTF-8 characters at the end of the string will be skipped.
+ */
+void charset_utf8_to_gsm(Octstr *ostr);
 
-/* 
+/*
  * Convert from GSM default character set to NRC ISO 21 (German)
  * and vise versa.
  */
@@ -113,11 +115,11 @@ void charset_nrc_iso_21_german_to_gsm(Octstr *ostr);
 /* Trunctate a string of GSM characters to a maximum length.
  * Make sure the last remaining character is a whole character,
  * and not half of an escape sequence.
- * Return 1 if any characters were removed, otherwise 0. 
+ * Return 1 if any characters were removed, otherwise 0.
  */
 int charset_gsm_truncate(Octstr *gsm, long max);
 
-/* Convert a string from  character set specified by charset_from into 
+/* Convert a string from  character set specified by charset_from into
  * UTF-8 character set. The result is stored in the octet string *to that 
  * is allocated by the function. The function returns the number of bytes 
  * written for success, -1 for general error, -2 for an transcoding error 
@@ -127,7 +129,7 @@ int charset_gsm_truncate(Octstr *gsm, long max);
 int charset_to_utf8(Octstr *from, Octstr **to, Octstr *charset_from);
 
 /* Convert a string from UTF-8 character set into another character set 
- * specified by charset_from. The result is stored in the octet string *to 
+ * specified by charset_from. The result is stored in the octet string *to
  * that is allocated by the function. The function returns the number of 
  * bytes written for success, -1 for general error, -2 for an transcoding 
  * error (the input string wasn't valid string in the character set it 
@@ -135,10 +137,9 @@ int charset_to_utf8(Octstr *from, Octstr **to, Octstr *charset_from);
  */
 int charset_from_utf8(Octstr *utf8, Octstr **to, Octstr *charset_to);
 
-/* 
- * Use iconv library to convert an Octstr in place, from source character 
- * set to destination character set
+/* use iconv library to convert an Octstr in place, from source character set to
+ * destination character set
  */
-int charset_convert(Octstr *string, char *charset_from, char *charset_to);
+int charset_convert(Octstr* string, char* charset_from, char* charset_to);
 
 #endif

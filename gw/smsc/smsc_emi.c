@@ -414,7 +414,7 @@ static struct emimsg *msg_to_emimsg(Msg *msg, int trn, PrivData *privdata)
     	/* either alphanum or international */
     	if (!octstr_check_range(str, 1, 256, gw_isdigit)) {
 	    /* alphanumeric sender address with + in front*/
-	    charset_latin1_to_gsm(str);
+	    charset_utf8_to_gsm(str);
 	    octstr_truncate(str, 11); /* max length of alphanumeric OaDC */
 	    emimsg->fields[E50_OTOA] = octstr_create("5039");
 	    pack_7bit(str);
@@ -429,7 +429,7 @@ static struct emimsg *msg_to_emimsg(Msg *msg, int trn, PrivData *privdata)
     else {
 	if (!octstr_check_range(str, 0, 256, gw_isdigit)) {
 	    /* alphanumeric sender address */
-            charset_latin1_to_gsm(str);
+            charset_utf8_to_gsm(str);
 	    octstr_truncate(str, 11); /* max length of alphanumeric OaDC */
 	    emimsg->fields[E50_OTOA] = octstr_create("5039");
 	    pack_7bit(str);
@@ -509,7 +509,7 @@ static struct emimsg *msg_to_emimsg(Msg *msg, int trn, PrivData *privdata)
     else {
 	emimsg->fields[E50_MT] = octstr_create("3");
 	str = octstr_duplicate(msg->sms.msgdata);
-	charset_latin1_to_gsm(str);
+	charset_utf8_to_gsm(str);
 
     /*
      * Check if we have to apply some after GSM transcoding kludges
@@ -607,7 +607,7 @@ static int handle_operation(SMSCConn *conn, Connection *server,
         if (privdata->alt_charset == EMI_NRC_ISO_21)
             charset_nrc_iso_21_german_to_gsm(msg->sms.msgdata);
 
-	    charset_gsm_to_latin1(msg->sms.msgdata);
+	    charset_gsm_to_utf8(msg->sms.msgdata);
 	}
 	else {
 	    error(0, "EMI2[%s]: MT == %s isn't supported for operation type 01",
@@ -755,7 +755,7 @@ static int handle_operation(SMSCConn *conn, Connection *server,
         if (privdata->alt_charset == EMI_NRC_ISO_21)
             charset_nrc_iso_21_german_to_gsm(msg->sms.msgdata);
 
-	    charset_gsm_to_latin1(msg->sms.msgdata);
+	    charset_gsm_to_utf8(msg->sms.msgdata);
 	}
 	else if (octstr_get_char(emimsg->fields[E50_MT], 0) == '4') {
 	    msg->sms.msgdata = emimsg->fields[E50_TMSG];

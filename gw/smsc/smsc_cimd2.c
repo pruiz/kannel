@@ -1484,7 +1484,7 @@ static struct packet *packet_encode_message(Msg *msg, Octstr *sender_prefix, SMS
         /* Going from latin1 to GSM to CIMD2 may seem like a
          * detour, but it's the only way to get all the escape
          * codes right. */
-        charset_latin1_to_gsm(text);
+        charset_utf8_to_gsm(text);
         truncated = charset_gsm_truncate(text, spaceleft);
         convert_gsm_to_cimd2(text);
         packet_add_sms_parm(packet, P_USER_DATA, text, conn);
@@ -1613,7 +1613,7 @@ static Msg *cimd2_accept_message(struct packet *request, SMSCConn *conn)
     text = packet_get_sms_parm(request, P_USER_DATA);
     if (text != NULL) {
         convert_cimd2_to_gsm(text,conn);
-        charset_gsm_to_latin1(text);
+        charset_gsm_to_utf8(text);
     } else {
         /*
          * FIXME: If DCS indicates GSM charset, and we get it in binary,

@@ -1966,7 +1966,7 @@ static void at2_decode7bituncompressed(Octstr *input, int len, Octstr *decoded, 
         pos++;
         octet = octstr_get_char(input, pos);
     }
-    charset_gsm_to_latin1(decoded);
+    charset_gsm_to_utf8(decoded);
 }
 
 
@@ -2239,7 +2239,7 @@ static Octstr *at2_pdu_encode(Msg *msg, PrivAT2data *privdata)
             offset = (((nbits / 7) + 1) * 7 - nbits) % 7; /* Fill bits */
         }
 
-        charset_latin1_to_gsm(msg->sms.msgdata);
+        charset_utf8_to_gsm(msg->sms.msgdata);
         
         if ((temp = at2_encode7bituncompressed(msg->sms.msgdata, offset)) != NULL)
             octstr_append(buffer, temp);

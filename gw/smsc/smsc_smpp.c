@@ -78,7 +78,7 @@
 #include "sms.h"
 #include "dlr.h"
 
-#define SMPP_DEFAULT_CHARSET	"windows-1252"
+#define SMPP_DEFAULT_CHARSET "UTF-8"
 
 /*
  * Select these based on whether you want to dump SMPP PDUs as they are
@@ -389,7 +389,7 @@ static long convert_addr_from_pdu(Octstr *id, Octstr *addr, long ton, long npi, 
         }
         if (alt_addr_charset) {
             if (octstr_str_case_compare(alt_addr_charset, "gsm") == 0)
-		charset_gsm_to_latin1(addr);
+		charset_gsm_to_utf8(addr);
             else if (charset_convert(addr, octstr_get_cstr(alt_addr_charset), SMPP_DEFAULT_CHARSET) != 0)
                 error(0, "Failed to convert address from charset <%s> to <%s>, leave as is.",
                     octstr_get_cstr(alt_addr_charset), SMPP_DEFAULT_CHARSET);
@@ -511,7 +511,7 @@ static Msg *pdu_to_msg(SMPP *smpp, SMPP_PDU *pdu, long *reason)
                              octstr_get_cstr(smpp->alt_charset), SMPP_DEFAULT_CHARSET);
                 msg->sms.coding = DC_7BIT;
             } else { /* assume GSM 03.38 7-bit alphabet */
-                charset_gsm_to_latin1(msg->sms.msgdata);
+                charset_gsm_to_utf8(msg->sms.msgdata);
                 msg->sms.coding = DC_7BIT;
             }
             break;
@@ -524,13 +524,13 @@ static Msg *pdu_to_msg(SMPP *smpp, SMPP_PDU *pdu, long *reason)
         case 0x05: /* JIS - what do I do with that ? */
             break;
         case 0x06: /* Cyrllic - iso-8859-5, I'll convert to unicode */
-            if (charset_convert(msg->sms.msgdata, "ISO-8859-5", "UCS-2BE") != 0)
-                error(0, "Failed to convert msgdata from cyrllic to UCS-2, will leave as is");
-            msg->sms.coding = DC_UCS2; break;
+            if (charset_convert(msg->sms.msgdata, "ISO-8859-5", "UTF-8") != 0)
+                error(0, "Failed to convert msgdata from cyrllic to UTF-8, will leave as is");
+            msg->sms.coding = DC_7BIT; break;
         case 0x07: /* Hebrew iso-8859-8, I'll convert to unicode */
-            if (charset_convert(msg->sms.msgdata, "ISO-8859-8", "UCS-2BE") != 0)
-                error(0, "Failed to convert msgdata from hebrew to UCS-2, will leave as is");
-            msg->sms.coding = DC_UCS2; break;
+            if (charset_convert(msg->sms.msgdata, "ISO-8859-8", "UTF-8") != 0)
+                error(0, "Failed to convert msgdata from hebrew to UTF-8, will leave as is");
+            msg->sms.coding = DC_7BIT; break;
         case 0x08: /* unicode UCS-2, yey */
             msg->sms.coding = DC_UCS2; break;
 
@@ -549,7 +549,7 @@ static Msg *pdu_to_msg(SMPP *smpp, SMPP_PDU *pdu, long *reason)
                 msg->sms.coding = DC_8BIT;
             else if (msg->sms.coding == DC_7BIT || msg->sms.coding == DC_UNDEF) { /* assume GSM 7Bit , reencode */
                 msg->sms.coding = DC_7BIT;
-                charset_gsm_to_latin1(msg->sms.msgdata);
+                charset_gsm_to_utf8(msg->sms.msgdata);
             }
     }
     msg->sms.pid = pdu->u.deliver_sm.protocol_id;
@@ -661,7 +661,7 @@ static Msg *data_sm_to_msg(SMPP *smpp, SMPP_PDU *pdu, long *reason)
                              octstr_get_cstr(smpp->alt_charset), SMPP_DEFAULT_CHARSET);
                 msg->sms.coding = DC_7BIT;
             } else { /* assume GSM 03.38 7-bit alphabet */
-                charset_gsm_to_latin1(msg->sms.msgdata);
+                charset_gsm_to_utf8(msg->sms.msgdata);
                 msg->sms.coding = DC_7BIT;
             }
             break;
@@ -674,13 +674,13 @@ static Msg *data_sm_to_msg(SMPP *smpp, SMPP_PDU *pdu, long *reason)
         case 0x05: /* JIS - what do I do with that ? */
             break;
         case 0x06: /* Cyrllic - iso-8859-5, I'll convert to unicode */
-            if (charset_convert(msg->sms.msgdata, "ISO-8859-5", "UCS-2BE") != 0)
-                error(0, "Failed to convert msgdata from cyrllic to UCS-2, will leave as is");
-            msg->sms.coding = DC_UCS2; break;
+            if (charset_convert(msg->sms.msgdata, "ISO-8859-5", "UTF-8") != 0)
+                error(0, "Failed to convert msgdata from cyrllic to UTF-8, will leave as is");
+            msg->sms.coding = DC_7BIT; break;
         case 0x07: /* Hebrew iso-8859-8, I'll convert to unicode */
-            if (charset_convert(msg->sms.msgdata, "ISO-8859-8", "UCS-2BE") != 0)
-                error(0, "Failed to convert msgdata from hebrew to UCS-2, will leave as is");
-            msg->sms.coding = DC_UCS2; break;
+            if (charset_convert(msg->sms.msgdata, "ISO-8859-8", "UTF-8") != 0)
+                error(0, "Failed to convert msgdata from hebrew to UTF-8, will leave as is");
+            msg->sms.coding = DC_7BIT; break;
         case 0x08: /* unicode UCS-2, yey */
             msg->sms.coding = DC_UCS2; break;
 
@@ -699,7 +699,7 @@ static Msg *data_sm_to_msg(SMPP *smpp, SMPP_PDU *pdu, long *reason)
                 msg->sms.coding = DC_8BIT;
             else if (msg->sms.coding == DC_7BIT || msg->sms.coding == DC_UNDEF) { /* assume GSM 7Bit , reencode */
                 msg->sms.coding = DC_7BIT;
-                charset_gsm_to_latin1(msg->sms.msgdata);
+                charset_gsm_to_utf8(msg->sms.msgdata);
             }
     }
 
@@ -767,7 +767,7 @@ static SMPP_PDU *msg_to_pdu(SMPP *smpp, Msg *msg)
                     if (octstr_str_case_compare(smpp->alt_addr_charset, "gsm") == 0) {
                         /* @ would break PDU if converted into GSM*/
                         octstr_replace(pdu->u.submit_sm.source_addr, octstr_imm("@"), octstr_imm("?"));
-                        charset_latin1_to_gsm(pdu->u.submit_sm.source_addr);
+                        charset_utf8_to_gsm(pdu->u.submit_sm.source_addr);
                     } else if (charset_convert(pdu->u.submit_sm.source_addr, SMPP_DEFAULT_CHARSET, octstr_get_cstr(smpp->alt_addr_charset)) != 0)
                         error(0, "Failed to convert source_addr from charset <%s> to <%s>, will send as is.",
                                 SMPP_DEFAULT_CHARSET, octstr_get_cstr(smpp->alt_addr_charset));
@@ -785,7 +785,7 @@ static SMPP_PDU *msg_to_pdu(SMPP *smpp, Msg *msg)
                     if (octstr_str_case_compare(smpp->alt_addr_charset, "gsm") == 0) {
                         /* @ would break PDU if converted into GSM */
                         octstr_replace(pdu->u.submit_sm.source_addr, octstr_imm("@"), octstr_imm("?")); 
-                        charset_latin1_to_gsm(pdu->u.submit_sm.source_addr);
+                        charset_utf8_to_gsm(pdu->u.submit_sm.source_addr);
                     } else if (charset_convert(pdu->u.submit_sm.source_addr, SMPP_DEFAULT_CHARSET, octstr_get_cstr(smpp->alt_addr_charset)) != 0)
                         error(0, "Failed to convert source_addr from charset <%s> to <%s>, will send as is.",
                                 SMPP_DEFAULT_CHARSET, octstr_get_cstr(smpp->alt_addr_charset));
@@ -875,7 +875,7 @@ static SMPP_PDU *msg_to_pdu(SMPP *smpp, Msg *msg)
             (pdu->u.submit_sm.data_coding == 0 && !smpp->alt_charset)) {
             if (msg->sms.charset != NULL &&
                 octstr_case_compare(msg->sms.charset, octstr_imm("GSM-03.38")) != 0)
-                charset_latin1_to_gsm(pdu->u.submit_sm.short_message);
+                charset_utf8_to_gsm(pdu->u.submit_sm.short_message);
         }
         else if (pdu->u.submit_sm.data_coding == 0 && smpp->alt_charset) {
             /*
@@ -883,7 +883,7 @@ static SMPP_PDU *msg_to_pdu(SMPP *smpp, Msg *msg)
              */
             if (msg->sms.charset != NULL && 
                 octstr_case_compare(msg->sms.charset, octstr_imm("GSM-03.38")) == 0)
-                charset_gsm_to_latin1(pdu->u.submit_sm.short_message);
+                charset_gsm_to_utf8(pdu->u.submit_sm.short_message);
             if (charset_convert(pdu->u.submit_sm.short_message, SMPP_DEFAULT_CHARSET,
                                 octstr_get_cstr(smpp->alt_charset)) != 0)
                 error(0, "Failed to convert msgdata from charset <%s> to <%s>, will send as is.",

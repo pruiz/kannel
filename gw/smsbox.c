@@ -1671,47 +1671,19 @@ static void obey_request_thread(void *arg)
 	else
 	    dreport = 0;
 
-	/* Recode to iso-8859-1 the MO message if possible */
+	/* Recode to UTF-8 the MO message if possible */
 	if (mo_recode && msg->sms.coding == DC_UCS2) {
             int converted = 0;
 	    Octstr *text;
 
 	    text = octstr_duplicate(msg->sms.msgdata);
-	    if(0 == octstr_recode (octstr_imm("iso-8859-1"), octstr_imm("UTF-16BE"), text)) {
-            if(octstr_search(text, octstr_imm("&#"), 0) == -1) {
-                /* XXX I'm trying to search for &#xxxx; text, which indicates that the
-                 * text couldn't be recoded.
-                 * We should use other function to do the recode or detect it using
-                 * other method */
-                info(0, "MO message converted from UCS-2 to ISO-8859-1");
-                octstr_destroy(msg->sms.msgdata);
-                msg->sms.msgdata = octstr_duplicate(text);
-                msg->sms.charset = octstr_create("ISO-8859-1");
-                msg->sms.coding = DC_7BIT;
-                converted=1;
-            } else {
-                octstr_destroy(text);
-	            text = octstr_duplicate(msg->sms.msgdata);
-            }
-	    }
-	    if(!converted && 0 == octstr_recode (octstr_imm("UTF-8"), octstr_imm("UTF-16BE"), text)) {
-            if(octstr_search(text, octstr_imm("&#"), 0) == -1) {
-                /* XXX I'm trying to search for &#xxxx; text, which indicates that the
-                 * text couldn't be recoded.
-                 * We should use other function to do the recode or detect it using
-                 * other method */
+	    if(0 == octstr_recode(octstr_imm("UTF-8"), octstr_imm("UTF-16BE"), text)) {
                 info(0, "MO message converted from UCS-2 to UTF-8");
                 octstr_destroy(msg->sms.msgdata);
                 msg->sms.msgdata = octstr_duplicate(text);
                 msg->sms.charset = octstr_create("UTF-8");
                 msg->sms.coding = DC_7BIT;
-            /* redundant, but this code could be used if another convertion is required
                 converted=1;
-            } else {
-                octstr_destroy(text);
-	            text = octstr_duplicate(msg->sms.msgdata);
-            */
-            }
 	    }
 	    octstr_destroy(text);
 	}
@@ -3701,14 +3673,14 @@ int charset_processing (Octstr *charset, Octstr *body, int coding) {
 	    /*
          * For 7 bit, convert to WINDOWS-1252
 	     */
-        if (charset_convert (body, octstr_get_cstr(charset), "WINDOWS-1252") < 0) {
+        if (charset_convert(body, octstr_get_cstr(charset), "UTF-8") < 0) {
 		resultcode = -1;
 	    }
 	} else if (coding == DC_UCS2) {
 	    /*
 	     * For UCS-2, convert to UTF-16BE
 	     */
-	    if (octstr_recode (octstr_imm ("UTF-16BE"), charset, body) < 0) {
+	    if (charset_convert(body, octstr_get_cstr(charset), "UTF-16BE") < 0) {
 		resultcode = -1;
 	    }
 	}

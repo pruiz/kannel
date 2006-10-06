@@ -657,10 +657,10 @@ static struct packet *packet_encode_message(Msg *msg, SMSCConn *conn)
     msgdata = octstr_duplicate(msg->sms.msgdata);
 
     if (msg->sms.coding == DC_7BIT || msg->sms.coding == DC_UNDEF) {
-        debug("bb.sms.oisd", 0, "OISD[%s]: sending latin1=%s",
+        debug("bb.sms.oisd", 0, "OISD[%s]: sending UTF-8=%s",
               octstr_get_cstr(conn->id),
               octstr_get_cstr(msg->sms.msgdata));
-        charset_latin1_to_gsm(msgdata);
+        charset_utf8_to_gsm(msgdata);
         oisd_shrink_gsm7(msgdata);
     }
 
@@ -850,8 +850,8 @@ static Msg *oisd_accept_message(struct packet *request, SMSCConn *conn)
             warning(0, "OISD[%s]: 7-bit UDH ?",
                     octstr_get_cstr(conn->id));
         } else {
-            charset_gsm_to_latin1(msg->sms.msgdata);
-            debug("bb.sms.oisd", 0, "OISD[%s]: received latin1=%s",
+            charset_gsm_to_utf8(msg->sms.msgdata);
+            debug("bb.sms.oisd", 0, "OISD[%s]: received UTF-8=%s",
                   octstr_get_cstr(conn->id),
                   octstr_get_cstr(msg->sms.msgdata));
         }

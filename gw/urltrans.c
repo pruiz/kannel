@@ -1088,6 +1088,7 @@ static URLTranslation *create_onetrans(CfgGroup *grp)
 	ot->username = cfg_get(grp, octstr_imm("username"));
 	ot->password = cfg_get(grp, octstr_imm("password"));
 	ot->dlr_url = cfg_get(grp, octstr_imm("dlr-url"));
+grp_dump(grp);
 	if (ot->password == NULL) {
 	    error(0, "Password required for send-sms user");
 	    goto error;

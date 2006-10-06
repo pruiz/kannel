@@ -188,7 +188,7 @@ int sms_msgdata_len(Msg* msg)
 
 	if (msg->sms.coding == DC_7BIT) {
 		msgdata = octstr_duplicate(msg->sms.msgdata);
-		charset_latin1_to_gsm(msgdata);
+		charset_utf8_to_gsm(msgdata);
 		ret = octstr_len(msgdata);
 		octstr_destroy(msgdata);
 	} else 
@@ -280,7 +280,7 @@ static Octstr *extract_msgdata_part_by_coding(Msg *msg, Octstr *split_chars,
      * cut the string to the required length and then count real characters. 
      */
      temp = octstr_duplicate(msg->sms.msgdata);
-     charset_latin1_to_gsm(temp);
+     charset_utf8_to_gsm(temp);
      charset_gsm_truncate(temp, max_part_len);
 
      pos = esc_count = 0;

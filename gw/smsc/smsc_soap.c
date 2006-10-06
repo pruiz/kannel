@@ -2748,8 +2748,8 @@ Octstr* soap_o2o_msgdata_attribute(Msg* msg, PrivData *privdata)
     }
     else if (msg->sms.coding == DC_7BIT || msg->sms.coding == DC_UNDEF) {
         /* convert message data to target encoding */
-        debug("bb.soap.o2o_msgdata_attribute", 0, "SOAP: converting from ISO-8859-1 to %s", octstr_get_cstr(privdata->alt_charset));
-        ret = charset_convert(data, "ISO-8859-1", octstr_get_cstr(privdata->alt_charset));
+        debug("bb.soap.o2o_msgdata_attribute", 0, "SOAP: converting from UTF-8 to %s", octstr_get_cstr(privdata->alt_charset));
+        ret = charset_convert(data, "UTF-8", octstr_get_cstr(privdata->alt_charset));
         if (ret == -1) {
             error(0,"SOAP: soap_o2o_msgdata_attribute, charset_convert failed");
             octstr_dump(msg->sms.msgdata, 0);
@@ -2804,8 +2804,8 @@ Octstr* soap_msgdata_attribute(Msg* msg, PrivData* privdata)
     }
     else if (msg->sms.coding == DC_7BIT || msg->sms.coding == DC_UNDEF) {
         /* convert message data to target encoding */
-        debug("bb.soap.msgdata_attribute", 0, "SOAP: converting from ISO-8859-1 to %s", octstr_get_cstr(privdata->alt_charset));
-        ret = charset_convert(data, "ISO-8859-1", octstr_get_cstr(privdata->alt_charset));
+        debug("bb.soap.msgdata_attribute", 0, "SOAP: converting from UTF-8 to %s", octstr_get_cstr(privdata->alt_charset));
+        ret = charset_convert(data, "UTF-8", octstr_get_cstr(privdata->alt_charset));
         if (ret == -1) {
             error(0,"SOAP: soap_msgdata_attribute, charset_convert failed");
             octstr_dump(msg->sms.msgdata, 0);

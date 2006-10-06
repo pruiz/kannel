@@ -994,8 +994,8 @@ static int ois_append_sm_text(char *raw, const Msg *msg)
     SAY(3, "ois_append_sm_text");
 
     if (msg->sms.coding == DC_7BIT || msg->sms.coding == DC_UNDEF) {
-        charset_latin1_to_gsm(msg->sms.udhdata);
-        charset_latin1_to_gsm(msg->sms.msgdata);
+        charset_utf8_to_gsm(msg->sms.udhdata);
+        charset_utf8_to_gsm(msg->sms.msgdata);
     }
 
 

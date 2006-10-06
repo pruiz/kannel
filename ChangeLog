@@ -1,3 +1,12 @@
+2006-10-06 Alexander Malysh <amalysh at kannel.org>
+    * gw/sms.c, gw/smsbox.c, gw/urltrans.c, gw/smsc/smsc_at.c, gw/smsc/smsc_cimd2.c,
+      gw/smsc/smsc_emi.c, gw/smsc/smsc_ois.c, gw/smsc/smsc_oisd.c, gw/smsc/smsc_smpp.c,
+      gw/smsc/smsc_soap.c, gwlib/charset.c, gwlib/charset.h, gwlib/latin1_to_gsm.h:
+      Applied patch that converts internal kannel charset to UTF-8. Please note that
+      I didn't add smsbox compatibility code, means smsbox expect text body to be 
+      encoded in UTF-8 as default also MOs will be forwarded in UTF-8. It could be
+      workarounded with charset cgi variable.
+
 2006-10-02  Stipe Tolj  <stolj at kannel.org>
     * doc/userguide/userguide.xml: fix once again URL in example of 'generic'
       in order not to use '&' char.
