@@ -1,3 +1,11 @@
+2006-10-10  Stipe Tolj  <stolj at kannel.org>
+    * gwlib/mime.c: fix MIME boundry check and fixup. Thanks to Pail for this.
+      [Msg-Id: <443F5E2B-781C-425C-8B85-E2D7ACEAA430@dsmagic.com>]
+      
+2006-10-10  Stipe Tolj  <stolj at kannel.org>
+    * configure[.in], gwlib/regex.h: ensure that we use the pcreposix wrapper 
+      lib for POSIX.1 instead of system regex if PCRE is enabled.
+   
 2006-10-06 Alexander Malysh <amalysh at kannel.org>
     * gw/sms.c, gw/smsbox.c, gw/urltrans.c, gw/smsc/smsc_at.c, gw/smsc/smsc_cimd2.c,
       gw/smsc/smsc_emi.c, gw/smsc/smsc_ois.c, gw/smsc/smsc_oisd.c, gw/smsc/smsc_smpp.c,

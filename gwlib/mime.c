@@ -456,7 +456,8 @@ List *mime_entity_headers(MIMEEntity *m)
     gw_assert(m != NULL && m->headers != NULL);
 
     /* Need a fixup before hand over. */
-    fix_boundary_element(m->headers,NULL);
+    if (mime_entity_num_parts(m) > 0)
+       fix_boundary_element(m->headers, NULL);
 
     headers = http_header_duplicate(m->headers);
 
