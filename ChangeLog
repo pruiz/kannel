@@ -1,5 +1,5 @@
 2006-10-10  Stipe Tolj  <stolj at kannel.org>
-    * gwlib/mime.c: fix MIME boundry check and fixup. Thanks to Pail for this.
+    * gwlib/mime.c: fix MIME boundry check and fixup. Thanks to Paul for this.
       [Msg-Id: <443F5E2B-781C-425C-8B85-E2D7ACEAA430@dsmagic.com>]
       
 2006-10-10  Stipe Tolj  <stolj at kannel.org>
