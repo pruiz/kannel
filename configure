@@ -8655,17 +8655,11 @@ echo $ECHO_N "checking PCRE version... $ECHO_C" >&6
       pcre_version=`$PCRE_CONFIG --version`
       echo "$as_me:$LINENO: result: $pcre_version" >&5
 echo "${ECHO_T}$pcre_version" >&6
+      LIBS="$LIBS `$PCRE_CONFIG --libs-posix`"
+      CFLAGS="$CFLAGS `$PCRE_CONFIG --cflags-posix`"
       echo "$as_me:$LINENO: checking for POSIX regex provider" >&5
 echo $ECHO_N "checking for POSIX regex provider... $ECHO_C" >&6
-      if test "x$has_posix_regex" != "x" ; then
-        LIBS="$LIBS `$PCRE_CONFIG --libs`"
-        CFLAGS="$CFLAGS `$PCRE_CONFIG --cflags`"
-        echo "$as_me:$LINENO: result: system regex" >&5
-echo "${ECHO_T}system regex" >&6
-      else
-        LIBS="$LIBS `$PCRE_CONFIG --libs-posix`"
-        CFLAGS="$CFLAGS `$PCRE_CONFIG --cflags-posix`"
-        echo "$as_me:$LINENO: result: PCRE library" >&5
+      echo "$as_me:$LINENO: result: PCRE library" >&5
 echo "${ECHO_T}PCRE library" >&6
 
 for ac_header in pcreposix.h
@@ -8891,7 +8885,6 @@ _ACEOF
 
 fi
 
-      fi
 
 for ac_header in pcre.h
 do
@@ -13231,9 +13224,10 @@ for ac_i in : $LIBOBJS; do test "x$ac_i" = x: && continue
   # 1. Remove the extension, and $U if already installed.
   ac_i=`echo "$ac_i" |
 	 sed 's/\$U\././;s/\.o$//;s/\.obj$//'`
-  # 2. Add them.
-  ac_libobjs="$ac_libobjs $ac_i\$U.$ac_objext"
-  ac_ltlibobjs="$ac_ltlibobjs $ac_i"'$U.lo'
+  # 2. Prepend LIBOBJDIR.  When used with automake>=1.10 LIBOBJDIR
+  #    will be set to the directory where LIBOBJS objects are built.
+  ac_libobjs="$ac_libobjs \${LIBOBJDIR}$ac_i\$U.$ac_objext"
+  ac_ltlibobjs="$ac_ltlibobjs \${LIBOBJDIR}$ac_i"'$U.lo'
 done
 LIBOBJS=$ac_libobjs
 
