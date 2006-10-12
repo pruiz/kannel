@@ -1,4 +1,9 @@
 2006-10-13  Stipe Tolj  <stolj at kannel.org>
+    * gwlib/mime.c: fixing unquoting while contructing octstr from mime object.
+      Thanks to Paul for this fix.
+      [Msg-Id: <121E1E3B-AADA-4FC4-956A-AE410B416EF9@dsmagic.com>]
+    
+2006-10-13  Stipe Tolj  <stolj at kannel.org>
     * gw/urltran.c: fxing alias support for sms-service in smsbox. Thanks to
       Vincent for analysis and patch. Also removed debugging grp_dump() from
       Alex' previous UTF-8 patch.

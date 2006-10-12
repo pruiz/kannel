@@ -63,7 +63,7 @@
  *
  * See gwlib/mime.h for more details on the implementation.
  *
- * Stipe Tolj <stolj@wapme.de>
+ * Stipe Tolj <stolj@kannel.org>
  */
 
 #include <string.h>
@@ -162,33 +162,50 @@ static int read_mime_headers(ParseContext *context, List *headers)
  */
 static void fix_boundary_element(List *headers, Octstr **boundary_elem)
 {
+    Octstr *value, *boundary;
+    long len;
+    
      /* 
       * Check if we have an boundary parameter already in the 
       * Content-Type header. If no, add one, otherwise parse which one 
       * we should use.
       * XXX this can be abstracted as function in gwlib/http.[ch].
       */
-     Octstr *value = http_header_value(headers, octstr_imm("Content-Type"));
-     Octstr *boundary = value ? http_get_header_parameter(value, octstr_imm("boundary")) :
-	  NULL;
-     if (boundary == NULL) {
-	  boundary = octstr_format("_boundary_%d_%ld_%c_%c_bd%d", 
-				   random(), (long)time(NULL), 'A' + (random()%26), 
-				   'a'+(random() % 26), random());
-	  octstr_format_append(value, "; boundary=%S", boundary);
-	  
-	  http_header_remove_all(headers, "Content-Type");
-	  http_header_add(headers, "Content-Type", octstr_get_cstr(value));
-	  http_header_add(headers, "MIME-Version", "1.0");
-     }
-     if (value)
-	  octstr_destroy(value);
-     if (boundary_elem)
-	  *boundary_elem = boundary;
-     else if (boundary)
-	  octstr_destroy(boundary);
-}
+     value = http_header_value(headers, octstr_imm("Content-Type"));
+     boundary = value ? http_get_header_parameter(value, octstr_imm("boundary")) : NULL;
 
+     if (value == NULL) {
+        /* we got here because it is multi-part, so... */
+        value = octstr_create("multipart/mixed");
+        http_header_add(headers, "Content-Type", "multipart/mixed");
+     }
+     if (boundary == NULL) {
+        Octstr *v;
+        boundary = octstr_format("_boundary_%d_%ld_%c_%c_bd%d", 
+                                 random(), (long) time(NULL), 'A' + (random() % 26), 
+                                 'a' + (random() % 26), random());
+	       
+        octstr_format_append(value, "; boundary=%S", boundary);
+	  
+        http_header_remove_all(headers, "Content-Type");
+        http_header_add(headers, "Content-Type", octstr_get_cstr(value));
+        if ((v = http_header_value(headers, octstr_imm("MIME-Version"))) == NULL)
+            http_header_add(headers, "MIME-Version", "1.0");
+        else
+            octstr_destroy(v);
+    } 
+    else if ((len = octstr_len(boundary)) > 0 &&
+             octstr_get_char(boundary, 0) == '"' && 
+             octstr_get_char(boundary, len - 1) == '"') {
+        octstr_delete(boundary, 0, 1);
+        octstr_delete(boundary, len - 2, 1);      
+    }
+
+    octstr_destroy(value);
+    if (boundary_elem)
+        *boundary_elem = boundary;
+    octstr_destroy(boundary);
+}
 
 
 /********************************************************************
