@@ -1,3 +1,9 @@
+2006-10-13  Stipe Tolj  <stolj at kannel.org>
+    * gw/urltran.c: fxing alias support for sms-service in smsbox. Thanks to
+      Vincent for analysis and patch. Also removed debugging grp_dump() from
+      Alex' previous UTF-8 patch.
+      [Msg-Id: <000901c6eb10$e930c750$9600a8c0@vince>]
+      
 2006-10-10  Stipe Tolj  <stolj at kannel.org>
     * gwlib/mime.c: fix MIME boundry check and fixup. Thanks to Paul for this.
       [Msg-Id: <443F5E2B-781C-425C-8B85-E2D7ACEAA430@dsmagic.com>]

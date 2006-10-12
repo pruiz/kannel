@@ -1416,6 +1416,12 @@ static URLTranslation *find_translation(URLTranslationList *trans, List *words,
     octstr_convert_range(keyword, 0, octstr_len(keyword), tolower);
 
     list = get_matching_translations(trans, keyword);
+
+    /* If list is empty we will check into trans->dict 
+     * (Dict of lowercase Octstr keywords) */
+    if (gwlist_len(list) == 0)
+        list = dict_get(trans->dict, keyword);
+
     /* List now contains all translations where the keyword of the sms 
      * matches the pattern defined by the tranlsation's keyword. */
     for (i = 0; i < gwlist_len(list); ++i) {
@@ -1433,7 +1439,6 @@ static URLTranslation *find_translation(URLTranslationList *trans, List *words,
         *reject = 0;
 
     octstr_destroy(keyword);    
-    gwlist_destroy(list, NULL);
     return t;
 }
 
