@@ -768,9 +768,10 @@ static void conn_pool_shutdown(void)
 }
 
 
-static inline Octstr *conn_pool_key(Octstr *host, int port)
+static inline Octstr *conn_pool_key(Octstr *host, int port, int ssl, Octstr *certfile, Octstr *our_host)
 {
-    return octstr_format("%S:%d", host, port);
+    return octstr_format("%S:%d:%d:%S:%S", host, port, ssl?1:0, certfile?certfile:octstr_imm(""),
+                         our_host?our_host:octstr_imm(""));
 }
 
 
@@ -784,7 +785,7 @@ static Connection *conn_pool_get(Octstr *host, int port, int ssl, Octstr *certke
 
     do {
         retry = 0;
-        key = conn_pool_key(host, port);
+        key = conn_pool_key(host, port, ssl, certkeyfile, our_host);
         mutex_lock(conn_pool_lock);
         list = dict_get(conn_pool, key);
         if (list != NULL)
@@ -843,7 +844,6 @@ static void check_pool_conn(Connection *conn, void *data)
         return;
     }
     /* check if connection still ok */
-    conn_wait(conn, 0);
     if (conn_error(conn) || conn_eof(conn)) {
         List *list;
         mutex_lock(conn_pool_lock);
@@ -869,12 +869,12 @@ static void check_pool_conn(Connection *conn, void *data)
 }
 
 
-static void conn_pool_put(Connection *conn, Octstr *host, int port)
+static void conn_pool_put(Connection *conn, Octstr *host, int port, int ssl, Octstr *certfile, Octstr *our_host)
 {
     Octstr *key;
     List *list;
 
-    key = conn_pool_key(host, port);
+    key = conn_pool_key(host, port, ssl, certfile, our_host);
     mutex_lock(conn_pool_lock);
     list = dict_get(conn_pool, key);
     if (list == NULL) {
@@ -1077,9 +1077,9 @@ static void handle_transaction(Connection *conn, void *data)
 #ifdef USE_KEEPALIVE 
     if (trans->persistent) {
         if (proxy_used_for_host(trans->host, trans->url))
-            conn_pool_put(trans->conn, proxy_hostname, proxy_port);
+            conn_pool_put(trans->conn, proxy_hostname, proxy_port, trans->ssl, trans->certkeyfile, http_interface);
         else 
-            conn_pool_put(trans->conn, trans->host, trans->port);
+            conn_pool_put(trans->conn, trans->host, trans->port, trans->ssl, trans->certkeyfile, http_interface);
     } else
 #endif
         conn_destroy(trans->conn);

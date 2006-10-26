@@ -1,3 +1,11 @@
+2006-10-26 Alexander Malysh <amalysh at kannel.org>
+    * gwlib/http.c: security bug fix for http.c. We have issue when we
+      use keep alive connections with our connection pool. This is scenario
+      without a patch:
+          1) http_start_request(..., ssl=0,certkeyfile=NULL,our_host=NULL)
+          2) http_start_request(..., ssl=1,certkeyfile=XYZ,our_host=XYZ)
+      in (2) we will get from conn_pool_get connection from (1)!
+
 2006-10-13  Stipe Tolj  <stolj at kannel.org>
     * gwlib/mime.c: fixing unquoting while contructing octstr from mime object.
       Thanks to Paul for this fix.
@@ -18,7 +26,7 @@
       lib for POSIX.1 instead of system regex if PCRE is enabled.
    
 2006-10-06 Alexander Malysh <amalysh at kannel.org>
-    * gw/sms.c, gw/smsbox.c, gw/urltrans.c, gw/smsc/smsc_at.c, gw/smsc/smsc_cimd2.c,
+(CB)  * gw/sms.c, gw/smsbox.c, gw/urltrans.c, gw/smsc/smsc_at.c, gw/smsc/smsc_cimd2.c,
       gw/smsc/smsc_emi.c, gw/smsc/smsc_ois.c, gw/smsc/smsc_oisd.c, gw/smsc/smsc_smpp.c,
       gw/smsc/smsc_soap.c, gwlib/charset.c, gwlib/charset.h, gwlib/latin1_to_gsm.h:
       Applied patch that converts internal kannel charset to UTF-8. Please note that
