@@ -1,3 +1,16 @@
+2006-10-31 Alexander Malysh <amalysh at kannel.org>
+    * gwlib/conn.c, gwlib/http.c: fixed race condition in
+      unregister/callback usage/destroy of callback data. The race is
+      as follow, spotted with help of http.c:
+	1 Thread				2 Thread
+      1) http:conn_pool_get			1) http:check_pool_conn
+      2) conn = XYZ
+      3) conn_unregister
+		in conn_unregister
+		destroy callbackdata
+						2) dict_get(conn_pool, key) -> crash
+                                                   because connback data already destroyed
+
 2006-10-26 Alexander Malysh <amalysh at kannel.org>
     * gwlib/http.c: security bug fix for http.c. We have issue when we
       use keep alive connections with our connection pool. This is scenario

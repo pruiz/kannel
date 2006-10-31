@@ -818,7 +818,9 @@ int conn_register_real(Connection *conn, FDSet *fdset,
 void conn_unregister(Connection *conn)
 {
     FDSet *set = NULL;
-    int fd;
+    int fd = -1;
+    void *data = NULL;
+    conn_callback_data_destroyer_t *destroyer = NULL;
     
     gw_assert(conn != NULL);
 
@@ -834,10 +836,14 @@ void conn_unregister(Connection *conn)
         fd = conn->fd;
         conn->registered = NULL;
         conn->callback = NULL;
-        /* call data destroyer */
-        if (conn->callback_data != NULL && conn->callback_data_destroyer != NULL)
-            conn->callback_data_destroyer(conn->callback_data);
+        /*
+         * remember and don't destroy data and data_destroyer because we
+         * may be in callback right now. So destroy only after fdset_unregister
+         * call which guarantee us we are not in callback anymore.
+         */
+        data = conn->callback_data;
         conn->callback_data = NULL;
+        destroyer = conn->callback_data_destroyer;
         conn->callback_data_destroyer = NULL;
         conn->listening_pollin = 0;
         conn->listening_pollout = 0;
@@ -845,10 +851,14 @@ void conn_unregister(Connection *conn)
 
     unlock_in(conn);
     unlock_out(conn);
-    
+
     /* now unregister from FDSet */
     if (set != NULL)
         fdset_unregister(set, fd);
+
+    /* ok we are not in callback anymore, destroy data if any */
+    if (data != NULL && destroyer != NULL)
+        destroyer(data);
 }
 
 int conn_wait(Connection *conn, double seconds)
