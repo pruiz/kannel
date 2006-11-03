@@ -1,3 +1,8 @@
+2006-11-03 Alexander Malysh <amalysh at kannel.org>
+    * gw/bb_boxc.c: fixed message of order issue when we retry to deliver
+      to smsbox. Thanks to Ben Suffolk <ben at vanilla.net> for the patch.
+      [Msg-Id: <C1DA6177-EA8E-458A-9BE7-B329DEC793C3@vanilla.net>]
+
 2006-10-31 Alexander Malysh <amalysh at kannel.org>
     * gwlib/conn.c, gwlib/http.c: fixed race condition in
       unregister/callback usage/destroy of callback data. The race is

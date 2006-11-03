@@ -1522,6 +1522,12 @@ static void sms_to_smsboxes(void *arg)
         }
         else {
             newmsg = msg = gwlist_consume(incoming_sms);
+            
+            /* Back at the first message? */
+            if (newmsg == startmsg) {
+                gwlist_insert(incoming_sms, 0, msg);
+                continue;
+            }
         }
 
         if (msg == NULL)
