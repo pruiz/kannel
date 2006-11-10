@@ -844,6 +844,19 @@ void octstr_convert_range(Octstr *ostr, long pos, long len,
 }
 
 
+static int inline make_printable(int c)
+{
+    return isprint(c) ? c : '.';    
+}
+
+
+void inline octstr_convert_printable(Octstr *ostr)
+{
+    octstr_convert_range(ostr, 0, ostr->len, make_printable);
+}
+
+
+
 int octstr_compare(const Octstr *ostr1, const Octstr *ostr2)
 {
     int ret;

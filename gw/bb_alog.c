@@ -363,6 +363,9 @@ void bb_alog_sms(SMSCConn *conn, Msg *msg, const char *message)
 
         if ((msg->sms.coding == DC_8BIT || msg->sms.coding == DC_UCS2))
             octstr_binary_to_hex(text, 1);
+        else
+            octstr_convert_printable(text);
+            
         octstr_binary_to_hex(udh, 1);
 
         alog("%s [SMSC:%s] [SVC:%s] [ACT:%s] [BINF:%s] [from:%s] [to:%s] [flags:%ld:%ld:%ld:%ld:%ld] "

@@ -1,3 +1,12 @@
+2006-11-10  Stipe Tolj  <stolj at kannel.org>
+    * gwlib/octstr.[ch]: adding function octstr_convert_printable() to allow
+      a simple convertion for an Ocstr to be printed in a printable locale
+      character set. Converts and non-printbale char to '.', as octstr_dump()
+      does.
+    * gw/bb_alog.c: ensure in bb_alog_sms() that we use octstr_convert_printable()
+      before calling alog() for DC_7BIT messages that still may contain control
+      sequences and hence break the "one-line-per-entry" rule.      
+
 2006-11-03 Alexander Malysh <amalysh at kannel.org>
     * gw/bb_boxc.c: fixed message of order issue when we retry to deliver
       to smsbox. Thanks to Ben Suffolk <ben at vanilla.net> for the patch.

@@ -304,6 +304,13 @@ int octstr_check_range(Octstr *ostr, long pos, long len,
 void octstr_convert_range(Octstr *ostr, long pos, long len, 
     	    	    	  octstr_func_t map);
 
+/*
+ * Use the octstr_convert_range() with make_printable() to ensure
+ * every char in the octstr can be printed in the current locale. Each
+ * character that is NOT printable is converted to a '.' (dot).
+ */
+void inline octstr_convert_printable(Octstr *ostr);
+
 
 /*
  * Compare two octet strings, returning 0 if they are equal, negative if
