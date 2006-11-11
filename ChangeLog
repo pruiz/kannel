@@ -1,3 +1,7 @@
+2006-11-11  Stipe Tolj  <stolj at kannel.org>
+    * gw/bb_alog.c: also add octstr_convert_printable() if custom access-log
+      formating is used.
+
 2006-11-10  Stipe Tolj  <stolj at kannel.org>
     * gwlib/octstr.[ch]: adding function octstr_convert_printable() to allow
       a simple convertion for an Ocstr to be printed in a printable locale
