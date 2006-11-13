@@ -1,3 +1,10 @@
+2006-11-13  Stipe Tolj  <stolj at kannel.org>
+    * gw/smsc/smsc_smpp.c: relaxing the TON=1 must have >= 7 digits condition.
+      According to Andreas (see reference), there can be international routable
+      numbers with less then 7 digits. So we only drop a WARNING here and 
+      continue with processing. 
+      [Msg-Id: <0C09E1C0-D32C-41AA-AD14-4F8D849D92C4@fink.org>]
+      
 2006-11-11  Stipe Tolj  <stolj at kannel.org>
     * gw/bb_alog.c: also add octstr_convert_printable() if custom access-log
       formating is used.
