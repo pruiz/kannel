@@ -8451,6 +8451,14 @@ test/fakesmsc -m 1 "100 500 udh %0eudh+stuff+here main+message"
 
 </sect3>
 <sect3>
+<title>Interactive mode</title>
+    <para>If no messages are passed on the command line when starting fakesmsc,
+		it runs on "interactive mode".</para>
+		<para>When running on this mode, fakesmsc accept single messages typed on stdin
+		(without quotation marks) and displays the responses on stdout. This allows
+		for a more finely controlled interaction with the backend applications.</para>
+</sect3>
+<sect3>
 <title>Fakesmsc command line options</title>
 
    <para>Fake SMS center can be started with various optional command

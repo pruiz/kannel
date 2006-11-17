@@ -113,6 +113,10 @@ Server replies are shown in the same message format.\n";
 
 #include "gwlib/gwlib.h"
 
+#define IN_BUFSIZE 256  /* Buffer size for stdin */
+#define IN_TIMEOUT 1    /* Timeout for stdin */
+
+
 static int port = 10000;
 static Octstr *host;
 static long max_send = LONG_MAX;
@@ -214,7 +218,6 @@ static Octstr *randomize(Octstr *os)
     return msg;
 }
 
-
 /* The main program. */
 int main(int argc, char **argv) 
 {
@@ -228,6 +231,12 @@ int main(int argc, char **argv)
     double first_sent_at, last_sent_at;
     double start_time, end_time;
     double delta;
+    int interactive, maxfd;
+    char *cptr;
+    char buffer[IN_BUFSIZE];
+    fd_set rset;
+    struct timeval alarm;
+    FILE *fp;
 
     gwlib_init();
     setup_signal_handlers();
@@ -236,24 +245,31 @@ int main(int argc, char **argv)
 
     mptr = get_and_set_debugs(argc, argv, check_args);
     num_msgs = argc - mptr;
-    if (num_msgs <= 0)
-        panic(0, "%s", usage);
+		
+    interactive = 0;
+    if (num_msgs <= 0) {
+        interactive = 1;
+        num_msgs = 0;
+        info(0, "Entering interactive mode. Type your message on the command line");
+        /* set up file pointer to stdin */
+        fp = stdin;
+        /* initialize set for select */
+        FD_ZERO(&rset);	
+    } else {
+        msgs = gw_malloc(sizeof(Octstr *) * num_msgs);
+        for (i = 0; i < num_msgs; i ++) {
+            msgs[i] = octstr_create(argv[mptr + i]);
+            octstr_append_char(msgs[i], 10); /* End of line */
+        }
+        info(0, "Host %s Port %d interval %.3f max-messages %ld",
+             octstr_get_cstr(host), port, interval, max_send);
 
-    /* pre-allocate array */
-    msgs = gw_malloc(sizeof(Octstr *) * num_msgs);
-    for (i = 0; i < num_msgs; i ++) {
-        msgs[i] = octstr_create(argv[mptr + i]);
-        octstr_append_char(msgs[i], 10); /* End of line */
+        srand((unsigned int) time(NULL));
     }
-    info(0, "Host %s Port %d interval %.3f max-messages %ld",
-           octstr_get_cstr(host), port, interval, max_send);
-
-    srand((unsigned int) time(NULL));
-
     info(0, "fakesmsc starting");
     server = conn_open_tcp(host, port, NULL);
     if (server == NULL)
-	panic(0, "Failed to open connection");
+       panic(0, "Failed to open connection");
 
     num_sent = 0;
     num_received = 0;
@@ -263,11 +279,41 @@ int main(int argc, char **argv)
     last_received_at = 0;
     last_sent_at = 0;
 
-    num_sent = 0;
-    
-    /* infinetly loop */
+    /* infinitely loop */
     while (1) {
+        /* Are we on interactive mode? */ 
+        if (interactive == 1) {
+            /* Check if we need to clean things up beforehand */
+            if ( num_msgs > 0 ) {
+                for (i = 0; i < num_msgs; i ++)
+                    octstr_destroy(msgs[i]);
+                gw_free(msgs);
+                num_msgs = 0;
+            }
 
+            /* we want either the file pointer or timer */
+            FD_SET(fileno(fp), &rset);
+            /* get the largest file descriptor */
+            maxfd = fileno(fp) + 1;
+        
+            /* set timer to go off in 3 seconds */
+            alarm.tv_sec = IN_TIMEOUT;
+            alarm.tv_usec = 0;
+        
+            if (select(maxfd, &rset, NULL, NULL, &alarm) == -1)
+                goto over;
+            /* something went off, let's see if it's stdin */
+            if (FD_ISSET(fileno(fp), &rset)) { /* stdin is readable */
+                cptr = fgets(buffer, IN_BUFSIZE, stdin);
+                if( strlen( cptr ) < 2 )
+                    goto rcv;
+            } else { /* timer kicked in */
+                goto rcv;
+            }
+            num_msgs = 1;
+            msgs = gw_malloc(sizeof(Octstr*));
+            msgs[0] = octstr_create(cptr);
+        }
         /* if we still have something to send as MO message */
         if (num_sent < max_send) {
             Octstr *os = choose_message(msgs, num_msgs);
@@ -289,7 +335,7 @@ int main(int argc, char **argv)
             if (first_sent_at == 0)    
                 first_sent_at = last_sent_at;
         }
-
+rcv:
         do {
             delta = interval * num_sent - (get_current_time() - first_sent_at);
             if (delta < 0)
@@ -316,7 +362,6 @@ int main(int argc, char **argv)
                 octstr_destroy(line);
             }
         } while (delta > 0 || num_sent >= max_send);
-
     }
 
 over:

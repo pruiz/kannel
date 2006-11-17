@@ -1,3 +1,11 @@
+2006-11-17  Stipe Tolj  <stolj at kannel.org>
+    * doc/userguide/userguide.xml: section describing the new 'interactive' mode
+      for fakesmsc.
+    * test/fakesmsc.c: adding 'interactive' mode via stdin and stdout to allow
+      a more human like interaction with the fake smsc module.
+      Thanks to Alejandro Guerrieri <alejandro.guerrieri@gmail.com> for patch.
+      [Msg-Id: <cd6a81510610032000s2799a2c5uc2a255b15c53e899@mail.gmail.com>]
+
 2006-11-13  Stipe Tolj  <stolj at kannel.org>
     * gw/smsc/smsc_smpp.c: relaxing the TON=1 must have >= 7 digits condition.
       According to Andreas (see reference), there can be international routable
