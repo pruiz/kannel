@@ -1,4 +1,9 @@
 2006-11-17  Stipe Tolj  <stolj at kannel.org>
+    * gw/smsbox.c: allow empty message responses.
+      Thanks to Colin Pitrat <colin.pitrat@bull.net> for this patch.
+      [Msg-Id: <44BCDE02.4090000@bull.net>]
+      
+2006-11-17  Stipe Tolj  <stolj at kannel.org>
     * gw/wap_push_ppg.c: adding support to pass the 'from' source addr via
       X-Kannel-From HTTP header in the PPG request.
       Thanks to Christian Boustany <noorentertainment@yahoo.com> for this patch.

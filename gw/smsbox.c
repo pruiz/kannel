@@ -327,12 +327,8 @@ static int send_message(URLTranslation *trans, Msg *msg)
      *  a) it's a HTTP sms-service reply: either ignore it or
      *     substitute the "empty" warning defined
      *  b) it's a sendsms HTTP interface call: leave the message empty
-     *     if at least a UDH is given.
-     *
-     * XXX this still does not cover the case when the sendsms interface is
-     * used with *no* text and udh. What should we do then?!
      */
-    if (octstr_len(msg->sms.msgdata) == 0 && octstr_len(msg->sms.udhdata) == 0) {
+    if (octstr_len(msg->sms.msgdata) == 0 && msg->sms.sms_type == mt_reply) {
         if (trans != NULL && urltrans_omit_empty(trans))
             return 0;
         else
