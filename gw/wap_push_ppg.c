@@ -373,8 +373,8 @@ static Octstr *tell_ppg_name(void);
 static Octstr *describe_code(long code);
 static long ota_abort_to_pap(long reason);
 static int content_transformable(List *push_headers);
-static WAPAddrTuple *set_addr_tuple(Octstr *address, long cliport, 
-                                    long servport, long address_type);
+static WAPAddrTuple *set_addr_tuple(Octstr *address, long cliport, long servport,
+                                    long address_type, List *push_headers);
 static WAPAddrTuple *addr_tuple_change_cliport(WAPAddrTuple *tuple, long port);
 static void initialize_time_item_array(long time_data[], struct tm now);
 static int date_item_compare(Octstr *before, long time_data, long pos);
@@ -1775,7 +1775,7 @@ static int transform_message(WAPEvent **e, WAPAddrTuple **tuple,
     }
     
     address_type = (**e).u.Push_Message.address_type;
-    *tuple = set_addr_tuple(cliaddr, cliport, servport, address_type);
+    *tuple = set_addr_tuple(cliaddr, cliport, servport, address_type, push_headers);
 
     if (!content_transformable(push_headers)) 
         goto no_transform;
@@ -2759,20 +2759,26 @@ static int deliver_after_test_cleared(Octstr *after, struct tm now)
  * used for compability reasons, when the bearer is ip. When it is SMS, the
  * server address is global-sender.
  */
-static WAPAddrTuple *set_addr_tuple(Octstr *address, long cliport, 
-                                    long servport, long address_type)
+static WAPAddrTuple *set_addr_tuple(Octstr *address, long cliport, long servport, 
+                                    long address_type, List *push_headers)
 {
     Octstr *cliaddr;
+    Octstr *from = NULL;
     WAPAddrTuple *tuple;
     
     gw_assert(address);
 
-    if (address_type == ADDR_PLMN)
-        cliaddr = global_sender;
-    else
+    if (address_type == ADDR_PLMN) {
+        from = http_header_value(push_headers, octstr_imm("X-Kannel-From"));
+        cliaddr = from ? from : global_sender;
+    } else {
         cliaddr = octstr_imm("0.0.0.0");
+    }
 
     tuple = wap_addr_tuple_create(address, cliport, cliaddr, servport);
+
+    octstr_destroy(from);
+    http_header_remove_all(push_headers, "X-Kannel-From");
 
     return tuple;
 }

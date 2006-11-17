@@ -1,4 +1,9 @@
 2006-11-17  Stipe Tolj  <stolj at kannel.org>
+    * gw/wap_push_ppg.c: adding support to pass the 'from' source addr via
+      X-Kannel-From HTTP header in the PPG request.
+      Thanks to Christian Boustany <noorentertainment@yahoo.com> for this patch.
+      
+2006-11-17  Stipe Tolj  <stolj at kannel.org>
     * doc/userguide/userguide.xml: section describing the new 'interactive' mode
       for fakesmsc.
     * test/fakesmsc.c: adding 'interactive' mode via stdin and stdout to allow
