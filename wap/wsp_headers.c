@@ -122,7 +122,7 @@ int wsp_field_value(ParseContext *context, int *well_known_value)
     } else if (val > 127) {
         *well_known_value = val - 128;
         return WSP_FIELD_VALUE_ENCODED;
-    } else if (val == WSP_QUOTE) {  /* 127 */
+    } else if (val == WSP_QUOTE || val == '"') {  /* 127 */
         *well_known_value = -1;
         /* We already consumed the Quote */
         return WSP_FIELD_VALUE_NUL_STRING;

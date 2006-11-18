@@ -1,4 +1,9 @@
 2006-11-18  Stipe Tolj  <stolj at kannel.org>
+    * wap/wsp_headers.c: re-adding quote char (") recognizing within the 
+      wsp_field_value() that isolates header values. Thanks again to Paul.
+      [Msg-Id: <D594FE8B-729D-4183-BCFA-3337FE547D37@dsmagic.com>]
+      
+2006-11-18  Stipe Tolj  <stolj at kannel.org>
     * gwlib/mime.c: fixing bug causing segfault due to destroyed, but then
       reused Octstr pointer. Thanks to Paul for spotting this.
       [Msg-Id: <E1F2DA11-C90B-49F5-9DC7-6481F44D14C7@dsmagic.com>]
