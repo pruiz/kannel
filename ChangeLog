@@ -1,3 +1,7 @@
+2006-11-18  Stipe Tolj  <stolj at kannel.org>
+    * configure[.in]: add /usr/lib64 search path within --with-ssl block, 
+      ie. FC5 on x64_64 has that lib64 layout for devel import libs.
+       
 2006-11-17  Stipe Tolj  <stolj at kannel.org>
     * gw/smsbox.c: allow empty message responses.
       Thanks to Colin Pitrat <colin.pitrat@bull.net> for this patch.

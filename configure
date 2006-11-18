@@ -10210,7 +10210,7 @@ fi;
 
 if test "$ssl" = "yes" ; then
     if test "x$ssllib" = "x" && test "x$sslinc" = "x"; then
-    for loc in /usr/lib /usr/local/ssl/lib /usr/local/openssl/lib; do
+    for loc in /usr/lib /usr/lib64 /usr/local/ssl/lib /usr/local/openssl/lib; do
       if test -f "$loc/libssl.a" -o -f "$loc/libssl.dylib" ; then
         ssllib="$loc"
       fi
