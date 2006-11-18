@@ -1,4 +1,9 @@
 2006-11-18  Stipe Tolj  <stolj at kannel.org>
+    * gwlib/mime.c: fixing bug causing segfault due to destroyed, but then
+      reused Octstr pointer. Thanks to Paul for spotting this.
+      [Msg-Id: <E1F2DA11-C90B-49F5-9DC7-6481F44D14C7@dsmagic.com>]
+
+2006-11-18  Stipe Tolj  <stolj at kannel.org>
     * configure[.in]: add /usr/lib64 search path within --with-ssl block, 
       ie. FC5 on x64_64 has that lib64 layout for devel import libs.
        

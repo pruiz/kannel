@@ -204,7 +204,8 @@ static void fix_boundary_element(List *headers, Octstr **boundary_elem)
     octstr_destroy(value);
     if (boundary_elem)
         *boundary_elem = boundary;
-    octstr_destroy(boundary);
+    else
+    	octstr_destroy(boundary);
 }
 
 
