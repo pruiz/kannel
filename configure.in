@@ -779,7 +779,7 @@ dnl Implement the --with-ssl option.
 
 AC_CONFIG_SECTION([Configuring OpenSSL support])
 AC_ARG_WITH(ssl,
-[  --with-ssl[=DIR]        where to look for OpenSSL libs and header files
+[  --with-ssl[=DIR]          where to look for OpenSSL libs and header files
                           DIR points to the installation [/usr/local/ssl]],
 [ if test -d "$withval"; then
     ssllib="$withval/lib";
@@ -1089,6 +1089,18 @@ else
         AC_TRY_CPP([#include <oci.h>],AC_MSG_RESULT(yes), AC_MSG_ERROR([oci.h not found]))
         CFLAGS="$CFLAGS $CPPFLAGS"
 
+        AC_MSG_CHECKING([Oracle OCI version])
+        oracle_version_major=`cat $ORACLE_INCLUDE_PATH/oci.h \
+                             | grep '#define.*OCI_MAJOR_VERSION.*' \
+                             | sed -e 's/#define OCI_MAJOR_VERSION  *//' \
+                             | sed -e 's/  *\/\*.*\*\///'`
+        oracle_version_minor=`cat $ORACLE_INCLUDE_PATH/oci.h \
+                             | grep '#define.*OCI_MINOR_VERSION.*' \
+                             | sed -e 's/#define OCI_MINOR_VERSION  *//' \
+                             | sed -e 's/  *\/\*.*\*\///'`
+        ORACLE_OCI_VERSION="$oracle_version_major.$oracle_version_minor"
+        AC_MSG_RESULT([$ORACLE_OCI_VERSION])
+
         AC_ARG_WITH(
                 oracle-libs,
                 [  --with-oracle-libs=DIR  adds oracle library path],
@@ -1099,12 +1111,23 @@ else
         do
                 LIBS="$LIBS -L$a"
         done
-        AC_CHECK_LIB(clntsh,OCIEnvCreate,[ LIBS="$LIBS -lclntsh" ],exit)
-        if test -f "$ORACLE_HOME/lib/libwtc8.so"
-        then
-                AC_CHECK_LIB(wtc8,wtcstu,[ LIBS="$LIBS -lwtc8" ],AC_MSG_ERROR([Oracle libwtc8.so not found]))
+        
+        dnl Check for Oracle 10g instant client
+        if test -f "$ORACLE_LIB_PATH/libnnz10.so" && \
+           test -f "$ORACLE_LIB_PATH/libclntsh.so.10.1"; then
+          LIBS="$LIBS -lnnz10"
+          AC_CHECK_LIB(clntsh,OCIEnvCreate,[ LIBS="$LIBS -lclntsh -lnnz10" ],exit)
         else
-                AC_CHECK_LIB(wtc9,wtcstu,[ LIBS="$LIBS -lwtc9" ],AC_MSG_ERROR([Oracle libwtc9.so not found]))
+          AC_CHECK_LIB(clntsh,OCIEnvCreate,[ LIBS="$LIBS -lclntsh" ],exit)
+        fi
+
+        dnl Beware that Oracle 10g doesn't use anymore the libwtcX.so libs,
+        dnl so we don't break hard in case they are not present.
+        if test -f "$ORACLE_HOME/lib/libwtc8.so"; then
+          AC_CHECK_LIB(wtc8,wtcstu,[ LIBS="$LIBS -lwtc8" ],AC_MSG_ERROR([Oracle libwtc8.so not found]))
+        fi
+        if test -f "$ORACLE_HOME/lib/libwtc9.so"; then
+          AC_CHECK_LIB(wtc9,wtcstu,[ LIBS="$LIBS -lwtc9" ],AC_MSG_ERROR([Oracle libwtc9.so not found]))
         fi
 
     AC_DEFINE(HAVE_ORACLE)
@@ -1193,7 +1216,7 @@ dnl Implement the --with-wtls option.
 dnl Check to see if we should include WTLS support, and which library to use.
 
 AC_ARG_WITH(wtls,
-[  --with-wtls[=TYPE]      select WTLS version to use: openssl/baltimore], 
+[  --with-wtls[=TYPE]        select WTLS version to use: openssl/baltimore], 
 [ AC_CONFIG_SECTION([Configuring WTLS support]) 
   AC_MSG_CHECKING([for WTLS library])
   AC_MSG_RESULT($withval)

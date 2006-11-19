@@ -76,6 +76,12 @@
 #ifdef HAVE_SQLITE 
 #include <sqlite.h>
 #endif
+#ifdef HAVE_SQLITE3 
+#include <sqlite3.h>
+#endif
+#ifdef HAVE_ORACLE 
+#include <oci.h>
+#endif
 
 
 volatile enum program_status program_status = starting_up;
@@ -113,8 +119,11 @@ Octstr *version_report_string(const char *boxname)
 #ifdef HAVE_SDB
              "Using LibSDB %s.\n"
 #endif
-#ifdef HAVE_SQLITE
+#if defined(HAVE_SQLITE) || defined(HAVE_SQLITE3)
              "Using SQLite %s.\n"
+#endif
+#ifdef HAVE_ORACLE
+             "Using Oracle OCI %d.%d.\n"
 #endif
              "Using %s malloc.\n",
 			 boxname, GW_VERSION,
@@ -137,8 +146,11 @@ Octstr *version_report_string(const char *boxname)
 #ifdef HAVE_SDB
              LIBSDB_VERSION,
 #endif
-#ifdef HAVE_SQLITE
+#if defined(HAVE_SQLITE) || defined(HAVE_SQLITE3)
              SQLITE_VERSION,
+#endif
+#ifdef HAVE_ORACLE
+             OCI_MAJOR_VERSION, OCI_MINOR_VERSION,
 #endif
              octstr_get_cstr(gwmem_type()));
 }

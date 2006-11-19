@@ -875,7 +875,7 @@ Optional Packages:
 			  speed = native malloc + no assertions
 			  debug = checking malloc + assertions
   --with-malloc           select malloc wrapper to use: native/check/slow native
-  --with-ssl=DIR        where to look for OpenSSL libs and header files
+  --with-ssl=DIR          where to look for OpenSSL libs and header files
                           DIR points to the installation /usr/local/ssl
   --with-mysql            enable MySQL storage disabled
   --with-mysql-dir=DIR    where to look for MySQL libs and header files
@@ -889,7 +889,7 @@ Optional Packages:
   --with-pgsql            enable PostgreSQL storage disabled
   --with-pgsql-dir=DIR    where to look for PostgreSQL libs and header files
                           DIR points to the installation /usr/local/pgsql
-  --with-wtls=TYPE      select WTLS version to use: openssl/baltimore
+  --with-wtls=TYPE        select WTLS version to use: openssl/baltimore
 
 Some influential environment variables:
   CC          C compiler command
@@ -12207,6 +12207,20 @@ fi
 rm -f conftest.err conftest.$ac_ext
         CFLAGS="$CFLAGS $CPPFLAGS"
 
+        echo "$as_me:$LINENO: checking Oracle OCI version" >&5
+echo $ECHO_N "checking Oracle OCI version... $ECHO_C" >&6
+        oracle_version_major=`cat $ORACLE_INCLUDE_PATH/oci.h \
+                             | grep '#define.*OCI_MAJOR_VERSION.*' \
+                             | sed -e 's/#define OCI_MAJOR_VERSION  *//' \
+                             | sed -e 's/  *\/\*.*\*\///'`
+        oracle_version_minor=`cat $ORACLE_INCLUDE_PATH/oci.h \
+                             | grep '#define.*OCI_MINOR_VERSION.*' \
+                             | sed -e 's/#define OCI_MINOR_VERSION  *//' \
+                             | sed -e 's/  *\/\*.*\*\///'`
+        ORACLE_OCI_VERSION="$oracle_version_major.$oracle_version_minor"
+        echo "$as_me:$LINENO: result: $ORACLE_OCI_VERSION" >&5
+echo "${ECHO_T}$ORACLE_OCI_VERSION" >&6
+
 
 # Check whether --with-oracle-libs or --without-oracle-libs was given.
 if test "${with_oracle_libs+set}" = set; then
@@ -12220,7 +12234,82 @@ fi;
         do
                 LIBS="$LIBS -L$a"
         done
-        echo "$as_me:$LINENO: checking for OCIEnvCreate in -lclntsh" >&5
+
+                if test -f "$ORACLE_LIB_PATH/libnnz10.so" && \
+           test -f "$ORACLE_LIB_PATH/libclntsh.so.10.1"; then
+          LIBS="$LIBS -lnnz10"
+          echo "$as_me:$LINENO: checking for OCIEnvCreate in -lclntsh" >&5
+echo $ECHO_N "checking for OCIEnvCreate in -lclntsh... $ECHO_C" >&6
+if test "${ac_cv_lib_clntsh_OCIEnvCreate+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lclntsh  $LIBS"
+cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+
+/* Override any gcc2 internal prototype to avoid an error.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+/* We use char because int might match the return type of a gcc2
+   builtin and then its argument prototype would still apply.  */
+char OCIEnvCreate ();
+int
+main ()
+{
+OCIEnvCreate ();
+  ;
+  return 0;
+}
+_ACEOF
+rm -f conftest.$ac_objext conftest$ac_exeext
+if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
+  (eval $ac_link) 2>conftest.er1
+  ac_status=$?
+  grep -v '^ *+' conftest.er1 >conftest.err
+  rm -f conftest.er1
+  cat conftest.err >&5
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } &&
+	 { ac_try='test -z "$ac_c_werror_flag"
+			 || test ! -s conftest.err'
+  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
+  (eval $ac_try) 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); }; } &&
+	 { ac_try='test -s conftest$ac_exeext'
+  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
+  (eval $ac_try) 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); }; }; then
+  ac_cv_lib_clntsh_OCIEnvCreate=yes
+else
+  echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+ac_cv_lib_clntsh_OCIEnvCreate=no
+fi
+rm -f conftest.err conftest.$ac_objext \
+      conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+echo "$as_me:$LINENO: result: $ac_cv_lib_clntsh_OCIEnvCreate" >&5
+echo "${ECHO_T}$ac_cv_lib_clntsh_OCIEnvCreate" >&6
+if test $ac_cv_lib_clntsh_OCIEnvCreate = yes; then
+   LIBS="$LIBS -lclntsh -lnnz10"
+else
+  exit
+fi
+
+        else
+          echo "$as_me:$LINENO: checking for OCIEnvCreate in -lclntsh" >&5
 echo $ECHO_N "checking for OCIEnvCreate in -lclntsh... $ECHO_C" >&6
 if test "${ac_cv_lib_clntsh_OCIEnvCreate+set}" = set; then
   echo $ECHO_N "(cached) $ECHO_C" >&6
@@ -12290,9 +12379,10 @@ else
   exit
 fi
 
-        if test -f "$ORACLE_HOME/lib/libwtc8.so"
-        then
-                echo "$as_me:$LINENO: checking for wtcstu in -lwtc8" >&5
+        fi
+
+                        if test -f "$ORACLE_HOME/lib/libwtc8.so"; then
+          echo "$as_me:$LINENO: checking for wtcstu in -lwtc8" >&5
 echo $ECHO_N "checking for wtcstu in -lwtc8... $ECHO_C" >&6
 if test "${ac_cv_lib_wtc8_wtcstu+set}" = set; then
   echo $ECHO_N "(cached) $ECHO_C" >&6
@@ -12364,8 +12454,9 @@ echo "$as_me: error: Oracle libwtc8.so not found" >&2;}
    { (exit 1); exit 1; }; }
 fi
 
-        else
-                echo "$as_me:$LINENO: checking for wtcstu in -lwtc9" >&5
+        fi
+        if test -f "$ORACLE_HOME/lib/libwtc9.so"; then
+          echo "$as_me:$LINENO: checking for wtcstu in -lwtc9" >&5
 echo $ECHO_N "checking for wtcstu in -lwtc9... $ECHO_C" >&6
 if test "${ac_cv_lib_wtc9_wtcstu+set}" = set; then
   echo $ECHO_N "(cached) $ECHO_C" >&6
