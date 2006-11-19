@@ -1,3 +1,9 @@
+2006-11-19  Stipe Tolj  <stolj at kannel.org>
+	* gw/bearerbox.c: resolves bug #369 by adding warning() calls for 
+	  --disable-sms or --disable-wap functions, so users are aware 
+	  that the function range is limited. Thanks to Martin for this patch. 
+	  Some more source code beauty via indention. NLC.
+	  
 2006-11-18  Stipe Tolj  <stolj at kannel.org>
     * wap/wsp_headers.c: re-adding quote char (") recognizing within the 
       wsp_field_value() that isolates header values. Thanks again to Paul.
