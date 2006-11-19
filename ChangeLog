@@ -1,4 +1,8 @@
 2006-11-19  Stipe Tolj  <stolj at kannel.org>
+    * gw/ota_prov.c: fixing bug #356, where calltype parsing was not right.
+      Thanks a lot to Richad Kotal <info@waplikace.cz> for patch.
+      
+2006-11-19  Stipe Tolj  <stolj at kannel.org>
     * configure[.in]: fixing bug #368 to support Oracle 10g, via 10.x instant 
       client libs and headers. Thanks to Martin.
     * gw/shared.c: added sqlite3 version output to version preamble, added

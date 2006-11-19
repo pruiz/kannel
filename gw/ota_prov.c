@@ -270,7 +270,7 @@ Msg *ota_tokenize_settings(CfgGroup *grp, Octstr *from, Octstr *receiver)
     username = NULL;
     passwd = NULL;
     bearer = -1;
-    calltype = -1;
+    calltype =  WBXML_TOK_VALUE_CONN_ISDN;
     connection = WBXML_TOK_VALUE_PORT_9201;
     security = 0;
     authent = WBXML_TOK_VALUE_AUTH_PAP;
@@ -289,10 +289,10 @@ Msg *ota_tokenize_settings(CfgGroup *grp, Octstr *from, Octstr *receiver)
     }
     p = cfg_get(grp, octstr_imm("calltype"));
     if (p != NULL) {
-        if (strcasecmp(octstr_get_cstr(p), "calltype") == 0)
-            calltype = WBXML_TOK_VALUE_CONN_ISDN;
+        if (strcasecmp(octstr_get_cstr(p), "analog") == 0)
+            calltype = WBXML_TOK_VALUE_CONN_ANALOGUE;
         else
-            calltype = -1;
+            calltype =  WBXML_TOK_VALUE_CONN_ISDN;
         octstr_destroy(p);
     }
 	
