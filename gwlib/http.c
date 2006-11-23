@@ -1069,10 +1069,27 @@ static void handle_transaction(Connection *conn, void *data)
 
     conn_unregister(trans->conn);
 
+    /* 
+     * Take care of persistent connection handling. 
+     * At this point we have only obeyed if server responds in HTTP/1.0 or 1.1
+     * and have assigned trans->persistent accordingly. This can be keept
+     * for default usage, but if we have [Proxy-]Connection: keep-alive, then
+     * we're still forcing persistancy of the connection.
+     */
     h = http_header_find_first(trans->response->headers, "Connection");
-    if (h != NULL && octstr_compare(h, octstr_imm("close")) == 0)
+    if (h != NULL && octstr_case_compare(h, octstr_imm("close")) == 0)
         trans->persistent = 0;
+    if (h != NULL && octstr_case_compare(h, octstr_imm("keep-alive")) == 0)
+        trans->persistent = 1;
     octstr_destroy(h);
+    if (proxy_used_for_host(trans->host, trans->url)) {
+        h = http_header_find_first(trans->response->headers, "Proxy-Connection");
+        if (h != NULL && octstr_case_compare(h, octstr_imm("close")) == 0)
+            trans->persistent = 0;
+        if (h != NULL && octstr_case_compare(h, octstr_imm("keep-alive")) == 0)
+            trans->persistent = 1;
+        octstr_destroy(h);
+    }
 
 #ifdef USE_KEEPALIVE 
     if (trans->persistent) {
@@ -1163,6 +1180,9 @@ static Octstr *build_request(char *method_name, Octstr *path_or_url,
     if (port != HTTP_PORT)
         octstr_format_append(request, ":%ld", port);
     octstr_append(request, octstr_imm("\r\n"));
+#ifdef USE_KEEPALIVE 
+    octstr_append(request, octstr_imm("Connection: keep-alive\r\n"));
+#endif
 
     for (i = 0; headers != NULL && i < gwlist_len(headers); ++i) {
         octstr_append(request, gwlist_get(headers, i));

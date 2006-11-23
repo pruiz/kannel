@@ -1,3 +1,8 @@
+2006-11-23  Stipe Tolj  <stolj at kannel.org>
+    * gwlib/http.c: fix HTTP/1.1 keep-alive interpreation handling. We need to
+      check response headers in addition to HTTP status version to see if
+      server/proxy will allow us to act in persistant connection mode.
+
 2006-11-19  Stipe Tolj  <stolj at kannel.org>
     * gw/ota_prov.c: fixing bug #356, where calltype parsing was not right.
       Thanks a lot to Richad Kotal <info@waplikace.cz> for patch.
