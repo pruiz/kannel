@@ -484,14 +484,14 @@ void gwlist_sort(List *list, int(*cmp)(const void *, const void *))
 {
     gw_assert(list != NULL && cmp != NULL);
 
-    gwlist_lock(list);
+    lock(list);
     if (list->len == 0) {
         /* nothing to sort */
         gwlist_unlock(list);
         return;
     }
     qsort(&GET(list, 0), list->len, sizeof(void*), cmp);
-    gwlist_unlock(list);
+    unlock(list);
 }
 
 

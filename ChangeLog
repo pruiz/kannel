@@ -1,3 +1,7 @@
+2006-11-27 Andreas Fink <andreas at fink.org>
+    * gwlib/list.c: fix mutex locking for gwlist_sort. It was using the wrong
+      mutex giving deadlocks if you did gwlist_lock(), gwlist_sort(), gwlist_unlock()
+
 2006-11-23  Stipe Tolj  <stolj at kannel.org>
     * gwlib/http.c: fix HTTP/1.1 keep-alive interpreation handling. We need to
       check response headers in addition to HTTP status version to see if
