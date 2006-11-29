@@ -1,3 +1,8 @@
+2006-11-29  Stipe Tolj  <stolj at kannel.org>
+    * gwlib/http.c: fixing case-insensitivity for MIME/HTTP header value
+      parameters. Thanks to Paul for patch and Enver for review.
+      [Msg-Id: <DEF58FCA-6522-47B6-BACB-8C6A46DE6D4B@dsmagic.com>]  
+
 2006-11-27 Andreas Fink <andreas at fink.org>
     * gwlib/list.c: fix mutex locking for gwlist_sort. It was using the wrong
       mutex giving deadlocks if you did gwlist_lock(), gwlist_sort(), gwlist_unlock()

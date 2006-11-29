@@ -3359,7 +3359,7 @@ Octstr *http_get_header_parameter(Octstr *value, Octstr *parameter)
         }
 
         /* is this the pair we look for? bail out then*/
-        if (octstr_compare(key, parameter) == 0) {
+        if (octstr_case_compare(key, parameter) == 0) {
             found++;        
             result = octstr_duplicate(val);
         }
