@@ -1,3 +1,8 @@
+2006-12-01  Stipe Tolj  <stolj at kannel.org>
+    * gw/smsc/smsc_emi.c: some updates of references in comments. NLC.
+      Thanks to Vincent for providing a patch.
+      [Msg-Id: <0ac101c71542$ca5d3780$9600a8c0@vince>]
+      
 2006-11-29  Stipe Tolj  <stolj at kannel.org>
     * gwlib/http.c: fixing case-insensitivity for MIME/HTTP header value
       parameters. Thanks to Paul for patch and Enver for review.

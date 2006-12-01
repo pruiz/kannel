@@ -59,11 +59,12 @@
  *
  * Uoti Urpala 2001
  * Alexander Malysh and Stipe Tolj 2002-2003
+ * Vincent Chavanis 2005-2006
  *
  * References:
  *
- *   [1] Short Message Sergice Centre 4.0 EMI - UCP Interface Specification
- *       document version 4.2, May 2001, CMG Wireless Data Solutions.
+ *   [1] Short Message Service Centre 4.6 EMI - UCP Interface Specification
+ *       document version 4.6, April 2003, CMG Wireless Data Solutions.
  */
 
 /* Doesn't warn about unrecognized configuration variables */
@@ -703,8 +704,8 @@ static int handle_operation(SMSCConn *conn, Connection *server,
                 break;
 
             /* 
-             * XSer 03-0b are for TDMA information exchange and are currently
-             * not implemented in this EMI interface. See CMG EMI/UCP spec 4.0,
+             * XSer 03-0b are for CDMA/TDMA information exchange and are currently
+             * not implemented in this EMI interface. See CMG EMI/UCP spec 4.6,
              * section 5.1.2.4 for more information.
              */
 
@@ -729,7 +730,7 @@ static int handle_operation(SMSCConn *conn, Connection *server,
                          octstr_get_cstr(privdata->name));
                 break;
 
-            /* XSer fields 0e-ff are reserved for future use. */
+            /* XSer fields 0e-ff are reserved for future use and should not be used. */
 
             default:
                 warning(0, "EMI2[%s]: Unsupported EMI XSer field %d",
