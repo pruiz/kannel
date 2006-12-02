@@ -331,15 +331,15 @@ SMPP_PDU *smpp_pdu_unpack(Octstr *data_without_len)
                     pos += opt_len; \
                 } else
     #define OPTIONAL_END \
-    		{ \
+                { \
                     Octstr *val = octstr_copy(data_without_len, pos, opt_len); \
                     if (val) octstr_binary_to_hex(val, 0); \
                     else val = octstr_create(""); \
-		    error(0, "SMPP: Unknown TLV(0x%04lx,0x%04lx,%s) for PDU type (%s) received!", \
-		            opt_tag, opt_len, octstr_get_cstr(val), pdu->type_name); \
+                    warning(0, "SMPP: Unknown TLV(0x%04lx,0x%04lx,%s) for PDU type (%s) received!", \
+                            opt_tag, opt_len, octstr_get_cstr(val), pdu->type_name); \
                     pos += opt_len; \
                     octstr_destroy(val); \
-		} \
+                } \
             } \
         } 
     #define INTEGER(name, octets) \
