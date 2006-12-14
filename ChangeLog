@@ -1,3 +1,8 @@
+2006-12-14
+    * gwlib/list.c: fix mutex locking for gwlist_sort. It was using the wrong
+      mutex giving deadlocks if you did gwlist_lock(), gwlist_sort(), gwlist_unlock()
+      now also unlocking the right mutex if the list length was zero.
+
 2006-12-02  Stipe Tolj  <stolj at kannel.org>
     * gw/smsc/smpp_pdu.c: moving 'Unknown TLV' output to WARNING for the sake
       of log-file readability. User's may switch to appropriate log-level in
