@@ -1,4 +1,4 @@
-2006-12-14
+2006-12-14 Andreas Fink <andreas at fink.org>
     * gwlib/list.c: fix mutex locking for gwlist_sort. It was using the wrong
       mutex giving deadlocks if you did gwlist_lock(), gwlist_sort(), gwlist_unlock()
       now also unlocking the right mutex if the list length was zero.
