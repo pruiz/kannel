@@ -1,3 +1,7 @@
+2006-12-19 Alexander Malysh <amalysh at kannel.org>
+    * gwlib/octstr.[ch]: fixed warning: inlining failed in call to
+      'octstr_convert_printable': function body not available.
+
 2006-12-19  Stipe Tolj  <stolj at kannel.org>
     * gw/smsc/smsc_emi.c: fix charset re-encoding for OP/53 DLR text.
       Thanks to Vincent for providing a patch.

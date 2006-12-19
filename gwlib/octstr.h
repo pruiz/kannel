@@ -309,7 +309,7 @@ void octstr_convert_range(Octstr *ostr, long pos, long len,
  * every char in the octstr can be printed in the current locale. Each
  * character that is NOT printable is converted to a '.' (dot).
  */
-void inline octstr_convert_printable(Octstr *ostr);
+void octstr_convert_printable(Octstr *ostr);
 
 
 /*
