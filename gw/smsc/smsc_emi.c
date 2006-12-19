@@ -862,13 +862,19 @@ static int handle_operation(SMSCConn *conn, Connection *server,
 	     * Recode the msg structure with the given msgdata.
 	     * Note: the DLR URL is delivered in msg->sms.dlr_url already.
 	     */
-	    if((emimsg->fields[E50_AMSG]) == NULL)
-		msg->sms.msgdata = octstr_create("Delivery Report without text");
-	    else
-		msg->sms.msgdata = octstr_duplicate(emimsg->fields[E50_AMSG]);
-	    octstr_hex_to_binary(msg->sms.msgdata);
-	    bb_smscconn_receive(conn, msg);
-	}
+        if ((emimsg->fields[E50_AMSG]) == NULL)
+            msg->sms.msgdata = octstr_create("Delivery Report without text");
+        else
+            msg->sms.msgdata = octstr_duplicate(emimsg->fields[E50_AMSG]);
+        octstr_hex_to_binary(msg->sms.msgdata);
+        if (octstr_get_char(emimsg->fields[E50_MT], 0) == '3') {
+            /* obey the NRC (national replacement codes) */
+            if (privdata->alt_charset == EMI_NRC_ISO_21)
+                charset_nrc_iso_21_german_to_gsm(msg->sms.msgdata);
+            charset_gsm_to_utf8(msg->sms.msgdata);
+        }
+        bb_smscconn_receive(conn, msg);
+    }
 	reply = emimsg_create_reply(53, emimsg->trn, 1, privdata->name);
 	if (emi2_emimsg_send(conn, server, reply) < 0) {
 	    emimsg_destroy(reply);
