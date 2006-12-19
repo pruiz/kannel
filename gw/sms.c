@@ -316,7 +316,7 @@ List *sms_split(Msg *orig, Octstr *header, Octstr *footer,
     if (orig->sms.coding == DC_8BIT || orig->sms.coding == DC_UCS2)
         max_part_len = max_octets - udh_len - hf_len;
     else
-        max_part_len = max_octets * 8 / 7 - (udh_len * 8 + 6) / 7 - hf_len;
+        max_part_len = max_octets * 8 / 7 - udh_len - hf_len;
 
     if (sms_msgdata_len(orig) > max_part_len && catenate) {
         /* Change part length to take concatenation overhead into account */
@@ -326,7 +326,7 @@ List *sms_split(Msg *orig, Octstr *header, Octstr *footer,
         if (orig->sms.coding == DC_8BIT || orig->sms.coding == DC_UCS2)
             max_part_len = max_octets - udh_len - hf_len;
         else
-            max_part_len = max_octets * 8 / 7 - (udh_len * 8 + 6) / 7 - hf_len;
+            max_part_len = max_octets * 8 / 7 - udh_len - hf_len;
     }
 
     /* ensure max_part_len is never negativ */
