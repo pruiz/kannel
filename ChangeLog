@@ -1,4 +1,7 @@
 2007-01-08  Stipe Tolj  <stolj at kannel.org>
+    * */*: update LICENSE preamble block to 2007.
+
+2007-01-08  Stipe Tolj  <stolj at kannel.org>
     * gwlib/charset.c: removing Alex's debugging octstr_dump() calls from 
       charset_utf8_to_gsm(). NLC.
     
