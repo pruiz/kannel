@@ -1,3 +1,6 @@
+2007-01-08  Stipe Tolj  <stolj at kannel.org>
+	* gw/dlr.h: fixing typo for DLR_SMSC_FAIL macro, obviously this is 0x16.
+
 2007-01-07  Stipe Tolj  <stolj at kannel.org>
     * gwlib/charset.[ch]: re-add prototypes and function charset_latin1_to_gsm()
       and charset_gsm_to_latin1() for the sake of backward compatibility of 
