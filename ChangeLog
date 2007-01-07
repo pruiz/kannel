@@ -1,4 +1,9 @@
 2007-01-08  Stipe Tolj  <stolj at kannel.org>
+    * gw/smsc/smsc_fake.c: enhancing the faked DLR support. Now we pass the ACK
+      of the MT first to abstraction layer, in order to obtain SMSC success DLR,
+      then care about the final DLR indicating success.
+
+2007-01-08  Stipe Tolj  <stolj at kannel.org>
 	* gw/dlr.h: fixing typo for DLR_SMSC_FAIL macro, obviously this is 0x16.
 
 2007-01-07  Stipe Tolj  <stolj at kannel.org>

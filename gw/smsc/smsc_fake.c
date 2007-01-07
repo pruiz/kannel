@@ -256,24 +256,41 @@ static void main_connection_loop(SMSCConn *conn, Connection *client)
         if (conn_eof(client))
             goto eof;
 
-        while ((msg = gwlist_extract_first(privdata->outgoing_queue)) != NULL) {
-            if (sms_to_client(client, msg) == 1) {
+        /* 
+         * We won't get DLRs from fakesmsc itself, due that we don't have
+         * corresponding message IDs etc. We threat the DLR receiving here. So
+         * DLR "originate" from the protocol layer towards abstraction layer.
+         * This is all for pure debugging and testing.
+         */
 
+        while ((msg = gwlist_extract_first(privdata->outgoing_queue)) != NULL) {
+
+            /* pass msg to fakesmsc daemon */            
+            if (sms_to_client(client, msg) == 1) {
+                Msg *copy = msg_duplicate(msg);
+                
                 /* 
-                 * Now look for the DLR entry and pass it to the upper layer.
-                 * There is no *real* DLR awaited from the fakesmsc.
+                 * Actually no quarantee of it having been really sent,
+                 * but I suppose that doesn't matter since this interface
+                 * is just for debugging anyway. The upper layer will send
+                 * a SMSC success DLR if mask is set. Be aware that msg is
+                 * destroyed in abstraction layer, that's why we use a copy
+                 * afterwards to handle the final DLR. 
                  */
-                if (DLR_IS_ENABLED_DEVICE(msg->sms.dlr_mask)) {
+                bb_smscconn_sent(conn, msg, NULL);
+
+                /* and now the final DLR */
+                if (DLR_IS_SUCCESS_OR_FAIL(copy->sms.dlr_mask)) {
                     Msg *dlrmsg;
                     Octstr *tmp;
                     int dlrstat = DLR_SUCCESS;
                     char id[UUID_STR_LEN + 1];
 
-                    uuid_unparse(msg->sms.id, id);
+                    uuid_unparse(copy->sms.id, id);
                     tmp = octstr_create(id);
                     dlrmsg = dlr_find(conn->id,
                                       tmp, /* smsc message id */
-                                      msg->sms.receiver, /* destination */
+                                      copy->sms.receiver, /* destination */
                                       dlrstat);
                     if (dlrmsg != NULL) {
                         /* XXX TODO: Provide a SMPP DLR text in msgdata */
@@ -283,13 +300,7 @@ static void main_connection_loop(SMSCConn *conn, Connection *client)
                     }
                     octstr_destroy(tmp);
                 }
-
-                /* 
-                 * Actually no quarantee of it having been really sent,
-                 * but I suppose that doesn't matter since this interface
-                 * is just for debugging anyway 
-                 */
-                bb_smscconn_sent(conn, msg, NULL);
+                msg_destroy(copy);
 
             } else {
                 bb_smscconn_send_failed(conn, msg,
@@ -423,11 +434,12 @@ static int add_msg_cb(SMSCConn *conn, Msg *sms)
     Msg *copy;
 
     copy = msg_duplicate(sms);
-    gwlist_produce(privdata->outgoing_queue, copy);
-
+  
     /*  
      * Send DLR if desired, which means first add the DLR entry 
-     * and then later find it and remove it
+     * and then later find it and remove it. We need to ensure
+     * that we put the DLR in first before producing the copy
+     * to the list.
      */
     if (DLR_IS_ENABLED_DEVICE(sms->sms.dlr_mask)) {
         Octstr *tmp;
@@ -437,6 +449,7 @@ static int add_msg_cb(SMSCConn *conn, Msg *sms)
         dlr_add(conn->id, tmp, sms);
         octstr_destroy(tmp);
     }
+    gwlist_produce(privdata->outgoing_queue, copy);
 
     gwthread_wakeup(privdata->connection_thread);
 
