@@ -119,6 +119,20 @@ void charset_nrc_iso_21_german_to_gsm(Octstr *ostr);
  */
 int charset_gsm_truncate(Octstr *gsm, long max);
 
+/* Convert a string in the GSM default character set (GSM 03.38)
+ * to ISO-8859-1.  A series of Greek characters (codes 16, 18-26)
+ * are not representable and are converted to '?' characters.
+ * GSM default is a 7-bit alphabet.  Characters with the 8th bit
+ * set are left unchanged. */
+void charset_gsm_to_latin1(Octstr *gsm);
+
+/* Convert a string in the ISO-8859-1 character set to the GSM 
+ * default character set (GSM 03.38).  A large number of characters
+ * are not representable.  Approximations are made in some cases
+ * (accented characters to their unaccented versions, for example),
+ * and the rest are converted to '?' characters. */
+void charset_latin1_to_gsm(Octstr *latin1);
+
 /* Convert a string from  character set specified by charset_from into
  * UTF-8 character set. The result is stored in the octet string *to that 
  * is allocated by the function. The function returns the number of bytes 

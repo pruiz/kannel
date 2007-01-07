@@ -1,4 +1,10 @@
 2007-01-07  Stipe Tolj  <stolj at kannel.org>
+    * gwlib/charset.[ch]: re-add prototypes and function charset_latin1_to_gsm()
+      and charset_gsm_to_latin1() for the sake of backward compatibility of 
+      external boxes using Kannel core libs. This should be reviewed and merged
+      into single array for latin1 and utf-8 transcoding values.
+
+2007-01-07  Stipe Tolj  <stolj at kannel.org>
     * gw/dlr.h: adding macro DLR_IS_NOT_FINAL() for non-final DLR status mask.
 
 2006-12-19 Alexander Malysh <amalysh at kannel.org>
