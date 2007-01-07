@@ -1,4 +1,8 @@
 2007-01-08  Stipe Tolj  <stolj at kannel.org>
+    * gwlib/charset.c: removing Alex's debugging octstr_dump() calls from 
+      charset_utf8_to_gsm(). NLC.
+    
+2007-01-08  Stipe Tolj  <stolj at kannel.org>
     * gw/smsc/smsc_fake.c: enhancing the faked DLR support. Now we pass the ACK
       of the MT first to abstraction layer, in order to obtain SMSC success DLR,
       then care about the final DLR indicating success.

@@ -292,8 +292,6 @@ void charset_utf8_to_gsm(Octstr *ostr)
     newostr = octstr_create("");
     len = octstr_len(ostr);
     
-    octstr_dump(ostr, 0);
-    
     for (pos = 0; pos < len; pos++) {
         val1 = octstr_get_char(ostr, pos);
         
@@ -382,7 +380,6 @@ void charset_utf8_to_gsm(Octstr *ostr)
         octstr_append_char(newostr, val1);
     }
 
-    octstr_dump(newostr, 0);
     octstr_truncate(ostr, 0);
     octstr_append(ostr, newostr);
     octstr_destroy(newostr);
