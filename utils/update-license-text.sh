@@ -6,8 +6,8 @@
 # current LICENSE text file to all source code files.
 #
 
-old="2001-2004 Kannel Group"
-new="2001-2005 Kannel Group"
+old="2001-2005 Kannel Group"
+new="2001-2007 Kannel Group"
 
 files=`find -type f | xargs fgrep -lr "${old}"`
 for i in $files; do
