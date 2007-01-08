@@ -388,38 +388,38 @@ static MIMEEntity *mime_something_to_entity(Octstr *mime, List *headers)
         octstr_append(seperator, boundary);
         while ((entity = parse_get_seperated_block(context, seperator)) != NULL) {
             MIMEEntity *m;
-
-            /* we have still two linefeeds at the beginning and end that we 
+            int del2 = 0;
+	    
+            /* we have still linefeeds at the beginning and end that we 
              * need to remove, these are from the separator. 
-             * We check if it is \n or \r\n?! */
-            if (octstr_get_char(entity, 0) == '\r')
+             * We check if it is LF only or CRLF! */
+            del2 = (octstr_get_char(entity, 0) == '\r');
+            if (del2) 
                 octstr_delete(entity, 0, 2);	      
             else
                 octstr_delete(entity, 0, 1);
 
-            if (octstr_get_char(entity, octstr_len(entity) - 2) == '\r' && 
-                octstr_get_char(entity, octstr_len(entity) - 4) == '\r')
-                octstr_delete(entity, octstr_len(entity) - 4, 4);
-            else if (octstr_get_char(entity, octstr_len(entity) - 2) == '\r')
+            /* we assume the same mechanism applies to beginning and end -- 
+             * seems reasonable! */
+            if (del2)
                 octstr_delete(entity, octstr_len(entity) - 2, 2);
             else
                 octstr_delete(entity, octstr_len(entity) - 1, 1);
-
 
             debug("mime.parse",0,"MIME multipart: Parsing entity:");
             octstr_dump(entity, 0);
 
             /* call ourself for this MIME entity and inject to list */
-            m = mime_octstr_to_entity(entity);
-            gwlist_append(e->multiparts, m);
-
-            /* check if this entity is our start entity (in terms of related)
-             * and set our start pointer to it */
-            if (cid_matches(m->headers, start)) {
-                /* set only if none has been set before */
-                e->start = (e->start == NULL) ? m : e->start;
+            if ((m = mime_octstr_to_entity(entity))) {
+                gwlist_append(e->multiparts, m);
+		 
+                /* check if this entity is our start entity (in terms of related)
+                 * and set our start pointer to it */
+                if (cid_matches(m->headers, start)) {
+                    /* set only if none has been set before */
+                    e->start = (e->start == NULL) ? m : e->start;
+                }
             }
-
 
             octstr_destroy(entity);
         }

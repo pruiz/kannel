@@ -1,4 +1,9 @@
 2007-01-08  Stipe Tolj  <stolj at kannel.org>
+    * gwlib/mime.c: fixing segfault in MIME multipart parsing. Thanks to Paul
+      for providing the patch, and Vincent and Martin for review.
+      [Msg-Id: <D19E3735-BE32-4934-987A-B9D6A3BA31CB@dsmagic.com>]
+      
+2007-01-08  Stipe Tolj  <stolj at kannel.org>
     * */*: update LICENSE preamble block to 2007.
 
 2007-01-08  Stipe Tolj  <stolj at kannel.org>
