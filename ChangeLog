@@ -1,3 +1,8 @@
+2007-01-09  Stipe Tolj  <stolj at kannel.org>
+    * test/decode_emimsg.c: adding a simple tool that decodes a EMI/UCP stream
+      PDU and prints more readable informations about it. Thanks to Vincent.
+      [Msg-Id: <1ad701c6e08d$88bee420$9600a8c0@vince>]
+    
 2007-01-08  Stipe Tolj  <stolj at kannel.org>
     * gwlib/mime.c: fixing segfault in MIME multipart parsing. Thanks to Paul
       for providing the patch, and Vincent and Martin for review.
