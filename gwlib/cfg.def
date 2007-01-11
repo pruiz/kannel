@@ -330,6 +330,7 @@ MULTI_GROUP(smsc,
     OCTSTR(pin)
     OCTSTR(phone)
     OCTSTR(send-url)
+    OCTSTR(dlr-url)    
     OCTSTR(sender-prefix)
     OCTSTR(flow-control)
     OCTSTR(wait-ack)

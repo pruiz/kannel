@@ -1,3 +1,11 @@
+2007-01-11  Stipe Tolj  <stolj at kannel.org>
+    * gwlib/cfg.def: adds config directive 'dlr-url' to smsc group to allow
+      DLR bridging via HTTP SMSC type 'kannel' connections.
+    * gw/smsc/smsc_http.c: adding generic DLR handling for type 'kannel',
+      which allows point-to-point DLR forwarding though the whole kannel 
+      instance chain. Uses 'dlr-url' to identify the DLR inbound port to the
+      next kannel instance in chain.
+      
 2007-01-09  Stipe Tolj  <stolj at kannel.org>
     * test/decode_emimsg.c: adding a simple tool that decodes a EMI/UCP stream
       PDU and prints more readable informations about it. Thanks to Vincent.
