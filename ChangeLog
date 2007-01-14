@@ -1,3 +1,8 @@
+2006-01-14 Alexander Malysh <amalysh at kannel.org>
+    * gw/bb_smscconn.c: set smsc_running = 0 in smsc2_cleanup insetad in
+      router thread because so we never call smsc2_cleanup.
+    * gwlib/cfg.c: fixed memleak. we should consider moving hooks to Cfg struct.
+
 2007-01-11  Stipe Tolj  <stolj at kannel.org>
     * gwlib/cfg.def: adds config directive 'dlr-url' to smsc group to allow
       DLR bridging via HTTP SMSC type 'kannel' connections.

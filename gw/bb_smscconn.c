@@ -498,10 +498,6 @@ static void sms_router(void *arg)
 	    newmsg = startmsg = NULL;
 	}
     }
-    /* router has died, make sure that rest die, too */
-
-    smsc_running = 0;
-
     gwlist_remove_producer(flow_threads);
 }
 
@@ -809,6 +805,8 @@ void smsc2_cleanup(void)
     /* destroy msg split counter */
     counter_destroy(split_msg_counter);
     gw_rwlock_destroy(&smsc_list_lock);
+
+    smsc_running = 0;
 }
 
 

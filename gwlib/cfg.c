@@ -294,7 +294,7 @@ Cfg *cfg_create(Octstr *filename)
     cfg->single_groups = dict_create(64, destroy_group);
     cfg->multi_groups = dict_create(64, destroy_group_list);
 
-   /* make sure we put our own core hooks into the lists */
+    /* make sure we put our own core hooks into the lists */
     allowed_hooks = gwlist_create();
     single_hooks = gwlist_create();
 
@@ -311,8 +311,11 @@ void cfg_destroy(Cfg *cfg)
 	octstr_destroy(cfg->filename);
 	dict_destroy(cfg->single_groups);
 	dict_destroy(cfg->multi_groups);
-	gw_free(cfg);
+        gw_free(cfg);
     }
+    gwlist_destroy(allowed_hooks, NULL);
+    gwlist_destroy(single_hooks, NULL);
+    allowed_hooks = single_hooks = NULL;
 }
 
 
