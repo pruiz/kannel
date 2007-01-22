@@ -1,4 +1,10 @@
 2007-01-22  Stipe Tolj  <stolj at kannel.org>
+   * gwlib/gwmem-native.c: segfault prevention by setting all free()ed 
+     pointers to NULL. This follows the secure coding principles of CERT-CC.
+     A non NULLed pointer may be containing bogus after free() and a redo
+     of gw_free() and hence free() will lead to segfault eventually.
+     
+2007-01-22  Stipe Tolj  <stolj at kannel.org>
    * gwlib/dbpool_sqlite.c: remove gw_free() in sqlite_close_conn(), since
      sqlite's sqlite_close() will give a bogus pointer and we segfault.
    * gwlib/dbpool_sqlite3.c: same as above, also fix a deadlock while closing
