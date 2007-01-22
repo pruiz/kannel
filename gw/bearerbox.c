@@ -402,10 +402,16 @@ static Cfg *init_bearerbox(Cfg *cfg)
     log = cfg_get(grp, octstr_imm("store-file"));
     /* initialize the store file */
     if (log != NULL) {
-        if (store_init(log, store_dump_freq) == -1)
-            panic(0, "Could not start with store init failed.");
-        octstr_destroy(log);
+        warning(0, "'store-file' option deprecated, please use 'store-location' and 'store-type' instead.");
+        val = octstr_create("file");
+    } else {
+        log = cfg_get(grp, octstr_imm("store-location"));
+        val = cfg_get(grp, octstr_imm("store-type"));
     }
+    if (store_init(val, log, store_dump_freq) == -1)
+        panic(0, "Could not start with store init failed.");
+    octstr_destroy(val);
+    octstr_destroy(log);
 
     conn_config_ssl (grp);
 

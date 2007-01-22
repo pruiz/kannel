@@ -1,4 +1,4 @@
-/* ==================================================================== 
+/* ====================================================================
  * The Kannel Software License, Version 1.0 
  * 
  * Copyright (c) 2001-2007 Kannel Group  
@@ -38,7 +38,7 @@
  * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE 
  * DISCLAIMED.  IN NO EVENT SHALL THE KANNEL GROUP OR ITS CONTRIBUTORS 
  * BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY,  
- * OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT  
+ * OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT
  * OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR  
  * BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,  
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE  
@@ -52,60 +52,60 @@
  * 
  * Portions of this software are based upon software originally written at  
  * WapIT Ltd., Helsinki, Finland for the Kannel project.  
- */ 
-
-/* 
- * Simple tool that prints out content of a kannel storefile.
+ */
+   
+/*
+ * bb_store.h : declarations for the bearerbox box SMS storage/retrieval module
  *
- * Tobias Weber <weber@wapme-group.de>
- * Stipe Tolj <st@tolj.org>
+ * Author: Alexander Malysh, 2005
  */
 
-#include "gwlib/gwlib.h"
-#include "shared.h"
-#include "bearerbox.h"
+#ifndef BB_STORE_H_
+#define BB_STORE_H_
 
-static int counter = 0;
+#define BB_STORE_DEFAULT_DUMP_FREQ 10
 
-static void print_msg(Msg *msg)
-{   
-    counter++;
-    msg_dump(msg, 0);
-}
+/* return number of SMS messages in current store (file) */
+extern long (*store_messages)(void);
 
-/* void function to make gwlib happy */
-static int check_args(int i, int argc, char **argv) {
-    return -1;
-}
+/* assign ID and save given message to store. Return -1 if save failed */
+extern int (*store_save)(Msg *msg);
 
-int main(int argc, char **argv)
-{
-    int cf_index;
-    Octstr *type;
-    
-    gwlib_init();
-    
-    cf_index = get_and_set_debugs(argc, argv, check_args);
-    
-    if (argv[cf_index] == NULL) {
-        debug("",0,"Usage: %s <store-file>", argv[0]);
-        goto error;
-    }
+/*
+ * Store ack/nack to the store file for a given message with a given status.
+ * @return: -1 if save failed ; 0 otherwise.
+ */
+extern int (*store_save_ack)(Msg *msg, ack_status_t status);
 
-    type = octstr_create("file");
-    
-    /* init store subsystem */
-    store_init(type, octstr_imm(argv[cf_index]), -1);
+/* load store from file; delete any messages that have been relayed,
+ * and create a new store file from remaining. Calling this function
+ * might take a while, depending on store size
+ * Return -1 if something fails (bb can then PANIC normally)
+ */
+extern int (*store_load)(void(*receive_msg)(Msg*));
 
-    /* pass every entry in the store to callback print_msg() */
-    store_load(print_msg);
+/* dump currently non-acknowledged messages into file. This is done
+ * automatically now and then, but can be forced. Return -1 if file
+ * problems
+ */
+extern int (*store_dump)(void);
 
-    info(0, "Store file contains %d msg entries", counter);
-    info(0, "Shutting down.");
-    
-error:
-    gwlib_shutdown();
+/* initialize system. Return -1 if fname is baad (too long). */
+int store_init(const Octstr* type, const Octstr *fname, long dump_freq);
 
-    return 1;
-}
+/* init shutdown (system dies when all acks have been processed) */
+extern void (*store_shutdown)(void);
+
+/* return all containing messages in the current store */
+extern Octstr* (*store_status)(int status_type);
+
+
+/**
+ * Init functions for different store types.
+ */
+int store_spool_init(const Octstr *fname);
+int store_file_init(const Octstr *fname, long dump_freq);
+
+
+#endif /*BB_STORE_H_*/
 

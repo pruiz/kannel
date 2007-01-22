@@ -1362,13 +1362,24 @@ admin-password = f00bar
         automatically discarded
      </entry></row>
 
-    <row><entry><literal>store-file</literal></entry>
+    <row><entry><literal>store-type</literal></entry>
      <entry>filename</entry>
      <entry valign="bottom">
-        A file in which any received SMS messages are stored until
-        they are successfully handled. By using this variable, no SMS
-        messages are lost in Kannel, but theoretically some messages
-        can duplicate when system is taken down violently. 
+        Kannel can use store subsystem that means storing messages
+        on hard disk until they are successfully handled. By using
+        this subsystem, no SMS messages are lost in Kannel even by
+        crash, but theoretically some messages can duplicate when
+        system is taken down violently. 
+        This variable defines a type of backend used for store
+        subsystem. Now two types are supported:
+        a) file: writes store into one single file
+        b) spool: writes store into spool directory (one file for each message)
+     </entry></row>
+
+    <row><entry><literal>store-location</literal></entry>
+     <entry>filename</entry>
+     <entry valign="bottom">
+        Depends on <literal>store-type</literal> option used, it is ether file or spool directory.
      </entry></row>
 
     <row><entry><literal>store-dump-freq</literal></entry>

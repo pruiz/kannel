@@ -1,4 +1,11 @@
 2007-01-22 Alexander Malysh <amalysh at kannel.org>
+   *  doc/userguide/userguide.xml, gw/bb_store.c, gw/bb_store.h, gw/bb_store_file.c,
+      gw/bb_store_spool.c, gw/bearerbox.c, gw/bearerbox.h, gwlib/cfg.def,
+      test/test_store_dump.c: apllied patch that adds additinaly support for store
+      spool directory.
+      [Msg-ID: <op.thkqb6jxran2ed@ppc.local>]
+
+2007-01-22 Alexander Malysh <amalysh at kannel.org>
    * gw/bb_boxc.c: implemented resend of MO/DLR messages if some box sent nack
      with ack_failed_tmp status.
 

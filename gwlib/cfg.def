@@ -100,6 +100,8 @@ SINGLE_GROUP(core,
     OCTSTR(access-log-clean)
     OCTSTR(store-file)
     OCTSTR(store-dump-freq)
+    OCTSTR(store-type)
+    OCTSTR(store-location)
     OCTSTR(unified-prefix)
     OCTSTR(white-list)
     OCTSTR(white-list-regex)
