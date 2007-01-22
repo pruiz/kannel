@@ -1,4 +1,8 @@
-2007-01-12 Alexander Malysh <amalysh at kannel.org>
+2007-01-22 Alexander Malysh <amalysh at kannel.org>
+   * gw/bb_boxc.c: implemented resend of MO/DLR messages if some box sent nack
+     with ack_failed_tmp status.
+
+2007-01-22 Alexander Malysh <amalysh at kannel.org>
    * gwlib/gwmem-native.c: reverted last Stipe's commit. It doesn do anything usefull.
 
 2007-01-22  Stipe Tolj  <stolj at kannel.org>

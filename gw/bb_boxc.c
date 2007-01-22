@@ -152,7 +152,7 @@ typedef struct _boxc {
 static void sms_to_smsboxes(void *arg);
 static int send_msg(Boxc *boxconn, Msg *pmsg);
 static void boxc_sent_push(Boxc*, Msg*);
-static void boxc_sent_pop(Boxc*, Msg*);
+static void boxc_sent_pop(Boxc*, Msg*, Msg**);
 
 
 /*-------------------------------------------------
@@ -296,14 +296,14 @@ static void boxc_receiver(void *arg)
                 /* wakeup the dequeue thread */
                 gwthread_wakeup(sms_dequeue_thread);
             }
-        } else if (msg_type(msg) == wdp_datagram  && conn->is_wap) {
+        } else if (msg_type(msg) == wdp_datagram && conn->is_wap) {
             debug("bb.boxc", 0, "boxc_receiver: got wdp from wapbox");
 
             /* XXX we should block these in SHUTDOWN phase too, but
                we need ack/nack msgs implemented first. */
             gwlist_produce(conn->outgoing, msg);
 
-        } else if (msg_type(msg) == sms  && conn->is_wap) {
+        } else if (msg_type(msg) == sms && conn->is_wap) {
             debug("bb.boxc", 0, "boxc_receiver: got sms from wapbox");
 
             /* should be a WAP push message, so tried it the same way */
@@ -317,13 +317,20 @@ static void boxc_receiver(void *arg)
         } else {
             if (msg_type(msg) == heartbeat) {
                 if (msg->heartbeat.load != conn->load)
-		              debug("bb.boxc", 0, "boxc_receiver: heartbeat with "
-			                "load value %ld received", msg->heartbeat.load);
+                    debug("bb.boxc", 0, "boxc_receiver: heartbeat with "
+                          "load value %ld received", msg->heartbeat.load);
                 conn->load = msg->heartbeat.load;
             }
             else if (msg_type(msg) == ack) {
-                boxc_sent_pop(conn, msg);
-                store_save(msg);
+                if (msg->ack.nack == ack_failed_tmp) {
+                    Msg *orig;
+                    boxc_sent_pop(conn, msg, &orig);
+                    if (orig != NULL) /* retry this message */
+                        gwlist_append(conn->retry, orig);
+                } else {
+                    boxc_sent_pop(conn, msg, NULL);
+                    store_save(msg);
+                }
                 debug("bb.boxc", 0, "boxc_receiver: got ack");
             }
             /* if this is an identification message from an smsbox instance */
@@ -413,7 +420,11 @@ static void boxc_sent_push(Boxc *conn, Msg *m)
 }
 
 
-static void boxc_sent_pop(Boxc *conn, Msg *m)
+/*
+ * Remove msg from sent queue.
+ * Return 0 if message should be deleted from store and 1 if not (e.g. tmp nack)
+ */
+static void boxc_sent_pop(Boxc *conn, Msg *m, Msg **orig)
 {
     Octstr *os;
     char id[UUID_STR_LEN + 1];
@@ -422,6 +433,9 @@ static void boxc_sent_pop(Boxc *conn, Msg *m)
     if (conn->is_wap || !conn->sent || !m || (msg_type(m) != ack && msg_type(m) != sms))
         return;
 
+    if (orig != NULL)
+        *orig = NULL;
+    
     uuid_unparse((msg_type(m) == sms ? m->sms.id : m->ack.id), id);
     os = octstr_create(id);
     msg = dict_remove(conn->sent, os);
@@ -432,7 +446,10 @@ static void boxc_sent_pop(Boxc *conn, Msg *m)
         return;
     }
     semaphore_up(conn->pending);
-    msg_destroy(msg);
+    if (orig == NULL)
+        msg_destroy(msg);
+    else
+        *orig = msg;
 }
 
 
@@ -469,7 +486,7 @@ static void boxc_sender(void *arg)
         boxc_sent_push(conn, msg);
         if (!conn->alive || send_msg(conn, msg) == -1) {
             /* we got message here */
-            boxc_sent_pop(conn, msg);
+            boxc_sent_pop(conn, msg, NULL);
             gwlist_produce(conn->retry, msg);
             break;
         }
