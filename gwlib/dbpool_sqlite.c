@@ -95,7 +95,6 @@ static void sqlite_close_conn(void *conn)
         return;
 
     sqlite_close((sqlite*) conn);
-    gw_free(conn);
 }
 
 static int sqlite_check_conn(void *conn)

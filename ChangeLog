@@ -1,4 +1,11 @@
 2007-01-22  Stipe Tolj  <stolj at kannel.org>
+   * gwlib/dbpool_sqlite.c: remove gw_free() in sqlite_close_conn(), since
+     sqlite's sqlite_close() will give a bogus pointer and we segfault.
+   * gwlib/dbpool_sqlite3.c: same as above, also fix a deadlock while closing
+     connection due to typo in while break condition.
+   * test/test_dbpool.c: add sqlite3 sections to the test
+   
+2007-01-22  Stipe Tolj  <stolj at kannel.org>
     * test/test_charset.c: simple test checking GSM->UTF-8->GSM conversion.
 
 2007-01-14 Alexander Malysh <amalysh at kannel.org>

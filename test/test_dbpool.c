@@ -274,6 +274,66 @@ static void sqlite_client_thread(void *arg)
 }
 #endif
 
+#ifdef HAVE_SQLITE3
+#include <sqlite3.h>
+
+static DBConf *sqlite3_create_conf(Octstr *db)
+{
+    DBConf *conf;
+    conf = gw_malloc(sizeof(DBConf));
+    conf->sqlite3 = gw_malloc(sizeof(SQLite3Conf));
+
+    conf->sqlite3->file = octstr_duplicate(db);
+
+    return conf;
+}
+
+static int callback3(void *not_used, int argc, char **argv, char **col_name)
+{
+    int i;
+    
+    for (i = 0; i < argc; i++) {
+        debug("",0,"SQLite3: result: %s = %s", col_name[i], argv[i]);
+    }
+
+    return 0;
+}
+
+static void sqlite3_client_thread(void *arg)
+{
+    unsigned long i, succeeded, failed;
+    DBPool *pool = arg;
+    char *errmsg = 0;
+
+    succeeded = failed = 0;
+
+    info(0,"Client thread started with %ld queries to perform on pool", queries);
+
+    /* perform random queries on the pool */
+    for (i = 1; i <= queries; i++) {
+        DBPoolConn *pconn;
+        int state;
+
+        /* provide us with a connection from the pool */
+        pconn = dbpool_conn_consume(pool);
+        debug("",0,"Query %ld/%ld: sqlite conn obj at %p",
+              i, queries, (void*) pconn->conn);
+
+        state = sqlite3_exec(pconn->conn, octstr_get_cstr(sql), callback3, 0, &errmsg);
+        if (state != SQLITE_OK) {
+            error(0, "SQLite3: %s", errmsg);
+            failed++;
+        } else {
+            succeeded++;
+        }
+
+        /* return the connection to the pool */
+        dbpool_conn_produce(pconn);
+    }
+    info(0, "This thread: %ld succeeded, %ld failed.", succeeded, failed);
+}
+#endif
+
 static void inc_dec_thread(void *arg)
 {
     DBPool *pool = arg;
@@ -381,6 +441,10 @@ int main(int argc, char **argv)
         info(0, "Do tests for sqlite database.");
         database_type = DBPOOL_SQLITE;
     }
+    else if (octstr_case_compare(db_type, octstr_imm("sqlite3")) == 0) {
+        info(0, "Do tests for sqlite3 database.");
+        database_type = DBPOOL_SQLITE3;
+    }
     else {
         panic(0, "Unknown database type '%s'", octstr_get_cstr(db_type));
     }
@@ -391,6 +455,7 @@ int main(int argc, char **argv)
             bail_out = (!user || !pass || !db) ? 1 : 0;
             break;
         case DBPOOL_SQLITE:
+        case DBPOOL_SQLITE3:
             bail_out = (!db) ? 1 : 0;
             break;
         default:
@@ -422,6 +487,12 @@ int main(int argc, char **argv)
         case DBPOOL_SQLITE:
             conf = sqlite_create_conf(db);
             client_thread = sqlite_client_thread;
+            break;
+#endif
+#ifdef HAVE_SQLITE3
+        case DBPOOL_SQLITE3:
+            conf = sqlite3_create_conf(db);
+            client_thread = sqlite3_client_thread;
             break;
 #endif
         default:

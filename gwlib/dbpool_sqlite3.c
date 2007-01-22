@@ -100,13 +100,11 @@ static void sqlite3_close_conn(void *conn)
     /* in case we are busy, loop until we can close */
     do {
         rc = sqlite3_close((sqlite3*) conn);
-    } while (rc != SQLITE_BUSY);
+    } while (rc == SQLITE_BUSY);
     
     if (rc == SQLITE_ERROR) {
         error(0, "SQLite3: error while closing database file.");
     }
-    
-    gw_free(conn);
 }
 
 
