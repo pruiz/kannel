@@ -1,3 +1,6 @@
+2007-01-12 Alexander Malysh <amalysh at kannel.org>
+   * gwlib/gwmem-native.c: reverted last Stipe's commit. It doesn do anything usefull.
+
 2007-01-22  Stipe Tolj  <stolj at kannel.org>
    * gwlib/gwmem-native.c: segfault prevention by setting all free()ed 
      pointers to NULL. This follows the secure coding principles of CERT-CC.

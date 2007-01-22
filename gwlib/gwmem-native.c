@@ -108,7 +108,6 @@ void *gw_native_realloc(void *ptr, size_t size)
 void gw_native_free(void *ptr)
 {
     free(ptr);
-    ptr = NULL;
 }
 
 
