@@ -1,5 +1,8 @@
-2006-01-14 Alexander Malysh <amalysh at kannel.org>
-    * gw/bb_smscconn.c: set smsc_running = 0 in smsc2_cleanup insetad in
+2007-01-22  Stipe Tolj  <stolj at kannel.org>
+    * test/test_charset.c: simple test checking GSM->UTF-8->GSM conversion.
+
+2007-01-14 Alexander Malysh <amalysh at kannel.org>
+    * gw/bb_smscconn.c: set smsc_running = 0 in smsc2_cleanup instead in
       router thread because so we never call smsc2_cleanup.
     * gwlib/cfg.c: fixed memleak. we should consider moving hooks to Cfg struct.
 
