@@ -560,7 +560,6 @@ static int parse_node(xmlNodePtr node, simple_binary_t **otabxml)
  */
 static int parse_ota_syncsettings(xmlNodePtr node, simple_binary_t **otabxml)
 {
-    xmlNodePtr childNode;
     Octstr *name, *content;
     unsigned char status_bits, ota_hex;
     int add_end_tag;

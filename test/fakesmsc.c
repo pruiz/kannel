@@ -247,6 +247,8 @@ int main(int argc, char **argv)
     num_msgs = argc - mptr;
 		
     interactive = 0;
+    msgs = NULL;
+    fp = NULL;
     if (num_msgs <= 0) {
         interactive = 1;
         num_msgs = 0;

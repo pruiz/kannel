@@ -77,6 +77,7 @@
 #include "bb_smscconn_cb.h"
 #include "sms.h"
 #include "dlr.h"
+#include "bearerbox.h"
 
 #define SMPP_DEFAULT_CHARSET "UTF-8"
 

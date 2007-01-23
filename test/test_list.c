@@ -78,7 +78,6 @@ static int my_sort_cmp(const void *a, const void *b)
 int main(void)
 {
     List *list;
-    uuid_t *uid1, *uid2;
     char id[UUID_STR_LEN + 1];
     int i;
      

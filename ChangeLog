@@ -1,3 +1,8 @@
+2007-01-23  Stipe Tolj  <stolj at kannel.org>
+   * gw/smsc/smsc_smpp.c, gw/ota_compiler.c, gw/wap-appl.c, gwlib/octstr.c,
+     test/fakesmsc.c, test/test_[conn|list].c: fixing compiler warnings due to
+     unused or uninitialized variables. NLC.
+
 2007-01-22 Alexander Malysh <amalysh at kannel.org>
    *  doc/userguide/userguide.xml, gw/bb_store.c, gw/bb_store.h, gw/bb_store_file.c,
       gw/bb_store_spool.c, gw/bearerbox.c, gw/bearerbox.h, gwlib/cfg.def,

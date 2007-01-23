@@ -910,6 +910,7 @@ int octstr_case_compare(const Octstr *os1, const Octstr *os2)
         return 0;
     }
 
+    c1 = c2 = 0;
     for (i = 0; i < len; ++i) {
         c1 = toupper(os1->data[i]);
         c2 = toupper(os2->data[i]);

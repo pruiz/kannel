@@ -645,6 +645,7 @@ static void add_msisdn(List *headers, WAPAddrTuple *addr_tuple,
  * 'X-WAP-Profile', 'X-WAP-Profile-Diff' according to WAP-248-UAProf-20011020-a,
  * section 9.2.3.3.
  */
+/*
 static void map_uaprof_headers(List *headers) 
 {
     Octstr *os;
@@ -658,6 +659,7 @@ static void map_uaprof_headers(List *headers)
     octstr_destroy(os);
     octstr_destroy(version);
 }
+*/
 
 
 /* XXX DAVI: Disabled in cvs revision 1.81 for Opengroup tests
