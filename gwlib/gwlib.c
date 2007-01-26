@@ -87,6 +87,7 @@ void gwlib_init(void)
     socket_init();
     charset_init();
     log_init();
+    cfg_init();
     init = 1;
 }
 
@@ -102,6 +103,7 @@ void gwlib_shutdown(void)
     uuid_shutdown();
     gw_check_leaks();
     log_shutdown();
+    cfg_shutdown();
     gwmem_shutdown();
     init = 0;
 }

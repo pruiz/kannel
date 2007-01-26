@@ -308,14 +308,11 @@ Cfg *cfg_create(Octstr *filename)
 void cfg_destroy(Cfg *cfg)
 {
     if (cfg != NULL) {
-	octstr_destroy(cfg->filename);
-	dict_destroy(cfg->single_groups);
-	dict_destroy(cfg->multi_groups);
+        octstr_destroy(cfg->filename);
+        dict_destroy(cfg->single_groups);
+        dict_destroy(cfg->multi_groups);
         gw_free(cfg);
     }
-    gwlist_destroy(allowed_hooks, NULL);
-    gwlist_destroy(single_hooks, NULL);
-    allowed_hooks = single_hooks = NULL;
 }
 
 
@@ -784,6 +781,7 @@ void cfg_dump(Cfg *cfg)
     debug("gwlib.cfg", 0, "Dump ends.");
 }
 
+
 void cfg_dump_all(void)
 {
     #define OCTSTR(name) \
@@ -799,4 +797,20 @@ void cfg_dump_all(void)
         fields; \
         printf("\n\n");
     #include "cfg.def"
+}
+
+
+void cfg_init(void)
+{
+    /* make sure we put our own core hooks into the lists */
+    allowed_hooks = gwlist_create();
+    single_hooks = gwlist_create();
+}
+
+
+void cfg_shutdown(void)
+{
+    gwlist_destroy(allowed_hooks, NULL);
+    gwlist_destroy(single_hooks, NULL);
+    allowed_hooks = single_hooks = NULL;
 }

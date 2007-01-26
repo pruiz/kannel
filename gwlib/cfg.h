@@ -97,6 +97,9 @@ void cfg_set(CfgGroup *grp, Octstr *varname, Octstr *value);
 void grp_dump(CfgGroup *grp);
 void cfg_dump(Cfg *cfg);
 
+void cfg_init(void);
+void cfg_shutdown(void);
+
 /*
  * Dump all known config groups and values to stdout.
  */

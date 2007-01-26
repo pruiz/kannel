@@ -1,3 +1,10 @@
+2007-01-26  Stipe Tolj  <stolj at kannel.org>
+   * gwlib/cfg.[ch]: fix memleak and revert Alex's commit on destroying the 
+     hook lists in cfg_destroy(). We need to do this in a global module scope,
+     so we introduce cfg_[init|shudown]().
+   * gwlib/gwlib.c: call cfg_init() and cfg_shutdown() while gwlib usage.
+     Thanks to Florian Bruch for pointing to this inconsistancy.
+
 2007-01-26 Alexander Malysh <amalysh at kannel.org>
    * gwlib/log.c: converted usage of List as rwlock to real RWLock and fixed
      some deadlocks. Additionaly we now have clean memleak stack when compiled
