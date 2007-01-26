@@ -1,3 +1,8 @@
+2007-01-26 Alexander Malysh <amalysh at kannel.org>
+   * gwlib/log.c: converted usage of List as rwlock to real RWLock and fixed
+     some deadlocks. Additionaly we now have clean memleak stack when compiled
+     with memcheck.
+
 2007-01-23  Stipe Tolj  <stolj at kannel.org>
    * gw/smsc/smsc_smpp.c, gw/ota_compiler.c, gw/wap-appl.c, gwlib/octstr.c,
      test/fakesmsc.c, test/test_[conn|list].c: fixing compiler warnings due to
