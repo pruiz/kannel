@@ -343,10 +343,10 @@ int log_open(char *filename, int level, enum excl_state excl)
     logfiles[num_logfiles].exclusive = excl;
     strcpy(logfiles[num_logfiles].filename, filename);
     ++num_logfiles;
-    info(0, "Added logfile `%s' with level `%d'.", filename, level);
-
     i = num_logfiles - 1;
     gw_rwlock_unlock(&rwlock);
+
+    info(0, "Added logfile `%s' with level `%d'.", filename, level);
 
     return i;
 }

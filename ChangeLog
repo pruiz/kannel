@@ -1,4 +1,7 @@
 2007-01-26 Alexander Malysh <amalysh at kannel.org>
+   * gwlib/log.c: fixed deadlock from my last commit.
+
+2007-01-26 Alexander Malysh <amalysh at kannel.org>
    * gwlib/cfg.c, gwlib/gwlib.c: fixed Stipe's last commit.
 
 2007-01-26  Stipe Tolj  <stolj at kannel.org>
