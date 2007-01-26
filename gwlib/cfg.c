@@ -294,13 +294,6 @@ Cfg *cfg_create(Octstr *filename)
     cfg->single_groups = dict_create(64, destroy_group);
     cfg->multi_groups = dict_create(64, destroy_group_list);
 
-    /* make sure we put our own core hooks into the lists */
-    allowed_hooks = gwlist_create();
-    single_hooks = gwlist_create();
-
-    gwlist_append(allowed_hooks, &core_is_allowed_in_group);
-    gwlist_append(single_hooks, &core_is_single_group);
-
     return cfg;
 }
 
@@ -805,6 +798,9 @@ void cfg_init(void)
     /* make sure we put our own core hooks into the lists */
     allowed_hooks = gwlist_create();
     single_hooks = gwlist_create();
+
+    gwlist_append(allowed_hooks, &core_is_allowed_in_group);
+    gwlist_append(single_hooks, &core_is_single_group);
 }
 
 

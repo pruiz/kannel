@@ -1,3 +1,6 @@
+2007-01-26 Alexander Malysh <amalysh at kannel.org>
+   * gwlib/cfg.c, gwlib/gwlib.c: fixed Stipe's last commit.
+
 2007-01-26  Stipe Tolj  <stolj at kannel.org>
    * gwlib/cfg.[ch]: fix memleak and revert Alex's commit on destroying the 
      hook lists in cfg_destroy(). We need to do this in a global module scope,

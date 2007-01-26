@@ -101,9 +101,9 @@ void gwlib_shutdown(void)
     octstr_shutdown();
     gwlib_protected_shutdown();
     uuid_shutdown();
+    cfg_shutdown();
     gw_check_leaks();
     log_shutdown();
-    cfg_shutdown();
     gwmem_shutdown();
     init = 0;
 }
