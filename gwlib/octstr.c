@@ -1577,7 +1577,7 @@ List *octstr_split(const Octstr *os, const Octstr *sep)
     pos = 0;
     seplen = octstr_len(sep);
 
-    while ((next = octstr_search(os, sep, pos)) > 0) {
+    while ((next = octstr_search(os, sep, pos)) >= 0) {
         gwlist_append(list, octstr_copy(os, pos, next - pos));
         pos = next + seplen;
     }
