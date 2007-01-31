@@ -1,5 +1,8 @@
+2007-01-31 Alexander Malysh <amalysh at kannel.org>
+   * gw/bb_smscconn.c: use enum in return from bb_smscconn_receive.
+
 2007-01-29 Andreas Fink <andreas at fink.org>
-  * gwlib/octstr.c: fixed octstr_split for cases where first occurence of separator is at position 0
+   * gwlib/octstr.c: fixed octstr_split for cases where first occurence of separator is at position 0
 
 2007-01-26 Alexander Malysh <amalysh at kannel.org>
    * gwlib/log.c: fixed deadlock from my last commit.

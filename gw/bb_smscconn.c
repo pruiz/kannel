@@ -430,7 +430,7 @@ long bb_smscconn_receive(SMSCConn *conn, Msg *sms)
 
     msg_destroy(sms);
 
-    return 0;
+    return SMSCCONN_SUCCESS;
 }
 
 
