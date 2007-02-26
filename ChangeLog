@@ -1,4 +1,8 @@
 2007-02-26 Alexander Malysh <amalysh at kannel.org>
+   * gw/smsc/smsc_at.c: fixed bug that AT SMSC put UDH without UDH len.
+     Thanks to Paul Bagyenda <bagyenda at dsmagic.com> for the patch.
+
+2007-02-26 Alexander Malysh <amalysh at kannel.org>
    * gw/sms.c: fixed two issues (1) max_part_len calculation;
      (2) we dropped last utf-8 multibyte sequence.
      [Msg-ID: <op.tnch9hnmran2ed@ppc.local>]

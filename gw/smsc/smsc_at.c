@@ -1731,7 +1731,7 @@ static Msg *at2_pdu_decode_deliver_sm(Octstr *data, PrivAT2data *privdata)
         pos++;
         if (udhlen + 1 > len)
             goto msg_error;
-        udh = octstr_copy(pdu, pos, udhlen);
+        udh = octstr_copy(pdu, pos-1, udhlen+1);
         pos += udhlen;
         len -= udhlen + 1;
     } else if (len <= 0) /* len < 0 is impossible, but sure is sure */
