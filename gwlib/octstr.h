@@ -550,7 +550,7 @@ int octstr_item_case_match(void *item, void *pattern);
  */
 void octstr_dump_real(const Octstr *ostr, int level, ...);
 #define octstr_dump(ostr, level, ...) \
-    octstr_dump_real(ostr, level, ##__VA_ARGS__)
+    octstr_dump_real(ostr, level, GW_DEBUG, ##__VA_ARGS__)
 
 
 /*
