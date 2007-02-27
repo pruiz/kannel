@@ -217,10 +217,33 @@ void emimsg_destroy(struct emimsg *emimsg)
     int len;
 
     len = emimsg->num_fields;
-    while (--len >= 0)
-	octstr_destroy(emimsg->fields[len]);  /* octstr_destroy(NULL) is ok */
+    while (--len >= 0) {
+        octstr_destroy(emimsg->fields[len]);  /* octstr_destroy(NULL) is ok */
+        emimsg->fields[len] = NULL;
+    }
     gw_free(emimsg->fields);
     gw_free(emimsg);
+}
+
+
+struct emimsg *emimsg_duplicate(struct emimsg *emimsg)
+{
+    int len;
+    struct emimsg *ret;
+
+    len = emimsg->num_fields;
+    if (len < 0)
+        return NULL;
+    ret = gw_malloc(sizeof(struct emimsg));
+    ret->fields = gw_malloc(len * sizeof(Octstr *));
+    ret->num_fields = len;
+    while (--len >= 0)
+        ret->fields[len] = octstr_duplicate(emimsg->fields[len]);
+    ret->ot = emimsg->ot;
+    ret->or = emimsg->or;
+    ret->trn = emimsg->trn;
+
+    return ret;
 }
 
 

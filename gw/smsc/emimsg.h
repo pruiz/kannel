@@ -98,14 +98,22 @@ enum {
 };
 
 
+/* Create an EMI msg struct with operation type OT and TRN */
 struct emimsg *emimsg_create_op(int ot, int trn, Octstr *whoami);
 
 
+/* Create an empty EMI msg struct as reply */
 struct emimsg *emimsg_create_reply(int ot, int trn, int positive,
 		Octstr *whoami);
 
 
+/* Destroy an EMI msg struct */
 void emimsg_destroy(struct emimsg *emimsg);
+
+
+/* Duplicate an EMI msg struct */ 
+struct emimsg *emimsg_duplicate(struct emimsg *emimsg);
+
 
 
 /* Create an emimsg struct from the string. */

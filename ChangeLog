@@ -1,3 +1,7 @@
+2007-02-27  Stipe Tolj  <stolj at kannel.org>
+   * gw/smsc/emimsg.[ch]: adding function emimsg_duplicate() to allow
+     duplication of the struct. This is usefull in various ways and places.
+
 2007-02-27 Alexander Malysh <amalysh at kannel.org>
    * gwlib/octstr.h: fixed octstr_dump that dumped Octstr with GW_INFO loglevel.
 
@@ -14,7 +18,8 @@
    * gw/bb_smscconn.c: use enum in return from bb_smscconn_receive.
 
 2007-01-29 Andreas Fink <andreas at fink.org>
-   * gwlib/octstr.c: fixed octstr_split for cases where first occurence of separator is at position 0
+   * gwlib/octstr.c: fixed octstr_split for cases where first occurence of 
+     separator is at position 0
 
 2007-01-26 Alexander Malysh <amalysh at kannel.org>
    * gwlib/log.c: fixed deadlock from my last commit.
