@@ -110,6 +110,7 @@ static RWLock   *smsbox_list_rwlock;
 static Dict *smsbox_by_id;
 static Dict *smsbox_by_smsc;
 static Dict *smsbox_by_receiver;
+static Dict *smsbox_by_smsc_receiver;
 
 static long	smsbox_port;
 static int smsbox_port_ssl;
@@ -983,6 +984,8 @@ static void smsboxc_run(void *arg)
     smsbox_by_smsc = NULL;
     dict_destroy(smsbox_by_receiver);
     smsbox_by_receiver = NULL;
+    dict_destroy(smsbox_by_smsc_receiver);
+    smsbox_by_smsc_receiver = NULL;
     
     gwlist_remove_producer(flow_threads);
 }
@@ -1038,7 +1041,7 @@ static void init_smsbox_routes(Cfg *cfg)
     CfgGroup *grp;
     List *list, *items;
     Octstr *boxc_id, *smsc_ids, *shortcuts;
-    int i;
+    int i, j;
 
     boxc_id = smsc_ids = shortcuts = NULL;
 
@@ -1053,16 +1056,20 @@ static void init_smsbox_routes(Cfg *cfg)
         }
 
         /*
-         * If smsc-ids are given, then any message comming from the specified
-         * smsc-id will be routed to this smsbox instance.
-         * If shortcuts are given, then any message with receiver number 
+         * If smsc-id is given, then any message comming from the specified
+         * smsc-id in the list will be routed to this smsbox instance.
+         * If shortcode is given, then any message with receiver number 
          * matching those will be routed to this smsbox instance.
+         * If both are given, then only receiver within shortcode originating
+         * from smsc-id list will be routed to this smsbox instance. So if both
+         * are present then this is a logical AND operation.
          */
-        smsc_ids = cfg_get(grp, octstr_imm("smsc-ids"));
-        shortcuts = cfg_get(grp, octstr_imm("shortcuts"));
+        smsc_ids = cfg_get(grp, octstr_imm("smsc-id"));
+        shortcuts = cfg_get(grp, octstr_imm("shortcode"));
 
-        /* now parse the smsc-ids and shortcuts semicolon separated list */
-        if (smsc_ids) {
+        /* consider now the 3 possibilities: */
+        if (smsc_ids && !shortcuts) {
+            /* smsc-id only, so all MO traffic */
             items = octstr_split(smsc_ids, octstr_imm(";"));
             for (i = 0; i < gwlist_len(items); i++) {
                 Octstr *item = gwlist_get(items, i);
@@ -1078,8 +1085,8 @@ static void init_smsbox_routes(Cfg *cfg)
             gwlist_destroy(items, octstr_destroy_item);
             octstr_destroy(smsc_ids);
         }
-
-        if (shortcuts) {
+        else if (!smsc_ids && shortcuts) {
+            /* shortcode only, so these MOs from all smscs */
             items = octstr_split(shortcuts, octstr_imm(";"));
             for (i = 0; i < gwlist_len(items); i++) {
                 Octstr *item = gwlist_get(items, i);
@@ -1091,6 +1098,35 @@ static void init_smsbox_routes(Cfg *cfg)
                 if (!dict_put_once(smsbox_by_receiver, item, octstr_duplicate(boxc_id)))
                     panic(0, "Routing for receiver no <%s> already exists!",
                           octstr_get_cstr(item));
+            }
+            gwlist_destroy(items, octstr_destroy_item);
+            octstr_destroy(shortcuts);
+        }
+        else if (smsc_ids && shortcuts) {
+            /* both, so only specified MOs from specified smscs */
+            items = octstr_split(shortcuts, octstr_imm(";"));
+            for (i = 0; i < gwlist_len(items); i++) {
+                List *subitems;
+                Octstr *item = gwlist_get(items, i);
+                octstr_strip_blanks(item);
+                subitems = octstr_split(smsc_ids, octstr_imm(";")); 
+                for (j = 0; j < gwlist_len(subitems); j++) {
+                    Octstr *subitem = gwlist_get(subitems, j);
+                    octstr_strip_blanks(subitem);
+                    
+                    debug("bb.boxc",0,"Adding smsbox routing to id <%s> "
+                          "for receiver no <%s> and smsc id <%s>",
+                          octstr_get_cstr(boxc_id), octstr_get_cstr(item),
+                          octstr_get_cstr(subitem));
+            
+                    /* construct the dict key '<shortcode>:<smsc-id>' */
+                    octstr_insert(subitem, item, 0);
+                    octstr_insert_char(subitem, octstr_len(item), ':');
+                    if (!dict_put_once(smsbox_by_smsc_receiver, subitem, octstr_duplicate(boxc_id)))
+                        panic(0, "Routing for receiver:smsc <%s> already exists!",
+                              octstr_get_cstr(subitem));
+                }
+                gwlist_destroy(subitems, octstr_destroy_item);
             }
             gwlist_destroy(items, octstr_destroy_item);
             octstr_destroy(shortcuts);
@@ -1142,6 +1178,7 @@ int smsbox_start(Cfg *cfg)
     smsbox_by_id = dict_create(10, NULL);  /* and a hash directory of identified */
     smsbox_by_smsc = dict_create(30, (void(*)(void *)) octstr_destroy);
     smsbox_by_receiver = dict_create(50, (void(*)(void *)) octstr_destroy);
+    smsbox_by_smsc_receiver = dict_create(50, (void(*)(void *)) octstr_destroy);
 
     /* load the defined smsbox routing rules */
     init_smsbox_routes(cfg);
@@ -1381,7 +1418,7 @@ void boxc_cleanup(void)
 int route_incoming_to_boxc(Msg *msg)
 {
     Boxc *bc = NULL, *best = NULL;
-    Octstr *s, *r;
+    Octstr *s, *r, *rs;
     long len, b, i;
     int full_found = 0;
 
@@ -1415,17 +1452,24 @@ int route_incoming_to_boxc(Msg *msg)
              * for sending, so it seems this smsbox is gone
              */
             warning(0,"Could not route message to smsbox id <%s>, smsbox is gone!",
-                  octstr_get_cstr(msg->sms.boxc_id));
+                    octstr_get_cstr(msg->sms.boxc_id));
         }
     }
     else {
         /*
          * Check if we have a "smsbox-route" for this msg.
-         * Where the shortcut route has a higher priority then the smsc-id rule.
+         * Where the shortcode route has a higher priority then the smsc-id rule.
+         * Highest priority has the combined <shortcode>:<smsc-id> route.
          */
+        Octstr *os = octstr_format("%s:%s", 
+                                   octstr_get_cstr(msg->sms.receiver),
+                                   octstr_get_cstr(msg->sms.smsc_id));
         s = (msg->sms.smsc_id ? dict_get(smsbox_by_smsc, msg->sms.smsc_id) : NULL);
         r = (msg->sms.receiver ? dict_get(smsbox_by_receiver, msg->sms.receiver) : NULL);
-        bc = r ? dict_get(smsbox_by_id, r) : (s ? dict_get(smsbox_by_id, s) : NULL);
+        rs = (os ? dict_get(smsbox_by_smsc_receiver, os) : NULL);
+        octstr_destroy(os); 
+        bc = rs ? dict_get(smsbox_by_id, rs) : 
+            (r ? dict_get(smsbox_by_id, r) : (s ? dict_get(smsbox_by_id, s) : NULL));
     }
 
     /* check if we found our routing */

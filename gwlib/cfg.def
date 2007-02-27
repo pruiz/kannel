@@ -281,8 +281,8 @@ SINGLE_GROUP(smsbox,
 
 MULTI_GROUP(smsbox-route,
     OCTSTR(smsbox-id)
-    OCTSTR(smsc-ids)
-    OCTSTR(shortcuts)
+    OCTSTR(smsc-id)
+    OCTSTR(shortcode)
 )
 
 
