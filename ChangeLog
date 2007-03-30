@@ -1,3 +1,6 @@
+2007-03-30 Alexander Malysh <amalysh at kannel.org>
+   * wap/wsp_caps.c: fixed possible heap smashing.
+
 2007-02-27  Stipe Tolj  <stolj at kannel.org>
 (CB) * gwlib/cfg.def, gw/bb_boxc.c: re-defining logic for the 'smsbox-route' group
      that is used for MO routing to different (identified) smsbox connections.
