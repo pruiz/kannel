@@ -1,3 +1,6 @@
+2007-04-02 Alexander Malysh <amalysh at kannel.org>
+   * gwlib/octstr.c: prevent possible heap smashing
+
 2007-03-30 Alexander Malysh <amalysh at kannel.org>
    * wap/wsp_caps.c: fixed possible heap smashing.
 

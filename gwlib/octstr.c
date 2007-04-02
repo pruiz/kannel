@@ -253,6 +253,12 @@ Octstr *octstr_create_from_data_real(const char *data, long len, const char *fil
     if (data == NULL)
         gw_assert(len == 0);
 
+    /* if gw_assert is disabled just return NULL
+     * and caller will check for NULL or just crash.
+     */
+    if (len < 0 || (data == NULL && len != 0))
+        return NULL;
+
     ostr = gw_malloc_trace(sizeof(*ostr), file, line, func);
     if (len == 0) {
         ostr->len = 0;
