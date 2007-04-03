@@ -5409,18 +5409,18 @@ log-level = 0
 
   <para>The smsbox routing solves this for the inbound direction. In
   certain scenarios you want that bearerbox to know to which smsbox
-  instance it should pass messages. I.e. if you implement our own boxes
+  instance it should pass messages. I.e. if you implement own boxes
   that pass messages to bearerbox and expect to receive messages defined
   on certain rules, like receiver number or smsc-id. This is the case
   for EMI/UCP and SMPP proxies that can be written easily using smsbox
   routing facility.
   </para>
 
-  <para>If you smppbox handles the SMPP specific communication to your
-  EMSEs, and if an client send a submit_sm PDU, smppbox would transform
+  <para>If you box handles the SMPP server specific communication to your
+  EMSEs, and if an client send a submit_sm PDU, the box would transform
   the message into Kannel message representation and inject the message to
   bearerbox as if it would be an smsbox. As you want to assign your clients
-  shortcuts for certain networks or route any inbound traffic from a certain
+  shortcodes for certain networks or route any inbound traffic from a certain
   smsc link connected to bearerbox, you need to separate in the scope of 
   bearerbox where the inbound message will be going to. An example may
   look like this:
@@ -5433,13 +5433,31 @@ smsbox-id = mysmsc
 
 group = smsbox-route
 smsbox-id = mysmsc
-shortcuts = "1111;2222;3333"
+shortcode = "1111;2222;3333"
 </programlisting>
 
-	which means and inbound message with receiver number 1111, 2222 or 3333
+	Which means any inbound message with receiver number 1111, 2222 or 3333
 	will be delivered to the smsbox instance that has identified itself
 	via the id "mysmsc" to bearerbox. Using this routing the smsbox instance
-	(which may be an EMI/UCP or SMPP proxy) is able to send a deliver_sm PDU
+	(which may be an EMI/UCP or SMPP proxy) is able to send a deliver_sm PDU. 
+	Another example showing the combination use of criteria smsc-id and 
+	shortcode looks like this:
+
+<programlisting>
+group = smsbox
+...
+smsbox-id = mysmsc
+...
+
+group = smsbox-route
+smsbox-id = mysmsc
+smsc-id = "A;B;C"
+shortcode = "1111;2222"
+</programlisting>
+
+	Which means any inbound message with receiver number 1111 or 2222 that have
+	been originating from the smsc-id connections A, B or C will be delivered
+	to the via the id "mysmsc" to bearerbox.
 	</para>
 
    <para>smsbox-route inherits from core the following fields:
@@ -5468,22 +5486,26 @@ shortcuts = "1111;2222;3333"
         Defines for which smsbox instance the routing rules do apply.
      </entry></row>
 
-	 <row><entry><literal>smsc-ids</literal></entry>
+	 <row><entry><literal>smsc-id</literal></entry>
      <entry>word-list</entry>
      <entry valign="bottom">
         If set, specifies from which smsc-ids all inbound messages should
 		  be routed to this smsbox instance. List contains smsc-ids separated
 		  by semicolon (";"). This rule may be used to pull any smsc specific
-		  message stream to an smsbox instance.
+		  message stream to an smsbox instance. If used in combination with 
+		  config directive shortcode, then this is another matching criteria
+		  for the routing decission.
      </entry></row>
 
-	 <row><entry><literal>shortcuts</literal></entry>
+	 <row><entry><literal>shortcode</literal></entry>
      <entry>number-list</entry>
      <entry valign="bottom">
         If set, specifies which receiver numbers for inbound messages should
 		  be routed to this smsbox instance. List contains numbers separated
 		  by semicolon (";"). This rule may be used to pull receiver number
-		  specific message streams to an smsbox instance.
+		  specific message streams to an smsbox instance. If used in combination
+		  with config directive smsc-id, then only messages originating from
+		  the connections in the smsc-id are matched against the shortcode list.
      </entry></row>
 
   </tbody>
