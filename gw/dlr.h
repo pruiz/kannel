@@ -72,7 +72,7 @@
 #define	DLR_FAIL            0x02
 #define	DLR_BUFFERED        0x04
 #define	DLR_SMSC_SUCCESS    0x08
-#define	DLR_SMSC_FAIL       0x16
+#define	DLR_SMSC_FAIL       0x10
 
 #define DLR_IS_DEFINED(dlr)          (dlr != DLR_UNDEFINED)
 #define DLR_IS_ENABLED(dlr)          (DLR_IS_DEFINED(dlr) && (dlr & (DLR_SUCCESS | DLR_FAIL | DLR_BUFFERED | DLR_SMSC_SUCCESS | DLR_SMSC_FAIL)))
