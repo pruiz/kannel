@@ -1,3 +1,9 @@
+2007-04-04  Stipe Tolj  <stolj at kannel.org>
+   * configure[.in]: modified the docbook.dsl search path to be more generic
+     since some distros have more recent version paths (ie. 1.79 for FC5 on 
+     x86_86 architectures), and we don't want to sum up every single version.
+     We relly on any match we get in the for shell loop and continue.
+
 2007-04-03  Stipe Tolj  <stolj at kannel.org>
    * doc/userguide/userguide.xml: documented change of 'smsbox-route' group
      logic from the commit on 2007-02-27.
