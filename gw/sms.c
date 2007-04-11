@@ -356,7 +356,8 @@ List *sms_split(Msg *orig, Octstr *header, Octstr *footer,
             extract_msgdata_part_by_coding(temp, split_chars,
                                            max_part_len - nlsuf_len);
         /* create new id for every part, except last */
-        uuid_generate(part->sms.id);
+        if (!last)
+            uuid_generate(part->sms.id);
 
         if (header)
             octstr_insert(part->sms.msgdata, header, 0);
