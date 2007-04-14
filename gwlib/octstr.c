@@ -1266,6 +1266,9 @@ void octstr_insert(Octstr *ostr1, const Octstr *ostr2, long pos)
 
 void octstr_truncate(Octstr *ostr, int new_len)
 {
+    if (ostr == NULL)
+        return;
+        
     seems_valid(ostr);
     gw_assert(!ostr->immutable);
     gw_assert(new_len >= 0);
