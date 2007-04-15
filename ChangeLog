@@ -1,3 +1,13 @@
+2007-04-16  Stipe Tolj  <stolj at kannel.org>
+   * gw/smsc/smsc_http.c: fixing default charset encoding policy in chaining
+     Kannel instances via 'system-type = kannel'. As we use now UTF-8 as
+     internal encoding, but still WINDOWS-1252 as default encoding for 
+     smsbox's sendsms HTTP interace, we need to forward explicetly the CGI
+     variable charset to the next instance here to let the smsbox know that
+     we pass the message in UFT-8 format for normal text messages.
+     This is a temporary issue, as long as smsbox's sendsms HTTP interface
+     isn't switched to UTF-8, which we should do in next major revision.
+
 2007-04-14  Stipe Tolj  <stolj at kannel.org>
    * gwlib/octstr.c: imunize octstr_truncate() for NULL argument. Currently
      this would cause a panic when charset_utf8_to_gsm(NULL) is called. Now

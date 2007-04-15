@@ -410,17 +410,30 @@ static void kannel_send_sms(SMSCConn *conn, Msg *sms)
     if (!conndata->no_sender)
         octstr_format_append(url, "&from=%E", sms->sms.sender);
     if (sms->sms.mclass != MC_UNDEF)
-	octstr_format_append(url, "&mclass=%d", sms->sms.mclass);
+        octstr_format_append(url, "&mclass=%d", sms->sms.mclass);
     if (!conndata->no_coding && sms->sms.coding != DC_UNDEF)
-	octstr_format_append(url, "&coding=%d", sms->sms.coding);
+        octstr_format_append(url, "&coding=%d", sms->sms.coding);
+
+    /* Obey that smsbox's sendsms HTTP interface is still expecting 
+     * WINDOWS-1252 as default charset, while all other internal parts
+     * use UTF-8 as internal encoding. This means, when we pass a SMS
+     * into a next Kannel instance, we need to let the smsbox know which
+     * charset we have in use.
+     * XXX TODO: change smsbox interface to use UTF-8 as default
+     * in next major release. */
+    if (sms->sms.coding == DC_7BIT)
+        octstr_append_cstr(url, "&charset=UTF-8");
+    else if (sms->sms.coding == DC_UCS2)
+        octstr_append_cstr(url, "&charset=UTF-16BE");
+
     if (sms->sms.mwi != MWI_UNDEF)
-	octstr_format_append(url, "&mwi=%d", sms->sms.mwi);
+        octstr_format_append(url, "&mwi=%d", sms->sms.mwi);
     if (sms->sms.account) /* prepend account with local username */
-	octstr_format_append(url, "&account=%E:%E", sms->sms.service, sms->sms.account);
+        octstr_format_append(url, "&account=%E:%E", sms->sms.service, sms->sms.account);
     if (sms->sms.binfo) /* prepend billing info */
-	octstr_format_append(url, "&binfo=%S", sms->sms.binfo);
+        octstr_format_append(url, "&binfo=%S", sms->sms.binfo);
     if (sms->sms.smsc_id) /* proxy the smsc-id to the next instance */
-	octstr_format_append(url, "&smsc=%S", sms->sms.smsc_id);
+        octstr_format_append(url, "&smsc=%S", sms->sms.smsc_id);
     if (sms->sms.dlr_url) {
         if (conndata->dlr_url) {
             char id[UUID_STR_LEN + 1];
@@ -454,7 +467,6 @@ static void kannel_send_sms(SMSCConn *conn, Msg *sms)
 
     octstr_destroy(url);
     http_destroy_headers(headers);
-
 }
 
 static void kannel_parse_reply(SMSCConn *conn, Msg *msg, int status,
@@ -488,6 +500,7 @@ static void kannel_parse_reply(SMSCConn *conn, Msg *msg, int status,
 	            SMSCCONN_FAILED_MALFORMED, octstr_duplicate(body));
     }
 }
+
 
 static void kannel_receive_sms(SMSCConn *conn, HTTPClient *client,
                                List *headers, Octstr *body, List *cgivars)
