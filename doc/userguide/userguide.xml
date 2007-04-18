@@ -1488,6 +1488,14 @@ admin-password = f00bar
         queues grow very long).
      </entry></row>
 
+     <row><entry><literal>sms-outgoing-queue-limit</literal></entry>
+     <entry>number of messages</entry>
+     <entry valign="bottom">
+        Set maximum size of outgoing message queue. After number of messages
+        has hit this value, Kannel began to discard them.
+        Value -1 default, means that the queue of infinite length is accepted.
+     </entry></row>
+
      <row><entry><literal>white-list-regex</literal></entry>
         <entry>POSIX regular expression</entry>
         <entry valign="bottom">

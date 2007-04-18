@@ -210,7 +210,7 @@ static Msg *read_from_box(Boxc *boxconn)
  */
 static void deliver_sms_to_queue(Msg *msg, Boxc *conn)
 {
-    Msg *mack, *mack_store;
+    Msg *mack;
     int rc;
 
     /*
@@ -224,27 +224,24 @@ static void deliver_sms_to_queue(Msg *msg, Boxc *conn)
 
     store_save(msg);
 
-    rc = smsc2_rout(msg);
+    rc = smsc2_rout(msg, 0);
     switch(rc) {
-        case 1:
+        case SMSCCONN_SUCCESS:
            mack->ack.nack = ack_success;
            break;
-        case 0:
+        case SMSCCONN_QUEUED:
            mack->ack.nack = ack_buffered;
            break;
-        case -1: /* no router at all */
-           warning(0, "Message rejected by bearerbox, no router!");
+        case SMSCCONN_FAILED_DISCARDED: /* no router at all */
+        case SMSCCONN_FAILED_QFULL: /* queue full */
+           warning(0, "Message rejected by bearerbox, %s!",
+                             (rc == SMSCCONN_FAILED_DISCARDED) ? "no router" : "queue full");
            /*
             * first create nack for store-file, in order to delete
             * message from store-file.
             */
-           mack_store = msg_create(ack);
-           gw_assert(mack_store != NULL);
-           uuid_copy(mack_store->ack.id, msg->sms.id);
-           mack_store->ack.time = msg->sms.time;
-           mack->ack.nack = mack_store->ack.nack = ack_failed;
-           store_save(mack_store);
-           msg_destroy(mack_store);
+           store_save_ack(msg, (rc == SMSCCONN_FAILED_QFULL ? ack_failed_tmp : ack_failed));
+           mack->ack.nack = (rc == SMSCCONN_FAILED_QFULL ? ack_failed_tmp : ack_failed);
 
            /* destroy original message */
            msg_destroy(msg);

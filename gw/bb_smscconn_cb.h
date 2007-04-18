@@ -106,6 +106,7 @@ void bb_smscconn_send_failed(SMSCConn *conn, Msg *sms, int reason, Octstr *reply
 
 enum {
     SMSCCONN_SUCCESS = 0,
+    SMSCCONN_QUEUED,
     SMSCCONN_FAILED_SHUTDOWN,
     SMSCCONN_FAILED_REJECTED,
     SMSCCONN_FAILED_MALFORMED,

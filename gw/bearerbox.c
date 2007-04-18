@@ -93,6 +93,8 @@ Counter *outgoing_wdp_counter;
 
 /* incoming/outgoing sms queue control */
 long max_incoming_sms_qlength;
+long max_outgoing_sms_qlength;
+
 
 /* this is not a list of items; instead it is used as
  * indicator to note how many threads we have.
@@ -179,13 +181,13 @@ static void signal_handler(int signum)
         case SIGHUP:
             bb_todo |= BB_LOGREOPEN;
             break;
-        
-        /* 
+
+        /*
          * It would be more proper to use SIGUSR1 for this, but on some
-         * platforms that's reserved by the pthread support. 
+         * platforms that's reserved by the pthread support.
          */
         case SIGQUIT:
-           bb_todo |= BB_CHECKLEAKS;  
+           bb_todo |= BB_CHECKLEAKS;
            break;
     }
 }
@@ -415,7 +417,7 @@ static Cfg *init_bearerbox(Cfg *cfg)
 
     conn_config_ssl (grp);
 
-    /* 
+    /*
      * Make sure we have "ssl-server-cert-file" and "ssl-server-key-file" specified
      * in the core group since we need it to run SSL-enabled internal box 
      * connections configured via "smsbox-port-ssl = yes" and "wapbox-port-ssl = yes".
@@ -437,9 +439,9 @@ static Cfg *init_bearerbox(Cfg *cfg)
     octstr_destroy(ssl_server_cert_file);
     octstr_destroy(ssl_server_key_file);
 #endif /* HAVE_LIBSSL */
-	
+
     /* if all seems to be OK by the first glimpse, real start-up */
-    
+
     outgoing_sms = gwlist_create();
     incoming_sms = gwlist_create();
     outgoing_wdp = gwlist_create();
@@ -449,7 +451,7 @@ static Cfg *init_bearerbox(Cfg *cfg)
     incoming_sms_counter = counter_create();
     outgoing_wdp_counter = counter_create();
     incoming_wdp_counter = counter_create();
-    
+
     status_mutex = mutex_create();
 
     setup_signal_handlers();
@@ -469,6 +471,10 @@ static Cfg *init_bearerbox(Cfg *cfg)
         cfg_get_integer(&max_incoming_sms_qlength, grp,
                                   octstr_imm("sms-incoming-queue-limit")) == -1)
         max_incoming_sms_qlength = -1;
+        
+    if (cfg_get_integer(&max_outgoing_sms_qlength, grp,
+                                  octstr_imm("sms-outgoing-queue-limit")) == -1)
+        max_outgoing_sms_qlength = -1;
 
 #ifndef NO_SMS    
     {

@@ -1,4 +1,9 @@
 2007-04-18 Alexander Malysh <amalysh at kannel.org>
+   * doc/userguide/userguide.xml, gw/bb_boxc.c, gw/bb_smscconn.c, gw/bb_smscconn_cb.h,
+     gw/bearerbox.c, gw/bearerbox.h, gwlib/cfg.def: applied patch that implements
+     outgoing queue (MT) limit.
+
+2007-04-18 Alexander Malysh <amalysh at kannel.org>
    * gwlib/mime.c: applied patch should help take care of issues where the
      Content-ID for the start element is enclosed in '<' '>'.
      Thanks to Paul Bagyenda <bagyenda at dsmagic.com> for the patch.

@@ -155,12 +155,18 @@ int smsc2_shutdown(void);
 void smsc2_cleanup(void); /* final clean-up */
 
 Octstr *smsc2_status(int status_type);
-/* Route message to SMSC. If finds a good one, puts into it and returns 1
- * If finds only bad ones, but acceptable, queues and returns 0
- * (like all acceptable currently disconnected)
- * If cannot find nothing at all, returns -1 and message is NOT destroyed
- * (otherwise it is) */
-int smsc2_rout(Msg *msg);
+
+/* function to route outgoing SMS'es
+ *
+ * If finds a good one, puts into it and returns SMSCCONN_SUCCESS
+ * If finds only bad ones, but acceptable, queues and
+ *  returns SMSCCONN_QUEUED  (like all acceptable currently disconnected)
+ * if message acceptable but queues full returns SMSCCONN_FAILED_QFULL and
+ * message is not destroyed.
+ * If cannot find nothing at all, returns SMSCCONN_FAILED_DISCARDED and
+ * message is NOT destroyed (otherwise it is)
+ */
+long smsc2_rout(Msg *msg, int resend);
 
 int smsc2_stop_smsc(Octstr *id);   /* shutdown a specific smsc */
 int smsc2_restart_smsc(Octstr *id);  /* re-start a specific smsc */
