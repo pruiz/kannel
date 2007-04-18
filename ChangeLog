@@ -1,3 +1,9 @@
+2007-04-18 Alexander Malysh <amalysh at kannel.org>
+   * gwlib/mime.c: applied patch should help take care of issues where the
+     Content-ID for the start element is enclosed in '<' '>'.
+     Thanks to Paul Bagyenda <bagyenda at dsmagic.com> for the patch.
+     [Msg-Id: <D4225F55-C681-4B36-B383-67B8B9C7DE46@dsmagic.com>]
+
 2007-04-16  Stipe Tolj  <stolj at kannel.org>
    * gw/smsc/smsc_http.c: fixing default charset encoding policy in chaining
      Kannel instances via 'system-type = kannel'. As we use now UTF-8 as

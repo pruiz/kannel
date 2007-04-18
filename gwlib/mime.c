@@ -316,14 +316,27 @@ static Octstr *get_start_param(Octstr *content_type)
 static int cid_matches(List *headers, Octstr *start)
 {
      Octstr *cid = http_header_value(headers, octstr_imm("Content-ID"));
+     char *cid_str;
+     int cid_len;
      int ret;
+
+     if (cid == NULL) 
+         return 0;
+     
+     /* First, strip the <> if any. XXX some mime coders produce such messiness! */
+     cid_str = octstr_get_cstr(cid);
+     cid_len = octstr_len(cid);
+     if (cid_str[0] == '<') {
+         cid_str+=1;
+	 cid_len-=2;
+     }
      if (start != NULL && cid != NULL  && 
-	 octstr_compare(start, cid) == 0) 
+	 (octstr_compare(start, cid) == 0 || octstr_str_ncompare(start, cid_str, cid_len) == 0)) 
 	  ret = 1;
      else 
 	  ret = 0;
-     if (cid)
-	  octstr_destroy(cid);
+
+     octstr_destroy(cid);
      return ret;
 }
 
