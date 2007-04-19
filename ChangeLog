@@ -1,3 +1,12 @@
+2007-04-20  Stipe Tolj  <stolj at kannel.org>
+   * aclocal.m4: fixed typo and updated email references. NLC.
+   * Makefile.in: adding creation of symlink for 'gw-config' if we have used
+     '--with-suffix' while configure, otherwise gw-config is also appended
+     with suffix string and it does not comply with external components
+     depending to find a 'gw-config' in the PATH and use the cflags and libs
+     information for their own builds against Kannel libs. This is safe now
+     for both, w/o suffix.
+
 2007-04-18 Alexander Malysh <amalysh at kannel.org>
    * doc/userguide/userguide.xml, gw/bb_boxc.c, gw/bb_smscconn.c, gw/bb_smscconn_cb.h,
      gw/bearerbox.c, gw/bearerbox.h, gwlib/cfg.def: applied patch that implements

@@ -251,6 +251,8 @@ install: all
 		$(INSTALL) $$prog \
 		    $(DESTDIR)$(bindir)/`basename $$prog`$(suffix); \
 	done
+	test -r $(DESTDIR)$(bindir)/gw-config || \
+		ln -sf gw-config$(suffix) $(DESTDIR)$(bindir)/gw-config
 	$(INSTALL) -d $(DESTDIR)$(sbindir)
 	for prog in $(sbinprogs); do \
 		$(INSTALL) $$prog \

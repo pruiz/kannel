@@ -5,14 +5,14 @@ dnl This file is part of the Kannel WAP and SMS gateway project.
 
 
 dnl Check if installed version string is equal or higher then required. 
-dnl This is used in a couple of tests to ensude we have a valid version 
+dnl This is used in a couple of tests to ensure we have a valid version 
 dnl of a software package installed. The basic idea is to split the 
 dnl version sequences into three parts and then test against eachother
 dnl in a whole complex if statement. 
 dnl
 dnl AC_CHECK_VERSION(installed, required, [do-if-success], [do-if-tail])
 dnl
-dnl Written by Stipe Tolj <stolj@wapme-group.de> 
+dnl Written by Stipe Tolj <stolj@kannel.org> <st@tolj.org> 
  
 AC_DEFUN(AC_CHECK_VERSION, 
 [ 
