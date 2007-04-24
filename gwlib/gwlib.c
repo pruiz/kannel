@@ -83,10 +83,10 @@ void gwlib_init(void)
     octstr_init();
     gwlib_protected_init();
     gwthread_init();
+    log_init();
     http_init();
     socket_init();
     charset_init();
-    log_init();
     cfg_init();
     init = 1;
 }

@@ -1,3 +1,11 @@
+2007-04-24  Andreas Fink <andreas at fink.org>
+   * gwlib/gwlib.c: call log_init before http_init and socket_init so error
+     messages from those init calls actually are able to appear on the screen
+     instead of crashing bearerbox at start. Reported under MacOS X by
+     Alejandro Guerrieri. Only happened if hostname was not set.
+     ERROR: Can't find out official hostname for this host, using `xyz' instead.
+     was being sent to a logfile not open... -> crash
+
 2007-04-20  Stipe Tolj  <stolj at kannel.org>
    * aclocal.m4: fixed typo and updated email references. NLC.
    * Makefile.in: adding creation of symlink for 'gw-config' if we have used
