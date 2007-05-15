@@ -274,6 +274,14 @@ void *gwlist_consume(List *list);
 
 
 /*
+ * Remove an item from the list, or return NULL if the list was empty
+ * and there were no producers. If the list is empty but there are
+ * producers, sleep until there is something to return or timeout occur.
+ */
+void *gwlist_timed_consume(List *list, long sec);
+
+
+/*
  * Search the list for a particular item. If not found, return NULL. If found,
  * return the list element. Compare items to search pattern with 
  * `cmp(item, pattern)'. If the function returns non-zero, the items are 

@@ -431,6 +431,31 @@ void *gwlist_consume(List *list)
 }
 
 
+void *gwlist_timed_consume(List *list, long sec)
+{
+    void *item;
+
+    lock(list);
+    while (list->len == 0 && list->num_producers > 0) {
+        struct timespec abstime;
+        abstime.tv_sec = time(NULL) + sec;
+        abstime.tv_nsec = 0;
+        list->single_operation_lock->owner = -1;
+        pthread_cond_timedwait(&list->nonempty,
+                          &list->single_operation_lock->mutex, &abstime);
+        list->single_operation_lock->owner = gwthread_self();
+    }
+    if (list->len > 0) {
+        item = GET(list, 0);
+        delete_items_from_list(list, 0, 1);
+    } else {
+        item = NULL;
+    }
+    unlock(list);
+    return item;
+}
+
+
 void *gwlist_search(List *list, void *pattern, int (*cmp)(void *, void *))
 {
     void *item;

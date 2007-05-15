@@ -1,3 +1,7 @@
+2007-05-15 Alexander Malysh <amalysh at kannel.org>
+   * gwlib/list.[ch]: added new function gwlist_timed_consume that works
+     as gwlist_consume except that we are able to specify timeout.
+
 2007-04-24  Andreas Fink <andreas at fink.org>
    * gwlib/gwlib.c: call log_init before http_init and socket_init so error
      messages from those init calls actually are able to appear on the screen
