@@ -223,6 +223,9 @@ void charset_gsm_to_utf8(Octstr *ostr)
     long pos, len;
     Octstr *newostr;
 
+    if (ostr == NULL)
+        return;
+
     newostr = octstr_create("");
     len = octstr_len(ostr);
     
@@ -288,6 +291,9 @@ void charset_utf8_to_gsm(Octstr *ostr)
     long pos, len;
     int val1, val2;
     Octstr *newostr;
+
+    if (ostr == NULL)
+        return;
     
     newostr = octstr_create("");
     len = octstr_len(ostr);

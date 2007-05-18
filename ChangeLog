@@ -1,3 +1,8 @@
+2007-05-18  Stipe Tolj  <stolj at kannel.org>
+   * gwlib/charset.c: imunize charset_[gsm|utf8]_to_[utf8|gsm]() functions 
+     for NULL argument. Currently these would panic due to octstr_append() 
+     called at the end with a NULL argument. NLC.
+   
 2007-05-15 Alexander Malysh <amalysh at kannel.org>
    * gwlib/list.[ch]: added new function gwlist_timed_consume that works
      as gwlist_consume except that we are able to specify timeout.
