@@ -217,9 +217,8 @@ void gwlist_insert(List *list, long pos, void *item)
 
     make_bigger(list, 1);
     for (i = list->len; i > pos; --i)
-        list->tab[(list->start + i) % list->tab_size] =
-            list->tab[(list->start + i - 1) % list->tab_size];
-    list->tab[(list->start + pos) % list->tab_size] = item;
+        list->tab[INDEX(list, i)] = GET(list, i - 1);
+    list->tab[INDEX(list, pos)] = item;
     ++list->len;
     pthread_cond_signal(&list->nonempty);
     unlock(list);

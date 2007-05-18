@@ -1,3 +1,6 @@
+2007-05-18 Alexander Malysh <amalysh at kannel.org>
+   * gwlib/list.c: use macro instead of direct access.
+
 2007-05-18  Stipe Tolj  <stolj at kannel.org>
    * gwlib/charset.c: imunize charset_[gsm|utf8]_to_[utf8|gsm]() functions 
      for NULL argument. Currently these would panic due to octstr_append() 
