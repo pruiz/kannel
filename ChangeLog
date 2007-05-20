@@ -1,3 +1,8 @@
+2007-05-20  Stipe Tolj  <stolj at kannel.org>
+   * gw/smsc/smsc_at.c: fix a possible segfault while read()ing on the device
+     file descriptor. Thanks to Ben Suffolk <ben@vanilla.net> for the patch.
+     [Msg-Id: <C7D0A46D-FD3B-4C28-8E25-22BF3EA38DAE@vanilla.net>]
+   
 2007-05-18 Alexander Malysh <amalysh at kannel.org>
    * gwlib/list.c: use macro instead of direct access.
 

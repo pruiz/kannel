@@ -226,8 +226,13 @@ static void at2_read_buffer(PrivAT2data *privdata)
         return;
 
     s = read(privdata->fd, buf, count);
-    if (s > 0)
+    if (s < 0) {
+        error(errno, "AT2[%s]: at2_read_buffer: Error during read", 
+              octstr_get_cstr(privdata->name));
+        at2_close_device(privdata);
+    } else {
         octstr_append_data(privdata->ilb, buf, s);
+    }
 }
 
 
@@ -633,7 +638,7 @@ static int at2_wait_modem_command(PrivAT2data *privdata, time_t timeout, int gt_
     privdata->lines = octstr_create("");
     
     smsc_number = octstr_create("");
-    while (time(&cur_time) <= end_time) {
+    while (privdata->fd != -1 && time(&cur_time) <= end_time) {
         O_DESTROY(line);
         if ((line = at2_read_line(privdata, gt_flag))) {
             octstr_append(privdata->lines, line);
@@ -1183,6 +1188,12 @@ reconnect:
             idle_timeout = time(NULL);
         } else
             at2_wait_modem_command(privdata, 1, 0, NULL);
+
+        /* read error, so re-connect */
+        if (privdata->fd == -1) {
+            reconnecting = 1;
+            goto reconnect;
+        }
 
         while (gwlist_len(privdata->pending_incoming_messages) > 0) {
             at2_read_pending_incoming_messages(privdata);
