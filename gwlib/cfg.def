@@ -123,6 +123,8 @@ SINGLE_GROUP(core,
     OCTSTR(sms-outgoing-queue-limit)
     OCTSTR(sms-resend-freq)
     OCTSTR(sms-resend-retry)
+    OCTSTR(sms-combine-concatenated-mo)
+    OCTSTR(sms-combine-concatenated-mo-timeout)
 )
 
 

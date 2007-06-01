@@ -274,6 +274,10 @@ static Octstr *extract_msgdata_part_by_coding(Msg *msg, Octstr *split_chars,
         return extract_msgdata_part(msg->sms.msgdata, split_chars, max_part_len);
     }
 
+    /* convert to and the from gsm, so we drop all non GSM chars */
+    charset_utf8_to_gsm(msg->sms.msgdata);
+    charset_gsm_to_utf8(msg->sms.msgdata);
+
     /* 
      * else we need to do something special. I'll just get charset_gsm_truncate to
      * cut the string to the required length and then count real characters. 

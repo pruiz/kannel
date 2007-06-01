@@ -1534,6 +1534,22 @@ admin-password = f00bar
         </entry>   
      </row>
 
+     <row><entry><literal>sms-combine-concatenated-mo</literal></entry>
+        <entry>boolean</entry>
+        <entry valign="bottom">
+        Whether Kannel should attempt to combine concatenated MO SMS
+        prior to passing them over to smsbox. Default is true
+        </entry>   
+     </row>
+
+     <row><entry><literal>sms-combine-concatenated-mo-timeout</literal></entry>
+        <entry>seconds</entry>
+        <entry valign="bottom">
+        How long to wait for all concatenated message parts to arrive before timeouting.
+        Default 1800 seconds.
+        </entry>   
+     </row>
+
   </tbody>
   </tgroup>
  </table>
