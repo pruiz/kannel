@@ -866,7 +866,7 @@ static SMPP_PDU *msg_to_pdu(SMPP *smpp, Msg *msg)
      * only re-encoding if using default smsc charset that is defined via
      * alt-charset in smsc group and if MT is not binary
      */
-    if (msg->sms.coding == DC_7BIT || (msg->sms.coding == DC_UNDEF && octstr_len(msg->sms.udhdata))) {
+    if (msg->sms.coding == DC_7BIT || (msg->sms.coding == DC_UNDEF && octstr_len(msg->sms.udhdata) == 0)) {
         /* 
          * consider 3 cases: 
          *  a) data_coding 0xFX: encoding should always be GSM 03.38 charset 
@@ -875,17 +875,11 @@ static SMPP_PDU *msg_to_pdu(SMPP *smpp, Msg *msg)
          */
         if ((pdu->u.submit_sm.data_coding & 0xF0) ||
             (pdu->u.submit_sm.data_coding == 0 && !smpp->alt_charset)) {
-            if (msg->sms.charset != NULL &&
-                octstr_case_compare(msg->sms.charset, octstr_imm("GSM-03.38")) != 0)
-                charset_utf8_to_gsm(pdu->u.submit_sm.short_message);
-        }
-        else if (pdu->u.submit_sm.data_coding == 0 && smpp->alt_charset) {
+            charset_utf8_to_gsm(pdu->u.submit_sm.short_message);
+        } else if (pdu->u.submit_sm.data_coding == 0 && smpp->alt_charset) {
             /*
              * convert to the given alternative charset
              */
-            if (msg->sms.charset != NULL && 
-                octstr_case_compare(msg->sms.charset, octstr_imm("GSM-03.38")) == 0)
-                charset_gsm_to_utf8(pdu->u.submit_sm.short_message);
             if (charset_convert(pdu->u.submit_sm.short_message, SMPP_DEFAULT_CHARSET,
                                 octstr_get_cstr(smpp->alt_charset)) != 0)
                 error(0, "Failed to convert msgdata from charset <%s> to <%s>, will send as is.",

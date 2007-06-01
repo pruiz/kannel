@@ -1,3 +1,7 @@
+2007-06-01 Alexander Malysh <amalysh at kannel.org>
+   * gw/smsc/smsc_smpp.c: removed GSM-03.38 kludge because it's not
+     necessary anymore.
+
 2007-05-20  Stipe Tolj  <stolj at kannel.org>
    * gw/smsc/smsc_at.c: fix a possible segfault while read()ing on the device
      file descriptor. Thanks to Ben Suffolk <ben@vanilla.net> for the patch.
