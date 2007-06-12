@@ -1,3 +1,6 @@
+2007-06-12 Alexander Malysh <amalysh at kannel.org>
+   * gwlib/list.c: fixed gwlist_timed_consume.
+
 2007-06-01 Alexander Malysh <amalysh at kannel.org>
    * doc/userguide/userguide.xml, gw/bb_smscconn.c, gw/sms.c,
      gwlib/cfg.def: applied MO concatenation patch. This patch was

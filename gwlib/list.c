@@ -90,6 +90,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <errno.h>
 
 #include "gwassert.h"
 #include "list.h"
@@ -433,16 +434,20 @@ void *gwlist_consume(List *list)
 void *gwlist_timed_consume(List *list, long sec)
 {
     void *item;
+    struct timespec abstime;
+    int rc;
+
+    abstime.tv_sec = time(NULL) + sec;
+    abstime.tv_nsec = 0;
 
     lock(list);
     while (list->len == 0 && list->num_producers > 0) {
-        struct timespec abstime;
-        abstime.tv_sec = time(NULL) + sec;
-        abstime.tv_nsec = 0;
         list->single_operation_lock->owner = -1;
-        pthread_cond_timedwait(&list->nonempty,
+        rc = pthread_cond_timedwait(&list->nonempty,
                           &list->single_operation_lock->mutex, &abstime);
         list->single_operation_lock->owner = gwthread_self();
+        if (rc == ETIMEDOUT)
+            break;
     }
     if (list->len > 0) {
         item = GET(list, 0);
