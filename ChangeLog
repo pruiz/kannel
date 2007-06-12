@@ -1,4 +1,8 @@
 2007-06-12 Alexander Malysh <amalysh at kannel.org>
+   * gw/bb_smscconn.c: fixed segfault and simplified handling of timeouted
+     concatenated MOs.
+
+2007-06-12 Alexander Malysh <amalysh at kannel.org>
    * gwlib/list.c: fixed gwlist_timed_consume.
 
 2007-06-01 Alexander Malysh <amalysh at kannel.org>

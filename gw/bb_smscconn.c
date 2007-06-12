@@ -420,7 +420,7 @@ long bb_smscconn_receive(SMSCConn *conn, Msg *sms)
          * and replace copy as such.
          */
         if (handle_concatenated_mo && copy->sms.sms_type == mo) {
-            ret = check_concatenation(&copy, conn->id);
+            ret = check_concatenation(&copy, (conn ? conn->id : NULL));
             switch(ret) {
             case concat_pending:
                 counter_increase(incoming_sms_counter); /* ?? */
@@ -1208,7 +1208,6 @@ typedef struct ConcatMsg {
 
 static Dict *incoming_concat_msgs;
 static Mutex *concat_lock;
-static Msg *timeouted_message;
 
 static void destroy_concatMsg(void *x)
 {
@@ -1282,9 +1281,6 @@ static void clear_old_concat_parts(void)
             if (x->parts[i] == NULL)
                 continue;
             msg = msg_duplicate(x->parts[i]);
-            mutex_lock(concat_lock);
-            timeouted_message = msg;
-            mutex_unlock(concat_lock);
             store_save_ack(x->parts[i], ack_success);
             switch(bb_smscconn_receive(NULL, msg)) {
             case SMSCCONN_FAILED_REJECTED:
@@ -1301,9 +1297,6 @@ static void clear_old_concat_parts(void)
                 destroy = 0;
                 break;
             }
-            mutex_lock(concat_lock);
-            timeouted_message = NULL;
-            mutex_unlock(concat_lock);
         }
         if (destroy) {
             destroy_concatMsg(x);
@@ -1353,17 +1346,9 @@ static int check_concatenation(Msg **pmsg, Octstr *smscid)
     ConcatMsg *cmsg;
     int ret = concat_complete;
 
-    /* ... module not initialised or there is no UDH. */
-    if (incoming_concat_msgs == NULL || (l = octstr_len(udh)) == 0)
+    /* ... module not initialised or there is no UDH or smscid is NULL. */
+    if (incoming_concat_msgs == NULL || (l = octstr_len(udh)) == 0 || smscid == NULL)
         return concat_none;
-
-    /* check if this is timeouted message */
-    mutex_lock(concat_lock);
-    if (timeouted_message == msg) {
-        mutex_unlock(concat_lock);
-        return concat_none;
-    }
-    mutex_unlock(concat_lock);
 
     for (pos = 1, c = -1; pos < l - 1; pos += iel + 2) {
         iel = octstr_get_char(udh, pos + 1);
