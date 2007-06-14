@@ -78,7 +78,7 @@
 #define DLR_IS_ENABLED(dlr)          (DLR_IS_DEFINED(dlr) && (dlr & (DLR_SUCCESS | DLR_FAIL | DLR_BUFFERED | DLR_SMSC_SUCCESS | DLR_SMSC_FAIL)))
 #define DLR_IS_ENABLED_DEVICE(dlr)   (DLR_IS_DEFINED(dlr) && (dlr & (DLR_SUCCESS | DLR_FAIL | DLR_BUFFERED)))
 #define DLR_IS_ENABLED_SMSC(dlr)     (DLR_IS_DEFINED(dlr) && (dlr & (DLR_SMSC_SUCCESS | DLR_SMSC_FAIL)))
-#define DLR_IS_NOT_FINAL(dlr)        (DLR_IS_DEFINED(dlr) && (dlr & (DLR_BUFFERED | DLR_SMSC_SUCCESS | DLR_SMSC_FAIL)))
+#define DLR_IS_NOT_FINAL(dlr)        (DLR_IS_DEFINED(dlr) && (dlr & (DLR_BUFFERED | DLR_SMSC_SUCCESS)))
 #define DLR_IS_SUCCESS_OR_FAIL(dlr)  (DLR_IS_DEFINED(dlr) && (dlr & (DLR_SUCCESS | DLR_FAIL)))
 #define DLR_IS_SUCCESS(dlr)          (DLR_IS_DEFINED(dlr) && (dlr & DLR_SUCCESS))
 #define DLR_IS_FAIL(dlr)             (DLR_IS_DEFINED(dlr) && (dlr & DLR_FAIL))

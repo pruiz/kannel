@@ -1,3 +1,7 @@
+2007-06-14  Stipe Tolj  <stolj at kannel.org>
+   * gw/dlr.h: fix bitmask for DLR_IS_NOT_FINAL macro, since DLR_SMSC_FAIL is
+     a final state, we need to ommit it here to be semantically correct.
+
 2007-06-12 Alexander Malysh <amalysh at kannel.org>
    * gw/bb_smscconn.c: fixed segfault and simplified handling of timeouted
      concatenated MOs.
