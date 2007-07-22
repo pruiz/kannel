@@ -144,6 +144,7 @@ static int at2_open_device(PrivAT2data *privdata)
     tios.c_iflag &= ~INPCK; /* INPCK: disable parity check */
     tios.c_cflag |= HUPCL; /* hangup on close */
     tios.c_cflag |= CREAD; /* enable receiver */
+    tios.c_cflag |= CLOCAL; /* Ignore modem control lines */
     tios.c_cflag &= ~CSIZE; /* set to 8 bit */
     tios.c_cflag |= CS8;
     tios.c_oflag &= ~ONLCR; /* no NL to CR-NL mapping outgoing */

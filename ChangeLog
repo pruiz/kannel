@@ -1,4 +1,8 @@
 2007-07-22 Alexander Malysh <amalysh at kannel.org>
+   * gw/smsc/smsc_at.c: added CLOCAL to c_cflag. This fixed #404.
+     Thanks to sobomax for reporting and patch.
+
+2007-07-22 Alexander Malysh <amalysh at kannel.org>
    * gw/smsc/smsc_at.c: set reconnecting = 1 if we have issues opening
      device. So we will sleep reconnect time instead of hammering on
      maybe not existing device. This should fix #412.
