@@ -271,7 +271,7 @@ static Octstr *mime_entity_to_octstr_real(MIMEEntity *m, unsigned int level)
 
     /* add the last boundary statement, but hive an EOL 
      * if we are on the top of the recursion stack. */
-    /* if (level > 0) */
+    if (level > 0) 
         octstr_append(mime, octstr_imm("\r\n"));
     octstr_append(mime, octstr_imm("\r\n--"));
     octstr_append(mime, boundary);

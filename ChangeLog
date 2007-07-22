@@ -1,3 +1,8 @@
+2007-07-22 Alexander Malysh <amalysh at kannel.org>
+   * gwlib/mime.c: don't add an extra CRLF to the end of a message part.
+     Thanks to Paul Bagyenda <bagyenda at dsmagic.com>.
+     [Msg-Id: <F83BC280-AF9A-4347-A255-6FF1A314C525@dsmagic.com>]
+
 2007-06-14  Stipe Tolj  <stolj at kannel.org>
    * gw/dlr.h: fix bitmask for DLR_IS_NOT_FINAL macro, since DLR_SMSC_FAIL is
      a final state, we need to ommit it here to be semantically correct.
