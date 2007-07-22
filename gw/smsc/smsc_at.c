@@ -1136,16 +1136,19 @@ reconnect:
         }
 
         if (privdata->speed == 0 && at2_detect_speed(privdata) == -1) {
+            reconnecting = 1;
             continue;
         }
 
         if (privdata->modem == NULL && at2_detect_modem_type(privdata) == -1) {
+            reconnecting = 1;
             continue;
         }
 
         if (at2_open_device(privdata)) {
-            error(errno, "AT2[%s]: at2_device_thread: open_at2_device failed. Terminating", 
+            error(errno, "AT2[%s]: at2_device_thread: open_at2_device failed.", 
                   octstr_get_cstr(privdata->name));
+            reconnecting = 1;
             continue;
         }
 
@@ -1156,6 +1159,7 @@ reconnect:
                  octstr_get_cstr(privdata->modem->reset_string), 0, 0) != 0) {
                 error(0, "AT2[%s]: Reset of modem failed.", octstr_get_cstr(privdata->name));
                 at2_close_device(privdata);
+                reconnecting = 1;
                 continue;
             } else {
                 info(0, "AT2[%s]: Modem reseted.", octstr_get_cstr(privdata->name));
@@ -1163,9 +1167,10 @@ reconnect:
         }
 
         if (at2_init_device(privdata) != 0) {
-            error(0, "AT2[%s]: Opening failed. Terminating", octstr_get_cstr(privdata->name));
+            error(0, "AT2[%s]: Initialization of device failed.", octstr_get_cstr(privdata->name));
             at2_close_device(privdata);
             error_count++;
+            reconnecting = 1;
             continue;
         } else
             error_count = 0;
