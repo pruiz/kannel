@@ -1,3 +1,8 @@
+2007-08-03 Alexander Malysh <amalysh at kannel.org>
+   * doc/userguide/userguide.xml, gw/smsbox.c: fixed userguide for XML post.
+     Also fixed XML Post parsing of smsc-id to match userguide. It's possible
+     that this will break existing applications.
+
 2007-07-22 Alexander Malysh <amalysh at kannel.org>
    * gw/ota_compiler.c: added new WLAN-related tokens in order to get new
      Nokia WiFi/VoIP OTA provisioning working. See OMA-DM-CP-2005-001R02-CR_CP-WLAN-.doc.

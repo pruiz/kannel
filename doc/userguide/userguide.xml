@@ -6433,7 +6433,7 @@ text = "No action specified"
       &#60;dlr-url&#62;dlr-url&#60;/dlr-url&#62;
     &#60;/statusrequest&#62;
 
-    &#60;!-- request from Kannel to application --&#62;
+    &#60;!-- request from application to Kannel --&#62;
     &#60;from&#62;
       &#60;user&#62;username&#60;/user&#62;
       &#60;username&#62;username&#60;/username&#62; 
@@ -6443,7 +6443,7 @@ text = "No action specified"
     &#60;/from&#62;
     &#60;to&#62;smsc-id&#60;/to&#62;
 
-    &#60;!-- request from application to Kannel --&#62;
+    &#60;!-- request from Kannel to application --&#62;
     &#60;from&#62;smsc-id&#60;/from&#62;
     &#60;to&#62;service-name&#60;/to&#62;
 

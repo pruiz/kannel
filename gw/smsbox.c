@@ -727,8 +727,9 @@ static void get_x_kannel_from_xml(int requesttype , Octstr **type, Octstr **body
     /* smsc */
     get_tag(*body, octstr_imm("to"), &tmp, 0, 0);
     if(tmp) {
-	get_tag(tmp, octstr_imm("account"), smsc, 0, 0);
-	O_DESTROY(tmp);
+        O_DESTROY(*smsc);
+        *smsc = tmp;
+        tmp = NULL;
     }
 
     /* pid */
