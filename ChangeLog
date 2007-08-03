@@ -1,4 +1,8 @@
 2007-08-03 Alexander Malysh <amalysh at kannel.org>
+   * gw/smsc/smpp_pdu.c: whitespaces fixes and various PDU parsing fixes and
+     enhancements. This should not break anything.
+
+2007-08-03 Alexander Malysh <amalysh at kannel.org>
    * doc/userguide/userguide.xml, gw/smsbox.c: fixed userguide for XML post.
      Also fixed XML Post parsing of smsc-id to match userguide. It's possible
      that this will break existing applications.

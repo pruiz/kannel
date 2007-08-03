@@ -68,7 +68,7 @@
 
 #define MIN_SMPP_PDU_LEN    (4*4)
 /* old value was (1024). We need more because message_payload can be up to 64K octets*/
-#define MAX_SMPP_PDU_LEN    (7424) 
+#define MAX_SMPP_PDU_LEN    (7424)
 
 
 static long decode_integer(Octstr *os, long pos, int octets)
@@ -96,23 +96,24 @@ static void append_encoded_integer(Octstr *os, unsigned long u, long octets)
 }
 
 
-static Octstr *copy_until_nul(Octstr *os, long *pos, long max_octets)
+static int copy_until_nul(const char *field_name, Octstr *os, long *pos, long max_octets, Octstr **data)
 {
     long nul;
-    Octstr *data;
+
+    *data = NULL;
 
     nul = octstr_search_char(os, '\0', *pos);
     if (nul == -1) {
-	warning(0, "SMPP: PDU NULL terminated string has no NULL.");
-    	return NULL;
+        warning(0, "SMPP: PDU NULL terminated string (%s) has no NULL.", field_name);
+        return -1;
     }
     if (*pos + max_octets < nul) {
-	error(0, "SMPP: PDU NULL terminated string longer than allowed.");
-    	return NULL;
+        error(0, "SMPP: PDU NULL terminated string (%s) longer than allowed.", field_name);
+        return -1;
     }
-    data = (nul - *pos > 0) ? octstr_copy(os, *pos, nul - *pos) : NULL;
+    *data = (nul - *pos > 0) ? octstr_copy(os, *pos, nul - *pos) : NULL;
     *pos = nul + 1;
-    return data;
+    return 0;
 }
 
 
@@ -129,23 +130,22 @@ SMPP_PDU *smpp_pdu_create(unsigned long type, unsigned long seq_no)
     #define TLV_NULTERMINATED(name, max_len) p->name = NULL;
     #define TLV_OCTETS(name, min_len, max_len) p->name = NULL;
     #define OPTIONAL_END
-    #define INTEGER(name, octets) \
-   	if (strcmp(#name, "command_id") == 0) p->name = type; \
-    	else if (strcmp(#name, "sequence_number") == 0) p->name = seq_no; \
-    	else p->name = 0;
+    #define INTEGER(name, octets) p->name = 0;
     #define NULTERMINATED(name, max_octets) p->name = NULL;
     #define OCTETS(name, field_giving_octetst) p->name = NULL;
     #define PDU(name, id, fields) \
-    	case id: { \
-	    struct name *p = &pdu->u.name; \
-	    pdu->type_name = #name; \
-	    fields \
-	} break;
+        case id: { \
+            struct name *p = &pdu->u.name; \
+            pdu->type_name = #name; \
+            fields \
+            p->command_id = type; \
+            p->sequence_number = seq_no; \
+        } break;
     #include "smpp_pdu.def"
     default:
-    	error(0, "Unknown SMPP_PDU type, internal error.");
-    	gw_free(pdu);
-	return NULL;
+        error(0, "Unknown SMPP_PDU type, internal error.");
+        gw_free(pdu);
+        return NULL;
     }
 
     return pdu;
@@ -154,7 +154,7 @@ SMPP_PDU *smpp_pdu_create(unsigned long type, unsigned long seq_no)
 void smpp_pdu_destroy(SMPP_PDU *pdu)
 {
     if (pdu == NULL)
-    	return;
+        return;
 
     switch (pdu->type) {
     #define OPTIONAL_BEGIN
@@ -166,10 +166,10 @@ void smpp_pdu_destroy(SMPP_PDU *pdu)
     #define NULTERMINATED(name, max_octets) octstr_destroy(p->name);
     #define OCTETS(name, field_giving_octets) octstr_destroy(p->name);
     #define PDU(name, id, fields) \
-    	case id: { struct name *p = &pdu->u.name; fields } break;
+        case id: { struct name *p = &pdu->u.name; fields } break;
     #include "smpp_pdu.def"
     default:
-    	error(0, "Unknown SMPP_PDU type, internal error while destroying.");
+        error(0, "Unknown SMPP_PDU type, internal error while destroying.");
     }
     gw_free(pdu);
 }
@@ -232,7 +232,7 @@ Octstr *smpp_pdu_pack(SMPP_PDU *pdu)
         }
     #define OPTIONAL_END
     #define INTEGER(name, octets) \
-    	append_encoded_integer(os, p->name, octets);
+        append_encoded_integer(os, p->name, octets);
     #define NULTERMINATED(name, max_octets) \
         if (p->name != NULL) { \
             if (octstr_len(p->name) >= max_octets) { \
@@ -249,10 +249,10 @@ Octstr *smpp_pdu_pack(SMPP_PDU *pdu)
     #define OCTETS(name, field_giving_octets) \
         if (p->name) octstr_append(os, p->name);
     #define PDU(name, id, fields) \
-    	case id: { struct name *p = &pdu->u.name; fields } break;
+        case id: { struct name *p = &pdu->u.name; fields } break;
     #include "smpp_pdu.def"
     default:
-    	error(0, "Unknown SMPP_PDU type, internal error while packing.");
+        error(0, "Unknown SMPP_PDU type, internal error while packing.");
     }
 
     temp = octstr_create("");
@@ -316,7 +316,7 @@ SMPP_PDU *smpp_pdu_unpack(Octstr *data_without_len)
                         pos += opt_len; \
                         continue; \
                     } \
-                    NULTERMINATED(name, opt_len); \
+                    copy_until_nul(#name, data_without_len, &pos, opt_len, &p->name); \
                 } else
     #define TLV_OCTETS(name, min_len, max_len) \
                 if (SMPP_##name == opt_tag) { \
@@ -341,20 +341,22 @@ SMPP_PDU *smpp_pdu_unpack(Octstr *data_without_len)
                     octstr_destroy(val); \
                 } \
             } \
-        } 
+        }
     #define INTEGER(name, octets) \
-    	p->name = decode_integer(data_without_len, pos, octets); \
-	pos += octets;
+        if ((p->name = decode_integer(data_without_len, pos, octets)) == -1) \
+            goto err; \
+        pos += octets;
     #define NULTERMINATED(name, max_octets) \
-    	p->name = copy_until_nul(data_without_len, &pos, max_octets);
+        /* just warn about errors but not fail */ \
+        copy_until_nul(#name, data_without_len, &pos, max_octets, &p->name);
     #define OCTETS(name, field_giving_octets) \
     	p->name = octstr_copy(data_without_len, pos, \
 	    	    	      p->field_giving_octets); \
         if (p->field_giving_octets != (unsigned long) octstr_len(p->name)) { \
-            error(0, "smpp_pdu: error while unpacking 'short_message', " \
+            error(0, "smpp_pdu: error while unpacking '" #name "', " \
                      "len is %ld but should have been %ld, dropping.", \
                      octstr_len(p->name), p->field_giving_octets); \
-            return NULL; \
+            goto err; \
         } else { \
             pos += p->field_giving_octets; \
         }
@@ -366,6 +368,11 @@ SMPP_PDU *smpp_pdu_unpack(Octstr *data_without_len)
     }
 
     return pdu;
+    
+err:
+    smpp_pdu_destroy(pdu);
+    octstr_dump(data_without_len, 0);
+    return NULL;
 }
 
 
@@ -386,20 +393,20 @@ void smpp_pdu_dump(SMPP_PDU *pdu)
     #define TLV_OCTETS(name, min_len, max_len) \
         if (p->name != NULL) { \
             OCTETS(name, max_len) \
-        }        
+        }
     #define OPTIONAL_END
     #define INTEGER(name, octets) \
-    	debug("sms.smpp", 0, "  %s: %lu = 0x%08lx", #name, p->name, p->name);
+        debug("sms.smpp", 0, "  %s: %lu = 0x%08lx", #name, p->name, p->name);
     #define NULTERMINATED(name, max_octets) \
-	octstr_dump_short(p->name, 2, #name);
+        octstr_dump_short(p->name, 2, #name);
     #define OCTETS(name, field_giving_octets) \
         octstr_dump_short(p->name, 2, #name);
     #define PDU(name, id, fields) \
-    	case id: { struct name *p = &pdu->u.name; fields } break;
+        case id: { struct name *p = &pdu->u.name; fields } break;
     #include "smpp_pdu.def"
     default:
-    	error(0, "Unknown SMPP_PDU type, internal error.");
-	break;
+        error(0, "Unknown SMPP_PDU type, internal error.");
+        break;
     }
     debug("sms.smpp", 0, "SMPP PDU dump ends.");
 }
@@ -408,13 +415,13 @@ void smpp_pdu_dump(SMPP_PDU *pdu)
 long smpp_pdu_read_len(Connection *conn)
 {
     Octstr *os;
-    char buf[4];    /* The length is 4 octets. */
+    unsigned char buf[4];    /* The length is 4 octets. */
     long len;
 
     os = conn_read_fixed(conn, sizeof(buf));
     if (os == NULL)
     	return 0;
-    octstr_get_many_chars(buf, os, 0, sizeof(buf));
+    octstr_get_many_chars((char*) buf, os, 0, sizeof(buf));
     octstr_destroy(os);
     len = decode_network_long(buf);
     if (len < MIN_SMPP_PDU_LEN) {
