@@ -728,6 +728,7 @@ int gwthread_poll(struct pollfd *fds, long numfds, double timeout)
     pollfds = gw_malloc((numfds + 1) * sizeof(*pollfds));
     pollfds[0].fd = threadinfo->wakefd_recv;
     pollfds[0].events = POLLIN;
+    pollfds[0].revents = 0;
     memcpy(pollfds + 1, fds, numfds * sizeof(*pollfds));
 
     milliseconds = timeout * 1000;
