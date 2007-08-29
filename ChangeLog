@@ -1,3 +1,7 @@
+2007-08-29  Stipe Tolj  <stolj at kannel.org>
+   * gwlib/cfg.c: remove empty lines. NLC.
+   * gwlib/http.c: add 'Date' HTTP header to any HTTP response we pass out.
+   
 2007-08-25  Stipe Tolj  <stolj at kannel.org>
    * gwlib/gwthread-pthread.c: fix valgrind conditional jump error report
      in gwthread_pool() for .revents value.

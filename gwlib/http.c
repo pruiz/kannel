@@ -2506,6 +2506,7 @@ void http_send_reply(HTTPClient *client, int status, List *headers,
     	    	     Octstr *body)
 {
     Octstr *response;
+    Octstr *date;
     long i;
     int ret;
 
@@ -2516,7 +2517,12 @@ void http_send_reply(HTTPClient *client, int status, List *headers,
 
     /* identify ourselfs */
     octstr_format_append(response, "Server: " GW_NAME "/%s\r\n", GW_VERSION);
-
+    
+    /* let's inform the client of our time */
+    date = date_format_http(time(NULL));
+    octstr_format_append(response, "Date: %s\r\n", octstr_get_cstr(date));
+    octstr_destroy(date);
+    
     octstr_format_append(response, "Content-Length: %ld\r\n",
 			 octstr_len(body));
 

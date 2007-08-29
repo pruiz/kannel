@@ -239,8 +239,6 @@ void cfg_add_hooks(void *allowed, void *single)
 }
 
 
-
-
 static int add_group(Cfg *cfg, CfgGroup *grp)
 {
     Octstr *groupname;
