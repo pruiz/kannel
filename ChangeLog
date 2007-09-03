@@ -1,3 +1,7 @@
+2007-09-03  Stipe Tolj  <stolj at kannel.org>
+   * gwlbib/cfg.c: fixing memleak reported by valgrind when we use directory
+     inclusions.
+
 2007-08-29  Stipe Tolj  <stolj at kannel.org>
    * gwlib/cfg.c: remove empty lines. NLC.
    * gwlib/http.c: add 'Date' HTTP header to any HTTP response we pass out.

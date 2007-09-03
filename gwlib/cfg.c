@@ -505,12 +505,14 @@ int cfg_read(Cfg *cfg)
                             Octstr *fileitem;
 
                             fileitem = octstr_duplicate(filename);
-                            octstr_append(fileitem, octstr_create("/"));
-                            octstr_append(fileitem, octstr_create(diritem->d_name));
+                            octstr_append_cstr(fileitem, "/");
+                            octstr_append_cstr(fileitem, diritem->d_name);
 
                             lstat(octstr_get_cstr(fileitem), &filestat);
                             if (!S_ISDIR(filestat.st_mode)) {
                                 gwlist_insert(files, 0, fileitem);
+                            } else {
+                            	octstr_destroy(fileitem);
                             }
                         }
                         closedir(dh);
