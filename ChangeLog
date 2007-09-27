@@ -1,3 +1,7 @@
+2007-09-27 Alexander Malysh <amalysh at kannel.org>
+   * gw/dlr.c: changed info to debug for the info that we still waiting for
+     dlr. Thanks to Vincent CHAVANIS for patch.
+
 2007-09-03  Stipe Tolj  <stolj at kannel.org>
    * gwlbib/cfg.c: fixing memleak reported by valgrind when we use directory
      inclusions.

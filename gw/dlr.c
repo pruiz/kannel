@@ -416,7 +416,7 @@ Msg *dlr_find(const Octstr *smsc, const Octstr *ts, const Octstr *dst, int typ)
  
     /* check for end status and if so remove from storage */
     if ((typ & DLR_BUFFERED) && ((dlr->mask & DLR_SUCCESS) || (dlr->mask & DLR_FAIL))) {
-        info(0, "DLR[%s]: DLR not destroyed, still waiting for other delivery report", dlr_type());
+        debug("dlr.dlr", 0, "DLR[%s]: DLR not destroyed, still waiting for other delivery report", dlr_type());
         /* update dlr entry status if function defined */
         if (handles != NULL && handles->dlr_update != NULL)
             handles->dlr_update(smsc, ts, dst, typ);
