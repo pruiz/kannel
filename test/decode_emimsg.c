@@ -133,16 +133,33 @@ int main (int argc, char **argv)
                     octstr_get_cstr(emimsg->fields[E01_ADC]));
             printf("E01_MT   \t%s\n",
                     octstr_get_cstr(emimsg->fields[E01_MT]));
-
             if (octstr_get_char(emimsg->fields[E01_MT], 0) == '3') {
                 charset_gsm_to_latin1(emimsg->fields[E01_AMSG]);
             }
-
             printf("E01_AMSG \t%s\n",
                     octstr_get_cstr(emimsg->fields[E01_AMSG]));
         }
 
-        if (emimsg->ot >= 50 && emimsg->ot <= 59) {
+        if ((emimsg->ot == 31 || (emimsg->ot >= 50 && emimsg->ot <= 59)) &&
+                emimsg->or == 'R' && 
+                (octstr_get_char(emimsg->fields[E50_ADC], 0) == 'A' ||
+                octstr_get_char(emimsg->fields[E50_ADC], 0) == 'N')) {
+            printf("E50_ACK  \t%s\n",
+                    octstr_get_cstr(emimsg->fields[E50_ADC]));
+            printf("E50_SM   \t%s\n",  
+                    octstr_get_cstr(emimsg->fields[E50_OADC]));
+        }
+
+        if (emimsg->ot == 31 && emimsg->or == 'O') {
+            printf("E50_ADC  \t%s\n",
+                    octstr_get_cstr(emimsg->fields[E50_ADC]));
+            printf("E50_PID  \t%s\n",
+                    octstr_get_cstr(emimsg->fields[E50_OADC]));
+        }
+
+        if (emimsg->ot >= 50 && emimsg->ot <= 59 && 
+                octstr_get_char(emimsg->fields[E50_ADC], 0) != 'A' &&
+                octstr_get_char(emimsg->fields[E50_ADC], 0) != 'N') {
             printf("E50_ADC  \t%s\n",
                     octstr_get_cstr(emimsg->fields[E50_ADC]));
             printf("E50_OADC \t%s\n",
@@ -185,9 +202,8 @@ int main (int argc, char **argv)
                     octstr_get_cstr(emimsg->fields[E50_NB]));
             printf("E50_NMSG \t%s\n",
                     octstr_get_cstr(emimsg->fields[E50_NMSG]));
-
+            if (emimsg->fields[E50_AMSG])
             octstr_hex_to_binary (emimsg->fields[E50_AMSG]);
-
             if (octstr_get_char(emimsg->fields[E50_MT], 0) == '3') {
                 charset_gsm_to_latin1(emimsg->fields[E50_AMSG]);
             }
@@ -221,6 +237,7 @@ int main (int argc, char **argv)
             printf("E50_RES5 \t%s\n",
                     octstr_get_cstr(emimsg->fields[E50_RES5]));
         }
+
         if (emimsg->ot == 60 || emimsg->ot == 61 || emimsg->ot == 62) {
             printf("E60_OADC  \t%s\n",
                     octstr_get_cstr(emimsg->fields[E60_OADC]));
@@ -230,6 +247,7 @@ int main (int argc, char **argv)
                     octstr_get_cstr(emimsg->fields[E60_ONPI]));
             printf("E60_STYP  \t%s\n",
                     octstr_get_cstr(emimsg->fields[E60_STYP]));
+            if (emimsg->fields[E60_PWD])
             octstr_hex_to_binary (emimsg->fields[E60_PWD]);
             printf("E60_PWD   \t%s\n",
                     octstr_get_cstr(emimsg->fields[E60_PWD]));

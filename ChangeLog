@@ -1,3 +1,13 @@
+2007-10-01 Alexander Malysh <amalysh at kannel.org>
+   * test/decode_emimsg.c: new version
+     - Fixes a segfault when we are decoding 52 operation response (eg 
+       ./decode_emimsg 03/00020/R/52/A///98)
+     - Operation 31 Ack/Nack is now supported
+     - Operation 5x Ack/Nack is now supported
+     - Fixes segfault when decoding 52 when xMSG is NULL
+     Thanks to Vincent CHAVANIS <vincent at telemaque.fr> for the patch.
+     [Msg-Id: <0d3f01c801bd$07a8f860$9600a8c0@vince>
+
 2007-09-27 Alexander Malysh <amalysh at kannel.org>
    * gw/dlr.c: changed info to debug for the info that we still waiting for
      dlr. Thanks to Vincent CHAVANIS for patch.
