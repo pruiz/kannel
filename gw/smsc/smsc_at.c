@@ -339,7 +339,7 @@ static int at2_write_line(PrivAT2data *privdata, char *line)
         errno = 0;
         s = write(privdata->fd, octstr_get_cstr(linestr) + data_written, 
                   count - data_written);
-        if (s < 0 && errno == EAGAIN && write_count < RETRY_SEND) {
+        if (s < 0 && errno == EAGAIN && write_count < RETRY_WRITE) {
             gwthread_sleep(1);
             ++write_count;
         } else if (s > 0) {
@@ -372,7 +372,7 @@ static int at2_write_ctrlz(PrivAT2data *privdata)
     while (1) {
         errno = 0;
         s = write(privdata->fd, ctrlz, 1);
-        if (s < 0 && errno == EAGAIN && write_count < RETRY_SEND) {
+        if (s < 0 && errno == EAGAIN && write_count < RETRY_WRITE) {
             gwthread_sleep(1);
             ++write_count;
         } else
@@ -401,7 +401,7 @@ static int at2_write(PrivAT2data *privdata, char *line)
     count = strlen(line);
     while(count > data_written) {
         s = write(privdata->fd, line + data_written, count - data_written);
-        if (s < 0 && errno == EAGAIN && write_count < RETRY_SEND) {
+        if (s < 0 && errno == EAGAIN && write_count < RETRY_WRITE) {
             gwthread_sleep(1);
             ++write_count;
         } else if (s > 0) {
@@ -1188,12 +1188,7 @@ reconnect:
 
     idle_timeout = 0;
     while (!privdata->shutdown) {
-        l = gw_prioqueue_len(privdata->outgoing_queue);
-        if (l > 0) {
-            at2_send_messages(privdata);
-            idle_timeout = time(NULL);
-        } else
-            at2_wait_modem_command(privdata, 1, 0, NULL);
+				at2_wait_modem_command(privdata, 1, 0, NULL);
 
         /* read error, so re-connect */
         if (privdata->fd == -1) {
@@ -1224,6 +1219,11 @@ reconnect:
                 goto reconnect;
             }
             memory_poll_timeout = time(NULL);
+        }
+
+        if (gw_prioqueue_len(privdata->outgoing_queue) > 0) {
+            at2_send_messages(privdata);
+            idle_timeout = time(NULL);
         }
     }
     at2_close_device(privdata);
@@ -1991,14 +1991,12 @@ static void at2_send_messages(PrivAT2data *privdata)
 {
     Msg *msg;
 
-    do {
-        if (privdata->modem->enable_mms && 
-            gw_prioqueue_len(privdata->outgoing_queue) > 1)
+		if (privdata->modem->enable_mms && 
+				gw_prioqueue_len(privdata->outgoing_queue) > 1)
             at2_send_modem_command(privdata, "AT+CMMS=2", 0, 0);
 
-        if ((msg = gw_prioqueue_remove(privdata->outgoing_queue)))
-            at2_send_one_message(privdata, msg);
-    } while (msg);
+		if ((msg = gw_prioqueue_remove(privdata->outgoing_queue)))
+				at2_send_one_message(privdata, msg);
 }
 
 
@@ -2007,7 +2005,6 @@ static void at2_send_one_message(PrivAT2data *privdata, Msg *msg)
     unsigned char command[500];
     int ret = -1;
     char sc[3];
-    int retries = RETRY_SEND;
 
     if (octstr_len(privdata->my_number)) {
         octstr_destroy(msg->sms.sender);
@@ -2031,24 +2028,20 @@ static void at2_send_one_message(PrivAT2data *privdata, Msg *msg)
         if ((pdu = at2_pdu_encode(msg, privdata)) == NULL) {
             error(2, "AT2[%s]: Error encoding PDU!",octstr_get_cstr(privdata->name));
             return;
-        }	
+        }
 
-        ret = -99;
-        retries = RETRY_SEND;
-        while ((ret != 0) && (retries-- > 0)) {
-            int msg_id = -1;
-            /* 
-             * send the initial command and then wait for > 
-             */
-            sprintf(command, "AT+CMGS=%ld", octstr_len(pdu) / 2);
-            
-            ret = at2_send_modem_command(privdata, command, 5, 1);
-            debug("bb.smsc.at2", 0, "AT2[%s]: send command status: %d",
-                  octstr_get_cstr(privdata->name), ret);
+        int msg_id = -1;
+        /* 
+         * send the initial command and then wait for > 
+         */
+        sprintf(command, "AT+CMGS=%ld", octstr_len(pdu) / 2);
 
-            if (ret != 1) /* > only! */
-                continue;
-                
+        ret = at2_send_modem_command(privdata, command, 5, 1);
+        debug("bb.smsc.at2", 0, "AT2[%s]: send command status: %d",
+                octstr_get_cstr(privdata->name), ret);
+
+        if (ret == 1) {/* > only! */
+
             /* 
              * Ok the > has been see now so we can send the PDU now and a 
              * control Z but no CR or LF 
@@ -2060,17 +2053,17 @@ static void at2_send_one_message(PrivAT2data *privdata, Msg *msg)
              * All other types will get handled as used to be.
              */
 
-            if (octstr_compare(privdata->modem->id, octstr_imm("nokiaphone")) != 0) {           
-            
+            if (octstr_compare(privdata->modem->id, octstr_imm("nokiaphone")) != 0) { 
+
                 sprintf(command, "%s%s", sc, octstr_get_cstr(pdu));
                 at2_write(privdata, command);
                 at2_write_ctrlz(privdata);
-            
+
             } else {
-            
+
                 /* include the CTRL-Z in the PDU string */
                 sprintf(command, "%s%s%c", sc, octstr_get_cstr(pdu), 0x1A);
-       
+
                 /* chop PDU into 18-byte-at-a-time pieces to prevent choking 
                  * of certain GSM Phones (e.g. Nokia 6310, 6230 etc.) */
                 if (strlen(command) > 18) {
@@ -2092,42 +2085,34 @@ static void at2_send_one_message(PrivAT2data *privdata, Msg *msg)
                     at2_write(privdata, command);
                 }
             }               
-                
+
             /* wait 20 secs for modem command */
             ret = at2_wait_modem_command(privdata, 20, 0, &msg_id);
             debug("bb.smsc.at2", 0, "AT2[%s]: send command status: %d",
                   octstr_get_cstr(privdata->name), ret);
 
-            if (ret != 0) /* OK only */
-                continue;
+            if (ret != 0) {
+                bb_smscconn_send_failed(privdata->conn, msg,
+                        SMSCCONN_FAILED_TEMPORARILY, octstr_create("ERROR"));
+            }else{
+                /* store DLR message if needed for SMSC generated delivery reports */
+                if (DLR_IS_ENABLED_DEVICE(msg->sms.dlr_mask)) {
+                    if (msg_id == -1)
+                        error(0,"AT2[%s]: delivery notification requested, but I have no message ID!",
+                                octstr_get_cstr(privdata->name));
+                    else {
+                        Octstr *dlrmsgid = octstr_format("%d", msg_id);
 
-            /* store DLR message if needed for SMSC generated delivery reports */
-            if (DLR_IS_ENABLED_DEVICE(msg->sms.dlr_mask)) {
-                if (msg_id == -1)
-                    error(0,"AT2[%s]: delivery notification requested, but I have no message ID!",
-                          octstr_get_cstr(privdata->name));
-                else {
-                    Octstr *dlrmsgid = octstr_format("%d", msg_id);
+                        dlr_add(privdata->conn->id, dlrmsgid, msg);
 
-                    dlr_add(privdata->conn->id, dlrmsgid, msg);
+                        O_DESTROY(dlrmsgid);
 
-                    O_DESTROY(dlrmsgid);
+                    }
                 }
+
+                bb_smscconn_sent(privdata->conn, msg, NULL);
             }
-
-            bb_smscconn_sent(privdata->conn, msg, NULL);
         }
-
-        if (ret != 0) {
-            /*
-             * no need to do counter_increase(privdata->conn->failed) here,
-             * since bb_smscconn_send_failed() will inc the counter on
-             * SMSCCONN_FAILED_MALFORMED
-             */
-            bb_smscconn_send_failed(privdata->conn, msg,
-	        SMSCCONN_FAILED_MALFORMED, octstr_create("MALFORMED"));
-        }
-
         O_DESTROY(pdu);
     }
 }

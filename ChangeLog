@@ -1,4 +1,15 @@
 2007-10-01 Alexander Malysh <amalysh at kannel.org>
+   * gw/smsc/smsc_at.[ch]: applied patch that has the main goal to follow a
+     simple rule: "If the modem reports an error during SMS sending, don't
+     retry the sending, but ask it what it's got to say". This patch should
+     fix errors like this:
+     CMS ERROR: Unknown error. -> maybe Sim storage is full? I'll have a look
+     at it. (500)
+     Thanks to Andrija Petrovic <andrija.petrovic at software888.com> for this
+     patch.
+     [Msg-Id: <47010443.7000104@software888.com>
+
+2007-10-01 Alexander Malysh <amalysh at kannel.org>
    * test/decode_emimsg.c: new version
      - Fixes a segfault when we are decoding 52 operation response (eg 
        ./decode_emimsg 03/00020/R/52/A///98)

@@ -82,8 +82,8 @@
 #define PNT_INTER       1
 #define PNT_NATIONAL    2
 
-/* The number of times to attempt to send a message should sending fail */
-#define RETRY_SEND 3
+/* The number of times to attempt to write a line should writing fail */
+#define RETRY_WRITE 3
 
 /* 
  * defines for use with the so-called "SIM buffering techinique":
