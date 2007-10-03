@@ -1099,7 +1099,7 @@ static void at2_device_thread(void *arg)
 {
     SMSCConn *conn = arg;
     PrivAT2data	*privdata = conn->data;
-    int l, reconnecting = 0, error_count = 0;
+    int reconnecting = 0, error_count = 0;
     long idle_timeout, memory_poll_timeout = 0;
 
     conn->status = SMSCCONN_CONNECTING;
