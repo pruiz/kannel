@@ -1119,6 +1119,7 @@ reconnect:
             error(0, "AT2[%s]: Couldn't connect (retrying in %ld seconds).",
                      octstr_get_cstr(privdata->name), conn->reconnect_delay);
             gwthread_sleep(conn->reconnect_delay);
+            reconnecting = 0;
         }
 
         /* If modems->speed is defined, try to use it, else autodetect */

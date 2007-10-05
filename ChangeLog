@@ -1,4 +1,7 @@
 2007-10-05 Alexander Malysh <amalysh at kannel.org>
+   * gw/smsc/smsc_at.c: reset reconnecting.
+
+2007-10-05 Alexander Malysh <amalysh at kannel.org>
    * gw/smsc/smsc_at.c: fixed memleak.
 
 2007-10-03  Stipe Tolj  <stolj at kannel.org>
