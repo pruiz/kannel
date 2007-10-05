@@ -2434,6 +2434,9 @@ static int at2_detect_modem_type(PrivAT2data *privdata)
                     break;
                 }
             }
+        } else {
+            /* Destroy modem */
+            at2_destroy_modem(modem);
         }
     }
 
