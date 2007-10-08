@@ -709,6 +709,8 @@ static int at2_wait_modem_command(PrivAT2data *privdata, time_t timeout, int gt_
                             ++(*output);
                         msg = at2_pdu_decode(pdu, privdata);
                         if (msg != NULL) {
+                            octstr_destroy(msg->sms.smsc_id);
+                            octstr_destroy(msg->sms.smsc_number);
                             msg->sms.smsc_id = octstr_duplicate(privdata->conn->id);
                             msg->sms.smsc_number = octstr_duplicate(smsc_number);
                             bb_smscconn_receive(privdata->conn, msg);
