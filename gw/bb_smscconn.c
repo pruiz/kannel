@@ -1254,7 +1254,7 @@ static void clear_old_concat_parts(void)
     Octstr *key;
 
     /* not initialised, go away */
-    if (incoming_concat_msgs != NULL)
+    if (incoming_concat_msgs == NULL)
         return;
 
     debug("bb.sms.splits", 0, "clear_old_concat_parts called");
