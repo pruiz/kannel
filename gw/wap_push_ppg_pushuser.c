@@ -810,6 +810,7 @@ static int response(List *push_headers, Octstr **username, Octstr **password)
           " authorization header");
     gwlist_destroy(auth_list, octstr_destroy_item);
     octstr_destroy(header_value);
+    http_header_remove_all(push_headers, "Authorization");
     return HEADER_AUTHENTICATION;
 
 no_response1:
