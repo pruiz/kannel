@@ -6,10 +6,11 @@
 # current LICENSE text file to all source code files.
 #
 
-old="2001-2005 Kannel Group"
-new="2001-2007 Kannel Group"
+old="2001-2007 Kannel Group"
+new="2001-2008 Kannel Group"
 
-files=`find -type f | xargs fgrep -lr "${old}"`
+prog=`basename $0`
+files=`find -type f ! -name "${prog}" | xargs fgrep -lr "${old}"`
 for i in $files; do
   echo ${i}
   cat ${i} | sed "s/${old}/${new}/" > ${i}.new
