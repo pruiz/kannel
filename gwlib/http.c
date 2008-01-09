@@ -197,6 +197,7 @@ static int parse_http_version(Octstr *version)
 static Mutex *proxy_mutex = NULL;
 static Octstr *proxy_hostname = NULL;
 static int proxy_port = 0;
+static int proxy_ssl = 0;
 static Octstr *proxy_username = NULL;
 static Octstr *proxy_password = NULL;
 static List *proxy_exceptions = NULL;
@@ -262,7 +263,7 @@ static int proxy_used_for_host(Octstr *host, Octstr *url)
 }
 
 
-void http_use_proxy(Octstr *hostname, int port, List *exceptions,
+void http_use_proxy(Octstr *hostname, int port, int ssl, List *exceptions,
     	    	    Octstr *username, Octstr *password, Octstr *exceptions_regex)
 {
     Octstr *e;
@@ -278,11 +279,11 @@ void http_use_proxy(Octstr *hostname, int port, List *exceptions,
 
     proxy_hostname = octstr_duplicate(hostname);
     proxy_port = port;
+    proxy_ssl = ssl;
     proxy_exceptions = gwlist_create();
     for (i = 0; i < gwlist_len(exceptions); ++i) {
         e = gwlist_get(exceptions, i);
-	debug("gwlib.http", 0, "HTTP: Proxy exception `%s'.",
-	      octstr_get_cstr(e));
+        debug("gwlib.http", 0, "HTTP: Proxy exception `%s'.", octstr_get_cstr(e));
         gwlist_append(proxy_exceptions, octstr_duplicate(e));
     }
     if (exceptions_regex != NULL &&
@@ -290,8 +291,9 @@ void http_use_proxy(Octstr *hostname, int port, List *exceptions,
             panic(0, "Could not compile pattern '%s'", octstr_get_cstr(exceptions_regex));
     proxy_username = octstr_duplicate(username);
     proxy_password = octstr_duplicate(password);
-    debug("gwlib.http", 0, "Using proxy <%s:%d>", 
-    	  octstr_get_cstr(proxy_hostname), proxy_port);
+    debug("gwlib.http", 0, "Using proxy <%s:%d> with %s scheme", 
+    	  octstr_get_cstr(proxy_hostname), proxy_port,
+    	  (proxy_ssl ? "HTTPS" : "HTTP"));
 
     mutex_unlock(proxy_mutex);
 }
@@ -1473,8 +1475,8 @@ static Connection *get_connection(HTTPServer *trans)
     Connection *conn = NULL;
     Octstr *host;
     HTTPURLParse *p;
-    int port;
-
+    int port, ssl;
+    
     /* if the parsing has not yet been done, then do it now */
     if (!trans->host && trans->port == 0 && trans->url != NULL) {
         if ((p = parse_url(trans->url)) != NULL) {
@@ -1488,12 +1490,14 @@ static Connection *get_connection(HTTPServer *trans)
     if (proxy_used_for_host(trans->host, trans->url)) {
         host = proxy_hostname;
         port = proxy_port;
+        ssl = proxy_ssl;
     } else {
         host = trans->host;
         port = trans->port;
+        ssl = trans->ssl;
     }
 
-    conn = conn_pool_get(host, port, trans->ssl, trans->certkeyfile,
+    conn = conn_pool_get(host, port, ssl, trans->certkeyfile,
                          http_interface);
     if (conn == NULL)
         goto error;

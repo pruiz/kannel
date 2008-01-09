@@ -498,6 +498,7 @@ static void config_reload(int reload) {
     Octstr *http_proxy_host;
     Octstr *http_interface_name;
     long http_proxy_port;
+    int http_proxy_ssl = 0;
     List *http_proxy_exceptions;
     Octstr *http_proxy_username;
     Octstr *http_proxy_password;
@@ -528,12 +529,15 @@ static void config_reload(int reload) {
     http_proxy_host = cfg_get(grp, octstr_imm("http-proxy-host"));
     http_proxy_port =  -1;
     cfg_get_integer(&http_proxy_port, grp, octstr_imm("http-proxy-port"));
+#ifdef HAVE_LIBSSL
+    cfg_get_bool(&http_proxy_ssl, grp, octstr_imm("http-proxy-ssl"));
+#endif /* HAVE_LIBSSL */
     http_proxy_username = cfg_get(grp, octstr_imm("http-proxy-username"));
     http_proxy_password = cfg_get(grp, octstr_imm("http-proxy-password"));
     http_proxy_exceptions = cfg_get_list(grp, octstr_imm("http-proxy-exceptions"));
     http_proxy_exceptions_regex = cfg_get(grp, octstr_imm("http-proxy-exceptions-regex"));
     if (http_proxy_host != NULL && http_proxy_port > 0) {
-        http_use_proxy(http_proxy_host, http_proxy_port, 
+        http_use_proxy(http_proxy_host, http_proxy_port, http_proxy_ssl,
                        http_proxy_exceptions, http_proxy_username, 
                        http_proxy_password, http_proxy_exceptions_regex);
     }

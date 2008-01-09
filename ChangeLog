@@ -1,3 +1,17 @@
+2008-01-09  Stipe Tolj  <stolj at kannel.org>
+   * gw/[sms|wap]box.c: incorporate 'http-proxy-ssl' directive handling.
+   * gwlib/cfg.def: add 'http-proxy-ssl' config directive to core group.
+   * gwlib/http.[ch]: fix a critical bug when proxy'ing https:// schema URLs.
+     We interpreted the SSL scheme for the HTTP proxy call too, even while
+     this should be a plain http:// call, and the proxy itself would then
+     use https:// to poll the resource. Now we do things right, which means
+     per default plain HTTP is send to proxy. If we want SSL-encryption
+     towards the HTTP proxy itself, then 'http-proxy-ssl' boolean config
+     directive can be set.
+   * test/test_[http|xmlrpc].c: make use of the 'http-proxy-ssl' feature.
+     Thanks to Carlos Perez <Carlos.Perez at acecomm.com> for this report.
+     [Msg-Id: <OF2A430D1A.E83BE0A3-ON852573CA.005A2F94-852573CA.005A58F0@acec>]
+
 2007-12-21  Stipe Tolj  <stolj at kannel.org>
    * gw/wap_push_ppg_pushuser.c: remove HTTP Authorization header which is
      encoded in the bytestream. Thanks to Mathieu Bruneau 

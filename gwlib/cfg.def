@@ -109,6 +109,7 @@ SINGLE_GROUP(core,
     OCTSTR(black-list-regex)
     OCTSTR(http-proxy-host)
     OCTSTR(http-proxy-port)
+    OCTSTR(http-proxy-ssl)
     OCTSTR(http-proxy-exceptions)
     OCTSTR(http-proxy-exceptions-regex)
     OCTSTR(http-proxy-username)

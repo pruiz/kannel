@@ -284,6 +284,8 @@ static void help(void)
     info(0, "    use `domain.name' as a proxy");
     info(0, "-P portnumber");
     info(0, "    connect to proxy at port `portnumber'");
+    info(0, "-S");
+    info(0, "    use HTTPS scheme to access SSL-enabled proxy server");
     info(0, "-e domain1:domain2:...");
     info(0, "    set exception list for proxy use");
     info(0, "-u filename");
@@ -309,6 +311,7 @@ int main(int argc, char **argv)
     Octstr *proxy;
     List *exceptions;
     long proxy_port;
+    int proxy_ssl = 0;
     Octstr *proxy_username;
     Octstr *proxy_password;
     Octstr *exceptions_regex;
@@ -331,7 +334,7 @@ int main(int argc, char **argv)
     file = 0;
     fp = NULL;
     
-    while ((opt = getopt(argc, argv, "hv:qr:p:P:e:t:i:a:u:sc:H:B:m:")) != EOF) {
+    while ((opt = getopt(argc, argv, "hv:qr:p:P:Se:t:i:a:u:sc:H:B:m:")) != EOF) {
 	switch (opt) {
 	case 'v':
 	    log_set_output_level(atoi(optarg));
@@ -380,6 +383,10 @@ int main(int argc, char **argv)
 	case 'P':
 	    proxy_port = atoi(optarg);
 	    break;
+
+	case 'S':
+        proxy_ssl = 1;
+        break;
 	
 	case 'e':
 	    p = strtok(optarg, ":");
@@ -451,7 +458,7 @@ int main(int argc, char **argv)
      * check if we are doing a SSL-enabled client version here
      * load the required cert and key file
      */
-    if (ssl) {
+    if (ssl || proxy_ssl) {
         if (ssl_client_certkey_file != NULL) {
             use_global_client_certkey_file(ssl_client_certkey_file);
         } else {
@@ -465,7 +472,7 @@ int main(int argc, char **argv)
     }
     
     if (proxy != NULL && proxy_port > 0) {
-        http_use_proxy(proxy, proxy_port, exceptions,
+        http_use_proxy(proxy, proxy_port, proxy_ssl, exceptions,
         proxy_username, proxy_password, exceptions_regex);
     }
     octstr_destroy(proxy);

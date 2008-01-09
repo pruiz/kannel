@@ -264,7 +264,7 @@ void parse_dump(HTTPURLParse *p);
  * http_close_proxy closes the current proxy connection, after any
  * pending requests have been served.
  */
-void http_use_proxy(Octstr *hostname, int port, List *exceptions,
+void http_use_proxy(Octstr *hostname, int port, int ssl, List *exceptions,
     	    	    Octstr *username, Octstr *password, Octstr *exceptions_regex);
 void http_close_proxy(void);
 
