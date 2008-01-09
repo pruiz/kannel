@@ -1,4 +1,7 @@
 2008-01-09  Stipe Tolj  <stolj at kannel.org>
+    * */*: update LICENSE preamble block to 2008.
+    
+2008-01-09  Stipe Tolj  <stolj at kannel.org>
    * gw/[sms|wap]box.c: incorporate 'http-proxy-ssl' directive handling.
    * gwlib/cfg.def: add 'http-proxy-ssl' config directive to core group.
    * gwlib/http.[ch]: fix a critical bug when proxy'ing https:// schema URLs.
