@@ -246,14 +246,20 @@ static void convert_html_entity(Octstr *sms, Octstr *html, long *pos)
     size_t len;
     char buf[1024];
 
-    if (octstr_get_char(html, (*pos) + 1) == '#') {
-        i = octstr_parse_long(&code, html, (*pos) + 2, 10);
+    if (octstr_get_char(html, *pos + 1) == '#') {
+        if (octstr_get_char(html, *pos + 2) == 'x' || octstr_get_char(html, *pos + 2) == 'X')
+            i = octstr_parse_long(&code, html, *pos + 3, 16); /* hex */
+        else
+            i = octstr_parse_long(&code, html, *pos + 2, 10); /* decimal */
         if (i > 0) {
             if (code < 256)
                 octstr_append_char(sms, code);
             *pos = i + 1;
             if (octstr_get_char(html, *pos) == ';')
                 ++(*pos);
+        } else {
+            ++(*pos);
+            octstr_append_char(sms, '&');
         }
     } else {
         for (i = 0; i < num_tab; ++i) {

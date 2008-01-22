@@ -1,3 +1,7 @@
+2008-01-22 Alexander Malysh <amalysh at kannel.org>
+    * gw/html.c: fixed #425: SMSBox goes into infinite loop when it encounter
+      hex escape sequence in html response.
+
 2008-01-09  Stipe Tolj  <stolj at kannel.org>
     * */*: update LICENSE preamble block to 2008.
     
