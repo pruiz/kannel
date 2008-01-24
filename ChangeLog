@@ -1,3 +1,7 @@
+2008-01-24 Alexander Malysh <amalysh at kannel.org>
+    * gw/sms.c: fixed truncating of the message if split-chars defined in the
+      config. Thanks to Giulio Harding for bug report.
+
 2008-01-22 Alexander Malysh <amalysh at kannel.org>
     * gw/html.c: fixed #425: SMSBox goes into infinite loop when it encounter
       hex escape sequence in html response.

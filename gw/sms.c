@@ -251,7 +251,7 @@ static Octstr *extract_msgdata_part(Octstr *msgdata, Octstr *split_chars,
     Octstr *part;
 
     len = max_part_len;
-    if (split_chars != NULL)
+    if (max_part_len < octstr_len(msgdata) && split_chars != NULL)
 	for (i = max_part_len; i > 0; i--)
 	    if (octstr_search_char(split_chars,
 				   octstr_get_char(msgdata, i - 1), 0) != -1) {
