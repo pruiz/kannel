@@ -1,3 +1,7 @@
+2008-01-29 Alexander Malysh <amalysh at kannel.org>
+    * gwlib/gw-prioqueue.c: Implemented extra sequence in the gw-prioqueue
+      that will guarantee the order of the equal messages. It should fix #436.
+
 2008-01-24 Alexander Malysh <amalysh at kannel.org>
     * gw/sms.c: fixed truncating of the message if split-chars defined in the
       config. Thanks to Giulio Harding for bug report.
