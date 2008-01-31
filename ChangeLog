@@ -1,3 +1,8 @@
+2008-01-31	Stipe Tolj  <stolj at kannel.org>
+    * Makefile.in: add build target 'pp' to allow building preprocessed 
+      outputs of source files via $(CC) -E. This can be used to verify
+      how our massive usage of preprocessing macros are resolved. NLC.
+       
 2008-01-29 Alexander Malysh <amalysh at kannel.org>
     * gwlib/gw-prioqueue.c: Implemented extra sequence in the gw-prioqueue
       that will guarantee the order of the equal messages. It should fix #436.
