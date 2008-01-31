@@ -1,3 +1,7 @@
+2008-02-01	Stipe Tolj  <stolj at kannel.org>
+    * Makefile.in: ensure we get second directory level too for the 
+      preprocessing target.
+    
 2008-01-31	Stipe Tolj  <stolj at kannel.org>
     * Makefile.in: add build target 'pp' to allow building preprocessed 
       outputs of source files via $(CC) -E. This can be used to verify
