@@ -87,6 +87,7 @@
 #elif defined(__GNU__)
 #define OSHURD
 #elif defined(SunOS)
+#elif defined(__CYGWIN__)
 #elif defined(__FreeBSD__) || defined(__APPLE__)
 #define FreeBSD
 #else

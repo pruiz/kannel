@@ -1,4 +1,8 @@
 2008-02-01	Stipe Tolj  <stolj at kannel.org>
+    * utils/start-stop-daemon.c: add Cygwin platform support to allow clean
+      runs for the preprocessing make target.
+    
+2008-02-01	Stipe Tolj  <stolj at kannel.org>
     * doc/doxygen/kannel.conf: doxygen config file for generating source
       code documentation.
     
