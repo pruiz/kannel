@@ -151,7 +151,7 @@ benchoutputs = \
     $(wildcard benchmarks/*.png) \
     $(wildcard benchmarks/*.xml)
 
-srcs = $(wildcard */*/*.c)
+srcs = $(wildcard */*.c) $(wildcard */*/*.c)
 objs = $(srcs:.c=.o)
 pres = $(srcs:.c=.i)
 
