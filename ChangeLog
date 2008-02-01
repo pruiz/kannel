@@ -1,4 +1,8 @@
 2008-02-01	Stipe Tolj  <stolj at kannel.org>
+    * doc/doxygen/kannel.conf: doxygen config file for generating source
+      code documentation.
+    
+2008-02-01	Stipe Tolj  <stolj at kannel.org>
     * Makefile.in: ensure we get second directory level too for the 
       preprocessing target.
     
