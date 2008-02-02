@@ -1,3 +1,9 @@
+2008-02-02	Stipe Tolj  <stolj at kannel.org>
+    * gw/ota_compiler.c: fix bug #405, where we forget to switch codepage
+      when no inline value is processed for WBXML compilation. Thanks go to
+      Maxim Sobolev <sobomax at sippysoft.com> for reporting and proving patch.
+      [Msg-Id: <47A3C8E6.4090008@sippysoft.com>]
+    
 2008-02-01	Stipe Tolj  <stolj at kannel.org>
     * Makefile.in: we need first and second level directories to care of.
     

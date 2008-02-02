@@ -812,6 +812,12 @@ static int parse_attribute(xmlAttrPtr attr, simple_binary_t **otabxml)
             output_char(OMA_VALUE_TAG, otabxml);
         output_char(ota_hex, otabxml);
     } else {
+        /* Switch code page. */
+        if (alist[i].code_page != (*otabxml)->code_page) {
+            output_char(0, otabxml);
+            output_char(alist[i].code_page, otabxml);
+            (*otabxml)->code_page = alist[i].code_page;
+        }
         output_char(ota_hex, otabxml);
         parse_inline_string(value, otabxml);
     }  
