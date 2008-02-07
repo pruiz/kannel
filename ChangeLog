@@ -1,3 +1,6 @@
+2008-02-07	Stipe Tolj  <stolj at kannel.org>
+    * gw/wbxml_tokens.def, wap/wsp_strings.def: updates from OMNA page.
+    
 2008-02-02	Stipe Tolj  <stolj at kannel.org>
     * gw/ota_compiler.c: fix bug #405, where we forget to switch codepage
       when no inline value is processed for WBXML compilation. Thanks go to

@@ -184,8 +184,10 @@ VNSTRING(WSP_1_5, "X-Wap-Loc-Delivery", WSP_HEADER_X_WAP_LOC_DELIVERY)
 /* Table 40. Well Known WSP Content Type Codes Assignments. 
  * These have been defined by WINA, 
  * see http://www.wapforum.org/wina/wsp-content-type.htm
- * Now they are maintained by OMNA,
- * see http://www.openmobilealliance.org/tech/omna/index.htm
+ * Now they are maintained by OMNA, see URL
+ * 
+ * http://www.openmobilealliance.org/tech/omna/index.htm (depricated)
+ * http://www.openmobilealliance.org/Technical/omna/omna-wsp-content-type.aspx
  */
 LINEAR(content_type,
 VSTRING(WSP_1_1, "*/*")
@@ -269,11 +271,15 @@ VSTRING(WSP_1_5, "application/vnd.wv.csp+wbxml")
 VSTRING(WSP_1_5, "application/vnd.syncml.ds.notification")
 VSTRING(WSP_1_6, "audio/*")
 VSTRING(WSP_1_6, "video/*") 
+VSTRING(WSP_1_6, "application/vnd.oma.dd2+xml")
+VSTRING(WSP_1_6, "application/mikey") 
 )
 
 /* Registered WSP Content Type Codes Assignments. 
- * Now they are maintained by OMNA,
- * see http://www.openmobilealliance.org/tech/omna/index.htm
+ * Now they are maintained by OMNA, see URL
+ * 
+ * http://www.openmobilealliance.org/tech/omna/index.htm (depricated)
+ * http://www.openmobilealliance.org/Technical/omna/omna-wsp-content-type.aspx
  */
 NUMBERED(content_type_registered,
 ASSIGN("application/vnd.uplanet.cacheop-wbxml", 0x0201)
@@ -306,6 +312,10 @@ ASSIGN("application/vnd.cmcc.setting+wbxml", 0x030E)
 ASSIGN("application/vnd.cmcc.bombing+wbxml", 0x030F)
 ASSIGN("application/vnd.docomo.pf", 0x0310)
 ASSIGN("application/vnd.docomo.ub", 0x0311)
+ASSIGN("application/vnd.omaloc-supl-init", 0x0312)
+ASSIGN("application/vnd.oma.group-usage-list+xml", 0x0313)
+ASSIGN("application/oma-directory+xml", 0x0314)
+ASSIGN("application/vnd.docomo.pf2", 0x0315)
 )
 
 /* Table 42, Character Set Assignment (partial) */
@@ -607,8 +617,11 @@ STRING("ansi-136_ghost/r_data_gsm_isdn")
 )
 
 /*
- * Well known and registered push application ids, see
- * http://www.openmobilealliance.org/tech/omna/omna-push-app-id.htm 
+ * Well known and registered push application ids, see URL
+ * 
+ * http://www.openmobilealliance.org/tech/omna/omna-push-app-id.htm (depricated)
+ * http://www.openmobilealliance.org/Technical/omna/omna-push-app-id.aspx
+ * 
  * Note that generic id strings do not contain the "x-wap-application" prefix,
  * it's the default, otherwise an alternate is given.
  */
@@ -625,6 +638,9 @@ ASSIGN("drm.ua", 0x08)
 ASSIGN("emn.ua", 0x09)
 ASSIGN("wv.ua", 0x0A)
 ASSIGN("x-oma-application:ulp.ua", 0x10)
+ASSIGN("x-oma-application:dlota.ua", 0x11)
+ASSIGN("x-oma-application:java-ams", 0x12)
+ASSIGN("x-oma-application:bcast.ua", 0x13)
 ASSIGN("x-wap-microsoft:localcontent.ua", 0x8000)
 ASSIGN("x-wap-microsoft:IMclient.ua", 0x8001)
 ASSIGN("x-wap-docomo:imode.mail.ua", 0x8002)
@@ -666,6 +682,44 @@ ASSIGN("x-oma-vodafone:dltmtbl.ua", 0x9024)
 ASSIGN("x-oma-vodafone:dvcctl.ua", 0x9025)
 ASSIGN("x-oma-cmcc:mail.ua", 0x9026)
 ASSIGN("x-oma-nokia:vmb.ua", 0x9027)
+ASSIGN("x-oma-nokia:ldapss.ua", 0x9028)
+ASSIGN("x-hutchison:al.ua", 0x9029)
+ASSIGN("x-oma-nokia:uma.ua", 0x902A)
+ASSIGN("x-oma-nokia:news.ua", 0x902B)
+ASSIGN("x-oma-docomo:pf", 0x902C)
+ASSIGN("x-oma-docomo:ub", 0x902D)
+ASSIGN("x-oma-nokia:nat.traversal.ua", 0x902E)
+ASSIGN("x-oma-intromobile:intropad.ua", 0x902F)
+ASSIGN("x-oma-docomo:uin.ua", 0x9030)
+ASSIGN("x-oma-nokia:iptv.ua", 0x9031)
+ASSIGN("x-hutchison:il.ua", 0x9032)
+ASSIGN("x-oma-nokia:voip.general.ua", 0x9033)
+ASSIGN("x-microsoft:drm.meter", 0x9034)
+ASSIGN("x-microsoft:drm.license", 0x9035)
+ASSIGN("x-oma-docomo:ic.ctl", 0x9036)
+ASSIGN("x-oma-slingmedia:SPM.ua", 0x9037)
+ASSIGN("x-cibenix:odp.ua", 0x9038)
+ASSIGN("x-oma-motorola:voip.ua", 0x9039)
+ASSIGN("x-oma-motorola:ims", 0x903A)
+ASSIGN("x-oma-docomo:imode.remote.ctl", 0x903B)
+ASSIGN("x-oma-docomo:device.ctl.um", 0x903C)
+ASSIGN("x-microsoft:playready.drm.initiator", 0x903D)
+ASSIGN("x-microsoft:playready.drm", 0x903E)
+ASSIGN("x-oma-sbm:ms.mexa.ua", 0x903F)
+ASSIGN("urn:oma:drms:org-LGE:L650V", 0x9040)
+ASSIGN("x-oma-docomo:um", 0x9041)
+ASSIGN("x-oma-docomo:uin.um", 0x9042)
+ASSIGN("urn:oma:drms:org-LGE:KU450", 0x9043)
+ASSIGN("x-wap-microsoft:cfgmgr.ua", 0x9044)
+ASSIGN("x-3gpp:mbms.download.delivery.ua", 0x9045)
+ASSIGN("x-oma-docomo:star.ctl", 0x9046)
+ASSIGN("urn:oma:drms:org-LGE:KU380", 0x9047)
+ASSIGN("x-oma-docomo:pf2", 0x9048)
+ASSIGN("x-oma-motorola:blogcentral.ua", 0x9049)
+ASSIGN("x-oma-docomo:imode.agent.ua", 0x904A)
+ASSIGN("x-wap-application:push.sia", 0x904B)
+ASSIGN("x-oma-nokia:destination.network.ua", 0x904C)
+ASSIGN("x-oma-sbm:mid2.ua", 0x904D)
 )
 
 /**** More preprocessor magic ****/

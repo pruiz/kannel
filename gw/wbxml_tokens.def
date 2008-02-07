@@ -76,8 +76,10 @@
 /**** End of preprocessor magic.  Tables start here. ****/
 
 /* Registered WSP Content Type Codes Assignments. 
- * Now they are maintained by OMNA,
- * see http://www.openmobilealliance.org/tech/omna/index.htm
+ * Now they are maintained by OMNA, see URL
+ * 
+ * http://www.openmobilealliance.org/tech/omna/index.htm (depricated)
+ * http://www.openmobilealliance.org/Technical/omna/omna-wbxml-public-docid.aspx
  */
 NUMBERED(public_ids,
 /* Well-Known Values */
@@ -98,6 +100,8 @@ ASSIGN("-//WIRELESSVILLAGE//DTD CSP 1.0//EN", 0x0F)
 ASSIGN("-//WIRELESSVILLAGE//DTD CSP 1.1//EN", 0x10)    
 ASSIGN("-//OMA//DTD WV-CSP 1.2//EN", 0x11)             
 ASSIGN("-//OMA//DTD IMPS-CSP 1.3//EN", 0x12)           
+ASSIGN("-//OMA//DRM 2.1//EN", 0x13)           
+ASSIGN("-//OMA//SRM 1.0//EN", 0x14)           
 /* Registered Values */
 ASSIGN("-//PHONE.COM//DTD ALERT 1.0//EN", 0x1100)
 ASSIGN("-//PHONE.COM//DTD CACHE-OPERATION 1.0//EN", 0x1101)
