@@ -1,3 +1,9 @@
+2008-02-19	Stipe Tolj  <stolj at kannel.org>
+    * gw/dlr.c: adding more debug output for the warning() in case the DLR 
+      could not be resolved. NLC.
+    * gw/wap_push_pap_compiler.c: typo fix in comment. NLC.
+      [Msg-Id: <0a5a01c872e6$4c682f80$9600a8c0@VINCE>]
+
 2008-02-07	Stipe Tolj  <stolj at kannel.org>
     * gw/wbxml_tokens.def, wap/wsp_strings.def: updates from OMNA page.
     

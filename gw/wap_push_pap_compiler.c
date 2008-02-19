@@ -477,7 +477,7 @@ static int set_anys(WAPEvent **e, long type_of_address, int is_any)
 }
 
 /*
- * We actually use address_type field of a wap event for cotrolling the bearer
+ * We actually use address_type field of a wap event for controlling the bearer
  * selection. Bearer and network filed are used for debugging purposes.
  */
 static void set_defaults(WAPEvent **e, long type_of_address)
