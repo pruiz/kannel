@@ -77,7 +77,7 @@ typedef void fdset_callback_t(int fd, int revents, void *data);
  * @timeout - idle timeout for any filedescriptor in this fdset after which
  *            callback function will be called with POLLERR as event.
  */
-#define fdset_create() fdset_create_real(-1);
+#define fdset_create() fdset_create_real(-1)
 FDSet *fdset_create_real(long timeout);
 
 /*

@@ -1,3 +1,8 @@
+2008-02-21	Stipe Tolj  <stolj at kannel.org>
+    * gwlib/fdset.h: remove trailing ';' in a macro. 
+      Thanks to Paul Bagyenda from Mbuni for spotting it.
+      [Msg-Id: <5B21C330-DA5A-4E6D-B431-9AB31479A446@dsmagic.com>]
+      
 2008-02-19	Stipe Tolj  <stolj at kannel.org>
     * gw/dlr.c: adding more debug output for the warning() in case the DLR 
       could not be resolved. NLC.
