@@ -209,7 +209,7 @@ enum { P_INT, P_STRING, P_ADDRESS, P_TIME, P_HEX, P_SMS };
  * outgoing messages. */
 static const struct
 {
-    unsigned char *name;
+    char *name;
     int number;
     int maxlen;
     int type;  /* P_ values */
@@ -342,7 +342,7 @@ static const int operation_can_receive(int operation);
 
 static const struct
 {
-    unsigned char *name;
+    char *name;
     int code;
     int can_send;
     int can_receive;
@@ -919,7 +919,7 @@ static void packet_check_can_receive(struct packet *packet, SMSCConn *conn)
 static struct
 {
     int code;
-    unsigned char *text;
+    char *text;
 }
 cimd2_errors[] = {
     { 0, "No error" },
@@ -1177,7 +1177,7 @@ static void convert_gsm_to_cimd2(Octstr *text)
 static struct packet *packet_create(int operation, int seq)
 {
     struct packet *packet;
-    unsigned char minpacket[sizeof("sOO:SSSte")];
+    char minpacket[sizeof("sOO:SSSte")];
 
     packet = gw_malloc(sizeof(*packet));
     packet->operation = operation;
@@ -1192,7 +1192,7 @@ static struct packet *packet_create(int operation, int seq)
 static void packet_add_parm(struct packet *packet, int parmtype,
                             int parmno, Octstr *value, SMSCConn *conn)
 {
-    unsigned char parmh[sizeof("tPPP:")];
+    char parmh[sizeof("tPPP:")];
     long position;
     long len;
     int copied = 0;
@@ -1261,7 +1261,7 @@ static void packet_add_hex_parm(struct packet *packet, int parmno, Octstr *value
 /* Add an Integer parameter to the packet */
 static void packet_add_int_parm(struct packet *packet, int parmno, long value, SMSCConn *conn)
 {
-    unsigned char buf[128];
+    char buf[128];
     Octstr *valuestr;
 
     gw_assert(parm_in_range(parmno, value));
@@ -1277,7 +1277,7 @@ static void packet_set_checksum(struct packet *packet)
     Octstr *data;
     int checksum;
     long pos, len;
-    unsigned char buf[16];
+    char buf[16];
 
     gw_assert(packet != NULL);
 
@@ -1302,7 +1302,7 @@ static void packet_set_checksum(struct packet *packet)
 
 static void packet_set_sequence(struct packet *packet, int seq)
 {
-    unsigned char buf[16];
+    char buf[16];
 
     gw_assert(packet != NULL);
     gw_assert(seq >= 0);

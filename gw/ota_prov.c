@@ -144,7 +144,7 @@ static int ota_pack_push_headers(Msg **msg, Octstr *mime_type, Octstr *sec,
     } else if (octstr_case_compare(mime_type, octstr_imm("oma-settings")) == 0) {
         Octstr *hdr = octstr_create(""), *mac; 
         unsigned char *p;
-        int mac_len;
+        unsigned int mac_len;
 #ifdef HAVE_LIBSSL
         unsigned char macbuf[EVP_MAX_MD_SIZE];
 #endif
@@ -170,14 +170,14 @@ static int ota_pack_push_headers(Msg **msg, Octstr *mime_type, Octstr *sec,
 
 #ifdef HAVE_LIBSSL
         p = HMAC(EVP_sha1(), octstr_get_cstr(pin), octstr_len(pin), 
-                 octstr_get_cstr(ota_binary), octstr_len(ota_binary), 
+                 (unsigned char *)octstr_get_cstr(ota_binary), octstr_len(ota_binary), 
                  macbuf, &mac_len);
 #else
         mac_len = 0;
         p = "";
         warning(0, "OMA ProvCont: No SSL Support, '%s' not supported!", octstr_get_cstr(mime_type));
 #endif
-        mac = octstr_create_from_data(p, mac_len);
+        mac = octstr_create_from_data((char *)p, mac_len);
         octstr_binary_to_hex(mac, 1);
     
         octstr_append(hdr, mac);

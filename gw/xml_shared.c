@@ -246,7 +246,7 @@ unsigned char element_check_content(xmlNodePtr node)
     if ((node->children != NULL) && 
 	!((node->children->next == NULL) && 
 	  (node->children->type == XML_TEXT_NODE) && 
-	  (only_blanks(node->children->content))))
+	  (only_blanks((char *)node->children->content))))
 	status_bits = WBXML_CONTENT_BIT;
 
     if (node->properties != NULL)

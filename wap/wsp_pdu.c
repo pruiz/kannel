@@ -322,7 +322,7 @@ Octstr *wsp_pdu_pack(WSP_PDU *pdu) {
 }
 
 void wsp_pdu_dump(WSP_PDU *pdu, int level) {
-	unsigned char *dbg = "wap.wsp";
+	char *dbg = "wap.wsp";
 
 	switch (pdu->type) {
 #define PDU(name, docstring, fields, is_valid) \

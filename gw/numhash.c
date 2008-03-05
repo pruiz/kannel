@@ -311,7 +311,7 @@ Numhash *numhash_create(char *seek_url)
     Octstr	*url, *final_url, *reply_body;
     Octstr	*type, *charset;
     
-    unsigned char       	*data, *ptr, numbuf[100];
+    char    *data, *ptr, numbuf[100];
     int		status;
     Numhash	*table;
 

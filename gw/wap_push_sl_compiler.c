@@ -302,7 +302,7 @@ static int parse_element(xmlNodePtr node, simple_binary_t **slbxml)
     int add_end_tag;
     xmlAttrPtr attribute;
 
-    name = octstr_create(node->name);
+    name = octstr_create((char *)node->name);
     if (octstr_len(name) == 0) {
         octstr_destroy(name);
         return -1;
@@ -359,10 +359,10 @@ static int parse_attribute(xmlAttrPtr attr, simple_binary_t **slbxml)
     size_t i,
            value_len;
 
-    name = octstr_create(attr->name);
+    name = octstr_create((char *)attr->name);
 
     if (attr->children != NULL)
-        value = create_octstr_from_node(attr->children);
+        value = create_octstr_from_node((char *)attr->children);
     else
         value = NULL;
 

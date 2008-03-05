@@ -745,17 +745,17 @@ static void pap_request_thread(void *arg)
     WAPEvent *ppg_event;
     PAPEvent *p;
     size_t push_len;
-    Octstr *pap_content,
-           *push_data,
-           *rdf_content,
-           *mime_content,
-           *plos,                      /* a temporary variable*/
-           *boundary,
-           *content_header,            /* Content-Type MIME header */
-           *url,
-           *ip,
-           *not_found,
-           *username;
+    Octstr *pap_content = NULL;
+    Octstr *push_data = NULL;
+    Octstr *rdf_content = NULL;
+    Octstr *mime_content = NULL;
+    Octstr *plos = NULL;               /* a temporary variable*/
+    Octstr *boundary = NULL;
+    Octstr *content_header = NULL;     /* Content-Type MIME header */
+    Octstr *url = NULL;
+    Octstr *ip = NULL;
+    Octstr *not_found = NULL;
+    Octstr *username = NULL;
     int compiler_status,
         http_status;
     List *push_headers,                /* MIME headers themselves */
@@ -1054,10 +1054,10 @@ static int handle_push_message(HTTPClient **c, WAPEvent *e, int status)
 
     PPGPushMachine *pm;
     PPGSessionMachine *sm;
-    WAPAddrTuple *tuple;
-    Octstr *push_data,
-           *cliaddr,
-           *type;
+    WAPAddrTuple *tuple=NULL;
+    Octstr *push_data=NULL;
+    Octstr *cliaddr=NULL;
+    Octstr *type=NULL;
 
     List *push_headers;
    

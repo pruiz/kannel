@@ -602,7 +602,7 @@ static int parse_document(xmlDocPtr document, Octstr *charset,
 
     /* Return WML Version dependent on xml ExternalID string */
     if ((document->intSubset != NULL) && (document->intSubset->ExternalID != NULL))    
-        externalID = octstr_create(document->intSubset->ExternalID);
+        externalID = octstr_create((char *)document->intSubset->ExternalID);
     if (externalID == NULL) {
         (*wbxml)->wml_public_id = 0x04; /* WML 1.1 Public ID */
         warning(0, "WBXML: WML without ExternalID, assuming 1.1");
@@ -664,7 +664,7 @@ static int parse_element(xmlNodePtr node, wml_binary_t **wbxml)
     Octstr *name;
     wml_hash_t *element;
 
-    name = octstr_create(node->name);
+    name = octstr_create((char *)node->name);
 
     /* Check, if the tag can be found from the code page. */
     if ((element = dict_get(wml_elements_dict, name)) != NULL) {
@@ -745,10 +745,10 @@ static int parse_attribute(xmlAttrPtr attr, wml_binary_t **wbxml)
     wml_attribute_t *attribute = NULL;
     Octstr *name = NULL, *pattern = NULL, *p = NULL;
 
-    name = octstr_create(attr->name);
+    name = octstr_create((char *)attr->name);
 
     if (attr->children != NULL)
-	pattern = create_octstr_from_node(attr->children);
+	pattern = create_octstr_from_node((char *)attr->children);
     else 
 	pattern = NULL;
 
@@ -796,7 +796,7 @@ static int parse_attribute(xmlAttrPtr attr, wml_binary_t **wbxml)
 	if (pattern != NULL && 
 	    coded_length < (int) octstr_len(pattern)) {
 	    if (coded_length == 0)
-		p = create_octstr_from_node(attr->children); 
+		p = create_octstr_from_node((char *)attr->children); 
 	    else
 		p = octstr_copy(pattern, coded_length, 
 				octstr_len(pattern) - coded_length); 
@@ -942,7 +942,7 @@ static int parse_text(xmlNodePtr node, wml_binary_t **wbxml)
     Octstr *temp;
     char* tmp;
 
-    temp = create_octstr_from_node(node); /* returns string in UTF-8 */
+    temp = create_octstr_from_node((char *)node); /* returns string in UTF-8 */
 
     /*
      * Beware that libxml2 does internal encoding in UTF-8 while parsing.
@@ -987,7 +987,7 @@ static int parse_cdata(xmlNodePtr node, wml_binary_t **wbxml)
     int ret = 0;
     Octstr *temp;
 
-    temp = create_octstr_from_node(node);
+    temp = create_octstr_from_node((char *)node);
 
     parse_st_octet_string(temp, 1, NOESC, wbxml);
     
@@ -1524,7 +1524,7 @@ static int check_do_elements(xmlNodePtr node)
 
     if ((child = node->children) != NULL) {
         while (child != NULL) {
-            if (child->name && strcmp(child->name, "do") == 0) {
+            if (child->name && strcmp((char *)child->name, "do") == 0) {
                 name = get_do_element_name(child);
 
                 if (name == NULL) {
@@ -1567,8 +1567,8 @@ static var_esc_t check_variable_name(xmlNodePtr node)
 
     if ((attr = node->properties) != NULL) {
         while (attr != NULL) {
-            if (attr->name && strcmp(attr->name, "name") == 0) {
-                name = create_octstr_from_node(attr->children);
+            if (attr->name && strcmp((char *)attr->name, "name") == 0) {
+                name = create_octstr_from_node((char *)attr->children);
                 break;
             }
             attr = attr->next;
@@ -1601,8 +1601,8 @@ static Octstr *get_do_element_name(xmlNodePtr node)
 
     if ((attr = node->properties) != NULL) {
         while (attr != NULL) {
-            if (attr->name && strcmp(attr->name, "name") == 0) {
-                name = create_octstr_from_node(attr->children);
+            if (attr->name && strcmp((char *)attr->name, "name") == 0) {
+                name = create_octstr_from_node((char *)attr->children);
                 break;
             }
             attr = attr->next;
@@ -1611,8 +1611,8 @@ static Octstr *get_do_element_name(xmlNodePtr node)
         if (attr == NULL) {
             attr = node->properties;
             while (attr != NULL) {
-                if (attr->name && strcmp(attr->name, "type") == 0) {
-                    name = create_octstr_from_node(attr->children);
+                if (attr->name && strcmp((char *)attr->name, "type") == 0) {
+                    name = create_octstr_from_node((char *)attr->children);
                     break;
                 }
                 attr = attr->next;
@@ -1653,19 +1653,19 @@ static int check_if_emphasis(xmlNodePtr node)
     if (node == NULL || node->name == NULL)
 	return 0;
 
-    if (strcmp(node->name, "b") == 0)
+    if (strcmp((char *)node->name, "b") == 0)
 	return 1;
-    if (strcmp(node->name, "big") == 0)
+    if (strcmp((char *)node->name, "big") == 0)
 	return 1;
-    if (strcmp(node->name, "em") == 0)
+    if (strcmp((char *)node->name, "em") == 0)
 	return 1;
-    if (strcmp(node->name, "i") == 0)
+    if (strcmp((char *)node->name, "i") == 0)
 	return 1;
-    if (strcmp(node->name, "small") == 0)
+    if (strcmp((char *)node->name, "small") == 0)
 	return 1;
-    if (strcmp(node->name, "strong") == 0)
+    if (strcmp((char *)node->name, "strong") == 0)
 	return 1;
-    if (strcmp(node->name, "u") == 0)
+    if (strcmp((char *)node->name, "u") == 0)
 	return 1;
 
     return 0;
@@ -1818,7 +1818,7 @@ static void string_table_collect_strings(xmlNodePtr node, List *strings)
 
     switch (node->type) {
     case XML_TEXT_NODE:
-	string = create_octstr_from_node(node);
+	string = create_octstr_from_node((char *)node);
 	    
 	octstr_shrink_blanks(string);
 	octstr_strip_blanks(string);

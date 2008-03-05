@@ -1957,7 +1957,7 @@ static void at2_decode7bituncompressed(Octstr *input, int len, Octstr *decoded, 
     /* Shift the buffer offset bits to the left */
     if (offset > 0) {
         unsigned char *ip;
-        for (i = 0, ip = octstr_get_cstr(input); i < octstr_len(input); i++) {
+        for (i = 0, ip = (unsigned char *)octstr_get_cstr(input); i < octstr_len(input); i++) {
             if (i == octstr_len(input) - 1)
                 *ip = *ip >> offset;
             else
@@ -2005,7 +2005,7 @@ static void at2_send_messages(PrivAT2data *privdata)
 
 static void at2_send_one_message(PrivAT2data *privdata, Msg *msg)
 {
-    unsigned char command[500];
+    char command[500];
     int ret = -1;
     char sc[3];
 
@@ -2070,7 +2070,7 @@ static void at2_send_one_message(PrivAT2data *privdata, Msg *msg)
                 /* chop PDU into 18-byte-at-a-time pieces to prevent choking 
                  * of certain GSM Phones (e.g. Nokia 6310, 6230 etc.) */
                 if (strlen(command) > 18) {
-                    unsigned char chop[20];
+                    char chop[20];
                     int len = strlen(command);
                     int pos = 0;
                     int ret = 18;

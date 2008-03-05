@@ -999,7 +999,7 @@ static Octstr *unpack_warning_value(ParseContext *context)
     if (warn_text && octstr_get_char(warn_text, 0) == WSP_QUOTE)
         octstr_delete(warn_text, 0, 1);
     if (octstr_get_char(warn_text, 0) != quote)
-        octstr_insert_data(warn_text, 0, &quote, 1);
+        octstr_insert_data(warn_text, 0, (char *)&quote, 1);
     if (octstr_get_char(warn_text, octstr_len(warn_text) - 1) != quote)
         octstr_append_char(warn_text, quote);
 
@@ -1125,7 +1125,7 @@ void wsp_unpack_well_known_field(List *unpacked, int field_type,
 
         case WSP_HEADER_PRAGMA:
             if (val == 0)
-                ch = "no-cache";
+                ch = (unsigned char *)"no-cache";
             else
                 warning(0, "Unknown pragma value 0x%02x.", val);
             break;
@@ -1290,7 +1290,7 @@ void wsp_unpack_well_known_field(List *unpacked, int field_type,
     }
 
     if (ch == NULL && decoded != NULL)
-        ch = octstr_get_cstr(decoded);
+        ch = (unsigned char *)octstr_get_cstr(decoded);
     if (ch == NULL)
         goto value_error;
 
@@ -1299,7 +1299,7 @@ void wsp_unpack_well_known_field(List *unpacked, int field_type,
         goto value_error;
     }
 
-    http_header_add(unpacked, headername, ch);
+    http_header_add(unpacked, (char *)headername,(char *) ch);
     octstr_destroy(decoded);
     return;
 
@@ -1781,11 +1781,11 @@ void wsp_pack_long_integer(Octstr *packed, unsigned long integer)
      * at the same position, because that's easier. */
     for (len = 0; integer != 0; integer >>= 8, len++) {
         octet = integer & 0xff;
-        octstr_insert_data(packed, oldlen, &octet, 1);
+        octstr_insert_data(packed, oldlen, (char *)&octet, 1);
     }
 
     octet = len;
-    octstr_insert_data(packed, oldlen, &octet, 1);
+    octstr_insert_data(packed, oldlen, (char *)&octet, 1);
 }
 
 void wsp_pack_short_integer(Octstr *packed, unsigned long integer)

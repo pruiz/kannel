@@ -255,7 +255,7 @@ static void append_integer(Octstr *os, long i)
     unsigned char buf[4];
 
     encode_network_long(buf, i);
-    octstr_append_data(os, buf, 4);
+    octstr_append_data(os, (char *)buf, 4);
 }
 
 static void append_string(Octstr *os, Octstr *field)
@@ -287,7 +287,7 @@ static int parse_integer(long *i, Octstr *packed, int *off)
         return -1;
     }
 
-    octstr_get_many_chars(buf, packed, *off, 4);
+    octstr_get_many_chars((char *)buf, packed, *off, 4);
     *i = decode_network_long(buf);
     *off += 4;
     return 0;

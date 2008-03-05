@@ -520,7 +520,7 @@ static int parse_document(xmlDocPtr document, Octstr *charset,
     xmlNodePtr node;
 
     if (document->intSubset && document->intSubset->ExternalID 
-        && strcmp(document->intSubset->ExternalID, "-//WAPFORUM//DTD PROV 1.0//EN") == 0) {
+        && strcmp((char *)document->intSubset->ExternalID, "-//WAPFORUM//DTD PROV 1.0//EN") == 0) {
         /* OMA ProvCont */
         (*otabxml)->wbxml_version = 0x03; /* WBXML Version number 1.3  */
         (*otabxml)->public_id = 0x0B; /* Public id for this kind of doc */  
@@ -615,7 +615,7 @@ static int parse_ota_syncsettings(xmlNodePtr node, simple_binary_t **otabxml)
 
     name = NULL;
     content = NULL;
-    name = octstr_create(node->name);
+    name = octstr_create((char *)node->name);
     if (octstr_len(name) == 0) {
         goto error;
     }
@@ -636,8 +636,8 @@ static int parse_ota_syncsettings(xmlNodePtr node, simple_binary_t **otabxml)
 
     /* if the node has CDATA content output it. 
      * Else expect child tags */
-    if (!only_blanks(node->children->content)) {
-        content = octstr_create(node->children->content);
+    if (!only_blanks((char *)node->children->content)) {
+        content = octstr_create((char *)node->children->content);
         parse_inline_string(content, otabxml);
     }
 
@@ -688,7 +688,7 @@ static int parse_element(xmlNodePtr node, simple_binary_t **otabxml)
         }
     }
 
-    name = octstr_create(node->name);
+    name = octstr_create((char *)node->name);
     if (octstr_len(name) == 0) {
         octstr_destroy(name);
         return -1;
@@ -752,10 +752,10 @@ static int parse_attribute(xmlAttrPtr attr, simple_binary_t **otabxml)
     size_t i, limit;
     ota_3table_t *alist;
 
-    name = octstr_create(attr->name);
+    name = octstr_create((char *)attr->name);
 
     if (attr->children != NULL)
-        value = create_octstr_from_node(attr->children);
+        value = create_octstr_from_node((char *)attr->children);
     else 
         value = NULL;
 

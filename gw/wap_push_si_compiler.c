@@ -251,7 +251,7 @@ static int parse_element(xmlNodePtr node, simple_binary_t **sibxml)
     int add_end_tag;
     xmlAttrPtr attribute;
 
-    name = octstr_create(node->name);
+    name = octstr_create((char *)node->name);
     outos = NULL;
     if (octstr_len(name) == 0) {
         octstr_destroy(name);
@@ -316,7 +316,7 @@ static int parse_text(xmlNodePtr node, simple_binary_t **sibxml)
 {
     Octstr *temp;
 
-    temp = create_octstr_from_node(node);
+    temp = create_octstr_from_node((char *)node);
 
     octstr_shrink_blanks(temp);
     octstr_strip_blanks(temp);
@@ -348,10 +348,10 @@ static int parse_attribute(xmlAttrPtr attr, simple_binary_t **sibxml)
     size_t i,
            value_len;
 
-    name = octstr_create(attr->name);
+    name = octstr_create((char *)attr->name);
 
     if (attr->children != NULL)
-	value = create_octstr_from_node(attr->children);
+	value = create_octstr_from_node((char *)attr->children);
     else 
 	value = NULL;
 
@@ -597,7 +597,7 @@ static int parse_cdata(xmlNodePtr node, simple_binary_t **sibxml)
     int ret = 0;
     Octstr *temp;
 
-    temp = create_octstr_from_node(node);
+    temp = create_octstr_from_node((char *)node);
     parse_octet_string(temp, sibxml);
     octstr_destroy(temp);
 

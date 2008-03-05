@@ -252,7 +252,7 @@ static int emi_open_session(SMSCenter *smsc)
     /* FOOTER */
 
     sprintf(my_buffer, "%s/%s/", message_header, message_body);
-    generate_checksum(my_buffer, message_footer);
+    generate_checksum((unsigned char *)my_buffer, (unsigned char *)message_footer);
 
     sprintf(message_whole, "\x02%s/%s/%s\x03", message_header,
             message_body, message_footer);
@@ -998,7 +998,7 @@ static int acknowledge_from_rawmessage(SMSCenter *smsc,
 
     /* FOOTER */
     sprintf(timestamp, "%s/%s/", emitext, isotext);
-    generate_checksum(timestamp, receiver);
+    generate_checksum((unsigned char *)timestamp, (unsigned char *)receiver);
 
     sprintf(sender, "%c%s/%s/%s%c", 0x02, emitext, isotext, receiver, 0x03);
     put_data(smsc, sender, strlen(sender), is_backup);
@@ -1105,7 +1105,7 @@ static int parse_msg_to_rawmessage(SMSCenter *smsc, Msg *msg, char *rawmessage, 
     /* FOOTER */
 
     sprintf(my_buffer, "%s/%s/", message_header, message_body);
-    generate_checksum(my_buffer, message_footer);
+    generate_checksum((unsigned char *)my_buffer, (unsigned char *)message_footer);
 
     sprintf(message_whole, "%c%s/%s/%s%c", 0x02, message_header, message_body, message_footer, 0x03);
 
@@ -1205,7 +1205,7 @@ static void generate_checksum(const unsigned char *buf, unsigned char *out)
             j -= 256;
     }
 
-    sprintf(out, "%02X", j);
+    sprintf((char *)out, "%02X", j);
 }
 
 

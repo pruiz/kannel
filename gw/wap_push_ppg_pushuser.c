@@ -1034,7 +1034,7 @@ static int compare_octstr_sequence(Octstr *os1, Octstr *os2, long start)
     prefix = NULL;
     if (start != 0) {
         prefix = gw_malloc(start);
-        octstr_get_many_chars(prefix, os1, 0, start);
+        octstr_get_many_chars((char *)prefix, os1, 0, start);
         octstr_delete(os1, 0, start);
     }
     
@@ -1042,7 +1042,7 @@ static int compare_octstr_sequence(Octstr *os1, Octstr *os2, long start)
     ret = octstr_ncompare(os1, os2, end - start);
     
     if (start != 0) {
-        octstr_insert_data(os1, 0, prefix, start);
+        octstr_insert_data(os1, 0, (char *)prefix, start);
         gw_free(prefix);
     }
 
