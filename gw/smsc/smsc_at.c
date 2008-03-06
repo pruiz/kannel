@@ -1557,7 +1557,9 @@ static Octstr *gsm2number(Octstr *pdu)
 
 	pos=0;
     len = octstr_len(pdu);
-	
+	if(len<= 0)
+		return octstr_create("");
+		
     ton = octstr_get_char(pdu,pos++);
     npi = ton & 0x0F;
     ton =  (ton >> 4) & 0x07;
@@ -1578,7 +1580,7 @@ static Octstr *gsm2number(Octstr *pdu)
 		tmp = octstr_create("");
 		break;
 	}
-	while(--len)
+	while(--len > 0)
 	{
 	    c = octstr_get_char(pdu,pos++);
 		a =  c & 0x0F;

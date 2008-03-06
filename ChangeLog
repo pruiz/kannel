@@ -1,3 +1,7 @@
+2008-03-06  Andreas Fink <andreas at fink.org>
+    * gw/smsc/smsc_at.c: fixed an infinite loop for receiving delivery
+      reports with SMSC string being empty.
+
 2008-02-21	Stipe Tolj  <stolj at kannel.org>
     * gwlib/fdset.h: remove trailing ';' in a macro. 
       Thanks to Paul Bagyenda from Mbuni for spotting it.
