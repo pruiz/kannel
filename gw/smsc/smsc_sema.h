@@ -370,11 +370,11 @@ static int sema_encode_msg(sema_msg*, char*);
 
 static int line_append_hex_IA5(Octstr* , unsigned char*, int);
 
-static int line_scan_IA5_hex(unsigned char*, int, unsigned char*);
+static int line_scan_IA5_hex(char*, int, unsigned char*);
 
 static int line_scan_hex_GSM7(unsigned char*,int,int,unsigned char*);
 
-static int internal_char_IA5_to_hex(unsigned char *, unsigned char *);
+static int internal_char_IA5_to_hex(char *, unsigned char *);
 
 static int internal_char_hex_to_IA5(unsigned char, unsigned char *);
 

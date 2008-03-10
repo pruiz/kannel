@@ -257,7 +257,7 @@ parameters[] = {
 
 /* Return the index in the parameters array for this parameter id.
  * Return -1 if it is not found. */
-static const int parm_index(int parmno)
+static int parm_index(int parmno)
 {
     int i;
 
@@ -271,7 +271,7 @@ static const int parm_index(int parmno)
 
 #ifndef NO_GWASSERT
 /* Return the type of this parameter id.  Return -1 if the id is unknown. */
-static const int parm_type(int parmno)
+static int parm_type(int parmno)
 {
     int i = parm_index(parmno);
 
@@ -284,7 +284,7 @@ static const int parm_type(int parmno)
 
 /* Return the max length for this parameter id.
  * Return -1 if the id is unknown. */
-static const int parm_maxlen(int parmno)
+static int parm_maxlen(int parmno)
 {
     int i = parm_index(parmno);
 
@@ -307,7 +307,7 @@ static const char *parm_name(int parmno)
 #ifndef NO_GWASSERT
 /* Return 1 if the value for this (Integer) parameter is in range.
  * Return 0 otherwise.  Return -1 if the parameter was not found.  */
-static const int parm_in_range(int parmno, long value)
+static int parm_in_range(int parmno, long value)
 {
     int i;
 
@@ -326,7 +326,7 @@ static int isphonedigit(int c)
     return isdigit(c) || c == '+' || c == '-';
 }
 
-static const int parm_valid_address(Octstr *value)
+static int parm_valid_address(Octstr *value)
 {
     return octstr_check_range(value, 0, octstr_len(value), isphonedigit);
 }
@@ -337,8 +337,8 @@ static const int parm_valid_address(Octstr *value)
 
 static int operation_find(int operation);
 static Octstr *operation_name(int operation);
-static const int operation_can_send(int operation);
-static const int operation_can_receive(int operation);
+static int operation_can_send(int operation);
+static int operation_can_receive(int operation);
 
 static const struct
 {
@@ -403,7 +403,7 @@ static Octstr *operation_name(int operation)
 }
 
 /* Return true if a CIMD2 client may send this operation */
-static const int operation_can_send(int operation)
+static int operation_can_send(int operation)
 {
     int i = operation_find(operation);
 
@@ -419,7 +419,7 @@ static const int operation_can_send(int operation)
 
 
 /* Return true if a CIMD2 server may send this operation */
-static const int operation_can_receive(int operation)
+static int operation_can_receive(int operation)
 {
     int i = operation_find(operation);
 

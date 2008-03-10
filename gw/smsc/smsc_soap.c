@@ -1219,7 +1219,7 @@ static int64 soap_parse_response(PrivData* privdata, Octstr* xmlResponse)
     /* FIXME: do something here */
 
     /* parse XML */
-    if ( !(responseDoc = xmlParseDoc(octstr_get_cstr(xmlResponse))) ) {
+    if ( !(responseDoc = xmlParseDoc((xmlChar *)octstr_get_cstr(xmlResponse))) ) {
         error(0,"SOAP[%s]: couldn't parse XML response [ %s ] in MT parsing",
               octstr_get_cstr(privdata->name), octstr_get_cstr(xmlResponse));
         return -1;
@@ -1322,7 +1322,7 @@ static long soap_parse_mo(SMSCConn *conn, Octstr *request, Octstr **response)
     debug("bb.soap.parse_mo",0,"SOAP[%s]: parse_mo  - MO request dump <%s>", octstr_get_cstr(privdata->name),octstr_get_cstr(request));
 
     /* parse XML */
-    if ( !(requestDoc = xmlParseDoc(octstr_get_cstr(request))) ) {
+    if ( !(requestDoc = xmlParseDoc((xmlChar *)octstr_get_cstr(request))) ) {
         error(0,"SOAP[%s]: parse_mo couldn't parse XML response", octstr_get_cstr(privdata->name));
         return -1;
     }
@@ -1558,7 +1558,7 @@ static long soap_parse_dlr(SMSCConn *conn, Octstr *request, Octstr **response)
 
     /* parse XML */
 
-    if ( !(requestDoc = xmlParseDoc(octstr_get_cstr(request))) ) {
+    if ( !(requestDoc = xmlParseDoc((xmlChar *)octstr_get_cstr(request))) ) {
         error(0,"SOAP[%s]: parse_dlr couldn't parse XML response", octstr_get_cstr(privdata->name));
         return -1;
     }
@@ -1692,7 +1692,7 @@ int soap_xmlnode_get_long(xmlNodePtr cur, long* out)
     }
 
     /* read the content into output */
-    *out = strtol(nodeContent,&endPointer,10);
+    *out = strtol((char *)nodeContent,&endPointer,10);
     xmlFree(nodeContent);
 
     if (endPointer == (char*)nodeContent) {
@@ -1726,7 +1726,7 @@ int soap_xmlnode_get_int64(xmlNodePtr cur, int64* out)
 
 
     /* read the content into output */
-    *out = strtoll(nodeContent,&endPointer,10);
+    *out = strtoll((char *)nodeContent,&endPointer,10);
     xmlFree(nodeContent);
 
     if (endPointer == (char*)nodeContent) {
@@ -1758,7 +1758,7 @@ int soap_xmlnode_get_octstr(xmlNodePtr cur, Octstr **out)
     }
 
     /* store the content into output */
-    *out = octstr_create(nodeContent);
+    *out = octstr_create((char *)nodeContent);
     xmlFree(nodeContent);
 
     if (*out)
@@ -2198,7 +2198,7 @@ Octstr* soap_fetch_xml_data(xmlNodePtr xml, Octstr* path)
         /* get the next path element */
         temp = gwlist_get(path_elements, index);
         do {
-            if (!octstr_str_compare(temp,node->name)) {
+            if (!octstr_str_compare(temp,(char *)node->name)) {
                 /* found what we're looking for */
                 if (!(node->xmlChildrenNode) && index < (gwlist_len(path_elements)-1)) {
                     /* while this is indeed the item we are looking for, it's not the end
@@ -2251,9 +2251,9 @@ Octstr* soap_fetch_xml_data(xmlNodePtr xml, Octstr* path)
      * is stored in parent */
     if (attr_name) { /* The caller wants to get an attribute */
         xmlChar* content;
-        content = xmlGetProp(parent, octstr_get_cstr(attr_name));
+        content = xmlGetProp(parent, (xmlChar *)octstr_get_cstr(attr_name));
         if (content)
-            temp = octstr_create(content);
+            temp = octstr_create((char *)content);
         else /* dont treat an empty or non-existant attribute as an error right away */
             temp = octstr_create("");
         xmlFree(content);
@@ -2261,7 +2261,7 @@ Octstr* soap_fetch_xml_data(xmlNodePtr xml, Octstr* path)
         xmlChar* content;
         content = xmlNodeGetContent(parent);
         if (content)
-            temp = octstr_create(content);
+            temp = octstr_create((char *)content);
         else /* don't treat an empty tag an error right away */
             temp = octstr_create("");
         xmlFree(content);
@@ -2303,7 +2303,7 @@ int soap_map_xml_data(xmlNodePtr xml, List* maps)
             /* get the next path element */
             temp = gwlist_get(path_elements, index);
             do {
-                if (!octstr_str_compare(temp,node->name)) {
+                if (!octstr_str_compare(temp,(char *)node->name)) {
                     /* found what we're looking for */
                     if (!(node->xmlChildrenNode) && index < (gwlist_len(path_elements)-1)) {
                         /* while this is indeed the item we are looking for, it's not the end
@@ -2353,9 +2353,9 @@ int soap_map_xml_data(xmlNodePtr xml, List* maps)
 
             /* The user wants to get an attribute */
             xmlChar* content;
-            content = xmlGetProp(parent, octstr_get_cstr(map->attribute));
+            content = xmlGetProp(parent, (xmlChar *)octstr_get_cstr(map->attribute));
             if (content)
-                temp = octstr_create(content);
+                temp = octstr_create((char *)content);
             else /* dont treat an empty or non-existant attribute as an error right away */
                 temp = octstr_create("");
             xmlFree(content);
@@ -2364,7 +2364,7 @@ int soap_map_xml_data(xmlNodePtr xml, List* maps)
             xmlChar* content;
             content = xmlNodeGetContent(parent);
             if (content)
-                temp = octstr_create(content);
+                temp = octstr_create((char *)content);
             else /*  don't treat an empty tag an error right away */
 
                 temp = octstr_create("");

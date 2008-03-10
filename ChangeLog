@@ -1,3 +1,7 @@
+2008-03-10  Andreas Fink <andreas at fink.org>
+    * gw/smsc/*: fixed a lot of warning due to pointer type mismatch
+    ( (char *) versus unsinge char * and the like)
+
 2008-03-06  Andreas Fink <andreas at fink.org>
     * gw/smsc/smsc_at.c: fixed an infinite loop for receiving delivery
       reports with SMSC string being empty.

@@ -138,7 +138,7 @@ static int isphonedigit(int c)
     return isdigit(c) || c == '+' || c == '-';
 }
 
-static const int parm_valid_address(Octstr *value)
+static int parm_valid_address(Octstr *value)
 {
     return octstr_check_range(value, 0, octstr_len(value), isphonedigit);
 }
@@ -149,12 +149,12 @@ static const int parm_valid_address(Octstr *value)
 
 static int operation_find(int operation);
 static Octstr *operation_name(int operation);
-static const int operation_can_send(int operation);
-static const int operation_can_receive(int operation);
+static int operation_can_send(int operation);
+static int operation_can_receive(int operation);
 
 static const struct
 {
-    unsigned char *name;
+    char *name;
     int code;
     int can_send;
     int can_receive;
@@ -203,7 +203,7 @@ static Octstr *operation_name(int operation)
 }
 
 /* Return true if a OISD client may send this operation */
-static const int operation_can_send(int operation)
+static int operation_can_send(int operation)
 {
     int i = operation_find(operation);
 
@@ -219,7 +219,7 @@ static const int operation_can_send(int operation)
 
 
 /* Return true if a OISD server may send this operation */
-static const int operation_can_receive(int operation)
+static int operation_can_receive(int operation)
 {
     int i = operation_find(operation);
 
@@ -469,7 +469,7 @@ static struct packet *packet_create(int operation, unsigned long opref)
     header[8] = 0;
     header[9] = 0;
 
-    packet->data = octstr_create_from_data(header, 10);
+    packet->data = octstr_create_from_data((char *)header, 10);
 
     return packet;
 }

@@ -548,7 +548,7 @@ static int ois_open_receiver(SMSCenter *smsc)
 
     addrlen = sizeof(addr);
     smsc->socket = accept(smsc->ois_listening_socket,
-			  (struct sockaddr *)&addr, &addrlen);
+			  (struct sockaddr *)&addr, (socklen_t *)&addrlen);
     if (smsc->socket == -1) {
 	if (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK)
 	    /* || errno == ECONNABORTED || errno == EPROTO) -Kalle 6.7 */

@@ -139,7 +139,7 @@ typedef struct PrivAT2data {
     int	sms_memory_capacity;
     int	sms_memory_usage;
     List *pending_incoming_messages;
-    int max_error_count;
+    long max_error_count;
     Octstr *rawtcp_host;
     int rawtcp_port;
     int is_serial; /* false if device is rawtcp */ 

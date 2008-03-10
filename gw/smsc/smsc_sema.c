@@ -563,9 +563,9 @@ static int X28_reopen_data_link(int oldpadfd ,char* device){
 	
 static int X28_close_send_link(int padfd)
 {
-    unsigned char discnntbuff[5];
-    unsigned char readbuff[1024];
-    unsigned char finishconfirm[]="CLR CONF\0";
+    char discnntbuff[5];
+    char readbuff[1024];
+    char finishconfirm[]="CLR CONF\0";
     int nret = 0, readall = 0;
     time_t tstart;
     time(&tstart);
@@ -972,16 +972,16 @@ static int sema_msg_session_mt(SMSCenter *smsc, sema_msg* pmsg){
 	ilen = strlen(IA5chars);
     else
 	ilen = 121;
-    segments[0].content = octstr_create_from_data(&(pmsg->type), 1);/*msg type, in hex*/
+    segments[0].content = octstr_create_from_data((char *)&(pmsg->type), 1);/*msg type, in hex*/
     ccontinuebyte = pack_continous_byte(pmsg->encodetype, 1, iseg -1);
     octstr_insert_data(segments[0].content, 1, 
-		       &ccontinuebyte, 1);  /*continue char, in hex*/
+		       (char *)&ccontinuebyte, 1);  /*continue char, in hex*/
     octstr_insert_data(segments[0].content,
-		       2, pmsg->optref, 4); /*operation reference, in hex*/
+		       2, (char *)pmsg->optref, 4); /*operation reference, in hex*/
     octstr_insert_data(segments[0].content, 6,
 		       IA5chars, ilen);
     octstr_insert_data(segments[0].content,
-		       octstr_len(segments[0].content), &ccr, 1); /*<cr>*/
+		       octstr_len(segments[0].content), (char *)&ccr, 1); /*<cr>*/
  
     /*rest segments*/
     for( i = 1; i < iseg; i++){
@@ -989,14 +989,14 @@ static int sema_msg_session_mt(SMSCenter *smsc, sema_msg* pmsg){
 	    ilen = strlen(IA5chars) - i*121;
 	else
 	    ilen =121;
-	segments[i].content= octstr_create_from_data(&(pmsg->type), 1); 
+	segments[i].content= octstr_create_from_data((char *)&(pmsg->type), 1); 
 	ccontinuebyte = pack_continous_byte(pmsg->encodetype, 0, iseg -i-1);
-	octstr_insert_data(segments[i].content, 1, &ccontinuebyte, 1); 
-	octstr_insert_data(segments[i].content, 2, pmsg->optref, 4); 
+	octstr_insert_data(segments[i].content, 1, (char *)&ccontinuebyte, 1); 
+	octstr_insert_data(segments[i].content, 2, (char *)pmsg->optref, 4); 
 	octstr_insert_data(segments[i].content, 6, 
 			   IA5chars + i*121, ilen);
 	octstr_insert_data(segments[i].content,
-			   octstr_len(segments[i].content), &ccr, 1); 
+			   octstr_len(segments[i].content),(char *)&ccr, 1); 
     }
 
     if(x28_data_mode != X28_MT_DATA_MODE){
@@ -1044,8 +1044,8 @@ static int sema_msg_session_mt(SMSCenter *smsc, sema_msg* pmsg){
 	memset(data,0,sizeof(data));
 	while(X28_msg_pop(smsc->buffer, data) == 0 ) {
 	    if(strlen(data) > 0){
-		if(strstr(data,cerr) != NULL ||
-		   strstr(data,cclr) != NULL){
+		if(strstr(data,(char *)cerr) != NULL ||
+		   strstr(data,(char *)cclr) != NULL){
 		  debug("smsc.sema", 0, "sema_mt_session: Radio Pad Command line-%s",data);
 		    goto sendlink_error;
 		}
@@ -1060,7 +1060,7 @@ static int sema_msg_session_mt(SMSCenter *smsc, sema_msg* pmsg){
 			memset(tmp1,0,5); memset(tmp2,0,5);
 			memcpy(tmp1,mtrmsg->optref,4);
 			memcpy(tmp2, pmsg->optref,4);
-			if(strstr(tmp1,tmp2) != NULL){
+			if(strstr((char *)tmp1,(char *)tmp2) != NULL){
 			    isrcved = 1;
 			    memcpy(submit_invoke->smscrefnum, submit_result->smscrefnum,4);
 			}
@@ -1080,7 +1080,7 @@ static int sema_msg_session_mt(SMSCenter *smsc, sema_msg* pmsg){
 			memset(tmp1,0,sizeof(tmp1)); memset(tmp2,0,sizeof(tmp2));
 			memcpy(tmp1,report_invoke->smscrefnum,4);
 			memcpy(tmp2,submit_invoke->smscrefnum,4);
-			if(strstr(tmp1, tmp2) != NULL){
+			if(strstr((char *)tmp1,(char *)tmp2) != NULL){
 			    iTrcved = 1;
 			}
 			decoderesult = 0; 
@@ -1318,7 +1318,7 @@ static int sema_decode_msg(sema_msg **desmsg, char* octsrc) {
 	octsrc +=iusedbyte;    
 	iusedbyte = line_scan_IA5_hex(octsrc,receive_sm->destaddlen,tmp);
 	if(iusedbyte < 1) goto error_deliver;
-	receive_sm->destadd= octstr_create_from_data(tmp,  receive_sm->destaddlen);
+	receive_sm->destadd= octstr_create_from_data((char *)tmp,  receive_sm->destaddlen);
 	/*smsc reference number*/
 	octsrc +=iusedbyte;
 	iusedbyte = line_scan_IA5_hex(octsrc, 4,tmp);
@@ -1334,7 +1334,7 @@ static int sema_decode_msg(sema_msg **desmsg, char* octsrc) {
 	octsrc +=iusedbyte;
 	iusedbyte = line_scan_IA5_hex(octsrc, receive_sm->origaddlen, tmp);
 	if(iusedbyte < 1) goto error_deliver;
-	receive_sm->origadd= octstr_create_from_data(tmp,receive_sm->origaddlen);
+	receive_sm->origadd= octstr_create_from_data((char *)tmp,receive_sm->origaddlen);
 	/* data code scheme */ 
 	octsrc +=iusedbyte;
 	if(iusedbyte < 1) goto error_deliver;
@@ -1377,7 +1377,7 @@ static int sema_decode_msg(sema_msg **desmsg, char* octsrc) {
 	{
 	    iusedbyte = line_scan_IA5_hex(octsrc,receive_sm->textsizeoctect,tmp);	   
 	    if(iusedbyte < 1) goto error_deliver;	
-	    receive_sm->shortmsg =octstr_create_from_data( tmp,receive_sm->textsizeoctect);
+	    receive_sm->shortmsg =octstr_create_from_data( (char *)tmp,receive_sm->textsizeoctect);
 	}
 	else if(receive_sm->DCS == ENCODE_GSM &&  receive_sm->textsizeseptet > 0)
 	{
@@ -1387,7 +1387,7 @@ static int sema_decode_msg(sema_msg **desmsg, char* octsrc) {
 	    if(iusedbyte < 1) goto error_deliver;
 	    line_scan_hex_GSM7(tmp,receive_sm->textsizeoctect,
 			       receive_sm->textsizeseptet, tmpgsm);
-	    receive_sm->shortmsg = octstr_create_from_data(tmpgsm,
+	    receive_sm->shortmsg = octstr_create_from_data((char *)tmpgsm,
 							   receive_sm->textsizeseptet);
 	
 	}
@@ -1419,7 +1419,7 @@ static int sema_decode_msg(sema_msg **desmsg, char* octsrc) {
 	octsrc += iusedbyte;    
 	iusedbyte = line_scan_IA5_hex(octsrc, receive_report->msisdnlen, tmp);
 	if(iusedbyte < 1) goto error_receive;
-	receive_report->msisdn = octstr_create_from_data( tmp,receive_report->msisdnlen);
+	receive_report->msisdn = octstr_create_from_data( (char *)tmp,receive_report->msisdnlen);
 	/*sme reference type*/
 	octsrc += iusedbyte;
 	iusedbyte = line_scan_IA5_hex(octsrc, 1, tmp);
@@ -1478,7 +1478,7 @@ static int sema_decode_msg(sema_msg **desmsg, char* octsrc) {
 	octsrc += iusedbyte;
 	iusedbyte = line_scan_IA5_hex(octsrc, receive_report->origaddlen, tmp);
 	if(iusedbyte < 1) goto error_receive;
-	receive_report->origadd = octstr_create_from_data(tmp,  receive_report->msisdnlen);
+	receive_report->origadd = octstr_create_from_data((char *)tmp,  receive_report->msisdnlen);
 	/* invoke time */
 	octsrc += iusedbyte;     
 	iusedbyte = line_scan_IA5_hex(octsrc,14, tmp);
@@ -1522,7 +1522,7 @@ static int sema_encode_msg(sema_msg* pmsg, char* str) {
 	write_variable_value(submit_sm->msisdnlen, oc1byte); /*msisdn len*/
 	line_append_hex_IA5(IA5msg, oc1byte,1);
 	line_append_hex_IA5(IA5msg, 
-			    octstr_get_cstr(submit_sm->msisdn),
+			    (unsigned char *)octstr_get_cstr(submit_sm->msisdn),
 			    octstr_len(submit_sm->msisdn)); /*msisdn*/
 	write_variable_value(submit_sm->smereftype, oc1byte);/*smetype*/
 	line_append_hex_IA5(IA5msg, oc1byte,1);
@@ -1532,7 +1532,7 @@ static int sema_encode_msg(sema_msg* pmsg, char* str) {
 	write_variable_value(submit_sm->origaddlen, oc1byte); /*orignating address length*/
 	line_append_hex_IA5(IA5msg, oc1byte,1);
 	line_append_hex_IA5(IA5msg, 
-			    octstr_get_cstr(submit_sm->origadd),
+			    (unsigned char *)octstr_get_cstr(submit_sm->origadd),
 			    octstr_len(submit_sm->origadd)); /*orignating address*/
 	write_variable_value(submit_sm->validperiodtype, oc1byte); /*valid period type*/
 	line_append_hex_IA5(IA5msg, oc1byte,1);
@@ -1549,14 +1549,14 @@ static int sema_encode_msg(sema_msg* pmsg, char* str) {
 	
             /*text size in 7 bits char*/
       	tSize = internal_char_hex_to_IA5(submit_sm->textsizeseptet,oc1byte);
-	octstr_insert_data(IA5msg, octstr_len(IA5msg), oc1byte, tSize);
+	octstr_insert_data(IA5msg, octstr_len(IA5msg), (char *)oc1byte, tSize);
 
             /*text size in 8 bits char*/
 	tSize = internal_char_hex_to_IA5(submit_sm->textsizeoctect,oc1byte);  
- 	octstr_insert_data(IA5msg, octstr_len(IA5msg), oc1byte, tSize);
+ 	octstr_insert_data(IA5msg, octstr_len(IA5msg),(char *) oc1byte, tSize);
 
 	line_append_hex_IA5(IA5msg,		      
-			    octstr_get_cstr(submit_sm->shortmsg),
+			    (unsigned char *)octstr_get_cstr(submit_sm->shortmsg),
 			    submit_sm->textsizeoctect); /*msg text*/
 	memcpy(str,octstr_get_cstr(IA5msg),octstr_len(IA5msg));
 	octstr_destroy(IA5msg);
@@ -1647,13 +1647,13 @@ static int line_append_hex_IA5(Octstr* des, unsigned char* src, int len)
 	    iall += j;
 	}
     }
-    octstr_insert_data(des,octstr_len(des),tmp,iall);
+    octstr_insert_data(des,octstr_len(des),(char *)tmp,iall);
     return iall;
 }
 
 
 /* check SMS2000 Version 4.0 B.4.2.3 */
-static int line_scan_IA5_hex(unsigned char* from, 
+static int line_scan_IA5_hex(char* from, 
 			     int hexnum, unsigned char* to)
 {
     unsigned char cha[1];
@@ -1792,7 +1792,7 @@ static int internal_char_hex_to_IA5(unsigned char from, unsigned char * to){
 	return -1;
 }
 
-static int internal_char_IA5_to_hex(unsigned char *from, unsigned char * to){
+static int internal_char_IA5_to_hex(char *from, unsigned char * to){
     int ret = -1;
     int len = strlen(from);
 

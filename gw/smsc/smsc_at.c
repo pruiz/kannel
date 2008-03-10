@@ -1419,7 +1419,7 @@ int smsc_at2_create(SMSCConn *conn, CfgGroup *cfg)
     privdata->conn = conn;
     privdata->phase2plus = 0;
     privdata->validityperiod = cfg_get(cfg, octstr_imm("validityperiod"));
-    if (cfg_get_integer((long*) &privdata->max_error_count, cfg, octstr_imm("max-error-count")) == -1)
+    if (cfg_get_integer((long *) &privdata->max_error_count,  cfg, octstr_imm("max-error-count")) == -1)
         privdata->max_error_count = -1;
 
     conn->data = privdata;
