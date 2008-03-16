@@ -2645,6 +2645,15 @@ secret-nas = radius
         </entry>   
      </row>
 
+     <row><entry><literal>max-sms-octets</literal></entry>
+        <entry>number</entry>
+        <entry valign="bottom">
+        Maximum allowed octets for this SMSC. If this maximum exceeds Kannel will split
+        SMS into multiparts.
+        Default: 140
+        </entry>   
+     </row>
+
   </tbody>
   </tgroup>
  </table>

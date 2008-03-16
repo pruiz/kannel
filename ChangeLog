@@ -1,3 +1,8 @@
+2008-03-15 Alexander Malysh <amalysh at kannel.org>
+    * doc/userguide/userguide.xml, gw/smscconn.c, gw/smscconn_p.h,
+      gwlib/cfg.def: Implemented max-sms-octets config option that
+      allows to set maximum length of SMS for SMSC.
+
 2008-03-10  Andreas Fink <andreas at fink.org>
     * gw/smsc/*: fixed a lot of warning due to pointer type mismatch
     ( (char *) versus unsinge char * and the like)

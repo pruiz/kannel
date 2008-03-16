@@ -381,6 +381,7 @@ MULTI_GROUP(smsc,
     OCTSTR(status-success-regex)
     OCTSTR(status-permfail-regex)
     OCTSTR(status-tempfail-regex)
+    OCTSTR(max-sms-octets)
 )
 
 

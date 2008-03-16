@@ -202,6 +202,7 @@ struct smscconn {
     Octstr *reroute_to_smsc;    /* define a smsc-id to reroute to */
     int reroute_dlr;            /* should DLR's are rereouted too? */
 
+    long max_sms_octets; /* max allowed octets for this SMSC */
 
     /* XXX: move rest global data from Smsc here
      */
