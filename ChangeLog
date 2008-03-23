@@ -1,3 +1,9 @@
+2008-03-23	Stipe Tolj  <stolj at kannel.org>
+    * gw/smsc/smsc_at.c: fix at2_wait_modem_command() to ignore specific OK
+      responses for AT+CNMA acknowledges.
+      Thanks to Marius Huysamen <mhuysamen at mhg.co.za> for providing patch.
+      [Msg-Id: <47C93579.8000409@mhg.co.za>]
+
 2008-03-15 Alexander Malysh <amalysh at kannel.org>
     * doc/userguide/userguide.xml, gw/smscconn.c, gw/smscconn_p.h,
       gwlib/cfg.def: Implemented max-sms-octets config option that
