@@ -1,3 +1,7 @@
+2008-04-09	Stipe Tolj  <stolj at kannel.org>
+    * doc/userguide/userguide.xml: add missing documentation block for 
+      'alt-dcs' in smsc group.
+
 2008-03-23	Stipe Tolj  <stolj at kannel.org>
     * gw/smsc/smsc_at.c: fix at2_wait_modem_command() to ignore specific OK
       responses for AT+CNMA acknowledges.

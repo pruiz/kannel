@@ -2509,21 +2509,30 @@ secret-nas = radius
         As some SMS Centers do not follow the standards in character
         coding, an <literal>alt-charset</literal> character conversion is
         presented. This directive acts different for specific SMSC types.
-		  Please see your SMSC module type you want to use for more details.
+		Please see your SMSC module type you want to use for more details.
+     </entry></row>
+
+   <row><entry><literal>alt-dcs</literal></entry>
+     <entry><literal>boolean</literal></entry>
+     <entry valign="bottom">
+	   Optional data coding scheme value usage. Sets the 'alt-dcs' value 
+	   for the sendsms HTTP interface to a fixed value for each SMS sent 
+	   via this SMSC connection. 
+	   If equals to yes, uses FX. If equals to no (default), uses 0X.
      </entry></row>
 
    <row><entry><literal>our-host</literal></entry>
      <entry><literal>hostname</literal></entry>
      <entry valign="bottom">
        Optional hostname or IP address in which to bind the connection in our
-     end. TCP/IP connection only.
+       end. TCP/IP connection only.
      </entry></row>
 
     <row><entry><literal>log-file</literal></entry>
      <entry>filename</entry>
      <entry valign="bottom">
         A file in which to write a log of the given smsc output. Hence
- 		  this allows to log smsc specific entries to a separate file.
+        this allows to log smsc specific entries to a separate file.
      </entry></row>
 
     <row><entry><literal>log-level</literal></entry>
