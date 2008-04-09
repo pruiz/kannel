@@ -1,3 +1,6 @@
+2008-04-09  Stipe Tolj  <stolj at kannel.org>
+    * Makefile.in: fix 'make clean' target, by fixing find expression.
+
 2008-04-09	Stipe Tolj  <stolj at kannel.org>
     * doc/userguide/userguide.xml: add missing documentation block for 
       'alt-dcs' in smsc group.

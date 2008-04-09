@@ -316,7 +316,7 @@ install-docs:
 	done
 	
 clean:
-	find . -name "*.o" -name "*.i" -name "*.a" | xargs rm -f
+	find . -name "*.o" -o -name "*.i" -o -name "*.a" | xargs rm -f
 	rm -f core gw-config $(progs) $(testprogs) $(checkprogs)
 	rm -f $(figs) $(ps) $(docs)
 	rm -f $(benchoutputs)
