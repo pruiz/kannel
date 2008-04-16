@@ -89,14 +89,14 @@ struct table
 
 struct numbered_element
 {
-    unsigned char *str;
+    char *str;
     long number;
     int version;    
 };
 
 struct linear_element
 {
-    unsigned char *str;
+    char *str;
     int version;    
 };
 
@@ -173,11 +173,11 @@ static unsigned char *number_to_cstr(long number, struct table *table)
 
     if (table->linear) {
 	if (number >= 0 && number < table->size)
-	    return octstr_get_cstr(table->strings[number]);
+	    return (unsigned char *)octstr_get_cstr(table->strings[number]);
     } else {
 	for (i = 0; i < table->size; i++) {
    	     if (table->numbers[i] == number)
-		return octstr_get_cstr(table->strings[i]);
+		return (unsigned char *)octstr_get_cstr(table->strings[i]);
 	}
     }
     return NULL;
