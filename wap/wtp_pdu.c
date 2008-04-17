@@ -444,7 +444,7 @@ Octstr *wtp_pdu_pack(WTP_PDU *pdu) {
 }
 
 void wtp_pdu_dump(WTP_PDU *pdu, int level) {
-	unsigned char *dbg = "wap.wtp";
+	 char *dbg = "wap.wtp";
 
 	switch (pdu->type) {
 #define PDU(name, docstring, fields, is_valid) \
