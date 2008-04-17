@@ -1,5 +1,6 @@
 2008-04-16  Andreas Fink <andreas at fink.org>
-    * wap/wsp_strings.c: fixed compiler warnings due to signed/unsigned char mismatch
+    * wap/wsp_[strings|unit|init|pdu].c: fixed compiler warnings due to 
+      signed/unsigned char mismatch.
 
 2008-04-09  Stipe Tolj  <stolj at kannel.org>
     * Makefile.in: fix 'make clean' target, by fixing find expression.
