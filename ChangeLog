@@ -1,3 +1,6 @@
+2008-04-17  Andreas Fink <andreas at fink.org>
+    * gw/smsc/smsc_ois.c: fixed compiler warning.
+    
 2008-04-16  Andreas Fink <andreas at fink.org>
     * wap/wsp_[strings|unit|init|pdu].c: fixed compiler warnings due to 
       signed/unsigned char mismatch.
