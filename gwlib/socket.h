@@ -169,6 +169,12 @@ Octstr *host_ip(struct sockaddr_in addr);
 
 
 /*
+ * Return the port number of an IP connection.
+ */
+int host_port(struct sockaddr_in addr);
+
+
+/*
  * This must be called before sockets are used. gwlib_init does that
  */
 void socket_init(void);

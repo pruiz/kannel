@@ -1,3 +1,7 @@
+2008-04-21  Stipe Tolj  <stolj at kannel.org>
+    * gwlib/socket.[ch]: add host_port() function in accordance to host_ip()
+      to get the port number of a TCP connection in use.
+
 2008-04-17  Andreas Fink <andreas at fink.org>
     * gw/smsc/smsc_ois.c: fixed compiler warning.
     

@@ -580,6 +580,12 @@ Octstr *host_ip(struct sockaddr_in addr)
 }
 
 
+int host_port(struct sockaddr_in addr)
+{
+    return ntohs(addr.sin_port);
+}
+
+
 Octstr *get_official_name(void)
 {
     gw_assert(official_name != NULL);
