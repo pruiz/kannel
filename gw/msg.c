@@ -245,6 +245,17 @@ error:
 }
 
 
+/*
+ * Wrapper function needed for function pointer forwarding to storage
+ * subsystem. We can't pass the msg_unpack() pre-processor macro, so we
+ * need to wrapp a function arround it.
+ */
+inline Msg *msg_unpack_wrapper(Octstr *os)
+{
+    return msg_unpack(os);
+}
+
+
 /**********************************************************************
  * Implementations of private functions.
  */

@@ -90,15 +90,22 @@ extern int (*store_load)(void(*receive_msg)(Msg*));
  */
 extern int (*store_dump)(void);
 
-/* initialize system. Return -1 if fname is baad (too long). */
-int store_init(const Octstr* type, const Octstr *fname, long dump_freq);
+/*
+ * Function pointers used inside the storage subsystem to pack and
+ * unpack a Msg with variable serialization functions.
+ */
+extern Octstr* (*store_msg_pack)(Msg *msg);
+extern Msg* (*store_msg_unpack)(Octstr *os);
+
+/* initialize system. Return -1 if fname is bad (too long). */
+int store_init(const Octstr *type, const Octstr *fname, long dump_freq,
+               void *pack_func, void *unpack_func);
 
 /* init shutdown (system dies when all acks have been processed) */
 extern void (*store_shutdown)(void);
 
 /* return all containing messages in the current store */
 extern Octstr* (*store_status)(int status_type);
-
 
 /**
  * Init functions for different store types.

@@ -410,7 +410,7 @@ static Cfg *init_bearerbox(Cfg *cfg)
         log = cfg_get(grp, octstr_imm("store-location"));
         val = cfg_get(grp, octstr_imm("store-type"));
     }
-    if (store_init(val, log, store_dump_freq) == -1)
+    if (store_init(val, log, store_dump_freq, msg_pack, msg_unpack_wrapper) == -1)
         panic(0, "Could not start with store init failed.");
     octstr_destroy(val);
     octstr_destroy(log);

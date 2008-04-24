@@ -1,3 +1,14 @@
+2008-04-24  Stipe Tolj  <stolj at kannel.org>
+    * gw/bb_store_[file|spool].c: use internal function pointer while
+      packing/unpacking the Msg struct.
+    * gw/bb_store.[ch]: add store_msg_pack and store_msg_unpack function
+      pointers, allowing a box to pass their own msg_[un]pack() functions
+      to the storage subsystem, in case they use a different serialization.
+    * gw/bearerbox.c, test/test_store_dump.c: add the function pointers
+      for packing/unpack to store_init() call.
+    * gw/msg.[ch]: we need a wrapper for msg_unpack(), for passing it as
+      function pointer argument, since it's a preprocessor macro.
+
 2008-04-21  Stipe Tolj  <stolj at kannel.org>
     * gwlib/socket.[ch]: add host_port() function in accordance to host_ip()
       to get the port number of a TCP connection in use.

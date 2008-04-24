@@ -104,7 +104,7 @@ static void write_msg(Msg *msg)
     Octstr *pack;
     unsigned char buf[4];
     
-    pack = msg_pack(msg);
+    pack = store_msg_pack(msg);
     encode_network_long(buf, octstr_len(pack));
     octstr_insert_data(pack, 0, (char*)buf, 4);
 
@@ -133,7 +133,7 @@ static int read_msg(Msg **msg, Octstr *os, long *off)
     
     pack = octstr_copy(os, *off, i);
     *off += octstr_len(pack);
-    *msg = msg_unpack(pack);
+    *msg = store_msg_unpack(pack);
     octstr_destroy(pack);
     
     if (!*msg)

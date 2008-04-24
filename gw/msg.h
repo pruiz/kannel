@@ -173,9 +173,9 @@ Octstr *msg_pack(Msg *msg);
  * Unpack an Msg from an Octstr. Return NULL for failure, otherwise a pointer
  * to the Msg.
  */
-
 Msg *msg_unpack_real(Octstr *os, const char *file, long line, const char *func);
 #define msg_unpack(os) \
     gw_claim_area(msg_unpack_real((os), __FILE__, __LINE__, __func__))
+Msg *msg_unpack_wrapper(Octstr *os);
 
 #endif

@@ -74,11 +74,17 @@ int (*store_load)(void(*receive_msg)(Msg*));
 int (*store_dump)(void);
 void (*store_shutdown)(void);
 Octstr* (*store_status)(int status_type);
+Octstr* (*store_msg_pack)(Msg *msg);
+Msg* (*store_msg_unpack)(Octstr *os);
  
 
-int store_init(const Octstr *type, const Octstr *fname, long dump_freq)
+int store_init(const Octstr *type, const Octstr *fname, long dump_freq,
+               void *pack_func, void *unpack_func)
 {
     int ret;
+    
+    store_msg_pack = pack_func;
+    store_msg_unpack = unpack_func;
 
     if (type == NULL || octstr_str_compare(type, "file") == 0) {
         ret = store_file_init(fname, dump_freq);
@@ -91,5 +97,3 @@ int store_init(const Octstr *type, const Octstr *fname, long dump_freq)
 
     return ret;
 }
- 
-

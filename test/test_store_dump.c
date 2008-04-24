@@ -95,7 +95,7 @@ int main(int argc, char **argv)
     type = octstr_create("file");
     
     /* init store subsystem */
-    store_init(type, octstr_imm(argv[cf_index]), -1);
+    store_init(type, octstr_imm(argv[cf_index]), -1, msg_pack, msg_unpack_wrapper);
 
     /* pass every entry in the store to callback print_msg() */
     store_load(print_msg);
