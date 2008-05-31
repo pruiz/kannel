@@ -1487,7 +1487,7 @@ struct headerinfo headerinfo[] =
         { WSP_HEADER_X_WAP_CONTENT_URI, pack_uri, 0},
         { WSP_HEADER_X_WAP_INITIATOR_URI, pack_uri, 0},
         { WSP_HEADER_X_WAP_APPLICATION_ID, wsp_pack_integer_string, 0},
-        { WSP_HEADER_CONTENT_ID, wsp_pack_text, 0},
+        { WSP_HEADER_CONTENT_ID, wsp_pack_quoted_text, 0},
         { WSP_HEADER_ENCODING_VERSION, wsp_pack_version_value, 0 }
         // DAVI { WSP_HEADER_SET_COOKIE, pack_version_value, 0 }
     };
@@ -1621,6 +1621,15 @@ int wsp_pack_text(Octstr *packed, Octstr *text)
     octstr_append(packed, text);
     octstr_append_char(packed, 0);
     return 0;
+}
+
+/* Pack a string as quoted-text WAP WSP 203, Section 8.4.2.1 */
+int wsp_pack_quoted_text(Octstr *packed, Octstr *text)
+{
+     octstr_append_char(packed, '"');
+     octstr_append(packed,text);
+     octstr_append_char(packed,0);
+     return 0;
 }
 
 /* Pack text as Quoted-string if it starts with a " character.

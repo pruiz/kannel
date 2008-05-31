@@ -1,3 +1,8 @@
+2008-05-31  Stipe Tolj  <stolj at kannel.org>
+    * wap/wsp_headers.[ch]: fix encoding of 'Content-Id' WSP header.
+      Thanks to Paul Bagyenda from Mbuni for the patch.
+      [Msg-Id: <96EDF863-5963-48C4-964D-8A8E375544CC@dsmagic.com>]
+
 2008-04-24  Stipe Tolj  <stolj at kannel.org>
     * gw/bb_store_[file|spool].c: use internal function pointer while
       packing/unpacking the Msg struct.
