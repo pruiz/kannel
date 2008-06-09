@@ -274,8 +274,7 @@ static Connection *open_send_connection(SMSCConn *conn)
     int connect_error = 0;
     int wait_ack = 0;
 
-    do_alt_host = octstr_len(privdata->alt_host) != 0 || 
-	    privdata->alt_port != 0;
+    do_alt_host = octstr_len(privdata->alt_host) != 0 || privdata->alt_port != 0;
 
     alt_host = 0;
 
@@ -300,17 +299,27 @@ static Connection *open_send_connection(SMSCConn *conn)
 	if (alt_host != 1) {
 	    info(0, "EMI2[%s]: connecting to Primary SMSC",
 			    octstr_get_cstr(privdata->name));
+        mutex_lock(conn->flow_mutex);
+        octstr_destroy(conn->name);
+        conn->name = octstr_format("EMI2:%S:%d:%S", privdata->host, privdata->port, privdata->username ? privdata->username : octstr_imm("null"));
+        mutex_unlock(conn->flow_mutex);
 	    server = conn_open_tcp_with_port(privdata->host, privdata->port,
 					     privdata->our_port,
 					     conn->our_host);
 	    if(do_alt_host)
-		alt_host=1;
+            alt_host=1;
 	    else
-		alt_host=0;
+            alt_host=0;
 	} else {
 	    info(0, "EMI2[%s]: connecting to Alternate SMSC",
 			    octstr_get_cstr(privdata->name));
 	    /* use alt_host or/and alt_port if defined */
+        mutex_lock(conn->flow_mutex);
+        octstr_destroy(conn->name);
+        conn->name = octstr_format("EMI2:%S:%d:%S", octstr_len(privdata->alt_host) ? privdata->alt_host : privdata->host,
+                                  privdata->alt_port ? privdata->alt_port : privdata->port,
+								  privdata->username ? privdata->username : octstr_imm("null"));
+        mutex_unlock(conn->flow_mutex);
 	    server = conn_open_tcp_with_port(
 		(octstr_len(privdata->alt_host) ? privdata->alt_host : privdata->host),
 		(privdata->alt_port ? privdata->alt_port : privdata->port),

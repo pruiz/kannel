@@ -1,3 +1,8 @@
+2008-06-09 Alexander Malysh <amalysh at kannel.org>
+    * gw/smsc/smsc_emi.c: fixed name issue when we use alternate host/port.
+      Thanks to Vincent CHAVANIS <v.chavanis at telemaque.fr> for spotting this
+      and provided patch.
+
 2008-05-31  Stipe Tolj  <stolj at kannel.org>
     * wap/wsp_headers.[ch]: fix encoding of 'Content-Id' WSP header.
       Thanks to Paul Bagyenda from Mbuni for the patch.
