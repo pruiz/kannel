@@ -1,3 +1,8 @@
+2008-06-13  Stipe Tolj  <stolj at kannel.org>
+    * gw/smsc/smsc_smpp.c: fix possible assertion check panic while calling
+      octstr_get_char() on the source_addr field, which may be NULL according
+      to SMPP v3.4 specs.
+
 2008-06-09 Alexander Malysh <amalysh at kannel.org>
     * gw/smsc/smsc_emi.c: fixed name issue when we use alternate host/port.
       Thanks to Vincent CHAVANIS <v.chavanis at telemaque.fr> for spotting this
