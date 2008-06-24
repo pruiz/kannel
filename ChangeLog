@@ -1,3 +1,9 @@
+2008-06-24  Andreas Fink  <andreas at fink.org>
+    * gw/smsc/smsc_at.c: support for protocol type = telnet
+      compared to rawtcp it does interpret telnet escape sequences.
+      Also supports specifying smsc-username / smsc-password to log in
+      on the access server. New params are login-prompt and password-prompt
+
 2008-06-13  Stipe Tolj  <stolj at kannel.org>
     * gw/smsc/smsc_smpp.c: fix possible assertion check panic while calling
       octstr_get_char() on the source_addr field, which may be NULL according

@@ -135,6 +135,10 @@ typedef struct PrivAT2data {
     Octstr *sms_center;
     Octstr *name;
     Octstr *configfile;
+    Octstr *username;
+    Octstr *password;
+    Octstr *login_prompt;
+    Octstr *password_prompt;
     int	sms_memory_poll_interval;
     int	sms_memory_capacity;
     int	sms_memory_usage;
@@ -143,6 +147,7 @@ typedef struct PrivAT2data {
     Octstr *rawtcp_host;
     int rawtcp_port;
     int is_serial; /* false if device is rawtcp */ 
+    int use_telnet; /* use telnet escape sequences */
  } PrivAT2data;
 
 

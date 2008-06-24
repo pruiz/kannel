@@ -3626,7 +3626,8 @@ pin = 2345
      <entry><literal>device-name</literal></entry>
      <entry valign="bottom">
           The device the modem is connected to, like <literal>/dev/ttyS0</literal>.
-          When the device name is set to <literal>rawtcp</literal>, two other
+          When the device name is set to <literal>rawtcp</literal> or 
+          <literal>telnet</literal> two other
           variables are required in the configuration: <literal>host</literal>
           and <literal>port</literal>. See the note below.
       </entry></row>
@@ -3710,6 +3711,38 @@ pin = 2345
        <entry valign="bottom">
           TCP port to connect to on <literal>rawtcp-host</literal>.
           Required if <literal>device</literal> is set to <literal>rawtcp</literal>.
+       </entry></row>
+
+     <row><entry><literal>smsc-username</literal></entry>
+       <entry><literal>string</literal></entry>
+       <entry valign="bottom">
+          Username to use on a Login: or User: prompt prior to be connected
+          to the modem. Useful if modem is connected to a terminal server
+          and <literal>rawtcp</literal> mode or <literal>telnet</literal> mode
+          are used.
+       </entry></row>
+
+     <row><entry><literal>smsc-password</literal></entry>
+       <entry><literal>string</literal></entry>
+       <entry valign="bottom">
+          Username to use on a Password prompt prior to be connected
+          to the modem. Useful if modem is connected to a terminal server
+          and <literal>rawtcp</literal> mode or <literal>telnet</literal> mode
+          are used. <literal>smsc-password</literal> can be used alone
+          without <literal>smsc-username</literal> for devices only asking for
+          a password.
+       </entry></row>
+
+    <row><entry><literal>login-prompt</literal></entry>
+       <entry><literal>string</literal></entry>
+       <entry valign="bottom">
+          An alternative string to be used instead of Login: or Username:
+       </entry></row>
+
+     <row><entry><literal>password-prompt</literal></entry>
+       <entry><literal>string</literal></entry>
+       <entry valign="bottom">
+           An alternative string to be used instead of Password:
        </entry></row>
 
    </tbody></tgroup></informaltable>
