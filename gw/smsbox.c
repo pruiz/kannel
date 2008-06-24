@@ -1726,8 +1726,7 @@ static void obey_request_thread(void *arg)
 		octstr_get_cstr(msg->sms.sender));
 
 	} else {
-	    trans = urltrans_find(translations, msg->sms.msgdata,
-	    	    	      msg->sms.smsc_id, msg->sms.sender, msg->sms.receiver, msg->sms.account);
+	    trans = urltrans_find(translations, msg);
 	    if (trans == NULL) {
 		warning(0, "No translation found for <%s> from <%s> to <%s>",
 		    octstr_get_cstr(msg->sms.msgdata),

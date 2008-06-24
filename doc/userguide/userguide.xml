@@ -6175,6 +6175,10 @@ forwarding of an operator ID from aggregator SMSCs to the application
 layer, hence the smsbox HTTP calling instance.
 </entry></row>
 
+<row><entry><literal>%O</literal></entry><entry>
+DCS (Data coding schema) value.
+</entry></row>
+
 <row><entry><literal>%f</literal></entry><entry>
 Originating SMSC of incoming message. The value is set if
 the AT driver is used to receive a SMS on a gsm modem.
