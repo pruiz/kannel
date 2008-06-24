@@ -1,9 +1,14 @@
+2008-06-24  Stipe Tolj  <stolj at kannel.org>
+    * gw/smsc/smsc_at.c: fix compiler warnings. NLC.
+    
 2008-06-24 Alexander Malysh <amalysh at kannel.org>
-    * doc/userguide/userguide.xml, gw/smsbox.c, gw/urltrans.[ch], test/test_urltrans.c:
-      convert keyword handling to use regex and allow keyword-regex to match the whole msg body
-      instead of only the first word. This patch doesn't change behaviour of keyword handling
-      except keyword-regex now match whole message body. Additionaly, this patch adds escape
-      code '%O' for DCS because it make sense to have DCS as whole instead of splitted into fields.
+    * doc/userguide/userguide.xml, gw/smsbox.c, gw/urltrans.[ch], 
+      test/test_urltrans.c: convert keyword handling to use regex and allow 
+      keyword-regex to match the whole msg body instead of only the first 
+      word. This patch doesn't change behaviour of keyword handling except 
+      keyword-regex now match whole message body. Additionaly, this patch 
+      adds escape code '%O' for DCS because it make sense to have DCS as 
+      whole instead of splitted into fields.
 
 2008-06-24  Andreas Fink  <andreas at fink.org>
     * gw/smsc/smsc_at.c: support for protocol type = telnet

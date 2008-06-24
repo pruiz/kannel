@@ -197,12 +197,10 @@ static int at2_open_device1(PrivAT2data *privdata)
     return 0;
 }
 
+
 static int at2_login_device(PrivAT2data *privdata)
 {
-    Octstr *line;
-    int attempts = 0;
-    
-    info(0, "AT2[%s]: loggin in", octstr_get_cstr(privdata->name));
+    info(0, "AT2[%s]: Logging in", octstr_get_cstr(privdata->name));
 
     at2_read_buffer(privdata);
     gwthread_sleep(0.5);
@@ -222,7 +220,6 @@ static int at2_login_device(PrivAT2data *privdata)
 
     return 0;
 }
-
 
 
 static int at2_open_device(PrivAT2data *privdata)
@@ -280,7 +277,7 @@ static int at2_open_device(PrivAT2data *privdata)
 
 static void at2_close_device(PrivAT2data *privdata)
 {
-    info(0, "AT2[%s]: closing device", octstr_get_cstr(privdata->name));
+    info(0, "AT2[%s]: Closing device", octstr_get_cstr(privdata->name));
     close(privdata->fd);
     privdata->fd = -1;
     privdata->pin_ready = 0;
