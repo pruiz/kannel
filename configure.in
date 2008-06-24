@@ -176,10 +176,10 @@ AC_C_INLINE
 dnl Check for how to do large files
 
 AC_SYS_LARGEFILE(CFLAGS)
-if test ${ac_cv_sys_file_offset_bits} != no ; then
+if test "${ac_cv_sys_file_offset_bits}" != no ; then
     CFLAGS="$CFLAGS -D_FILE_OFFSET_BITS=${ac_cv_sys_file_offset_bits}"
 fi
-if test ${ac_cv_sys_large_files} != "no" ; then
+if test "${ac_cv_sys_large_files}" != no ; then
     CFLAGS="$CFLAGS -D_LARGE_FILES=${ac_cv_sys_large_files}"
 fi
 
