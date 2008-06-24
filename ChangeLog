@@ -1,4 +1,8 @@
 2008-06-24  Stipe Tolj  <stolj at kannel.org>
+    * Makefile.in: add 'datarootdir' reference which is required for
+      autoconf 2.60 (and higher) output files.
+      
+2008-06-24  Stipe Tolj  <stolj at kannel.org>
     * configure[.in]: fix shell unary expression error. NLC.
     
 2008-06-24  Stipe Tolj  <stolj at kannel.org>
