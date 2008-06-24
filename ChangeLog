@@ -1,4 +1,9 @@
 2008-06-24  Stipe Tolj  <stolj at kannel.org>
+    * configure[.in]: fix [] bracked output, and change --with-sqlite to
+      --with-sqlite2 to make the difference to more recent sqlite3 version
+      clear.
+      
+2008-06-24  Stipe Tolj  <stolj at kannel.org>
     * gw/smsc/smsc_at.c: fix compiler warnings. NLC.
     
 2008-06-24 Alexander Malysh <amalysh at kannel.org>
