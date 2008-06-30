@@ -1,3 +1,6 @@
+2008-06-30  Stipe Tolj  <stolj at kannel.org>
+    * test/test_urltrans.c: fix compiler warning. NLC.
+
 2008-06-24  Stipe Tolj  <stolj at kannel.org>
     * Makefile.in: add 'datarootdir' reference which is required for
       autoconf 2.60 (and higher) output files.

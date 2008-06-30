@@ -74,7 +74,6 @@ static void help(void) {
 
 int main(int argc, char **argv) {
 	int i, opt;
-	Octstr *url;
 	long repeats;
 	URLTranslationList *list;
 	URLTranslation *t;
