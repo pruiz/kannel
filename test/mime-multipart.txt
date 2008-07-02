@@ -2,6 +2,7 @@ Content-Type: multipart/related; start=<AAA>; boundary=my_boundary
 X-Some-Header: Some-Value
 MIME-Version: 1.0
 
+
 --my_boundary
 Content-Type: text/plain
 
@@ -10,6 +11,7 @@ this is the text in this entity
 --my_boundary
 Content-Type: multipart/mixed; boundary=mms_boundary
 MIME-Version: 1.0
+
 
 --mms_boundary
 Content-Type: text/plain

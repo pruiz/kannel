@@ -1,3 +1,10 @@
+2008-07-02  Stipe Tolj  <stolj at kannel.org>
+    * gwlib/mime.c: fix and relax function mime_entity_to_octstr() for end of
+      line chars. Thanks to Paul Bagyenda for providing the patch.
+      [Msg-Id: <841FABF4-5733-4610-B097-19120DF0CD4A@dsmagic.com>]
+    * test/mime-multipart.txt: demo MIME multipart input file for test/
+      test_mime_multipart.c.  
+
 2008-06-30  Stipe Tolj  <stolj at kannel.org>
     * test/test_urltrans.c: fix compiler warning. NLC.
 

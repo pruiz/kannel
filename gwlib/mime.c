@@ -213,7 +213,7 @@ static void fix_boundary_element(List *headers, Octstr **boundary_elem)
  * Mapping function from other data types, mainly Octstr and HTTP.
  */
 
-static Octstr *mime_entity_to_octstr_real(MIMEEntity *m, unsigned int level)
+Octstr *mime_entity_to_octstr(MIMEEntity *m)
 {
     Octstr *mime, *boundary = NULL;
     List *headers;
@@ -250,29 +250,24 @@ static Octstr *mime_entity_to_octstr_real(MIMEEntity *m, unsigned int level)
         octstr_append(mime, octstr_imm("\r\n"));
     }
     http_destroy_headers(headers);
+    octstr_append(mime, octstr_imm("\r\n")); /* Mark end of headers. */
 
     /* loop through all MIME multipart entities of this entity */
     for (i = 0; i < gwlist_len(m->multiparts); i++) {
         MIMEEntity *e = gwlist_get(m->multiparts, i);
         Octstr *body;
 
-        if (i != 0)
-            octstr_append(mime, octstr_imm("\r\n"));
         octstr_append(mime, octstr_imm("\r\n--"));
         octstr_append(mime, boundary);
         octstr_append(mime, octstr_imm("\r\n"));
 
         /* call ourself to produce the MIME entity body */
-        body = mime_entity_to_octstr_real(e, level + 1);
+        body = mime_entity_to_octstr(e);
         octstr_append(mime, body);
 
         octstr_destroy(body);
     }
 
-    /* add the last boundary statement, but hive an EOL 
-     * if we are on the top of the recursion stack. */
-    if (level > 0) 
-        octstr_append(mime, octstr_imm("\r\n"));
     octstr_append(mime, octstr_imm("\r\n--"));
     octstr_append(mime, boundary);
     octstr_append(mime, octstr_imm("--\r\n"));
@@ -280,17 +275,6 @@ static Octstr *mime_entity_to_octstr_real(MIMEEntity *m, unsigned int level)
     octstr_destroy(boundary);
 
 finished:
-
-    return mime;
-}
-
-
-Octstr *mime_entity_to_octstr(MIMEEntity *m)
-{
-    Octstr *mime;
-
-    /* mapping function required to pass recurssion level */
-    mime = mime_entity_to_octstr_real(m, 0);
 
     return mime;
 }
