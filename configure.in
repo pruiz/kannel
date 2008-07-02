@@ -109,6 +109,7 @@ AC_PROG_INSTALL
 AC_PROG_RANLIB
 AC_PROG_YACC
 AC_PROG_LEX
+AC_CHECK_TOOL(AR, ar)
 AC_PATH_PROG(CONVERT, convert)
 AC_PATH_PROG(PERL, perl)
 
@@ -116,7 +117,7 @@ dnl Apply system specific rules.
 dnl Executable extension for systems that need one, i.e. Cygwin
 dnl Set the LIBTOOL to be used to create libs
 EXE_EXT=""
-LIBTOOL="ar rc"
+LIBTOOL="$AR rc"
 case "$host" in
   *-sun-solaris*) 
     CFLAGS="$CFLAGS -DSunOS=1"
@@ -1220,8 +1221,6 @@ AC_ARG_WITH(wtls,
   AC_MSG_RESULT($withval)
   case "$withval" in
   openssl) 
- 	OLDLIBS="$LIBS"
-	LIBS="$LIBS -L/usr/local/ssl/lib -lcrypto"
     AC_CHECK_LIB(crypto, RSA_new,
     [ AC_CHECK_HEADERS(openssl/objects.h openssl/rc5.h, 
         AC_DEFINE(HAVE_WTLS_OPENSSL),

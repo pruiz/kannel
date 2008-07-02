@@ -1,4 +1,11 @@
 2008-07-02  Stipe Tolj  <stolj at kannel.org>
+    * configure[.in]: add support for AIX 64bit builds via setting the ar
+      archiever call in $AR env variable.
+      Thanks to James Bostock <james.bostock at comverse.com> for his AIX 
+      contributions.
+      [Msg-Id: <84E219D8B81E5F4688C4A8992426CD83012A44E9@fr-par-mail01.comverse.com>] 
+
+2008-07-02  Stipe Tolj  <stolj at kannel.org>
     * gwlib/mime.c: fix and relax function mime_entity_to_octstr() for end of
       line chars. Thanks to Paul Bagyenda for providing the patch.
       [Msg-Id: <841FABF4-5733-4610-B097-19120DF0CD4A@dsmagic.com>]
