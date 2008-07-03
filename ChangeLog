@@ -1,3 +1,9 @@
+2008-07-03  Stipe Tolj  <stolj at kannel.org>
+    * gwlib/gwthread[-pthread].[ch]: add function gwthread_sleep_micro() which
+      allows sleep of microseconds. Thanks to Werner Coetzee 
+      <werner.coetzee at clickatell.com> for providing this contribution.
+      [Msg-Id: <86E9DA9FF04EBD468B3574F22A0B0DB648811780C4@comms01-cpt.internal.clickatell.com>]
+
 2008-07-02  Stipe Tolj  <stolj at kannel.org>
     * configure[.in]: add support for AIX 64bit builds via setting the ar
       archiever call in $AR env variable.

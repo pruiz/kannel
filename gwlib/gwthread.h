@@ -142,6 +142,10 @@ int gwthread_poll(struct pollfd *fds, long numfds, double timeout);
  * calls gwthread_wakeup on us.  Fractional seconds are allowed. */
 void gwthread_sleep(double seconds);
 
+/* Sleep until "seconds" seconds have elapsed, or until another thread
+ * calls gwthread_wakeup on us.  Fractional seconds are allowed. */
+void gwthread_sleep_micro(double dseconds);
+
 /* Force a specific thread to terminate. Returns 0 on success, -1 if the
  * thread has been terminated while calling and non-zero for the pthread
  * specific error code.

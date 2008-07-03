@@ -781,6 +781,41 @@ void gwthread_sleep(double seconds)
 }
 
 
+void gwthread_sleep_micro(double dseconds)
+{
+    fd_set fd_set_recv;
+    struct threadinfo *threadinfo;
+    int fd;
+    int ret;
+
+    threadinfo = getthreadinfo();
+    fd = threadinfo->wakefd_recv;
+
+    FD_ZERO(&fd_set_recv);
+    FD_SET(fd, &fd_set_recv);
+
+    if (dseconds < 0) {
+        ret = select(fd + 1, &fd_set_recv, NULL, NULL, NULL);
+    } else {
+        struct timeval timeout;
+        timeout.tv_sec = dseconds;
+        timeout.tv_usec = (dseconds - timeout.tv_sec) * 1000000;
+
+        ret = select(fd + 1, &fd_set_recv, NULL, NULL, &timeout);
+    }
+
+    if (ret < 0) {
+        if (errno != EINTR && errno != EAGAIN) {
+            warning(errno, "gwthread_sleep_micro: error in select()");
+        }
+    }
+
+    if (FD_ISSET(fd, &fd_set_recv)) {
+        flushpipe(fd);
+    }
+}
+
+
 int gwthread_cancel(long thread)
 {
     struct threadinfo *threadinfo;
