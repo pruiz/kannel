@@ -1,3 +1,7 @@
+2008-07-03  Andreas Fink <andreas at fink.org>
+    * gw/smsc_at.c
+      size_t is unsigned so if -1 is returned, we never catch it.
+
 2008-07-03  Stipe Tolj  <stolj at kannel.org>
     * gwlib/gwthread[-pthread].[ch]: add function gwthread_sleep_micro() which
       allows sleep of microseconds. Thanks to Werner Coetzee 

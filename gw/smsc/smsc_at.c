@@ -292,7 +292,8 @@ static void at2_read_buffer(PrivAT2data *privdata)
 {
     char buf[MAX_READ + 1];
     int ret;
-    size_t count, s;
+    size_t count;
+    signed int s;
     fd_set read_fd;
     struct timeval tv;
 
