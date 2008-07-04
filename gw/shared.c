@@ -123,7 +123,11 @@ Octstr *version_report_string(const char *boxname)
              "Using SQLite %s.\n"
 #endif
 #ifdef HAVE_ORACLE
+#if defined(OCI_MAJOR_VERSION) && defined(OCI_MINOR_VERSION)
              "Using Oracle OCI %d.%d.\n"
+#else
+             "Using Oracle OCI.\n"
+#endif
 #endif
              "Using %s malloc.\n",
 			 boxname, GW_VERSION,
@@ -150,7 +154,9 @@ Octstr *version_report_string(const char *boxname)
              SQLITE_VERSION,
 #endif
 #ifdef HAVE_ORACLE
+#if defined(OCI_MAJOR_VERSION) && defined(OCI_MINOR_VERSION)
              OCI_MAJOR_VERSION, OCI_MINOR_VERSION,
+#endif
 #endif
              octstr_get_cstr(gwmem_type()));
 }

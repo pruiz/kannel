@@ -1,6 +1,11 @@
+2008-07-04  Stipe Tolj  <stolj at kannel.org>
+    * gw/shared.c: ensure we handle OCI_[MINOR|MAJOR]_VERSION only if they 
+      are defined in the oci.h header. Pre Oracle 10 versions seem to lack this.
+      Thanks to James Bostock <james.bostock at comverse.com> for the patch.
+      [Msg-Id: <84E219D8B81E5F4688C4A8992426CD83012A4AFE@fr-par-mail01.comverse.com>] 
+
 2008-07-03  Andreas Fink <andreas at fink.org>
-    * gw/smsc_at.c
-      size_t is unsigned so if -1 is returned, we never catch it.
+    * gw/smsc_at.c: size_t is unsigned so if -1 is returned, we never catch it.
 
 2008-07-03  Stipe Tolj  <stolj at kannel.org>
     * gwlib/gwthread[-pthread].[ch]: add function gwthread_sleep_micro() which
