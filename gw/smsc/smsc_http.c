@@ -127,6 +127,8 @@
 #include "dlr.h"
 #include "urltrans.h"
 
+#define DEFAULT_CHARSET "UTF-8"
+
 typedef struct conndata {
     HTTPCaller *http_ref;
     long receive_thread;
@@ -144,6 +146,7 @@ typedef struct conndata {
     int no_coding;      /* this, too */
     int no_sep;         /* not to mention this */
     Octstr *proxy;      /* proxy a constant string */
+    Octstr *alt_charset;    /* alternative charset use */
 
     /* The following are compiled regex for the 'generic' type for handling 
      * success, permanent failure and temporary failure. For types that use
@@ -181,6 +184,7 @@ static void conndata_destroy(ConnData *conndata)
     octstr_destroy(conndata->password);
     octstr_destroy(conndata->proxy);
     octstr_destroy(conndata->system_id);
+    octstr_destroy(conndata->alt_charset);
 
     gw_free(conndata);
 }
@@ -654,35 +658,40 @@ static void kannel_receive_sms(SMSCConn *conn, HTTPClient *client,
  * Clickatell - http://api.clickatell.com/
  *
  * Rene Kluwen <rene.kluwen@chimit.nl>
+ * Stipe Tolj <st@tolj.org>, <stolj@kannel.org>
  */
 
 /* MT related function */
 static void clickatell_send_sms(SMSCConn *conn, Msg *sms)
 {
     ConnData *conndata = conn->data;
-    Octstr *url;
+    Octstr *url, *os;
+    char id[UUID_STR_LEN + 1];
     List *headers;
 
     /* form the basic URL */
     url = octstr_format("%S/sendmsg?to=%E&from=%E&api_id=%E&user=%E&password=%E",
-        conndata->send_url, sms->sms.receiver, sms->sms.sender, conndata->system_id, conndata->username, conndata->password);
+        conndata->send_url, sms->sms.receiver, sms->sms.sender, 
+        conndata->system_id, conndata->username, conndata->password);
     
-    /* 
-     * We use &binfo=<foobar> from sendsms interface to encode
-     * additional paramters. If a mandatory value is not set,
-     * a default value is applied
-     */
-    if (octstr_len(sms->sms.binfo)) {
-        octstr_url_decode(sms->sms.binfo);
-        octstr_format_append(url, "&%S", sms->sms.binfo);
-    }
-
+    /* append MD5 digest as msg ID from our UUID */
+    uuid_unparse(sms->sms.id, id);
+    os = octstr_create(id);
+    octstr_replace(os, octstr_imm("-"), octstr_imm(""));
+    octstr_format_append(url, "&cliMsgId=%E", os);
+    octstr_destroy(os);
+    
     /* add UDH header */
     if (octstr_len(sms->sms.udhdata)) {
         octstr_format_append(url, "&data=%H", sms->sms.msgdata);
         octstr_format_append(url, "&udh=%H", sms->sms.udhdata);
     } else {
         octstr_format_append(url, "&text=%E", sms->sms.msgdata);
+        if (conndata->alt_charset) {
+            octstr_format_append(url, "&charset=%E", conndata->alt_charset);
+        } else {
+            octstr_append_cstr(url, "&charset=UTF-8");
+        }
     }
 
     if (DLR_IS_ENABLED_DEVICE(sms->sms.dlr_mask))
@@ -807,6 +816,7 @@ static void clickatell_receive_sms(SMSCConn *conn, HTTPClient *client,
 	momsg->sms.receiver = octstr_duplicate(to);
 	momsg->sms.msgdata = octstr_duplicate(text);
 	momsg->sms.charset = octstr_duplicate(charset);
+    momsg->sms.service = octstr_duplicate(api_id);
 	momsg->sms.binfo = octstr_duplicate(api_id);
         momsg->sms.smsc_id = octstr_duplicate(conn->id);
 	if (octstr_len(udh) > 0) {
@@ -1543,6 +1553,13 @@ static int httpsmsc_send(SMSCConn *conn, Msg *msg)
         delay = 1.0 / conn->throughput;
     }
 
+    /* convert character encoding if required */
+    if (conndata->alt_charset && 
+        charset_convert(sms->sms.msgdata, DEFAULT_CHARSET,
+                        octstr_get_cstr(conndata->alt_charset)) != 0)
+        error(0, "Failed to convert msgdata from charset <%s> to <%s>, will send as is.",
+                 DEFAULT_CHARSET, octstr_get_cstr(conndata->alt_charset));
+
     conndata->open_sends++;
     conndata->send_sms(conn, sms);
 
@@ -1611,6 +1628,7 @@ int smsc_http_create(SMSCConn *conn, CfgGroup *cfg)
     cfg_get_bool(&conndata->no_coding, cfg, octstr_imm("no-coding"));
     cfg_get_bool(&conndata->no_sep, cfg, octstr_imm("no-sep"));
     conndata->proxy = cfg_get(cfg, octstr_imm("system-id"));
+    conndata->alt_charset = cfg_get(cfg, octstr_imm("alt-charset"));
 
     if (conndata->send_url == NULL)
         panic(0, "HTTP[%s]: Sending not allowed. No 'send-url' specified.",

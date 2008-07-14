@@ -1,3 +1,10 @@
+2008-07-14  Stipe Tolj  <stolj at kannel.org>
+    * gw/smsc/smsc_http.c: add 'cliMsgId' support for the Clickatell HTTP API
+      to allow defining client side message IDs via our UUID string morphed
+      into a MD5 compliant string, added also support for 'alt-charset' config
+      directive support in smsc group for setting a different charset encoding
+      for the Clickatell HTTP API.
+
 2008-07-04  Stipe Tolj  <stolj at kannel.org>
     * gw/shared.c: ensure we handle OCI_[MINOR|MAJOR]_VERSION only if they 
       are defined in the oci.h header. Pre Oracle 10 versions seem to lack this.
