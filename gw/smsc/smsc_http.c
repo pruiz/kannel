@@ -726,16 +726,16 @@ static Dict *clickatell_parse_body(Octstr *body)
 
     words = octstr_split_words(body);
     if ((len = gwlist_len(words)) > 1) {
-	word = gwlist_extract_first(words);
-	if (octstr_compare(word, octstr_imm("ID:")) == 0) {
-	    value = gwlist_extract_first(words);
-	    param = dict_create(4, NULL);
-	    dict_put(param, octstr_imm("ID"), value);
-	} else if (octstr_compare(word, octstr_imm("ERR:")) == 0) {
-	    value = gwlist_extract_first(words);
-	    param = dict_create(4, NULL);
-	    dict_put(param, octstr_imm("ERR"), value);
-	}
+        word = gwlist_extract_first(words);
+        if (octstr_compare(word, octstr_imm("ID:")) == 0) {
+            value = gwlist_extract_first(words);
+            param = dict_create(4, (void(*)(void *)) octstr_destroy);
+            dict_put(param, octstr_imm("ID"), value);
+        } else if (octstr_compare(word, octstr_imm("ERR:")) == 0) {
+            value = gwlist_extract_first(words);
+            param = dict_create(4, (void(*)(void *)) octstr_destroy);
+            dict_put(param, octstr_imm("ERR"), value);
+        }
         octstr_destroy(word);
     }
     gwlist_destroy(words, (void(*)(void *)) octstr_destroy);
@@ -1017,7 +1017,7 @@ static Dict *brunet_parse_body(Octstr *body)
 
     words = octstr_split_words(body);
     if ((len = gwlist_len(words)) > 0) {
-        param = dict_create(4, NULL);
+        param = dict_create(4, (void(*)(void *)) octstr_destroy);
         while ((word = gwlist_extract_first(words)) != NULL) {
             List *l = octstr_split(word, octstr_imm("="));
             Octstr *key = gwlist_extract_first(l);

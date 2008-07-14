@@ -1,3 +1,8 @@
+2008-07-15  Stipe Tolj  <stolj at kannel.org>
+    * gw/smsc/smsc_http.c: memory leak fix for Clickatell and Brunet HTTP API.
+      Thanks to Donald Jackson <donaldjster at gmail.com> for the patch.
+      [Msg-Id: <290be5f30807140151j5cf784u3b5fdcf3191b890d@mail.gmail.com>]
+
 2008-07-14  Stipe Tolj  <stolj at kannel.org>
     * gw/smsc/smsc_http.c: add 'cliMsgId' support for the Clickatell HTTP API
       to allow defining client side message IDs via our UUID string morphed
