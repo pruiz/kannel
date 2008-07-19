@@ -345,7 +345,9 @@ static MIMEEntity *mime_something_to_entity(Octstr *mime, List *headers)
     /* parse the headers up to the body. If we have headers already passed 
      * from our caller, then duplicate them and continue */
     if (headers != NULL) {
-        /* duplicate existing headers */
+        /* we have some headers to duplicate, first ensure we destroy
+         * the list from the previous creation inside mime_entity_create() */
+        http_destroy_headers(e->headers);
         e->headers = http_header_duplicate(headers);
     } else {
         /* parse the headers out of the mime block */

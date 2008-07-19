@@ -1,3 +1,8 @@
+2008-07-19  Stipe Tolj  <stolj at kannel.org>
+    * gwlib/mime.c: memory leak fix while duplicating headers.
+      Thanks to Paul Bagyenda for providing the patch.
+      [Msg-Id: <93C3937B-F5F7-4873-ABF4-391308F9ED09@dsmagic.com>]
+
 2008-07-15  Stipe Tolj  <stolj at kannel.org>
     * gw/smsc/smsc_http.c: memory leak fix for Clickatell and Brunet HTTP API.
       Thanks to Donald Jackson <donaldjster at gmail.com> for the patch.
