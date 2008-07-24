@@ -1,3 +1,8 @@
+2008-07-24  Stipe Tolj  <stolj at kannel.org>
+    * gwlib/cfg.c: add more semantical error statement if we detect an unknown
+      group identifier. This shall help the users to find their config typos.
+      [Msg-Id: <48877F65.8060605@tolj.org>]
+
 2008-07-19  Stipe Tolj  <stolj at kannel.org>
     * gwlib/mime.c: memory leak fix while duplicating headers.
       Thanks to Paul Bagyenda for providing the patch.

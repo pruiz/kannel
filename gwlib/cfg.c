@@ -186,7 +186,8 @@ static int core_is_allowed_in_group(Octstr *group, Octstr *variable)
 	}
     #include "cfg.def"
 
-    return 0;
+    /* unknown group identifier */
+    return -1;
 }
 
 
@@ -207,14 +208,15 @@ static int core_is_single_group(Octstr *query)
 static int is_allowed_in_group(Octstr *group, Octstr *variable)
 {
     long i;
-    int r = 0;
+    int x, r = -1;
 
     for (i = 0; i < gwlist_len(allowed_hooks); ++i) {
-        r += ((int(*)(Octstr *, Octstr *))
+        x = ((int(*)(Octstr *, Octstr *))
             gwlist_get(allowed_hooks, i))(group, variable);
+        r = (x == -1 ? (r == -1 ? x : r) : (r == -1 ? x : r + x));
     }
 
-    return (r > 0);
+    return r;
 }
 
 
@@ -248,34 +250,48 @@ static int add_group(Cfg *cfg, CfgGroup *grp)
     
     groupname = cfg_get(grp, octstr_imm("group"));
     if (groupname == NULL) {
-	error(0, "Group does not contain variable 'group'.");
-    	return -1;
+        error(0, "Group does not contain variable 'group'.");
+        return -1;
     }
     set_group_name(grp, groupname);
 
     names = dict_keys(grp->vars);
+
     while ((name = gwlist_extract_first(names)) != NULL) {
-	if (!is_allowed_in_group(groupname, name)) {
-	    error(0, "Group '%s' may not contain field '%s'.",
-		  octstr_get_cstr(groupname), octstr_get_cstr(name));
-	    octstr_destroy(name);
-	    octstr_destroy(groupname);
-	    gwlist_destroy(names, octstr_destroy_item);
-	    return -1;
-	}
-	octstr_destroy(name);
+        int a = is_allowed_in_group(groupname, name);
+        switch (a) {
+            case 0:
+                error(0, "Group '%s' may not contain field '%s'.",
+                      octstr_get_cstr(groupname), octstr_get_cstr(name));
+                octstr_destroy(name);
+                octstr_destroy(groupname);
+                gwlist_destroy(names, octstr_destroy_item);
+                return -1;
+                break;
+            case -1:
+                error(0, "Group '%s' is no valid group identifier.",
+                      octstr_get_cstr(groupname));
+                octstr_destroy(name);
+                octstr_destroy(groupname);
+                gwlist_destroy(names, octstr_destroy_item);
+                return -1;
+                break;
+            default:
+                octstr_destroy(name);
+                break;
+        }
     }
     gwlist_destroy(names, NULL);
 
-    if (is_single_group(groupname))
-    	dict_put(cfg->single_groups, groupname, grp);
-    else {
-	list = dict_get(cfg->multi_groups, groupname);
-	if (list == NULL) {
-	    list = gwlist_create();
-	    dict_put(cfg->multi_groups, groupname, list);
-	}
-    	gwlist_append(list, grp);
+    if (is_single_group(groupname)) {
+        dict_put(cfg->single_groups, groupname, grp);
+    } else {
+        list = dict_get(cfg->multi_groups, groupname);
+        if (list == NULL) {
+            list = gwlist_create();
+            dict_put(cfg->multi_groups, groupname, list);
+        }
+        gwlist_append(list, grp);
     }
 
     octstr_destroy(groupname);
@@ -564,7 +580,8 @@ int cfg_read(Cfg *cfg)
                     grp = create_group(); 
                  
                 if (grp->configfile != NULL) {
-                    octstr_destroy(grp->configfile); grp->configfile=NULL;
+                    octstr_destroy(grp->configfile); 
+                    grp->configfile = NULL;
                 }
                 grp->configfile = octstr_duplicate(cfg->filename); 
 
