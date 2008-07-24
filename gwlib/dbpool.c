@@ -240,7 +240,7 @@ unsigned int dbpool_decrease(DBPool *p, unsigned int c)
 
 long dbpool_conn_count(DBPool *p)
 {
-    gw_assert(p->pool != NULL);
+    gw_assert(p != NULL && p->pool != NULL);
 
     return gwlist_len(p->pool);
 }
@@ -251,11 +251,19 @@ DBPoolConn *dbpool_conn_consume(DBPool *p)
     DBPoolConn *pc;
 
     gw_assert(p != NULL && p->pool != NULL);
+    
+    /* check for max connections and if 0 return NULL */
+    if (p->max_size < 1)
+        return NULL;
 
-    /* check if we have any connection, if no return NULL; otherwise we have deadlock */
-    if (p->curr_size < 1)
-        panic(0, "DBPOOL: Deadlock detected!!!");
-
+    /* check if we have any connection */
+    while (p->curr_size < 1) {
+        debug(0, "dbpool", "DBPool has no connections, reconnecting up to maximum...");
+        /* dbpool_increase ensure max_size is not exceeded so don't lock */
+        dbpool_increase(p, p->max_size - p->curr_size);
+        if (p->curr_size < 1)
+            gwthread_sleep(0.1);
+    }
 
     /* garantee that you deliver a valid connection to the caller */
     while ((pc = gwlist_consume(p->pool)) != NULL) {
@@ -277,7 +285,14 @@ DBPoolConn *dbpool_conn_consume(DBPool *p)
              * can be dangeros if all connections where broken, then we will
              * block here for ever.
              */
-            dbpool_increase(p, 1);
+            while (p->curr_size < 1) {
+                debug(0, "dbpool", "DBPool has too few connections, reconnecting up to maximum...");
+                /* dbpool_increase ensure max_size is not exceeded so don't lock */
+                dbpool_increase(p, p->max_size - p->curr_size);
+                if (p->curr_size < 1)
+                    gwthread_sleep(0.1);
+            }
+
         } else {
             break;
         }

@@ -1,3 +1,8 @@
+2008-07-24 Alexander Malysh <amalysh at kannel.org>
+    * gwlib/dbpool.c: Fixed deadlock in dbpool_conn_consume if we don't have any
+      database connections available anymore and database is temporarely not
+      available.
+
 2008-07-24  Stipe Tolj  <stolj at kannel.org>
     * gwlib/cfg.c: add more semantical error statement if we detect an unknown
       group identifier. This shall help the users to find their config typos.
