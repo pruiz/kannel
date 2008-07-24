@@ -1068,7 +1068,7 @@ dnl accordingly and enable the usage of the OCI routines.
 
 AC_MSG_CHECKING([whether to compile with Oracle support])
 AC_ARG_WITH(oracle,
-[  --with-oracle           enable Oracle storage @<:@disabled@:>@],
+[  --with-oracle           enable ORACLE storage @<:@disabled@:>@],
 [
 if test "$withval" != yes ; then
     AC_MSG_RESULT(disabled)
@@ -1076,7 +1076,7 @@ else
     AC_MSG_RESULT(searching)
         AC_ARG_WITH(
                 oracle-includes,
-                [  --with-oracle-includes=DIR  adds Oracle include paths],
+                [  --with-oracle-includes=DIR  adds oracle include paths],
                 [ ORACLE_INCLUDE_PATH="$withval" ],
                 [ ORACLE_INCLUDE_PATH="$ORACLE_HOME/rdbms/demo $ORACLE_HOME/rdbms/public" ]
         )
@@ -1088,21 +1088,9 @@ else
         AC_TRY_CPP([#include <oci.h>],AC_MSG_RESULT(yes), AC_MSG_ERROR([oci.h not found]))
         CFLAGS="$CFLAGS $CPPFLAGS"
 
-        AC_MSG_CHECKING([Oracle OCI version])
-        oracle_version_major=`cat $ORACLE_INCLUDE_PATH/oci.h \
-                             | grep '#define.*OCI_MAJOR_VERSION.*' \
-                             | sed -e 's/#define OCI_MAJOR_VERSION  *//' \
-                             | sed -e 's/  *\/\*.*\*\///'`
-        oracle_version_minor=`cat $ORACLE_INCLUDE_PATH/oci.h \
-                             | grep '#define.*OCI_MINOR_VERSION.*' \
-                             | sed -e 's/#define OCI_MINOR_VERSION  *//' \
-                             | sed -e 's/  *\/\*.*\*\///'`
-        ORACLE_OCI_VERSION="$oracle_version_major.$oracle_version_minor"
-        AC_MSG_RESULT([$ORACLE_OCI_VERSION])
-
         AC_ARG_WITH(
                 oracle-libs,
-                [  --with-oracle-libs=DIR  adds Oracle library path],
+                [  --with-oracle-libs=DIR  adds oracle library path],
                 [ ORACLE_LIB_PATH="$withval" ],
                 [ ORACLE_LIB_PATH="$ORACLE_HOME/lib" ]
         )
@@ -1110,26 +1098,19 @@ else
         do
                 LIBS="$LIBS -L$a"
         done
-        
+
         dnl Check for Oracle 10g instant client
-        if test -f "$ORACLE_LIB_PATH/libnnz10.so" && \
-           test -f "$ORACLE_LIB_PATH/libclntsh.so.10.1"; then
-          LIBS="$LIBS -lnnz10"
+        AC_CHECK_LIB(clntsh,OCIEnvCreate,[ LIBS="$LIBS -lclntsh" ],
           AC_CHECK_LIB(clntsh,OCIEnvCreate,[ LIBS="$LIBS -lclntsh -lnnz10" ],exit)
-        else
-          AC_CHECK_LIB(clntsh,OCIEnvCreate,[ LIBS="$LIBS -lclntsh" ],exit)
-        fi
+        )
 
         dnl Beware that Oracle 10g doesn't use anymore the libwtcX.so libs,
         dnl so we don't break hard in case they are not present.
-        if test -f "$ORACLE_HOME/lib/libwtc8.so"; then
-          AC_CHECK_LIB(wtc8,wtcstu,[ LIBS="$LIBS -lwtc8" ],AC_MSG_ERROR([Oracle libwtc8.so not found]))
-        fi
-        if test -f "$ORACLE_HOME/lib/libwtc9.so"; then
-          AC_CHECK_LIB(wtc9,wtcstu,[ LIBS="$LIBS -lwtc9" ],AC_MSG_ERROR([Oracle libwtc9.so not found]))
-        fi
+        AC_CHECK_LIB(wtc8,wtcstu,[ LIBS="$LIBS -lwtc8" ],
+          AC_CHECK_LIB(wtc9,wtcstu,[ LIBS="$LIBS -lwtc9" ], true)
+        )
 
-    AC_DEFINE(HAVE_ORACLE)
+    AC_DEFINE(HAVE_ORACLE, 1, [Do we have Oracle])
     AC_MSG_CHECKING([whether to compile with Oracle support])
     AC_MSG_RESULT(yes)
 fi

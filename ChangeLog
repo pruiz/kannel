@@ -1,4 +1,8 @@
 2008-07-24 Alexander Malysh <amalysh at kannel.org>
+    * configure.in, configure: fixed hardcoded library detection for oracle. Not
+      all OSs have .so.
+
+2008-07-24 Alexander Malysh <amalysh at kannel.org>
     * gwlib/dbpool.c: Fixed deadlock in dbpool_conn_consume if we don't have any
       database connections available anymore and database is temporarely not
       available.
