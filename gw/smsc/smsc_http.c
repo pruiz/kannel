@@ -1607,6 +1607,7 @@ int smsc_http_create(SMSCConn *conn, CfgGroup *cfg)
               octstr_get_cstr(conn->id));
         return -1;
     }
+    cfg_get_bool(&ssl, cfg, octstr_imm("use-ssl"));
     if ((type = cfg_get(cfg, octstr_imm("system-type")))==NULL) {
         error(0, "HTTP[%s]: 'type' missing in smsc 'http' record.",
               octstr_get_cstr(conn->id));

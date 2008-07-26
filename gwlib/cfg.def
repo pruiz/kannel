@@ -313,6 +313,7 @@ MULTI_GROUP(smsc,
     OCTSTR(host)
     OCTSTR(alt-host)
     OCTSTR(port)
+    OCTSTR(use-ssl)
     OCTSTR(alt-port)
     OCTSTR(smsc-username)
     OCTSTR(smsc-password)

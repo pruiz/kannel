@@ -4022,6 +4022,12 @@ send-url = "http://localhost:20022"
        gateway
      </entry></row>
 
+   <row><entry><literal>use-ssl</literal></entry>
+   <entry><literal>boolean</literal></entry>
+   <entry valign="bottom">
+      Defines whether listen port should use SSL.
+   </entry></row>
+
    <row><entry><literal>connect-allow-ip</literal></entry>
      <entry><literal>IP-list</literal></entry>
      <entry valign="bottom">
