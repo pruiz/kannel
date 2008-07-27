@@ -1,3 +1,6 @@
+2008-07-27  Stipe Tolj  <stolj at kannel.org>
+    * gwlib/dbpool[_sqlite3].c: fix minor compiler warnings. NLC.
+
 2008-07-26 Alexander Malysh <amalysh at kannel.org>
     * doc/userguide/userguide.xml, gw/smsc/smsc_http.c, gwlib/cfg.def: added new
       config option 'use-ssl' that allow to use SSL for listen port.

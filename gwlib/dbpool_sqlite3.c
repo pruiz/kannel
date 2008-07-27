@@ -67,7 +67,6 @@ static void *sqlite3_open_conn(const DBConf *db_conf)
 {
     sqlite3 *db = NULL;
     SQLite3Conf *conf = db_conf->sqlite3; /* make compiler happy */
-    char *errmsg = 0;
 
     /* sanity check */
     if (conf == NULL)

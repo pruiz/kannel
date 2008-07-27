@@ -258,7 +258,7 @@ DBPoolConn *dbpool_conn_consume(DBPool *p)
 
     /* check if we have any connection */
     while (p->curr_size < 1) {
-        debug(0, "dbpool", "DBPool has no connections, reconnecting up to maximum...");
+        debug("dbpool", 0, "DBPool has no connections, reconnecting up to maximum...");
         /* dbpool_increase ensure max_size is not exceeded so don't lock */
         dbpool_increase(p, p->max_size - p->curr_size);
         if (p->curr_size < 1)
@@ -286,7 +286,7 @@ DBPoolConn *dbpool_conn_consume(DBPool *p)
              * block here for ever.
              */
             while (p->curr_size < 1) {
-                debug(0, "dbpool", "DBPool has too few connections, reconnecting up to maximum...");
+                debug("dbpool", 0, "DBPool has too few connections, reconnecting up to maximum...");
                 /* dbpool_increase ensure max_size is not exceeded so don't lock */
                 dbpool_increase(p, p->max_size - p->curr_size);
                 if (p->curr_size < 1)
