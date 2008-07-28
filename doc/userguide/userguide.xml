@@ -2424,7 +2424,7 @@ secret-nas = radius
      </entry></row>
 
     <row><entry><literal>throughput</literal></entry>
-      <entry><literal>number (messages/sec)</literal></entry>
+      <entry><literal>float (messages/sec)</literal></entry>
       <entry valign="bottom">
         If SMSC requires that Kannel limits the number of messages per second, 
         use this variable. This is considered as active throttling. (optional)

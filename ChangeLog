@@ -1,4 +1,9 @@
 2008-07-28 Alexander Malysh <amalysh at kannel.org>
+    * doc/userguide/userguide.xml: applied patch that clarify that float can
+      be used for throughput.
+      Thanks to Vincent CHAVANIS.
+
+2008-07-28 Alexander Malysh <amalysh at kannel.org>
     * gw/smsc/smsc_emi_x25.c: fixed X25 speed (AIX does not define B115200).
       Thanks to "Bostock James" <james.bostock at comverse.com> for the patch
       and to Vincent CHAVANIS for pushing it into CVS.
