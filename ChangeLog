@@ -1,3 +1,9 @@
+2008-07-28 Alexander Malysh <amalysh at kannel.org>
+    * gw/smsc/smsc_emi_x25.c: fixed X25 speed (AIX does not define B115200).
+      Thanks to "Bostock James" <james.bostock at comverse.com> for the patch
+      and to Vincent CHAVANIS for pushing it into CVS.
+      Msg-ID: <84E219D8B81E5F4688C4A8992426CD8301318309@fr-par-mail01.comverse.com>
+
 2008-07-27  Stipe Tolj  <stolj at kannel.org>
     * gwlib/dbpool[_sqlite3].c: fix minor compiler warnings. NLC.
 

@@ -496,11 +496,31 @@ static int at_dial(char *device, char *phonenum, char *at_prefix, time_t how_lon
 
     /* The speed initialisation is pretty important. */
     tcgetattr(fd, &tios);
+#if defined(B115200)
     cfsetospeed(&tios, B115200);
     cfsetispeed(&tios, B115200);
+#elif defined(B76800)
+    cfsetospeed(&tios, B76800);
+    cfsetispeed(&tios, B76800);
+#elif defined(B57600)
+    cfsetospeed(&tios, B57600);
+    cfsetispeed(&tios, B57600);
+#elif defined(B38400)
+    cfsetospeed(&tios, B38400);
+    cfsetispeed(&tios, B38400);
+#elif defined(B19200)
+    cfsetospeed(&tios, B19200);
+    cfsetispeed(&tios, B19200);
+#elif defined(B9600)
+    cfsetospeed(&tios, B9600);
+    cfsetispeed(&tios, B9600);
+#endif
     kannel_cfmakeraw(&tios);
     tios.c_cflag |= (HUPCL | CREAD | CRTSCTS);
-    tcsetattr(fd, TCSANOW, &tios);
+    ret = tcsetattr(fd, TCSANOW, &tios);
+    if (ret == -1) {
+        error(errno, "EMI[X25]: at_dial: fail to set termios attribute");
+    }
 
     /* Dial using an AT command string. */
     for (redial = 1; redial; ) {
