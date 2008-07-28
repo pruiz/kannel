@@ -1,4 +1,10 @@
 2008-07-28 Alexander Malysh <amalysh at kannel.org>
+    * configure.in, configure: require C99 compiler because we use some of
+      features of this standart.
+      Thanks to "Bostock James" <james.bostock at comverse.com> for the patch.
+      Msg-ID: <84E219D8B81E5F4688C4A8992426CD83013D79D8@fr-par-mail01.comverse.com>
+
+2008-07-28 Alexander Malysh <amalysh at kannel.org>
     * doc/userguide/userguide.xml: applied patch that clarify that float can
       be used for throughput.
       Thanks to Vincent CHAVANIS.
