@@ -1,3 +1,8 @@
+2008-07-29 Alexander Malysh <amalysh at kannel.org>
+    * gw/smsc/smsc_soap.c: fixed compilation on AIX in 64bit mode (converted
+      int64 into long long.
+      Thanks to "Bostock James" <james.bostock at comverse.com> for notice.
+
 2008-07-28 Alexander Malysh <amalysh at kannel.org>
     * configure.in, configure: require C99 compiler because we use some of
       features of this standart.

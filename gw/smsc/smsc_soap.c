@@ -223,8 +223,7 @@ typedef struct argument_map {
 /* useful macros go here (some of these were ripped of other modules,
    so maybe its better to put them in a shared file) */
 #define	O_DESTROY(a)	{ if(a) octstr_destroy(a); a=NULL; }
-typedef long long int64;
- 
+
 /*
  * SOAP module public API towards bearerbox
  */
@@ -265,7 +264,7 @@ static void soap_read_response(SMSCConn *conn);
 static Octstr *soap_format_xml(Octstr *xml_file, Msg *msg, PrivData *privdata);
 /* parse a response from the SOAP server to get the message ID */
 
-static int64 soap_parse_response(PrivData *privdata, Octstr *xmlResponse);
+static long long soap_parse_response(PrivData *privdata, Octstr *xmlResponse);
 /* parse an incoming MO xml */
 static long soap_parse_mo(SMSCConn *conn, Octstr *request, Octstr **response);
 /* parse an incoming derlivery report */
@@ -277,7 +276,7 @@ static long soap_parse_dlr(SMSCConn *conn, Octstr *request, Octstr **response);
 /* parse an integer out of a XML node */
 int soap_xmlnode_get_long(xmlNodePtr cur, long *out);
 /* parse an int64 out of a XML node */
-int soap_xmlnode_get_int64(xmlNodePtr cur, int64 *out);
+int soap_xmlnode_get_int64(xmlNodePtr cur, long long *out);
 /* parse a string out of a XML node */
 int soap_xmlnode_get_octstr(xmlNodePtr cur, Octstr **out);
 /* convert a one2one date format to epoch time */
@@ -1123,7 +1122,7 @@ static void soap_read_response(SMSCConn *conn)
     Octstr *responseBody, *responseURL;
     List* responseHeaders;
     int responseStatus;
-    int64 msgID;
+    long long msgID;
     ClientData* cd;
 
     /* don't get in here unless I have some callers */
@@ -1203,9 +1202,9 @@ static void soap_read_response(SMSCConn *conn)
  *                but if gwlist_get() returns NULL for an empty item, things might break - and
  *                not in a nice way.
  **/
-static int64 soap_parse_response(PrivData* privdata, Octstr* xmlResponse)
+static long long soap_parse_response(PrivData* privdata, Octstr* xmlResponse)
 {
-    int64 msgID = -1;
+    long long msgID = -1;
     long responseStatus = -1;
     xmlDocPtr responseDoc;
     xmlNodePtr root;
@@ -1286,7 +1285,7 @@ static long soap_parse_mo(SMSCConn *conn, Octstr *request, Octstr **response)
 
     List* maps;
     char receiver[30], sender[30], msgtype[30], msgdata[255], date[30];
-    int64 msgid = -1;
+    long long msgid = -1;
     char* keywords[] = { "receiver", "sender", "msgtype", "msgdata", "date", "id" };
     char* sscans[] = { "%s", "%s", "%s", "%s", "%s", "%lld" };
     void* pointers[] = { &receiver, &sender, &msgtype, &msgdata, &date, &msgid };
@@ -1705,12 +1704,12 @@ int soap_xmlnode_get_long(xmlNodePtr cur, long* out)
 
 /*
  * function soap_xmlnode_get_int64()
- *	parse the content of an XML node and return it as an int64
+ *	parse the content of an XML node and return it as an long long
  * Input: xmlNodePtr to node
  * Output: long parsed
  * Returns: 0 on success, -1 on failure
  **/
-int soap_xmlnode_get_int64(xmlNodePtr cur, int64* out)
+int soap_xmlnode_get_int64(xmlNodePtr cur, long long* out)
 {
     xmlChar* nodeContent;
     char* endPointer;
