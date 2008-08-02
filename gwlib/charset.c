@@ -442,7 +442,7 @@ void charset_latin1_to_gsm(Octstr *ostr)
     new = latin1_to_gsm[c];
     if (new < 0) {
          /* Escaped GSM code */
-        octstr_insert_data(ostr, pos, &esc, 1);
+        octstr_insert_data(ostr, pos, (char*) &esc, 1);
         pos++;
         len++;
         new = -new;

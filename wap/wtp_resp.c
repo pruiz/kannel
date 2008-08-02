@@ -146,7 +146,7 @@ static void resp_event_handle(WTPRespMachine *machine, WAPEvent *event);
 /*
  * Print a wtp responder machine state as a string.
  */
-static unsigned char *name_resp_state(int name);
+static char *name_resp_state(int name);
 
 /*
  * Find the wtp responder machine from the global list of wtp responder 
@@ -282,7 +282,7 @@ static void main_thread(void *arg)
 /*
  * Give the name of a responder state in a readable form. 
  */
-static unsigned char *name_resp_state(int s)
+static char *name_resp_state(int s)
 {
        switch (s) {
        #define STATE_NAME(state) case state: return #state;

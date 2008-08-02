@@ -383,7 +383,7 @@ Octstr *radius_acct_get_msisdn(Octstr *client_ip)
 
 void radius_acct_init(CfgGroup *grp)
 {
-    unsigned long nas_ports = 0;
+    long nas_ports = 0;
 
     /* get configured parameters */
     if ((our_host = cfg_get(grp, octstr_imm("our-host"))) == NULL) {
