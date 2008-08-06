@@ -86,6 +86,7 @@ struct FDSet
     
     /* Array of times when appropriate fd got any event or events bitmask changed */
     time_t *times;
+
     /* timeout for this fdset */
     long timeout;
 
@@ -138,12 +139,13 @@ struct FDSet
  * of putting it on any list. */
 struct action
 {
-    enum { REGISTER, LISTEN, UNREGISTER, DESTROY } type;
+    enum { REGISTER, LISTEN, UNREGISTER, DESTROY, SET_TIMEOUT } type;
     int fd;                     /* Used by REGISTER, LISTEN, and UNREGISTER */
     int mask;                   /* Used by LISTEN */
     int events;                 /* Used by REGISTER and LISTEN */
     fdset_callback_t *callback; /* Used by REGISTER */
     void *data;                 /* Used by REGISTER */
+    long timeout;               /* Used by SET_TIMEOUT */
     /* When the request has been handled, an element is produced on this
      * list, so that the submitter can synchronize.  Can be left NULL. */
     List *done;                 /* Used by LISTEN, UNREGISTER, and DESTROY */
@@ -245,6 +247,9 @@ static int handle_action(FDSet *set, struct action *action)
     case DESTROY:
         fdset_destroy(set);
         result = -1;
+        break;
+    case SET_TIMEOUT:
+        set->timeout = action->timeout;
         break;
     default:
         panic(0, "fdset: handle_action got unknown action type %d.",
@@ -537,4 +542,19 @@ void fdset_unregister(FDSet *set, int fd)
     } else {
         remove_entry(set, entry);
     }
+}
+
+void fdset_set_timeout(FDSet *set, long timeout)
+{
+    gw_assert(set != NULL);
+
+    if (gwthread_self() != set->poll_thread) {
+        struct action *action;
+
+        action = action_create(SET_TIMEOUT);
+        action->timeout = timeout;
+        submit_action(set, action);
+        return;
+    }
+    set->timeout = timeout;
 }

@@ -1,4 +1,7 @@
 2008-08-06 Alexander Malysh <amalysh at kannel.org>
+    * gwlib/fdset.[ch]: added new function fdset_set_timeout.
+
+2008-08-06 Alexander Malysh <amalysh at kannel.org>
     * gwlib/conn.[ch]: added new function conn_open_ssl_nb.
 
 2008-08-06 Alexander Malysh <amalysh at kannel.org>

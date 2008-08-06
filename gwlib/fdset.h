@@ -116,3 +116,8 @@ void fdset_listen(FDSet *set, int fd, int mask, int events);
  * function will not be called for this fd after this function returns.
  */
 void fdset_unregister(FDSet *set, int fd);
+
+/**
+ * Set timeout in seconds for this FDSet.
+ */
+void fdset_set_timeout(FDSet *set, long timeout);
