@@ -88,7 +88,7 @@
 #define DUMP_RESPONSE 1
 
 /* define http client connections timeout in seconds (set to -1 for disable) */
-#define HTTP_CLIENT_TIMEOUT 240
+static int http_client_timeout = 240;
 
 /* define http server connections timeout in seconds (set to -1 for disable) */
 #define HTTP_SERVER_TIMEOUT 60
@@ -822,7 +822,7 @@ static Connection *conn_pool_get(Octstr *host, int port, int ssl, Octstr *certke
     if (conn == NULL) {
 #ifdef HAVE_LIBSSL
         if (ssl) 
-            conn = conn_open_ssl(host, port, certkeyfile, our_host);
+            conn = conn_open_ssl_nb(host, port, certkeyfile, our_host);
         else
 #endif /* HAVE_LIBSSL */
             conn = conn_open_tcp_nb(host, port, our_host);
@@ -1143,8 +1143,8 @@ static void handle_transaction(Connection *conn, void *data)
         conn_destroy(trans->conn);
         trans->conn = NULL;
 
-        /* re-inject request to queue */
-        gwlist_produce(pending_requests, trans);
+        /* re-inject request to the front of the queue */
+        gwlist_insert(pending_requests, 0, trans);
 
     } else {
         /* handle this response as usual */
@@ -1596,6 +1596,8 @@ static void write_request_thread(void *arg)
 
         gw_assert(trans->state == request_not_sent);
 
+        debug("gwlib.http", 0, "Queue contains %ld pending requests.", gwlist_len(pending_requests));
+
         /* 
          * get the connection to use
          * also calls parse_url() to populate the trans values
@@ -1635,7 +1637,7 @@ static void start_client_threads(void)
 	 */
 	mutex_lock(client_thread_lock);
 	if (!client_threads_are_running) {
-	    client_fdset = fdset_create_real(HTTP_CLIENT_TIMEOUT);
+	    client_fdset = fdset_create_real(http_client_timeout);
 	    if (gwthread_create(write_request_thread, NULL) == -1) {
                 error(0, "HTTP: Could not start client write_request thread.");
                 fdset_destroy(client_fdset);
@@ -1652,6 +1654,14 @@ void http_set_interface(const Octstr *our_host)
     http_interface = octstr_duplicate(our_host);
 }
 
+void http_set_client_timeout(long timeout)
+{
+    http_client_timeout = timeout;
+    if (client_fdset != NULL) {
+        /* we are already initialized set timeout in fdset */
+        fdset_set_timeout(client_fdset, http_client_timeout);
+    }
+}
 
 void http_start_request(HTTPCaller *caller, int method, Octstr *url, List *headers,
     	    	    	Octstr *body, int follow, void *id, Octstr *certkeyfile)
@@ -2001,7 +2011,12 @@ static void port_put_request(HTTPClient *client)
     key = port_key(client->port);
     p = dict_get(port_collection, key);
     octstr_destroy(key);
-    gw_assert(p != NULL);
+    if (p == NULL) {
+        /* client was too slow and we closed port already */
+        mutex_unlock(port_mutex);
+        client_destroy(client);
+        return;
+    }
     gwlist_produce(p->clients_with_requests, client);
     mutex_unlock(port_mutex);
 }
@@ -2423,11 +2438,19 @@ HTTPClient *http_accept_request(int port, Octstr **client_ip, Octstr **url,
 {
     HTTPClient *client;
 
-    client = port_get_request(port);
-    if (client == NULL) {
-	debug("gwlib.http", 0, "HTTP: No clients with requests, quitting.");
-    	return NULL;
-    }
+    do {
+        client = port_get_request(port);
+        if (client == NULL) {
+            debug("gwlib.http", 0, "HTTP: No clients with requests, quitting.");
+            return NULL;
+        }
+        /* check whether client connection still ok */
+        conn_wait(client->conn, 0);
+        if (conn_error(client->conn) || conn_eof(client->conn)) {
+            client_destroy(client);
+            client = NULL;
+        }
+    } while(client == NULL);
 
     *client_ip = octstr_duplicate(client->ip);
     *url = client->url;
@@ -3262,6 +3285,20 @@ void http_cgivar_dump(List *cgiargs)
         octstr_dump(v->value, 0);
     }
     debug("gwlib.http", 0, "End of dump.");
+}
+
+
+void http_cgivar_dump_into(List *cgiargs, Octstr *os)
+{
+    HTTPCGIVar *v;
+
+    if (os == NULL)
+        return;
+
+    gwlib_assert_init();
+
+    while ((v = gwlist_extract_first(cgiargs)) != NULL)
+        octstr_format_append(os, "&%S=%S", v->name, v->value);
 }
 
 

@@ -278,6 +278,12 @@ void http_close_proxy(void);
  */
 void http_set_interface(const Octstr *our_host);
 
+/**
+ * Define timeout in seconds for which HTTP clint will wait for
+ * response. Set -1 to disable timeouts.
+ */
+void http_set_client_timeout(long timeout);
+
 /*
  * Functions for doing a GET request. The difference is that _real follows
  * redirections, plain http_get does not. Return value is the status
@@ -579,6 +585,11 @@ void http_header_dump(List *headers);
  * list.
  */
 void http_cgivar_dump(List *cgiargs);
+
+/*
+ * As above function except that dump appended to Octstr.
+ */
+void http_cgivar_dump_into(List *cgiargs, Octstr *os);
 
 /*
  * Check if the passed charset is in the 'Accept-Charset' header list

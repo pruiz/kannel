@@ -1,4 +1,13 @@
 2008-08-06 Alexander Malysh <amalysh at kannel.org>
+    * gwlib/http.[ch]: added 2 new functions (http_set_client_timeout, http_cgivar_dump_into).
+      Fixes:
+          1) use conn_open_ssl_nb in conn_pool_get
+          2) reinject redirect requests into the front of the queue
+          3) don't panic if we try to put slow client into port queue but
+             listen port was already closed
+          4) don't return already dead client in http_accept_request
+
+2008-08-06 Alexander Malysh <amalysh at kannel.org>
     * gwlib/fdset.[ch]: added new function fdset_set_timeout.
 
 2008-08-06 Alexander Malysh <amalysh at kannel.org>
