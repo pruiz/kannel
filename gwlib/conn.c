@@ -397,17 +397,8 @@ static void unlocked_register_pollout(Connection *conn, int onoff)
 }
 
 #ifdef HAVE_LIBSSL
-
-Connection *conn_open_ssl(Octstr *host, int port, Octstr *certkeyfile,
-			  Octstr *our_host)
+static int conn_init_client_ssl(Connection *ret, Octstr *certkeyfile)
 {
-    Connection *ret;
-
-    /* open the TCP connection */
-    if (!(ret = conn_open_tcp(host, port, our_host))) {
-        return NULL;
-    }
-
     ret->ssl = SSL_new(global_ssl_context);
 
     /*
@@ -426,7 +417,7 @@ Connection *conn_open_ssl(Octstr *host, int port, Octstr *certkeyfile,
             error(0, "conn_open_ssl: private key isn't consistent with the "
                      "certificate from file %s (or failed reading the file)",
                   octstr_get_cstr(certkeyfile));
-            goto error;
+            return -1;
         }
     }
 
@@ -434,25 +425,57 @@ Connection *conn_open_ssl(Octstr *host, int port, Octstr *certkeyfile,
     if (SSL_set_fd(ret->ssl, ret->fd) == 0) {
         /* SSL_set_fd failed, log error */
         error(errno, "SSL: OpenSSL: %.256s", ERR_error_string(ERR_get_error(), NULL));
-        goto error;
+        return -1;
     }
 
     /*
      * make sure the socket is non-blocking while we do SSL_connect
      */
     if (socket_set_blocking(ret->fd, 0) < 0) {
-        goto error;
+        return -1;
     }
     BIO_set_nbio(SSL_get_rbio(ret->ssl), 1);
     BIO_set_nbio(SSL_get_wbio(ret->ssl), 1);
 
     SSL_set_connect_state(ret->ssl);
+    
+    return 0;
+}
+
+Connection *conn_open_ssl_nb(Octstr *host, int port, Octstr *certkeyfile,
+                          Octstr *our_host)
+{
+    Connection *ret;
+
+    /* open the TCP connection */
+    if (!(ret = conn_open_tcp_nb(host, port, our_host))) {
+        return NULL;
+    }
+    
+    if (conn_init_client_ssl(ret, certkeyfile) == -1) {
+        conn_destroy(ret);
+        return NULL;
+    }
+    
+    return ret;
+}
+
+Connection *conn_open_ssl(Octstr *host, int port, Octstr *certkeyfile,
+			  Octstr *our_host)
+{
+    Connection *ret;
+
+    /* open the TCP connection */
+    if (!(ret = conn_open_tcp(host, port, our_host))) {
+        return NULL;
+    }
+
+    if (conn_init_client_ssl(ret, certkeyfile) == -1) {
+        conn_destroy(ret);
+        return NULL;
+    }
 
     return ret;
-
-error:
-    conn_destroy(ret);
-    return NULL;
 }
 
 #endif /* HAVE_LIBSSL */
@@ -523,6 +546,10 @@ Connection *conn_open_tcp_with_port(Octstr *host, int port, int our_port,
 }
 
 
+/*
+ * XXX bad assumption here that conn_wrap_fd for SSL can only happens
+ * for the server side!!!! FIXME !!!!
+ */
 Connection *conn_wrap_fd(int fd, int ssl)
 {
     Connection *conn;

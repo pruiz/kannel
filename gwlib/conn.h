@@ -117,8 +117,14 @@ typedef void conn_callback_data_destroyer_t(void *data);
  * as conn_open_tcp() below. 'certkeyfile' specifies a PEM-encoded
  * file where OpenSSL looks for a private key and a certificate. 
  */
-Connection *conn_open_ssl(Octstr *host, int port, Octstr *certkeyfile,
-		Octstr *our_host);
+Connection *conn_open_ssl(Octstr *host, int port, Octstr *certkeyfile, Octstr *our_host);
+
+/* Open an SSL connection to the given host and port.  Same behavior
+ * as conn_open_tcp_nb() below. 'certkeyfile' specifies a PEM-encoded
+ * file where OpenSSL looks for a private key and a certificate. 
+ */
+Connection *conn_open_ssl_nb(Octstr *host, int port, Octstr *certkeyfile, Octstr *our_host);
+
 void server_ssl_init(void); /* used by http.c */
 #endif /* HAVE_LIBSSL */
 
