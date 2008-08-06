@@ -1,3 +1,6 @@
+2008-08-06 Alexander Malysh <amalysh at kannel.org>
+    * configure.in, configure: added MacOSX10.5.sdk
+
 2008-08-02 Alexander Malysh <amalysh at kannel.org>
     * gwlib/charset.c, radius/radius_acct.c, wap/wtp_resp.c: fixed compiler
       warnings.
