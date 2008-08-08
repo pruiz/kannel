@@ -1,6 +1,10 @@
+2008-08-08  Stipe Tolj  <stolj at kannel.org>
+    * doc/doxygen/kannel.conf: change to 'CREATE_SUBDIRS = YES' for the sake
+      of filesystem IO performance during creation and read.
+
 2008-08-06 Alexander Malysh <amalysh at kannel.org>
-    * gwlib/http.[ch]: added 2 new functions (http_set_client_timeout, http_cgivar_dump_into).
-      Fixes:
+    * gwlib/http.[ch]: added 2 new functions (http_set_client_timeout, 
+      http_cgivar_dump_into). Fixes:
           1) use conn_open_ssl_nb in conn_pool_get
           2) reinject redirect requests into the front of the queue
           3) don't panic if we try to put slow client into port queue but
