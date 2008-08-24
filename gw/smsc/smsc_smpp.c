@@ -759,7 +759,7 @@ static SMPP_PDU *msg_to_pdu(SMPP *smpp, Msg *msg)
         pdu->u.submit_sm.source_addr_npi = GSM_ADDR_NPI_E164; /* ISDN number plan */
     }
 
-    if (smpp->autodetect_addr && pdu->u.submit_sm.source_addr) {
+    if (pdu->u.submit_sm.source_addr && smpp->autodetect_addr) {
         /* lets see if its international or alphanumeric sender */
         if (octstr_get_char(pdu->u.submit_sm.source_addr, 0) == '+') {
             if (!octstr_check_range(pdu->u.submit_sm.source_addr, 1, 256, gw_isdigit)) {

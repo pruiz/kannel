@@ -1,3 +1,8 @@
+2008-08-24  Stipe Tolj  <stolj at kannel.org>
+    * gw/smsc/smsc_smpp.c: switch if condition statement to ensure we don't 
+      run into an assertion panic within octstr_get_char() for a NULL'ed
+      source_addr.
+      
 2008-08-13  Stipe Tolj  <stolj at kannel.org>
     * gwlib/http.h: add complete list of HTTP/1.1 return codes. NLC.
     
