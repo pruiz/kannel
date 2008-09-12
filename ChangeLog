@@ -1,3 +1,6 @@
+2008-09-12 Alexander Malysh <amalysh at kannel.org>
+    * gw/smsc/smsc_smpp.c: switched internal queue to gw_prioqueue instead of List.
+
 2008-08-24  Stipe Tolj  <stolj at kannel.org>
     * gw/smsc/smsc_smpp.c: switch if condition statement to ensure we don't 
       run into an assertion panic within octstr_get_char() for a NULL'ed

@@ -132,7 +132,7 @@
 typedef struct {
     long transmitter;
     long receiver;
-    List *msgs_to_send;
+    gw_prioqueue_t *msgs_to_send;
     Dict *sent_msgs; 
     List *received_msgs; 
     Counter *message_id_counter; 
@@ -224,9 +224,9 @@ static SMPP *smpp_create(SMSCConn *conn, Octstr *host, int transmit_port,
     smpp = gw_malloc(sizeof(*smpp)); 
     smpp->transmitter = -1; 
     smpp->receiver = -1; 
-    smpp->msgs_to_send = gwlist_create(); 
+    smpp->msgs_to_send = gw_prioqueue_create(sms_priority_compare); 
     smpp->sent_msgs = dict_create(max_pending_submits, NULL); 
-    gwlist_add_producer(smpp->msgs_to_send); 
+    gw_prioqueue_add_producer(smpp->msgs_to_send); 
     smpp->received_msgs = gwlist_create(); 
     smpp->message_id_counter = counter_create(); 
     counter_increase(smpp->message_id_counter);
@@ -268,7 +268,7 @@ static SMPP *smpp_create(SMSCConn *conn, Octstr *host, int transmit_port,
 static void smpp_destroy(SMPP *smpp) 
 { 
     if (smpp != NULL) { 
-        gwlist_destroy(smpp->msgs_to_send, msg_destroy_item); 
+        gw_prioqueue_destroy(smpp->msgs_to_send, msg_destroy_item); 
         dict_destroy(smpp->sent_msgs); 
         gwlist_destroy(smpp->received_msgs, msg_destroy_item); 
         counter_destroy(smpp->message_id_counter); 
@@ -997,7 +997,7 @@ static void send_messages(SMPP *smpp, Connection *conn, long *pending_submits)
 
     while (*pending_submits < smpp->max_pending_submits) {
     	/* Get next message, quit if none to be sent */
-    	msg = gwlist_extract_first(smpp->msgs_to_send);
+    	msg = gw_prioqueue_remove(smpp->msgs_to_send);
         if (msg == NULL)
             break;
 
@@ -1869,7 +1869,7 @@ static void io_thread(void *arg)
 
             long reason = (smpp->quitting?SMSCCONN_FAILED_SHUTDOWN:SMSCCONN_FAILED_TEMPORARILY);
 
-            while((msg = gwlist_extract_first(smpp->msgs_to_send)) != NULL)
+            while((msg = gw_prioqueue_remove(smpp->msgs_to_send)) != NULL)
                 bb_smscconn_send_failed(smpp->conn, msg, reason, NULL);
 
             noresp = dict_keys(smpp->sent_msgs);
@@ -1909,7 +1909,7 @@ static long queued_cb(SMSCConn *conn)
 
     smpp = conn->data;
     conn->load = (smpp ? (conn->status != SMSCCONN_DEAD ?
-                  gwlist_len(smpp->msgs_to_send) : 0) : 0);
+                  gw_prioqueue_len(smpp->msgs_to_send) : 0) : 0);
     return conn->load;
 }
 
@@ -1919,7 +1919,7 @@ static int send_msg_cb(SMSCConn *conn, Msg *msg)
     SMPP *smpp;
 
     smpp = conn->data;
-    gwlist_produce(smpp->msgs_to_send, msg_duplicate(msg));
+    gw_prioqueue_produce(smpp->msgs_to_send, msg_duplicate(msg));
     gwthread_wakeup(smpp->transmitter);
     return 0;
 }
