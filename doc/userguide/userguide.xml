@@ -6168,8 +6168,9 @@ recoded from Unicode, it will be "WINDOWS-1252"
 billing identifier/information of incoming message. The value
 depends on the SMSC module and the associated billing semantics
 of the specific SMSC providing the information. For EMI2 the value
-is the XSer 0c field, for SMPP it is the service_type of the 
-deliver_sm PDU. (Note: This is used for proxying billing 
+is the XSer 0c field, for SMPP MO it is the service_type of the 
+deliver_sm PDU, and for SMPP DLR it is the DLR message err component. 
+(Note: This is used for proxying billing 
 information to external applications. There is no semantics 
 associated while processing these.)
 </entry></row>

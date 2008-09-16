@@ -1,5 +1,15 @@
+2008-09-16  Stipe Tolj  <stolj at kannel.org>
+    * doc/userguide/userguide.xml: add reference to the below binfo support
+      of SMPP DLRs.
+    * gw/smsc/smsc_smpp.c: add 'binfo' support for SMPP DLRs, in order to proxy
+      the DLR message 'err' component via our msg struct value. This allows
+      users to specify the '%B' escape code in 'dlr-url' too, beside the
+      normal DLR value '%d' to provision the DLR error code to the backend
+      application.
+          
 2008-09-12 Alexander Malysh <amalysh at kannel.org>
-    * gw/smsc/smsc_smpp.c: switched internal queue to gw_prioqueue instead of List.
+    * gw/smsc/smsc_smpp.c: switched internal queue to gw_prioqueue instead of 
+      List.
 
 2008-08-24  Stipe Tolj  <stolj at kannel.org>
     * gw/smsc/smsc_smpp.c: switch if condition statement to ensure we don't 
