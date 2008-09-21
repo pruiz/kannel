@@ -1,3 +1,10 @@
+2008-09-21 Alexander Malysh <amalysh at kannel.org>
+    * gw/bb_smscconn.c, gw/bearerbox.c, gw/load.c, gw/load.h:
+      added simple bandwidth meter with heuristic and needed changes to bearerbox status.
+      Bearerbox status show now 3 speeds: 1 minute sample, 5 minute sample, and over livetime.
+      Example:
+      SMS: inbound (0.00,0.00,0.00) msg/sec, outbound (0.00,0.00,0.00) msg/sec
+
 2008-09-16  Stipe Tolj  <stolj at kannel.org>
     * doc/userguide/userguide.xml: add reference to the below binfo support
       of SMPP DLRs.

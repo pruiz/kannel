@@ -87,6 +87,7 @@
 #include "numhash.h"
 #include "smscconn.h"
 #include "dlr.h"
+#include "load.h"
 
 #include "bb_smscconn_cb.h"    /* callback functions for connections */
 #include "smscconn_p.h"        /* to access counters */
@@ -99,6 +100,9 @@ extern List *outgoing_sms;
 
 extern Counter *incoming_sms_counter;
 extern Counter *outgoing_sms_counter;
+
+extern Load *outgoing_sms_load;
+extern Load *incoming_sms_load;
 
 extern List *flow_threads;
 extern List *suspended;
@@ -251,6 +255,7 @@ void bb_smscconn_sent(SMSCConn *conn, Msg *sms, Octstr *reply)
     }
     
     counter_increase(outgoing_sms_counter);
+    load_increase(outgoing_sms_load);
     if (conn) counter_increase(conn->sent);
 
     /* write ACK to store file */
@@ -424,6 +429,7 @@ long bb_smscconn_receive(SMSCConn *conn, Msg *sms)
             switch(ret) {
             case concat_pending:
                 counter_increase(incoming_sms_counter); /* ?? */
+                load_increase(incoming_sms_load);
                 if (conn != NULL)
                     counter_increase(conn->received);
                 msg_destroy(sms);
@@ -476,6 +482,7 @@ long bb_smscconn_receive(SMSCConn *conn, Msg *sms)
 	bb_alog_sms(conn, sms, "Receive DLR");
 
     counter_increase(incoming_sms_counter);
+    load_increase(incoming_sms_load);
     if (conn != NULL) counter_increase(conn->received);
 
     msg_destroy(sms);

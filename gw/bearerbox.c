@@ -77,6 +77,7 @@
 #include "bearerbox.h"
 #include "shared.h"
 #include "dlr.h"
+#include "load.h"
 
 /* global variables; included to other modules as needed */
 
@@ -94,6 +95,10 @@ Counter *outgoing_wdp_counter;
 /* incoming/outgoing sms queue control */
 long max_incoming_sms_qlength;
 long max_outgoing_sms_qlength;
+
+
+Load *outgoing_sms_load;
+Load *incoming_sms_load;
 
 
 /* this is not a list of items; instead it is used as
@@ -454,6 +459,17 @@ static Cfg *init_bearerbox(Cfg *cfg)
 
     status_mutex = mutex_create();
 
+    outgoing_sms_load = load_create();
+    /* add 60,300,-1 entries */
+    load_add_interval(outgoing_sms_load, 60);
+    load_add_interval(outgoing_sms_load, 300);
+    load_add_interval(outgoing_sms_load, -1);
+    incoming_sms_load = load_create();
+    /* add 60,300,-1 entries */
+    load_add_interval(incoming_sms_load, 60);
+    load_add_interval(incoming_sms_load, 300);
+    load_add_interval(incoming_sms_load, -1);
+
     setup_signal_handlers();
     
     /* http-admin is REQUIRED */
@@ -544,6 +560,9 @@ static void empty_msg_lists(void)
     
     counter_destroy(incoming_sms_counter);
     counter_destroy(outgoing_sms_counter);
+
+    load_destroy(incoming_sms_load);
+    load_destroy(outgoing_sms_load);
 }
 
 
@@ -816,7 +835,6 @@ Octstr *bb_print_status(int status_type)
 {
     char *s, *lb;
     char *frmt, *footer;
-    char buf[1024];
     Octstr *ret, *str, *version;
     time_t t;
 
@@ -845,7 +863,7 @@ Octstr *bb_print_status(int status_type)
                "(%ld queued)</p>\n\n"
                " <p>SMS: received %ld (%ld queued), sent %ld "
                "(%ld queued), store size %ld</p>\n"
-               " <p>SMS: inbound %.2f msg/sec, outbound %.2f msg/sec</p>\n\n"
+               " <p>SMS: inbound (%.2f,%.2f,%.2f) msg/sec, outbound (%.2f,%.2f,%.2f) msg/sec</p>\n\n"
                " <p>DLR: %ld queued, using %s storage</p>\n\n";
         footer = "<p>";
     } else if (status_type == BBSTATUS_WML) {
@@ -856,8 +874,8 @@ Octstr *bb_print_status(int status_type)
                "   <p>SMS: received %ld (%ld queued)<br/>\n"
                "      SMS: sent %ld (%ld queued)<br/>\n"
                "      SMS: store size %ld<br/>\n"
-               "      SMS: inbound %.2f msg/sec<br/>\n"
-               "      SMS: outbound %.2f msg/sec</p>\n\n"
+               "      SMS: inbound (%.2f,%.2f,%.2f) msg/sec<br/>\n"
+               "      SMS: outbound (%.2f,%.2f,%.2f) msg/sec</p>\n\n"
                "   <p>DLR: %ld queued<br/>\n"
                "      DLR: using %s storage</p>\n\n";
         footer = "<p>";
@@ -870,19 +888,19 @@ Octstr *bb_print_status(int status_type)
                "\t<sms>\n\t\t<received><total>%ld</total><queued>%ld</queued>"
                "</received>\n\t\t<sent><total>%ld</total><queued>%ld</queued>"
                "</sent>\n\t\t<storesize>%ld</storesize>\n\t\t"
-               "<inbound>%.2f</inbound>\n\t\t<outbound>%.2f</outbound>\n\t</sms>\n"
+               "<inbound>%.2f,%.2f,%.2f</inbound>\n\t\t<outbound>%.2f,%.2f,%.2f</outbound>\n\t</sms>\n"
                "\t<dlr>\n\t\t<queued>%ld</queued>\n\t\t<storage>%s</storage>\n\t</dlr>\n";
         footer = "";
     } else {
         frmt = "%s\n\nStatus: %s, uptime %ldd %ldh %ldm %lds\n\n"
                "WDP: received %ld (%ld queued), sent %ld (%ld queued)\n\n"
                "SMS: received %ld (%ld queued), sent %ld (%ld queued), store size %ld\n"
-               "SMS: inbound %.2f msg/sec, outbound %.2f msg/sec\n\n"
+               "SMS: inbound (%.2f,%.2f,%.2f) msg/sec, outbound (%.2f,%.2f,%.2f) msg/sec\n\n"
                "DLR: %ld queued, using %s storage\n\n";
         footer = "";
     }
     
-    sprintf(buf, frmt,
+    ret = octstr_format(frmt,
         octstr_get_cstr(version),
         s, t/3600/24, t/3600%24, t/60%60, t%60,
         counter_value(incoming_wdp_counter),
@@ -891,12 +909,11 @@ Octstr *bb_print_status(int status_type)
         counter_value(incoming_sms_counter), gwlist_len(incoming_sms),
         counter_value(outgoing_sms_counter), gwlist_len(outgoing_sms),
         store_messages(),
-        (float) counter_value(incoming_sms_counter)/t,
-        (float) counter_value(outgoing_sms_counter)/t,
+        load_get(incoming_sms_load,0), load_get(incoming_sms_load,1), load_get(incoming_sms_load,2),
+        load_get(outgoing_sms_load,0), load_get(outgoing_sms_load,1), load_get(outgoing_sms_load,2),
         dlr_messages(), dlr_type());
 
     octstr_destroy(version);
-    ret = octstr_create(buf);
     
     append_status(ret, str, boxc_status, status_type);
     append_status(ret, str, smsc2_status, status_type);
