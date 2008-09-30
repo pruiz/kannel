@@ -133,6 +133,21 @@ error_reporting(0);
             echo ", uptime $regs[2]d $regs[3]h $regs[4]m $regs[5]s <br />\n";
         }
 
+        /* get the inbound load of this bearerbox */
+        $s = XPathValue("gateway/sms/inbound", $status[$inst]);
+        echo "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<b>Inbound:</b> $s<br/>";
+
+        /* get the outbound load of this bearerbox */
+        $s = XPathValue("gateway/sms/outbound", $status[$inst]);       
+        echo "&nbsp;&nbsp;&nbsp;<b>Outbound:</b> $s<br/>";      
+
+        /* get the info of this bearerbox */        
+        $s = XPathValue("gateway/version", $status[$inst]);
+        $s = str_replace(chr(10),'<br />&nbsp&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'.
+             '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;',$s);
+        $s = str_replace(chr(13),'',$s); 
+        echo "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<b>Version:</b> $s<br/>";
+
         ?>
         </td><td class=text valign=top align=right>
             <a class=href href="#" onClick="admin_url('suspend', '<?php echo $config["base_url"]."/suspend"; ?>', '<?php echo $config["admin_passwd"]; ?>');">suspend</a> |
