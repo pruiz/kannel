@@ -1,3 +1,9 @@
+2008-10-07: Alexander Malysh <amalysh at kannel.org>
+    * gw/smsbox.c: commited patch that allow longer account parameter and
+      clarify error message.
+      Thanks to Vincent CHAVANIS <v.chavanis_at_telemaque.fr> for this patch.
+      [Msg-ID: <48E35531.90603@telemaque.fr>]
+
 2008-09-30 Alexander Malysh <amalysh at kannel.org>
     * contrib/kannel-monitor/index.php: applied patch that adds inbound/outbound load and
       version info.
