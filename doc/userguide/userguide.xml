@@ -166,7 +166,7 @@
 
 	<para>Kannel's quality has been recognized on March 7, 2001 when it
 	was <ulink url="http://www.kannel.org/oldnews.shtml#wapcert">certified</ulink> 
-	by <ulink url="http://www.wapforum.org">Wap Forum</ulink>
+	by <ulink url="http://www.wapforum.org">WAP Forum</ulink>
 	as the first WAP 1.1 gateway in the world.</para>
 
 	<para>Greater quality recognition are the quantity of companies 
@@ -226,7 +226,7 @@
 	content to the phones.</para>
 
         <figure>
-        <title>Logical position of WAP gateway (and PPG)between a phone and a 
+        <title>Logical position of WAP gateway (and PPG) between a phone and a 
         content server.</title>
         <graphic fileref="wap-gateway&figtype;"></graphic>
         </figure>
@@ -428,7 +428,7 @@
 	</itemizedlist>
 	</para>
 	
-	<para>Hardware requirements are fluffier. Some informal benchmarkings 
+	<para>Hardware requirements are fluffier. Some informal benchmarking 
 	have shown that with a reasonably fast PC architecture (e.g. 400MHz 
 	Pentium II with 128MB RAM), SMS performance's bottleneck is always on the
 	SMSC side, even for example with multiple connections summing a pipeline with 
@@ -495,7 +495,7 @@
 	<para>You can also find general information on Kannel's 
 		<ulink url="http://www.kannel.org">website</ulink> and
 		information about existing problems at 
-		<ulink url="http://bugs.kannel.org">our bugtracker</ulink>.
+		<ulink url="http://bugs.kannel.org">our bug tracker</ulink>.
 	</para>
 
 	<para>
@@ -789,7 +789,7 @@
 
 	<para>To run Kannel as a SMS gateway you need to edit the
 	configuration file which is at /etc/kannel/kannel.conf.
-	In kannel's documentation directory 
+	In Kannel's documentation directory 
 	(<filename>/usr/share/doc/kannel</filename>) 
 	there is an example file called examples/smskannel.conf. 
 	It has some basic examples of the configuration groups needed 
@@ -844,7 +844,7 @@
 	</para>
 
 	<para>See http://kannel.org/download.shtml#debian_repository for 
-	informations about kannel repository sources.list</para>
+	information about kannel repository sources.list</para>
 
 	<para>Installing or upgrading Kannel from a file</para>
 
@@ -1005,10 +1005,10 @@
 	<para>A variable definition line has the name of the variable,
 	and equals sign (<literal>=</literal>) and the value of the
 	variable. The name of the variable can contain any characters
-	except whitespace and equals. The value of the variable is a
+	except white space and equals. The value of the variable is a
 	string, with or without quotation marks (<literal></literal>)
 	around it. Quotation marks are needed if the variable needs to
-	begin or end with whitespace or contain special
+	begin or end with white space or contain special
 	characters. Normal C 	escape character syntax works inside 
 	quotation marks.</para>
 
@@ -1621,7 +1621,7 @@ white-list = "http://localhost/whitelist.txt"
   packet comes with two sample configuration files,
   <literal>smskannel.conf</literal> and
   <literal>wapkannel.conf</literal> (in <literal>gw</literal>
-  subdirectory), of which the first one is for
+  sub directory), of which the first one is for
   testing out SMS Kannel and the second one for setting up a WAP
   Kannel. Feel free to edit those configuration files to set up your
   own specialized system.</para>
@@ -2076,7 +2076,7 @@ bearerbox-host = localhost
      <entry>filename</entry>
      <entry valign="bottom">
         A file containing all requested URLs from clients while wapbox operation,
-        including client IP, HTTP server User-Agent string, HTTP reponse code, 
+        including client IP, HTTP server User-Agent string, HTTP response code, 
         size of reply.
      </entry></row>
 
@@ -2111,11 +2111,11 @@ bearerbox-host = localhost
 	 If set wapbox will use a strict policy in XML parsing the WML
 	 deck. If not set it will be more relaxing and let the XML parser
 	 recover from parsing errors. This has mainly impacts in how smart
-	 the WML deck and it's character set encoding can be addopted, even
+	 the WML deck and it's character set encoding can be adopted, even
 	 while you used an encoding that does not fit the XML preamble.
 	 BEWARE: This may be a vulnerability in your wapbox for large bogus 
 	 WML input. Therefore this defaults to 'yes', strict parsing.
-	 is assimed.
+	 is assumed.
 	 </entry></row>
 
   </tbody>
@@ -2951,7 +2951,7 @@ smsc-password = bar
 		  0x00 - disconnect/reconnect, (default) 0x01 - as is now, re-queue, 
 		  but this could potentially result in the msg arriving twice
 		  0x02 - just carry on waiting (given that the wait-ack should never 
-		  expire this is the mst accurate)
+		  expire this is the must accurate)
      </entry></row>
 
     <row><entry><literal>flow-control</literal></entry>
@@ -3323,7 +3323,7 @@ address-range = ""
 		  0x00 - disconnect/reconnect, (default) 0x01 - as is now, re-queue, 
 		  but this could potentially result in the msg arriving twice
 		  0x02 - just carry on waiting (given that the wait-ack should never 
-		  expire this is the mst accurate)
+		  expire this is the must accurate)
      </entry></row>
 
    <row><entry><literal>validityperiod</literal></entry>

@@ -1,20 +1,23 @@
-2008-10-07: Alexander Malysh <amalysh at kannel.org>
+2008-10-09  Stipe Tolj  <stolj at kannel.org>
+    * doc/userguide/userguide.xml: some typo fixes, using 'aspell check -H'.
+
+2008-10-07 Alexander Malysh <amalysh at kannel.org>
     * gw/smsbox.c: commited patch that allow longer account parameter and
       clarify error message.
       Thanks to Vincent CHAVANIS <v.chavanis_at_telemaque.fr> for this patch.
       [Msg-ID: <48E35531.90603@telemaque.fr>]
 
 2008-09-30 Alexander Malysh <amalysh at kannel.org>
-    * contrib/kannel-monitor/index.php: applied patch that adds inbound/outbound load and
-      version info.
+    * contrib/kannel-monitor/index.php: applied patch that adds inbound/
+      outbound load and version info.
       Thanks to Vincent CHAVANIS <v.chavanis_at_telemaque.fr> for this patch.
       [Msg-ID: <48DA51D6.9010209@telemaque.fr>]
 
 2008-09-21 Alexander Malysh <amalysh at kannel.org>
     * gw/bb_smscconn.c, gw/bearerbox.c, gw/load.c, gw/load.h:
-      added simple bandwidth meter with heuristic and needed changes to bearerbox status.
-      Bearerbox status show now 3 speeds: 1 minute sample, 5 minute sample, and over livetime.
-      Example:
+      added simple bandwidth meter with heuristic and needed changes to 
+      bearerbox status. Bearerbox status show now 3 speeds: 1 minute sample, 
+      5 minute sample, and over livetime. Example:
       SMS: inbound (0.00,0.00,0.00) msg/sec, outbound (0.00,0.00,0.00) msg/sec
 
 2008-09-16  Stipe Tolj  <stolj at kannel.org>
