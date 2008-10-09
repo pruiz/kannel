@@ -121,6 +121,8 @@ static RWLock smsc_list_lock;
 static List *smsc_groups;
 static Octstr *unified_prefix;
 
+static Octstr *black_list_url;
+static Octstr *white_list_url;
 static Numhash *black_list;
 static Numhash *white_list;
 
@@ -602,10 +604,12 @@ int smsc2_start(Cfg *cfg)
     unified_prefix = cfg_get(grp, octstr_imm("unified-prefix"));
 
     white_list = black_list = NULL;
-    os = cfg_get(grp, octstr_imm("white-list"));
-    if (os != NULL) {
-        white_list = numhash_create(octstr_get_cstr(os));
-	octstr_destroy(os);
+    white_list_url = black_list_url = NULL;
+    white_list_url = cfg_get(grp, octstr_imm("white-list"));
+    if (white_list_url != NULL) {
+        if ((white_list = numhash_create(octstr_get_cstr(white_list_url))) == NULL)
+            panic(0, "Could not get white-list at URL <%s>", 
+                  octstr_get_cstr(white_list_url));
     }
     if ((os = cfg_get(grp, octstr_imm("white-list-regex"))) != NULL) {
         if ((white_list_regex = gw_regex_comp(os, REG_EXTENDED)) == NULL)
@@ -613,10 +617,11 @@ int smsc2_start(Cfg *cfg)
         octstr_destroy(os);
     }
     
-    os = cfg_get(grp, octstr_imm("black-list"));
-    if (os != NULL) {
-        black_list = numhash_create(octstr_get_cstr(os));
-	octstr_destroy(os);
+    black_list_url = cfg_get(grp, octstr_imm("black-list"));
+    if (black_list_url != NULL) {
+        if ((black_list = numhash_create(octstr_get_cstr(black_list_url))) == NULL)
+            panic(0, "Could not get black-list at URL <%s>", 
+                  octstr_get_cstr(black_list_url));
     }
     if ((os = cfg_get(grp, octstr_imm("black-list-regex"))) != NULL) {
         if ((black_list_regex = gw_regex_comp(os, REG_EXTENDED)) == NULL)
@@ -872,6 +877,8 @@ void smsc2_cleanup(void)
     octstr_destroy(unified_prefix);    
     numhash_destroy(white_list);
     numhash_destroy(black_list);
+    octstr_destroy(white_list_url);
+    octstr_destroy(black_list_url);
     if (white_list_regex != NULL)
         gw_regex_destroy(white_list_regex);
     if (black_list_regex != NULL)
@@ -1476,3 +1483,24 @@ static int check_concatenation(Msg **pmsg, Octstr *smscid)
 
     return ret;
 }
+
+int bb_reload_lists(void)
+{
+    numhash_destroy(white_list);
+    numhash_destroy(black_list);
+    
+    if (white_list_url != NULL) {
+        white_list = numhash_create(octstr_get_cstr(white_list_url));
+    }
+    if (white_list == NULL)
+        return -1;
+
+    if (black_list_url != NULL) {
+        black_list = numhash_create(octstr_get_cstr(black_list_url));
+    }
+    if (black_list == NULL)
+        return -1;
+
+    return 1;
+}
+

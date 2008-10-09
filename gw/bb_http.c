@@ -284,6 +284,18 @@ static Octstr *httpd_restart_smsc(List *cgivars, int status_type)
         return octstr_create("SMSC id not given");
 }
 
+static Octstr *httpd_reload_lists(List *cgivars, int status_type)
+{
+    Octstr *reply;
+    if ((reply = httpd_check_authorization(cgivars, 0))!= NULL) return reply;
+    if ((reply = httpd_check_status())!= NULL) return reply;
+ 
+    if (bb_reload_lists() == -1)
+        return octstr_create("Could not re-load lists");
+    else
+        return octstr_create("Black/white lists re-loaded");
+}
+
 /* Known httpd commands and their functions */
 static struct httpd_command {
     const char *command;
@@ -300,6 +312,7 @@ static struct httpd_command {
     { "flush-dlr", httpd_flush_dlr },
     { "stop-smsc", httpd_stop_smsc },
     { "start-smsc", httpd_restart_smsc },
+    { "reload-lists", httpd_reload_lists },
     { NULL , NULL } /* terminate list */
 };
 

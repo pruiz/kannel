@@ -209,6 +209,7 @@ int bb_restart(void);
 int bb_flush_dlr(void);
 int bb_stop_smsc(Octstr *id);
 int bb_restart_smsc(Octstr *id);
+int bb_reload_lists(void);
 
 /* return string of current status */
 Octstr *bb_print_status(int status_type);

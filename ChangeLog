@@ -1,3 +1,11 @@
+2008-10-10  Stipe Tolj  <stolj at kannel.org>
+    * doc/userguide/userguide.xml: add HTTP admin 'reload-lists' section.
+    * gw/bb_[http|smssconn].c, gw/bearerbox.h: implement HTTP admin command 
+      'reload-lists' to allow re-loading of the '[white|black]-list' on the fly 
+      while runtime. This helps a lot while the remote lists change over time 
+      and we want to keep bearerbox running and don't have to restart in order 
+      to re-load the lists.
+      
 2008-10-09  Stipe Tolj  <stolj at kannel.org>
     * doc/userguide/userguide.xml: some typo fixes, using 'aspell check -H'.
 

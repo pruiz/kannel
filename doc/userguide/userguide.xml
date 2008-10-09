@@ -1925,6 +1925,13 @@ commands never arrive nor can you restart it via WAP anymore.</para>
 		  you to change the current log-level of the log-files on the fly.
    </entry></row>
 
+	<row><entry><literal>reload-lists</literal></entry>
+   <entry valign="bottom">
+        Re-loads the 'white-list' and 'black-list' URLs provided in the
+        core group. This allows Kannel to keep running while the remote
+        lists change and signal bearerbox to re-load them on the fly.
+   </entry></row>
+
   </tbody>
   </tgroup>
  </table>
