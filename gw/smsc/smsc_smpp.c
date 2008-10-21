@@ -1352,7 +1352,7 @@ static void handle_pdu(SMPP *smpp, Connection *conn, SMPP_PDU *pdu,
            mutex_lock(smpp->conn->flow_mutex);
            if (smpp->conn->is_stopped) {
                  mutex_unlock(smpp->conn->flow_mutex);
-                 resp->u.data_sm.command_status = SMPP_ESME_RX_T_APPN;
+                 resp->u.data_sm_resp.command_status = SMPP_ESME_RX_T_APPN;
                  break;
            }
            mutex_unlock(smpp->conn->flow_mutex);
@@ -1404,7 +1404,7 @@ static void handle_pdu(SMPP *smpp, Connection *conn, SMPP_PDU *pdu,
                  mutex_unlock(smpp->conn->flow_mutex);
                  resp = smpp_pdu_create(deliver_sm_resp,
                                pdu->u.deliver_sm.sequence_number);
-                 resp->u.deliver_sm.command_status = SMPP_ESME_RX_T_APPN;
+                 resp->u.deliver_sm_resp.command_status = SMPP_ESME_RX_T_APPN;
 	             break;
            }
            mutex_unlock(smpp->conn->flow_mutex);
@@ -1638,11 +1638,11 @@ static void handle_pdu(SMPP *smpp, Connection *conn, SMPP_PDU *pdu,
         default:
             error(0, "SMPP[%s]: Unknown PDU type 0x%08lx, ignored.",
                   octstr_get_cstr(smpp->conn->id), pdu->type);
+            
             /*
-                send gnack , see smpp3.4 spec., section 3.3
-                because we doesn't know what kind of pdu received, we assume generick_nack_resp
-                (header always the same)
-            */
+             * We received an unknown PDU type, therefore we will respond
+             * with a generic_nack PDU, see SMPP v3.4 spec, section 3.3.
+             */
             resp = smpp_pdu_create(generic_nack, pdu->u.generic_nack.sequence_number);
             resp->u.generic_nack.command_status = SMPP_ESME_RINVCMDID;
             break;

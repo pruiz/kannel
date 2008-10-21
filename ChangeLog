@@ -1,3 +1,8 @@
+2008-10-21  Stipe Tolj  <stolj at kannel.org>
+    * gw/smsc/smsc_smpp.c: fix possible segfaults in handle_pdu(), where we 
+      don't access the resp PDU structure correctly in the case of shutdown
+      phase.
+
 2008-10-10  Stipe Tolj  <stolj at kannel.org>
     * doc/userguide/userguide.xml: add HTTP admin 'reload-lists' section.
     * gw/bb_[http|smssconn].c, gw/bearerbox.h: implement HTTP admin command 
