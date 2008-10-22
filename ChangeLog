@@ -1,4 +1,8 @@
 2008-10-22  Stipe Tolj  <stolj at kannel.org>
+    * test/test_ota.c: write the binary ota_compile() output block to a file
+      cleanly.
+       
+2008-10-22  Stipe Tolj  <stolj at kannel.org>
     * gw/ota_compiler.c: re-order INLINE attributs in oma_ota_attributes struct
       to fit the order in the spec tables. NLC.
 
