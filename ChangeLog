@@ -1,3 +1,7 @@
+2008-10-22  Stipe Tolj  <stolj at kannel.org>
+    * gw/ota_compiler.c: re-order INLINE attributs in oma_ota_attributes struct
+      to fit the order in the spec tables. NLC.
+
 2008-10-21  Stipe Tolj  <stolj at kannel.org>
     * gw/smsc/smsc_smpp.c: fix possible segfaults in handle_pdu(), where we 
       don't access the resp PDU structure correctly in the case of shutdown

@@ -234,8 +234,9 @@ static ota_3table_t ota_attributes[] = {
  */
 
 static ota_3table_t oma_ota_attributes[] = {
-    { "VERSION", "1.0", 0x46 },
     { "VERSION", "INLINE", 0x45 },  
+    { "VERSION", "1.0", 0x46 },
+    { "TYPE", "INLINE", 0x50 },
     { "TYPE", "PXLOGICAL", 0x51 },
     { "TYPE", "PXPHYSICAL", 0x52 },
     { "TYPE", "PORT", 0x53 },
@@ -258,7 +259,7 @@ static ota_3table_t oma_ota_attributes[] = {
     { "TYPE", "EAP", 0x5C, 1 },
     { "TYPE", "CERT", 0x5D, 1 },
     { "TYPE", "WEPKEY", 0x5E, 1 },
-    { "TYPE", "INLINE", 0x50 },
+    { "NAME", "INLINE", 0x5 },
     { "NAME", "NAME", 0x7 },
     { "NAME", "NAP-ADDRESS", 0x8 },
     { "NAME", "NAP-ADDRTYPE", 0x9 },
@@ -377,7 +378,7 @@ static ota_3table_t oma_ota_attributes[] = {
     { "NAME", "EDIT-SET", 0x71, 1 },
     { "NAME", "VIEW-SET", 0x72, 1 },
     { "NAME", "FORW-SET", 0x73, 1 },
-    { "NAME", "INLINE", 0x5 },
+    { "VALUE", "INLINE", 0x6 },     
     { "VALUE", "IPV4", 0x85 },
     { "VALUE", "IPV6", 0x86 },
     { "VALUE", "E164", 0x87 },
@@ -444,7 +445,6 @@ static ota_3table_t oma_ota_attributes[] = {
     { "VALUE", "DIGEST", 0x93, 1 },
     { "VALUE", "AAA", 0xE0 },
     { "VALUE", "HA", 0xE1 },
-    { "VALUE", "INLINE", 0x6 },     
 };
 
 #define OMA_VALUE_TAG 0x06
