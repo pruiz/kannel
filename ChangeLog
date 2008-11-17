@@ -1,3 +1,8 @@
+2008-11-17 Alexander Malysh <amalysh at kannel.org>
+    * gw/smsc/smsc_at.c: wait OK after issuing AT+CNMA-command.
+      Thanks to matti.armanen at sci.fi for the patch.
+      [Msg-ID: 491E905E.908@sci.fi]
+
 2008-10-22  Stipe Tolj  <stolj at kannel.org>
     * test/test_ota.c: write the binary ota_compile() output block to a file
       cleanly.

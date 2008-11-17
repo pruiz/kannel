@@ -749,7 +749,6 @@ static int at2_wait_modem_command(PrivAT2data *privdata, time_t timeout, int gt_
     Msg	*msg;
     int len;
     int cmgr_flag = 0;
-    int expect_extra_ok = 0;
 
     time(&end_time);
     if (timeout == 0)
@@ -772,12 +771,8 @@ static int at2_wait_modem_command(PrivAT2data *privdata, time_t timeout, int gt_
                 goto end;
             }
             if (octstr_search(line, octstr_imm("OK"), 0) != -1) {
-                if (!expect_extra_ok) {
-                    ret = 0;
-                    goto end;
-                } else {
-                    --expect_extra_ok;
-                }
+                ret = 0;
+                goto end;
             }
             if ((gt_flag ) && (octstr_search(line, octstr_imm(">"), 0) != -1)) {
                 ret = 1;
@@ -847,8 +842,7 @@ static int at2_wait_modem_command(PrivAT2data *privdata, time_t timeout, int gt_
 
                         if (!cmgr_flag) {
                             if (privdata->phase2plus) {
-                                at2_write_line(privdata, "AT+CNMA");
-                                ++expect_extra_ok;
+                                at2_send_modem_command(privdata, "AT+CNMA", 3, 0);
                             }
                         }
 
