@@ -279,10 +279,16 @@ void log_close_all(void)
 
     while (num_logfiles > 0) {
         --num_logfiles;
-        if (logfiles[num_logfiles].file != stderr &&
-            logfiles[num_logfiles].file != NULL)
+        if (logfiles[num_logfiles].file != stderr && logfiles[num_logfiles].file != NULL) {
+            int i;
+            /* look for the same filename and set file to NULL */
+            for (i = num_logfiles - 1; i >= 0; i--) {
+                if (strcmp(logfiles[num_logfiles].filename, logfiles[i].filename) == 0)
+                    logfiles[i].file = NULL;
+            }
             fclose(logfiles[num_logfiles].file);
-        logfiles[num_logfiles].file = NULL;
+            logfiles[num_logfiles].file = NULL;
+        }
     }
 
     /*

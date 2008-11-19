@@ -1,4 +1,9 @@
 2008-11-19 Alexander Malysh <amalysh at kannel.org>
+    * gwlib/log.c: fixed double close/free in log_close_all().
+      Thanks to Werner Coetzee <werner.coetzee at clickatell.com> for pointing
+      to the issue.
+
+2008-11-19 Alexander Malysh <amalysh at kannel.org>
     * debian/kannel.init: apllied patch that replace usage of run_kannel_box
       with kannel oprions --daemonize.
       Thanks to Alan McNatty <alan at catalyst.net.nz> for this patch.
