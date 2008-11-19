@@ -28,33 +28,24 @@ case "$1" in
     start-stop-daemon --start --quiet \
 	--pidfile $PIDFILES/kannel_bearerbox.pid \
 	--chuid kannel \
-	--exec $BOXPATH/run_kannel_box \
-	-- \
-	--pidfile $PIDFILES/kannel_bearerbox.pid \
-	--no-extra-args \
-	$BOXPATH/bearerbox -v 4 -- $CONF
+	--exec $BOXPATH/bearerbox -- -v 4 --parachute --daemonize \
+		--pid-file $PIDFILES/kannel_bearerbox.pid  $CONF 
     sleep 1 # Wait for bearerbox
     test ! -z $START_WAPBOX && (
     echo -n " wapbox"
 	start-stop-daemon --start --quiet \
     	    --pidfile $PIDFILES/kannel_wapbox.pid \
 	    --chuid kannel \
-	    --exec $BOXPATH/run_kannel_box \
-	    -- \
-	    --pidfile $PIDFILES/kannel_wapbox.pid \
-	    --no-extra-args \
-	    $BOXPATH/wapbox -v 4 -- $CONF
+	    --exec $BOXPATH/wapbox -- -v 4 --parachute --daemonize \
+		--pid-file $PIDFILES/kannel_wapbox.pid $CONF 
     )
     test ! -z $START_SMSBOX && (
     echo -n " smsbox"
 	start-stop-daemon --start --quiet \
     	    --pidfile $PIDFILES/kannel_smsbox.pid \
 	    --chuid kannel \
-	    --exec $BOXPATH/run_kannel_box \
-	    -- \
-	    --pidfile $PIDFILES/kannel_smsbox.pid \
-	    --no-extra-args \
-	    $BOXPATH/smsbox -v 4 -- $CONF
+	    --exec $BOXPATH/smsbox -- -v 4 --parachute --daemonize \
+		--pid-file $PIDFILES/kannel_smsbox.pid $CONF
     )
     echo "."
     ;;
@@ -65,18 +56,18 @@ case "$1" in
 	echo -n " smsbox"
 	start-stop-daemon --stop --retry 5 --quiet \
     	    --pidfile $PIDFILES/kannel_smsbox.pid \
-	    --exec $BOXPATH/run_kannel_box
+	    --name smsbox
     )
     test ! -z $START_WAPBOX && (
 	echo -n " wapbox"
 	start-stop-daemon --stop --retry 5 --quiet \
     	    --pidfile $PIDFILES/kannel_wapbox.pid \
-	    --exec $BOXPATH/run_kannel_box
+	    --name wapbox
     )
     echo -n " bearerbox"
     start-stop-daemon --stop --retry 5 --quiet \
     	--pidfile $PIDFILES/kannel_bearerbox.pid \
-	--exec $BOXPATH/run_kannel_box
+	--name bearerbox
     echo "."
     ;;
 

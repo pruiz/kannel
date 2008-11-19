@@ -1,3 +1,9 @@
+2008-11-19 Alexander Malysh <amalysh at kannel.org>
+    * debian/kannel.init: apllied patch that replace usage of run_kannel_box
+      with kannel oprions --daemonize.
+      Thanks to Alan McNatty <alan at catalyst.net.nz> for this patch.
+      [Msg-ID: <4922140B.3000803@catalyst.net.nz>]
+
 2008-11-17 Alexander Malysh <amalysh at kannel.org>
     * gw/smsc/smsc_at.c: wait OK after issuing AT+CNMA-command.
       Thanks to matti.armanen at sci.fi for the patch.
