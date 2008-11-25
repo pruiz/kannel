@@ -1474,12 +1474,21 @@ static int obey_request(Octstr **result, URLTranslation *trans, Msg *msg)
 /* XXX The first two chars are beeing eaten somewhere and
  * only sometimes - something must be ungry */
 
-#define OCTSTR_APPEND_XML(xml, tag, text)                  \
-        octstr_format_append(xml, "  \t\t<" tag ">%s</" tag ">\n", \
-            (text?octstr_get_cstr(text):""));
+#define OCTSTR_APPEND_XML(xml, tag, text) \
+        octstr_format_append(xml, "  \t\t<" tag ">%s</" tag ">\n", (text?octstr_get_cstr(text):""))
+
+#define OCTSTR_APPEND_XML_OCTSTR(xml, tag, text) \
+        do { \
+            xmlDocPtr tmp_doc = xmlNewDoc(BAD_CAST "1.0"); \
+            xmlChar *xml_escaped = NULL; \
+            if (text != NULL) xml_escaped = xmlEncodeEntitiesReentrant(tmp_doc, BAD_CAST octstr_get_cstr(text)); \
+            octstr_format_append(xml, "  \t\t<" tag ">%s</" tag ">\n", (xml_escaped != NULL ? (char*)xml_escaped : "")); \
+            if (xml_escaped != NULL) xmlFree(xml_escaped); \
+            xmlFreeDoc(tmp_doc); \
+        } while(0)
 
 #define OCTSTR_APPEND_XML_NUMBER(xml, tag, value)          \
-        octstr_format_append(xml, "  \t\t<" tag ">%ld</" tag ">\n", (long) value);
+        octstr_format_append(xml, "  \t\t<" tag ">%ld</" tag ">\n", (long) value)
 
 	request_headers = http_create_empty_headers();
 	http_header_add(request_headers, "User-Agent", GW_NAME "/" GW_VERSION);
@@ -1522,14 +1531,14 @@ static int obey_request(Octstr **result, URLTranslation *trans, Msg *msg)
 	/* oa */
 	if(urltrans_send_sender(trans)) {
 	    tmp = octstr_create("");
-	    OCTSTR_APPEND_XML(tmp, "number", msg->sms.receiver);
+	    OCTSTR_APPEND_XML_OCTSTR(tmp, "number", msg->sms.receiver);
 	    OCTSTR_APPEND_XML(xml, "oa", tmp);
 	    octstr_destroy(tmp);
 	}
 
 	/* da */
 	tmp = octstr_create("");
-	OCTSTR_APPEND_XML(tmp, "number", msg->sms.sender);
+	OCTSTR_APPEND_XML_OCTSTR(tmp, "number", msg->sms.sender);
 	OCTSTR_APPEND_XML(xml, "da", tmp);
 	octstr_destroy(tmp);
 
@@ -1538,15 +1547,15 @@ static int obey_request(Octstr **result, URLTranslation *trans, Msg *msg)
 	    Octstr *t;
 	    t = octstr_duplicate(msg->sms.udhdata);
 	    octstr_url_encode(t);
-	    OCTSTR_APPEND_XML(xml, "udh", t);
+	    OCTSTR_APPEND_XML_OCTSTR(xml, "udh", t);
 	    octstr_destroy(t);
 	}
 
 	/* ud */
 	if(octstr_len(msg->sms.msgdata)) {
-	    octstr_url_encode(msg->sms.msgdata);
-            OCTSTR_APPEND_XML(xml, "ud", msg->sms.msgdata);
-        }
+        octstr_url_encode(msg->sms.msgdata);
+        OCTSTR_APPEND_XML_OCTSTR(xml, "ud", msg->sms.msgdata);
+    }
 
 	/* pid */
 	if(msg->sms.pid != SMS_PARAM_UNDEFINED)
@@ -1569,7 +1578,7 @@ static int obey_request(Octstr **result, URLTranslation *trans, Msg *msg)
 	if(msg->sms.compress != SMS_PARAM_UNDEFINED)
 	    OCTSTR_APPEND_XML_NUMBER(tmp, "compress", msg->sms.compress);
 	if(octstr_len(tmp))
-	    OCTSTR_APPEND_XML(xml, "dcs", tmp)
+	    OCTSTR_APPEND_XML(xml, "dcs", tmp);
 	octstr_destroy(tmp);
 
 	/* deferred (timing/delay) */
@@ -1577,7 +1586,7 @@ static int obey_request(Octstr **result, URLTranslation *trans, Msg *msg)
 	if(msg->sms.deferred != SMS_PARAM_UNDEFINED)
 	    OCTSTR_APPEND_XML_NUMBER(tmp, "delay", msg->sms.deferred);
 	if(octstr_len(tmp))
-	    OCTSTR_APPEND_XML(xml, "timing", tmp)
+	    OCTSTR_APPEND_XML(xml, "timing", tmp);
 	octstr_destroy(tmp);
 
 	/* validity (vp/delay) */
@@ -1585,7 +1594,7 @@ static int obey_request(Octstr **result, URLTranslation *trans, Msg *msg)
 	if(msg->sms.validity != SMS_PARAM_UNDEFINED)
 	    OCTSTR_APPEND_XML_NUMBER(tmp, "delay", msg->sms.validity);
 	if(octstr_len(tmp))
-	    OCTSTR_APPEND_XML(xml, "vp", tmp)
+	    OCTSTR_APPEND_XML(xml, "vp", tmp);
 	octstr_destroy(tmp);
 
 	/* time (at) */
@@ -1602,18 +1611,18 @@ static int obey_request(Octstr **result, URLTranslation *trans, Msg *msg)
 	if (octstr_len(msg->sms.smsc_id)) {
 	    tmp = octstr_create("");
 	    if(octstr_len(msg->sms.smsc_id))
-		OCTSTR_APPEND_XML(tmp, "account", msg->sms.smsc_id);
+            OCTSTR_APPEND_XML_OCTSTR(tmp, "account", msg->sms.smsc_id);
 	    if(octstr_len(tmp))
-		OCTSTR_APPEND_XML(xml, "from", tmp);
+            OCTSTR_APPEND_XML(xml, "from", tmp);
 	    O_DESTROY(tmp);
 	}
 
 	/* service = to/service */
 	if(octstr_len(msg->sms.service)) {
 	    tmp = octstr_create("");
-	    OCTSTR_APPEND_XML(tmp, "service", msg->sms.service);
+	    OCTSTR_APPEND_XML_OCTSTR(tmp, "service", msg->sms.service);
 	    if(octstr_len(tmp))
-		OCTSTR_APPEND_XML(xml, "to", tmp);
+            OCTSTR_APPEND_XML(xml, "to", tmp);
 	    O_DESTROY(tmp);
 	}
 

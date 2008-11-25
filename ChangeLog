@@ -1,3 +1,7 @@
+2008-11-25 Alexander Malysh <amalysh at kannel.org>
+    * gw/smsbox.c: escape string values in the XML document for MO messages.
+      Thanks to Michael Zervakis <michael at zervakis.com> for pointing to this issue.
+
 2008-11-19 Alexander Malysh <amalysh at kannel.org>
     * gwlib/log.c: fixed double close/free in log_close_all().
       Thanks to Werner Coetzee <werner.coetzee at clickatell.com> for pointing
