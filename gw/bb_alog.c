@@ -315,6 +315,8 @@ static Octstr *get_pattern(SMSCConn *conn, Msg *msg, const char *message)
     } /* for ... */
 
     gwlist_destroy(word_list, octstr_destroy_item);
+    octstr_destroy(text);
+    octstr_destroy(udh);
 
     return result;
 }
