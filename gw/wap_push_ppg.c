@@ -447,6 +447,8 @@ void wap_push_ppg_shutdown(void)
          octstr_destroy(global_sender);
          octstr_destroy(service_name);
          octstr_destroy(ppg_default_smsc);
+         octstr_destroy(ppg_dlr_url);
+         octstr_destroy(ppg_smsbox_id);
 
          gwthread_join_every(http_read_thread);
 #ifdef HAVE_LIBSSL

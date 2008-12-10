@@ -831,6 +831,7 @@ int main(int argc, char **argv)
 
     wml_shutdown();
     close_connection_to_bearerbox();
+    alog_close();
     wap_map_destroy();
     wap_map_user_destroy();
     octstr_destroy(device_home);
