@@ -86,6 +86,7 @@ MSG(sms,
 		INTEGER(time);
 		OCTSTR(smsc_id);
 		OCTSTR(smsc_number);
+		OCTSTR(foreign_id);
 		OCTSTR(service);
 		OCTSTR(account);
 		UUID(id);

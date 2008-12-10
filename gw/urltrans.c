@@ -432,6 +432,15 @@ Octstr *urltrans_fill_escape_codes(Octstr *pattern, Msg *request)
         }
         break;
 
+    case 'F':
+        if (request->sms.foreign_id == NULL)
+            break;
+        enc = octstr_duplicate(request->sms.foreign_id);
+        octstr_url_encode(enc);
+        octstr_append(result, enc);
+        octstr_destroy(enc);
+        break;
+
     case 'i':
         if (request->sms.smsc_id == NULL)
         break;
@@ -617,7 +626,6 @@ Octstr *urltrans_fill_escape_codes(Octstr *pattern, Msg *request)
      *   * validity, deferred, rpi - we don't receive these from smsc
      *   * username, password, dlr-url, account - nonsense to send
      */
-
     case '%':
         octstr_format_append(result, "%%");
         break;

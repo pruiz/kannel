@@ -311,9 +311,14 @@ const char* dlr_type(void)
 /*
  * Add new dlr entry into dlr storage
  */
-void dlr_add(const Octstr *smsc, const Octstr *ts, const Msg *msg)
+void dlr_add(const Octstr *smsc, const Octstr *ts, Msg *msg)
 {
     struct dlr_entry *dlr = NULL;
+
+    /* Add the foreign_id so all SMSC modules can use it */
+    if (msg->sms.foreign_id != NULL)
+        octstr_destroy(msg->sms.foreign_id);
+    msg->sms.foreign_id = octstr_duplicate(ts);
 
     if(octstr_len(smsc) == 0) {
 	warning(0, "DLR[%s]: Can't add a dlr without smsc-id", dlr_type());
@@ -392,6 +397,8 @@ Msg *dlr_find(const Octstr *smsc, const Octstr *ts, const Octstr *dst, int typ)
         O_SET(msg->sms.sender, dlr->source);
         /* if dlr_url was present, recode it here again */
         O_SET(msg->sms.dlr_url, dlr->url);
+        /* add the foreign_id */
+        msg->sms.foreign_id = octstr_duplicate(ts);
         /* 
          * insert original message to the data segment 
          * later in the smsc module 
@@ -468,6 +475,7 @@ Msg* create_dlr_from_msg(const Octstr *smsc, const Msg *msg, const Octstr *reply
     dlrmsg->sms.dlr_url = octstr_duplicate(msg->sms.dlr_url);
     dlrmsg->sms.msgdata = octstr_duplicate(reply);
     dlrmsg->sms.boxc_id = octstr_duplicate(msg->sms.boxc_id);
+    dlrmsg->sms.foreign_id = octstr_duplicate(msg->sms.foreign_id);
     time(&dlrmsg->sms.time);
 
     debug("dlr.dlr", 0,"SMSC[%s]: DLR = %s",

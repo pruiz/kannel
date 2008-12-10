@@ -100,6 +100,7 @@ static Octstr *custom_log_format = NULL;
  *   %t - the time of the message, formatted as "YYYY-MM-DD HH:MM:SS"
  *   %T - the time of the message, in UNIX epoch timestamp format
  *   %I - the internal message ID
+ *   %F - the foreign (smsc-provided) message ID
  *
  * Most escape codes should be compatible with escape codes used in
  * sms-service groups.
@@ -299,6 +300,11 @@ static Octstr *get_pattern(SMSCConn *conn, Msg *msg, const char *message)
             }
             break;
 
+	case 'F': /* the foreign (smsc-provided) message ID */
+	    if (msg->sms.foreign_id != NULL)
+	        octstr_append(result, msg->sms.foreign_id);
+	    break;
+
         /* XXX add more here if needed */
 
 	case '%':
@@ -371,13 +377,14 @@ void bb_alog_sms(SMSCConn *conn, Msg *msg, const char *message)
             octstr_convert_printable(text);
         octstr_binary_to_hex(udh, 1);
 
-        alog("%s [SMSC:%s] [SVC:%s] [ACT:%s] [BINF:%s] [from:%s] [to:%s] [flags:%ld:%ld:%ld:%ld:%ld] "
+        alog("%s [SMSC:%s] [SVC:%s] [ACT:%s] [BINF:%s] [FID:%s] [from:%s] [to:%s] [flags:%ld:%ld:%ld:%ld:%ld] "
              "[msg:%ld:%s] [udh:%ld:%s]",
              message,
              octstr_get_cstr(cid),
              msg->sms.service ? octstr_get_cstr(msg->sms.service) : "",
              msg->sms.account ? octstr_get_cstr(msg->sms.account) : "",
              msg->sms.binfo ? octstr_get_cstr(msg->sms.binfo) : "",
+             msg->sms.foreign_id ? octstr_get_cstr(msg->sms.foreign_id) : "",
              msg->sms.sender ? octstr_get_cstr(msg->sms.sender) : "",
              msg->sms.receiver ? octstr_get_cstr(msg->sms.receiver) : "",
              msg->sms.mclass, msg->sms.coding, msg->sms.mwi, msg->sms.compress,

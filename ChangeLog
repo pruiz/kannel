@@ -1,4 +1,10 @@
 2008-12-10 Alexander Malysh <amalysh at kannel.org>
+(CB)* doc/userguide/userguide.xml, gw/bb_alog.c, gw/dlr.[ch], gw/msg-decl.h, gw/urltrans.c:
+      applied patch that adds foreign (SMSC) ID to message. This patch breaks access log
+      format and extends Msg struct.
+      Thanks to Alejandro Guerrieri <aguerrieri at kannel.org> for this patch.
+
+2008-12-10 Alexander Malysh <amalysh at kannel.org>
     * gw/wap_push_ppg.c, gw/wapbox.c: fixed memory leaks.
 
 2008-12-10 Alexander Malysh <amalysh at kannel.org>

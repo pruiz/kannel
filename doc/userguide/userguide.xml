@@ -1319,7 +1319,7 @@ admin-password = f00bar
 		  String defining a custom log file line format. May use escape codes as defined
 		  later on to substitute values of the messages into the log entry. If no
 		  custom log format is used the standard format will be:
-		  <literal>"%t %l [SMSC:%i] [SVC:%n] [ACT:%A] [BINF:%B] [from:%p] [to:%P] 
+		  <literal>"%t %l [SMSC:%i] [SVC:%n] [ACT:%A] [BINF:%B] [FID:%F] [from:%p] [to:%P] 
 		           [flags:%m:%c:%M:%C:%d] [msg:%L:%b] [udh:%U:%u]"</literal>
      </entry></row>
 
@@ -6141,6 +6141,11 @@ the delivery report value
 the delivery report SMSC reply, if any
 </entry></row>
 
+<row><entry><literal>%F</literal></entry><entry>
+the <literal>foreign</literal> (smsc-provided) message ID. Only
+relevant on DLR url's.
+</entry></row>
+
 <row><entry><literal>%n</literal></entry><entry>
 the sendsms-user or sms-service name
 </entry></row>
@@ -9344,8 +9349,8 @@ test/fakesmsc -m 1 "100 500 udh %0eudh+stuff+here main+message"
 <title>Bearerbox Access Log</title>
 
 	<screen><computeroutput>
-	2001-01-01 12:00:00 Sent SMS [SMSC:smsc] [SVC:sms] [from:12345] 
-	    [to:67890] [flags:0:1:0:0:0] [msg:11:Hello World] [udh:0]
+	2001-01-01 12:00:00 Sent SMS [SMSC:smsc] [SVC:sms] [ACT:account] [BINFO:binfo] [FID:1234567890]
+            [from:12345] [to:67890] [flags:0:1:0:0:0] [msg:11:Hello World] [udh:0]
 	</computeroutput></screen>	
 
  <informaltable frame="none">
@@ -9412,6 +9417,12 @@ test/fakesmsc -m 1 "100 500 udh %0eudh+stuff+here main+message"
      <entry>0:</entry>
      <entry valign="bottom">
 	     Size of UDH and UDH Hex dump 
+     </entry></row>
+
+     <row><entry>Foreign ID</entry>
+     <entry>1234567890</entry>
+     <entry valign="bottom">
+	     Foreign (SMSC-provided) Message ID (only available on MT messages)
      </entry></row>
 
    </tbody>
