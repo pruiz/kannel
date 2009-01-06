@@ -682,9 +682,14 @@ static void clickatell_send_sms(SMSCConn *conn, Msg *sms)
     octstr_destroy(os);
     
     /* add UDH header */
-    if (octstr_len(sms->sms.udhdata)) {
-        octstr_format_append(url, "&data=%H", sms->sms.msgdata);
-        octstr_format_append(url, "&udh=%H", sms->sms.udhdata);
+    if(octstr_len(sms->sms.udhdata)) {
+	octstr_format_append(url, "&udh=%H", sms->sms.udhdata);
+    }
+
+    if(sms->sms.coding == DC_8BIT) {
+        octstr_format_append(url, "&data=%H&mclass=%d", sms->sms.msgdata, sms->sms.mclass);
+    } else if(sms->sms.coding == DC_UCS2) {
+        octstr_format_append(url, "&unicode=1&text=%H", sms->sms.msgdata);
     } else {
         octstr_format_append(url, "&text=%E", sms->sms.msgdata);
         if (conndata->alt_charset) {
@@ -693,7 +698,7 @@ static void clickatell_send_sms(SMSCConn *conn, Msg *sms)
             octstr_append_cstr(url, "&charset=UTF-8");
         }
     }
-
+ 
     if (DLR_IS_ENABLED_DEVICE(sms->sms.dlr_mask))
 	octstr_format_append(url, "&callback=3&deliv_ack=1");
 

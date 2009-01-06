@@ -1,3 +1,9 @@
+2009-01-06 Alexander Malysh <amalysh at kannel.org>
+    * gw/smsc/smsc_http.c: applied patch which will allow to send concat,
+      8bit and unicode messages over HTTP via Clickatell.
+      Thanks to Donald Jackson <donaldjster at gmail.com> for this patch.
+      [Msg-ID: <290be5f30901042256r416032ecu1a909f23ee46baa7@mail.gmail.com>]
+
 2008-12-10 Alexander Malysh <amalysh at kannel.org>
 (CB)* doc/userguide/userguide.xml, gw/bb_alog.c, gw/dlr.[ch], gw/msg-decl.h, gw/urltrans.c:
       applied patch that adds foreign (SMSC) ID to message. This patch breaks access log
