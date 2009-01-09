@@ -1887,7 +1887,7 @@ static Msg *at2_pdu_decode_deliver_sm(Octstr *data, PrivAT2data *privdata)
     stime = date_convert_universal(&mtime);
 
     /* get data length
-     * XXX: Is it allowed to have length = 0 ??? (alex)
+     * TODO: Is it allowed to have length = 0 ??? (alex)
      */
     len = octstr_get_char(pdu, pos);
     pos++;
@@ -1917,8 +1917,8 @@ static Msg *at2_pdu_decode_deliver_sm(Octstr *data, PrivAT2data *privdata)
     /* build the message */
     message = msg_create(sms);
     if (!dcs_to_fields(&message, dcs)) {
-        /* XXX Should reject this message? */
-        debug("bb.smsc.at2", 0, "AT2[%s]: Invalid DCS", octstr_get_cstr(privdata->name));
+        /* TODO Should we reject this message? */
+        error("AT2[%s]: Invalid DCS (0x%02x)", octstr_get_cstr(privdata->name), dcs);
         dcs_to_fields(&message, 0);
     }
 
@@ -1935,7 +1935,14 @@ static Msg *at2_pdu_decode_deliver_sm(Octstr *data, PrivAT2data *privdata)
             int nbits;
             nbits = (udhlen + 1) * 8;
             /* fill bits for UDH to septet boundary */
-            offset = (((nbits / 7) + 1) * 7 - nbits) % 7;     
+            offset = (((nbits / 7) + 1) * 7 - nbits) % 7;
+            /*
+             * Fix length because UDH data length is determined
+             * in septets if we are in GSM coding, otherwise it's in octets. Adding 6
+             * will ensure that for an octet length of 0, we get septet length 0,
+             * and for octet length 1 we get septet length 2. 
+             */
+            len = len + udhlen + 1 - (8 * (udhlen + 1) + 6) / 7;
         }
         at2_decode7bituncompressed(tmpstr, len, text, offset);
     }

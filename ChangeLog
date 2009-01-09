@@ -1,3 +1,9 @@
+2009-01-09 Alexander Malysh <amalysh at kannel.org>
+    * gw/smsc/smsc_at.c: Fixed length calculation for concatenated 7Bit
+      MO messages.
+      Thanks to Matti Ärmänen <matti.armanen at sci.fi> for bug report.
+      [Msg-ID: <496720A1.5010705@sci.fi>]
+
 2009-01-08 Alexander Malysh <amalysh at kannel.org>
     * gw/smsc/smsc_at.c: applied patch that fixes 7bit encoding.
       Thanks to Riku Palomäki <riku at hyperkuutio.fi> for this patch.
