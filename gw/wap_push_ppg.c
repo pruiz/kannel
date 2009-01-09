@@ -438,6 +438,7 @@ void wap_push_ppg_shutdown(void)
          gwlist_remove_producer(ppg_queue);
          gwlist_remove_producer(pap_queue);
          octstr_destroy(ppg_url);
+         ppg_url = NULL;
          http_close_all_ports();
          dict_destroy(http_clients);
          dict_destroy(urls);
@@ -952,6 +953,7 @@ static void pap_request_thread(void *arg)
         octstr_destroy(push_data);
         octstr_destroy(rdf_content);
         octstr_destroy(boundary);
+        boundary = rdf_content = push_data = pap_content = mime_content = username = NULL;
         continue;
 
 no_transform:
@@ -964,6 +966,7 @@ no_transform:
         octstr_destroy(push_data);
         octstr_destroy(rdf_content);
         octstr_destroy(boundary);
+        boundary = rdf_content = push_data = pap_content = mime_content = username = NULL;
         continue;
 
 no_compile:
@@ -976,6 +979,7 @@ no_compile:
         octstr_destroy(rdf_content);
         octstr_destroy(boundary);
         octstr_destroy(url);
+        url = boundary = rdf_content = push_data = mime_content = username = NULL;
         continue;
 
 not_acceptable:
@@ -989,6 +993,7 @@ not_acceptable:
         octstr_destroy(rdf_content);
         octstr_destroy(boundary);
         octstr_destroy(url);
+        url = boundary = rdf_content = push_data = pap_content = mime_content = username = NULL;
         continue;
 
 clean:
@@ -1001,6 +1006,7 @@ clean:
         octstr_destroy(content_header);
         octstr_destroy(boundary);
         octstr_destroy(url);
+        url = boundary = content_header = rdf_content = push_data = pap_content = NULL;
         continue;
 
 ferror:
@@ -1011,6 +1017,7 @@ ferror:
         octstr_destroy(url);
         octstr_destroy(ip);
         octstr_destroy(mime_content);
+        mime_content = ip = url = username = NULL;
         continue;
 
 herror:
@@ -1019,6 +1026,7 @@ herror:
         http_destroy_cgiargs(cgivars);
         octstr_destroy(username);
         octstr_destroy(url);
+        url = username = NULL;
         continue;
 
 berror:
@@ -1030,6 +1038,7 @@ berror:
         octstr_destroy(content_header);
         octstr_destroy(boundary);
         octstr_destroy(url);
+        url = boundary = content_header = mime_content = username = NULL;
         continue;
     }
 }
