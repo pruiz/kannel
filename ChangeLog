@@ -1,4 +1,7 @@
 2009-01-09 Alexander Malysh <amalysh at kannel.org>
+    * gw/smsc/smsc_smpp.c: fixed #460.
+
+2009-01-09 Alexander Malysh <amalysh at kannel.org>
     * gw/wap_push_ppg.c: applied patch from #473.
 
 2009-01-09 Alexander Malysh <amalysh at kannel.org>
