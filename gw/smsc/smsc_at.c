@@ -1918,7 +1918,7 @@ static Msg *at2_pdu_decode_deliver_sm(Octstr *data, PrivAT2data *privdata)
     message = msg_create(sms);
     if (!dcs_to_fields(&message, dcs)) {
         /* TODO Should we reject this message? */
-        error("AT2[%s]: Invalid DCS (0x%02x)", octstr_get_cstr(privdata->name), dcs);
+        error(0, "AT2[%s]: Invalid DCS (0x%02x)", octstr_get_cstr(privdata->name), dcs);
         dcs_to_fields(&message, 0);
     }
 
