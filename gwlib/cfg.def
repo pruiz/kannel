@@ -548,10 +548,18 @@ MULTI_GROUP(pgsql-connection,
 )
 
 
+MULTI_GROUP(sqlite-connection,
+    OCTSTR(id)
+    OCTSTR(database)
+    OCTSTR(max-connections)
+    OCTSTR(lock-timeout)
+)
+
 MULTI_GROUP(sqlite3-connection,
     OCTSTR(id)
     OCTSTR(database)
     OCTSTR(max-connections)
+    OCTSTR(lock-timeout)
 )
 
  

@@ -1,3 +1,8 @@
+2009-01-09 Alejandro Guerrieri <aguerrieri at kannel.org>
+    * gwlib/dbpool.h gwlib/dbpool_sqlite.c gwlib/dbpool_sqlite3.c gwlib/cfg.def:
+      Fixed missing section on sqlite 2 section on cfg.def. Added a "lock-timeout"
+      parameter to Sqlite2 and Sqlite3.
+
 2009-01-09 Alexander Malysh <amalysh at kannel.org>
     * gw/smsc/smsc_smpp.c: fixed #460.
 

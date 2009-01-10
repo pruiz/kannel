@@ -79,6 +79,10 @@ static void *sqlite3_open_conn(const DBConf *db_conf)
         sqlite3_close(db);
         goto failed;
     }
+    if (conf->lock_timeout > 0) {
+    	info(0, "SQLite3: Setting lock timeout to %ld", conf->lock_timeout);
+    	sqlite3_busy_timeout(db, conf->lock_timeout);
+    }
 
     info(0, "SQLite3: Opened or created database file `%s'.", octstr_get_cstr(conf->file));
     info(0, "SQLite3: library version %s.", sqlite3_version);

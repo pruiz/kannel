@@ -117,10 +117,12 @@ typedef struct {
 
 typedef struct {
     Octstr *file;
+    int lock_timeout;
 } SQLiteConf;
 
 typedef struct {
     Octstr *file;
+    int lock_timeout;
 } SQLite3Conf;
 
 typedef struct {

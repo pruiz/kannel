@@ -79,7 +79,10 @@ static void *sqlite_open_conn(const DBConf *db_conf)
         error(0, "SQLite: %s", errmsg);
         goto failed;
     }
-
+    if (conf->lock_timeout > 0) {
+    	info(0, "SQLite: Setting lock timeout to %ld", conf->lock_timeout);
+    	sqlite_busy_timeout(db, conf->lock_timeout);
+    }
     info(0, "SQLite: Opened database file `%s'.", octstr_get_cstr(conf->file));
     info(0, "SQLite: library version %s.", sqlite_version);
 
