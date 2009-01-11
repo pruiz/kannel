@@ -1,3 +1,7 @@
+2009-01-11  Stipe Tolj  <stolj at kannel.org>
+    * doc/examples/modems.conf: added modems group for the Sony Ericsson P1i.
+      Thanks to Christoffer Elenius <celenius at cc.hut.fi> for providing it.
+
 2009-01-09 Alejandro Guerrieri <aguerrieri at kannel.org>
     * gwlib/dbpool.h gwlib/dbpool_sqlite.c gwlib/dbpool_sqlite3.c gwlib/cfg.def:
       Fixed missing section on sqlite 2 section on cfg.def. Added a "lock-timeout"
