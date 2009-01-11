@@ -11,8 +11,9 @@
 
 2009-01-09 Alexander Malysh <amalysh at kannel.org>
     * gw/smsc/smsc_at.c: Fixed length calculation for concatenated 7Bit
-      MO messages.
-      Thanks to Matti Ärmänen <matti.armanen at sci.fi> for bug report.
+      MO messages.This fixes #456.
+      Thanks to Paolo Losi <paoloa at enuan.com> and Matti Ärmänen
+      <matti.armanen at sci.fi> for bug report.
       [Msg-ID: <496720A1.5010705@sci.fi>]
 
 2009-01-08 Alexander Malysh <amalysh at kannel.org>
