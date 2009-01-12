@@ -1,4 +1,4 @@
-NEWS about Kannel: Open Source WAP and SMS Gateway version 1.4.1
+NEWS about Kannel: Open Source WAP and SMS Gateway version 1.4.2
 
 This is a STABLE version. It should be usable for production systems.
 Please do report problems to the Kannel bug tracking system available at 
@@ -6,10 +6,93 @@ http://bugs.kannel.org/ or send a mail to <devel@kannel.org> (the development
 mailing list).
 
 
+Changes since version 1.4.1: 
+
+[*** Beware that the version move from 1.4.1 to 1.4.2 contains numerous 
+change sets, with major bug fixes and improvements. Following is a summary of the 
+main issues. For a complete and detailed set of changes please refer to the 
+specific ChangeLog in the doc/ directory of the distribution. ***]
+
+Compatibility breakers:
+
+  * Internal message payload encoding changed from LATIN1 to UTF-8, which 
+    means any 1.4.2 boxes are unable to communicate with older versions.
+  
+  * Re-defined logic for the 'smsbox-route' group that is used for MO 
+    routing to different (identified) smsbox connections. 
+  
+  * Changed main message structure to include foreign (SMSC) ID to it, 
+    breaking the access-log format and communication to older box versions.
+
+New features:
+
+  * Added service routing based on account field, which allows routing of
+    MO messages depending on the account set by an aggregating SMSC provider.
+  
+  * Added the new 'generic' system-type for HTTP SMSC, which allows the usage
+    of the escape code sequenced in send-url and regex parsing of HTTP
+    response.
+    
+  * Added 'interactive' mode via stdin and stdout to allow a more human like 
+    interaction with the fake smsc module.
+    
+  * Added support to pass the 'from' source addr via 'X-Kannel-From' HTTP 
+    header in the PPG request.
+    
+  * Added generic DLR handling for type 'kannel' (HTTP SMSC), which allows 
+    point-to-point DLR forwarding though the whole kannel instance chain. 
+
+  * Added support for store spool directory.
+
+  * Added concatenation MO support.
+  
+  * Added AT SMSC support for protocol 'type = telnet', which interprets telnet
+    escape sequenced compared to rawtcp.
+
+  * Added REGEX support for keyword matching.
+  
+  * Added support for IBM AIX 64bit builds.
+  
+  * Added SSL support for HTTP SMSC module server.
+  
+  * Added bearerbox HTTP admin command 'reload-lists' to allow re-loading of 
+    the '[white|black]-list' on the fly. 
+  
+  * Added support of concatenated, 8bit and Unicode messages over HTTP via 
+    Clickatell.
+     
+Bugfixes:
+
+  * Fixed alias support for sms-service in smsbox scope.
+
+  * Fixed various MIME type handling bugs.
+
+  * Fixed security and race condition issue in HTTP module for keep-alive 
+    connections.
+
+  * Fixed wrong length calculation for concatenated messages.
+  
+  * Fixed bug that AT SMSC put UDH without UDH len.
+  
+  * Fixed various memleaks, reported by valgrind.
+  
+  * Fixed HTTP proxy scheme interpretation for SSL-enabled connections.
+
+  * Fixed OTA compiler, within WBXML compilation.
+  
+  * Fixed encoding of 'Content-Id' WSP header.
+
+  * Fixed various segfaults in SMPP, logging modules.
+  
+  * Fixed various AT command handling in AT module.
+
+  * Fixed 7bit encoding in AT SMSC.
+  
+
 Changes since version 1.4.0: 
 
 [*** Beware that the version move from 1.4.0 to 1.4.1 contains more then 200 
-changesets, with major bugfixes and improvemnts. Following is a summary of the 
+change sets, with major bug fixes and improvements. Following is a summary of the 
 main issues. For a complete and detailed set of changes please refer to the 
 specific ChangeLog in the doc/ directory of the distribution. ***]
 
