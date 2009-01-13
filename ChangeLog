@@ -1,2 +1,5 @@
+2009-01-13 Alexander Malysh <amalysh at kannel.org>
+    * test/test_http_server.c: fixed memleak.
+
 2009-01-12  Stipe Tolj  <stolj at kannel.org>
     * Making stable release 1.4.2.
