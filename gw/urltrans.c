@@ -423,6 +423,15 @@ Octstr *urltrans_fill_escape_codes(Octstr *pattern, Msg *request)
         octstr_destroy(enc);
         break;
 
+    case 'D': /* meta_data */
+        if (octstr_len(request->sms.meta_data)) {
+            enc = octstr_duplicate(request->sms.meta_data);
+            octstr_url_encode(enc);
+            octstr_append(result, enc);
+            octstr_destroy(enc);
+        }
+        break;
+
     case 'f':  /* smsc number*/
         if (octstr_len(request->sms.smsc_number)) {
             enc = octstr_duplicate(request->sms.smsc_number);

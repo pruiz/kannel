@@ -78,6 +78,7 @@
 #include "sms.h"
 #include "dlr.h"
 #include "bearerbox.h"
+#include "meta_data.h"
 
 #define SMPP_DEFAULT_CHARSET "UTF-8"
 
@@ -559,6 +560,10 @@ static Msg *pdu_to_msg(SMPP *smpp, SMPP_PDU *pdu, long *reason)
     /* set priority flag */
     msg->sms.priority = pdu->u.deliver_sm.priority_flag;
 
+    if (msg->sms.meta_data == NULL)
+        msg->sms.meta_data = octstr_create("");
+    meta_data_set_values(msg->sms.meta_data, pdu->u.deliver_sm.tlv, "smpp");
+
     return msg;
 
 error:
@@ -704,6 +709,10 @@ static Msg *data_sm_to_msg(SMPP *smpp, SMPP_PDU *pdu, long *reason)
                 charset_gsm_to_utf8(msg->sms.msgdata);
             }
     }
+
+    if (msg->sms.meta_data == NULL)
+        msg->sms.meta_data = octstr_create("");
+    meta_data_set_values(msg->sms.meta_data, pdu->u.data_sm.tlv, "smpp");
 
     return msg;
 
@@ -928,6 +937,9 @@ static SMPP_PDU *msg_to_pdu(SMPP *smpp, Msg *msg)
     /* set more messages to send */
     if (smpp->version > 0x33 && msg->sms.msg_left > 0)
         pdu->u.submit_sm.more_messages_to_send = 1;
+
+    dict_destroy(pdu->u.submit_sm.tlv);
+    pdu->u.submit_sm.tlv = meta_data_get_values(msg->sms.meta_data, "smpp");
 
     return pdu;
 }
@@ -1367,6 +1379,9 @@ static void handle_pdu(SMPP *smpp, Connection *conn, SMPP_PDU *pdu,
                 dlrmsg = handle_dlr(smpp, pdu->u.data_sm.source_addr, NULL, pdu->u.data_sm.message_payload,
                                     pdu->u.data_sm.receipted_message_id, pdu->u.data_sm.message_state);
                 if (dlrmsg != NULL) {
+                    if (dlrmsg->sms.meta_data == NULL)
+                        dlrmsg->sms.meta_data = octstr_create("");
+                    meta_data_set_values(dlrmsg->sms.meta_data, pdu->u.data_sm.tlv, "smpp");
                     /* passing DLR to upper layer */
                     reason = bb_smscconn_receive(smpp->conn, dlrmsg);
                 } else {
@@ -1421,11 +1436,13 @@ static void handle_pdu(SMPP *smpp, Connection *conn, SMPP_PDU *pdu,
 
                 dlrmsg = handle_dlr(smpp, pdu->u.deliver_sm.source_addr, pdu->u.deliver_sm.short_message, pdu->u.deliver_sm.message_payload,
                                     pdu->u.deliver_sm.receipted_message_id, pdu->u.deliver_sm.message_state);
-                resp = smpp_pdu_create(deliver_sm_resp,
-                            pdu->u.deliver_sm.sequence_number);
-                if (dlrmsg != NULL)
+                resp = smpp_pdu_create(deliver_sm_resp, pdu->u.deliver_sm.sequence_number);
+                if (dlrmsg != NULL) {
+                    if (dlrmsg->sms.meta_data == NULL)
+                        dlrmsg->sms.meta_data = octstr_create("");
+                    meta_data_set_values(dlrmsg->sms.meta_data, pdu->u.deliver_sm.tlv, "smpp");
                     reason = bb_smscconn_receive(smpp->conn, dlrmsg);
-                else
+                } else
                     reason = SMSCCONN_SUCCESS;
                 resp->u.deliver_sm_resp.command_status = smscconn_failure_reason_to_smpp_status(reason);
             } else {/* MO-SMS */

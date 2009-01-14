@@ -590,6 +590,16 @@ SINGLE_GROUP(radius-acct,
     OCTSTR(unified-prefix)
 )
 
+
+MULTI_GROUP(smpp-tlv,
+    OCTSTR(name)
+    OCTSTR(tag)
+    OCTSTR(length)
+    OCTSTR(type)
+    OCTSTR(smsc-id)
+)
+
+
 #undef OCTSTR
 #undef SINGLE_GROUP
 #undef MULTI_GROUP

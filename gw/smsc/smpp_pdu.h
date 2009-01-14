@@ -95,7 +95,7 @@ struct SMPP_PDU {
         #define TLV_INTEGER(name, octets) unsigned long name;
         #define TLV_NULTERMINATED(name, max_len) Octstr *name;
         #define TLV_OCTETS(name, min_len, max_len) Octstr *name;
-        #define OPTIONAL_END
+        #define OPTIONAL_END Dict *tlv;
         #define INTEGER(name, octets) unsigned long name;
         #define NULTERMINATED(name, max_octets) Octstr *name;
         #define OCTETS(name, field_giving_octets) Octstr *name;
@@ -223,6 +223,11 @@ enum SMPP_ERROR_MESSAGES {
     SMPP_ESME_RINVBCASTSRVGRP = 0x00000111,
     SMPP_ESME_RINVBCASTCHANIND = 0x00000112,
 };
+
+/* initialize SMPP PDU */
+int smpp_pdu_init(Cfg *cfg);
+/* shutdown SMPP PDU */
+int smpp_pdu_shutdown(void);
 
 SMPP_PDU *smpp_pdu_create(unsigned long type, unsigned long seq_no);
 void smpp_pdu_destroy(SMPP_PDU *pdu);

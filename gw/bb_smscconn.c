@@ -92,6 +92,8 @@
 #include "bb_smscconn_cb.h"    /* callback functions for connections */
 #include "smscconn_p.h"        /* to access counters */
 
+#include "smsc/smpp_pdu.h"     /* access smpp_pdu_init/smpp_pdu_shutdown */
+
 /* passed from bearerbox core */
 
 extern volatile sig_atomic_t bb_status;
@@ -651,6 +653,10 @@ int smsc2_start(Cfg *cfg)
     if (handle_concatenated_mo)
         init_concat_handler();
 
+    /* initialize low level PDUs */
+    if (smpp_pdu_init(cfg) == -1)
+        panic(0, "Connot start with PDU init failed.");
+
     smsc_groups = cfg_get_multi_group(cfg, octstr_imm("smsc"));
     gwlist_add_producer(smsc_list);
     for (i = 0; i < gwlist_len(smsc_groups) && 
@@ -851,6 +857,10 @@ int smsc2_shutdown(void)
      * to shutdown before calling these?
      */
     gwlist_remove_producer(incoming_sms);
+
+    /* shutdown low levele PDU things */
+    smpp_pdu_shutdown();
+
     return 0;
 }
 

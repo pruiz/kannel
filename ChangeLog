@@ -1,3 +1,9 @@
+2009-01-14 Alexander Malysh <amalysh at kannel.org>
+    * doc/userguide/userguide.xml, gw/bb_alog.c, gw/bb_smscconn.c,
+      gw/meta_data.[ch],gw/msg-decl.h,gw/smsbox.c,gw/smsc/smpp_pdu.[ch],
+      gw/smsc/smsc_http.c,gw/smsc/smsc_smpp.c,gw/urltrans.c,gwlib/cfg.def,
+      test/drive_smpp.c,test/drive_smpp.conf: merged meta-data branch.
+
 2009-01-13  Stipe Tolj  <stolj at kannel.org>
     * test/test_http_server.c: fixing Alex's previous committ clash. NLC.
 

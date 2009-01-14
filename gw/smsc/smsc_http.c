@@ -698,7 +698,7 @@ static void clickatell_send_sms(SMSCConn *conn, Msg *sms)
             octstr_append_cstr(url, "&charset=UTF-8");
         }
     }
- 
+
     if (DLR_IS_ENABLED_DEVICE(sms->sms.dlr_mask))
 	octstr_format_append(url, "&callback=3&deliv_ack=1");
 

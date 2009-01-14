@@ -102,6 +102,7 @@ typedef struct {
     Connection *conn;
     int transmitter;
     int receiver;
+    long version;
 } ESME;
 
 
@@ -113,6 +114,7 @@ static ESME *esme_create(Connection *conn)
     esme->conn = conn;
     esme->transmitter = 0;
     esme->receiver = 0;
+    esme->version = 0;
     return esme;
 }
 
@@ -131,6 +133,7 @@ static SMPP_PDU *handle_bind_transmitter(ESME *esme, SMPP_PDU *pdu)
     SMPP_PDU *resp;
     
     esme->transmitter = 1;
+    esme->version = pdu->u.bind_transmitter.interface_version;
     resp = smpp_pdu_create(bind_transmitter_resp,
     	    	    	    pdu->u.bind_transmitter.sequence_number);
 #if 0 /* XXX system_id is not implemented in the PDU at the moment */
@@ -146,6 +149,7 @@ static SMPP_PDU *handle_bind_receiver(ESME *esme, SMPP_PDU *pdu)
     SMPP_PDU *resp;
     
     esme->receiver = 1;
+    esme->version = pdu->u.bind_receiver.interface_version;
     resp = smpp_pdu_create(bind_receiver_resp,
     	    	    	    pdu->u.bind_receiver.sequence_number);
 #if 0 /* XXX system_id is not implemented in the PDU at the moment */
@@ -257,35 +261,34 @@ static void send_smpp_thread(void *arg)
     
     id = 0;
     while (!quitting && counter_value(num_to_esme) < max_to_esme) {
-	id = counter_increase(num_to_esme) + 1;
-    	while (!quitting && counter_value(num_from_esme) + 500 < id)
-	    gwthread_sleep(1.0);
-	if (quitting)
-	    break;
-	pdu = smpp_pdu_create(deliver_sm,
-			       counter_increase(message_id_counter));
-	pdu->u.deliver_sm.source_addr = octstr_create("456");
-	pdu->u.deliver_sm.destination_addr = octstr_create("123");
-	pdu->u.deliver_sm.short_message = octstr_format("%ld", id);
-	os = smpp_pdu_pack(pdu);
-	conn_write(esme->conn, os);
-	octstr_destroy(os);
-	smpp_pdu_destroy(pdu);
-	if (first_to_esme == (time_t) -1)
-	    time(&first_to_esme);
-	debug("test.smpp", 0, 
-	      "Delivered SMS %ld of %ld to bearerbox via SMPP.",
-	      id, max_to_esme);
+        id = counter_increase(num_to_esme) + 1;
+        while (!quitting && counter_value(num_from_esme) + 500 < id)
+            gwthread_sleep(1.0);
+        if (quitting)
+            break;
+        pdu = smpp_pdu_create(deliver_sm, counter_increase(message_id_counter));
+        pdu->u.deliver_sm.source_addr = octstr_create("456");
+        pdu->u.deliver_sm.destination_addr = octstr_create("123");
+        pdu->u.deliver_sm.short_message = octstr_format("%ld", id);
+        if (esme->version > 0x33)
+            pdu->u.deliver_sm.receipted_message_id = octstr_create("receipted_message_id\0");
+        os = smpp_pdu_pack(pdu);
+        conn_write(esme->conn, os);
+        octstr_destroy(os);
+        smpp_pdu_destroy(pdu);
+        if (first_to_esme == (time_t) -1)
+            time(&first_to_esme);
+        debug("test.smpp", 0, "Delivered SMS %ld of %ld to bearerbox via SMPP.",
+              id, max_to_esme);
 
-    	if ((id % enquire_interval) == 0) {
-	    pdu = smpp_pdu_create(enquire_link, 
-	    	    	    	  counter_increase(message_id_counter));
-	    os = smpp_pdu_pack(pdu);
-	    conn_write(esme->conn, os);
-	    octstr_destroy(os);
-	    smpp_pdu_destroy(pdu);
-	    debug("test.smpp", 0, "Sent enquire_link to bearerbox.");
-	}
+        if ((id % enquire_interval) == 0) {
+            pdu = smpp_pdu_create(enquire_link, counter_increase(message_id_counter));
+            os = smpp_pdu_pack(pdu);
+            conn_write(esme->conn, os);
+            octstr_destroy(os);
+            smpp_pdu_destroy(pdu);
+            debug("test.smpp", 0, "Sent enquire_link to bearerbox.");
+        }
     }
     time(&last_to_esme);
     if (id == max_to_esme)
@@ -456,7 +459,7 @@ static void handler(int signal)
 
 static void help(void)
 {
-    info(0, "drive_smpp [-h] [-v level] [-p port]");
+    info(0, "drive_smpp [-h] [-v level][-l logfile][-p port][-m msgs][-c config]");
 }
 
 
@@ -468,6 +471,7 @@ int main(int argc, char **argv)
     int opt;
     double run_time;
     char *log_file;
+    char *config_file;
 
     gwlib_init();
 
@@ -489,9 +493,9 @@ int main(int argc, char **argv)
     num_from_esme = counter_create();
     num_to_bearerbox = counter_create();
     num_from_bearerbox = counter_create();
-    log_file = NULL;
+    log_file = config_file = NULL;
 
-    while ((opt = getopt(argc, argv, "hv:p:P:m:l:")) != EOF) {
+    while ((opt = getopt(argc, argv, "hv:p:P:m:l:c:")) != EOF) {
 	switch (opt) {
 	case 'v':
 	    log_set_output_level(atoi(optarg));
@@ -513,9 +517,13 @@ int main(int argc, char **argv)
 	    http_port = atoi(optarg);
 	    break;
 
-    	case 'l':
-	    log_file = optarg;
-	    break;
+    case 'l':
+        log_file = optarg;
+        break;
+    
+    case 'c':
+        config_file = optarg;
+        break;
 
 	case '?':
 	default:
@@ -528,6 +536,18 @@ int main(int argc, char **argv)
     if (log_file != NULL)
     	log_open(log_file, GW_DEBUG, GW_NON_EXCL);
 
+    if (config_file != NULL) {
+        Cfg *cfg;
+        Octstr *tmp = octstr_create(config_file);
+        
+        cfg = cfg_create(tmp);
+        octstr_destroy(tmp);
+        if (cfg_read(cfg) == -1)
+            panic(0, "Errors in config file.");
+        smpp_pdu_init(cfg);
+        cfg_destroy(cfg);
+    }
+            
     info(0, "Starting drive_smpp test.");
     gwthread_create(accept_thread, &port);
     gwthread_join_all();
