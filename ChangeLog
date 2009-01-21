@@ -1,4 +1,7 @@
 2009-01-21 Alexander Malysh <amalysh at kannel.org>
+    * utils/makedist: added sha1 digest for packages.
+
+2009-01-21 Alexander Malysh <amalysh at kannel.org>
     * gw/smsc/smsc_smpp.c: fixed panic due to the unsupported %llu
       format in octstr_format.
 
