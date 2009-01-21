@@ -1290,9 +1290,9 @@ static Msg *handle_dlr(SMPP *smpp, Octstr *destination_addr, Octstr *short_messa
         } else {
             if ((smpp->smpp_msg_id_type & 0x02) || 
                 (!octstr_check_range(msgid, 0, octstr_len(msgid), gw_isdigit))) {
-                tmp = octstr_format("%llu", strtoll(octstr_get_cstr(msgid), NULL, 16));
+                tmp = octstr_format("%lu", strtoll(octstr_get_cstr(msgid), NULL, 16));
             } else {
-                tmp = octstr_format("%llu", strtoll(octstr_get_cstr(msgid), NULL, 10));
+                tmp = octstr_format("%lu", strtoll(octstr_get_cstr(msgid), NULL, 10));
             }
         }
 

@@ -1,3 +1,7 @@
+2009-01-21 Alexander Malysh <amalysh at kannel.org>
+    * gw/smsc/smsc_smpp.c: fixed panic due to the unsupported %llu
+      format in octstr_format.
+
 2009-01-14 Alexander Malysh <amalysh at kannel.org>
     * doc/userguide/userguide.xml, gw/bb_alog.c, gw/bb_smscconn.c,
       gw/meta_data.[ch],gw/msg-decl.h,gw/smsbox.c,gw/smsc/smpp_pdu.[ch],
