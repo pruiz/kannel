@@ -928,6 +928,49 @@ static Octstr *get_redirection_location(HTTPServer *trans)
 }
 
 
+/* 
+ * Recovers a Location header value of format URI /xyz to an 
+ * absoluteURI format according to the protocol rules. 
+ * This simply implies that we re-create the prefixed scheme,
+ * user/passwd (if any), host and port string and prepend it
+ * to the location URI.
+ */
+static void recover_absolute_uri(HTTPServer *trans, Octstr *loc)
+{
+    Octstr *os;
+    
+    gw_assert(loc != NULL && trans != NULL);
+    
+    /* we'll only accept locations with a leading / */
+    if (octstr_get_char(loc, 0) == '/') {
+        
+        /* scheme */
+        os = trans->ssl ? octstr_create("https://") : 
+            octstr_create("http://");
+        
+        /* credentials, if any */
+        if (trans->username && trans->password) {
+            octstr_append(os, trans->username);
+            octstr_append_char(os, ':');
+            octstr_append(os, trans->password);
+            octstr_append_char(os, '@');
+        }
+        
+        /* host */
+        octstr_append(os, trans->host);
+        
+        /* port, only added if literally not default. */
+        if (trans->port != 80) {
+            octstr_format_append(os, ":%ld", trans->port);
+        }
+        
+        /* prepend the created octstr to the loc, and destroy then. */
+        octstr_insert(loc, os, 0);
+        octstr_destroy(os);
+    }
+}
+
+
 /*
  * Read and parse the status response line from an HTTP server.
  * Fill in trans->persistent and trans->status with the findings.
@@ -1117,9 +1160,30 @@ static void handle_transaction(Connection *conn, void *data)
 
         /* 
          * This is a redirected response, we have to follow.
-         * Clean up all trans stuff for the next request we do.
+         * 
+         * According to HTTP/1.1 (RFC 2616), section 14.30 any Location
+         * header value should be 'absoluteURI', which is defined in
+         * RFC 2616, section 3.2.1 General Syntax, and specifically in
+         * RFC 2396, section 3 URI Syntactic Components as
+         * 
+         *   absoluteURI   = scheme ":" ( hier_part | opaque_part )
+         * 
+         * Some HTTP servers 'interpret' a leading UDI / as that kind
+         * of absoluteURI, which is not correct, following the protocol in
+         * detail. But we'll try to recover from that misleaded 
+         * interpreation and try to convert the partly absoluteURI to a
+         * fully qualified absoluteURI.
+         * 
+         *   http_URL = "http:" "//" [ userid : password "@"] host 
+         *      [ ":" port ] [ abs_path [ "?" query ]] 
+         * 
          */
         octstr_strip_blanks(h);
+        recover_absolute_uri(trans, h);
+        
+        /*
+         * Clean up all trans stuff for the next request we do.
+         */
         octstr_destroy(trans->url);
         octstr_destroy(trans->host);
         trans->port = 0;
