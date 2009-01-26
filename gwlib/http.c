@@ -960,7 +960,7 @@ static void recover_absolute_uri(HTTPServer *trans, Octstr *loc)
         octstr_append(os, trans->host);
         
         /* port, only added if literally not default. */
-        if (trans->port != 80) {
+        if (trans->port != 80 || trans->ssl) {
             octstr_format_append(os, ":%ld", trans->port);
         }
         

@@ -1,3 +1,9 @@
+2009-01-26  Stipe Tolj  <stolj at kannel.org>
+    * gwlib/http.c: fix the recover_absolute_uri() to handle HTTPS connections
+      to port 80 too, via applying the port 80 to the URL scheme if the
+      connection IS SSL-enabled. Thanks to Martin for the vetoing.
+      [Msg-Id: <92cf04420901251835k5f0636acueafdfd17f8147355@mail.gmail.com>]
+       
 2009-01-25  Stipe Tolj  <stolj at kannel.org>
     * gwlib/http.c: add function recover_absolute_uri() to handle partly
       incomplete absoluteURI values in redirect HTTP headers.
