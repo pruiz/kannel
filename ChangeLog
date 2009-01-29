@@ -1,4 +1,8 @@
 2009-01-29 Alexander Malysh <amalysh at kannel.org>
+    * gw/smsc/smsc_smpp.c: this patch should fix #460.
+      Changed %lu -> %llu in octstr_format call when strtoll is used.
+
+2009-01-29 Alexander Malysh <amalysh at kannel.org>
     * gwlib/octstr.c, test/test_octstr_format.c: applied patch that adds
       support for %llu, %llx etc. to octstr_format. Also added test.
       Thanks to Nikos Balkanas <nbalkanas at gmail.com> for patch.
