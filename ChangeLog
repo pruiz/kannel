@@ -1,3 +1,9 @@
+2009-01-29 Alexander Malysh <amalysh at kannel.org>
+    * gwlib/octstr.c, test/test_octstr_format.c: applied patch that adds
+      support for %llu, %llx etc. to octstr_format. Also added test.
+      Thanks to Nikos Balkanas <nbalkanas at gmail.com> for patch.
+      [Msg-Id: <7f4386bc0901290255y3f8f44feya6132b138b0b6003@mail.gmail.com>]
+
 2009-01-26  Stipe Tolj  <stolj at kannel.org>
     * gwlib/http.c: fix the recover_absolute_uri() to handle HTTPS connections
       to port 80 too, via applying the port 80 to the URL scheme if the

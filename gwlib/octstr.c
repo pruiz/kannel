@@ -2218,11 +2218,16 @@ static void format_prec(struct format *format, const char **fmt,
 
 static void format_type(struct format *format, const char **fmt)
 {
-    switch (**fmt)
-    {
+    switch (**fmt) {
     case 'h':
-    case 'l':
         format->type = **fmt;
+        ++(*fmt);
+        break;
+    case 'l':
+        if (*(*fmt + 1) == 'l'){
+           format->type = 'L';
+           ++(*fmt);
+        } else format->type = **fmt;
         ++(*fmt);
         break;
     }
@@ -2234,8 +2239,8 @@ static void convert(Octstr *os, struct format *format, const char **fmt,
 {
     Octstr *new;
     char *s, *pad;
-    long n;
-    unsigned long u;
+    long long n;
+    unsigned long long u;
     char tmpfmt[1024];
     char tmpbuf[1024];
     char c;
@@ -2253,6 +2258,9 @@ static void convert(Octstr *os, struct format *format, const char **fmt,
     case 'd':
     case 'i':
         switch (format->type) {
+        case 'L':
+            n = va_arg(VALST(args), long long);
+            break;
         case 'l':
             n = va_arg(VALST(args), long);
             break;
@@ -2271,18 +2279,21 @@ static void convert(Octstr *os, struct format *format, const char **fmt,
     case 'u':
     case 'x':
     case 'X':
-	switch (format->type) {
-	case 'l':
-	    u = va_arg(VALST(args), unsigned long);
-	    break;
-        case 'h':
-            u = (unsigned short) va_arg(VALST(args), unsigned int);
-            break;
-        default:
-            u = va_arg(VALST(args), unsigned int);
-            break;
-        }
-        tmpfmt[0] = '%';
+   switch (format->type) {
+   case 'l':
+      u = va_arg(VALST(args), unsigned long);
+      break;
+   case 'L':
+      u = va_arg(VALST(args), unsigned long long);
+      break;
+   case 'h':
+      u = (unsigned short) va_arg(VALST(args), unsigned int);
+      break;
+   default:
+      u = va_arg(VALST(args), unsigned int);
+      break;
+   }
+   tmpfmt[0] = '%';
 	tmpfmt[1] = 'l';
 	tmpfmt[2] = **fmt;
 	tmpfmt[3] = '\0';

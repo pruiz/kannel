@@ -61,7 +61,8 @@
 #include "gwlib/gwlib.h"
 
 int main(void) {
-	Octstr *os, *os2, *os3, *os4;
+	Octstr *os, *os2, *os3, *os4, *os5;
+        unsigned long long n = 78234782386423784267234;
 
 	gwlib_init();
 
@@ -81,9 +82,14 @@ int main(void) {
 	os4 = octstr_format("Encode %E and limited %-10.10E", os, os);
 	octstr_dump(os4, 0);
 
+        os5 = octstr_format("Encode %%llu: %llu", n);
+        octstr_dump(os5, 0);
+
 	octstr_destroy(os);
 	octstr_destroy(os2);
 	octstr_destroy(os3);
+        octstr_destroy(os4);
+        octstr_destroy(os5);
 	
 	gwlib_shutdown();
 	
