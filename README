@@ -46,13 +46,14 @@ Documentation
 	directory.
 	
 	In order to convert the documentation from DocBook (a markup
-	language) to HTML and PostScript, you need some tools. On a
-	Debian GNU/Linux system, install the package "docbook-stylesheets"
-	and everything it depends on:
+	language) to HTML and PostScript, you need some tools. 
 	
-	    apt-get install docbook-stylesheets
+    On a Debian GNU/Linux system, you need to install the following
+	packages via: 
+	
+	    $ sudo apt-get install docbook-stylesheets
     
-    	On a Red Hat Linux system, you need to install the following
+    On a Red Hat Linux (RHEL) system, you need to install the following
 	packages, in order:
 	
 		sgml-common
@@ -63,15 +64,20 @@ Documentation
 		jadetex
 		transfig
 
-    	See http://www.rpmfind.net to find the packages.
+	See http://www.rpmfind.net to find the packages.
+    	
+    On a Fedora Core system, you need to install the following packages:
+    
+        $ sudo yum install openjade jadetex docbook-style-dsssl \
+        	texlive-dvips transfig ImageMagick
 
-        On a Gentoo system, the following should do:
+    On a Gentoo system, the following should do:
 
-	    emerge transfig jadetex docbook-dsssl-stylesheets
+	    $ sudo emerge transfig jadetex docbook-dsssl-stylesheets
 
-        On a Mandrakelinux system, the following should do:
-
-	    urpmi transfig jadetex docbook-style-dsssl
+    On a Mandrakelinux system, the following should do:
+		
+		$ urpmi transfig jadetex docbook-style-dsssl
 
 	Then apply this change to /usr/share/texmf/web2c/texmf.cnf:
 	
@@ -94,7 +100,7 @@ Documentation
 		stack_size.jadetex = 1500
 		stack_size.pdfjadetex = 1500
 	
-    	On other systems, you'll have to figure it out yourself.
+	On other systems, you'll have to figure it out yourself.
 	
 Getting the gateway sources
 

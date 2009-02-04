@@ -1,4 +1,7 @@
 2009-02-04  Stipe Tolj  <stolj at kannel.org>
+    * README: add the documentation requirement packages for Fedora Core too.
+    
+2009-02-04  Stipe Tolj  <stolj at kannel.org>
     * test/test_octstr_format.c: fix intendion according to our CodingStyle
       policy. NLC.
 
