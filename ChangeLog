@@ -1,3 +1,7 @@
+2009-02-04  Stipe Tolj  <stolj at kannel.org>
+    * test/test_octstr_format.c: fix intendion according to our CodingStyle
+      policy. NLC.
+
 2009-01-29 Alexander Malysh <amalysh at kannel.org>
     * gw/smsc/smsc_smpp.c: this patch should fix #460.
       Changed %lu -> %llu in octstr_format call when strtoll is used.
