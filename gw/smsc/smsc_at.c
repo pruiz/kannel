@@ -1373,6 +1373,9 @@ reconnect:
     octstr_destroy(privdata->sms_center);
     octstr_destroy(privdata->name);
     octstr_destroy(privdata->configfile);
+    octstr_destroy(privdata->username);
+    octstr_destroy(privdata->password);
+    octstr_destroy(privdata->rawtcp_host);
     gw_prioqueue_destroy(privdata->outgoing_queue, NULL);
     gwlist_destroy(privdata->pending_incoming_messages, octstr_destroy_item);
     gw_free(conn->data);
