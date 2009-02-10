@@ -3,6 +3,7 @@
 # Use `test/test_headers' to test gw/wsp_headers.c
 
 set -e
+#set -x
 
 loglevel=1
 
@@ -17,4 +18,4 @@ then
 	exit 1
 fi
 
-rm check_headers.log
+rm -f check_headers.log

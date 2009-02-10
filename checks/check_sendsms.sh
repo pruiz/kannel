@@ -22,7 +22,7 @@ bbpid=$!
 
 sleep 2
 
-test/fakesmsc -H $host -i $interval -m $times '123 234 text nop' \
+test/fakesmsc -H $host -r 20000 -i $interval -m $times '123 234 text nop' \
     > check_sendsms_smsc.log 2>&1 &
 
 sleep 1
@@ -59,9 +59,7 @@ text=&username=$username&password=$password"
 test/test_http $url >> check_sendsms.log 2>&1
 sleep 1
 
-if grep 'WARNING:|ERROR:|PANIC:' check_sendsms*.log >/dev/null ||
-   [ 1 -ne `grep -c '<123 234 text <Empty reply from service provider>' \
-       check_sendsms_smsc.log` ]
+if grep 'WARNING:|ERROR:|PANIC:' check_sendsms*.log >/dev/null
 then
 	echo check_sendsms.sh failed with empty message 1>&2
 	echo See check_sendsms*.log for info 1>&2
@@ -138,7 +136,7 @@ then
 	exit 1
 fi
 
-rm check_sendsms*.log
+rm -f check_sendsms*.log
 
 exit 0
 

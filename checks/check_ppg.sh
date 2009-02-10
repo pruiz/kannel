@@ -12,9 +12,9 @@ set -e
 #set -x
 
 host=127.0.0.1
-list_port=8082
-server_port=8081
-push_port=8080
+list_port=18082
+server_port=18081
+push_port=18080
 loglevel=0
 username="foo"
 password="bar"
@@ -37,7 +37,8 @@ blacklist="$prefix/blacklist.txt"
 # File containing the whitelist
 whitelist="$prefix/whitelist.txt"
 
-test/test_http_server -p $list_port -w $whitelist -b $blacklist > check_http_list.log 2>&1 & listid=$
+sleep 1
+test/test_http_server -p $list_port -w $whitelist -b $blacklist > check_http_list.log 2>&1 & listid=$!
 error=no
 
 # ok control files requesting an ip bearer. Names contain string 'ip'. Bearer-
@@ -59,7 +60,7 @@ for control_file in $ip_control_files;
             if ! grep "and type push response" check_ppg.tmp > /dev/null
             then
                 cat check_ppg.tmp >> check_ppg.log 2>&1
-                error=yes
+                error="yes"
                 echo "ppg failed with control file $control_file"
             fi
 
@@ -73,12 +74,12 @@ for control_file in $ip_control_files;
             if ! grep "got wdp from wapbox" check_bb.tmp > /dev/null
             then
                 cat check_bb.tmp >> check_bb.log 2>&1
-                error=yes
+                error="yes"
                 echo "bb failed with control file $control_file"
             fi
 
             kill -INT $wappid
-            sleep 2
+            sleep 1
             kill -INT $bbpid
             sleep 2
 
@@ -132,7 +133,7 @@ for control_file in $wrong_ip_files;
                ! grep "and type bad message response" check_ppg.tmp > /dev/null
             then
                 cat check_ppg.tmp >> check_ppg.log 2>&1
-                error=yes
+                error="yes"
                 echo "ppg failed when control file $control_file"
             fi
 
@@ -147,12 +148,12 @@ for control_file in $wrong_ip_files;
             if grep "got wdp from wapbox" check_bb.tmp > /dev/null
             then
                 cat check_bb.tmp >> check_bb.log 2>&1
-                error=yes
+                error="yes"
                 echo "bb failed when control file $control_file"
             fi
 
             kill -INT $wappid
-            sleep 2
+            sleep 1
             kill -INT $bbpid
             sleep 2
 
@@ -192,7 +193,7 @@ for control_file in $sms_control_files;
     do 
         if [ -f $control_file ]
         then
-            test/test_http_server -p $server_port > check_http_sim.tmp 2>&1 & simid=$
+            test/test_http_server -p $server_port > check_http_sim.tmp 2>&1 & simid=$!
             sleep 1
             gw/bearerbox -v $loglevel $conf_file > check_bb.tmp 2>&1 & bbpid=$!
             sleep 2 
@@ -204,7 +205,7 @@ for control_file in $sms_control_files;
             if ! grep "and type push response" check_ppg.tmp > /dev/null
             then
                 cat check_ppg.tmp >> check_ppg.log 2>&1
-                error=yes
+                error="yes"
                 echo "ppg failed with control file $control_file"
             fi
 
@@ -218,15 +219,16 @@ for control_file in $sms_control_files;
             if ! grep "got sms from wapbox" check_bb.tmp > /dev/null
             then
                 cat check_bb.tmp >> check_bb.log 2>&1
-                error=yes
+                error="yes"
                 echo "bb failed with control file $control_file"
             fi
            
             kill -INT $wappid
+            sleep 1
             kill -INT $bbpid
             sleep 2
             test/test_http -qv 4 http://$host:$server_port/quit
-            sleep 1
+            sleep 2
 # We can panic when we are going down, too
             if test "$error" != "yes"  
             then
@@ -285,7 +287,7 @@ for control_file in $wrong_sms_files;
                ! grep "and type bad message response" check_ppg.tmp > /dev/null
             then
                 cat check_ppg.tmp >> check_ppg.log 2>&1
-                error=yes
+                error="yes"
                 echo "ppg failed, going down with control file $control_file"
             fi
 
@@ -300,16 +302,16 @@ for control_file in $wrong_sms_files;
             if grep "got sms from wapbox" check_bb.tmp > /dev/null
             then
                 cat check_bb.tmp >> check_bb.log 2>&1
-                error=yes
+                error="yes"
                 echo "bb failed, going down with control file $control_file"
             fi
 
             kill -INT $wappid
             sleep 2
             kill -INT $bbpid
-            sleep 2
-            test/test_http -qv 4 http://$host:$server_port/quit
             sleep 1
+            test/test_http -qv 4 http://$host:$server_port/quit
+            sleep 2
 
 # We can panic when we are going down, too
             if test "$error" != "yes" 
@@ -338,7 +340,7 @@ for control_file in $wrong_sms_files;
                 if grep 'ERROR:|PANIC:' check_http_sim.tmp > /dev/null
                 then
                     cat check_http_sim.tmp >> check_http_sim.log 2>&1
-                    error=yes
+                    error="yes"
                     echo "got errors in http_sim when ending tests"
                 fi
             fi
@@ -347,6 +349,8 @@ for control_file in $wrong_sms_files;
         fi;
 done
 
+kill -INT $listid
+sleep 1
 test/test_http -qv 4 http://$host:$list_port/quit
 wait
 
@@ -361,10 +365,4 @@ fi
 rm -f check_bb.log check_wap.log check_ppg.log check_http_list.log check_http_sim.log
 
 exit 0
-
-
-
-
-
-
 

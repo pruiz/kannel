@@ -1,4 +1,9 @@
 2009-02-10 Alexander Malysh <amalysh at kannel.org>
+     * checks, gw/pushkannel.conf, gw/smskannel.conf, gw/wapkannel.conf: fixes
+       for make check. It works now.
+       Thanks to Vincent CHAVANIS <v.chavanis at telemaque.fr> for patch.
+
+2009-02-10 Alexander Malysh <amalysh at kannel.org>
     * wap/wsp_headers.c: fixes wsp_pack_text -> wsp_pack_quoted_text.
       Thanks to Vincent CHAVANIS <v.chavanis at telemaque.fr> for patch.
 

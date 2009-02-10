@@ -19,18 +19,16 @@ ssl_cert="gw/cert.pem"
 ssl_key="gw/key.pem" 
 ssl_clientcert="/tmp/clientcert.pem" 
 loglevel=0
-ssl_enabled=yes 
+ssl_enabled="yes"
  
 cat $ssl_cert $ssl_key > $ssl_clientcert 
  
 test/test_http_server -p $port -v $loglevel > check_http_server.log 2>&1 & 
 serverpid=$! 
- 
 sleep 1 
  
 test/test_http_server -p $port_ssl -v $loglevel -s -c $ssl_cert -k $ssl_key > check_https_server.log 2>&1 & 
 serverpid_ssl=$!
- 
 sleep 1 
  
 test/test_http -r $times $url > check_http.log 2>&1 
@@ -42,7 +40,7 @@ ret=$?
 if grep 'SSL not compiled in' check_https.log > /dev/null
 then
     echo 'do not check SSL, SSL not compiled in'
-    ssl_enabled=no
+    ssl_enabled="no"
 fi
 
 if test "$ssl_enabled" = "yes"
@@ -53,15 +51,17 @@ then
 else
     test/test_http -r 1 -s -c $ssl_clientcert $quiturl_ssl >> check_https.log 2>&1
     rm -f check_https.log
+    sleep 1
 fi
  
 test/test_http -r 1 $quiturl >> check_http.log 2>&1
 if test "$ssl_enabled" = "yes"
 then
      test/test_http -r 1 -s -c $ssl_clientcert $quiturl_ssl >> check_https.log 2>&1
+     sleep 1
 fi
  
-sleep 2
+sleep 1
 if grep 'ERROR:|PANIC:' check_http.log check_http_server.log  > /dev/null  
 then 
 	echo check_http failed 1>&2 
@@ -79,8 +79,8 @@ then
     fi
 fi
 
-rm check_http*.log
-rm $ssl_clientcert
+rm -f check_http*.log
+rm -f $ssl_clientcert
 exit 0
 
 

@@ -7,10 +7,10 @@ set -e
 
 times=10
 
-test/drive_smpp -v 0 -m $times 2> check_smpp_drive.log & 
+test/drive_smpp -v 0 -m $times 2> check_smpp_drive.log 1>&2 & 
 sleep 1
 
-gw/bearerbox -v 0 test/drive_smpp.conf 2> check_smpp_bb.log &  
+gw/bearerbox -v 0 test/drive_smpp.conf 2> check_smpp_bb.log 1>&2 &  
 bbpid=$!
 
 running=yes

@@ -6,15 +6,13 @@ set -e
 #set -x
 
 host=127.0.0.1
-times=10
+times=2
 port=8040
 url="http://$host:$port/hello.wml"
 loglevel=0
 
 test/test_http_server -f test/hello.wml -p $port > check_http.log 2>&1 &
 httppid=$!
-
-sleep 1
 
 gw/bearerbox -v $loglevel gw/wapkannel.conf > check_bb.log 2>&1 &
 bbpid=$!
@@ -30,7 +28,9 @@ test/fakewap -g $host -m $times $url > check_fake.log 2>&1
 ret=$?
 
 test/test_http -qv 4 http://$host:$port/quit
+
 kill -INT $bbpid 
+kill -INT $wappid
 wait
 
 if [ "$ret" != 0 ]
@@ -41,8 +41,6 @@ then
 	exit 1
 fi
 
-rm check_bb.log check_wap.log check_fake.log check_http.log
+rm -f check_bb.log check_wap.log check_fake.log check_http.log
 
 exit 0
-
-

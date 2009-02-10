@@ -14,4 +14,4 @@ then
 	exit 1
 fi
 
-rm check_compiler.log
+rm -f check_compiler.log

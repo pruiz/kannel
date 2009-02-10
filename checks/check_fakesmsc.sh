@@ -12,23 +12,21 @@ host=127.0.0.1
 
 gw/bearerbox -v $loglevel gw/smskannel.conf > check_fakesmsc_bb.log 2>&1 &
 bbpid=$!
-
 sleep 2
 
-test/fakesmsc -H $host -i $interval -m $times '123 234 text nop' \
+test/fakesmsc -H $host -r 20000 -i $interval -m $times '123 234 text nop' \
     > check_fakesmsc.log 2>&1 &
-
 sleep 1
 
 gw/smsbox -v $loglevel gw/smskannel.conf > check_fakesmsc_sms.log 2>&1 &
 
-running=yes
-while [ $running = yes ]
+running="yes"
+while [ $running = "yes" ]
 do
     sleep 2
     if grep "Got message $times" check_fakesmsc.log >/dev/null
     then
-    	running=no
+    	running="no"
     fi
 done
 
@@ -42,6 +40,6 @@ then
 	exit 1
 fi
 
-rm check_fakesmsc*.log
+rm -f check_fakesmsc*.log
 
 exit 0
