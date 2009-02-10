@@ -1,3 +1,12 @@
+2009-02-10 Alexander Malysh <amalysh at kannel.org>
+    * test/test_date.c: added test to test gwlib/date.
+
+2009-02-10 Alexander Malysh <amalysh at kannel.org>
+    * gwlib/date.c: applied patch that corrects parsing of iso date
+      for YYYMMDDTHHMMSS format.
+      Thanks to Paul Bagyenda <bagyenda at dsmagic.com> for this patch.
+      [Msg-ID: <F438D467-5767-40D9-898E-C015DDF7923F@dsmagic.com>]
+
 2009-02-06 Alexander Malysh <amalysh at kannel.org>
     * test/test_hmac.c, test/test_md5.c, test/test_octstr_dump.c, test/test_regex.c:
       applied patch that fixes segfaults.
