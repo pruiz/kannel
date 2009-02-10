@@ -74,10 +74,8 @@ int main(int argc, char **argv)
 
     get_and_set_debugs(argc, argv, NULL);
 
-    if (argc < 2) {
-        printf("Syntax: %s <file>\n", argv[0]);
-        return -1;
-    }
+    if (argc < 2)
+        panic(0, "Syntax: %s <file>\n", argv[0]);
 
     filename = octstr_create(argv[1]);
     data = octstr_read_file(octstr_get_cstr(filename));

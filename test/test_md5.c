@@ -74,10 +74,8 @@ int main(int argc, char **argv)
 
     get_and_set_debugs(argc, argv, NULL);
 
-    if (argc < 2) {
-        printf("Syntax: %s <txt>\n", argv[0]);
-        return -1;
-    }
+    if (argc < 2)
+        panic(0, "Syntax: %s <txt>\n", argv[0]);
 
     data = octstr_create(argv[1]);
     enc = md5(data);

@@ -65,6 +65,11 @@ int main(int argc, char **argv)
     
     gwlib_init();
 
+    get_and_set_debugs(argc, argv, NULL);
+
+    if (argc < 2)
+        panic(0, "Syntax: %s <config_file>\n", argv[0]);
+
     for (i = 1; i < argc; ++i) {
         name = octstr_create(argv[i]);
         cfg = cfg_create(name);

@@ -81,10 +81,8 @@ int main(int argc, char **argv)
 
     get_and_set_debugs(argc, argv, NULL);
 
-    if (argc < 4) {
-        printf("Syntax: %s <os> <re> <sub>\n", argv[0]);
-        return -1;
-    }
+    if (argc < 4)
+        panic(0, "Syntax: %s <os> <re> <sub>\n", argv[0]);
 
     os = octstr_create(argv[1]);
     re = octstr_create(argv[2]);

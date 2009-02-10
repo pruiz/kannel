@@ -1,4 +1,8 @@
 2009-02-10 Alexander Malysh <amalysh at kannel.org>
+    * test/*: varios fixes.
+      Thanks to Vincent CHAVANIS <v.chavanis at telemaque.fr> for patch.
+
+2009-02-10 Alexander Malysh <amalysh at kannel.org>
     * wap/cookies.c: applied patch that fixes cookies parsing.
       Thanks to "Nikos Balkanas" <nbalkanas at gmail.com> for this patch.
       [Msig-ID: <006201c9865e$bd574230$02b2a8c0@tardis>]

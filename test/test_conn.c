@@ -77,6 +77,9 @@ int main(int argc, char **argv)
 
     get_and_set_debugs(argc, argv, NULL);
 
+    if (argc < 3)
+        panic(0, "Syntax: %s <host> <port>\n", argv[0]);
+
     host = octstr_create(argv[1]);    
     port = atoi(argv[2]);
     i = 50;

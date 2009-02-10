@@ -95,10 +95,8 @@ int main(int argc, char **argv)
 
     get_and_set_debugs(argc, argv, NULL);
 
-    if (argc < 3) {
-        printf("Syntax: %s <file>\n", argv[0]);
-        return -1;
-    }
+    if (argc < 3)
+        panic(0, "Syntax: %s <key> <file>\n", argv[0]);
   
     key = octstr_create(argv[1]);    
     filename = octstr_create(argv[2]);

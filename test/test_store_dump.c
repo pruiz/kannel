@@ -87,10 +87,8 @@ int main(int argc, char **argv)
     
     cf_index = get_and_set_debugs(argc, argv, check_args);
     
-    if (argv[cf_index] == NULL) {
-        debug("",0,"Usage: %s <store-file>", argv[0]);
-        goto error;
-    }
+    if (argv[cf_index] == NULL)
+        panic(0, "Usage: %s <store-file>", argv[0]);
 
     type = octstr_create("file");
     

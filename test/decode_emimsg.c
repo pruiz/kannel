@@ -55,7 +55,7 @@
  */
 
 /*
- * decode_emimsg.c - Decoding an EMI message. <vincent@telemaque.fr>
+ * decode_emimsg.c - Decoding an UCP/EMI packet. <vincent@telemaque.fr>
  *
  */
 
@@ -104,22 +104,20 @@ int main (int argc, char **argv)
 
     gwlib_init();
 
-    if (argc < 2) {
-        printf("Syntax: %s <msg>\n", argv[0]);
-        return -1;
-    }
+    if (argc < 2)
+        panic(0, "Syntax: %s <packet_without_STX/ETX>\n", argv[0]);
 
     message = octstr_format("\02%s\03", argv[1]); // fit the UCP specs.
     whoami = octstr_create("DECODE");
 
-    printf(" /* decode_emimsg - Decoding an EMI message. <vincent@telemaque.fr> */ \n\n");
+    printf(" /* decode_emimsg - Decoding an UCP/EMI packet. <vincent@telemaque.fr> */ \n\n");
 
     emimsg = get_fields(message, whoami);
 
     if (emimsg != NULL) {
         printf("\n");
         printf("TRN      \t%d\n", emimsg->trn);
-        printf("TYPE     \t%c\n", emimsg->or);
+        printf("TYPE     \t%c (%s)\n", emimsg->or, emimsg->or == 'R' ? "Result" : "Operation");
         printf("OPERATION\t%d (%s)\n", emimsg->ot, emi_typeop (emimsg->ot));
 
         if (emimsg->ot == 01) {
@@ -140,13 +138,13 @@ int main (int argc, char **argv)
                     octstr_get_cstr(emimsg->fields[E01_AMSG]));
         }
 
-        if ((emimsg->ot == 31 || (emimsg->ot >= 50 && emimsg->ot <= 59)) &&
-                emimsg->or == 'R' && 
+        if ((emimsg->ot == 31 || (emimsg->ot >= 50 && emimsg->ot <= 60))
+                && emimsg->or == 'R' && 
                 (octstr_get_char(emimsg->fields[E50_ADC], 0) == 'A' ||
                 octstr_get_char(emimsg->fields[E50_ADC], 0) == 'N')) {
-            printf("E50_ACK  \t%s\n",
+            printf("E?0_ACK  \t%s\n",
                     octstr_get_cstr(emimsg->fields[E50_ADC]));
-            printf("E50_SM   \t%s\n",  
+            printf("E?0_SM   \t%s\n",  
                     octstr_get_cstr(emimsg->fields[E50_OADC]));
         }
 
@@ -238,7 +236,9 @@ int main (int argc, char **argv)
                     octstr_get_cstr(emimsg->fields[E50_RES5]));
         }
 
-        if (emimsg->ot == 60 || emimsg->ot == 61 || emimsg->ot == 62) {
+        if ((emimsg->ot == 60 || emimsg->ot == 61) &&
+                (octstr_get_char(emimsg->fields[E50_ADC], 0) != 'A' &&
+                octstr_get_char(emimsg->fields[E50_ADC], 0) != 'N')) {
             printf("E60_OADC  \t%s\n",
                     octstr_get_cstr(emimsg->fields[E60_OADC]));
             printf("E60_OTON  \t%s\n",
