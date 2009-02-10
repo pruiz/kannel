@@ -297,7 +297,7 @@ static Cookie *parse_cookie(Octstr *cookiestr)
 		else {		/* Name value pair - this should be first */
 			char *equals = NULL;
 
-			if ((equals = strrchr(p, '=')) != NULL) {
+			if ((equals = strchr(p, '=')) != NULL) {
 				*equals = '\0';
 
 				c->name = octstr_create(p);
