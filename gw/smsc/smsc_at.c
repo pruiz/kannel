@@ -1202,8 +1202,37 @@ static void at2_set_speed(PrivAT2data *privdata, int bps)
             speed = B115200;
             break;
 #endif
+#ifdef B230400
+        case 230400:
+            speed = B230400;
+            break;
+#endif
+#ifdef B460800
+        case 460800:
+            speed = B460800;
+            break;
+#endif
+#ifdef B500000
+        case 500000:
+            speed = B500000;
+            break;
+#endif
+#ifdef B576000
+        case 576000:
+            speed = B576000;
+            break;
+#endif
+#ifdef B921600
+        case 921600:
+            speed = B921600;
+            break;
+#endif
         default:
-            speed = B9600;
+#if B9600 == 9600
+	     speed = bps;
+#else
+             speed = B9600;
+#endif
     }
     
     cfsetospeed(&tios, speed);

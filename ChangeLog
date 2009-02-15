@@ -1,5 +1,12 @@
+2009-02-15 Alexander Malysh <amalysh at kannel.org>
+    * gw/smsc/smsc_at.c: applied patch that includes more speed cases,
+      and allows the default to be any speed (rather than 9600) *if* the OS
+      behaves like OSX where B9600 == 9600 (not so under Linux).
+      Thanks to Paul Bagyenda <bagyenda at dsmagic.com> for this patch.
+      [Msg-ID: <48DB2FB0-2D8B-4FC0-A00B-A33E36DAA45D@dsmagic.com>]
+
 2009-02-10 Alexander Malysh <amalysh at kannel.org>
-     * checks, gw/pushkannel.conf, gw/smskannel.conf, gw/wapkannel.conf: fixes
+    * checks, gw/pushkannel.conf, gw/smskannel.conf, gw/wapkannel.conf: fixes
        for make check. It works now.
        Thanks to Vincent CHAVANIS <v.chavanis at telemaque.fr> for patch.
 
