@@ -1,4 +1,9 @@
 2009-02-15 Alexander Malysh <amalysh at kannel.org>
+    * gw/meta_data.c: fixed compiler warnings.
+      Thanks to Vincent CHAVANIS <v.chavanis at telemaque.fr> for patch
+      and to "Nikos Balkanas" <nbalkanas at gmail.com>.
+
+2009-02-15 Alexander Malysh <amalysh at kannel.org>
     * gw/smsc/smsc_at.c: applied patch that includes more speed cases,
       and allows the default to be any speed (rather than 9600) *if* the OS
       behaves like OSX where B9600 == 9600 (not so under Linux).

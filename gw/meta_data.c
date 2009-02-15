@@ -335,12 +335,12 @@ int meta_data_set_value(Octstr *data, const char *group, const Octstr *key, cons
     }
     if (replace) {
         /* delete old value if any */
-        dict_put(curr->values, key, NULL);
+        dict_put(curr->values, (Octstr *) key, NULL);
         /* put new value */
-        dict_put(curr->values, key, octstr_duplicate(value));
-    } else if (dict_get(curr->values, key) == NULL) {
+        dict_put(curr->values, (Octstr *) key, octstr_duplicate(value));
+    } else if (dict_get(curr->values, (Octstr *) key) == NULL) {
         /* put new value */
-        dict_put(curr->values, key, octstr_duplicate(value));
+        dict_put(curr->values, (Octstr *) key, octstr_duplicate(value));
     }
 
     /* pack it */
@@ -365,7 +365,7 @@ Octstr *meta_data_get_value(Octstr *data, const char *group, const Octstr *key)
         return NULL;
     for (curr = mdata; curr != NULL; curr = curr->next) {
         if (octstr_str_case_compare(curr->group, group) == 0) {
-            ret = dict_remove(curr->values, key);
+            ret = dict_remove(curr->values, (Octstr *) key);
             break;
         }
     }
