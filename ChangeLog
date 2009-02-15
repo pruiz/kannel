@@ -1,4 +1,8 @@
 2009-02-15 Alexander Malysh <amalysh at kannel.org>
+    * test/test_octstr_format.c: fixed compiler warnings.
+      Thanks to Vincent CHAVANIS <v.chavanis at telemaque.fr> for patch.
+
+2009-02-15 Alexander Malysh <amalysh at kannel.org>
     * gw/meta_data.c: fixed compiler warnings.
       Thanks to Vincent CHAVANIS <v.chavanis at telemaque.fr> for patch
       and to "Nikos Balkanas" <nbalkanas at gmail.com>.

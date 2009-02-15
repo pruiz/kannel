@@ -63,7 +63,7 @@
 int main(void) 
 {
     Octstr *os, *os2, *os3, *os4, *os5;
-    unsigned long long n = 78234782386423784267234;
+    unsigned long long n = 18446744073709551615ull;
 
     gwlib_init();
 
