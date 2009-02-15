@@ -1,3 +1,12 @@
+2009-02-16  Stipe Tolj  <stolj at kannel.org>
+    * doc/userguide/userguide.xml: adding documetation section for the
+      command line switch for showing the version.
+    * gw/shared.[ch]: moved the version printing related public functions.
+    * gwlib/utils.[ch]: places the printing functions here and adding the
+      --version command line switch to the general command line intrpreting
+      function.
+      [Msg-Id: <4996DF94.5010505@tolj.org>]
+      
 2009-02-15 Alexander Malysh <amalysh at kannel.org>
     * test/test_octstr_format.c: fixed compiler warnings.
       Thanks to Vincent CHAVANIS <v.chavanis at telemaque.fr> for patch.

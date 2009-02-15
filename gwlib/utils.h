@@ -199,4 +199,19 @@ int roundup_div(int a, int b);
 unsigned long long gw_generate_id(void);
 
 
+/*
+ * Return an octet string with information about Kannel version,
+ * operating system, and libxml version. The caller must take care to
+ * destroy the string when done.
+ */
+Octstr *version_report_string(const char *boxname);
+
+
+/*
+ * Output the information returned by version_report_string to the log
+ * files.
+ */
+void report_versions(const char *boxname);
+
+
 #endif

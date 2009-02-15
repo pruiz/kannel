@@ -1654,6 +1654,12 @@ white-list = "http://localhost/whitelist.txt"
   <title>Kannel Command Line Options</title>
   <tgroup cols="2">
   <tbody>
+   <row><entry><literal></literal></entry>
+        <entry morerows="1" valign="bottom">
+             Print the version of the Kannel binary.
+        </entry></row>
+   <row><entry><literal>--version</literal></entry></row>
+
    <row><entry><literal>-v &lt;level&gt;</literal></entry>
         <entry morerows="1" valign="bottom">
              Set verbosity level for stdout (screen) logging. Default is 0,

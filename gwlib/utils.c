@@ -74,11 +74,32 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <sys/stat.h>
+#include <sys/utsname.h>
 #include <fcntl.h>
 #include <pwd.h>
 #include <grp.h>
+#include <libgen.h>
 
 #include "gwlib.h"
+
+/* Headers required for the version dump. */
+#if defined(HAVE_LIBSSL) || defined(HAVE_WTLS_OPENSSL) 
+#include <openssl/opensslv.h>
+#endif
+#ifdef HAVE_MYSQL 
+#include <mysql_version.h>
+#include <mysql.h>
+#endif
+#ifdef HAVE_SQLITE 
+#include <sqlite.h>
+#endif
+#ifdef HAVE_SQLITE3 
+#include <sqlite3.h>
+#endif
+#ifdef HAVE_ORACLE 
+#include <oci.h>
+#endif
+
 
 /* pid of child process when parachute is used */
 static pid_t child_pid = -1;
@@ -346,6 +367,7 @@ static void remove_pid_file(void)
         error(errno, "Could not unlink pid-file `%s'", pid_file);
 }
 
+
 static int change_user(const char *user)
 {
     struct passwd *pass;
@@ -381,7 +403,6 @@ static int change_user(const char *user)
  */
 
 
-
 MultibyteInt get_variable_value(Octet *source, int *len)
 {
     MultibyteInt retval = 0;
@@ -415,6 +436,7 @@ int write_variable_value(MultibyteInt value, Octet *dest)
     return loc;
 }
 
+
 Octet reverse_octet(Octet source)
 {
     Octet	dest;
@@ -428,6 +450,81 @@ Octet reverse_octet(Octet source)
     dest += (source & 128) >>7;
     
     return dest;
+}
+
+
+void report_versions(const char *boxname)
+{
+    Octstr *os;
+    
+    os = version_report_string(boxname);
+    debug("gwlib.gwlib", 0, "%s", octstr_get_cstr(os));
+    octstr_destroy(os);
+}
+
+
+Octstr *version_report_string(const char *boxname)
+{
+    struct utsname u;
+
+    uname(&u);
+    return octstr_format(GW_NAME " %s version `%s'.\nBuild `%s', compiler `%s'.\n"
+                         "System %s, release %s, version %s, machine %s.\n"
+             "Hostname %s, IP %s.\n"
+             "Libxml version %s.\n"
+#ifdef HAVE_LIBSSL
+             "Using "
+#ifdef HAVE_WTLS_OPENSSL
+             "WTLS library "
+#endif
+             "%s.\n"
+#endif
+#ifdef HAVE_MYSQL
+             "Compiled with MySQL %s, using MySQL %s.\n"
+#endif
+#ifdef HAVE_SDB
+             "Using LibSDB %s.\n"
+#endif
+#if defined(HAVE_SQLITE) || defined(HAVE_SQLITE3)
+             "Using SQLite %s.\n"
+#endif
+#ifdef HAVE_ORACLE
+#if defined(OCI_MAJOR_VERSION) && defined(OCI_MINOR_VERSION)
+             "Using Oracle OCI %d.%d.\n"
+#else
+             "Using Oracle OCI.\n"
+#endif
+#endif
+             "Using %s malloc.\n",
+             boxname, GW_VERSION,
+#ifdef __GNUC__ 
+             (__DATE__ " " __TIME__) ,
+             __VERSION__,
+#else 
+             "unknown" , "unknown",
+#endif 
+             u.sysname, u.release, u.version, u.machine,
+             octstr_get_cstr(get_official_name()),
+             octstr_get_cstr(get_official_ip()),
+             LIBXML_DOTTED_VERSION,
+#ifdef HAVE_LIBSSL
+             OPENSSL_VERSION_TEXT,
+#endif
+#ifdef HAVE_MYSQL
+             MYSQL_SERVER_VERSION, mysql_get_client_info(),
+#endif
+#ifdef HAVE_SDB
+             LIBSDB_VERSION,
+#endif
+#if defined(HAVE_SQLITE) || defined(HAVE_SQLITE3)
+             SQLITE_VERSION,
+#endif
+#ifdef HAVE_ORACLE
+#if defined(OCI_MAJOR_VERSION) && defined(OCI_MINOR_VERSION)
+             OCI_MAJOR_VERSION, OCI_MINOR_VERSION,
+#endif
+#endif
+             octstr_get_cstr(gwmem_type()));
 }
 
 
@@ -491,6 +588,11 @@ int get_and_set_debugs(int argc, char **argv,
                 panic(0, "Missing argument for option %s\n", argv[i]);
         } else if (strcmp(argv[i], "-g")==0 || strcmp(argv[i], "--generate")==0) {
             cfg_dump_all();
+            exit(0);
+        } else if (strcmp(argv[i], "--version")==0) {
+            Octstr *version = version_report_string(basename(argv[0]));
+            printf("%s", octstr_get_cstr(version));
+            octstr_destroy(version);
             exit(0);
         } else if (strcmp(argv[i],"--")==0) {
             i++;

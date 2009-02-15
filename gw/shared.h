@@ -84,21 +84,6 @@ extern volatile enum program_status {
 
 
 /*
- * Return an octet string with information about Kannel version,
- * operating system, and libxml version. The caller must take care to
- * destroy the string when done.
- */
-Octstr *version_report_string(const char *boxname);
-
-
-/*
- * Output the information returned by version_report_string to the log
- * files.
- */
-void report_versions(const char *boxname);
-
-
-/*
  * Open a connection to the bearerbox.
  */
 Connection *connect_to_bearerbox_real(Octstr *host, int port, int ssl, Octstr *our_host);
