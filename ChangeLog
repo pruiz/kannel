@@ -1,3 +1,6 @@
+2009-03-02 Alexander Malysh <amalysh at kannel.org>
+    * gwlib/charset.c: try to convert with iconv harder.
+
 2009-03-01 Alexander Malysh <amalysh at kannel.org>
     * configure.in, configure: added openjade to search.
       Added /sw /opt/local to search path for docbook.
