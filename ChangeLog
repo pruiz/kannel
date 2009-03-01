@@ -1,4 +1,8 @@
 2009-03-01 Alexander Malysh <amalysh at kannel.org>
+    * configure.in, configure: added openjade to search.
+      Added /sw /opt/local to search path for docbook.
+
+2009-03-01 Alexander Malysh <amalysh at kannel.org>
     * gw/bb_boxc.c: applied patch that fixes handling of multiple boxes with
       equal name.
       Thanks to Ben Suffolk <ben at vanilla.net> for the initial patch.
