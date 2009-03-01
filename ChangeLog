@@ -1,3 +1,9 @@
+2009-03-01 Alexander Malysh <amalysh at kannel.org>
+    * gw/bb_boxc.c: applied patch that fixes handling of multiple boxes with
+      equal name.
+      Thanks to Ben Suffolk <ben at vanilla.net> for the initial patch.
+      [Msg-ID: <C5DF9E3A-61B5-467D-91E0-0844B2AB4645@vanilla.net>]
+
 2009-02-16  Stipe Tolj  <stolj at kannel.org>
     * doc/userguide/userguide.xml: adding documetation section for the
       command line switch for showing the version.

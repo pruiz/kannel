@@ -1,58 +1,58 @@
-/* ==================================================================== 
- * The Kannel Software License, Version 1.0 
- * 
- * Copyright (c) 2001-2009 Kannel Group  
- * Copyright (c) 1998-2001 WapIT Ltd.   
- * All rights reserved. 
- * 
- * Redistribution and use in source and binary forms, with or without 
- * modification, are permitted provided that the following conditions 
- * are met: 
- * 
- * 1. Redistributions of source code must retain the above copyright 
- *    notice, this list of conditions and the following disclaimer. 
- * 
- * 2. Redistributions in binary form must reproduce the above copyright 
- *    notice, this list of conditions and the following disclaimer in 
- *    the documentation and/or other materials provided with the 
- *    distribution. 
- * 
- * 3. The end-user documentation included with the redistribution, 
- *    if any, must include the following acknowledgment: 
- *       "This product includes software developed by the 
- *        Kannel Group (http://www.kannel.org/)." 
- *    Alternately, this acknowledgment may appear in the software itself, 
- *    if and wherever such third-party acknowledgments normally appear. 
- * 
- * 4. The names "Kannel" and "Kannel Group" must not be used to 
- *    endorse or promote products derived from this software without 
- *    prior written permission. For written permission, please  
- *    contact org@kannel.org. 
- * 
- * 5. Products derived from this software may not be called "Kannel", 
- *    nor may "Kannel" appear in their name, without prior written 
- *    permission of the Kannel Group. 
- * 
- * THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESSED OR IMPLIED 
- * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES 
- * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE 
- * DISCLAIMED.  IN NO EVENT SHALL THE KANNEL GROUP OR ITS CONTRIBUTORS 
- * BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY,  
- * OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT  
- * OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR  
- * BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,  
- * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE  
- * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,  
- * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 
- * ==================================================================== 
- * 
- * This software consists of voluntary contributions made by many 
- * individuals on behalf of the Kannel Group.  For more information on  
- * the Kannel Group, please see <http://www.kannel.org/>. 
- * 
- * Portions of this software are based upon software originally written at  
- * WapIT Ltd., Helsinki, Finland for the Kannel project.  
- */ 
+/* ====================================================================
+ * The Kannel Software License, Version 1.0
+ *
+ * Copyright (c) 2001-2009 Kannel Group
+ * Copyright (c) 1998-2001 WapIT Ltd.
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in
+ *    the documentation and/or other materials provided with the
+ *    distribution.
+ *
+ * 3. The end-user documentation included with the redistribution,
+ *    if any, must include the following acknowledgment:
+ *       "This product includes software developed by the
+ *        Kannel Group (http://www.kannel.org/)."
+ *    Alternately, this acknowledgment may appear in the software itself,
+ *    if and wherever such third-party acknowledgments normally appear.
+ *
+ * 4. The names "Kannel" and "Kannel Group" must not be used to
+ *    endorse or promote products derived from this software without
+ *    prior written permission. For written permission, please
+ *    contact org@kannel.org.
+ *
+ * 5. Products derived from this software may not be called "Kannel",
+ *    nor may "Kannel" appear in their name, without prior written
+ *    permission of the Kannel Group.
+ *
+ * THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESSED OR IMPLIED
+ * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+ * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED.  IN NO EVENT SHALL THE KANNEL GROUP OR ITS CONTRIBUTORS
+ * BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY,
+ * OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT
+ * OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR
+ * BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
+ * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * ====================================================================
+ *
+ * This software consists of voluntary contributions made by many
+ * individuals on behalf of the Kannel Group.  For more information on
+ * the Kannel Group, please see <http://www.kannel.org/>.
+ *
+ * Portions of this software are based upon software originally written at
+ * WapIT Ltd., Helsinki, Finland for the Kannel project.
+ */
 
 /*
  * bb_boxc.c : bearerbox box connection module
@@ -154,6 +154,7 @@ static void sms_to_smsboxes(void *arg);
 static int send_msg(Boxc *boxconn, Msg *pmsg);
 static void boxc_sent_push(Boxc*, Msg*);
 static void boxc_sent_pop(Boxc*, Msg*, Msg**);
+static void boxc_gwlist_destroy(List *list);
 
 
 /*-------------------------------------------------
@@ -340,18 +341,50 @@ static void boxc_receiver(void *arg)
                  */
                 if (msg->admin.boxc_id != NULL) {
 
-                    /* and add the boxc_id into conn for boxc_status() output */
-                    if (conn->boxc_id != NULL) {
-                        dict_remove(smsbox_by_id, msg->admin.boxc_id);
-                        octstr_destroy(conn->boxc_id);
+                    /* Only interested if the connection is not named, or its a different name */
+                    if(conn->boxc_id == NULL || octstr_compare(conn->boxc_id, msg->admin.boxc_id)) {
+                        List *boxc_id_list = NULL;
+
+                        /*
+                         * Different name, need to remove it from the old list.
+                         *
+                         * I Don't think this case should ever arise, but might as well
+                         * be safe.
+                         */
+                        if (conn->boxc_id != NULL) {
+
+                            /* Get the list for this box id */
+                            boxc_id_list = dict_get(smsbox_by_id, conn->boxc_id);
+
+                            /* Delete the connection from the list */
+                            if (boxc_id_list != NULL) {
+                                gwlist_delete_equal(boxc_id_list, conn);
+                            }
+
+                            octstr_destroy(conn->boxc_id);
+                        }
+
+                        /* Get the list for this box id */
+                        boxc_id_list = dict_get(smsbox_by_id, msg->admin.boxc_id);
+
+                        /* No list yet, so create it */
+                        if (boxc_id_list == NULL) {
+                            boxc_id_list = gwlist_create();
+                            if (!dict_put_once(smsbox_by_id, msg->admin.boxc_id, boxc_id_list))
+                                boxc_id_list = dict_get(smsbox_by_id, msg->admin.boxc_id); /* list already added */
+                        }
+
+                        /* Add the connection into the list */
+                        gwlist_append(boxc_id_list, conn);
+
+                        conn->boxc_id = msg->admin.boxc_id;
+                    }
+                    else {
+                        octstr_destroy(msg->admin.boxc_id);
                     }
 
-                    conn->boxc_id = msg->admin.boxc_id;
                     msg->admin.boxc_id = NULL;
 
-                    /* add this identified smsbox to the dictionary */
-                    /* XXX check for equal boxc_id in Dict, otherwise we overwrite it */
-                    dict_put(smsbox_by_id, conn->boxc_id, conn);
                     debug("bb.boxc", 0, "boxc_receiver: got boxc_id <%s> from <%s>",
                           octstr_get_cstr(conn->boxc_id),
                           octstr_get_cstr(conn->client_ip));
@@ -406,10 +439,10 @@ static void boxc_sent_push(Boxc *conn, Msg *m)
 {
     Octstr *os;
     char id[UUID_STR_LEN + 1];
-    
+
     if (conn->is_wap || !conn->sent || !m || msg_type(m) != sms)
         return;
-    
+
     uuid_unparse(m->sms.id, id);
     os = octstr_create(id);
     dict_put(conn->sent, os, msg_duplicate(m));
@@ -433,7 +466,7 @@ static void boxc_sent_pop(Boxc *conn, Msg *m, Msg **orig)
 
     if (orig != NULL)
         *orig = NULL;
-    
+
     uuid_unparse((msg_type(m) == sms ? m->sms.id : m->ack.id), id);
     os = octstr_create(id);
     msg = dict_remove(conn->sent, os);
@@ -624,8 +657,15 @@ static void run_smsbox(void *arg)
     gw_rwlock_wrlock(smsbox_list_rwlock);
     gwlist_delete_equal(smsbox_list, newconn);
     if (newconn->boxc_id) {
-        dict_remove(smsbox_by_id, newconn->boxc_id);
+
+        /* Get the list, and remove the connection from it */
+        List *boxc_id_list = dict_get(smsbox_by_id, newconn->boxc_id);
+
+        if(boxc_id_list != NULL) {
+            gwlist_delete_equal(boxc_id_list, newconn);
+        }
     }
+
     gw_rwlock_unlock(smsbox_list_rwlock);
 
     /*
@@ -638,10 +678,10 @@ static void run_smsbox(void *arg)
     /* check if we are still waiting for ack's and semaphore locked */
     if (dict_key_count(newconn->sent) >= smsbox_max_pending)
         semaphore_up(newconn->pending); /* allow sender to go down */
-        
+
     gwthread_join(sender);
 
-    /* put not acked msgs into incoming queue */    
+    /* put not acked msgs into incoming queue */
     keys = dict_keys(newconn->sent);
     while((key = gwlist_extract_first(keys)) != NULL) {
         msg = dict_remove(newconn->sent, key);
@@ -681,7 +721,7 @@ static void run_wapbox(void *arg)
     gwlist_add_producer(flow_threads);
     newconn = arg;
     newconn->is_wap = 1;
-    
+
     /*
      * create a new incoming list for just that box,
      * and add it to list of list pointers, so we can start
@@ -689,11 +729,11 @@ static void run_wapbox(void *arg)
      */
 
     debug("bb", 0, "setting up systems for new wapbox");
-    
+
     newlist = gwlist_create();
     /* this is released by the sender/receiver if it exits */
     gwlist_add_producer(newlist);
-    
+
     newconn->incoming = newlist;
     newconn->retry = incoming_wdp;
     newconn->outgoing = outgoing_wdp;
@@ -709,7 +749,7 @@ static void run_wapbox(void *arg)
     boxc_receiver(newconn);
 
     /* cleanup after receiver has exited */
-    
+
     gwlist_remove_producer(newconn->outgoing);
     gwlist_lock(wapbox_list);
     gwlist_delete_equal(wapbox_list, newconn);
@@ -719,7 +759,7 @@ static void run_wapbox(void *arg)
 	    gwlist_remove_producer(newlist);
 
     newconn->alive = 0;
-    
+
     gwthread_join(sender);
 
 cleanup:
@@ -751,7 +791,7 @@ static int cmp_route(void *ap, void *ms)
 {
     AddrPar *addr = ap;
     Msg *msg = ms;
-    
+
     if (msg->wdp_datagram.source_port == addr->port  &&
 	    octstr_compare(msg->wdp_datagram.source_address, addr->address)==0)
 	return 1;
@@ -773,7 +813,7 @@ static Boxc *route_msg(List *route_info, Msg *msg)
     AddrPar *ap;
     Boxc *conn, *best;
     int i, b, len;
-    
+
     ap = gwlist_search(route_info, msg, cmp_route);
     if (ap == NULL) {
 	    debug("bb.boxc", 0, "Did not find previous routing info for WDP, "
@@ -806,7 +846,7 @@ route:
 	    }
 	    conn = best;
 	    conn->load++;	/* simulate new client until we get new values */
-	
+
 	    ap = gw_malloc(sizeof(AddrPar));
 	    ap->address = octstr_duplicate(msg->wdp_datagram.source_address);
 	    ap->port = msg->wdp_datagram.source_port;
@@ -848,7 +888,7 @@ static void wdp_to_wapboxes(void *arg)
 
     route_info = gwlist_create();
 
-    
+
     while(bb_status != BB_DEAD) {
 
 	    gwlist_consume(suspended);	/* block here if suspended */
@@ -886,14 +926,14 @@ static void wdp_to_wapboxes(void *arg)
 }
 
 
-static void wait_for_connections(int fd, void (*function) (void *arg), 
+static void wait_for_connections(int fd, void (*function) (void *arg),
     	    	    	    	 List *waited, int ssl)
 {
     int ret;
     int timeout = 10; /* 10 sec. */
 
     gw_assert(function != NULL);
-    
+
     while(bb_status != BB_DEAD) {
 
         /* if we are being shutdowned, as long as there is
@@ -937,8 +977,8 @@ static void smsboxc_run(void *arg)
     gwlist_add_producer(flow_threads);
     gwthread_wakeup(MAIN_THREAD_ID);
     port = (int) *((long *)arg);
-    
-    fd = make_server_socket(port, NULL); 
+
+    fd = make_server_socket(port, NULL);
     /* XXX add interface_name if required */
 
     if (fd < 0) {
@@ -983,7 +1023,7 @@ static void smsboxc_run(void *arg)
     smsbox_by_receiver = NULL;
     dict_destroy(smsbox_by_smsc_receiver);
     smsbox_by_smsc_receiver = NULL;
-    
+
     gwlist_remove_producer(flow_threads);
 }
 
@@ -995,7 +1035,7 @@ static void wapboxc_run(void *arg)
     gwlist_add_producer(flow_threads);
     gwthread_wakeup(MAIN_THREAD_ID);
     port = (int) *((long*)arg);
-    
+
     fd = make_server_socket(port, NULL);
     	/* XXX add interface_name if required */
 
@@ -1012,20 +1052,20 @@ static void wapboxc_run(void *arg)
 
     /* wait for all connections to die and then remove list
      */
-    
+
     while(gwlist_wait_until_nonempty(wapbox_list) == 1)
         gwthread_sleep(1.0);
 
     /* wait for wdp_to_wapboxes to exit */
     while(gwlist_consume(wapbox_list)!=NULL)
 	;
-    
+
     /* close listen socket */
-    close(fd);   
- 
+    close(fd);
+
     gwlist_destroy(wapbox_list, NULL);
     wapbox_list = NULL;
-    
+
     gwlist_remove_producer(flow_threads);
 }
 
@@ -1042,20 +1082,20 @@ static void init_smsbox_routes(Cfg *cfg)
 
     boxc_id = smsc_ids = shortcuts = NULL;
 
-    list = cfg_get_multi_group(cfg, octstr_imm("smsbox-route")); 
- 
+    list = cfg_get_multi_group(cfg, octstr_imm("smsbox-route"));
+
     /* loop multi-group "smsbox-route" */
-    while (list && (grp = gwlist_extract_first(list)) != NULL) { 
-         
-        if ((boxc_id = cfg_get(grp, octstr_imm("smsbox-id"))) == NULL) { 
-            grp_dump(grp); 
-            panic(0,"'smsbox-route' group without valid 'smsbox-id' directive!"); 
+    while (list && (grp = gwlist_extract_first(list)) != NULL) {
+
+        if ((boxc_id = cfg_get(grp, octstr_imm("smsbox-id"))) == NULL) {
+            grp_dump(grp);
+            panic(0,"'smsbox-route' group without valid 'smsbox-id' directive!");
         }
 
         /*
          * If smsc-id is given, then any message comming from the specified
          * smsc-id in the list will be routed to this smsbox instance.
-         * If shortcode is given, then any message with receiver number 
+         * If shortcode is given, then any message with receiver number
          * matching those will be routed to this smsbox instance.
          * If both are given, then only receiver within shortcode originating
          * from smsc-id list will be routed to this smsbox instance. So if both
@@ -1091,7 +1131,7 @@ static void init_smsbox_routes(Cfg *cfg)
 
                 debug("bb.boxc",0,"Adding smsbox routing to id <%s> for receiver no <%s>",
                       octstr_get_cstr(boxc_id), octstr_get_cstr(item));
-            
+
                 if (!dict_put_once(smsbox_by_receiver, item, octstr_duplicate(boxc_id)))
                     panic(0, "Routing for receiver no <%s> already exists!",
                           octstr_get_cstr(item));
@@ -1106,16 +1146,16 @@ static void init_smsbox_routes(Cfg *cfg)
                 List *subitems;
                 Octstr *item = gwlist_get(items, i);
                 octstr_strip_blanks(item);
-                subitems = octstr_split(smsc_ids, octstr_imm(";")); 
+                subitems = octstr_split(smsc_ids, octstr_imm(";"));
                 for (j = 0; j < gwlist_len(subitems); j++) {
                     Octstr *subitem = gwlist_get(subitems, j);
                     octstr_strip_blanks(subitem);
-                    
+
                     debug("bb.boxc",0,"Adding smsbox routing to id <%s> "
                           "for receiver no <%s> and smsc id <%s>",
                           octstr_get_cstr(boxc_id), octstr_get_cstr(item),
                           octstr_get_cstr(subitem));
-            
+
                     /* construct the dict key '<shortcode>:<smsc-id>' */
                     octstr_insert(subitem, item, 0);
                     octstr_insert_char(subitem, octstr_len(item), ':');
@@ -1144,7 +1184,7 @@ static void init_smsbox_routes(Cfg *cfg)
 int smsbox_start(Cfg *cfg)
 {
     CfgGroup *grp;
-    
+
     if (smsbox_running) return -1;
 
     debug("bb", 0, "starting smsbox connection module");
@@ -1160,19 +1200,19 @@ int smsbox_start(Cfg *cfg)
 
     if (smsbox_port_ssl)
         debug("bb", 0, "smsbox connection module is SSL-enabled");
-        
+
     if (cfg_get_integer(&smsbox_max_pending, grp, octstr_imm("smsbox-max-pending")) == -1) {
         smsbox_max_pending = SMSBOX_MAX_PENDING;
         info(0, "BOXC: 'smsbox-max-pending' not set, using default (%ld).", smsbox_max_pending);
     }
-    
+
     smsbox_list = gwlist_create();	/* have a list of connections */
     smsbox_list_rwlock = gw_rwlock_create();
     if (!boxid)
         boxid = counter_create();
 
     /* the smsbox routing specific inits */
-    smsbox_by_id = dict_create(10, NULL);  /* and a hash directory of identified */
+    smsbox_by_id = dict_create(10, (void(*)(void *)) boxc_gwlist_destroy);
     smsbox_by_smsc = dict_create(30, (void(*)(void *)) octstr_destroy);
     smsbox_by_receiver = dict_create(50, (void(*)(void *)) octstr_destroy);
     smsbox_by_smsc_receiver = dict_create(50, (void(*)(void *)) octstr_destroy);
@@ -1184,7 +1224,7 @@ int smsbox_start(Cfg *cfg)
     gwlist_add_producer(smsbox_list);
 
     smsbox_running = 1;
-    
+
     if ((sms_dequeue_thread = gwthread_create(sms_to_smsboxes, NULL)) == -1)
  	    panic(0, "Failed to start a new thread for smsbox routing");
 
@@ -1198,7 +1238,7 @@ int smsbox_start(Cfg *cfg)
 int smsbox_restart(Cfg *cfg)
 {
     if (!smsbox_running) return -1;
-    
+
     /* send new config to clients */
 
     return 0;
@@ -1215,9 +1255,9 @@ int wapbox_start(Cfg *cfg)
     if (wapbox_running) return -1;
 
     debug("bb", 0, "starting wapbox connection module");
-    
+
     grp = cfg_get_single_group(cfg, octstr_imm("core"));
-    
+
     if (cfg_get_integer(&wapbox_port, grp, octstr_imm("wapbox-port")) == -1) {
 	    error(0, "Missing wapbox-port variable, cannot start WAP");
 	    return -1;
@@ -1225,7 +1265,7 @@ int wapbox_start(Cfg *cfg)
 #ifdef HAVE_LIBSSL
     cfg_get_bool(&wapbox_port_ssl, grp, octstr_imm("wapbox-port-ssl"));
 #endif /* HAVE_LIBSSL */
-  
+
     box_allow_ip = cfg_get(grp, octstr_imm("box-allow-ip"));
     if (box_allow_ip == NULL)
     	box_allow_ip = octstr_create("");
@@ -1234,7 +1274,7 @@ int wapbox_start(Cfg *cfg)
     	box_deny_ip = octstr_create("");
     if (box_allow_ip != NULL && box_deny_ip == NULL)
 	    info(0, "Box connection allowed IPs defined without any denied...");
-    
+
     wapbox_list = gwlist_create();	/* have a list of connections */
     gwlist_add_producer(outgoing_wdp);
     if (!boxid)
@@ -1242,7 +1282,7 @@ int wapbox_start(Cfg *cfg)
 
     if (gwthread_create(wdp_to_wapboxes, NULL) == -1)
  	    panic(0, "Failed to start a new thread for wapbox routing");
- 
+
     if (gwthread_create(wapboxc_run, &wapbox_port) == -1)
 	    panic(0, "Failed to start a new thread for wapbox connections");
 
@@ -1266,7 +1306,7 @@ Octstr *boxc_status(int status_type)
      *    between 'destroy_list and setting list to NULL calls.
      *    Ok, this has to be fixed, but now I am too tired.
      */
-    
+
     if ((lb = bb_status_linebreak(status_type))==NULL)
 	    return octstr_create("Un-supported format");
 
@@ -1279,7 +1319,7 @@ Octstr *boxc_status(int status_type)
 
     if (status_type == BBSTATUS_HTML || status_type == BBSTATUS_WML)
 	    para = 1;
-    
+
     if (status_type == BBSTATUS_XML) {
         tmp = octstr_create ("");
         octstr_append_cstr(tmp, "<boxes>\n\t");
@@ -1287,7 +1327,7 @@ Octstr *boxc_status(int status_type)
     else
         tmp = octstr_format("%sBox connections:%s", para ? "<p>" : "", lb);
     boxes = 0;
-    
+
     if (wapbox_list) {
 	    gwlist_lock(wapbox_list);
 	    for(i=0; i < gwlist_len(wapbox_list); i++) {
@@ -1304,7 +1344,7 @@ Octstr *boxc_status(int status_type)
 				t/3600/24, t/3600%24, t/60%60, t%60,
 #ifdef HAVE_LIBSSL
                 conn_get_ssl(bi->conn) != NULL ? "yes" : "no"
-#else 
+#else
                 "not installed"
 #endif
                 );
@@ -1312,12 +1352,12 @@ Octstr *boxc_status(int status_type)
 	            octstr_format_append(tmp,
 		        "%swapbox, IP %s (on-line %ldd %ldh %ldm %lds) %s %s",
 				ws, octstr_get_cstr(bi->client_ip),
-				t/3600/24, t/3600%24, t/60%60, t%60, 
+				t/3600/24, t/3600%24, t/60%60, t%60,
 #ifdef HAVE_LIBSSL
                 conn_get_ssl(bi->conn) != NULL ? "using SSL" : "",
 #else
                 "",
-#endif 
+#endif
                 lb);
 	            boxes++;
 	       }
@@ -1342,20 +1382,20 @@ Octstr *boxc_status(int status_type)
 		            t/3600/24, t/3600%24, t/60%60, t%60,
 #ifdef HAVE_LIBSSL
                     conn_get_ssl(bi->conn) != NULL ? "yes" : "no"
-#else 
+#else
                     "not installed"
 #endif
                     );
             else
                 octstr_format_append(tmp, "%ssmsbox:%s, IP %s (%ld queued), (on-line %ldd %ldh %ldm %lds) %s %s",
-                    ws, (bi->boxc_id ? octstr_get_cstr(bi->boxc_id) : "(none)"), 
+                    ws, (bi->boxc_id ? octstr_get_cstr(bi->boxc_id) : "(none)"),
                     octstr_get_cstr(bi->client_ip), gwlist_len(bi->incoming) + dict_key_count(bi->sent),
-		            t/3600/24, t/3600%24, t/60%60, t%60, 
+		            t/3600/24, t/3600%24, t/60%60, t%60,
 #ifdef HAVE_LIBSSL
                     conn_get_ssl(bi->conn) != NULL ? "using SSL" : "",
 #else
                     "",
-#endif 
+#endif
                     lb);
 	       boxes++;
 	    }
@@ -1379,7 +1419,7 @@ int boxc_incoming_wdp_queue(void)
 {
     int i, q = 0;
     Boxc *boxc;
-    
+
     if (wapbox_list) {
 	    gwlist_lock(wapbox_list);
 	    for(i=0; i < gwlist_len(wapbox_list); i++) {
@@ -1409,13 +1449,13 @@ void boxc_cleanup(void)
  *   a random smsbox conn if no shortcut routing and msg->sms.boxc_id match
  *
  * BEWARE: All logic inside here should be fast, hence speed processing
- * optimized, because every single MO message passes this function and we 
+ * optimized, because every single MO message passes this function and we
  * have to ensure that no unncessary overhead is done.
  */
 int route_incoming_to_boxc(Msg *msg)
 {
-    Boxc *bc = NULL, *best = NULL;
-    Octstr *s, *r, *rs;
+    Boxc *bc = NULL;
+    Octstr *s, *r, *rs, *boxc_id = NULL;
     long len, b, i;
     int full_found = 0;
 
@@ -1424,10 +1464,7 @@ int route_incoming_to_boxc(Msg *msg)
 
     /* msg_dump(msg, 0); */
 
-    /* 
-     * We have a specific route to pass this msg to smsbox-id 
-     * Lookup the connection in the dictionary.
-     */
+    /* Check we have at least one smsbox connected! */
     gw_rwlock_rdlock(smsbox_list_rwlock);
     if (gwlist_len(smsbox_list) == 0) {
         gw_rwlock_unlock(smsbox_list_rwlock);
@@ -1435,65 +1472,92 @@ int route_incoming_to_boxc(Msg *msg)
         if (max_incoming_sms_qlength < 0 || max_incoming_sms_qlength > gwlist_len(incoming_sms)) {
             gwlist_produce(incoming_sms, msg);
 	    return 0;
-         }
-         else
-             return -1;
+        } else
+            return -1;
     }
 
+
+    /*
+     * We have a specific route to pass this msg to smsbox-id?
+     */
     if (octstr_len(msg->sms.boxc_id) > 0) {
-        
-        bc = dict_get(smsbox_by_id, msg->sms.boxc_id);
-        if (bc == NULL) {
-            /*
-             * something is wrong, this was the smsbox connection we used
-             * for sending, so it seems this smsbox is gone
-             */
-            warning(0,"Could not route message to smsbox id <%s>, smsbox is gone!",
-                    octstr_get_cstr(msg->sms.boxc_id));
-        }
-    }
-    else {
+        boxc_id = msg->sms.boxc_id;
+    } else {
         /*
          * Check if we have a "smsbox-route" for this msg.
          * Where the shortcode route has a higher priority then the smsc-id rule.
          * Highest priority has the combined <shortcode>:<smsc-id> route.
          */
-        Octstr *os = octstr_format("%s:%s", 
+        Octstr *os = octstr_format("%s:%s",
                                    octstr_get_cstr(msg->sms.receiver),
                                    octstr_get_cstr(msg->sms.smsc_id));
         s = (msg->sms.smsc_id ? dict_get(smsbox_by_smsc, msg->sms.smsc_id) : NULL);
         r = (msg->sms.receiver ? dict_get(smsbox_by_receiver, msg->sms.receiver) : NULL);
         rs = (os ? dict_get(smsbox_by_smsc_receiver, os) : NULL);
-        octstr_destroy(os); 
-        bc = rs ? dict_get(smsbox_by_id, rs) : 
-            (r ? dict_get(smsbox_by_id, r) : (s ? dict_get(smsbox_by_id, s) : NULL));
+        octstr_destroy(os);
+
+        if (rs)
+            boxc_id = rs;
+        else if (r)
+            boxc_id = r;
+        else if (s)
+            boxc_id = s;
     }
 
-    /* check if we found our routing */
-    if (bc != NULL) {
-        if (max_incoming_sms_qlength < 0 || max_incoming_sms_qlength > gwlist_len(bc->incoming)) {
-            gwlist_produce(bc->incoming, msg);
-            gw_rwlock_unlock(smsbox_list_rwlock);
-            return 1; /* we are done */
+
+    /* We have a specific smsbox-id to use */
+    if (boxc_id != NULL) {
+
+        List *boxc_id_list = dict_get(smsbox_by_id, boxc_id);
+        if (boxc_id_list == NULL || gwlist_len(boxc_id_list) == 0) {
+            /*
+             * something is wrong, this was the smsbox connection we used
+             * for sending, so it seems this smsbox is gone
+             */
+            warning(0,"Could not route message to smsbox id <%s>, smsbox is gone!",
+                    octstr_get_cstr(boxc_id));
         }
         else {
-            gw_rwlock_unlock(smsbox_list_rwlock);
-            return -1;
+            /* take random smsbox from list, as long as it has space we will use it,
+             * otherwise check the next one.
+             */
+            len = gwlist_len(boxc_id_list);
+            b = gw_rand() % len;
+
+            for(i = 0; i < len; i++) {
+                bc = gwlist_get(boxc_id_list, (i+b) % len);
+
+                if (bc != NULL && max_incoming_sms_qlength > 0 &&
+                    gwlist_len(bc->incoming) > max_incoming_sms_qlength) {
+                    bc = NULL;
+                }
+
+                if (bc != NULL) {
+                    break;
+                }
+            }
+
+            if (bc != NULL) {
+                bc->load++;
+                gwlist_produce(bc->incoming, msg);
+                gw_rwlock_unlock(smsbox_list_rwlock);
+                return 1; /* we are done */
+            }
+            else {
+                /*
+                 * we have routing defined, but no smsbox connected at the moment.
+                 * put msg into global incoming queue and wait until smsbox with
+                 * such boxc_id connected.
+                 */
+                gw_rwlock_unlock(smsbox_list_rwlock);
+                if (max_incoming_sms_qlength < 0 || max_incoming_sms_qlength > gwlist_len(incoming_sms)) {
+                    gwlist_produce(incoming_sms, msg);
+                    return 0;
+                }
+                else
+                    return -1;
+            }
         }
-    }
-    else if (s != NULL || r != NULL || octstr_len(msg->sms.boxc_id) > 0) {
-        gw_rwlock_unlock(smsbox_list_rwlock);
-        /*
-         * we have routing defined, but no smsbox connected at the moment.
-         * put msg into global incoming queue and wait until smsbox with
-         * such boxc_id connected.
-         */
-        if (max_incoming_sms_qlength < 0 || max_incoming_sms_qlength > gwlist_len(incoming_sms)) {
-            gwlist_produce(incoming_sms, msg);
-            return 0;
-        }
-        else
-            return -1;
     }
 
     /*
@@ -1501,15 +1565,14 @@ int route_incoming_to_boxc(Msg *msg)
      * a random smsbox.
      */
 
-    /* take random smsbox from list, and then check all smsboxes
-     * and select the one with lowest load level - if tied, the first
-     * one
+    /* take random smsbox from list, as long as it has space we will use it,
+     * otherwise check the next one.
      */
     len = gwlist_len(smsbox_list);
     b = gw_rand() % len;
 
-    for(i = 0; i < gwlist_len(smsbox_list); i++) {
-	bc = gwlist_get(smsbox_list, (i+b) % len);
+    for(i = 0; i < len; i++) {
+        bc = gwlist_get(smsbox_list, (i+b) % len);
 
         if (bc->boxc_id != NULL || bc->routable == 0)
             bc = NULL;
@@ -1520,29 +1583,26 @@ int route_incoming_to_boxc(Msg *msg)
             bc = NULL;
         }
 
-        if ((bc != NULL && best != NULL && bc->load < best->load) ||
-             (bc != NULL && best == NULL)) {
-	    best = bc;
+        if (bc != NULL) {
+            break;
         }
     }
 
-    if (best != NULL) {
-        best->load++;
-        gwlist_produce(best->incoming, msg);
+    if (bc != NULL) {
+        bc->load++;
+        gwlist_produce(bc->incoming, msg);
     }
 
     gw_rwlock_unlock(smsbox_list_rwlock);
 
-    if (best == NULL && full_found == 0) {
-	warning(0, "smsbox_list empty!");
+    if (bc == NULL && full_found == 0) {
+        warning(0, "smsbox_list empty!");
         if (max_incoming_sms_qlength < 0 || max_incoming_sms_qlength > gwlist_len(incoming_sms)) {
             gwlist_produce(incoming_sms, msg);
-	    return 0;
-         }
-         else
-             return -1;
-    }
-    else if (best == NULL && full_found == 1)
+	           return 0;
+         } else
+            return -1;
+    } else if (bc == NULL && full_found == 1)
         return -1;
 
     return 1;
@@ -1580,7 +1640,7 @@ static void sms_to_smsboxes(void *arg)
         }
         else {
             newmsg = msg = gwlist_consume(incoming_sms);
-            
+
             /* Back at the first message? */
             if (newmsg == startmsg) {
                 gwlist_insert(incoming_sms, 0, msg);
@@ -1614,3 +1674,15 @@ static void sms_to_smsboxes(void *arg)
 
     gwlist_remove_producer(flow_threads);
 }
+
+
+/*
+ * Simple wrapper to allow the named smsbox Lists to be
+ * destroyed when the smsbox_by_id Dict is destroyed
+ *
+ */
+static void boxc_gwlist_destroy(List *list)
+{
+    gwlist_destroy(list, NULL);
+}
+
