@@ -1,3 +1,6 @@
+2009-03-02  Stipe Tolj  <stolj at kannel.org>
+    * gw/bb_boxc.c: minor source re-formatting. NLC.
+    
 2009-03-02 Alexander Malysh <amalysh at kannel.org>
     * gwlib/charset.c: try to convert with iconv harder.
 

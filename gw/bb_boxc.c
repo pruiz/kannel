@@ -342,7 +342,8 @@ static void boxc_receiver(void *arg)
                 if (msg->admin.boxc_id != NULL) {
 
                     /* Only interested if the connection is not named, or its a different name */
-                    if(conn->boxc_id == NULL || octstr_compare(conn->boxc_id, msg->admin.boxc_id)) {
+                    if (conn->boxc_id == NULL || 
+                        octstr_compare(conn->boxc_id, msg->admin.boxc_id)) {
                         List *boxc_id_list = NULL;
 
                         /*
@@ -371,7 +372,8 @@ static void boxc_receiver(void *arg)
                         if (boxc_id_list == NULL) {
                             boxc_id_list = gwlist_create();
                             if (!dict_put_once(smsbox_by_id, msg->admin.boxc_id, boxc_id_list))
-                                boxc_id_list = dict_get(smsbox_by_id, msg->admin.boxc_id); /* list already added */
+                                /* list already added */
+                                boxc_id_list = dict_get(smsbox_by_id, msg->admin.boxc_id); 
                         }
 
                         /* Add the connection into the list */
