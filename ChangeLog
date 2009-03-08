@@ -1,3 +1,9 @@
+2009-03-08  Stipe Tolj  <stolj at kannel.org>
+    * install-sh: use a more recent version taken from automake-1.10, in order
+      to support wildcard filenames to install. This script is used in case
+      the configure run finds no other BSD-compatible install program, i.e.
+      required for Solaris 10 that has no such thing.
+
 2009-03-02  Stipe Tolj  <stolj at kannel.org>
     * gw/bb_boxc.c: minor source re-formatting. NLC.
     
