@@ -1,4 +1,4 @@
-dnl aclocal.m4 -- local include for for autoconf
+dnl acinclude.m4 -- local include for for autoconf
 dnl
 dnl This file is processed while autoconf generates configure.
 dnl This file is part of the Kannel WAP and SMS gateway project.

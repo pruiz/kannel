@@ -101,7 +101,6 @@ int main(int argc, char **argv)
     info(0, "Store file contains %d msg entries", counter);
     info(0, "Shutting down.");
     
-error:
     gwlib_shutdown();
 
     return 1;

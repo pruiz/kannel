@@ -80,7 +80,7 @@ static void *sqlite3_open_conn(const DBConf *db_conf)
         goto failed;
     }
     if (conf->lock_timeout > 0) {
-    	info(0, "SQLite3: Setting lock timeout to %ld", conf->lock_timeout);
+    	info(0, "SQLite3: Setting lock timeout to %d", conf->lock_timeout);
     	sqlite3_busy_timeout(db, conf->lock_timeout);
     }
 

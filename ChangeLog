@@ -1,3 +1,8 @@
+2009-03-13  Stipe Tolj  <stolj at kannel.org>
+    * gwlib/date.c, gwlib/dbpool_sqlite3.c, test/test_store_dump.c: fixed 
+      minor compiler warnings. NLC.
+    * acinclude.m4: changed header to reflect the correct file name. NLC.
+    
 2009-03-13 Alexander Malysh <amalysh at kannel.org>
     * .cvsignore, Makefile.in, acinclude.m4, aclocal.m4, bootstrap.sh,
       configure, configure.in, gw-config.h.in, gwlib/charset.c: Use already

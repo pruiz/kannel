@@ -226,8 +226,7 @@ error:
 
 int date_parse_iso (struct universaltime *ut, Octstr *os)
 {
-    long pos = 0;
-    int c, n = 0;
+    int n = 0;
     char *p, *q;
 
     /* assign defaults */
