@@ -1,3 +1,12 @@
+2009-03-13 Alexander Malysh <amalysh at kannel.org>
+    * .cvsignore, Makefile.in, acinclude.m4, aclocal.m4, bootstrap.sh,
+      configure, configure.in, gw-config.h.in, gwlib/charset.c: Use already
+      defined in gettext AM_ICONV macro to detect and declare iconv. This
+      fixes warning about const declaration.
+      This macro defined in aclocal and therefore I renamed aclocal.m4 to
+      acinclude.m4 and added bootstrap.sh. Please always use bootstrap.sh to
+      create new configure script!
+
 2009-03-08  Stipe Tolj  <stolj at kannel.org>
     * install-sh: use a more recent version taken from automake-1.10, in order
       to support wildcard filenames to install. This script is used in case
