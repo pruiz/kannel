@@ -64,7 +64,7 @@
 
 #include "gwlib/gwlib.h"
 
-#if HAVE_ICONV_H
+#if HAVE_ICONV
 #include <errno.h>
 #include <iconv.h>
 #endif
@@ -589,7 +589,7 @@ int charset_from_utf8(Octstr *utf8, Octstr **to, Octstr *charset_to)
 
 int charset_convert(Octstr* string, char* charset_from, char* charset_to)
 {
-#if HAVE_ICONV_H
+#if HAVE_ICONV
     char *from_buf, *to_buf, *pointer;
     size_t inbytesleft, outbytesleft, ret;
     iconv_t cd;
@@ -616,7 +616,7 @@ int charset_convert(Octstr* string, char* charset_from, char* charset_to)
     pointer = to_buf = gw_malloc(outbytesleft);
 
     do {
-        ret = iconv(cd, &from_buf, &inbytesleft, &pointer, &outbytesleft);
+        ret = iconv(cd, (ICONV_CONST char**) &from_buf, &inbytesleft, &pointer, &outbytesleft);
         if(ret == -1) {
             long tmp;
             /* the conversion failed somewhere */

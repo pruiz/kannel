@@ -196,8 +196,9 @@
 /* Define if you have <syslog.h>.  */
 #undef HAVE_SYSLOG_H
 
-/* Define if you have <iconv.h>.  */
-#undef HAVE_ICONV_H
+/* Defines for iconv.  */
+#define HAVE_ICONV 0
+#define ICONV_CONST const
 
 /* Define if you have <execinfo.h>. */
 #undef HAVE_EXECINFO_H

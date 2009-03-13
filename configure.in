@@ -213,13 +213,12 @@ AC_CHECK_LIB(bind, inet_ntop)
 if test -z "$pthread"; then
     AC_CHECK_LIB(pthread, pthread_exit, [LIBS="$LIBS -lpthread"])
 fi
-AC_CHECK_LIB(iconv, libiconv, [LIBS="$LIBS -liconv"])   
 
 dnl Checks for header files.
 
 AC_HEADER_STDC
 AC_CHECK_HEADERS(sys/ioctl.h sys/time.h sys/types.h unistd.h sys/poll.h)
-AC_CHECK_HEADERS(pthread.h getopt.h syslog.h iconv.h zlib.h execinfo.h stdlib.h)
+AC_CHECK_HEADERS(pthread.h getopt.h syslog.h zlib.h execinfo.h stdlib.h)
 AC_CHECK_HEADERS([sys/socket.h sys/sockio.h netinet/in.h])
 AC_CHECK_HEADERS([net/if.h], [], [],
   [#include <stdio.h>
@@ -243,6 +242,8 @@ AC_TRY_COMPILE(, [char *func = __FUNCTION__;],
 AC_TRY_COMPILE(, [char *func = __func__;], 
     	       AC_DEFINE(HAVE___FUNC__))
 
+dnl check for iconv
+AM_ICONV
 
 dnl Checks for library functions.
 
