@@ -1,4 +1,9 @@
 2009-03-14  Stipe Tolj  <stolj at kannel.org>
+    * gwlib/cfg.c: fix segfault on sparc-solaris10 and possibly various other
+      systems in case of a failing lstat() call and further undefined 
+      processing of the variable outcome.
+      
+2009-03-14  Stipe Tolj  <stolj at kannel.org>
     * config.rpath: touched file to surporess the configure error.
     * configure[.in], aclocal.m4: added '--enable-auto-import' linker option
       for the Cygwin 1.x platform to avoid warnings at link time.
