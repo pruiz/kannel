@@ -128,6 +128,7 @@ case "$host" in
     ;;
   *-cygwin*)
     EXE_EXT=".exe"
+    LDFLAGS="$LDFLAGS -Wl,--enable-auto-import"
     ;;
   *apple-darwin*) 
     # MacOS X

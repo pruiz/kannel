@@ -1,4 +1,9 @@
 2009-03-14  Stipe Tolj  <stolj at kannel.org>
+    * config.rpath: touched file to surporess the configure error.
+    * configure[.in], aclocal.m4: added '--enable-auto-import' linker option
+      for the Cygwin 1.x platform to avoid warnings at link time.
+      
+2009-03-14  Stipe Tolj  <stolj at kannel.org>
     * Makefile.in: fix missing -liconv flag for gw-config's --libs output. We
       rather use the Makefile variable then the configure substitution, so we
       get all library flags handled.
