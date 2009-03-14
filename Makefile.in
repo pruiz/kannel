@@ -376,6 +376,6 @@ pkg: all
 
 gw-config: utils/foobar-config.sh Makefile
 	./utils/foobar-config.sh "-I$(includedir)/kannel @CFLAGS@" \
-		"-L$(libdir)/kannel -lgw -lwap -lgwlib @LIBS@" \
+		"-L$(libdir)/kannel -lgw -lwap -lgwlib $(LIBS)" \
 		"@VERSION@" > gw-config
 	chmod 0755 gw-config

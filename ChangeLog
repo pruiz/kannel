@@ -1,3 +1,8 @@
+2009-03-14  Stipe Tolj  <stolj at kannel.org>
+    * Makefile.in: fix missing -liconv flag for gw-config's --libs output. We
+      rather use the Makefile variable then the configure substitution, so we
+      get all library flags handled.
+      
 2009-03-13  Stipe Tolj  <stolj at kannel.org>
     * gwlib/date.c, gwlib/dbpool_sqlite3.c, test/test_store_dump.c: fixed 
       minor compiler warnings. NLC.
