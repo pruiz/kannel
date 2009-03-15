@@ -68,6 +68,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <dirent.h>
+#include <errno.h>
 
 struct CfgGroup {
     Octstr *name;

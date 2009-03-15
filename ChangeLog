@@ -1,3 +1,6 @@
+2009-03-15 Alexander Malysh <amalysh at kannel.org>
+    * gwlib/cfg.c: fixed compilation error introduced by Stipe.
+
 2009-03-14  Stipe Tolj  <stolj at kannel.org>
     * gwlib/cfg.c: fix segfault on sparc-solaris10 and possibly various other
       systems in case of a failing lstat() call and further undefined 
