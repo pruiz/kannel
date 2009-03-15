@@ -4,7 +4,7 @@
       processing of the variable outcome.
       
 2009-03-14  Stipe Tolj  <stolj at kannel.org>
-    * config.rpath: touched file to surporess the configure error.
+    * config.rpath: touched file to surpress the configure error.
     * configure[.in], aclocal.m4: added '--enable-auto-import' linker option
       for the Cygwin 1.x platform to avoid warnings at link time.
       
