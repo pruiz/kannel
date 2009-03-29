@@ -2816,7 +2816,7 @@ void http_header_get(List *headers, long i, Octstr **name, Octstr **value)
         *value = octstr_duplicate(os);
     } else {
         *name = octstr_copy(os, 0, colon);
-        *value = octstr_copy(os, colon + 1, octstr_len(os));
+        *value = octstr_copy(os, colon + 1, octstr_len(os) - colon - 1);
         octstr_strip_blanks(*value);
     }
 }

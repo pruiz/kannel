@@ -1,3 +1,8 @@
+2009-03-29 Alexander Malysh <amalysh at kannel.org>
+    * gwlib/http.c: applied patch that fixes octsr_copy length.
+      Thanks to "Nikos Balkanas" <nbalkanas at gmail.com> for this patch.
+      [Msg-Id: <002b01c9af01$c06655d0$02b2a8c0@tardis>]
+
 2009-03-15 Alexander Malysh <amalysh at kannel.org>
     * gwlib/cfg.c: fixed compilation error introduced by Stipe.
 
