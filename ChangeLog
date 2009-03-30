@@ -1,4 +1,8 @@
 2009-03-30 Alexander Malysh <amalysh at kannel.org>
+    * gwlib/http.c: applied patch that fixes octsr_copy length.
+      Thanks to Vincent CHAVANIS <v.chavanis at telemaque.fr> for this patch.
+
+2009-03-30 Alexander Malysh <amalysh at kannel.org>
     * gw/wap-appl.c: applied patch that fixes possible infinite loop.
       Thanks to "Nikos Balkanas" <nbalkanas at gmail.com> for this patch.
 

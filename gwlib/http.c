@@ -2850,7 +2850,7 @@ Octstr *http_header_value(List *headers, Octstr *name)
             current_name = octstr_copy(os, 0, colon);
         }
         if (octstr_case_compare(current_name, name) == 0) {
-            value = octstr_copy(os, colon + 1, octstr_len(os));
+            value = octstr_copy(os, colon + 1, octstr_len(os) - colon - 1);
             octstr_strip_blanks(value);
             octstr_destroy(current_name);
             return value;
