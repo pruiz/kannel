@@ -1464,6 +1464,7 @@ static void check_application_headers(List **headers,
 {
     List *inh;
     int i;
+    long len;
     Octstr *appid_name, *coded_octstr;
     char *appid_value, *coded_value;
 
@@ -1479,10 +1480,11 @@ static void check_application_headers(List **headers,
     }
 
     i = 0;
+    len = gwlist_len(inh);
     coded_value = NULL;
     appid_value = NULL;
 
-    while (gwlist_len(inh) > 0) {
+    while (i < len) {
         http_header_get(inh, i, &appid_name, &coded_octstr);
 
         /* Greatest value reserved by WINA is 0xFF00 0000*/
