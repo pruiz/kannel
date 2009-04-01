@@ -1,3 +1,7 @@
+2009-04-01 Alexander Malysh <amalysh at kannel.org>
+    * gw/smsc/smsc_smpp.c: handle partial SMPP v3.4 DLR support, when
+      receipted_message_id received but not the dlrstat.
+
 2009-03-30 Alexander Malysh <amalysh at kannel.org>
     * gwlib/http.c: applied patch that fixes octsr_copy length.
       Thanks to Vincent CHAVANIS <v.chavanis at telemaque.fr> for this patch.

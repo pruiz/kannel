@@ -1,58 +1,58 @@
-/* ==================================================================== 
- * The Kannel Software License, Version 1.0 
- * 
- * Copyright (c) 2001-2009 Kannel Group  
- * Copyright (c) 1998-2001 WapIT Ltd.   
- * All rights reserved. 
- * 
- * Redistribution and use in source and binary forms, with or without 
- * modification, are permitted provided that the following conditions 
- * are met: 
- * 
- * 1. Redistributions of source code must retain the above copyright 
- *    notice, this list of conditions and the following disclaimer. 
- * 
- * 2. Redistributions in binary form must reproduce the above copyright 
- *    notice, this list of conditions and the following disclaimer in 
- *    the documentation and/or other materials provided with the 
- *    distribution. 
- * 
- * 3. The end-user documentation included with the redistribution, 
- *    if any, must include the following acknowledgment: 
- *       "This product includes software developed by the 
- *        Kannel Group (http://www.kannel.org/)." 
- *    Alternately, this acknowledgment may appear in the software itself, 
- *    if and wherever such third-party acknowledgments normally appear. 
- * 
- * 4. The names "Kannel" and "Kannel Group" must not be used to 
- *    endorse or promote products derived from this software without 
- *    prior written permission. For written permission, please  
- *    contact org@kannel.org. 
- * 
- * 5. Products derived from this software may not be called "Kannel", 
- *    nor may "Kannel" appear in their name, without prior written 
- *    permission of the Kannel Group. 
- * 
- * THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESSED OR IMPLIED 
- * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES 
- * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE 
- * DISCLAIMED.  IN NO EVENT SHALL THE KANNEL GROUP OR ITS CONTRIBUTORS 
- * BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY,  
- * OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT  
- * OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR  
- * BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,  
- * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE  
- * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,  
- * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 
- * ==================================================================== 
- * 
- * This software consists of voluntary contributions made by many 
- * individuals on behalf of the Kannel Group.  For more information on  
- * the Kannel Group, please see <http://www.kannel.org/>. 
- * 
- * Portions of this software are based upon software originally written at  
- * WapIT Ltd., Helsinki, Finland for the Kannel project.  
- */ 
+/* ====================================================================
+ * The Kannel Software License, Version 1.0
+ *
+ * Copyright (c) 2001-2009 Kannel Group
+ * Copyright (c) 1998-2001 WapIT Ltd.
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in
+ *    the documentation and/or other materials provided with the
+ *    distribution.
+ *
+ * 3. The end-user documentation included with the redistribution,
+ *    if any, must include the following acknowledgment:
+ *       "This product includes software developed by the
+ *        Kannel Group (http://www.kannel.org/)."
+ *    Alternately, this acknowledgment may appear in the software itself,
+ *    if and wherever such third-party acknowledgments normally appear.
+ *
+ * 4. The names "Kannel" and "Kannel Group" must not be used to
+ *    endorse or promote products derived from this software without
+ *    prior written permission. For written permission, please
+ *    contact org@kannel.org.
+ *
+ * 5. Products derived from this software may not be called "Kannel",
+ *    nor may "Kannel" appear in their name, without prior written
+ *    permission of the Kannel Group.
+ *
+ * THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESSED OR IMPLIED
+ * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+ * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED.  IN NO EVENT SHALL THE KANNEL GROUP OR ITS CONTRIBUTORS
+ * BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY,
+ * OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT
+ * OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR
+ * BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
+ * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * ====================================================================
+ *
+ * This software consists of voluntary contributions made by many
+ * individuals on behalf of the Kannel Group.  For more information on
+ * the Kannel Group, please see <http://www.kannel.org/>.
+ *
+ * Portions of this software are based upon software originally written at
+ * WapIT Ltd., Helsinki, Finland for the Kannel project.
+ */
 
 /*
  * smsc_smpp.c - SMPP v3.3 and v3.4 implementation
@@ -117,7 +117,7 @@
 #define SMPP_DEFAULT_SHUTDOWN_TIMEOUT 30
 
 
-/* 
+/*
  * Some defines
  */
 #define SMPP_WAITACK_RECONNECT      0x00
@@ -134,30 +134,30 @@ typedef struct {
     long transmitter;
     long receiver;
     gw_prioqueue_t *msgs_to_send;
-    Dict *sent_msgs; 
-    List *received_msgs; 
-    Counter *message_id_counter; 
-    Octstr *host; 
-    Octstr *system_type; 
-    Octstr *username; 
-    Octstr *password; 
-    Octstr *address_range; 
-    Octstr *my_number; 
+    Dict *sent_msgs;
+    List *received_msgs;
+    Counter *message_id_counter;
+    Octstr *host;
+    Octstr *system_type;
+    Octstr *username;
+    Octstr *password;
+    Octstr *address_range;
+    Octstr *my_number;
     Octstr *service_type;
-    int source_addr_ton; 
-    int source_addr_npi; 
-    int dest_addr_ton; 
+    int source_addr_ton;
+    int source_addr_npi;
+    int dest_addr_ton;
     int dest_addr_npi;
     long bind_addr_ton;
     long bind_addr_npi;
-    int transmit_port; 
-    int receive_port; 
-    int quitting; 
+    int transmit_port;
+    int receive_port;
+    int quitting;
     long enquire_link_interval;
     long max_pending_submits;
     int version;
-    int priority;       /* set default priority for messages */    
-    int validityperiod;    
+    int priority;       /* set default priority for messages */
+    int validityperiod;
     time_t throttling_err_time;
     int smpp_msg_id_type;  /* msg id in C string, hex or decimal */
     int autodetect_addr;
@@ -166,9 +166,9 @@ typedef struct {
     long connection_timeout;
     long wait_ack;
     int wait_ack_action;
-    SMSCConn *conn; 
-} SMPP; 
- 
+    SMSCConn *conn;
+} SMPP;
+
 
 struct smpp_msg {
     time_t sent_time;
@@ -177,16 +177,16 @@ struct smpp_msg {
 
 
 /*
- * create smpp_msg struct 
+ * create smpp_msg struct
  */
 static struct smpp_msg* smpp_msg_create(Msg *msg)
 {
     struct smpp_msg *result = gw_malloc(sizeof(struct smpp_msg));
-    
+
     gw_assert(result != NULL);
     result->sent_time = time(NULL);
     result->msg = msg;
-                
+
     return result;
 }
 
@@ -199,60 +199,60 @@ static void smpp_msg_destroy(struct smpp_msg *msg, int destroy_msg)
     /* sanity check */
     if (msg == NULL)
         return;
-                
+
     if (destroy_msg && msg->msg != NULL)
         msg_destroy(msg->msg);
-                            
+
     gw_free(msg);
 }
 
- 
-static SMPP *smpp_create(SMSCConn *conn, Octstr *host, int transmit_port,  
-    	    	    	 int receive_port, Octstr *system_type,  
-                         Octstr *username, Octstr *password, 
+
+static SMPP *smpp_create(SMSCConn *conn, Octstr *host, int transmit_port,
+    	    	    	 int receive_port, Octstr *system_type,
+                         Octstr *username, Octstr *password,
     	    	    	 Octstr *address_range,
-                         int source_addr_ton, int source_addr_npi,  
-                         int dest_addr_ton, int dest_addr_npi, 
-                         int enquire_link_interval, int max_pending_submits, 
+                         int source_addr_ton, int source_addr_npi,
+                         int dest_addr_ton, int dest_addr_npi,
+                         int enquire_link_interval, int max_pending_submits,
                          int version, int priority, int validity,
-                         Octstr *my_number, int smpp_msg_id_type, 
+                         Octstr *my_number, int smpp_msg_id_type,
                          int autodetect_addr, Octstr *alt_charset, Octstr *alt_addr_charset,
                          Octstr *service_type, long connection_timeout,
-                         long wait_ack, int wait_ack_action) 
-{ 
-    SMPP *smpp; 
-     
-    smpp = gw_malloc(sizeof(*smpp)); 
-    smpp->transmitter = -1; 
-    smpp->receiver = -1; 
-    smpp->msgs_to_send = gw_prioqueue_create(sms_priority_compare); 
-    smpp->sent_msgs = dict_create(max_pending_submits, NULL); 
-    gw_prioqueue_add_producer(smpp->msgs_to_send); 
-    smpp->received_msgs = gwlist_create(); 
-    smpp->message_id_counter = counter_create(); 
+                         long wait_ack, int wait_ack_action)
+{
+    SMPP *smpp;
+
+    smpp = gw_malloc(sizeof(*smpp));
+    smpp->transmitter = -1;
+    smpp->receiver = -1;
+    smpp->msgs_to_send = gw_prioqueue_create(sms_priority_compare);
+    smpp->sent_msgs = dict_create(max_pending_submits, NULL);
+    gw_prioqueue_add_producer(smpp->msgs_to_send);
+    smpp->received_msgs = gwlist_create();
+    smpp->message_id_counter = counter_create();
     counter_increase(smpp->message_id_counter);
-    smpp->host = octstr_duplicate(host); 
-    smpp->system_type = octstr_duplicate(system_type); 
-    smpp->username = octstr_duplicate(username); 
-    smpp->password = octstr_duplicate(password); 
-    smpp->address_range = octstr_duplicate(address_range); 
-    smpp->source_addr_ton = source_addr_ton; 
-    smpp->source_addr_npi = source_addr_npi; 
-    smpp->dest_addr_ton = dest_addr_ton; 
-    smpp->dest_addr_npi = dest_addr_npi; 
-    smpp->my_number = octstr_duplicate(my_number); 
+    smpp->host = octstr_duplicate(host);
+    smpp->system_type = octstr_duplicate(system_type);
+    smpp->username = octstr_duplicate(username);
+    smpp->password = octstr_duplicate(password);
+    smpp->address_range = octstr_duplicate(address_range);
+    smpp->source_addr_ton = source_addr_ton;
+    smpp->source_addr_npi = source_addr_npi;
+    smpp->dest_addr_ton = dest_addr_ton;
+    smpp->dest_addr_npi = dest_addr_npi;
+    smpp->my_number = octstr_duplicate(my_number);
     smpp->service_type = octstr_duplicate(service_type);
-    smpp->transmit_port = transmit_port; 
-    smpp->receive_port = receive_port; 
+    smpp->transmit_port = transmit_port;
+    smpp->receive_port = receive_port;
     smpp->enquire_link_interval = enquire_link_interval;
-    smpp->max_pending_submits = max_pending_submits; 
-    smpp->quitting = 0; 
+    smpp->max_pending_submits = max_pending_submits;
+    smpp->quitting = 0;
     smpp->version = version;
     smpp->priority = priority;
     smpp->validityperiod = validity;
-    smpp->conn = conn; 
+    smpp->conn = conn;
     smpp->throttling_err_time = 0;
-    smpp->smpp_msg_id_type = smpp_msg_id_type;    
+    smpp->smpp_msg_id_type = smpp_msg_id_type;
     smpp->autodetect_addr = autodetect_addr;
     smpp->alt_charset = octstr_duplicate(alt_charset);
     smpp->alt_addr_charset = octstr_duplicate(alt_addr_charset);
@@ -261,72 +261,72 @@ static SMPP *smpp_create(SMSCConn *conn, Octstr *host, int transmit_port,
     smpp->wait_ack_action = wait_ack_action;
     smpp->bind_addr_ton = 0;
     smpp->bind_addr_npi = 0;
- 
-    return smpp; 
-} 
- 
- 
-static void smpp_destroy(SMPP *smpp) 
-{ 
-    if (smpp != NULL) { 
-        gw_prioqueue_destroy(smpp->msgs_to_send, msg_destroy_item); 
-        dict_destroy(smpp->sent_msgs); 
-        gwlist_destroy(smpp->received_msgs, msg_destroy_item); 
-        counter_destroy(smpp->message_id_counter); 
-        octstr_destroy(smpp->host); 
-        octstr_destroy(smpp->username); 
-        octstr_destroy(smpp->password); 
-        octstr_destroy(smpp->system_type); 
-        octstr_destroy(smpp->service_type); 
-        octstr_destroy(smpp->address_range); 
+
+    return smpp;
+}
+
+
+static void smpp_destroy(SMPP *smpp)
+{
+    if (smpp != NULL) {
+        gw_prioqueue_destroy(smpp->msgs_to_send, msg_destroy_item);
+        dict_destroy(smpp->sent_msgs);
+        gwlist_destroy(smpp->received_msgs, msg_destroy_item);
+        counter_destroy(smpp->message_id_counter);
+        octstr_destroy(smpp->host);
+        octstr_destroy(smpp->username);
+        octstr_destroy(smpp->password);
+        octstr_destroy(smpp->system_type);
+        octstr_destroy(smpp->service_type);
+        octstr_destroy(smpp->address_range);
         octstr_destroy(smpp->my_number);
         octstr_destroy(smpp->alt_charset);
         octstr_destroy(smpp->alt_addr_charset);
-        gw_free(smpp); 
-    } 
-} 
- 
- 
-/* 
- * Try to read an SMPP PDU from a Connection. Return -1 for error (caller 
- * should close the connection), 0 for no PDU to ready yet, or 1 for PDU 
- * read and unpacked. Return a pointer to the PDU in `*pdu'. Use `*len' 
- * to store the length of the PDU to read (it may be possible to read the 
- * length, but not the rest of the PDU - we need to remember the lenght 
- * for the next call). `*len' should be zero at the first call. 
+        gw_free(smpp);
+    }
+}
+
+
+/*
+ * Try to read an SMPP PDU from a Connection. Return -1 for error (caller
+ * should close the connection), 0 for no PDU to ready yet, or 1 for PDU
+ * read and unpacked. Return a pointer to the PDU in `*pdu'. Use `*len'
+ * to store the length of the PDU to read (it may be possible to read the
+ * length, but not the rest of the PDU - we need to remember the lenght
+ * for the next call). `*len' should be zero at the first call.
  */
-static int read_pdu(SMPP *smpp, Connection *conn, long *len, SMPP_PDU **pdu) 
-{ 
-    Octstr *os; 
- 
-    if (*len == 0) { 
-        *len = smpp_pdu_read_len(conn); 
-        if (*len == -1) { 
+static int read_pdu(SMPP *smpp, Connection *conn, long *len, SMPP_PDU **pdu)
+{
+    Octstr *os;
+
+    if (*len == 0) {
+        *len = smpp_pdu_read_len(conn);
+        if (*len == -1) {
             error(0, "SMPP[%s]: Server sent garbage, ignored.",
-                  octstr_get_cstr(smpp->conn->id)); 
-            return -1; 
-        } else if (*len == 0) { 
-            if (conn_eof(conn) || conn_error(conn)) 
-                return -1; 
-            return 0; 
-        } 
-    } 
-     
-    os = smpp_pdu_read_data(conn, *len); 
-    if (os == NULL) { 
-        if (conn_eof(conn) || conn_error(conn)) 
-            return -1; 
-        return 0; 
-    } 
-    *len = 0; 
-     
-    *pdu = smpp_pdu_unpack(os); 
-    if (*pdu == NULL) { 
+                  octstr_get_cstr(smpp->conn->id));
+            return -1;
+        } else if (*len == 0) {
+            if (conn_eof(conn) || conn_error(conn))
+                return -1;
+            return 0;
+        }
+    }
+
+    os = smpp_pdu_read_data(conn, *len);
+    if (os == NULL) {
+        if (conn_eof(conn) || conn_error(conn))
+            return -1;
+        return 0;
+    }
+    *len = 0;
+
+    *pdu = smpp_pdu_unpack(os);
+    if (*pdu == NULL) {
         error(0, "SMPP[%s]: PDU unpacking failed.",
-              octstr_get_cstr(smpp->conn->id)); 
+              octstr_get_cstr(smpp->conn->id));
         debug("bb.sms.smpp", 0, "SMPP[%s]: Failed PDU follows.",
-              octstr_get_cstr(smpp->conn->id)); 
-        octstr_dump(os, 0); 
+              octstr_get_cstr(smpp->conn->id));
+        octstr_dump(os, 0);
         octstr_destroy(os);
         return -1;
     }
@@ -339,7 +339,7 @@ static int read_pdu(SMPP *smpp, Connection *conn, long *len, SMPP_PDU **pdu)
 static long convert_addr_from_pdu(Octstr *id, Octstr *addr, long ton, long npi, Octstr *alt_addr_charset)
 {
     long reason = SMPP_ESME_ROK;
-    
+
     if (addr == NULL)
         return reason;
 
@@ -401,7 +401,7 @@ static long convert_addr_from_pdu(Octstr *id, Octstr *addr, long ton, long npi, 
     default: /* otherwise don't touch addr, user should handle it */
         break;
     }
-    
+
 error:
     return reason;
 }
@@ -410,7 +410,7 @@ error:
 
 /*
  * Convert SMPP PDU to internal Msgs structure.
- * Return the Msg if all was fine and NULL otherwise, while getting 
+ * Return the Msg if all was fine and NULL otherwise, while getting
  * the failing reason delivered back in *reason.
  * XXX semantical check on the incoming values can be extended here.
  */
@@ -425,8 +425,8 @@ static Msg *pdu_to_msg(SMPP *smpp, SMPP_PDU *pdu, long *reason)
     gw_assert(msg != NULL);
     *reason = SMPP_ESME_ROK;
 
-    /* 
-     * Reset source addr to have a prefixed '+' in case we have an 
+    /*
+     * Reset source addr to have a prefixed '+' in case we have an
      * intl. TON to allow backend boxes (ie. smsbox) to distinguish
      * between national and international numbers.
      */
@@ -438,9 +438,9 @@ static Msg *pdu_to_msg(SMPP *smpp, SMPP_PDU *pdu, long *reason)
     msg->sms.sender = pdu->u.deliver_sm.source_addr;
     pdu->u.deliver_sm.source_addr = NULL;
 
-    /* 
-     * Follows SMPP spec. v3.4. issue 1.2 
-     * it's not allowed to have destination_addr NULL 
+    /*
+     * Follows SMPP spec. v3.4. issue 1.2
+     * it's not allowed to have destination_addr NULL
      */
     if (pdu->u.deliver_sm.destination_addr == NULL) {
         error(0, "SMPP[%s]: Mallformed destination_addr `%s', may not be empty. "
@@ -486,7 +486,7 @@ static Msg *pdu_to_msg(SMPP *smpp, SMPP_PDU *pdu, long *reason)
     if (pdu->u.deliver_sm.esm_class & ESM_CLASS_SUBMIT_UDH_INDICATOR) {
         int udhl;
         udhl = octstr_get_char(msg->sms.msgdata, 0) + 1;
-        debug("bb.sms.smpp",0,"SMPP[%s]: UDH length read as %d", 
+        debug("bb.sms.smpp",0,"SMPP[%s]: UDH length read as %d",
               octstr_get_cstr(smpp->conn->id), udhl);
         if (udhl > octstr_len(msg->sms.msgdata)) {
             error(0, "SMPP[%s]: Mallformed UDH length indicator 0x%03x while message length "
@@ -574,7 +574,7 @@ error:
 
 /*
  * Convert SMPP PDU to internal Msgs structure.
- * Return the Msg if all was fine and NULL otherwise, while getting 
+ * Return the Msg if all was fine and NULL otherwise, while getting
  * the failing reason delivered back in *reason.
  * XXX semantical check on the incoming values can be extended here.
  */
@@ -589,8 +589,8 @@ static Msg *data_sm_to_msg(SMPP *smpp, SMPP_PDU *pdu, long *reason)
     gw_assert(msg != NULL);
     *reason = SMPP_ESME_ROK;
 
-    /* 
-     * Reset source addr to have a prefixed '+' in case we have an 
+    /*
+     * Reset source addr to have a prefixed '+' in case we have an
      * intl. TON to allow backend boxes (ie. smsbox) to distinguish
      * between national and international numbers.
      */
@@ -602,9 +602,9 @@ static Msg *data_sm_to_msg(SMPP *smpp, SMPP_PDU *pdu, long *reason)
     msg->sms.sender = pdu->u.data_sm.source_addr;
     pdu->u.data_sm.source_addr = NULL;
 
-    /* 
-     * Follows SMPP spec. v3.4. issue 1.2 
-     * it's not allowed to have destination_addr NULL 
+    /*
+     * Follows SMPP spec. v3.4. issue 1.2
+     * it's not allowed to have destination_addr NULL
      */
     if (pdu->u.data_sm.destination_addr == NULL) {
         error(0, "SMPP[%s]: Mallformed destination_addr `%s', may not be empty. "
@@ -640,7 +640,7 @@ static Msg *data_sm_to_msg(SMPP *smpp, SMPP_PDU *pdu, long *reason)
     if (pdu->u.data_sm.esm_class & ESM_CLASS_SUBMIT_UDH_INDICATOR) {
         int udhl;
         udhl = octstr_get_char(msg->sms.msgdata, 0) + 1;
-        debug("bb.sms.smpp",0,"SMPP[%s]: UDH length read as %d", 
+        debug("bb.sms.smpp",0,"SMPP[%s]: UDH length read as %d",
               octstr_get_cstr(smpp->conn->id), udhl);
         if (udhl > octstr_len(msg->sms.msgdata)) {
             error(0, "SMPP[%s]: Mallformed UDH length indicator 0x%03x while message length "
@@ -743,16 +743,16 @@ static SMPP_PDU *msg_to_pdu(SMPP *smpp, Msg *msg)
 {
     SMPP_PDU *pdu;
     int validity;
-    
+
     pdu = smpp_pdu_create(submit_sm,
     	    	    	  counter_increase(smpp->message_id_counter));
 
     pdu->u.submit_sm.source_addr = octstr_duplicate(msg->sms.sender);
     pdu->u.submit_sm.destination_addr = octstr_duplicate(msg->sms.receiver);
 
-    /* Set the service type of the outgoing message. We'll use the config 
+    /* Set the service type of the outgoing message. We'll use the config
      * directive as default and 'binfo' as specific parameter. */
-    pdu->u.submit_sm.service_type = octstr_len(msg->sms.binfo) ? 
+    pdu->u.submit_sm.service_type = octstr_len(msg->sms.binfo) ?
         octstr_duplicate(msg->sms.binfo) : octstr_duplicate(smpp->service_type);
 
     /* Check for manual override of source ton and npi values */
@@ -795,7 +795,7 @@ static SMPP_PDU *msg_to_pdu(SMPP *smpp, Msg *msg)
                 if (smpp->alt_addr_charset) {
                     if (octstr_str_case_compare(smpp->alt_addr_charset, "gsm") == 0) {
                         /* @ would break PDU if converted into GSM */
-                        octstr_replace(pdu->u.submit_sm.source_addr, octstr_imm("@"), octstr_imm("?")); 
+                        octstr_replace(pdu->u.submit_sm.source_addr, octstr_imm("@"), octstr_imm("?"));
                         charset_utf8_to_gsm(pdu->u.submit_sm.source_addr);
                     } else if (charset_convert(pdu->u.submit_sm.source_addr, SMPP_DEFAULT_CHARSET, octstr_get_cstr(smpp->alt_addr_charset)) != 0)
                         error(0, "Failed to convert source_addr from charset <%s> to <%s>, will send as is.",
@@ -876,10 +876,10 @@ static SMPP_PDU *msg_to_pdu(SMPP *smpp, Msg *msg)
      * alt-charset in smsc group and if MT is not binary
      */
     if (msg->sms.coding == DC_7BIT || (msg->sms.coding == DC_UNDEF && octstr_len(msg->sms.udhdata) == 0)) {
-        /* 
-         * consider 3 cases: 
-         *  a) data_coding 0xFX: encoding should always be GSM 03.38 charset 
-         *  b) data_coding 0x00: encoding may be converted according to alt-charset 
+        /*
+         * consider 3 cases:
+         *  a) data_coding 0xFX: encoding should always be GSM 03.38 charset
+         *  b) data_coding 0x00: encoding may be converted according to alt-charset
          *  c) data_coding 0x00: assume GSM 03.38 charset if alt-charset is not defined
          */
         if ((pdu->u.submit_sm.data_coding & 0xF0) ||
@@ -1048,79 +1048,79 @@ static void send_messages(SMPP *smpp, Connection *conn, long *pending_submits)
  * before calling this.
  */
 static Connection *open_transmitter(SMPP *smpp)
-{ 
-    SMPP_PDU *bind; 
-    Connection *conn; 
- 
-    conn = conn_open_tcp(smpp->host, smpp->transmit_port, smpp->conn->our_host ); 
+{
+    SMPP_PDU *bind;
+    Connection *conn;
+
+    conn = conn_open_tcp(smpp->host, smpp->transmit_port, smpp->conn->our_host );
     if (conn == NULL) {
         error(0, "SMPP[%s]: Couldn't connect to server.",
               octstr_get_cstr(smpp->conn->id));
-        return NULL; 
-    } 
-     
-    bind = smpp_pdu_create(bind_transmitter, 
-                counter_increase(smpp->message_id_counter)); 
-    bind->u.bind_transmitter.system_id = octstr_duplicate(smpp->username); 
-    bind->u.bind_transmitter.password = octstr_duplicate(smpp->password); 
-    if (smpp->system_type == NULL) 
-        bind->u.bind_transmitter.system_type = octstr_create("VMA"); 
-    else 
-        bind->u.bind_transmitter.system_type =  
-	       octstr_duplicate(smpp->system_type); 
+        return NULL;
+    }
+
+    bind = smpp_pdu_create(bind_transmitter,
+                counter_increase(smpp->message_id_counter));
+    bind->u.bind_transmitter.system_id = octstr_duplicate(smpp->username);
+    bind->u.bind_transmitter.password = octstr_duplicate(smpp->password);
+    if (smpp->system_type == NULL)
+        bind->u.bind_transmitter.system_type = octstr_create("VMA");
+    else
+        bind->u.bind_transmitter.system_type =
+	       octstr_duplicate(smpp->system_type);
     bind->u.bind_transmitter.interface_version = smpp->version;
-    bind->u.bind_transmitter.address_range =  
-    	octstr_duplicate(smpp->address_range); 
+    bind->u.bind_transmitter.address_range =
+    	octstr_duplicate(smpp->address_range);
     bind->u.bind_transmitter.addr_ton = smpp->bind_addr_ton;
     bind->u.bind_transmitter.addr_npi = smpp->bind_addr_npi;
-    send_pdu(conn, smpp->conn->id, bind); 
-    smpp_pdu_destroy(bind); 
- 
-    return conn; 
-} 
- 
- 
-/* 
- * Open transceiver connection to SMS center. Return NULL for error, 
- * open Connection for OK. Caller must set smpp->conn->status correctly 
- * before calling this. 
- */ 
-static Connection *open_transceiver(SMPP *smpp) 
-{ 
+    send_pdu(conn, smpp->conn->id, bind);
+    smpp_pdu_destroy(bind);
+
+    return conn;
+}
+
+
+/*
+ * Open transceiver connection to SMS center. Return NULL for error,
+ * open Connection for OK. Caller must set smpp->conn->status correctly
+ * before calling this.
+ */
+static Connection *open_transceiver(SMPP *smpp)
+{
     SMPP_PDU *bind;
-    Connection *conn; 
-     
-    conn = conn_open_tcp(smpp->host, smpp->transmit_port, smpp->conn->our_host ); 
-    if (conn == NULL) {  
+    Connection *conn;
+
+    conn = conn_open_tcp(smpp->host, smpp->transmit_port, smpp->conn->our_host );
+    if (conn == NULL) {
        error(0, "SMPP[%s]: Couldn't connect to server.",
              octstr_get_cstr(smpp->conn->id));
-       return NULL; 
-    } 
- 
-    bind = smpp_pdu_create(bind_transceiver, 
-                           counter_increase(smpp->message_id_counter)); 
-    bind->u.bind_transceiver.system_id = octstr_duplicate(smpp->username); 
-    bind->u.bind_transceiver.password = octstr_duplicate(smpp->password); 
-    if (smpp->system_type == NULL) 
-        bind->u.bind_transceiver.system_type = octstr_create("VMA"); 
-    else    
-        bind->u.bind_transceiver.system_type = octstr_duplicate(smpp->system_type); 
+       return NULL;
+    }
+
+    bind = smpp_pdu_create(bind_transceiver,
+                           counter_increase(smpp->message_id_counter));
+    bind->u.bind_transceiver.system_id = octstr_duplicate(smpp->username);
+    bind->u.bind_transceiver.password = octstr_duplicate(smpp->password);
+    if (smpp->system_type == NULL)
+        bind->u.bind_transceiver.system_type = octstr_create("VMA");
+    else
+        bind->u.bind_transceiver.system_type = octstr_duplicate(smpp->system_type);
     bind->u.bind_transceiver.interface_version = smpp->version;
-    bind->u.bind_transceiver.address_range = octstr_duplicate(smpp->address_range); 
+    bind->u.bind_transceiver.address_range = octstr_duplicate(smpp->address_range);
     bind->u.bind_transceiver.addr_ton = smpp->bind_addr_ton;
     bind->u.bind_transceiver.addr_npi = smpp->bind_addr_npi;
-    send_pdu(conn, smpp->conn->id, bind); 
-    smpp_pdu_destroy(bind); 
- 
-    return conn; 
-} 
- 
- 
-/* 
- * Open reception connection to SMS center. Return NULL for error,  
- * open Connection for OK. Caller must set smpp->conn->status correctly  
- * before calling this. 
- */ 
+    send_pdu(conn, smpp->conn->id, bind);
+    smpp_pdu_destroy(bind);
+
+    return conn;
+}
+
+
+/*
+ * Open reception connection to SMS center. Return NULL for error,
+ * open Connection for OK. Caller must set smpp->conn->status correctly
+ * before calling this.
+ */
 static Connection *open_receiver(SMPP *smpp)
 {
     SMPP_PDU *bind;
@@ -1159,7 +1159,7 @@ static Msg *handle_dlr(SMPP *smpp, Octstr *destination_addr, Octstr *short_messa
     Msg *dlrmsg = NULL;
     Octstr *respstr = NULL, *msgid = NULL, *err = NULL, *tmp;
     int dlrstat = -1;
-    
+
     /* first check for SMPP v3.4 and above */
     if (smpp->version > 0x33 && receipted_message_id) {
         msgid = octstr_duplicate(receipted_message_id);
@@ -1178,6 +1178,11 @@ static Msg *handle_dlr(SMPP *smpp, Octstr *destination_addr, Octstr *short_messa
         case 8: /* REJECTED */
             dlrstat = DLR_FAIL;
             break;
+        case -1: /* message state is not present, partial SMPP v3.4 */
+            debug("bb.sms.smpp", 0, "SMPP[%s]: Partial SMPP v3.4, receipted_message_id present but not message_state.",
+                    octstr_get_cstr(smpp->conn->id));
+            dlrstat = -1;
+            break;
         default:
             warning(0, "SMPP[%s]: Got DLR with unknown 'message_state' (%ld).",
                 octstr_get_cstr(smpp->conn->id), message_state);
@@ -1191,25 +1196,28 @@ static Msg *handle_dlr(SMPP *smpp, Octstr *destination_addr, Octstr *short_messa
         respstr = message_payload;
     else
         respstr = short_message;
-        
-    /* still no msgid ? */
-    if (!msgid && respstr) {
+
+    /* still no msgid or dlrstat ? */
+    if ((msgid == NULL || dlrstat == -1) && respstr) {
         long curr = 0, vpos = 0;
         Octstr *stat = NULL;
         char id_cstr[65], stat_cstr[16], sub_d_cstr[13], done_d_cstr[13];
         char err_cstr[4];
         int sub, dlrvrd, ret;
-    
+
         /* get server message id */
         /* first try sscanf way if thus failed then old way */
         ret = sscanf(octstr_get_cstr(respstr),
                      "id:%64[^s] sub:%d dlvrd:%d submit date:%12[0-9] done "
                      "date:%12[0-9] stat:%10[^t^e] err:%3[0-9]",
-                     id_cstr, &sub, &dlrvrd, sub_d_cstr, done_d_cstr, 
+                     id_cstr, &sub, &dlrvrd, sub_d_cstr, done_d_cstr,
                      stat_cstr, err_cstr);
         if (ret == 7) {
-            msgid = octstr_create(id_cstr);
-            octstr_strip_blanks(msgid);
+            /* only if not already here */
+            if (msgid == NULL) {
+                msgid = octstr_create(id_cstr);
+                octstr_strip_blanks(msgid);
+            }
             stat = octstr_create(stat_cstr);
             octstr_strip_blanks(stat);
             err = octstr_create(err_cstr);
@@ -1218,13 +1226,16 @@ static Msg *handle_dlr(SMPP *smpp, Octstr *destination_addr, Octstr *short_messa
         else {
             debug("bb.sms.smpp", 0, "SMPP[%s]: Couldnot parse DLR string sscanf way,"
                 "fallback to old way. Please report!", octstr_get_cstr(smpp->conn->id));
-        
-            if ((curr = octstr_search(respstr, octstr_imm("id:"), 0)) != -1) {
-                vpos = octstr_search_char(respstr, ' ', curr);
-                if ((vpos-curr >0) && (vpos != -1))
-                    msgid = octstr_copy(respstr, curr+3, vpos-curr-3);
-            } else {
-                msgid = NULL;
+
+            /* only if not already here */
+            if (msgid == NULL) {
+                if ((curr = octstr_search(respstr, octstr_imm("id:"), 0)) != -1) {
+                    vpos = octstr_search_char(respstr, ' ', curr);
+                    if ((vpos-curr >0) && (vpos != -1))
+                        msgid = octstr_copy(respstr, curr+3, vpos-curr-3);
+                } else {
+                    msgid = NULL;
+                }
             }
 
             /* get err & status code */
@@ -1243,7 +1254,7 @@ static Msg *handle_dlr(SMPP *smpp, Octstr *destination_addr, Octstr *short_messa
                 err = NULL;
             }
         }
-        
+
         /*
          * we get the following status:
          * DELIVRD, ACCEPTD, EXPIRED, DELETED, UNDELIV, UNKNOWN, REJECTD
@@ -1251,23 +1262,21 @@ static Msg *handle_dlr(SMPP *smpp, Octstr *destination_addr, Octstr *short_messa
          * Note: some buggy SMSC's send us immediately delivery notifications although
          *          we doesn't requested these.
          */
-        
         if (stat != NULL && octstr_compare(stat, octstr_imm("DELIVRD")) == 0)
             dlrstat = DLR_SUCCESS;
         else if (stat != NULL && (octstr_compare(stat, octstr_imm("ACCEPTD")) == 0 ||
                         octstr_compare(stat, octstr_imm("ACKED")) == 0 ||
                         octstr_compare(stat, octstr_imm("BUFFRED")) == 0 ||
-                        octstr_compare(stat, octstr_imm("BUFFERD")) == 0 ||                        
+                        octstr_compare(stat, octstr_imm("BUFFERD")) == 0 ||
                         octstr_compare(stat, octstr_imm("ENROUTE")) == 0))
             dlrstat = DLR_BUFFERED;
         else
             dlrstat = DLR_FAIL;
-                
+
         octstr_destroy(stat);
     }
 
-    if (msgid != NULL) {
-
+    if (msgid != NULL && dlrstat != -1) {
         /*
          * Obey which SMPP msg_id type this SMSC is using, where we
          * have the following semantics for the variable smpp_msg_id:
@@ -1288,7 +1297,7 @@ static Msg *handle_dlr(SMPP *smpp, Octstr *destination_addr, Octstr *short_messa
             /* the default, C string */
             tmp = octstr_duplicate(msgid);
         } else {
-            if ((smpp->smpp_msg_id_type & 0x02) || 
+            if ((smpp->smpp_msg_id_type & 0x02) ||
                 (!octstr_check_range(msgid, 0, octstr_len(msgid), gw_isdigit))) {
                 tmp = octstr_format("%llu", strtoll(octstr_get_cstr(msgid), NULL, 16));
             } else {
@@ -1304,7 +1313,7 @@ static Msg *handle_dlr(SMPP *smpp, Octstr *destination_addr, Octstr *short_messa
         octstr_destroy(msgid);
     } else
         tmp = octstr_create("");
-    
+
     if (dlrmsg != NULL) {
         /*
          * we found the delivery report in our storage, so recode the
@@ -1323,7 +1332,7 @@ static Msg *handle_dlr(SMPP *smpp, Octstr *destination_addr, Octstr *short_messa
     }
     octstr_destroy(tmp);
     octstr_destroy(err);
-                
+
     return dlrmsg;
 }
 
@@ -1507,7 +1516,7 @@ static void handle_pdu(SMPP *smpp, Connection *conn, SMPP_PDU *pdu,
                 else
                     smpp->throttling_err_time = 0;
 
-                bb_smscconn_send_failed(smpp->conn, msg, reason, 
+                bb_smscconn_send_failed(smpp->conn, msg, reason,
                         octstr_format("%ld/%s", pdu->u.submit_sm_resp.command_status,
                             smpp_error_to_string(pdu->u.submit_sm_resp.command_status)));
                 --(*pending_submits);
@@ -1519,8 +1528,8 @@ static void handle_pdu(SMPP *smpp, Connection *conn, SMPP_PDU *pdu,
                     /* the default, C string */
                     tmp = octstr_duplicate(pdu->u.submit_sm_resp.message_id);
                 } else {
-                    if ((smpp->smpp_msg_id_type & 0x01) || 
-                       (!octstr_check_range(pdu->u.submit_sm_resp.message_id, 0, 
+                    if ((smpp->smpp_msg_id_type & 0x01) ||
+                       (!octstr_check_range(pdu->u.submit_sm_resp.message_id, 0,
                             octstr_len(pdu->u.submit_sm_resp.message_id), gw_isdigit))) {
                         tmp = octstr_format("%llu", strtoll(  /* hex */
                             octstr_get_cstr(pdu->u.submit_sm_resp.message_id), NULL, 16));
@@ -1630,7 +1639,7 @@ static void handle_pdu(SMPP *smpp, Connection *conn, SMPP_PDU *pdu,
             } else {
                 msg = smpp_msg->msg;
                 smpp_msg_destroy(smpp_msg, 0);
-                
+
                 error(0, "SMPP[%s]: SMSC returned error code 0x%08lx (%s) "
                       "in response to submit_sm.",
                       octstr_get_cstr(smpp->conn->id),
@@ -1655,7 +1664,7 @@ static void handle_pdu(SMPP *smpp, Connection *conn, SMPP_PDU *pdu,
         default:
             error(0, "SMPP[%s]: Unknown PDU type 0x%08lx, ignored.",
                   octstr_get_cstr(smpp->conn->id), pdu->type);
-            
+
             /*
              * We received an unknown PDU type, therefore we will respond
              * with a generic_nack PDU, see SMPP v3.4 spec, section 3.3.
@@ -1689,7 +1698,7 @@ static struct io_arg *io_arg_create(SMPP *smpp, int transmitter)
 }
 
 
-/* 
+/*
  * sent queue cleanup.
  * @return 1 if io_thread should reconnect; 0 if not
  */
@@ -1699,18 +1708,18 @@ static int do_queue_cleanup(SMPP *smpp, long *pending_submits, int action)
     Octstr *key;
     struct smpp_msg *smpp_msg;
     time_t now = time(NULL);
-                
+
     if (*pending_submits <= 0)
         return 0;
 
     /* check if action set to wait ack for ever */
     if (action == SMPP_WAITACK_NEVER_EXPIRE)
         return 0;
-                            
+
     keys = dict_keys(smpp->sent_msgs);
     if (keys == NULL)
         return 0;
-                                            
+
     while ((key = gwlist_extract_first(keys)) != NULL) {
         smpp_msg = dict_get(smpp->sent_msgs, key);
         if (smpp_msg != NULL && difftime(now, smpp_msg->sent_time) > smpp->wait_ack) {
@@ -1856,7 +1865,7 @@ static void io_thread(void *arg)
                       octstr_get_cstr(smpp->conn->id));
                 break;
             }
-            
+
             /* if no PDU was received and connection timeout was set and over the limit */
             if (ret == 0 && smpp->connection_timeout > 0 &&
                 difftime(time(NULL), last_response) > smpp->connection_timeout) {
@@ -1872,7 +1881,7 @@ static void io_thread(void *arg)
                     break; /* reconnect */
                 last_cleanup = time(NULL);
             }
-                                                                    
+
             if (transmitter && difftime(time(NULL), smpp->throttling_err_time) > SMPP_THROTTLING_SLEEP_TIME) {
                 smpp->throttling_err_time = 0;
                 send_messages(smpp, conn, &pending_submits);
@@ -2028,81 +2037,81 @@ int smsc_smpp_create(SMSCConn *conn, CfgGroup *grp)
     my_number = alt_addr_charset = alt_charset = NULL;
     transceiver_mode = 0;
     autodetect_addr = 1;
- 
-    host = cfg_get(grp, octstr_imm("host")); 
-    if (cfg_get_integer(&port, grp, octstr_imm("port")) == -1) 
-        port = 0; 
-    if (cfg_get_integer(&receive_port, grp, octstr_imm("receive-port")) == -1) 
-        receive_port = 0; 
-    cfg_get_bool(&transceiver_mode, grp, octstr_imm("transceiver-mode")); 
-    username = cfg_get(grp, octstr_imm("smsc-username")); 
-    password = cfg_get(grp, octstr_imm("smsc-password")); 
-    system_type = cfg_get(grp, octstr_imm("system-type")); 
-    address_range = cfg_get(grp, octstr_imm("address-range")); 
-    my_number = cfg_get(grp, octstr_imm("my-number")); 
-    service_type = cfg_get(grp, octstr_imm("service-type")); 
-     
-    system_id = cfg_get(grp, octstr_imm("system-id")); 
-    if (system_id != NULL) { 
-        warning(0, "SMPP: obsolete system-id variable is set, " 
-	    	   "use smsc-username instead."); 
-        if (username == NULL) { 
-            warning(0, "SMPP: smsc-username not set, using system-id instead"); 
-            username = system_id; 
-        } else 
-            octstr_destroy(system_id); 
-    } 
 
-    /* 
+    host = cfg_get(grp, octstr_imm("host"));
+    if (cfg_get_integer(&port, grp, octstr_imm("port")) == -1)
+        port = 0;
+    if (cfg_get_integer(&receive_port, grp, octstr_imm("receive-port")) == -1)
+        receive_port = 0;
+    cfg_get_bool(&transceiver_mode, grp, octstr_imm("transceiver-mode"));
+    username = cfg_get(grp, octstr_imm("smsc-username"));
+    password = cfg_get(grp, octstr_imm("smsc-password"));
+    system_type = cfg_get(grp, octstr_imm("system-type"));
+    address_range = cfg_get(grp, octstr_imm("address-range"));
+    my_number = cfg_get(grp, octstr_imm("my-number"));
+    service_type = cfg_get(grp, octstr_imm("service-type"));
+
+    system_id = cfg_get(grp, octstr_imm("system-id"));
+    if (system_id != NULL) {
+        warning(0, "SMPP: obsolete system-id variable is set, "
+	    	   "use smsc-username instead.");
+        if (username == NULL) {
+            warning(0, "SMPP: smsc-username not set, using system-id instead");
+            username = system_id;
+        } else
+            octstr_destroy(system_id);
+    }
+
+    /*
      * check if timing values have been configured, otherwise
      * use the predefined default values.
      */
-    if (cfg_get_integer(&enquire_link_interval, grp, 
+    if (cfg_get_integer(&enquire_link_interval, grp,
                         octstr_imm("enquire-link-interval")) == -1)
         enquire_link_interval = SMPP_ENQUIRE_LINK_INTERVAL;
-    if (cfg_get_integer(&max_pending_submits, grp, 
+    if (cfg_get_integer(&max_pending_submits, grp,
                         octstr_imm("max-pending-submits")) == -1)
         max_pending_submits = SMPP_MAX_PENDING_SUBMITS;
- 
-    /* Check that config is OK */ 
-    ok = 1; 
-    if (host == NULL) { 
-        error(0,"SMPP: Configuration file doesn't specify host"); 
-        ok = 0; 
-    }     
-    if (username == NULL) { 
-	    error(0, "SMPP: Configuration file doesn't specify username."); 
-	    ok = 0; 
-    } 
-    if (password == NULL) { 
-	    error(0, "SMPP: Configuration file doesn't specify password."); 
-	    ok = 0; 
-    } 
-    if (system_type == NULL) { 
-	    error(0, "SMPP: Configuration file doesn't specify system-type."); 
-	    ok = 0; 
-    } 
+
+    /* Check that config is OK */
+    ok = 1;
+    if (host == NULL) {
+        error(0,"SMPP: Configuration file doesn't specify host");
+        ok = 0;
+    }
+    if (username == NULL) {
+	    error(0, "SMPP: Configuration file doesn't specify username.");
+	    ok = 0;
+    }
+    if (password == NULL) {
+	    error(0, "SMPP: Configuration file doesn't specify password.");
+	    ok = 0;
+    }
+    if (system_type == NULL) {
+	    error(0, "SMPP: Configuration file doesn't specify system-type.");
+	    ok = 0;
+    }
     if (octstr_len(service_type) > 6) {
             error(0, "SMPP: Service type must be 6 characters or less.");
             ok = 0;
     }
 
-    if (!ok) 
-        return -1; 
- 
-    /* if the ton and npi values are forced, set them, else set them to -1 */ 
-    if (cfg_get_integer(&source_addr_ton, grp, 
-                        octstr_imm("source-addr-ton")) == -1) 
-        source_addr_ton = -1; 
-    if (cfg_get_integer(&source_addr_npi, grp, 
-                        octstr_imm("source-addr-npi")) == -1) 
-        source_addr_npi = -1; 
-    if (cfg_get_integer(&dest_addr_ton, grp, 
-                        octstr_imm("dest-addr-ton")) == -1) 
-        dest_addr_ton = -1; 
-    if (cfg_get_integer(&dest_addr_npi, grp, 
-                        octstr_imm("dest-addr-npi")) == -1) 
-        dest_addr_npi = -1; 
+    if (!ok)
+        return -1;
+
+    /* if the ton and npi values are forced, set them, else set them to -1 */
+    if (cfg_get_integer(&source_addr_ton, grp,
+                        octstr_imm("source-addr-ton")) == -1)
+        source_addr_ton = -1;
+    if (cfg_get_integer(&source_addr_npi, grp,
+                        octstr_imm("source-addr-npi")) == -1)
+        source_addr_npi = -1;
+    if (cfg_get_integer(&dest_addr_ton, grp,
+                        octstr_imm("dest-addr-ton")) == -1)
+        dest_addr_ton = -1;
+    if (cfg_get_integer(&dest_addr_npi, grp,
+                        octstr_imm("dest-addr-npi")) == -1)
+        dest_addr_npi = -1;
 
     /* if source addr autodetection should be used set this to 1 */
     if (cfg_get_bool(&autodetect_addr, grp, octstr_imm("source-addr-autodetect")) == -1)
@@ -2129,19 +2138,19 @@ int smsc_smpp_create(SMSCConn *conn, CfgGroup *grp)
 
     /* set the msg_id type variable for this SMSC */
     if (cfg_get_integer(&smpp_msg_id_type, grp, octstr_imm("msg-id-type")) == -1) {
-        /* 
-         * defaults to C string "as-is" style 
+        /*
+         * defaults to C string "as-is" style
          */
-        smpp_msg_id_type = -1; 
+        smpp_msg_id_type = -1;
     } else {
         if (smpp_msg_id_type < 0 || smpp_msg_id_type > 3)
-            panic(0,"SMPP: Invalid value for msg-id-type directive in configuraton"); 
+            panic(0,"SMPP: Invalid value for msg-id-type directive in configuraton");
     }
 
     /* check for an alternative charset */
     alt_charset = cfg_get(grp, octstr_imm("alt-charset"));
     alt_addr_charset = cfg_get(grp, octstr_imm("alt-addr-charset"));
-    
+
     /* check for connection timeout */
     if (cfg_get_integer(&connection_timeout, grp, octstr_imm("connection-timeout")) == -1)
         connection_timeout = SMPP_DEFAULT_CONNECTION_TIMEOUT;
@@ -2152,77 +2161,77 @@ int smsc_smpp_create(SMSCConn *conn, CfgGroup *grp)
 
     if (cfg_get_integer(&wait_ack_action, grp, octstr_imm("wait-ack-expire")) == -1)
         wait_ack_action = SMPP_WAITACK_REQUEUE;
-        
+
     if (wait_ack_action > 0x03 || wait_ack_action < 0)
         panic(0, "SMPP: Invalid wait-ack-expire directive in configuration.");
 
-    smpp = smpp_create(conn, host, port, receive_port, system_type,  
+    smpp = smpp_create(conn, host, port, receive_port, system_type,
     	    	       username, password, address_range,
-                       source_addr_ton, source_addr_npi, dest_addr_ton,  
-                       dest_addr_npi, enquire_link_interval, 
-                       max_pending_submits, version, priority, validity, my_number, 
+                       source_addr_ton, source_addr_npi, dest_addr_ton,
+                       dest_addr_npi, enquire_link_interval,
+                       max_pending_submits, version, priority, validity, my_number,
                        smpp_msg_id_type, autodetect_addr, alt_charset, alt_addr_charset,
-                       service_type, connection_timeout, wait_ack, wait_ack_action); 
- 
+                       service_type, connection_timeout, wait_ack, wait_ack_action);
+
     cfg_get_integer(&smpp->bind_addr_ton, grp, octstr_imm("bind-addr-ton"));
     cfg_get_integer(&smpp->bind_addr_npi, grp, octstr_imm("bind-addr-npi"));
 
-    conn->data = smpp; 
-    conn->name = octstr_format("SMPP:%S:%d/%d:%S:%S",  
-    	    	    	       host, port, 
-                               (receive_port ? receive_port : port),  
-                               username, system_type); 
- 
-    smsc_id = cfg_get(grp, octstr_imm("smsc-id")); 
-    if (smsc_id == NULL) { 
-        conn->id = octstr_duplicate(conn->name); 
-    } 
+    conn->data = smpp;
+    conn->name = octstr_format("SMPP:%S:%d/%d:%S:%S",
+    	    	    	       host, port,
+                               (receive_port ? receive_port : port),
+                               username, system_type);
 
-    octstr_destroy(host); 
-    octstr_destroy(username); 
-    octstr_destroy(password); 
-    octstr_destroy(system_type); 
-    octstr_destroy(address_range); 
-    octstr_destroy(my_number); 
+    smsc_id = cfg_get(grp, octstr_imm("smsc-id"));
+    if (smsc_id == NULL) {
+        conn->id = octstr_duplicate(conn->name);
+    }
+
+    octstr_destroy(host);
+    octstr_destroy(username);
+    octstr_destroy(password);
+    octstr_destroy(system_type);
+    octstr_destroy(address_range);
+    octstr_destroy(my_number);
     octstr_destroy(smsc_id);
-    octstr_destroy(alt_charset); 
+    octstr_destroy(alt_charset);
     octstr_destroy(alt_addr_charset);
     octstr_destroy(service_type);
 
-    conn->status = SMSCCONN_CONNECTING; 
-       
-    /* 
-     * I/O threads are only started if the corresponding ports 
-     * have been configured with positive numbers. Use 0 to  
-     * disable the creation of the corresponding thread. 
-     */ 
-    if (port != 0) 
-        smpp->transmitter = gwthread_create(io_thread, io_arg_create(smpp,  
-                                           (transceiver_mode ? 2 : 1))); 
-    if (receive_port != 0) 
-        smpp->receiver = gwthread_create(io_thread, io_arg_create(smpp, 0)); 
-     
-    if ((port != 0 && smpp->transmitter == -1) ||  
-        (receive_port != 0 && smpp->receiver == -1)) { 
+    conn->status = SMSCCONN_CONNECTING;
+
+    /*
+     * I/O threads are only started if the corresponding ports
+     * have been configured with positive numbers. Use 0 to
+     * disable the creation of the corresponding thread.
+     */
+    if (port != 0)
+        smpp->transmitter = gwthread_create(io_thread, io_arg_create(smpp,
+                                           (transceiver_mode ? 2 : 1)));
+    if (receive_port != 0)
+        smpp->receiver = gwthread_create(io_thread, io_arg_create(smpp, 0));
+
+    if ((port != 0 && smpp->transmitter == -1) ||
+        (receive_port != 0 && smpp->receiver == -1)) {
         error(0, "SMPP[%s]: Couldn't start I/O threads.",
-              octstr_get_cstr(smpp->conn->id)); 
-        smpp->quitting = 1; 
-        if (smpp->transmitter != -1) { 
-            gwthread_wakeup(smpp->transmitter); 
-            gwthread_join(smpp->transmitter); 
-        } 
-        if (smpp->receiver != -1) { 
-            gwthread_wakeup(smpp->receiver); 
-            gwthread_join(smpp->receiver); 
-        } 
-    	smpp_destroy(conn->data); 
-        return -1; 
-    } 
- 
-    conn->shutdown = shutdown_cb; 
-    conn->queued = queued_cb; 
-    conn->send_msg = send_msg_cb; 
- 
-    return 0; 
+              octstr_get_cstr(smpp->conn->id));
+        smpp->quitting = 1;
+        if (smpp->transmitter != -1) {
+            gwthread_wakeup(smpp->transmitter);
+            gwthread_join(smpp->transmitter);
+        }
+        if (smpp->receiver != -1) {
+            gwthread_wakeup(smpp->receiver);
+            gwthread_join(smpp->receiver);
+        }
+    	smpp_destroy(conn->data);
+        return -1;
+    }
+
+    conn->shutdown = shutdown_cb;
+    conn->queued = queued_cb;
+    conn->send_msg = send_msg_cb;
+
+    return 0;
 }
- 
+
