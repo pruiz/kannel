@@ -984,9 +984,12 @@ static int send_pdu(Connection *conn, Octstr *id, SMPP_PDU *pdu)
 
     dump_pdu("Sending PDU:", id, pdu);
     os = smpp_pdu_pack(pdu);
-    if (os)
-        ret = conn_write(conn, os);   /* Caller checks for write errors later */
-    else
+    if (os) {
+        /* Caller checks for write errors later */
+        ret = conn_write(conn, os);
+        /* it's not a error if we still have data buffered */
+        ret = (ret == 1) ? 0 : ret;
+    } else
 	ret = -1;
     octstr_destroy(os);
     return ret;
@@ -1032,8 +1035,7 @@ static void send_messages(SMPP *smpp, Connection *conn, long *pending_submits)
              */
             if (smpp->conn->throughput > 0)
                 gwthread_sleep(delay);
-        }
-        else { /* write error occurs */
+        } else { /* write error occurs */
             smpp_pdu_destroy(pdu);
             bb_smscconn_send_failed(smpp->conn, msg, SMSCCONN_FAILED_TEMPORARILY, NULL);
             break;
@@ -1073,7 +1075,12 @@ static Connection *open_transmitter(SMPP *smpp)
     	octstr_duplicate(smpp->address_range);
     bind->u.bind_transmitter.addr_ton = smpp->bind_addr_ton;
     bind->u.bind_transmitter.addr_npi = smpp->bind_addr_npi;
-    send_pdu(conn, smpp->conn->id, bind);
+    if (send_pdu(conn, smpp->conn->id, bind) == -1) {
+        error(0, "SMPP[%s]: Couldn't send bind_transmitter to server.",
+              octstr_get_cstr(smpp->conn->id));
+        conn_destroy(conn);
+        conn = NULL;
+    }
     smpp_pdu_destroy(bind);
 
     return conn;
@@ -1109,7 +1116,12 @@ static Connection *open_transceiver(SMPP *smpp)
     bind->u.bind_transceiver.address_range = octstr_duplicate(smpp->address_range);
     bind->u.bind_transceiver.addr_ton = smpp->bind_addr_ton;
     bind->u.bind_transceiver.addr_npi = smpp->bind_addr_npi;
-    send_pdu(conn, smpp->conn->id, bind);
+    if (send_pdu(conn, smpp->conn->id, bind) == -1) {
+        error(0, "SMPP[%s]: Couldn't send bind_transceiver to server.",
+              octstr_get_cstr(smpp->conn->id));
+        conn_destroy(conn);
+        conn = NULL;
+    }
     smpp_pdu_destroy(bind);
 
     return conn;
@@ -1147,7 +1159,12 @@ static Connection *open_receiver(SMPP *smpp)
         octstr_duplicate(smpp->address_range);
     bind->u.bind_receiver.addr_ton = smpp->bind_addr_ton;
     bind->u.bind_receiver.addr_npi = smpp->bind_addr_npi;
-    send_pdu(conn, smpp->conn->id, bind);
+    if (send_pdu(conn, smpp->conn->id, bind) == -1) {
+        error(0, "SMPP[%s]: Couldn't send bind_receiver to server.",
+              octstr_get_cstr(smpp->conn->id));
+        conn_destroy(conn);
+        conn = NULL;
+    }
     smpp_pdu_destroy(bind);
 
     return conn;
