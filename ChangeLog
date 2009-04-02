@@ -1,4 +1,9 @@
 2009-04-02 Alexander Malysh <amalysh at kannel.org>
+    * gwlib/thread.[ch]: fixed compilation failure if compiled with
+      '--enable-mutex-stats'.
+      Thanks to "Nikos Balkanas" <nbalkanas at gmail.com> for report.
+
+2009-04-02 Alexander Malysh <amalysh at kannel.org>
     * gw/smsc/smsc_smpp.c: fixed issue that return code 1 of conn_write
       that indicated still data buffered but no error was interpreted
       as error.
