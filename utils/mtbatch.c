@@ -65,7 +65,6 @@
  * Stipe Tolj <stolj@wapme.de>
  *
  * XXX add udh (etc.) capabilities. Currently we handle only 7-bit.
- * XXX add ACK handling by providing a queue and retrying if failed.
  */
 
 #include <string.h>
@@ -87,6 +86,7 @@ static List *lines = NULL;
 static Octstr *bb_host;
 static long bb_port;
 static int bb_ssl;
+static Counter *counter;
 static Octstr *service = NULL;
 static Octstr *account = NULL;
 static Octstr *from = NULL;
@@ -135,10 +135,10 @@ static void read_messages_from_bearerbox(void *arg)
 {
     time_t start, t;
     unsigned long secs;
-    unsigned long total_s, total_f, total_ft, total_b;
+    unsigned long total_s, total_f, total_ft, total_b, total_o;
     Msg *msg;
 
-    total_s = total_f = total_ft = total_b = 0;
+    total_s = total_f = total_ft = total_b = total_o = 0;
     start = t = time(NULL);
     while (program_status != shutting_down) {
         int ret;
@@ -162,6 +162,7 @@ static void read_messages_from_bearerbox(void *arg)
              */
             msg_destroy(msg);
         } else if (msg_type(msg) == ack) {
+            counter_increase(counter);
             switch (msg->ack.nack) {
                 case ack_success:
                     total_s++;
@@ -178,13 +179,14 @@ static void read_messages_from_bearerbox(void *arg)
             }
             msg_destroy(msg);
         } else {
-            warning(0, "Received other message than sms/admin, ignoring!");
+            warning(0, "Received other message than ack/admin, ignoring!");
             msg_destroy(msg);
+            total_o++;
         }
     }
     secs = difftime(time(NULL), start);
-    info(0, "Received acks: %ld success, %ld failed, %ld failed temporarly, %ld queued in %ld seconds "
-    	 "(%.2f per second)", total_s, total_f, total_ft, total_b, secs, 
+    info(0, "Received acks: %ld success, %ld failed, %ld failed temporarly, %ld queued, %ld other in %ld seconds "
+         "(%.2f per second)", total_s, total_f, total_ft, total_b, total_o, secs,
          (float)(total_s+total_f+total_ft+total_b) / secs);
 }
 
@@ -284,11 +286,14 @@ static void init_batch(Octstr *cfilename, Octstr *rfilename)
 
     info(0,"Receivers file `%s' contains %ld destination numbers.",
          octstr_get_cstr(rfilename), lineno);
+
+    counter = counter_create();
 }
 
-static void run_batch(void)
+static unsigned long run_batch(void)
 {
     Octstr *no;
+    unsigned long linerr = 0;
     unsigned long lineno = 0;
 
     while ((no = gwlist_consume(lines)) != NULL) {
@@ -310,18 +315,22 @@ static void run_batch(void)
         msg->sms.coding = DC_7BIT;
 
         if (send_message(msg) < 0) {
-            panic(0,"Failed to send message at line <%ld> for receiver `%s' to bearerbox.",
+            linerr++;
+            info(0,"Failed to send message at line <%ld> for receiver `%s' to bearerbox.",
                   lineno, octstr_get_cstr(no));
         }	
         msg_destroy(msg);
         octstr_destroy(no);
         }
     }
+    info(0,"mtbatch has processed %ld messages with %ld errors", lineno, linerr);
+    return lineno;
 } 
 
 int main(int argc, char **argv)
 {
     int opt;
+    unsigned long sended = 0;
     Octstr *cf, *rf;
 
     gwlib_init();
@@ -373,7 +382,7 @@ int main(int argc, char **argv)
     
     if (optind == argc || argc-optind < 2) {
         help();
-        exit(0);
+        exit(1);
     }
 
     /* check some mandatory elements */
@@ -392,7 +401,12 @@ int main(int argc, char **argv)
     identify_to_bearerbox();
     gwthread_create(read_messages_from_bearerbox, NULL);
 
-    run_batch();
+    sended = run_batch();
+
+    /* avoid exiting before sending all msgs */
+    while(sended > counter_value(counter)) {
+         gwthread_sleep(0.1);
+    }
 
     program_status = shutting_down;
     gwthread_join_all();
@@ -403,6 +417,7 @@ int main(int argc, char **argv)
     octstr_destroy(service);
     octstr_destroy(account);
     octstr_destroy(smsc_id);
+    counter_destroy(counter);
     gwlist_destroy(lines, octstr_destroy_item); 
    
     gwlib_shutdown();
