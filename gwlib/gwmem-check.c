@@ -103,6 +103,7 @@
  * accident protectors. */
 #undef malloc
 #undef realloc
+#undef calloc
 #undef free
 
 /* Freshly malloced space is filled with NEW_AREA_PATTERN, to break
@@ -533,6 +534,29 @@ void *gw_check_malloc(size_t size, const char *filename, long lineno,
     return p;
 }
 
+void *gw_check_calloc(int nmemb, size_t size, const char *filename, long lineno,
+                      const char *function)
+{
+    unsigned char *p;
+
+    gw_assert(initialized);
+
+    /* ANSI C89 says malloc(0) is implementation-defined.  Avoid it. */
+    gw_assert(size > 0);
+
+    p = calloc(1, (nmemb*size) + 2 * MARKER_SIZE);
+    if (p == NULL)
+        panic(errno, "Memory allocation of %ld bytes failed.", (long)size);
+
+    p += MARKER_SIZE;
+
+    lock();
+    record_allocation(p, size, filename, lineno, function);
+    unlock();
+
+    return p;
+}
+
 void *gw_check_realloc(void *p, size_t size, const char *filename,
                        long lineno, const char *function)
 {
@@ -615,12 +639,14 @@ char *gw_check_strdup(const char *str, const char *filename, long lineno,
                       const char *function)
 {
     char *copy;
+    int size;
 
     gw_assert(initialized);
     gw_assert(str != NULL);
 
-    copy = gw_check_malloc(strlen(str) + 1, filename, lineno, function);
-    strcpy(copy, str);
+    size = strlen(str) + 1;
+    copy = gw_check_malloc(size, filename, lineno, function);
+    memcpy(copy, str, size);
     return copy;
 }
 

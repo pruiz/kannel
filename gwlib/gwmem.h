@@ -76,6 +76,7 @@ void *gw_native_noop(void *ptr);
 void gw_native_init(void);
 void gw_native_check_leaks(void);
 void *gw_native_malloc(size_t size);
+void *gw_native_calloc(int nmemb, size_t size);
 void *gw_native_realloc(void *ptr, size_t size);
 void gw_native_free(void *ptr);
 char *gw_native_strdup(const char *str);
@@ -85,6 +86,8 @@ void gw_native_shutdown(void);
 void gw_check_init_mem(int slow_flag);
 void gw_check_check_leaks(void);
 void *gw_check_malloc(size_t size, 
+	const char *filename, long line, const char *function);
+void *gw_check_calloc(int nmemb, size_t size, 
 	const char *filename, long line, const char *function);
 void *gw_check_realloc(void *p, size_t size, 
 	const char *filename, long line, const char *function);
@@ -118,6 +121,7 @@ void gw_check_shutdown(void);
 #define gw_check_leaks()
 #define gw_malloc(size) (gw_native_malloc(size))
 #define gw_malloc_trace(size, file, line, func) (gw_native_malloc(size))
+#define gw_calloc(nmemb, size) (gw_native_calloc(nmemb, size))
 #define gw_realloc(ptr, size) (gw_native_realloc(ptr, size))
 #define gw_free(ptr) (gw_native_free(ptr))
 #define gw_strdup(str) (gw_native_strdup(str))
@@ -146,6 +150,8 @@ void gw_check_shutdown(void);
 	(gw_check_malloc(size, file, line, func))
 #define gw_malloc(size) \
 	(gw_check_malloc(size, __FILE__, __LINE__, __func__))
+#define gw_calloc(nmemb, size) \
+	(gw_check_malloc(nmemb, size, __FILE__, __LINE__, __func__))
 #define gw_realloc(ptr, size) \
 	(gw_check_realloc(ptr, size, __FILE__, __LINE__, __func__))
 #define gw_free(ptr) \
@@ -179,6 +185,7 @@ void gw_check_shutdown(void);
 #define calloc(a, b)	do_not_use_calloc
 #define realloc(p, n)	do_not_call_realloc_directly
 #define free(p)	    	do_not_call_free_directly
+#define strdup(p)	    	do_not_call_strdup_directly
 
 
 #endif
