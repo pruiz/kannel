@@ -151,7 +151,7 @@ void gw_check_shutdown(void);
 #define gw_malloc(size) \
 	(gw_check_malloc(size, __FILE__, __LINE__, __func__))
 #define gw_calloc(nmemb, size) \
-	(gw_check_malloc(nmemb, size, __FILE__, __LINE__, __func__))
+	(gw_check_calloc(nmemb, size, __FILE__, __LINE__, __func__))
 #define gw_realloc(ptr, size) \
 	(gw_check_realloc(ptr, size, __FILE__, __LINE__, __func__))
 #define gw_free(ptr) \

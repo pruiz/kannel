@@ -1,3 +1,6 @@
+2009-04-06  Stipe Tolj  <stolj at kannel.org>
+    * gwlib/gwmem.h: fixed typo from previous commit set. NLC.
+    
 2009-04-06 Alexander Malysh <amalysh at kannel.org>
     * gwlib/gwmem-check.c, gwlib/gwmem-native.c, gwlib/gwmem.h: applied patch
       that adds gw_calloc function and speedup a gw_strdup.
