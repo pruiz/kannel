@@ -543,6 +543,7 @@ void *gw_check_calloc(int nmemb, size_t size, const char *filename, long lineno,
 
     /* ANSI C89 says malloc(0) is implementation-defined.  Avoid it. */
     gw_assert(size > 0);
+    gw_assert(nmemb > 0);
 
     p = calloc(1, (nmemb*size) + 2 * MARKER_SIZE);
     if (p == NULL)
