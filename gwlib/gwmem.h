@@ -181,11 +181,18 @@ void gw_check_shutdown(void);
  * Make sure no-one uses the unwrapped functions by mistake.
  */
 
+/* undefine first to avoid compiler warnings about redefines */
+#undef malloc
+#undef calloc
+#undef realloc
+#undef free
+#undef strdup
+
 #define malloc(n)	do_not_call_malloc_directly
 #define calloc(a, b)	do_not_use_calloc
 #define realloc(p, n)	do_not_call_realloc_directly
 #define free(p)	    	do_not_call_free_directly
-#define strdup(p)	    	do_not_call_strdup_directly
+#define strdup(p)    	do_not_call_strdup_directly
 
 
 #endif

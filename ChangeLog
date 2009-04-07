@@ -1,3 +1,6 @@
+2009-04-07 Alexander Malysh <amalysh at kannel.org>
+    * gwlib/gwmem.h: fixed compiler warnings about strdup redefine.
+
 2009-04-06  Stipe Tolj  <stolj at kannel.org>
     * gwlib/gwmem.h: fixed typo from previous commit set. NLC.
     
