@@ -106,7 +106,8 @@ binsrcs = \
 	wmlscript/wmlsc.c \
 	wmlscript/wmlsdasm.c \
 	utils/seewbmp.c \
-	utils/mtbatch.c
+	utils/mtbatch.c \
+	utils/decode_emimsg.c
 sbinsrcs = \
 	gw/bearerbox.c \
 	gw/smsbox.c \

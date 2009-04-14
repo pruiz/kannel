@@ -1,3 +1,7 @@
+2009-04-14 Alexander Malysh <amalysh at kannel.org>
+    * test/decode_emimsg.c: moved to utils.
+      Thanks to Vincent CHAVANIS <v.chavanis at telemaque.fr> for this patch.
+
 2009-04-07 Alexander Malysh <amalysh at kannel.org>
     * gwlib/gwmem.h: fixed compiler warnings about strdup redefine.
 

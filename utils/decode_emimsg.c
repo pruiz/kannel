@@ -55,7 +55,7 @@
  */
 
 /*
- * decode_emimsg.c - Decoding an UCP/EMI packet. <vincent@telemaque.fr>
+ * decode_emimsg.c - This tool can decode an UCP/EMI packet. <v.chavanis@telemaque.fr>
  *
  */
 
@@ -102,6 +102,8 @@ int main (int argc, char **argv)
     Octstr *message, *whoami;
     struct emimsg *emimsg;
 
+    printf("/* This tool can decode an UCP/EMI packet. <v.chavanis@telemaque.fr> */\n\n");
+
     gwlib_init();
 
     if (argc < 2)
@@ -109,8 +111,6 @@ int main (int argc, char **argv)
 
     message = octstr_format("\02%s\03", argv[1]); // fit the UCP specs.
     whoami = octstr_create("DECODE");
-
-    printf(" /* decode_emimsg - Decoding an UCP/EMI packet. <vincent@telemaque.fr> */ \n\n");
 
     emimsg = get_fields(message, whoami);
 
@@ -142,9 +142,9 @@ int main (int argc, char **argv)
                 && emimsg->or == 'R' && 
                 (octstr_get_char(emimsg->fields[E50_ADC], 0) == 'A' ||
                 octstr_get_char(emimsg->fields[E50_ADC], 0) == 'N')) {
-            printf("E?0_ACK  \t%s\n",
+            printf("E%d_ACK  \t%s\n", emimsg->ot,
                     octstr_get_cstr(emimsg->fields[E50_ADC]));
-            printf("E?0_SM   \t%s\n",  
+            printf("E%d_SM   \t%s\n", emimsg->ot,
                     octstr_get_cstr(emimsg->fields[E50_OADC]));
         }
 
@@ -201,7 +201,7 @@ int main (int argc, char **argv)
             printf("E50_NMSG \t%s\n",
                     octstr_get_cstr(emimsg->fields[E50_NMSG]));
             if (emimsg->fields[E50_AMSG])
-            octstr_hex_to_binary (emimsg->fields[E50_AMSG]);
+                octstr_hex_to_binary (emimsg->fields[E50_AMSG]);
             if (octstr_get_char(emimsg->fields[E50_MT], 0) == '3') {
                 charset_gsm_to_latin1(emimsg->fields[E50_AMSG]);
             }
@@ -248,7 +248,7 @@ int main (int argc, char **argv)
             printf("E60_STYP  \t%s\n",
                     octstr_get_cstr(emimsg->fields[E60_STYP]));
             if (emimsg->fields[E60_PWD])
-            octstr_hex_to_binary (emimsg->fields[E60_PWD]);
+                octstr_hex_to_binary (emimsg->fields[E60_PWD]);
             printf("E60_PWD   \t%s\n",
                     octstr_get_cstr(emimsg->fields[E60_PWD]));
             printf("E60_NPWD  \t%s\n",
