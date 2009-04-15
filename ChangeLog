@@ -1,3 +1,7 @@
+2009-04-15 Alexander Malysh <amalysh at kannel.org> 
+    * utils/mtbatch.c: applied patch that add DLR support for mtbatch.
+      Thanks to Vincent CHAVANIS <v.chavanis at telemaque.fr> for this patch.
+
 2009-04-14 Alexander Malysh <amalysh at kannel.org>
     * test/decode_emimsg.c: moved to utils.
       Thanks to Vincent CHAVANIS <v.chavanis at telemaque.fr> for this patch.

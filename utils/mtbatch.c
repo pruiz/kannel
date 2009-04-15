@@ -63,8 +63,10 @@
  * to bearerbox.
  *
  * Stipe Tolj <stolj@wapme.de>
+ * Vincent Chavanis <v.chavanis@telemaque.fr>
  *
- * XXX add udh (etc.) capabilities. Currently we handle only 7-bit.
+ * XXX Add UDH capabilities.
+ * XXX Support more charsets than 7-bit.
  */
 
 #include <string.h>
@@ -75,6 +77,7 @@
 
 #include "msg.h"
 #include "sms.h"
+#include "dlr.h"
 #include "bb.h"
 #include "shared.h"
 #include "heartbeat.h"
@@ -90,6 +93,8 @@ static Counter *counter;
 static Octstr *service = NULL;
 static Octstr *account = NULL;
 static Octstr *from = NULL;
+static int dlr_mask = 0;
+static Octstr *dlr_url = NULL;
 static Octstr *smsc_id = NULL;
 static long sms_max_length = MAX_SMS_OCTETS;
 static double delay = 0;
@@ -251,6 +256,10 @@ static void help(void)
     info(0, "    defines the smsbox-id to be used for bearerbox connection (default: none)");
     info(0, "-f sender");
     info(0, "    which sender address should be used");
+    info(0, "-D dlr-mask");
+    info(0, "    defines the dlr-mask");
+    info(0, "-u dlr-url");
+    info(0, "    defines the dlr-url");
     info(0, "-n service");
     info(0, "    defines which service name should be logged (default: none)");
     info(0, "-a account");
@@ -311,6 +320,8 @@ static unsigned long run_batch(void)
         msg->sms.receiver = octstr_duplicate(no);
         msg->sms.account = account ? octstr_duplicate(account) : NULL;
         msg->sms.msgdata = content ? octstr_duplicate(content) : octstr_create("");
+        msg->sms.dlr_mask = dlr_mask;
+        msg->sms.dlr_url = octstr_duplicate(dlr_url);        
         msg->sms.udhdata = octstr_create("");
         msg->sms.coding = DC_7BIT;
 
@@ -339,7 +350,7 @@ int main(int argc, char **argv)
     bb_port = 13001;
     bb_ssl = 0;
         
-    while ((opt = getopt(argc, argv, "hv:b:p:si:n:a:f:d:r:")) != EOF) {
+    while ((opt = getopt(argc, argv, "hv:b:p:si:n:a:f:D:u:d:r:")) != EOF) {
         switch (opt) {
             case 'v':
                 log_set_output_level(atoi(optarg));
@@ -366,6 +377,12 @@ int main(int argc, char **argv)
             case 'f':
                 from = octstr_create(optarg);
                 break;
+            case 'D':
+                dlr_mask = atoi(optarg);
+                break;
+            case 'u':
+                dlr_url = octstr_create(optarg);
+                break;
             case 'd':
                 delay = atof(optarg);
                 break;
@@ -388,6 +405,9 @@ int main(int argc, char **argv)
     /* check some mandatory elements */
     if (from == NULL)
         panic(0,"Sender address not specified. Use option -f to specify sender address.");
+
+    if ((DLR_IS_ENABLED(dlr_mask) && dlr_url == NULL) || (!DLR_IS_ENABLED(dlr_mask) && dlr_url != NULL))
+        panic(0,"dlr-url address OR dlr-mask not specified. Use option -D or -u to specify dlr values");
 
     rf = octstr_create(argv[argc-1]);
     cf = octstr_create(argv[argc-2]);
@@ -416,6 +436,7 @@ int main(int argc, char **argv)
     octstr_destroy(content);
     octstr_destroy(service);
     octstr_destroy(account);
+    octstr_destroy(dlr_url);
     octstr_destroy(smsc_id);
     counter_destroy(counter);
     gwlist_destroy(lines, octstr_destroy_item); 
