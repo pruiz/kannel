@@ -2586,15 +2586,21 @@ static int at2_detect_modem_type(PrivAT2data *privdata)
     res = at2_send_modem_command(privdata, "", 1, 0); 
     res = at2_send_modem_command(privdata, "AT", 0, 0);
 
-    if (at2_send_modem_command(privdata, "AT&F", 0, 0) == -1)
+    if (at2_send_modem_command(privdata, "AT&F", 0, 0) == -1) {
+        at2_close_device(privdata);
         return -1;
-    if (at2_send_modem_command(privdata, "ATE0", 0, 0) == -1)
+    }
+    if (at2_send_modem_command(privdata, "ATE0", 0, 0) == -1) {
+        at2_close_device(privdata);
         return -1;
+    }
 
     at2_flush_buffer(privdata);
 
-    if (at2_send_modem_command(privdata, "ATI", 0, 0) == -1)
+    if (at2_send_modem_command(privdata, "ATI", 0, 0) == -1) {
+        at2_close_device(privdata);
         return -1;
+    }
 
     /* we try to detect the modem automatically */
     i = 1;
