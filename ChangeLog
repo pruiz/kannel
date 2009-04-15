@@ -1,3 +1,8 @@
+2009-04-16  Stipe Tolj  <stolj at kannel.org>
+    * utils/mtbatch.c: changed email reference. NLC.
+    * gwlib/socket.c: re-inforced preamble, which was changed acidently
+      in the previous patchset. NLC.
+
 2009-04-15 Alexander Malysh <amalysh at kannel.org> 
     * gwlib/socket.c: implemented support for multi-IP.
 

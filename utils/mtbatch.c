@@ -62,7 +62,7 @@
  * to bearerbox as if it would be a smsbox and issues the SMS sequentially
  * to bearerbox.
  *
- * Stipe Tolj <stolj@wapme.de>
+ * Stipe Tolj <stolj@kannel.org>
  * Vincent Chavanis <v.chavanis@telemaque.fr>
  *
  * XXX Add UDH capabilities.
