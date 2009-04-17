@@ -65,11 +65,11 @@
 
 #include "gwlib.h"
 
-static unsigned char *wkday[7] = {
+static char const *wkday[7] = {
     "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"
 };
 
-static unsigned char *monthname[12] = {
+static char const *monthname[12] = {
     "Jan", "Feb", "Mar", "Apr", "May", "Jun",
     "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
 };
@@ -89,7 +89,7 @@ static int monthstart[12] = {
 Octstr *date_format_http(unsigned long unixtime)
 {
     struct tm tm;
-    unsigned char buffer[30];
+    char buffer[30];
 
     tm = gw_gmtime((time_t) unixtime);
 

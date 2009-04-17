@@ -632,7 +632,7 @@ int charset_convert(Octstr* string, char* charset_from, char* charset_to)
             case EILSEQ: /* invalid multibyte sequence */
             case EINVAL: /* incomplete multibyte sequence */
                 warning(0, "Invalid/Incomplete multibyte sequence at position %d, skeep it.",
-                        from_buf - octstr_get_cstr(string));
+                        (int)(from_buf - octstr_get_cstr(string)));
                 /* skeep char and try next */
                 if (outbytesleft == 0) {
                     /* buffer to small */
@@ -666,7 +666,7 @@ int charset_convert(Octstr* string, char* charset_from, char* charset_to)
 
     if (errno == EILSEQ) {
         debug("charset_convert", 0, "Found an invalid multibyte sequence at position <%d>",
-              from_buf - octstr_get_cstr(string));     
+              (int)(from_buf - octstr_get_cstr(string)));
     }
     gw_free(to_buf);
     return ret;

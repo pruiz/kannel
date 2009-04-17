@@ -1,3 +1,8 @@
+2009-04-17 Alexander Malysh <amalysh at kannel.org>
+    * gwlib/charset.c, gwlib/date.c: fixed compiler warnings.
+      Thanks to Vincent CHAVANIS <v.chavanis at telemaque.fr> for pointing
+      to it and partially fix.
+
 2009-04-16  Stipe Tolj  <stolj at kannel.org>
     * utils/mtbatch.c: changed email reference. NLC.
     * gwlib/socket.c: re-inforced preamble, which was changed acidently
