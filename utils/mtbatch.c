@@ -146,8 +146,9 @@ static void read_messages_from_bearerbox(void *arg)
     start = t = time(NULL);
     while (program_status != shutting_down) {
         int ret;
+
         /* block infinite for reading messages */
-        ret = read_from_bearerbox(&msg, INFINITE_TIME);
+        ret = read_from_bearerbox(&msg, 0.5);
         if (ret == -1)
             break;
         else if (ret == 1) /* timeout */
