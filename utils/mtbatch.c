@@ -96,7 +96,6 @@ static Octstr *from = NULL;
 static int dlr_mask = 0;
 static Octstr *dlr_url = NULL;
 static Octstr *smsc_id = NULL;
-static long sms_max_length = MAX_SMS_OCTETS;
 static double delay = 0;
 
 
@@ -204,7 +203,6 @@ static int send_message(Msg *msg)
 {
     unsigned long msg_count;
     List *list;
-    Msg *part;
     
     gw_assert(msg != NULL);
     gw_assert(msg_type(msg) == sms);
@@ -218,23 +216,19 @@ static int send_message(Msg *msg)
         msg->sms.boxc_id = octstr_duplicate(smsbox_id);
     }
     
-    list = sms_split(msg, NULL, NULL, NULL, NULL, 1, 0, 100, sms_max_length);
+    list = sms_split(msg, NULL, NULL, NULL, NULL, 1, 0, 100, MAX_SMS_OCTETS);
     msg_count = gwlist_len(list);
+    gwlist_destroy(list, msg_destroy_item);
 
     debug("sms", 0, "message length %ld, sending %ld messages", 
           octstr_len(msg->sms.msgdata), msg_count);
 
-    while ((part = gwlist_extract_first(list)) != NULL) {
+    if (delay > 0)
+        gwthread_sleep(delay);
 
-        if (delay > 0)
-            gwthread_sleep(delay);
-
-        /* pass message to bearerbox */
-        if (deliver_to_bearerbox(part) != 0)
-            return -1;
-        
-    }    
-    gwlist_destroy(list, NULL);
+    /* pass message to bearerbox */
+    if (deliver_to_bearerbox(msg) != 0)
+        return -1;
     
     return msg_count;
 }
@@ -306,32 +300,32 @@ static unsigned long run_batch(void)
     unsigned long lineno = 0;
 
     while ((no = gwlist_consume(lines)) != NULL) {
-    	if (octstr_check_range(no, 0, 256, gw_isdigit)) {
-        Msg *msg;
+        if (octstr_check_range(no, 0, 256, gw_isdigit)) {
+            Msg *msg;
         
-        lineno++;
+            lineno++;
 
-        msg = msg_create(sms);
+            msg = msg_create(sms);
 
-        msg->sms.smsc_id = smsc_id ? octstr_duplicate(smsc_id) : NULL;
-        msg->sms.service = service ? octstr_duplicate(service) : NULL;
-        msg->sms.sms_type = mt_push;
-        msg->sms.sender = octstr_duplicate(from);
-        msg->sms.receiver = octstr_duplicate(no);
-        msg->sms.account = account ? octstr_duplicate(account) : NULL;
-        msg->sms.msgdata = content ? octstr_duplicate(content) : octstr_create("");
-        msg->sms.dlr_mask = dlr_mask;
-        msg->sms.dlr_url = octstr_duplicate(dlr_url);        
-        msg->sms.udhdata = octstr_create("");
-        msg->sms.coding = DC_7BIT;
+            msg->sms.smsc_id = smsc_id ? octstr_duplicate(smsc_id) : NULL;
+            msg->sms.service = service ? octstr_duplicate(service) : NULL;
+            msg->sms.sms_type = mt_push;
+            msg->sms.sender = octstr_duplicate(from);
+            msg->sms.receiver = octstr_duplicate(no);
+            msg->sms.account = account ? octstr_duplicate(account) : NULL;
+            msg->sms.msgdata = content ? octstr_duplicate(content) : octstr_create("");
+            msg->sms.dlr_mask = dlr_mask;
+            msg->sms.dlr_url = octstr_duplicate(dlr_url);
+            msg->sms.udhdata = octstr_create("");
+            msg->sms.coding = DC_7BIT;
 
-        if (send_message(msg) < 0) {
-            linerr++;
-            info(0,"Failed to send message at line <%ld> for receiver `%s' to bearerbox.",
-                  lineno, octstr_get_cstr(no));
-        }	
-        msg_destroy(msg);
-        octstr_destroy(no);
+            if (send_message(msg) < 0) {
+                linerr++;
+                info(0,"Failed to send message at line <%ld> for receiver `%s' to bearerbox.",
+                      lineno, octstr_get_cstr(no));
+                msg_destroy(msg);
+            }
+            octstr_destroy(no);
         }
     }
     info(0,"mtbatch has processed %ld messages with %ld errors", lineno, linerr);

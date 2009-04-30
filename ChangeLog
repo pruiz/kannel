@@ -1,3 +1,7 @@
+2009-04-30 Alexander Malysh <amalysh at kannel.org>
+    * utils/mtbatch.c: send the whole message to bearerbox instead of splitted
+      parts. Splitting is done in bearerbox.
+
 2009-04-17 Alexander Malysh <amalysh at kannel.org>
     * aclocal.m4, configure, configure.in: fixed FeeBSD compilation options.
       Use -lpthread instead of -lkse. See http://www.FreeBSD.org/kse/.
