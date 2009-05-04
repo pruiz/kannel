@@ -75,6 +75,8 @@
  *     instance. This is required if you use state conditioned smsboxes or smppboxes
  *     via one bearerbox. Previously bearerbox was simple ignoring to which smsbox
  *     connection a msg is passed. Now we can route the messages inside bearerbox.
+ * 2009-04-29: aguerrieri at kannel dot org:
+ *     added support for ms-sql and sybase via freetds.
  */
  
 #include <ctype.h>
@@ -256,6 +258,8 @@ void dlr_init(Cfg* cfg)
         handles = dlr_init_mem(cfg);
     } else if (octstr_compare(dlr_type, octstr_imm("pgsql")) == 0) {
         handles = dlr_init_pgsql(cfg);
+    } else if (octstr_compare(dlr_type, octstr_imm("mssql")) == 0) {
+        handles = dlr_init_mssql(cfg);
     }
 
     /*

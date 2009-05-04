@@ -776,6 +776,7 @@ with_oracle_includes
 with_oracle_libs
 with_pgsql
 with_pgsql_dir
+with_mssql
 with_wtls
 '
       ac_precious_vars='build_alias
@@ -1461,6 +1462,8 @@ Optional Packages:
   --with-pgsql            enable PostgreSQL storage [disabled]
   --with-pgsql-dir=DIR    where to look for PostgreSQL libs and header files
                           DIR points to the installation [/usr/local/pgsql]
+  --with-mssql=DIR        Include FreeTDS Ct-Lib support.  DIR is the FreeTDS
+                          install directory, defaults to /usr/local.
   --with-wtls[=TYPE]      select WTLS version to use: openssl/baltimore
 
 Some influential environment variables:
@@ -14481,6 +14484,51 @@ $as_echo "disabled" >&6; }
 
 fi
 
+
+{ $as_echo "$as_me:$LINENO: checking whether to compile with FreeTDS Ct-Lib support" >&5
+$as_echo_n "checking whether to compile with FreeTDS Ct-Lib support... " >&6; }
+
+# Check whether --with-mssql was given.
+if test "${with_mssql+set}" = set; then
+  withval=$with_mssql;
+    if test "$withval" = "yes"; then
+        withval=/usr/local
+    fi
+
+    if test "$withval" != "no"; then
+        if test -f $withval/include/ctpublic.h; then
+            MSSQL_INCDIR=$withval/include
+            MSSQL_LIBDIR=$withval/lib
+        else
+            if test -f $withval/include/freetds/ctpublic.h; then
+                MSSQL_INCDIR=$withval/include/freetds
+                MSSQL_LIBDIR=$withval/lib
+            else
+                { $as_echo "$as_me:$LINENO: result: no" >&5
+$as_echo "no" >&6; }
+                { { $as_echo "$as_me:$LINENO: error: Invalid FreeTDS directory - unable to find ctpublic.h" >&5
+$as_echo "$as_me: error: Invalid FreeTDS directory - unable to find ctpublic.h" >&2;}
+   { (exit 1); exit 1; }; }
+            fi
+        fi
+        LIBS="$LIBS -L$MSSQL_LIBDIR -lct"
+        CFLAGS="$CFLAGS -I$MSSQL_INCDIR"
+
+cat >>confdefs.h <<\_ACEOF
+#define HAVE_MSSQL 1
+_ACEOF
+
+        { $as_echo "$as_me:$LINENO: result: yes" >&5
+$as_echo "yes" >&6; }
+        MSSQL="yes"
+            fi
+
+else
+
+    { $as_echo "$as_me:$LINENO: result: disabled" >&5
+$as_echo "disabled" >&6; }
+
+fi
 
 
 

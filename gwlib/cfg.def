@@ -510,6 +510,16 @@ MULTI_GROUP(modems,
 )
 
 
+MULTI_GROUP(mssql-connection,
+    OCTSTR(id)
+    OCTSTR(username)
+    OCTSTR(password)
+    OCTSTR(server)
+    OCTSTR(database)
+    OCTSTR(max-connections)
+)
+
+
 MULTI_GROUP(mysql-connection,
     OCTSTR(id)
     OCTSTR(host)

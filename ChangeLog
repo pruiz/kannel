@@ -1,4 +1,10 @@
 2009-05-04 Alexander Malysh <amalysh at kannel.org>
+    * aclocal.m4, configure, configure.in, gw-config.h.in, gw/dlr.c,
+      gw/dlr_p.h, gwlib/cfg.def, gwlib/dbpool.[ch], doc/userguide/userguide.xml:
+      added MSSQL support to DBPool and DLR.
+      Thanks to Alejandro Guerrieri <aguerrieri at kannel.org> for this patch.
+
+2009-05-04 Alexander Malysh <amalysh at kannel.org>
     * gw/meta_data.[ch]: Extends meta_data_set_values function to be able to add
       new values without replacing the whole dict.
     * gw/smsc/smsc_smpp.c: return DLR error in dlr_err metadata parameter.

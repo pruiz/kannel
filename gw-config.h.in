@@ -209,6 +209,9 @@
 /* Defined if we're using OpenSSL WTLS */
 #undef HAVE_WTLS_OPENSSL
 
+/* Define if you have and want to use the FreeTDS ct-lib */
+#undef HAVE_MSSQL
+
 /* Define if you have and want to use the MySQL client library (-lmysqlclient) */
 #undef HAVE_MYSQL
 

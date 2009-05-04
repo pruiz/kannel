@@ -614,6 +614,12 @@
 	    Enable using PAM for authentication of sendsms users for
 	    smsbox.</para></listitem>
 
+        <listitem><para><literal>--with-mssql<replaceable>[=DIR]</replaceable></literal>
+
+            Enable using FreeTDS libraries for DBPool and
+            DLR support on MS-SQL and Sybase. Optional DIR specifies where to look for
+            FreeTDS libraries and include files (defaults to /usr/local).</para></listitem>
+
         <listitem><para><literal>--with-mysql</literal>
 
             Enable using MySQL libraries for DBPool and
@@ -1466,9 +1472,10 @@ admin-password = f00bar
      <entry>type</entry>
      <entry valign="bottom">
         Defines the way DLRs are stored. If you have build-in external 
-		  DLR storage support, i.e. using MySQL you may define here the
-		  alternative storage type like 'mysql'. Supported types are:
-		  internal, mysql, oracle. By default this is set to 'internal'.
+          DLR storage support, i.e. using MySQL you may define here the
+          alternative storage type like 'mysql'. Supported types are:
+          internal, mysql, pgsql, sdb, mssql and oracle. By default this
+          is set to 'internal'.
      </entry></row>
 
      <row><entry><literal>maximum-queue-length</literal></entry>
@@ -5073,6 +5080,49 @@ field-boxc-id = boxc
 	</para>
 
 	</sect2>
+
+    <sect2>
+    <title>MS-SQL/Sybase DLR storage</title>
+    <para>To store DLR information into a MS-SQL or Sybase (via FreeTDS)
+    database you may use the <literal>dlr-storage = mssql</literal>
+    configuration directive in the <literal>core</literal> group.
+    </para>
+    <para>In addition to that you must have a <literal>dlr-db</literal>
+    group defined that specifies the table field names that are used to the
+    DLR attributes and a <literal>mssql-connection</literal> group that
+    defines the connection to the MS-SQL or Sybase server itself.
+    </para>
+    <para>Please note that the <literal>server</literal> configuration directive
+    must match the corresponding <literal>[section]</literal> on
+    <literal>freetds.conf</literal></para>
+    <para>Here is the example configuration:
+
+<programlisting>
+group = mssql-connection
+id = msdlr
+server = myservername
+username = foo
+password = bar
+database = dlr
+max-connections = 1
+
+group = dlr-db
+id = msdlr
+table = dlr
+field-smsc = smsc
+field-timestamp = ts
+field-destination = destination
+field-source = source
+field-service = service
+field-url = url
+field-mask = mask
+field-status = status
+field-boxc-id = boxc
+</programlisting>
+
+    </para>
+
+    </sect2>
 
         <sect2>
 	<title>DLR database field configuration</title>

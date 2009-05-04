@@ -66,14 +66,15 @@
 
 #if defined(HAVE_MYSQL) || defined(HAVE_SDB) || \
     defined(HAVE_ORACLE) || defined(HAVE_SQLITE) || \
-    defined(HAVE_PGSQL) || defined(HAVE_SQLITE3)
+    defined(HAVE_PGSQL) || defined(HAVE_SQLITE3) || \
+    defined(HAVE_MSSQL)
 #define HAVE_DBPOOL 1
 #endif
 
 /* supported databases for connection pools */
 enum db_type {
-	DBPOOL_MYSQL, DBPOOL_SDB, DBPOOL_ORACLE, DBPOOL_SQLITE, DBPOOL_PGSQL,
-    DBPOOL_SQLITE3
+    DBPOOL_MYSQL, DBPOOL_SDB, DBPOOL_ORACLE, DBPOOL_SQLITE, DBPOOL_PGSQL,
+    DBPOOL_SQLITE3, DBPOOL_MSSQL
 };
 
 
@@ -108,6 +109,13 @@ typedef struct {
 typedef struct {
     Octstr *username;
     Octstr *password;
+    Octstr *server;
+    Octstr *database;
+} MSSQLConf;
+
+typedef struct {
+    Octstr *username;
+    Octstr *password;
     Octstr *tnsname;
 } OracleConf;
 
@@ -136,6 +144,7 @@ typedef struct {
 } PgSQLConf;
 
 typedef union {
+    MSSQLConf *mssql;
     MySQLConf *mysql;
     SDBConf *sdb;
     OracleConf *oracle;
