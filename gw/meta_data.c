@@ -270,10 +270,12 @@ Dict *meta_data_get_values(const Octstr *data, const char *group)
 }
 
 
-int meta_data_set_values(Octstr *data, const Dict *dict, const char *group)
+int meta_data_set_values(Octstr *data, const Dict *dict, const char *group, int replace)
 {
     struct meta_data *mdata, *curr;
     int i;
+    List *keys;
+    Octstr *key;
 
     if (data == NULL || group == NULL)
         return -1;
@@ -281,6 +283,16 @@ int meta_data_set_values(Octstr *data, const Dict *dict, const char *group)
     mdata = meta_data_unpack(data);
     for (curr = mdata; curr != NULL; curr = curr->next) {
         if (octstr_str_case_compare(curr->group, group) == 0) {
+            /*
+             * If we don't replace the values, copy the old Dict values to the new Dict
+             */
+            if (replace == 0) {
+                keys = dict_keys(curr->values);
+                while((key = gwlist_extract_first(keys)) != NULL) {
+                    dict_put_once((Dict*)dict, key, octstr_duplicate(dict_get(curr->values, key)));
+                }
+                gwlist_destroy(keys, NULL);
+            }
             dict_destroy(curr->values);
             curr->values = (Dict*)dict;
             break;

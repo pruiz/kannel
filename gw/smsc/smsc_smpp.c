@@ -562,7 +562,7 @@ static Msg *pdu_to_msg(SMPP *smpp, SMPP_PDU *pdu, long *reason)
 
     if (msg->sms.meta_data == NULL)
         msg->sms.meta_data = octstr_create("");
-    meta_data_set_values(msg->sms.meta_data, pdu->u.deliver_sm.tlv, "smpp");
+    meta_data_set_values(msg->sms.meta_data, pdu->u.deliver_sm.tlv, "smpp", 1);
 
     return msg;
 
@@ -712,7 +712,7 @@ static Msg *data_sm_to_msg(SMPP *smpp, SMPP_PDU *pdu, long *reason)
 
     if (msg->sms.meta_data == NULL)
         msg->sms.meta_data = octstr_create("");
-    meta_data_set_values(msg->sms.meta_data, pdu->u.data_sm.tlv, "smpp");
+    meta_data_set_values(msg->sms.meta_data, pdu->u.data_sm.tlv, "smpp", 1);
 
     return msg;
 
@@ -1171,7 +1171,7 @@ static Connection *open_receiver(SMPP *smpp)
 }
 
 
-static Msg *handle_dlr(SMPP *smpp, Octstr *destination_addr, Octstr *short_message, Octstr *message_payload, Octstr *receipted_message_id, long message_state)
+static Msg *handle_dlr(SMPP *smpp, Octstr *destination_addr, Octstr *short_message, Octstr *message_payload, Octstr *receipted_message_id, long message_state, Octstr *network_error_code)
 {
     Msg *dlrmsg = NULL;
     Octstr *respstr = NULL, *msgid = NULL, *err = NULL, *tmp;
@@ -1208,89 +1208,94 @@ static Msg *handle_dlr(SMPP *smpp, Octstr *destination_addr, Octstr *short_messa
         }
     }
 
+    if (network_error_code != NULL)
+        err = octstr_duplicate(network_error_code);
+
     /* check for SMPP v.3.4. and message_payload */
     if (smpp->version > 0x33 && octstr_len(short_message) == 0)
         respstr = message_payload;
     else
         respstr = short_message;
 
-    /* still no msgid or dlrstat ? */
-    if ((msgid == NULL || dlrstat == -1) && respstr) {
-        long curr = 0, vpos = 0;
-        Octstr *stat = NULL;
-        char id_cstr[65], stat_cstr[16], sub_d_cstr[13], done_d_cstr[13];
-        char err_cstr[4];
-        int sub, dlrvrd, ret;
+    if (msgid == NULL || err == NULL || dlrstat == -1) {
+        /* parse the respstr if it exists */
+        if (respstr) {
+            long curr = 0, vpos = 0;
+            Octstr *stat = NULL;
+            char id_cstr[65], stat_cstr[16], sub_d_cstr[13], done_d_cstr[13];
+            char err_cstr[4];
+            int sub, dlrvrd, ret;
 
-        /* get server message id */
-        /* first try sscanf way if thus failed then old way */
-        ret = sscanf(octstr_get_cstr(respstr),
-                     "id:%64[^s] sub:%d dlvrd:%d submit date:%12[0-9] done "
-                     "date:%12[0-9] stat:%10[^t^e] err:%3[0-9]",
-                     id_cstr, &sub, &dlrvrd, sub_d_cstr, done_d_cstr,
-                     stat_cstr, err_cstr);
-        if (ret == 7) {
-            /* only if not already here */
-            if (msgid == NULL) {
-                msgid = octstr_create(id_cstr);
-                octstr_strip_blanks(msgid);
-            }
-            stat = octstr_create(stat_cstr);
-            octstr_strip_blanks(stat);
-            err = octstr_create(err_cstr);
-            octstr_strip_blanks(err);
-        }
-        else {
-            debug("bb.sms.smpp", 0, "SMPP[%s]: Couldnot parse DLR string sscanf way,"
-                "fallback to old way. Please report!", octstr_get_cstr(smpp->conn->id));
+            /* get server message id */
+            /* first try sscanf way if thus failed then old way */
+            ret = sscanf(octstr_get_cstr(respstr),
+                         "id:%64[^s] sub:%d dlvrd:%d submit date:%12[0-9] done "
+                         "date:%12[0-9] stat:%10[^t^e] err:%3[0-9]",
+                         id_cstr, &sub, &dlrvrd, sub_d_cstr, done_d_cstr,
+                         stat_cstr, err_cstr);
+            if (ret == 7) {
+                /* only if not already here */
+                if (msgid == NULL) {
+                    msgid = octstr_create(id_cstr);
+                    octstr_strip_blanks(msgid);
+                }
+                stat = octstr_create(stat_cstr);
+                octstr_strip_blanks(stat);
+                err = octstr_create(err_cstr);
+                octstr_strip_blanks(err);
+            } else {
+                debug("bb.sms.smpp", 0, "SMPP[%s]: Couldnot parse DLR string sscanf way,"
+                    "fallback to old way. Please report!", octstr_get_cstr(smpp->conn->id));
 
-            /* only if not already here */
-            if (msgid == NULL) {
-                if ((curr = octstr_search(respstr, octstr_imm("id:"), 0)) != -1) {
+                /* only if not already here */
+                if (msgid == NULL) {
+                    if ((curr = octstr_search(respstr, octstr_imm("id:"), 0)) != -1) {
+                        vpos = octstr_search_char(respstr, ' ', curr);
+                        if ((vpos-curr >0) && (vpos != -1))
+                            msgid = octstr_copy(respstr, curr+3, vpos-curr-3);
+                    } else {
+                        msgid = NULL;
+                    }
+                }
+
+                /* get err & status code */
+                if ((curr = octstr_search(respstr, octstr_imm("stat:"), 0)) != -1) {
                     vpos = octstr_search_char(respstr, ' ', curr);
                     if ((vpos-curr >0) && (vpos != -1))
-                        msgid = octstr_copy(respstr, curr+3, vpos-curr-3);
+                        stat = octstr_copy(respstr, curr+5, vpos-curr-5);
                 } else {
-                    msgid = NULL;
+                    stat = NULL;
+                }
+                if ((curr = octstr_search(respstr, octstr_imm("err:"), 0)) != -1) {
+                    vpos = octstr_search_char(respstr, ' ', curr);
+                    if ((vpos-curr >0) && (vpos != -1))
+                        err = octstr_copy(respstr, curr+4, vpos-curr-4);
+                } else {
+                    err = NULL;
                 }
             }
 
-            /* get err & status code */
-            if ((curr = octstr_search(respstr, octstr_imm("stat:"), 0)) != -1) {
-                vpos = octstr_search_char(respstr, ' ', curr);
-                if ((vpos-curr >0) && (vpos != -1))
-                    stat = octstr_copy(respstr, curr+5, vpos-curr-5);
-            } else {
-                stat = NULL;
+            /*
+             * we get the following status:
+             * DELIVRD, ACCEPTD, EXPIRED, DELETED, UNDELIV, UNKNOWN, REJECTD
+             *
+             * Note: some buggy SMSC's send us immediately delivery notifications although
+             *          we doesn't requested these.
+             */
+            if (dlrstat == -1) {
+                if (stat != NULL && octstr_compare(stat, octstr_imm("DELIVRD")) == 0)
+                    dlrstat = DLR_SUCCESS;
+                else if (stat != NULL && (octstr_compare(stat, octstr_imm("ACCEPTD")) == 0 ||
+                                octstr_compare(stat, octstr_imm("ACKED")) == 0 ||
+                                octstr_compare(stat, octstr_imm("BUFFRED")) == 0 ||
+                                octstr_compare(stat, octstr_imm("BUFFERD")) == 0 ||
+                                octstr_compare(stat, octstr_imm("ENROUTE")) == 0))
+                    dlrstat = DLR_BUFFERED;
+                else
+                    dlrstat = DLR_FAIL;
             }
-            if ((curr = octstr_search(respstr, octstr_imm("err:"), 0)) != -1) {
-                vpos = octstr_search_char(respstr, ' ', curr);
-                if ((vpos-curr >0) && (vpos != -1))
-                    err = octstr_copy(respstr, curr+4, vpos-curr-4);
-            } else {
-                err = NULL;
-            }
+            octstr_destroy(stat);
         }
-
-        /*
-         * we get the following status:
-         * DELIVRD, ACCEPTD, EXPIRED, DELETED, UNDELIV, UNKNOWN, REJECTD
-         *
-         * Note: some buggy SMSC's send us immediately delivery notifications although
-         *          we doesn't requested these.
-         */
-        if (stat != NULL && octstr_compare(stat, octstr_imm("DELIVRD")) == 0)
-            dlrstat = DLR_SUCCESS;
-        else if (stat != NULL && (octstr_compare(stat, octstr_imm("ACCEPTD")) == 0 ||
-                        octstr_compare(stat, octstr_imm("ACKED")) == 0 ||
-                        octstr_compare(stat, octstr_imm("BUFFRED")) == 0 ||
-                        octstr_compare(stat, octstr_imm("BUFFERD")) == 0 ||
-                        octstr_compare(stat, octstr_imm("ENROUTE")) == 0))
-            dlrstat = DLR_BUFFERED;
-        else
-            dlrstat = DLR_FAIL;
-
-        octstr_destroy(stat);
     }
 
     if (msgid != NULL && dlrstat != -1) {
@@ -1336,11 +1341,16 @@ static Msg *handle_dlr(SMPP *smpp, Octstr *destination_addr, Octstr *short_messa
          * we found the delivery report in our storage, so recode the
          * message structure.
          * The DLR trigger URL is indicated by msg->sms.dlr_url.
-         * Add the DLR error code as billing identifier.
+         * Add the DLR error code to meta-data.
          */
         dlrmsg->sms.msgdata = octstr_duplicate(respstr);
         dlrmsg->sms.sms_type = report_mo;
-        dlrmsg->sms.binfo = octstr_duplicate(err);
+        if (err != NULL) {
+            if (dlrmsg->sms.meta_data == NULL) {
+                dlrmsg->sms.meta_data = octstr_create("");
+            }
+            meta_data_set_value(dlrmsg->sms.meta_data, "smpp", octstr_imm("dlr_err"), err, 1);
+        }
     } else {
         error(0,"SMPP[%s]: got DLR but could not find message or was not interested "
                 "in it id<%s> dst<%s>, type<%d>",
@@ -1403,11 +1413,11 @@ static void handle_pdu(SMPP *smpp, Connection *conn, SMPP_PDU *pdu,
                 debug("bb.sms.smpp",0,"SMPP[%s] handle_pdu, got DLR",
                       octstr_get_cstr(smpp->conn->id));
                 dlrmsg = handle_dlr(smpp, pdu->u.data_sm.source_addr, NULL, pdu->u.data_sm.message_payload,
-                                    pdu->u.data_sm.receipted_message_id, pdu->u.data_sm.message_state);
+                                    pdu->u.data_sm.receipted_message_id, pdu->u.data_sm.message_state, pdu->u.data_sm.network_error_code);
                 if (dlrmsg != NULL) {
                     if (dlrmsg->sms.meta_data == NULL)
                         dlrmsg->sms.meta_data = octstr_create("");
-                    meta_data_set_values(dlrmsg->sms.meta_data, pdu->u.data_sm.tlv, "smpp");
+                    meta_data_set_values(dlrmsg->sms.meta_data, pdu->u.data_sm.tlv, "smpp", 0);
                     /* passing DLR to upper layer */
                     reason = bb_smscconn_receive(smpp->conn, dlrmsg);
                 } else {
@@ -1461,12 +1471,12 @@ static void handle_pdu(SMPP *smpp, Connection *conn, SMPP_PDU *pdu,
                       octstr_get_cstr(smpp->conn->id));
 
                 dlrmsg = handle_dlr(smpp, pdu->u.deliver_sm.source_addr, pdu->u.deliver_sm.short_message, pdu->u.deliver_sm.message_payload,
-                                    pdu->u.deliver_sm.receipted_message_id, pdu->u.deliver_sm.message_state);
+                                    pdu->u.deliver_sm.receipted_message_id, pdu->u.deliver_sm.message_state, pdu->u.deliver_sm.network_error_code);
                 resp = smpp_pdu_create(deliver_sm_resp, pdu->u.deliver_sm.sequence_number);
                 if (dlrmsg != NULL) {
                     if (dlrmsg->sms.meta_data == NULL)
                         dlrmsg->sms.meta_data = octstr_create("");
-                    meta_data_set_values(dlrmsg->sms.meta_data, pdu->u.deliver_sm.tlv, "smpp");
+                    meta_data_set_values(dlrmsg->sms.meta_data, pdu->u.deliver_sm.tlv, "smpp", 0);
                     reason = bb_smscconn_receive(smpp->conn, dlrmsg);
                 } else
                     reason = SMSCCONN_SUCCESS;

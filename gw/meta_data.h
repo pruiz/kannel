@@ -72,7 +72,7 @@ Dict *meta_data_get_values(const Octstr *data, const char *group);
 /**
  * Replace Dictionary for the given group.
  */
-int meta_data_set_values(Octstr *data, const Dict *dict, const char *group);
+int meta_data_set_values(Octstr *data, const Dict *dict, const char *group, int replace);
 /**
  * Set or replace value for a given group and key.
  */
