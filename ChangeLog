@@ -1,3 +1,8 @@
+2009-05-05  Stipe Tolj  <stolj at kannel.org>
+    * gw/msg.[ch], gw/msg-decl.h: remove the semicolon references from the 
+      macro definition file for the sake or usability of the macro in other
+      places. NLC.
+
 2009-05-04 Alexander Malysh <amalysh at kannel.org>
     * aclocal.m4, configure, configure.in, gw-config.h.in, gw/dlr.c,
       gw/dlr_p.h, gwlib/cfg.def, gwlib/dbpool.[ch], doc/userguide/userguide.xml:
