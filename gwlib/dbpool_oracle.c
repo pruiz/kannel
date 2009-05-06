@@ -128,7 +128,7 @@ static void oracle_checkerr(OCIError *errhp, sword status)
 static void *oracle_malloc(void *ctx, size_t size)
 {
     void *ret = gw_malloc(size);
-    debug("dbpool.oracle",0,"oracle_malloc called size=%d @%08lx", size, 
+    debug("dbpool.oracle",0,"oracle_malloc called size=%ld @%08lx", (long) size, 
           (long) ret);
     return ret;
 }
@@ -150,7 +150,7 @@ static void oracle_free(void *ctx, void *ptr)
 static void *oracle_realloc(void *ctx, void *ptr, size_t size)
 {
     void *ret = gw_realloc(ptr, size);
-    debug("dbpool.oracle",0,"oracle_realloc called size=%d", size);
+    debug("dbpool.oracle",0,"oracle_realloc called size=%ld", (long) size);
     return ret;
 }
 
@@ -197,9 +197,9 @@ static void* oracle_open_conn(const DBConf *db_conf)
 
     /* open oracle user session */
     errorcode = OCILogon(conn->envp, conn->errhp, &conn->svchp,
-                         octstr_get_cstr(cfg->username), octstr_len(cfg->username),
-                         octstr_get_cstr(cfg->password), octstr_len(cfg->password),
-                         octstr_get_cstr(cfg->tnsname), octstr_len(cfg->tnsname));
+                         (unsigned char*)octstr_get_cstr(cfg->username), octstr_len(cfg->username),
+                         (unsigned char*)octstr_get_cstr(cfg->password), octstr_len(cfg->password),
+                         (unsigned char*)octstr_get_cstr(cfg->tnsname), octstr_len(cfg->tnsname));
 
     if (errorcode != OCI_SUCCESS) {
         oracle_checkerr(conn->errhp, errorcode);
@@ -303,7 +303,7 @@ static int oracle_select(void *theconn, const Octstr *sql, List *binds, List **r
         return -1;
     }
     /* prepare statement */
-    status = OCIStmtPrepare(stmt, conn->errhp, octstr_get_cstr(sql), 
+    status = OCIStmtPrepare(stmt, conn->errhp, (unsigned char*)octstr_get_cstr(sql), 
                             octstr_len(sql), OCI_NTV_SYNTAX, OCI_DEFAULT);
     if (OCI_SUCCESS != status) {
         oracle_checkerr(conn->errhp, status);
@@ -345,7 +345,7 @@ static int oracle_select(void *theconn, const Octstr *sql, List *binds, List **r
     debug("dbpool.oracle",0,"SQL has %d columns", columns);
 
     /* allocate array of pointers */
-    debug("dbpool.oracle",0,"alloc size=%d",sizeof(text*)*columns);
+    debug("dbpool.oracle",0,"alloc size=%ld",sizeof(text*)*columns);
     data = gw_malloc(sizeof(struct data_s)*columns);
 
     debug("dbpool.oracle",0,"retrieve data_size");
@@ -424,7 +424,7 @@ static int oracle_select(void *theconn, const Octstr *sql, List *binds, List **r
             if (data[i].data == NULL || data[i].ind == -1) {
                 gwlist_insert(row, i, octstr_create(""));
             } else {
-                gwlist_insert(row, i, octstr_create_from_data(data[i].data, data[i].size));
+                gwlist_insert(row, i, octstr_create_from_data((const char*)data[i].data, data[i].size));
             }
             /* debug("dbpool.oracle",0,"inserted value = '%s'", 
                      octstr_get_cstr(gwlist_get(row,i))); */
@@ -473,7 +473,7 @@ static int oracle_update(void *theconn, const Octstr *sql, List *binds)
     }
     debug("dbpool.oracle",0,"OCIStmt allocated");
     /* prepare statement */
-    status = OCIStmtPrepare(stmt, conn->errhp, octstr_get_cstr(sql), 
+    status = OCIStmtPrepare(stmt, conn->errhp, (unsigned char*)octstr_get_cstr(sql), 
                             octstr_len(sql), OCI_NTV_SYNTAX, OCI_DEFAULT);
     if (OCI_SUCCESS != status) {
         oracle_checkerr(conn->errhp, status);

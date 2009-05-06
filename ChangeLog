@@ -1,4 +1,7 @@
 2009-05-06 Alexander Malysh <amalysh at kannel.org>
+    * gwlib/dbpool_oracle.c: fixed compiler warnings.
+
+2009-05-06 Alexander Malysh <amalysh at kannel.org>
     * doc/userguide/userguide.xml, gw/bb_smscconn.c, gw/smscconn.[ch], gw/smscconn_p.h
       gwlib/cfg.def: added new config option to smsc group 'smsc-admin-id'. This is
       used in admin interface to shutdown/start/restart smsc links when smsc-id is
