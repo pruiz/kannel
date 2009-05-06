@@ -1917,7 +1917,7 @@ commands never arrive nor can you restart it via WAP anymore.</para>
    <entry valign="bottom">
         Re-start a single SMSC link. Password required. Additionally
 		  the <literal>smsc</literal> parameter must be given to identify
- 		  which <literal>smsc-id</literal> should be re-started.
+ 		  which <literal>smsc-admin-id</literal> should be re-started.
    </entry></row>
 
   	<row><entry><literal>stop-smsc</literal></entry>
@@ -2441,6 +2441,19 @@ secret-nas = radius
 	<literal>preferred-smsc-id</literal> is used for that.
 	If you want to use Delivery Reports, you must define this.
 
+     </entry></row>
+
+   <row><entry><literal>smsc-admin-id</literal></entry>
+     <entry><literal>string</literal></entry>
+     <entry valign="bottom">
+        An optional id for the smsc to be used on administrative
+        commands. This allows commands targeted to individual binds
+        even if they share the same <literal>smsc-id</literal>
+        (for load balancing scenarios, for example). Any string is
+        acceptable, but semicolon ';' may cause problems, so avoid
+        it and any other special non-alphabet characters.
+        Several SMSCs can have the same admin-id, though it's not
+        recommended. The name is case-insensitive.
      </entry></row>
 
     <row><entry><literal>throughput</literal></entry>

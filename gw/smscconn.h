@@ -166,6 +166,9 @@ const Octstr *smscconn_name(SMSCConn *smscconn);
 /* Return ID of the SMSC, as reference - caller may not free it! */
 const Octstr *smscconn_id(SMSCConn *conn);
 
+/* Return Admin ID of the SMSC, as reference - caller may not free it! */
+const Octstr *smscconn_admin_id(SMSCConn *conn);
+
 /* Check if this SMSC Connection is usable as sender for given
  * message. The bearerbox must then select the good SMSC for sending
  * according to load levels and connected/disconnected status, this

@@ -168,6 +168,7 @@ struct smscconn {
     Octstr *name;		/* Descriptive name filled from connection info */
     Octstr *id;			/* Abstract name specified in configuration and
 				   used for logging and routing */
+    Octstr *admin_id;
     List *allowed_smsc_id;
     List *denied_smsc_id;
     List *preferred_smsc_id;

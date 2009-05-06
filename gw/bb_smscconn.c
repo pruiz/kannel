@@ -690,7 +690,7 @@ static long smsc2_find(Octstr *id, long start)
 
     for (i = start; i < gwlist_len(smsc_list); i++) {
         conn = gwlist_get(smsc_list, i);
-        if (conn != NULL && octstr_compare(conn->id, id) == 0) {
+        if (conn != NULL && octstr_compare(conn->admin_id, id) == 0) {
             break;
         }
     }
@@ -914,6 +914,7 @@ Octstr *smsc2_status(int status_type)
     SMSCConn *conn;
     StatusInfo info;
     const Octstr *conn_id = NULL;
+    const Octstr *conn_admin_id = NULL;
     const Octstr *conn_name = NULL;
 
     if ((lb = bb_status_linebreak(status_type)) == NULL)
@@ -949,22 +950,29 @@ Octstr *smsc2_status(int status_type)
 
         conn_id = conn ? smscconn_id(conn) : octstr_imm("unknown");
         conn_id = conn_id ? conn_id : octstr_imm("unknown");
+        conn_admin_id = conn ? smscconn_admin_id(conn) : octstr_imm("unknown");
+        conn_admin_id = conn_admin_id ? conn_admin_id : octstr_imm("unknown");
         conn_name = conn ? smscconn_name(conn) : octstr_imm("unknown");
 
         if (status_type == BBSTATUS_HTML) {
             octstr_append_cstr(tmp, "&nbsp;&nbsp;&nbsp;&nbsp;<b>");
             octstr_append(tmp, conn_id);
-            octstr_append_cstr(tmp, "</b>&nbsp;&nbsp;&nbsp;&nbsp;");
+            octstr_append_cstr(tmp, "</b>[");
+            octstr_append(tmp, conn_admin_id);
+            octstr_append_cstr(tmp, "]&nbsp;&nbsp;&nbsp;&nbsp;");
         } else if (status_type == BBSTATUS_TEXT) {
             octstr_append_cstr(tmp, "    ");
             octstr_append(tmp, conn_id);
-            octstr_append_cstr(tmp, "    ");
+            octstr_append_cstr(tmp, "[");
+            octstr_append(tmp, conn_admin_id);
+            octstr_append_cstr(tmp, "]    ");
         } 
         if (status_type == BBSTATUS_XML) {
             octstr_append_cstr(tmp, "<smsc>\n\t\t<name>");
             octstr_append(tmp, conn_name);
-            octstr_append_cstr(tmp, "</name>\n\t\t");
-            octstr_append_cstr(tmp, "<id>");
+            octstr_append_cstr(tmp, "</name>\n\t\t<admin-id>");
+            octstr_append(tmp, conn_admin_id);
+            octstr_append_cstr(tmp, "</admin-id>\n\t\t<id>");
             octstr_append(tmp, conn_id);
             octstr_append_cstr(tmp, "</id>\n\t\t");
         } else

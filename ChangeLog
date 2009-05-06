@@ -1,3 +1,10 @@
+2009-05-06 Alexander Malysh <amalysh at kannel.org>
+    * doc/userguide/userguide.xml, gw/bb_smscconn.c, gw/smscconn.[ch], gw/smscconn_p.h
+      gwlib/cfg.def: added new config option to smsc group 'smsc-admin-id'. This is
+      used in admin interface to shutdown/start/restart smsc links when smsc-id is
+      equal due to loadbalancing.
+      Thanks to Alejandro Guerrieri <aguerrieri at kannel.org> for this patch.
+
 2009-05-05  Stipe Tolj  <stolj at kannel.org>
     * gw/msg.[ch], gw/msg-decl.h: remove the semicolon references from the 
       macro definition file for the sake or usability of the macro in other

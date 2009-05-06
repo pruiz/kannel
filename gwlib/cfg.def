@@ -293,6 +293,7 @@ MULTI_GROUP(smsbox-route,
 MULTI_GROUP(smsc,
     OCTSTR(smsc)
     OCTSTR(smsc-id)
+    OCTSTR(smsc-admin-id)
     OCTSTR(denied-smsc-id)
     OCTSTR(allowed-smsc-id)
     OCTSTR(preferred-smsc-id)

@@ -222,6 +222,10 @@ SMSCConn *smscconn_create(CfgGroup *grp, int start_as_stopped)
         octstr_destroy(tmp);
         info(0, "Set throughput to %.3f for smsc id <%s>", conn->throughput, octstr_get_cstr(conn->id));
     }
+    /* Sets the admin_id. Equals to connection id if empty */
+    GET_OPTIONAL_VAL(conn->admin_id, "smsc-admin-id");
+    if (conn->admin_id == NULL)
+        conn->admin_id = octstr_duplicate(conn->id);
 
     /* configure the internal rerouting rules for this smsc id */
     init_reroute(conn, grp);
@@ -333,6 +337,7 @@ int smscconn_destroy(SMSCConn *conn)
 
     octstr_destroy(conn->name);
     octstr_destroy(conn->id);
+    octstr_destroy(conn->admin_id);
     gwlist_destroy(conn->allowed_smsc_id, octstr_destroy_item);
     gwlist_destroy(conn->denied_smsc_id, octstr_destroy_item);
     gwlist_destroy(conn->preferred_smsc_id, octstr_destroy_item);
@@ -407,6 +412,13 @@ const Octstr *smscconn_id(SMSCConn *conn)
 {
     gw_assert(conn != NULL);
     return conn->id;
+}
+
+
+const Octstr *smscconn_admin_id(SMSCConn *conn)
+{
+    gw_assert(conn != NULL);
+    return conn->admin_id;
 }
 
 
