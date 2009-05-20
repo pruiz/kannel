@@ -348,6 +348,9 @@ long octstr_len(const Octstr *ostr)
 Octstr *octstr_copy_real(const Octstr *ostr, long from, long len, const char *file, long line,
                          const char *func)
 {
+    if (ostr == NULL)
+        return octstr_create("");
+
     seems_valid(ostr);
     gw_assert(from >= 0);
     gw_assert(len >= 0);
