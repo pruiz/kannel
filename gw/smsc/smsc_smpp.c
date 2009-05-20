@@ -928,6 +928,9 @@ static SMPP_PDU *msg_to_pdu(SMPP *smpp, Msg *msg)
     else if (DLR_IS_FAIL(msg->sms.dlr_mask) && !DLR_IS_SUCCESS(msg->sms.dlr_mask))
         pdu->u.submit_sm.registered_delivery = 2;
 
+    if (DLR_IS_INTERMEDIATE(msg->sms.dlr_mask))
+        pdu->u.submit_sm.registered_delivery += 16;
+
     /* set priority */
     if (msg->sms.priority >= 0 && msg->sms.priority <= 3)
         pdu->u.submit_sm.priority_flag = msg->sms.priority;
@@ -1230,7 +1233,7 @@ static Msg *handle_dlr(SMPP *smpp, Octstr *destination_addr, Octstr *short_messa
             /* first try sscanf way if thus failed then old way */
             ret = sscanf(octstr_get_cstr(respstr),
                          "id:%64[^s] sub:%d dlvrd:%d submit date:%12[0-9] done "
-                         "date:%12[0-9] stat:%10[^t^e] err:%3[0-9]",
+                         "date:%12[0-9] stat:%10[^t^e] err:%3[^t]",
                          id_cstr, &sub, &dlrvrd, sub_d_cstr, done_d_cstr,
                          stat_cstr, err_cstr);
             if (ret == 7) {
@@ -1409,7 +1412,7 @@ static void handle_pdu(SMPP *smpp, Connection *conn, SMPP_PDU *pdu,
              *       only on bits 2-5 (some SMSC's send 0x44, and it's
              *       spec. conforme)
              */
-           if (pdu->u.data_sm.esm_class & (0x04|0x08)) {
+           if (pdu->u.data_sm.esm_class & (0x04|0x08|0x20)) {
                 debug("bb.sms.smpp",0,"SMPP[%s] handle_pdu, got DLR",
                       octstr_get_cstr(smpp->conn->id));
                 dlrmsg = handle_dlr(smpp, pdu->u.data_sm.source_addr, NULL, pdu->u.data_sm.message_payload,
@@ -1461,11 +1464,11 @@ static void handle_pdu(SMPP *smpp, Connection *conn, SMPP_PDU *pdu,
            mutex_unlock(smpp->conn->flow_mutex);
 
             /* got a deliver ack (DLR)?
-	         * NOTE: following SMPP v3.4. spec. we are interested
-	         *       only on bits 2-5 (some SMSC's send 0x44, and it's
-	         *       spec. conforme)
-	         */
-            if (pdu->u.deliver_sm.esm_class & (0x04|0x08)) {
+             * NOTE: following SMPP v3.4. spec. we are interested
+             *       only on bits 2-5 (some SMSC's send 0x44, and it's
+             *       spec. conforme)
+             */
+            if (pdu->u.deliver_sm.esm_class & (0x04|0x08|0x20)) {
 
                 debug("bb.sms.smpp",0,"SMPP[%s] handle_pdu, got DLR",
                       octstr_get_cstr(smpp->conn->id));

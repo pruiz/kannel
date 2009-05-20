@@ -1,6 +1,12 @@
 2009-05-20 Alexander Malysh <amalysh at kannel.org>
+    * doc/userguide/userguide.xml, gw/smsc/smsc_smpp.c, gw/smsbox.c, gw/dlr.h:
+      added support for intermediate notification.
+      Thanks to Alejandro Guerrieri <aguerrieri at kannel.org> for this patch.
+
+2009-05-20 Alexander Malysh <amalysh at kannel.org>
     * doc/userguide/userguide.xml: adding clarification that user can provide own
       message id's to the dlr-url.
+      Thanks to "Arne K. Haaje" <arne at drlinux.no> for this patch.
  
 2009-05-20 Alexander Malysh <amalysh at kannel.org>
     * gwlib/octstr.c: fixed PANIC when we try to send empty message body.

@@ -8468,6 +8468,7 @@ ssl-server-key-file = "/etc/kannel/key1.pem"
 	<listitem><para>4: message buffered</para></listitem>
 	<listitem><para>8: smsc submit</para></listitem>
 	<listitem><para>16: smsc reject</para></listitem>
+	<listitem><para>32: smsc intermediate notifications</para></listitem>
 	</itemizedlist>
 	If you want multiple report types, you simply add the values together. For example if you want to get delivery success and/or failure
 	you set the <literal>dlr-mask</literal> value to 1+2. and so on. If you specify <literal>dlr-mask</literal> on the URL you pass on to
