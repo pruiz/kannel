@@ -1,4 +1,8 @@
 2009-05-20 Alexander Malysh <amalysh at kannel.org>
+    * doc/userguide/userguide.xml: adding clarification that user can provide own
+      message id's to the dlr-url.
+ 
+2009-05-20 Alexander Malysh <amalysh at kannel.org>
     * gwlib/octstr.c: fixed PANIC when we try to send empty message body.
 
 2009-05-06 Alexander Malysh <amalysh at kannel.org>

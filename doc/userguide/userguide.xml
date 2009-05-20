@@ -8477,13 +8477,17 @@ ssl-server-key-file = "/etc/kannel/key1.pem"
 	<para>
 	An example transaction would work as following.
 	<itemizedlist>
-	<listitem><para>1. you send a message using dlr-mask=7 and dlr-url=http://www.xyz.com/cgi/dlr.php?type=%d</para></listitem>
+	<listitem><para>1. you send a message using dlr-mask=7 and dlr-url=http://www.xyz.com/cgi/dlr.php?myId=123456&amp;type=%d</para></listitem>
 	<listitem><para>2. Kannel forwards the message to the SMSC and keeps track of the message</para></listitem>
 	<listitem><para>3. The SMSC can not reach the phone and thus returns a buffered message</para></listitem>
-	<listitem><para>4. Kannel calls http://www.xyz.com/cgi/dlr.php?type=4 to indicate the message being buffered</para></listitem>
+	<listitem><para>4. Kannel calls http://www.xyz.com/cgi/dlr.php?myId=123456&amp;type=4 to indicate the message being buffered</para></listitem>
 	<listitem><para>5. The phone is switched on and the SMS gets delivered from the SMSC. The SMSC reports this to Kannel</para></listitem>
-	<listitem><para>6. Kannel calls http://www.xyz.com/cgi/dlr.php?type=1 to indicate the final success</para></listitem>
+	<listitem><para>6. Kannel calls http://www.xyz.com/cgi/dlr.php?myId=123456&amp;type=1 to indicate the final success</para></listitem>
 	</itemizedlist>
+	<para>
+	If you put your own message ID in the dlr-url like in the example above, you can then use this ID to update your database
+	with the message status.
+	</para>
 	Depending on the SMSC type not all type of messages are supported. For example a CIMD SMSC does
 	not support buffered messages. Also some SMSC drivers have not implemented all DLR types.
 	</para>
