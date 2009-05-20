@@ -1225,15 +1225,15 @@ static Msg *handle_dlr(SMPP *smpp, Octstr *destination_addr, Octstr *short_messa
         if (respstr) {
             long curr = 0, vpos = 0;
             Octstr *stat = NULL;
-            char id_cstr[65], stat_cstr[16], sub_d_cstr[13], done_d_cstr[13];
+            char id_cstr[65], stat_cstr[16], sub_d_cstr[15], done_d_cstr[15];
             char err_cstr[4];
             int sub, dlrvrd, ret;
 
             /* get server message id */
             /* first try sscanf way if thus failed then old way */
             ret = sscanf(octstr_get_cstr(respstr),
-                         "id:%64[^s] sub:%d dlvrd:%d submit date:%12[0-9] done "
-                         "date:%12[0-9] stat:%10[^t^e] err:%3[^t]",
+                         "id:%64[^s] sub:%d dlvrd:%d submit date:%14[0-9] done "
+                         "date:%14[0-9] stat:%10[^t^e] err:%3[^t]",
                          id_cstr, &sub, &dlrvrd, sub_d_cstr, done_d_cstr,
                          stat_cstr, err_cstr);
             if (ret == 7) {

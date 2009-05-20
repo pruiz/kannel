@@ -1,4 +1,8 @@
 2009-05-20 Alexander Malysh <amalysh at kannel.org>
+    * gw/smsc/smsc_smpp.c: some SMSCs have submit/done date with seconds. Now we
+      can parse it sscanf way.
+
+2009-05-20 Alexander Malysh <amalysh at kannel.org>
     * doc/userguide/userguide.xml, gw/smsc/smsc_smpp.c, gw/smsbox.c, gw/dlr.h:
       added support for intermediate notification.
       Thanks to Alejandro Guerrieri <aguerrieri at kannel.org> for this patch.
