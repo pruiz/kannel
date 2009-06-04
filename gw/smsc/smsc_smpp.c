@@ -1348,6 +1348,7 @@ static Msg *handle_dlr(SMPP *smpp, Octstr *destination_addr, Octstr *short_messa
          */
         dlrmsg->sms.msgdata = octstr_duplicate(respstr);
         dlrmsg->sms.sms_type = report_mo;
+        dlrmsg->sms.account = octstr_duplicate(smpp->username);
         if (err != NULL) {
             if (dlrmsg->sms.meta_data == NULL) {
                 dlrmsg->sms.meta_data = octstr_create("");
@@ -1502,6 +1503,7 @@ static void handle_pdu(SMPP *smpp, Connection *conn, SMPP_PDU *pdu,
 
                 time(&msg->sms.time);
                 msg->sms.smsc_id = octstr_duplicate(smpp->conn->id);
+                msg->sms.account = octstr_duplicate(smpp->username);
                 reason =  bb_smscconn_receive(smpp->conn, msg);
                 resp->u.deliver_sm_resp.command_status = smscconn_failure_reason_to_smpp_status(reason);
             }

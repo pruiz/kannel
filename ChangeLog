@@ -1,3 +1,8 @@
+2009-06-04  Stipe Tolj  <stolj at kannel.org>
+    * gw/smsc/smsc_smpp.c: add the SMPP username as msg->sms.account value, so
+      we can use it in the urltrans layer with escape code '%o'. This makes
+      the semantics for MT/MO direction similar.
+      
 2009-05-25  Stipe Tolj  <stolj at kannel.org>
     * doc/userguide/userguide.xml: fixing bug 'document type does not allow element 
       "PARA" here; missing one of "FOOTNOTE", "MSGTEXT", "CAUTION", "IMPORTANT", 
