@@ -4080,38 +4080,209 @@ send-url = "http://localhost:20022"
      <entry valign="bottom">
        Password for username, if needed.
      </entry></row>
+   </tbody></tgroup></informaltable>
+
+<sect3>
+<title>The "generic" system-type</title>
+
+   <para>For a generic HTTP-based relay, the system-type 'generic' can be used.
+   It can use the escape codes known from sms-service's get-url config
+   directives in the send-url string to indicate the HTTP API calling style of
+   the remote HTTP server, and the 3 HTTP body response parsing regular
+   expressions 'status-success-regex' for successfull acknowledge,
+   'status-permfail-regex' for permanent failure and 'status-tempfail-regex'
+   for temporary failure. It can also accomodate the incoming parameters and response
+   codes and text. This system-type has a lot of extra parameters that gives it a lot
+   of flexibility:
+   </para>
+
+
+ <informaltable frame="none">
+  <tgroup cols="3"><thead><row>
+     <entry>Variable</entry>
+     <entry>Value</entry>
+     <entry>Description</entry>
+   </row></thead><tbody>
      
    <row><entry><literal>status-success-regex (o)</literal></entry>
      <entry><literal>POSIX regular expression</literal></entry>
      <entry valign="bottom">
-       Regular expression for system-type 'generic' to match against HTTP 
+       Regular expression to match against HTTP
        response body conent, indicating a successfull submission. 
      </entry></row>
      
    <row><entry><literal>status-permfail-regex (o)</literal></entry>
      <entry><literal>POSIX regular expression</literal></entry>
      <entry valign="bottom">
-       Regular expression for system-type 'generic' to match against HTTP 
+       Regular expression to match against HTTP
        response body conent, indicating a permanent failure. 
      </entry></row>
 
    <row><entry><literal>status-tempfail-regex (o)</literal></entry>
      <entry><literal>POSIX regular expression</literal></entry>
      <entry valign="bottom">
-       Regular expression for system-type 'generic' to match against HTTP 
+       Regular expression to match against HTTP
        response body conent, indicating a temporary failure. 
      </entry></row>
     
+   <row><entry><literal>generic-param-username (o)</literal></entry>
+     <entry><literal>string</literal></entry>
+     <entry valign="bottom">
+       Overrides the default parameter for the 'username'
+       field used on incoming requests.
+     </entry></row>
+
+   <row><entry><literal>generic-param-password (o)</literal></entry>
+     <entry><literal>string</literal></entry>
+     <entry valign="bottom">
+       Overrides the default parameter for the 'password'
+       field used on incoming requests.
+     </entry></row>
+
+   <row><entry><literal>generic-param-from (o)</literal></entry>
+     <entry><literal>string</literal></entry>
+     <entry valign="bottom">
+       Overrides the default parameter for the 'from' field
+       used on incoming requests.
+     </entry></row>
+
+   <row><entry><literal>generic-param-to (o)</literal></entry>
+     <entry><literal>string</literal></entry>
+     <entry valign="bottom">
+       Overrides the default parameter for the 'to' field
+       used on incoming requests.
+     </entry></row>
+
+   <row><entry><literal>generic-param-text (o)</literal></entry>
+     <entry><literal>string</literal></entry>
+     <entry valign="bottom">
+       Overrides the default parameter for the 'text' field
+       used on incoming requests.
+     </entry></row>
+
+   <row><entry><literal>generic-param-udh (o)</literal></entry>
+     <entry><literal>string</literal></entry>
+     <entry valign="bottom">
+       Overrides the default parameter for the 'udh' field
+       used on incoming requests.
+     </entry></row>
+
+   <row><entry><literal>generic-param-service (o)</literal></entry>
+     <entry><literal>string</literal></entry>
+     <entry valign="bottom">
+       Overrides the default parameter for the 'service' field
+       used on incoming requests.
+     </entry></row>
+
+   <row><entry><literal>generic-param-account (o)</literal></entry>
+     <entry><literal>string</literal></entry>
+     <entry valign="bottom">
+       Overrides the default parameter for the 'account' field
+       used on incoming requests.
+     </entry></row>
+
+   <row><entry><literal>generic-param-binfo (o)</literal></entry>
+     <entry><literal>string</literal></entry>
+     <entry valign="bottom">
+       Overrides the default parameter for the 'binfo' field
+       used on incoming requests.
+     </entry></row>
+
+   <row><entry><literal>generic-param-dlr-mask (o)</literal></entry>
+     <entry><literal>string</literal></entry>
+     <entry valign="bottom">
+       Overrides the default parameter for the 'dlr-mask' field
+       used on incoming requests.
+     </entry></row>
+
+   <row><entry><literal>generic-param-dlr-url (o)</literal></entry>
+     <entry><literal>string</literal></entry>
+     <entry valign="bottom">
+       Overrides the default parameter for the 'dlr-url' field
+       used on incoming requests.
+     </entry></row>
+
+   <row><entry><literal>generic-param-dlr-mid (o)</literal></entry>
+     <entry><literal>string</literal></entry>
+     <entry valign="bottom">
+       Overrides the default parameter for the 'dlr-mid' field
+       used on incoming requests.
+     </entry></row>
+
+   <row><entry><literal>generic-param-flash (o)</literal></entry>
+     <entry><literal>string</literal></entry>
+     <entry valign="bottom">
+       Overrides the default parameter for the 'flash' field
+       used on incoming requests.
+     </entry></row>
+
+   <row><entry><literal>generic-param-mclass (o)</literal></entry>
+     <entry><literal>string</literal></entry>
+     <entry valign="bottom">
+       Overrides the default parameter for the 'mclass' field
+       used on incoming requests.
+     </entry></row>
+
+   <row><entry><literal>generic-param-mwi (o)</literal></entry>
+     <entry><literal>string</literal></entry>
+     <entry valign="bottom">
+       Overrides the default parameter for the 'mwi' field
+       used on incoming requests.
+     </entry></row>
+
+   <row><entry><literal>generic-param-coding (o)</literal></entry>
+     <entry><literal>string</literal></entry>
+     <entry valign="bottom">
+       Overrides the default parameter for the 'coding' field
+       used on incoming requests.
+     </entry></row>
+
+   <row><entry><literal>generic-param-validity (o)</literal></entry>
+     <entry><literal>string</literal></entry>
+     <entry valign="bottom">
+       Overrides the default parameter for the 'validity' field
+       used on incoming requests.
+     </entry></row>
+
+   <row><entry><literal>generic-param-deferred (o)</literal></entry>
+     <entry><literal>string</literal></entry>
+     <entry valign="bottom">
+       Overrides the default parameter for the 'deferred' field
+       used on incoming requests.
+     </entry></row>
+
+   <row><entry><literal>generic-param-foreign-id (o)</literal></entry>
+     <entry><literal>string</literal></entry>
+     <entry valign="bottom">
+       Overrides the default parameter for the 'foreign-id' field
+       used on incoming requests.
+     </entry></row>
+
+   <row><entry><literal>generic-message-sent (o)</literal></entry>
+     <entry><literal>string</literal></entry>
+     <entry valign="bottom">
+       It allows you to set the text returned when a succesful request is made.
+       If not set, defaults to 'Sent.'. Note that you can use all sms service escapes
+       here, see <xref linkend="escapecodes" endterm="escapecodes.title"> for details.
+     </entry></row>
+
+   <row><entry><literal>generic-status-sent (o)</literal></entry>
+     <entry><literal>string</literal></entry>
+     <entry valign="bottom">
+       Overrides the HTTP status code returned when a successful
+       request is made. If not set, defaults to 202 (HTTP_ACCEPTED).
+     </entry></row>
+
+   <row><entry><literal>generic-status-error (o)</literal></entry>
+     <entry><literal>string</literal></entry>
+     <entry valign="bottom">
+       Overrides the HTTP status code returned when a request is
+       rejected for any reason. If not set, defaults to 202 (HTTP_ACCEPTED).
+     </entry></row>
+
    </tbody></tgroup></informaltable>
 
-   <para>For a generic HTTP-based relay, the system-type 'generic' can be used.
-   It can use the escape codes known from sms-service's get-url config
-   directives in the send-url string to indicate the HTTP API calling style of 
-   the remote HTTP server, and the 3 HTTP body response parsing regular 
-   expressions 'status-success-regex' for successfull acknowledge, 
-   'status-permfail-regex' for permanent failure and 'status-tempfail-regex' 
-   for temporary failure. An example for a 'generic' group looks like this:
-   </para>
+   <para>An example for a 'generic' group looks like this:</para>
 
 <programlisting>
 group = smsc
@@ -4122,14 +4293,13 @@ send-url = "http://www.foobar.com/mt.php?from=%P&amp;to=%p&amp;text=%b"
 status-success-regex = "ok"
 status-permfail-regex = "failure"
 status-tempfail-regex = "retry later"
+generic-param-from = "phoneNumber"
+generic-param-to = "shortCode"
+generic-message-sent = "Message sent with ID: %I"
+generic-status-sent = 200
+generic-status-error = 404
 </programlisting>
-
-  <para>Beware that this generic HTTP system-type is for MT only. We don't
-  provide a way for the MO side too. For MO traffic we simply expect the
-  remote HTTP caller to use Kannel's sendsms HTTP API on the given port to 
-  inject MO messages.
-  </para> 
-  
+</sect3>
 </sect2>
 
 
@@ -6120,8 +6290,8 @@ get-url = "http://%S"
 
 
 
- <table frame="none">
-  <title>Parameters (Escape Codes)</title>
+ <table frame="none" id="escapecodes">
+  <title id="escapecodes.title">Parameters (Escape Codes)</title>
   <tgroup cols="2">
   <tbody>
 
