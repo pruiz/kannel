@@ -1,10 +1,14 @@
 2009-06-09 Alexander Malysh <amalysh at kannel.org>
-     * gw/ota_compiler.c: revert of re-order INLINE attributs in oma_ota_attributes
+    * gw/ota_compiler.c: fixed #484 and reordered syncsettings to be in line
+      with OTA spec.
+
+2009-06-09 Alexander Malysh <amalysh at kannel.org>
+    * gw/ota_compiler.c: revert of re-order INLINE attributs in oma_ota_attributes
        because code assume VALUE INLINE to be last in table.
        Thanks to "Nikos Balkanas" <nbalkanas at gmail.com> for this patch.
 
 2008-10-22  Stipe Tolj  <stolj at kannel.org>
-        * gw/ota_compiler.c: re-order INLINE attributs in oma_ota_attributes struct
+    * gw/ota_compiler.c: re-order INLINE attributs in oma_ota_attributes struct
           to fit the order in the spec tables. NLC.
 
 2009-06-04  Stipe Tolj  <stolj at kannel.org>

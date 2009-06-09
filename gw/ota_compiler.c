@@ -136,25 +136,25 @@ static ota_2table_t ota_elements[] = {
  */
 
 static ota_2table_t ota_syncsettings_elements[] = {
-    { "Version", 0x58 },
-    { "HostAddr", 0x50 },
-    { "Port", 0x52 },
-    { "RemoteDB", 0x54 },
-    { "CTType", 0x4E },
-    { "CTVer", 0x4F },
-    { "URI", 0x56 },
-    { "Name", 0x51 },
+    { "Addr", 0x45 },
+    { "AddrType", 0x46 },
     { "Auth", 0x47 },
     { "AuthLevel", 0x48 },
     { "AuthScheme", 0x49 },
-    { "Username", 0x57 },
-    { "Cred", 0x4D },
-    { "ConRef", 0x4B },
-    { "ConType", 0x4E },
     { "Bearer", 0x4A },
-    { "AddrType", 0x46 },
-    { "Addr", 0x45 },
-    { "RefID", 0x53 }
+    { "ConRef", 0x4B },
+    { "ConType", 0x4C },
+    { "Cred", 0x4D },
+    { "CTType", 0x4E },
+    { "CTVer", 0x4F },
+    { "HostAddr", 0x50 },
+    { "Name", 0x51 },
+    { "Port", 0x52 },
+    { "RefID", 0x53 },
+    { "RemoteDB", 0x54 },
+    { "URI", 0x56 },
+    { "Username", 0x57 },
+    { "Version", 0x58 }
 };
 
 #define NUMBER_OF_SYNCSETTINGS_ELEMENTS sizeof(ota_syncsettings_elements)/sizeof(ota_syncsettings_elements[0])
