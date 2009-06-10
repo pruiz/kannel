@@ -630,7 +630,7 @@ static void kannel_receive_sms(SMSCConn *conn, HTTPClient *client,
               octstr_get_cstr(conn->id));
         retmsg = octstr_create("Authorization failed for sendsms");
     }
-    else if (dlrurl != NULL && dlrmask != 0 && dlrmid != NULL) {
+    else if (dlrmask != 0 && dlrmid != NULL) {
         /* we got a DLR, and we don't require additional values */
         Msg *dlrmsg;
         

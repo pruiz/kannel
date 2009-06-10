@@ -1,3 +1,10 @@
+2009-06-10 Alejandro Guerrieri <aguerrieri at kannel.org>
+    * test/.cvsignore utils/.cvsignore: ignoring test_date and decode_emimsg
+
+2009-06-10 Alejandro Guerrieri <aguerrieri at kannel.org>
+    * gw/smsc/smsc_http.c: removed the dlr-url field as a requirement for
+    incoming dlrs on kannel smsc-type
+
 2009-06-09 Alejandro Guerrieri <aguerrieri at kannel.org>
     * gw/smsc/smsc_http.c gwlib/cfg.def doc/userguide/userguide.xml: added
       support for mo parameters, return messages and codes configuration.
