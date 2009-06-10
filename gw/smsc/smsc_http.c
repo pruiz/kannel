@@ -1727,27 +1727,27 @@ static void generic_receive_sms(SMSCConn *conn, HTTPClient *client,
         /* Parse the rest of the parameters */
         tmp_string = http_cgi_variable(cgivars, octstr_get_cstr(fm->flash));
         if (tmp_string) {
-            sscanf(octstr_get_cstr(tmp_string),"%d", &msg->sms.mclass);
+            sscanf(octstr_get_cstr(tmp_string),"%ld", &msg->sms.mclass);
         }
         tmp_string = http_cgi_variable(cgivars, octstr_get_cstr(fm->mclass));
         if (tmp_string) {
-            sscanf(octstr_get_cstr(tmp_string),"%d", &msg->sms.mclass);
+            sscanf(octstr_get_cstr(tmp_string),"%ld", &msg->sms.mclass);
         }
         tmp_string = http_cgi_variable(cgivars, octstr_get_cstr(fm->mwi));
         if (tmp_string) {
-            sscanf(octstr_get_cstr(tmp_string),"%d", &msg->sms.mwi);
+            sscanf(octstr_get_cstr(tmp_string),"%ld", &msg->sms.mwi);
         }
         tmp_string = http_cgi_variable(cgivars, octstr_get_cstr(fm->coding));
         if (tmp_string) {
-            sscanf(octstr_get_cstr(tmp_string),"%d", &msg->sms.coding);
+            sscanf(octstr_get_cstr(tmp_string),"%ld", &msg->sms.coding);
         }
         tmp_string = http_cgi_variable(cgivars, octstr_get_cstr(fm->validity));
         if (tmp_string) {
-            sscanf(octstr_get_cstr(tmp_string),"%d", &msg->sms.validity);
+            sscanf(octstr_get_cstr(tmp_string),"%ld", &msg->sms.validity);
         }
         tmp_string = http_cgi_variable(cgivars, octstr_get_cstr(fm->deferred));
         if (tmp_string) {
-            sscanf(octstr_get_cstr(tmp_string),"%d", &msg->sms.deferred);
+            sscanf(octstr_get_cstr(tmp_string),"%ld", &msg->sms.deferred);
         }
         account = http_cgi_variable(cgivars, octstr_get_cstr(fm->account));
         binfo = http_cgi_variable(cgivars, octstr_get_cstr(fm->binfo));
