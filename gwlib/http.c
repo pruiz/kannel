@@ -1489,6 +1489,7 @@ HTTPURLParse *parse_url(Octstr *url)
     query = octstr_search_char(url, '?', (slash == -1) ? prefix_len : slash);
     if (query != -1) {
         p->query = octstr_copy(url, query + 1, octstr_len(url));
+        host_len = slash != -1 ? slash - prefix_len : query - prefix_len;
     }
 
     /* path */
@@ -1498,8 +1499,7 @@ HTTPURLParse *parse_url(Octstr *url)
             octstr_copy(url, slash, octstr_len(url) - slash)); 
 
     /* hostname */
-    p->host = octstr_copy(url, prefix_len, 
-        (query == -1 || slash != -1) ? host_len : query - prefix_len);
+    p->host = octstr_copy(url, prefix_len, host_len); 
 
     /* XXX add fragment too */
    
