@@ -1,3 +1,6 @@
+2009-06-15 Alexander Malysh <amalysh at kannel.org>
+    * gwlib/http.c: fixed last commit that broke urls with port and query.
+
 2009-06-11 Alexander Malysh <amalysh at kannel.org>
     * gwlib/http.c: fixed #503. we didn't handle right urls like http://host:port?query.
 

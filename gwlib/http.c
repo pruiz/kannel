@@ -1489,7 +1489,8 @@ HTTPURLParse *parse_url(Octstr *url)
     query = octstr_search_char(url, '?', (slash == -1) ? prefix_len : slash);
     if (query != -1) {
         p->query = octstr_copy(url, query + 1, octstr_len(url));
-        host_len = slash != -1 ? slash - prefix_len : query - prefix_len;
+        if (colon == -1)
+            host_len = slash != -1 ? slash - prefix_len : query - prefix_len;
     }
 
     /* path */
