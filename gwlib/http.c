@@ -1961,6 +1961,12 @@ static int client_is_persistent(List *headers, int use_version_1_0)
 
 
 /*
+ * Maximum number of servers (ports) we have open at the same time.
+ */
+#define MAX_SERVERS 100
+
+
+/*
  * Port specific lists of clients with requests.
  */
 struct port {
@@ -1982,7 +1988,7 @@ static int port_match(void *client, void *port)
 static void port_init(void)
 {
     port_mutex = mutex_create();
-    port_collection = dict_create(1024, NULL);
+    port_collection = dict_create(MAX_SERVERS, NULL);
     /* create list with all active_connections */
     active_connections = gwlist_create();
 }
@@ -2067,6 +2073,18 @@ static void port_remove(int port)
 }
 
 
+static long port_count(void)
+{
+    long ret;
+    
+    mutex_lock(port_mutex);
+    ret = dict_key_count(port_collection);
+    mutex_unlock(port_mutex);
+    
+    return ret;
+}
+
+
 static void port_put_request(HTTPClient *client)
 {
     Octstr *key;
@@ -2109,12 +2127,6 @@ static HTTPClient *port_get_request(int port)
     }
     return client;
 }
-
-
-/*
- * Maximum number of servers (ports) we have open at the same time.
- */
-#define MAX_SERVERS 32
 
 
 /*
@@ -2395,6 +2407,11 @@ static void start_server_thread(void)
 int http_open_port_if(int port, int ssl, Octstr *interface)
 {
     struct server *p;
+    
+    if (port_count() >= MAX_SERVERS) {
+        error(0, "HTTP: Maximum allowed server ports (%d) reached. Port (%d) not opened.", MAX_SERVERS, port);
+        return -1;
+    }
     
     if (ssl) 
         info(0, "HTTP: Opening SSL server at port %d.", port);

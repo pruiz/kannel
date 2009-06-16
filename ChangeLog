@@ -1,4 +1,8 @@
 2009-06-16 Alexander Malysh <amalysh at kannel.org>
+    * gwlib/http.c: increase max http servers from 32 to 100 and return error
+      if max servers reached.
+
+2009-06-16 Alexander Malysh <amalysh at kannel.org>
     * gwlib/http.c: indent fixes.
 
 2009-06-15 Alexander Malysh <amalysh at kannel.org>
