@@ -2140,7 +2140,7 @@ static int parse_request_line(int *method, Octstr **url,
     words = octstr_split_words(line);
     if (gwlist_len(words) != 3) {
         gwlist_destroy(words, octstr_destroy_item);
-	return -1;
+        return -1;
     }
 
     method_str = gwlist_get(words, 0);
@@ -2149,11 +2149,11 @@ static int parse_request_line(int *method, Octstr **url,
     gwlist_destroy(words, NULL);
 
     if (octstr_compare(method_str, octstr_imm("GET")) == 0)
-	*method = HTTP_METHOD_GET;
+        *method = HTTP_METHOD_GET;
     else if (octstr_compare(method_str, octstr_imm("POST")) == 0)
-	*method = HTTP_METHOD_POST;
+        *method = HTTP_METHOD_POST;
     else if (octstr_compare(method_str, octstr_imm("HEAD")) == 0)
-	*method = HTTP_METHOD_HEAD;
+        *method = HTTP_METHOD_HEAD;
     else
         goto error;
 
@@ -2182,79 +2182,79 @@ static void receive_request(Connection *conn, void *data)
     int ret;
 
     if (run_status != running) {
-	conn_unregister(conn);
-	return;
+        conn_unregister(conn);
+        return;
     }
 
     client = data;
     
     for (;;) {
-	switch (client->state) {
-	case reading_request_line:
-    	    line = conn_read_line(conn);
-	    if (line == NULL) {
-		if (conn_eof(conn) || conn_error(conn))
-		    goto error;
-	    	return;
-	    }
-	    ret = parse_request_line(&client->method, &client->url,
-                                     &client->use_version_1_0, line);
-	    octstr_destroy(line);
-            /* client sent bad request? */
-	    if (ret == -1) {
+        switch (client->state) {
+            case reading_request_line:
+                line = conn_read_line(conn);
+                if (line == NULL) {
+                    if (conn_eof(conn) || conn_error(conn))
+                        goto error;
+                    return;
+                }
+                ret = parse_request_line(&client->method, &client->url,
+                                         &client->use_version_1_0, line);
+                octstr_destroy(line);
+                /* client sent bad request? */
+                if (ret == -1) {
+                    /*
+                     * mark client as not persistent in order to destroy connection
+                     * afterwards
+                     */
+                    client->persistent_conn = 0;
+                    /* unregister connection, http_send_reply handle this */
+                    conn_unregister(conn);
+                    http_send_reply(client, HTTP_BAD_REQUEST, NULL, NULL);
+                    return;
+                }
                 /*
-                 * mark client as not persistent in order to destroy connection
-                 * afterwards
+                 * RFC2616 (4.3) says we should read a message body if there
+                 * is one, even on GET requests.
                  */
-                client->persistent_conn = 0;
-                /* unregister connection, http_send_reply handle this */
-                conn_unregister(conn);
-                http_send_reply(client, HTTP_BAD_REQUEST, NULL, NULL);
+                client->request = entity_create(expect_body_if_indicated);
+                client->state = reading_request;
+                break;
+                
+            case reading_request:
+                ret = entity_read(client->request, conn);
+                if (ret < 0)
+                    goto error;
+                if (ret == 0) {
+                    client->state = request_is_being_handled;
+                    conn_unregister(conn);
+                    port_put_request(client);
+                }
                 return;
-            }
-   	    /*
-	     * RFC2616 (4.3) says we should read a message body if there
-	     * is one, even on GET requests.
-	     */
-	    client->request = entity_create(expect_body_if_indicated);
-	    client->state = reading_request;
-	    break;
-	    
-	case reading_request:
-	    ret = entity_read(client->request, conn);
-	    if (ret < 0)
-		goto error;
-	    if (ret == 0) {
-	    	client->state = request_is_being_handled;
-		conn_unregister(conn);
-		port_put_request(client);
-	    }
-	    return;
-
-	case sending_reply:
-            /* Implicit conn_unregister() and _destroy */
-            if (conn_error(conn))
-                goto error;
-	    if (conn_outbuf_len(conn) > 0)
-                return;
-	    /* Reply has been sent completely */
-	    if (!client->persistent_conn) {
-                /*
-                 * in order to avoid race conditions while conn will be destroyed but
-                 * conn is still in use, we call conn_unregister explicit here because
-                 * conn_unregister call uses locks
-                 */
-                conn_unregister(conn);
-                client_destroy(client);
-                return;
-	    }
-	    /* Start reading another request */
-	    client_reset(client);
-	    break;
-
-    	default:
-	    panic(0, "Internal error: HTTPClient state is wrong.");
-	}
+                
+            case sending_reply:
+                /* Implicit conn_unregister() and _destroy */
+                if (conn_error(conn))
+                    goto error;
+                if (conn_outbuf_len(conn) > 0)
+                    return;
+                /* Reply has been sent completely */
+                if (!client->persistent_conn) {
+                    /*
+                     * in order to avoid race conditions while conn will be destroyed but
+                     * conn is still in use, we call conn_unregister explicit here because
+                     * conn_unregister call uses locks
+                     */
+                    conn_unregister(conn);
+                    client_destroy(client);
+                    return;
+                }
+                /* Start reading another request */
+                client_reset(client);
+                break;
+                
+            default:
+                panic(0, "Internal error: HTTPClient state is wrong.");
+        }
     }
     
 error:
@@ -2375,19 +2375,19 @@ static void server_thread(void *dummy)
 static void start_server_thread(void)
 {
     if (!server_thread_is_running) {
-	/* 
-	 * To be really certain, we must repeat the test, but use the
-	 * lock first. If the test failed, however, we _know_ we've
-	 * already initialized. This strategy of double testing avoids
-	 * using the lock more than a few times at startup.
-	 */
-	mutex_lock(server_thread_lock);
-	if (!server_thread_is_running) {
-	    server_fdset = fdset_create_real(HTTP_SERVER_TIMEOUT);
-	    server_thread_id = gwthread_create(server_thread, NULL);
-	    server_thread_is_running = 1;
-	}
-	mutex_unlock(server_thread_lock);
+        /* 
+         * To be really certain, we must repeat the test, but use the
+         * lock first. If the test failed, however, we _know_ we've
+         * already initialized. This strategy of double testing avoids
+         * using the lock more than a few times at startup.
+         */
+        mutex_lock(server_thread_lock);
+        if (!server_thread_is_running) {
+            server_fdset = fdset_create_real(HTTP_SERVER_TIMEOUT);
+            server_thread_id = gwthread_create(server_thread, NULL);
+            server_thread_is_running = 1;
+        }
+        mutex_unlock(server_thread_lock);
     }
 }
 
@@ -2395,7 +2395,7 @@ static void start_server_thread(void)
 int http_open_port_if(int port, int ssl, Octstr *interface)
 {
     struct server *p;
-
+    
     if (ssl) 
         info(0, "HTTP: Opening SSL server at port %d.", port);
     else 
@@ -2405,16 +2405,16 @@ int http_open_port_if(int port, int ssl, Octstr *interface)
     p->ssl = ssl;
     p->fd = make_server_socket(port, (interface ? octstr_get_cstr(interface) : NULL));
     if (p->fd == -1) {
-	gw_free(p);
+        gw_free(p);
     	return -1;
     }
-
+    
     port_add(port);
     gwlist_produce(new_server_sockets, p);
     keep_servers_open = 1;
     start_server_thread();
     gwthread_wakeup(server_thread_id);
-
+    
     return 0;
 }
 
@@ -2499,10 +2499,10 @@ static List *parse_cgivars(Octstr *url)
 
 HTTPClient *http_accept_request(int port, Octstr **client_ip, Octstr **url, 
     	    	    	    	List **headers, Octstr **body, 
-				List **cgivars)
+                                List **cgivars)
 {
     HTTPClient *client;
-
+    
     do {
         client = port_get_request(port);
         if (client == NULL) {
@@ -2516,27 +2516,27 @@ HTTPClient *http_accept_request(int port, Octstr **client_ip, Octstr **url,
             client = NULL;
         }
     } while(client == NULL);
-
+    
     *client_ip = octstr_duplicate(client->ip);
     *url = client->url;
     *headers = client->request->headers;
     *body = client->request->body;
     *cgivars = parse_cgivars(client->url);
-
+    
     if (client->method != HTTP_METHOD_POST) {
-	octstr_destroy(*body);
-	*body = NULL;
+        octstr_destroy(*body);
+        *body = NULL;
     }
-
+    
     client->persistent_conn = client_is_persistent(client->request->headers,
-						   client->use_version_1_0);
+                                                   client->use_version_1_0);
     
     client->url = NULL;
     client->request->headers = NULL;
     client->request->body = NULL;
     entity_destroy(client->request);
     client->request = NULL;
-
+    
     return client;
 }
 
