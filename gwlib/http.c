@@ -1961,12 +1961,6 @@ static int client_is_persistent(List *headers, int use_version_1_0)
 
 
 /*
- * Maximum number of servers (ports) we have open at the same time.
- */
-#define MAX_SERVERS 100
-
-
-/*
  * Port specific lists of clients with requests.
  */
 struct port {
@@ -1988,7 +1982,7 @@ static int port_match(void *client, void *port)
 static void port_init(void)
 {
     port_mutex = mutex_create();
-    port_collection = dict_create(MAX_SERVERS, NULL);
+    port_collection = dict_create(1024, NULL);
     /* create list with all active_connections */
     active_connections = gwlist_create();
 }
@@ -2070,18 +2064,6 @@ static void port_remove(int port)
     gwlist_destroy(l, NULL);
     while((client = gwlist_search(active_connections, &port, port_match)) != NULL)
         client_destroy(client);
-}
-
-
-static long port_count(void)
-{
-    long ret;
-    
-    mutex_lock(port_mutex);
-    ret = dict_key_count(port_collection);
-    mutex_unlock(port_mutex);
-    
-    return ret;
 }
 
 
@@ -2289,33 +2271,37 @@ struct server {
 
 static void server_thread(void *dummy)
 {
-    struct pollfd tab[MAX_SERVERS];
-    int ports[MAX_SERVERS];
-    int ssl[MAX_SERVERS];
-    long i, j, n, fd;
-    int *portno;
-    struct server *p;
+    struct pollfd *tab = NULL;
+    struct server **ports = NULL;
+    int tab_size = 0, n, i, fd, ret;
     struct sockaddr_in addr;
     socklen_t addrlen;
-    Connection *conn;
     HTTPClient *client;
-    int ret;
+    Connection *conn;
+    int *portno;
 
     n = 0;
     while (run_status == running && keep_servers_open) {
-
-        if (n == 0 || (n < MAX_SERVERS && gwlist_len(new_server_sockets) > 0)) {
-            p = gwlist_consume(new_server_sockets);
+        if (n == 0 || gwlist_len(new_server_sockets) > 0) {
+            struct server *p = gwlist_consume(new_server_sockets);
             if (p == NULL) {
                 debug("gwlib.http", 0, "HTTP: No new servers. Quitting.");
                 break;
             }
+            if (tab_size <= n) {
+                tab_size++;
+                tab = gw_realloc(tab, tab_size * sizeof(*tab));
+                ports = gw_realloc(ports, tab_size * sizeof(*ports));
+                if (tab == NULL || ports == NULL) {
+                    tab_size--;
+                    gw_free(p);
+                    continue;
+                }
+            }
             tab[n].fd = p->fd;
             tab[n].events = POLLIN;
-            ports[n] = p->port;
-            ssl[n] = p->ssl;
-            ++n;
-            gw_free(p);
+            ports[n] = p;
+            n++;
         }
 
         if ((ret = gwthread_poll(tab, n, -1.0)) == -1) {
@@ -2337,8 +2323,8 @@ static void server_thread(void *dummy)
                      * handshake has failed, so we only client_create() if
                      * there is an conn.
                      */             
-                    if ((conn = conn_wrap_fd(fd, ssl[i]))) {
-                        client = client_create(ports[i], conn, client_ip);
+                    if ((conn = conn_wrap_fd(fd, ports[i]->ssl))) {
+                        client = client_create(ports[i]->port, conn, client_ip);
                         conn_register(conn, server_fdset, receive_request, client);
                     } else {
                         error(0, "HTTP: unsuccessful SSL handshake for client `%s'",
@@ -2351,34 +2337,35 @@ static void server_thread(void *dummy)
 
         while ((portno = gwlist_extract_first(closed_server_sockets)) != NULL) {
             for (i = 0; i < n; ++i) {
-                if (ports[i] == *portno) {
+                if (ports[i]->port == *portno) {
                     (void) close(tab[i].fd);
-                    port_remove(ports[i]);
                     tab[i].fd = -1;
-                    ports[i] = -1;
-                    ssl[i] = 0;
+                    tab[i].events = 0;
+                    port_remove(ports[i]->port);
+                    gw_free(ports[i]);
+                    ports[i] = NULL;
+                    n--;
+                    
+                    /* now put the last entry on this place */
+                    tab[i].fd = tab[n].fd;
+                    tab[i].events = tab[n].events;
+                    tab[n].fd = -1;
+                    tab[n].events = 0;
+                    ports[i] = ports[n];
                 }
             }
             gw_free(portno);
         }
-        
-        j = 0;
-        for (i = 0; i < n; ++i) {
-            if (tab[i].fd != -1) {
-                tab[j] = tab[i];
-                ports[j] = ports[i];
-                ssl[j] = ssl[i];
-                ++j;
-            }
-        }
-        n = j;
     }
     
     /* make sure we close all ports */
     for (i = 0; i < n; ++i) {
         (void) close(tab[i].fd);
-        port_remove(ports[i]);
+        port_remove(ports[i]->port);
+        gw_free(ports[i]);
     }
+    gw_free(tab);
+    gw_free(ports);
 
     server_thread_id = -1;
 }
@@ -2407,12 +2394,7 @@ static void start_server_thread(void)
 int http_open_port_if(int port, int ssl, Octstr *interface)
 {
     struct server *p;
-    
-    if (port_count() >= MAX_SERVERS) {
-        error(0, "HTTP: Maximum allowed server ports (%d) reached. Port (%d) not opened.", MAX_SERVERS, port);
-        return -1;
-    }
-    
+
     if (ssl) 
         info(0, "HTTP: Opening SSL server at port %d.", port);
     else 
