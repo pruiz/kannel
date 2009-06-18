@@ -1,4 +1,8 @@
 2009-06-18 Alexander Malysh <amalysh at kannel.org>
+    * gw/smsc/smsc_at.c: applied patch that adds more error descriptions.
+      Thanks to Vincent CHAVANIS <v.chavanis at telemaque.fr> for this patch.
+
+2009-06-18 Alexander Malysh <amalysh at kannel.org>
     * gwlib/http.c: removed max http server limit.
 
 2009-06-16 Alexander Malysh <amalysh at kannel.org>
