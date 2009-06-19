@@ -3124,6 +3124,12 @@ address-range = ""
 		 Use value 0 to disable this I/O thread.
      </entry></row>
 
+   <row><entry><literal>use-ssl</literal></entry>
+     <entry><literal>bool</literal></entry>
+     <entry valign="bottom">
+        Defines whether we should try to bind with SSL enabled connection.
+     </entry></row>
+
    <row><entry><literal>transceiver-mode</literal></entry>
      <entry>bool</entry>
      <entry valign="bottom">

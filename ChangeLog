@@ -1,3 +1,6 @@
+2009-06-19 Alexander Malysh <amalysh at kannel.org>
+    * gw/smsc/smsc_smpp.c, doc/userguide/userguide.xml: added possibility to bind with SSL. 
+
 2009-06-18 Alexander Malysh <amalysh at kannel.org>
     * gw/smsc/smsc_at.c: applied patch that adds more error descriptions.
       Thanks to Vincent CHAVANIS <v.chavanis at telemaque.fr> for this patch.

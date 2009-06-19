@@ -152,7 +152,8 @@ typedef struct {
     long bind_addr_npi;
     int transmit_port;
     int receive_port;
-    int quitting;
+    int use_ssl;
+    volatile int quitting;
     long enquire_link_interval;
     long max_pending_submits;
     int version;
@@ -261,6 +262,7 @@ static SMPP *smpp_create(SMSCConn *conn, Octstr *host, int transmit_port,
     smpp->wait_ack_action = wait_ack_action;
     smpp->bind_addr_ton = 0;
     smpp->bind_addr_npi = 0;
+    smpp->use_ssl = 0;
 
     return smpp;
 }
@@ -1057,7 +1059,10 @@ static Connection *open_transmitter(SMPP *smpp)
     SMPP_PDU *bind;
     Connection *conn;
 
-    conn = conn_open_tcp(smpp->host, smpp->transmit_port, smpp->conn->our_host );
+    if (smpp->use_ssl)
+        conn = conn_open_ssl(smpp->host, smpp->transmit_port, NULL, smpp->conn->our_host);
+    else
+        conn = conn_open_tcp(smpp->host, smpp->transmit_port, smpp->conn->our_host);
     if (conn == NULL) {
         error(0, "SMPP[%s]: Couldn't connect to server.",
               octstr_get_cstr(smpp->conn->id));
@@ -1100,7 +1105,10 @@ static Connection *open_transceiver(SMPP *smpp)
     SMPP_PDU *bind;
     Connection *conn;
 
-    conn = conn_open_tcp(smpp->host, smpp->transmit_port, smpp->conn->our_host );
+    if (smpp->use_ssl)
+        conn = conn_open_ssl(smpp->host, smpp->transmit_port, NULL, smpp->conn->our_host);
+    else
+        conn = conn_open_tcp(smpp->host, smpp->transmit_port, smpp->conn->our_host);
     if (conn == NULL) {
        error(0, "SMPP[%s]: Couldn't connect to server.",
              octstr_get_cstr(smpp->conn->id));
@@ -1141,7 +1149,10 @@ static Connection *open_receiver(SMPP *smpp)
     SMPP_PDU *bind;
     Connection *conn;
 
-    conn = conn_open_tcp(smpp->host, smpp->receive_port, smpp->conn->our_host );
+    if (smpp->use_ssl)
+        conn = conn_open_ssl(smpp->host, smpp->receive_port, NULL, smpp->conn->our_host);
+    else
+        conn = conn_open_tcp(smpp->host, smpp->receive_port, smpp->conn->our_host);
     if (conn == NULL) {
         error(0, "SMPP[%s]: Couldn't connect to server.",
               octstr_get_cstr(smpp->conn->id));
@@ -2208,6 +2219,8 @@ int smsc_smpp_create(SMSCConn *conn, CfgGroup *grp)
     cfg_get_integer(&smpp->bind_addr_ton, grp, octstr_imm("bind-addr-ton"));
     cfg_get_integer(&smpp->bind_addr_npi, grp, octstr_imm("bind-addr-npi"));
 
+    cfg_get_bool(&smpp->use_ssl, grp, octstr_imm("use-ssl"));
+
     conn->data = smpp;
     conn->name = octstr_format("SMPP:%S:%d/%d:%S:%S",
     	    	    	       host, port,
@@ -2257,6 +2270,7 @@ int smsc_smpp_create(SMSCConn *conn, CfgGroup *grp)
             gwthread_join(smpp->receiver);
         }
     	smpp_destroy(conn->data);
+        conn->data = NULL;
         return -1;
     }
 
