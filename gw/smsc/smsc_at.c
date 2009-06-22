@@ -786,12 +786,16 @@ static int at2_wait_modem_command(PrivAT2data *privdata, time_t timeout, int gt_
                 privdata->pin_ready = 1;
                 continue;
             }
-            if (octstr_search(line, octstr_imm("+CMS ERROR"), 0) != -1) {
+            if (octstr_search(line, octstr_imm("+CMS ERROR"), 0) != -1 ||
+                octstr_search(line, octstr_imm("+CME ERROR"), 0) != -1) {
                 int errcode;
-                error(0, "AT2[%s]: CMS ERROR: %s", octstr_get_cstr(privdata->name), 
+                error(0, "AT2[%s]: CMx ERROR: %s", octstr_get_cstr(privdata->name), 
                       octstr_get_cstr(line));
                 if (sscanf(octstr_get_cstr(line), "+CMS ERROR: %d", &errcode) == 1)
-                    error(0, "AT2[%s]: CMS ERROR: %s (%d)", octstr_get_cstr(privdata->name), 
+                    error(0, "AT2[%s]: +CMS ERROR: %s (%d)", octstr_get_cstr(privdata->name), 
+                          at2_error_string(errcode), errcode);
+                else if (sscanf(octstr_get_cstr(line), "+CME ERROR: %d", &errcode) == 1)   
+                    error(0, "AT2[%s]: +CME ERROR: %s (%d)", octstr_get_cstr(privdata->name),
                           at2_error_string(errcode), errcode);
                 ret = 1;
                 goto end;
@@ -2895,6 +2899,19 @@ static int at2_set_message_storage(PrivAT2data *privdata, Octstr *memory_name)
 
 static const char *at2_error_string(int code)
 {
+    /*
+     * +CMS ERRORS
+     * 0...127 from GSM 04.11 Annex E-2 values
+     * 128...255 from GSM 03.40 subclause 9.2.3.22
+     * 300...511 from GSM 07.05 subclause 3.2.5
+     * 512+ are manufacturer specific according to GSM 07.05 subclause 3.2.5
+     * 
+     * +CME ERRORS
+     * CME Error codes from GSM 07.07 section 9.2
+     * GPP TS 27.007 /2/
+     * GPRS-related errors - (GSM 04.08 cause codes)
+     * 
+     */
     switch (code) {
     case 0:
         /*
@@ -2908,7 +2925,9 @@ static const char *at2_error_string(int code)
          * Station cannot be reached because, although the number is in a 
          * valid format, it is not currently assigned (allocated).
          */
-        return "Unassigned (unallocated) number";
+        return "Unassigned (unallocated) number (+CMS) or No connection to phone (+CME)";
+    case 2:
+        return "Phone-adaptor link reserved";
     case 3: 
         /* 
          * This can be a lot of things, depending upon the command, but in general
@@ -2921,6 +2940,8 @@ static const char *at2_error_string(int code)
          * it relates to invaid parameters being passed.
          */
         return "Operation / Parameter(s) not supported";
+    case 5: 
+        return "PH-SIM PIN required";
     case 8:
         /*
          * This cause indicates that the MS has tried to send a mobile originating
@@ -2940,6 +2961,10 @@ static const char *at2_error_string(int code)
         return "SIM PUK required";
     case 13:
         return "SIM failure";
+    case 14:
+        return "SIM busy";
+    case 15:
+        return "SIM wrong";
     case 16:
         return "Incorrect password";
     case 17:
@@ -2947,7 +2972,7 @@ static const char *at2_error_string(int code)
          * This cause is sent to the MS if the MSC cannot service an MS generated
          * request because of PLMN failures, e.g. problems in MAP.
          */
-        return "Network failure";
+        return "Network failure (+CMS) or SIM PIN2 required (+CME)";
     case 18:
         return "SIM PUK2 required";
     case 20:
@@ -2959,7 +2984,7 @@ static const char *at2_error_string(int code)
          * the short message since the equipment sending this cause is neither 
          * busy nor incompatible.
          */
-        return "Short message transfer rejected";
+        return "Short message transfer rejected (+CMS) or Invalid Index (+CME)";
     case 22:
         /*
          * This cause is sent if the service request cannot be actioned because 
@@ -2967,9 +2992,13 @@ static const char *at2_error_string(int code)
          * this cause indicates that the mobile station cannot store the 
          * incoming short message due to lack of storage capacity.
          */
-        return "Congestion or Memory capacity exceeded";
+        return "Congestion (+CMS) or Memory capacity exceeded (+CME)";
+    case 23:
+        return "Memory failure";
     case 24:
         return "Text string too long"; /* +CPBW, +CPIN, +CPIN2, +CLCK, +CPWD */
+    case 25:
+        return "Invalid characters in text string";
     case 26:
         return "Dial string too long"; /* +CPBW, ATD, +CCFC */
     case 27:
@@ -3001,7 +3030,9 @@ static const char *at2_error_string(int code)
          * (i.e. IMSI or directory number is not allocated to a subscriber).
          * Also means "No network service" for +VTS, +COPS=?, +CLCK, +CCFC, +CCWA, +CUSD
          */
-        return "Unknown subscriber or No network service";
+        return "Unknown subscriber (+CMS) or No network service (+CME)";
+    case 31:
+        return "Network timeout";
     case 32:
         return "Network not allowed - emergency calls only"; /* +COPS */
     case 38:
@@ -3021,19 +3052,27 @@ static const char *at2_error_string(int code)
          * the Mobile Station may wish to try another short message transfer 
          * attempt almost immediately.
          */
-        return "Temporary failure";
+        return "Temporary failure (+CMS) or Network personalization PUK required (+CME)";
     case 42:
         /*
          * This cause indicates that the short message service cannot be serviced 
          * because of high traffic.
          */
-        return "Congestion";
+        return "Congestion (+CMS) or Network subset personalization PIN required (+CME)";
+    case 43:
+        return "Network subset personalization PUK required";
+    case 44:
+        return "Service provider personalization PIN required";
+    case 45:
+        return "Service provider personalization PUK required";
+    case 46:
+        return "Corporate personalization PIN required";
     case 47:
         /*
          * This cause is used to report a resource unavailable event only when no 
          * other cause applies.
          */
-        return "Resources unavailable, unspecified";
+        return "Resources unavailable, unspecified (+CMS) or Corporate personalization PUK required (+CME)";
     case 50:
         /*
          * This cause indicates that the requested short message service could not
@@ -3093,6 +3132,8 @@ static const char *at2_error_string(int code)
          * order for the equipment sending the cause to process the message.
          */
         return "Information element non-existent or not implemented";
+    case 100:
+        return "Unknown";
     case 103:
         return "Illegal MS (#3)"; /* +CGATT */
     case 106:
@@ -3105,7 +3146,7 @@ static const char *at2_error_string(int code)
          * cause applies.
          * Also means "PLMN not allowed (#11)" for +CGATT
          */
-        return "Protocol error, unspecified or PLMN not allowed (#11)";
+        return "Protocol error, unspecified (+CMS) or PLMN not allowed (#11) (+CME)";
     case 112:
         return "Location area not allowed (#12)"; /* +CGATT */
     case 113:
@@ -3182,51 +3223,71 @@ static const char *at2_error_string(int code)
     case 255:
         return "Unspecified error cause";
     case 300:
-        return "ME failure";
+        /*
+         * Mobile equipment refers to the mobile device that communicates with
+         * the wireless network. Usually it is a mobile phone or GSM/GPRS modem.
+         * The SIM card is defined as a separate entity and is not part of mobile equipment.
+         */
+        return "Mobile equipment (ME) failure";
     case 301:
-        return "SMS service of ME reserved";
+        /*
+         * See +CMS error code 300 for the meaning of mobile equipment. 
+         */
+        return "SMS service of mobile equipment (ME) is reserved";
     case 302:
-        return "Operation not allowed";
+        return "The operation to be done by the AT command is not allowed";
     case 303:
-        return "Operation not supported";
+        return "The operation to be done by the AT command is not supported";
     case 304:
-        return "Invalid PDU mode parameter";
+        return "One or more parameter values assigned to the AT command are invalid";
     case 305:
-        return "Invalid text mode parameter";
+        return "One or more parameter values assigned to the AT command are invalid";
     case 310:
-        return "SIM not inserted";
+        return "There is no SIM card";
     case 311:
-        return "SIM PIN required";
+        /*
+         * The AT command +CPIN (command name in text: Enter PIN)
+         * can be used to send the PIN to the SIM card.
+         */
+        return "The SIM card requires a PIN to operate";
     case 312:
-        return "PH-SIM PIN required";
+        /*
+         * The AT command +CPIN (command name in text: Enter PIN)
+         * can be used to send the PH-SIM PIN to the SIM card.
+         */           
+        return "The SIM card requires a PH-SIM PIN to operate";
     case 313:
-        return "SIM failure";
+        return "SIM card failure";
     case 314:
-        return "SIM busy";
+        return "The SIM card is busy";
     case 315:
-        return "SIM wrong";
+        return "The SIM card is wrong";
     case 316:
-        return "SIM PUK required";
+        /*
+         * The AT command +CPIN (command name in text: Enter PIN)
+         * can be used to send the PUK to the SIM card.
+         */
+        return "The SIM card requires a PUK to operate";
     case 317:
-        return "SIM PIN2 required";
+        return "The SIM card requires a PIN2 to operate";
     case 318:
-        return "SIM PUK2 required";
+        return "The SIM card requires a PUK2 to operate";
     case 320:
-        return "Memory failure";
+        return "Memory/message storage failure";
     case 321:
-        return "Invalid memory index -> don't worry, just memory fragmentation.";
+        return "The memory/message storage index assigned to the AT command is invalid";
     case 322:
-        return "Memory full";
+        return "The memory/message storage is out of space";
     case 330:
-        return "SMSC address unknown";
+        return "The SMS center (SMSC) address is unknown";
     case 331:
-        return "No network service";
+        return "No network service is available";
     case 332:
-        return "Network timeout";
+        return "Network timeout occurred";
     case 340:
-        return "NO +CNMA ACK EXPECTED";
+        return "There is no need to send message ack by the AT command +CNMA";
     case 500:
-        return "Unknown error. -> maybe Sim storage is full? I'll have a look at it.";
+        return "An unknown error occurred";
     case 512:
         /*
          * Resulting from +CMGS, +CMSS
@@ -3293,14 +3354,14 @@ static const char *at2_error_string(int code)
         /*
          * Resulting from +WOPEN
          */
-        return "The embedded application is activated so the objects flash are not erased.";
+        return "The embedded application is activated so the objects flash are not erased";
     case 533:
         /*
          * Resulting from +ATD*99,+GACT,+CGDATA
          */
         return "Missing or unknown APN";
     default:
-        return "Error number unknown. Ask google and add it.";
+        return "Error number unknown. Ask google and add it";
     }
 }
 

@@ -1,3 +1,7 @@
+2009-06-22 Alexander Malysh <amalysh at kannel.org>
+    * gw/smsc/smsc_at.c: applied patch that adds handling of +CME ERROR.
+      Thanks to Vincent CHAVANIS <v.chavanis at telemaque.fr> for this patch.
+
 2009-06-19 Alexander Malysh <amalysh at kannel.org>
     * gw/smsc/smsc_smpp.c: following changes:
         - added retrurn codes to all sending and processing PDU functions
