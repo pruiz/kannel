@@ -1,3 +1,9 @@
+2009-06-22 Alejandro Guerrieri <aguerrieri at kannel.org>
+    * gwlib/dbpool_mssql.c: various fixes:
+        - allows execution of stored procedures on mssql_select
+        - fixed memory leak on mssql_select
+        - fixed double free on data deallocation
+
 2009-06-22 Alexander Malysh <amalysh at kannel.org>
     * gw/smsc/smsc_at.c: applied patch that adds handling of +CME ERROR.
       Thanks to Vincent CHAVANIS <v.chavanis at telemaque.fr> for this patch.

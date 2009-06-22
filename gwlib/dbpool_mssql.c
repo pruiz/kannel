@@ -77,7 +77,7 @@ static int mssql_update(void *theconn, const Octstr *sql, List *binds);
 
 #define mssql_undef_coldata(cols) \
     mssql_undef_colfmt(cols); \
-    for (j = 0; j < cols; j++) { gw_free(data[j].data); gw_free(data[j].format); } \
+    for (j = 0; j < cols; j++) { gw_free(data[j].data); } \
     gw_free(data);
 
 struct mssql_conn {
@@ -260,16 +260,18 @@ static int mssql_select(void *theconn, const Octstr *sql, List *binds, List **re
                     *res = NULL;
                     return -1;
                 }
+                mssql_undef_coldata(columns);
                 break;
             case CS_CMD_SUCCEED:
             case CS_CMD_DONE:
+            case CS_STATUS_RESULT:
                 break;
             case CS_CMD_FAIL:
                 error(0, "select failed!");
                 return -1;
                 break;
             default:
-                error(0, "ct_result returned unexpected result type");
+                error(0, "ct_result returned unexpected result type: %d", res_type);
                 return -1;
                 break;
         }
@@ -303,6 +305,7 @@ static int mssql_update(void *theconn, const Octstr *sql, List *binds)
         switch ((int) result_type) {
             case CS_CMD_SUCCEED:
             case CS_CMD_DONE:
+            case CS_STATUS_RESULT:
                 break;
             default:
                 mssql_checkerr(result_type);
