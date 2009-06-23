@@ -185,6 +185,10 @@ typedef struct conndata {
     regex_t *permfail_regex;
     regex_t *tempfail_regex;
 
+    /* Compiled regex for the 'generic' type to get the foreign message id
+    * from the HTTP response body */
+    regex_t *generic_foreign_id_regex;
+
     /* callback functions set by HTTP-SMSC type */
     void (*send_sms) (SMSCConn *conn, Msg *msg);
     void (*parse_reply) (SMSCConn *conn, Msg *msg, int status,
@@ -237,6 +241,8 @@ static void conndata_destroy(ConnData *conndata)
         gw_regex_destroy(conndata->permfail_regex);
     if (conndata->tempfail_regex)
         gw_regex_destroy(conndata->tempfail_regex);
+    if (conndata->generic_foreign_id_regex)
+        gw_regex_destroy(conndata->generic_foreign_id_regex);
     fieldmap_destroy(conndata->fieldmap);
     octstr_destroy(conndata->allow_ip);
     octstr_destroy(conndata->send_url);
@@ -1532,6 +1538,7 @@ static void wapme_smsproxy_parse_reply(SMSCConn *conn, Msg *msg, int status,
  *  status-success-regex = "ok"
  *  status-permfail-regex = "failure"
  *  status-tempfail-regex = "retry later"
+ *  generic-foreign-id-regex = "<id>(.+)</id>"
  *  generic-param-from = "phoneNumber"
  *  generic-param-to = "shortCode"
  *  generic-param-text = "message"
@@ -1655,7 +1662,7 @@ static void generic_receive_sms(SMSCConn *conn, HTTPClient *client,
     if (tmp_string) {
         sscanf(octstr_get_cstr(tmp_string),"%d", &dlrmask);
     }
-    debug("smsc.http.kannel", 0, "HTTP[%s]: Received an HTTP request",
+    debug("smsc.http.generic", 0, "HTTP[%s]: Received an HTTP request",
           octstr_get_cstr(conn->id));
 
     if ((conndata->username != NULL && conndata->password != NULL) &&
@@ -1679,7 +1686,7 @@ static void generic_receive_sms(SMSCConn *conn, HTTPClient *client,
         if (dlrmsg != NULL) {
             dlrmsg->sms.sms_type = report_mo;
 
-            debug("smsc.http.kannel", 0, "HTTP[%s]: Received DLR for DLR-URL <%s>",
+            debug("smsc.http.generic", 0, "HTTP[%s]: Received DLR for DLR-URL <%s>",
                   octstr_get_cstr(conn->id), octstr_get_cstr(dlrmsg->sms.dlr_url));
 
             Msg *resp = msg_duplicate(dlrmsg);
@@ -1752,7 +1759,7 @@ static void generic_receive_sms(SMSCConn *conn, HTTPClient *client,
         account = http_cgi_variable(cgivars, octstr_get_cstr(fm->account));
         binfo = http_cgi_variable(cgivars, octstr_get_cstr(fm->binfo));
 
-        debug("smsc.http.kannel", 0, "HTTP[%s]: Constructing new SMS",
+        debug("smsc.http.generic", 0, "HTTP[%s]: Constructing new SMS",
               octstr_get_cstr(conn->id));
 
         /* convert character encoding if required */
@@ -1785,7 +1792,7 @@ static void generic_receive_sms(SMSCConn *conn, HTTPClient *client,
 
     reply_headers = gwlist_create();
     http_header_add(reply_headers, "Content-Type", "text/plain");
-    debug("smsc.http.kannel", 0, "HTTP[%s]: Sending reply",
+    debug("smsc.http.generic", 0, "HTTP[%s]: Sending reply",
           octstr_get_cstr(conn->id));
     http_send_reply(client, retstatus, reply_headers, retmsg);
 
@@ -1819,8 +1826,8 @@ static void generic_parse_reply(SMSCConn *conn, Msg *msg, int status,
                                 List *headers, Octstr *body)
 {
     ConnData *conndata = conn->data;
-    size_t n_match = 1;
-    regmatch_t p_match[10];
+    regmatch_t pmatch[2];
+    Octstr *msgid = NULL;
     
     /* 
      * Our generic type checks only content on the HTTP reponse body.
@@ -1828,17 +1835,31 @@ static void generic_parse_reply(SMSCConn *conn, Msg *msg, int status,
      * This is the most generic criteria (at the moment). 
      */
     if ((conndata->success_regex != NULL) && 
-        (gw_regex_exec(conndata->success_regex, body, n_match, p_match, 0) == 0)) {
+        (gw_regex_exec(conndata->success_regex, body, 0, NULL, 0) == 0)) {
+        /* SMSC ACK... the message id should be in the body */
+        if ((conndata->generic_foreign_id_regex != NULL) && DLR_IS_ENABLED_DEVICE(msg->sms.dlr_mask)) {
+            if (gw_regex_exec(conndata->generic_foreign_id_regex, body, sizeof(pmatch) / sizeof(regmatch_t), pmatch, 0) == 0) {
+                if (pmatch[1].rm_so != -1 && pmatch[1].rm_eo != -1) {
+                    msgid = octstr_copy(body, pmatch[1].rm_so, pmatch[1].rm_eo - pmatch[1].rm_so);
+                    debug("smsc.http.generic", 0, "HTTP[%s]: Found foreign message id <%s> in body.", octstr_get_cstr(conn->id), octstr_get_cstr(msgid));
+                    dlr_add(conn->id, msgid, msg);
+                }
+            }
+            if (msgid == NULL)
+                warning(0, "HTTP[%s]: Can't get the foreign message id from the HTTP body.", octstr_get_cstr(conn->id));
+            else
+                octstr_destroy(msgid);
+        }
         bb_smscconn_sent(conn, msg, NULL);
     } 
     else if ((conndata->permfail_regex != NULL) &&        
-        (gw_regex_exec(conndata->permfail_regex, body, n_match, p_match, 0) == 0)) {
+        (gw_regex_exec(conndata->permfail_regex, body, 0, NULL, 0) == 0)) {
         error(0, "HTTP[%s]: Message not accepted.", octstr_get_cstr(conn->id));
         bb_smscconn_send_failed(conn, msg,
             SMSCCONN_FAILED_MALFORMED, octstr_duplicate(body));
     }
     else if ((conndata->tempfail_regex != NULL) &&        
-        (gw_regex_exec(conndata->tempfail_regex, body, n_match, p_match, 0) == 0)) {
+        (gw_regex_exec(conndata->tempfail_regex, body, 0, NULL, 0) == 0)) {
         warning(0, "HTTP[%s]: Message temporary not accepted, will retry.", 
                 octstr_get_cstr(conn->id));
         bb_smscconn_send_failed(conn, msg,
@@ -1933,6 +1954,7 @@ int smsc_http_create(SMSCConn *conn, CfgGroup *cfg)
     conndata->http_ref = NULL;
     conndata->success_regex = 
         conndata->permfail_regex = conndata->tempfail_regex = NULL;
+    conndata->generic_foreign_id_regex = NULL;
 
     conndata->allow_ip = cfg_get(cfg, octstr_imm("connect-allow-ip"));
     conndata->send_url = cfg_get(cfg, octstr_imm("send-url"));
@@ -2011,18 +2033,28 @@ int smsc_http_create(SMSCConn *conn, CfgGroup *cfg)
 
         /* pre-compile regex expressions */
         if (os != NULL) {   /* this is implicite due to the above if check */
-            if ((conndata->success_regex = gw_regex_comp(os, REG_EXTENDED)) == NULL)
-                panic(0, "Could not compile regex pattern '%s'", octstr_get_cstr(os));
+            if ((conndata->success_regex = gw_regex_comp(os, REG_EXTENDED|REG_NOSUB)) == NULL)
+                panic(0, "Could not compile pattern '%s' defined for variable 'status-success-regex'", octstr_get_cstr(os));
             octstr_destroy(os);
         }
         if ((os = cfg_get(cfg, octstr_imm("status-permfail-regex"))) != NULL) {
-            if ((conndata->permfail_regex = gw_regex_comp(os, REG_EXTENDED)) == NULL)
-                panic(0, "Could not compile regex pattern '%s'", octstr_get_cstr(os));
+            if ((conndata->permfail_regex = gw_regex_comp(os, REG_EXTENDED|REG_NOSUB)) == NULL)
+                panic(0, "Could not compile pattern '%s' defined for variable 'status-permfail-regex'", octstr_get_cstr(os));
             octstr_destroy(os);
         }
         if ((os = cfg_get(cfg, octstr_imm("status-tempfail-regex"))) != NULL) {
-            if ((conndata->tempfail_regex = gw_regex_comp(os, REG_EXTENDED)) == NULL)
-                panic(0, "Could not compile regex pattern '%s'", octstr_get_cstr(os));
+            if ((conndata->tempfail_regex = gw_regex_comp(os, REG_EXTENDED|REG_NOSUB)) == NULL)
+                panic(0, "Could not compile pattern '%s' defined for variable 'status-tempfail-regex'", octstr_get_cstr(os));
+            octstr_destroy(os);
+        }
+        if ((os = cfg_get(cfg, octstr_imm("generic-foreign-id-regex"))) != NULL) {
+            if ((conndata->generic_foreign_id_regex = gw_regex_comp(os, REG_EXTENDED)) == NULL)
+                panic(0, "Could not compile pattern '%s' defined for variable 'generic-foreign-id-regex'", octstr_get_cstr(os));
+            else {
+                /* check quickly that at least 1 group seems to be defined in the regex */
+                if (octstr_search_char(os, '(', 0) == -1 || octstr_search_char(os, ')', 0) == -1)
+                    warning(0, "HTTP[%s]: No group defined in pattern '%s' for variable 'generic-foreign-id-regex'", octstr_get_cstr(conn->id), octstr_get_cstr(os));
+            }
             octstr_destroy(os);
         }
     }

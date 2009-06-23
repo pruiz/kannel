@@ -4114,21 +4114,29 @@ send-url = "http://localhost:20022"
      <entry><literal>POSIX regular expression</literal></entry>
      <entry valign="bottom">
        Regular expression to match against HTTP
-       response body conent, indicating a successfull submission. 
+       response body content, indicating a successful submission.
      </entry></row>
      
    <row><entry><literal>status-permfail-regex (o)</literal></entry>
      <entry><literal>POSIX regular expression</literal></entry>
      <entry valign="bottom">
        Regular expression to match against HTTP
-       response body conent, indicating a permanent failure. 
+       response body content, indicating a permanent failure.
      </entry></row>
 
    <row><entry><literal>status-tempfail-regex (o)</literal></entry>
      <entry><literal>POSIX regular expression</literal></entry>
      <entry valign="bottom">
        Regular expression to match against HTTP
-       response body conent, indicating a temporary failure. 
+       response body content, indicating a temporary failure.
+     </entry></row>
+
+   <row><entry><literal>generic-foreign-id-regex (o)</literal></entry>
+     <entry><literal>POSIX regular expression</literal></entry>
+     <entry valign="bottom">
+       Regular expression to match against HTTP
+       response body content to get the foreign message id
+       in case of successful submission.
      </entry></row>
     
    <row><entry><literal>generic-param-username (o)</literal></entry>
@@ -4299,6 +4307,7 @@ send-url = "http://www.foobar.com/mt.php?from=%P&amp;to=%p&amp;text=%b"
 status-success-regex = "ok"
 status-permfail-regex = "failure"
 status-tempfail-regex = "retry later"
+generic-foreign-id-regex = "&lt;id&gt;(.+)&lt;/id&gt;"
 generic-param-from = "phoneNumber"
 generic-param-to = "shortCode"
 generic-message-sent = "Message sent with ID: %I"

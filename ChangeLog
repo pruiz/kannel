@@ -1,3 +1,9 @@
+2009-09-23 Alexander Malysh <amalysh at kannel.org>
+    * doc/userguide/userguide.xml, gw/smsc/smsc_http.c, gwlib/cfg.def: added 
+      generic-foreign-id-regex config option that allows us to substract message
+      id from body content by successful submission.
+      Thanks to "Franck LAMASUTA" <f.lamasuta at cobratelematics.com> for this patch.
+
 2009-06-22 Alejandro Guerrieri <aguerrieri at kannel.org>
     * gwlib/dbpool_mssql.c: various fixes:
         - allows execution of stored procedures on mssql_select
