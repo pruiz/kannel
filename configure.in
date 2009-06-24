@@ -261,7 +261,7 @@ AC_CHECK_FUNC(gethostbyname_r, [ AC_FUNC_WHICH_GETHOSTBYNAME_R ], [
 dnl Extra feature checks
 
 dnl GW_HAVE_TYPE_FROM(HDRNAME, TYPE, HAVENAME, DESCRIPTION)
-AC_DEFUN(GW_HAVE_TYPE_FROM, [
+AC_DEFUN([GW_HAVE_TYPE_FROM], [
 	AC_CACHE_CHECK([for $2 in <$1>], gw_cv_type_$3,
 		AC_TRY_COMPILE([#ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -275,7 +275,7 @@ AC_DEFUN(GW_HAVE_TYPE_FROM, [
 ])
 
 dnl GW_HAVE_FUNC_FROM(HDRNAME, FUNC, HAVENAME, DESCRIPTION)
-AC_DEFUN(GW_HAVE_FUNC_FROM, [
+AC_DEFUN([GW_HAVE_FUNC_FROM], [
 	AC_CACHE_CHECK([for $2 in <$1>], gw_cv_func_$3,
 		AC_TRY_COMPILE([#include <$1>], [void *foo = $2;],
 			gw_cv_func_$3=yes, gw_cv_func_$3=no))
@@ -819,7 +819,7 @@ if test "$ssl" = "yes" ; then
   dnl test only if --with-ssl has not been used
   if test "x$ssllib" = "x" && test "x$sslinc" = "x"; then
     for loc in /usr/lib /usr/lib64 /usr/local/ssl/lib /usr/local/openssl/lib; do
-      if test -f "$loc/libssl.a" -o -f "$loc/libssl.dylib" ; then
+      if test -f "$loc/libssl.a" -o -f "$loc/libssl.so" -o -f "$loc/libssl.dylib" ; then
         ssllib="$loc"
       fi
     done

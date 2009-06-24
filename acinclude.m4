@@ -14,7 +14,7 @@ dnl AC_CHECK_VERSION(installed, required, [do-if-success], [do-if-tail])
 dnl
 dnl Written by Stipe Tolj <stolj@kannel.org> <st@tolj.org> 
  
-AC_DEFUN(AC_CHECK_VERSION, 
+AC_DEFUN([AC_CHECK_VERSION], 
 [ 
   dnl split installed version string 
   ac_inst_ver_maj=`echo $1 | sed -e 's/^\(.*\)\..*\..*$/\1/'` 
@@ -53,7 +53,7 @@ AC_DEFUN(AC_CHECK_VERSION,
 dnl Some optional terminal sequences for configure
 dnl Taken from the mod_ssl package by Ralf S. Engelschall.
 
-AC_DEFUN(AC_SET_TERMINAL_SEQUENCES,
+AC_DEFUN([AC_SET_TERMINAL_SEQUENCES],
 [
   case $TERM in
     xterm|xterm*|vt220|vt220*|cygwin)
@@ -75,7 +75,7 @@ AC_DEFUN(AC_SET_TERMINAL_SEQUENCES,
 dnl Display configure section name in bold white letters
 dnl if available on the terminal
 
-AC_DEFUN(AC_CONFIG_SECTION,
+AC_DEFUN([AC_CONFIG_SECTION],
 [
   nl='
 '
@@ -88,7 +88,7 @@ dnl the value to the given variable
 dnl day is reevaluated because `` eats the two spaces if 
 dnl   day is lesser than 10.
 
-AC_DEFUN(AC_CVS_DATE,
+AC_DEFUN([AC_CVS_DATE],
 [
   cvs_date=`grep ChangeLog CVS/Entries | cut -f4 -d/`
   day=`grep ChangeLog CVS/Entries | cut -f4 -d/ | cut -c9-10 | tr " " "0"`
@@ -116,7 +116,7 @@ dnl Available from the GNU Autoconf Macro Archive at:
 dnl http://www.gnu.org/software/ac-archive/htmldoc/ac_caolan_func_which_gethostbyname_r.html
 dnl Modified by Alexander Malysh for Kannel Project.
 
-AC_DEFUN(AC_FUNC_WHICH_GETHOSTBYNAME_R,
+AC_DEFUN([AC_FUNC_WHICH_GETHOSTBYNAME_R],
 [AC_CACHE_CHECK(for which type of gethostbyname_r, ac_cv_func_which_gethostname_r, [
 AC_TRY_COMPILE([
 #include <netdb.h>
