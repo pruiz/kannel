@@ -1,6 +1,6 @@
 2009-06-24  Stipe Tolj  <stolj at kannel.org>
     * acinclude.m4: fix unquoted definition warnings from bootstrap.sh run.
-    * aclocal.m4: outout of aclocal
+    * aclocal.m4: outcome of aclocal
     * configure[.in]: fix Fedora Core 11 (x86 and amd64) build for openssl
       detection. The static libssl.a library has been extracted from the
       openssl-devel package and is usually now not installed on a base system
