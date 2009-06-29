@@ -1,4 +1,10 @@
 2009-06-29 Alexander Malysh <amalysh at kannel.org>
+    * gw/smsc/smsc_at.c: optimizing detection process on CME/CMS Errors (avoid to check
+      if CMS when CME was detected). Renaming param value code -> errcode to make it
+      more clean.
+      Thanks to Vincent CHAVANIS <v.chavanis at telemaque.fr> for this patch.
+
+2009-06-29 Alexander Malysh <amalysh at kannel.org>
     * gwlib/regex.c: fixed memory leak.
       Thanks to "Franck LAMASUTA" <f.lamasuta at cobratelematics.com> for patch.
 

@@ -786,15 +786,20 @@ static int at2_wait_modem_command(PrivAT2data *privdata, time_t timeout, int gt_
                 privdata->pin_ready = 1;
                 continue;
             }
-            if (octstr_search(line, octstr_imm("+CMS ERROR"), 0) != -1 ||
-                octstr_search(line, octstr_imm("+CME ERROR"), 0) != -1) {
+            if (octstr_search(line, octstr_imm("+CMS ERROR"), 0) != -1) {
                 int errcode;
-                error(0, "AT2[%s]: CMx ERROR: %s", octstr_get_cstr(privdata->name), 
+                error(0, "AT2[%s]: +CMS ERROR: %s", octstr_get_cstr(privdata->name), 
                       octstr_get_cstr(line));
                 if (sscanf(octstr_get_cstr(line), "+CMS ERROR: %d", &errcode) == 1)
                     error(0, "AT2[%s]: +CMS ERROR: %s (%d)", octstr_get_cstr(privdata->name), 
                           at2_error_string(errcode), errcode);
-                else if (sscanf(octstr_get_cstr(line), "+CME ERROR: %d", &errcode) == 1)   
+                ret = 1;
+                goto end;
+            } else if (octstr_search(line, octstr_imm("+CME ERROR"), 0) != -1) {
+                int errcode;
+                error(0, "AT2[%s]: +CME ERROR: %s", octstr_get_cstr(privdata->name),
+                      octstr_get_cstr(line));
+                if (sscanf(octstr_get_cstr(line), "+CME ERROR: %d", &errcode) == 1)
                     error(0, "AT2[%s]: +CME ERROR: %s (%d)", octstr_get_cstr(privdata->name),
                           at2_error_string(errcode), errcode);
                 ret = 1;
@@ -2897,7 +2902,7 @@ static int at2_set_message_storage(PrivAT2data *privdata, Octstr *memory_name)
 }
 
 
-static const char *at2_error_string(int code)
+static const char *at2_error_string(int errcode)
 {
     /*
      * +CMS ERRORS
@@ -2912,7 +2917,7 @@ static const char *at2_error_string(int code)
      * GPRS-related errors - (GSM 04.08 cause codes)
      * 
      */
-    switch (code) {
+    switch (errcode) {
     case 0:
         /*
          * Default the code to 0 then when you extract the value from the
@@ -2954,7 +2959,7 @@ static const char *at2_error_string(int code)
          * This cause indicates that the outgoing call barred service applies to
          * the short message service for the called destination.
          */
-        return "Call barred or SIM not inserted or Card inserted is not a SIM";
+        return "Call barred (+CMS) or SIM not inserted or Card inserted is not a SIM (+CME)";
     case 11:
         return "SIM PIN required";
     case 12:
