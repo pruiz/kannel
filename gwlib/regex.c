@@ -107,6 +107,7 @@ regex_t *gw_regex_comp_real(const Octstr *pattern, int cflags, const char *file,
         error(0, "%s:%ld: %s: regex compilation `%s' failed: %s (Called from %s:%ld:%s.)",
               __FILE__, (long) __LINE__, __func__, octstr_get_cstr(pattern), buffer, 
               (file), (long) (line), (func));
+        gw_free(preg);
         return NULL;
     }
 
