@@ -1,3 +1,16 @@
+2009-07-07 Alexander Malysh <amalysh at kannel.org>
+    * gw/smsc/smsc_smpp.c: merged smpp throttling branch that adds throughput handling
+      without sleep for better ACK/DLR performance. Also changed:
+      - added retrurn codes to all sending and processing PDU functions
+      - dded extra errorcode when we receive malformed PDU
+      - inlined smpp_msg_[create|destroy]
+      - check validity against SMS_PARAM_UNDEFINED instead of hardcoded >= 0
+      - added function to send generic NACk
+      - check bind_xxx_resp for error 'already bounded' and don't handle it as error
+      - rewrote io_thread function (this is the main loop) to take into accounts all
+        possible conditions and throughput
+      - implemented async shutdown sequence
+
 2009-06-29 Alexander Malysh <amalysh at kannel.org>
     * gw/smsc/smsc_at.c: optimizing detection process on CME/CMS Errors (avoid to check
       if CMS when CME was detected). Renaming param value code -> errcode to make it
