@@ -170,6 +170,8 @@ long smsc2_rout(Msg *msg, int resend);
 
 int smsc2_stop_smsc(Octstr *id);   /* shutdown a specific smsc */
 int smsc2_restart_smsc(Octstr *id);  /* re-start a specific smsc */
+int smsc2_add_smsc(Octstr *id);   /* add a new smsc */
+int smsc2_remove_smsc(Octstr *id);   /* remove a specific smsc */
 
 
 /*---------------
@@ -208,8 +210,11 @@ int bb_resume(void);
 int bb_restart(void);
 int bb_flush_dlr(void);
 int bb_stop_smsc(Octstr *id);
+int bb_add_smsc(Octstr *id);
+int bb_remove_smsc(Octstr *id);
 int bb_restart_smsc(Octstr *id);
 int bb_reload_lists(void);
+int bb_reload_smsc_groups(void);
 
 /* return string of current status */
 Octstr *bb_print_status(int status_type);

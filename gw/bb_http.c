@@ -266,6 +266,42 @@ static Octstr *httpd_stop_smsc(List *cgivars, int status_type)
         return octstr_create("SMSC id not given");
 }
 
+static Octstr *httpd_remove_smsc(List *cgivars, int status_type)
+{
+    Octstr *reply;
+    Octstr *smsc;
+    if ((reply = httpd_check_authorization(cgivars, 0))!= NULL) return reply;
+    if ((reply = httpd_check_status())!= NULL) return reply;
+
+    /* check if the smsc id is given */
+    smsc = http_cgi_variable(cgivars, "smsc");
+    if (smsc) {
+        if (bb_remove_smsc(smsc) == -1)
+            return octstr_format("Could not remove smsc-id `%s'", octstr_get_cstr(smsc));
+        else
+            return octstr_format("SMSC `%s' removed", octstr_get_cstr(smsc));
+    } else
+        return octstr_create("SMSC id not given");
+}
+
+static Octstr *httpd_add_smsc(List *cgivars, int status_type)
+{
+    Octstr *reply;
+    Octstr *smsc;
+    if ((reply = httpd_check_authorization(cgivars, 0))!= NULL) return reply;
+    if ((reply = httpd_check_status())!= NULL) return reply;
+
+    /* check if the smsc id is given */
+    smsc = http_cgi_variable(cgivars, "smsc");
+    if (smsc) {
+        if (bb_add_smsc(smsc) == -1)
+            return octstr_format("Could not add smsc-id `%s'", octstr_get_cstr(smsc));
+        else
+            return octstr_format("SMSC `%s' added", octstr_get_cstr(smsc));
+    } else
+        return octstr_create("SMSC id not given");
+}
+
 static Octstr *httpd_restart_smsc(List *cgivars, int status_type)
 {
     Octstr *reply;
@@ -312,6 +348,8 @@ static struct httpd_command {
     { "flush-dlr", httpd_flush_dlr },
     { "stop-smsc", httpd_stop_smsc },
     { "start-smsc", httpd_restart_smsc },
+    { "add-smsc", httpd_add_smsc },
+    { "remove-smsc", httpd_remove_smsc },
     { "reload-lists", httpd_reload_lists },
     { NULL , NULL } /* terminate list */
 };

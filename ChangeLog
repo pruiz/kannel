@@ -1,3 +1,14 @@
+2009-07-08 Alejandro Guerrieri <aguerrieri at kannel.org>
+    * doc/userguide/userguide.xml, gw/bearerbox.c, gw/bearerbox.h, gw/bb_smscconn.c,
+      gw/bb_http.c: improvements and bug fixes for the http admin interface:
+      - added add-smsc and remove-smsc commands to dinamically add and remove smsc
+        without restarting bearerbox
+      - start-smsc reloads the configuration from disk
+      - fixes bug on stop-smsc and start-smsc to properly report an error when a
+	non-existing smsc name is stopped/started
+      - fixes a bug when starting a group with 2 or more entries with the same id and
+        different admin-id's
+
 2009-07-07 Alexander Malysh <amalysh at kannel.org>
     * gw/smsc/smsc_smpp.c: merged smpp throttling branch that adds throughput handling
       without sleep for better ACK/DLR performance. Also changed:

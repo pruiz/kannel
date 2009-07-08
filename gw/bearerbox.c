@@ -122,6 +122,9 @@ List *suspended;
  */
 List *isolated;
 
+/* configuration filename */
+Octstr *cfg_filename;
+
 volatile sig_atomic_t bb_status;
 
 /* 
@@ -591,7 +594,6 @@ int main(int argc, char **argv)
 {
     int cf_index;
     Cfg *cfg;
-    Octstr *filename;
 
     bb_status = BB_RUNNING;
     
@@ -606,15 +608,13 @@ int main(int argc, char **argv)
     cf_index = get_and_set_debugs(argc, argv, check_args);
 
     if (argv[cf_index] == NULL)
-        filename = octstr_create("kannel.conf");
+        cfg_filename = octstr_create("kannel.conf");
     else
-        filename = octstr_create(argv[cf_index]);
-    cfg = cfg_create(filename); 
+        cfg_filename = octstr_create(argv[cf_index]);
+    cfg = cfg_create(cfg_filename);
     
     if (cfg_read(cfg) == -1)
-        panic(0, "Couldn't read configuration from `%s'.", octstr_get_cstr(filename));
-    
-    octstr_destroy(filename);
+        panic(0, "Couldn't read configuration from `%s'.", octstr_get_cstr(cfg_filename));
 
     dlr_init(cfg);
     
@@ -819,6 +819,16 @@ int bb_stop_smsc(Octstr *id)
 int bb_restart_smsc(Octstr *id)
 {
     return smsc2_restart_smsc(id);
+}
+
+int bb_add_smsc(Octstr *id)
+{
+    return smsc2_add_smsc(id);
+}
+
+int bb_remove_smsc(Octstr *id)
+{
+    return smsc2_remove_smsc(id);
 }
 
 int bb_restart(void)

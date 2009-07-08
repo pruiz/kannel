@@ -1918,6 +1918,8 @@ commands never arrive nor can you restart it via WAP anymore.</para>
         Re-start a single SMSC link. Password required. Additionally
 		  the <literal>smsc</literal> parameter must be given to identify
  		  which <literal>smsc-admin-id</literal> should be re-started.
+        The configuration for the SMSC link is re-read from disk before
+        the action is performed.
    </entry></row>
 
   	<row><entry><literal>stop-smsc</literal></entry>
@@ -1925,6 +1927,21 @@ commands never arrive nor can you restart it via WAP anymore.</para>
         Shutdown a single SMSC link. Password required. Additionally
 		  the <literal>smsc</literal> parameter must be given (see above).
    </entry></row>
+
+    <row><entry><literal>add-smsc</literal></entry>
+    <entry valign="bottom">
+        Adds an SMSC link previously removed or created after the service was
+        started. Password required. Additionally the <literal>smsc</literal>
+        parameter must be given (see above).
+    </entry></row>
+
+    <row><entry><literal>remove-smsc</literal></entry>
+    <entry valign="bottom">
+        Removes an existing SMSC link. Password required. Additionally the
+        <literal>smsc</literal> parameter must be given (see above). If you
+        want a permanent removal, you should also remove the entry from the
+        configuration file or it will be recreated after a service restart.
+    </entry></row>
 
 	<row><entry><literal>restart</literal></entry>
    <entry valign="bottom">
