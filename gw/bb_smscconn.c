@@ -836,7 +836,6 @@ int smsc2_restart_smsc(Octstr *id)
 int smsc2_remove_smsc(Octstr *id)
 {
     SMSCConn *conn;
-    Octstr *smscid = NULL;
     long i = -1;
     int success = 0;
 
@@ -867,7 +866,6 @@ int smsc2_add_smsc(Octstr *id)
 {
     CfgGroup *grp;
     SMSCConn *conn;
-    Octstr *smsc_type;
     Octstr *smscid = NULL;
     long i;
     int success = 0;
