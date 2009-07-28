@@ -61,10 +61,10 @@
  *
  * !!! NOTE NOTE NOTE !!!
  *
- * Phone number precision is limited according to sizeof(long)
+ * Phone number precision is limited according to sizeof(long long)
  * in host machine. that is usually either 32 or 64 bits. In a
- * case of 32 bit longs, only last 9 digits are checked, otherwise
- * last 18 digits. This means that in some places several numbers
+ * case of 32 bit longs, only last 19 digits are checked, otherwise
+ * last 38 digits. This means that in some places several numbers
  * might map to same hash entry, and thus some caution is needed
  * specially with telephone number black lists
  *
@@ -74,7 +74,7 @@
  *
  * MEMORY NEEDED:  (approximated)
  *
- * 2* (sizeof(long)+sizeof(void *)) bytes per number
+ * 2* (sizeof(long long)+sizeof(void *)) bytes per number
  */
 
 #ifndef NUMHASH_H
@@ -108,7 +108,7 @@ typedef struct numhash_table Numhash;
  *  +358 40 1234
  *  +358 40-1234 : Kalle Marjola
  */
-Numhash *numhash_create(char *url); 
+Numhash *numhash_create(const char *url); 
 
 /* destroy hash and all numbers in it */
 void numhash_destroy(Numhash *table);
@@ -118,11 +118,11 @@ void numhash_destroy(Numhash *table);
 int numhash_find_number(Numhash *table, Octstr *nro);
 				      
 /* if we already have the key */
-int numhash_find_key(Numhash *table, long key);		
+int numhash_find_key(Numhash *table, long long key);
 
 /* if we want to know the key */
-long numhash_get_key(Octstr *nro);
-long numhash_get_char_key(char *nro);
+long long numhash_get_key(Octstr *nro);
+long long numhash_get_char_key(char *nro);
 
 
 /* Return hash fill percent. If 'longest' != NULL, set as longest

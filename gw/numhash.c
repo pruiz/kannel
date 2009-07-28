@@ -98,7 +98,7 @@ struct numhash_table {
 };	/* Numhash */
 
 struct numhash_number {
-  long			key;		/* (hopefully) unique key */
+  long long			key;		/* (hopefully) unique key */
   struct numhash_number	*next;		/* next in hash table, if any */
 };
 
@@ -114,7 +114,7 @@ struct numhashes {
 };	/* Multitable */
 
 
-static int	precision = 9;		/* the precision (last numbers) used */
+static int	precision = 19;		/* the precision (last numbers) used */
 
 /*
  * add new item (number) to hash table
@@ -139,8 +139,8 @@ static int add_item(Numhash *table, struct numhash_number *nro)
     return 0;
 
 duplicate:
-    warning(0, "Duplicate number %ld!", nro->key); 
-    return -1;	
+    warning(0, "Duplicate number %lld!", nro->key);
+    return -1;
 }
 
 /* Add a new number to number list and hash
@@ -156,12 +156,12 @@ static int numhash_add_number(Numhash *table, char *nro)
 	return -1;
     }
     newnro =  &table->numbers[table->number_total++]; /* take the next free */
-  
+
     newnro->key = numhash_get_char_key(nro);
     newnro->next = NULL;
-  
+
     add_item(table, newnro);
-  
+
     return 0;
 }
 
@@ -173,7 +173,7 @@ static Numhash *numhash_init(int max_numbers, int hash_size)
     Numhash	*ntable = NULL;
 
     ntable = gw_malloc(sizeof(Numhash));
-    
+
     if (hash_size > 0)
 	ntable->hash_size = hash_size;
     else if (hash_size == NUMHASH_AUTO_HASH) {
@@ -194,13 +194,15 @@ static Numhash *numhash_init(int max_numbers, int hash_size)
     ntable->numbers = gw_malloc(ntable->table_size * sizeof(struct numhash_number));
 
     ntable->number_total = 0;
-  
+
     /* set our accuracy according to the size of long int
      * Ok, we call this many times if we use multiple tables, but
      * that is not a problem...
      */
-    if (sizeof(long)>=8) precision = 18;
-    else if (sizeof(long)>=4) precision = 9;
+    if (sizeof(long long) >= 16)
+        precision = 38;
+    else if (sizeof(long long) >= 8)
+        precision = 19;
 
     return ntable;
 }
@@ -215,14 +217,14 @@ static Numhash *numhash_init(int max_numbers, int hash_size)
 
 int numhash_find_number(Numhash *table, Octstr *nro)
 {
-    long key = numhash_get_key(nro);
+    long long key = numhash_get_key(nro);
     if (key<0) return key;
 
     return numhash_find_key(table, key);
 }
 
 
-int numhash_find_key(Numhash *table, long key)
+int numhash_find_key(Numhash *table, long long key)
 {
     struct numhash_number *ptr;
 
@@ -236,31 +238,34 @@ int numhash_find_key(Numhash *table, long key)
 
 
 
-long numhash_get_key(Octstr *nro)
+long long numhash_get_key(Octstr *nro)
 {
-    long key;
+    long long key;
+
     if (!nro) return -1;
-  
+
     if (octstr_len(nro) > precision)
-	key = atoi(octstr_get_cstr(nro) + octstr_len(nro) -precision);
+        key = strtoll(octstr_get_cstr(nro) + octstr_len(nro) - precision, (char**) NULL, 10);
     else
-	key = atoi(octstr_get_cstr(nro));
+        key = strtoll(octstr_get_cstr(nro), (char**) NULL, 10);
 
     return key;
 }
 
 
-long numhash_get_char_key(char *nro)
+long long numhash_get_char_key(char *nro)
 {
     int len;
-    long key;
+    long long key;
+
     if (!nro) return -1;
+
     len = strlen(nro);
-    
+
     if (len > precision)
-	key = atoi(nro + len -precision);
+        key = strtoll(nro + len - precision, (char**) NULL, 10);
     else
-	key = atoi(nro);
+        key = strtoll(nro, (char**) NULL, 10);
 
     return key;
 }
@@ -284,7 +289,7 @@ double numhash_hash_fill(Numhash *table, int *longest)
     for (i=0; i < table->hash_size; i++)
 	if (table->hash[i]) {
 	    tot++;
-	    ptr = table->hash[i]; 
+	    ptr = table->hash[i];
 	    for (l=0; ptr->next; ptr = ptr->next)
 		l++;
 	    if (l > max)
@@ -304,24 +309,24 @@ int numhash_size(Numhash *table)
 }
 
 
-Numhash *numhash_create(char *seek_url)
+Numhash *numhash_create(const char *seek_url)
 {
     int		loc, lines = 0;
     List	*request_headers, *reply_headers;
     Octstr	*url, *final_url, *reply_body;
     Octstr	*type, *charset;
-    
-    char    *data, *ptr, numbuf[100];
+
+    char *data, *ptr, numbuf[100];
     int		status;
     Numhash	*table;
 
     url = octstr_create(seek_url);
-    request_headers = gwlist_create();
+    request_headers = http_create_empty_headers();
     status = http_get_real(HTTP_METHOD_GET, url, request_headers, &final_url,
 			    &reply_headers, &reply_body);
     octstr_destroy(url);
     octstr_destroy(final_url);
-    gwlist_destroy(request_headers, NULL);
+    http_destroy_headers(request_headers);
 
     if (status != HTTP_OK) {
 	http_destroy_headers(reply_headers);
@@ -332,7 +337,7 @@ Numhash *numhash_create(char *seek_url)
     http_header_get_content_type(reply_headers, &type, &charset);
     octstr_destroy(charset);
     http_destroy_headers(reply_headers);
-    
+
     if (octstr_str_compare(type, "text/plain") != 0) {
         octstr_destroy(reply_body);
         error(0, "Strange content type <%s> for numhash - expecting 'text/plain'"
@@ -341,7 +346,7 @@ Numhash *numhash_create(char *seek_url)
         return NULL;
     }
     octstr_destroy(type);
-    
+
     ptr = data = octstr_get_cstr(reply_body);
     while(*ptr) {
 	if (*ptr == '\n') lines++;
@@ -354,7 +359,7 @@ Numhash *numhash_create(char *seek_url)
     /* now, parse the number information */
 
     lines = 0;
-  
+
     while((ptr = strchr(data, '\n'))) {	/* each line is ended with linefeed */
 	*ptr = '\0';
 	while(*data != '\0' && isspace(*data))
@@ -379,7 +384,7 @@ Numhash *numhash_create(char *seek_url)
 	}
 	data = ptr+1;	/* next row... */
     }
-    octstr_destroy(reply_body); 
+    octstr_destroy(reply_body);
 
     info(0, "Read from <%s> total of %ld numbers", seek_url, table->number_total);
     return table;

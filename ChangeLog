@@ -1,3 +1,7 @@
+2009-07-28 Alexander Malysh <amalysh at kannel.org>
+    * gw/numhash.[ch]: increase numhash precision from 9,18 to 19,38 on 32,64bit respectively.
+      This is possible by using C99 standard type long long.
+
 2009-07-21  Stipe Tolj  <stolj at kannel.org>
     * gw/smsc/smsc_smpp.c: fix compile error for --disable-ssl builds. NLC.
       Thanks to Gottfried Huber <gottfried.huber at siemens.com> for reporting.
