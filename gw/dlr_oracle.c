@@ -300,7 +300,7 @@ static void dlr_flush_oracle (void)
     if (pconn == NULL)
         return;
 
-    sql = octstr_format("DELETE FROM DLR");
+    sql = octstr_format("DELETE FROM %S", fields->table);
 #if defined(DLR_TRACE)
     debug("dlr.oracle", 0, "sql: %s", octstr_get_cstr(sql));
 #endif
