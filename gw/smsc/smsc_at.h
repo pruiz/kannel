@@ -173,7 +173,7 @@ static void at2_close_device(PrivAT2data *privdata);
 /*
  * checks if there are any incoming bytes and adds them to the line buffer
  */
-static void at2_read_buffer(PrivAT2data *privdata);
+static void at2_read_buffer(PrivAT2data *privdata, double timeout);
 
 /* 
  * Looks for a full line to be read from the buffer. 
@@ -190,7 +190,7 @@ static Octstr *at2_wait_line(PrivAT2data *privdata, time_t timeout, int gt_flag)
  * is yet received returns NULL. If gt_flag is set, it is also looking for
  * a line containing > even there is no CR yet.
  */
-static Octstr *at2_read_line(PrivAT2data *privdata, int gt_flag);
+static Octstr *at2_read_line(PrivAT2data *privdata, int gt_flag, double timeout);
 
 /*
  * Writes a line out to the device and adds a carriage return/linefeed to it. 
