@@ -310,8 +310,14 @@ static void at2_read_buffer(PrivAT2data *privdata, double timeout)
         count = SSIZE_MAX;
 #endif
 
-    tv.tv_sec = 0;
-    tv.tv_usec = timeout <= 0 ? 1000 : timeout * 1000000;
+    if (timeout <= 0) {
+        tv.tv_sec = 0;
+        tv.tv_usec = 1000;
+    } else {
+      int usecs = timeout * 1000000;
+      tv.tv_sec = usecs / 1000000;
+      tv.tv_usec = usecs % 1000000;
+    }
 
     FD_ZERO(&read_fd);
     FD_SET(privdata->fd, &read_fd);

@@ -1,3 +1,6 @@
+2009-08-24 Alexander Malysh <amalysh at kannel.org>
+    * gw/smsc/smsc_at.c: fixed timeout value passed to select. This should fix #514.
+
 2009-08-12 Alexander Malysh <amalysh at kannel.org>
     * gw/smsc/smsc_at.[ch]: changes as follows:
       - changed at2_read_line to first try buffer and only then try to read from device.
