@@ -366,6 +366,13 @@ long bb_smscconn_receive(SMSCConn *conn, Msg *sms)
     Msg *copy;
 
    /*
+    * first check whether msgdata data is NULL and set it to empty
+    *  because seems too much kannels parts rely on msgdata not to be NULL.
+    */
+   if (sms->sms.msgdata == NULL)
+       sms->sms.msgdata = octstr_create("");
+
+   /*
     * First normalize in smsc level and then on global level.
     * In outbound direction it's vise versa, hence first global then smsc.
     */

@@ -1,3 +1,7 @@
+2009-08-28 Alexander Malysh <amalysh at kannel.org>
+    * gw/bb_smscconn.c: always initialize msgdata because too many parts in
+      kannel expect msgdata non NULL.
+
 2009-08-24 Alexander Malysh <amalysh at kannel.org>
     * gw/smsc/smsc_at.c: fixed timeout value passed to select. This should fix #514.
 
