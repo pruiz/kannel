@@ -1,3 +1,6 @@
+2009-08-28 Andreas Fink <andreas at fink.org>
+    * util/start-stop-daemon.c: fix compilation under MacOS X 10.6
+
 2009-08-28 Alexander Malysh <amalysh at kannel.org>
     * gw/bb_smscconn.c: always initialize msgdata because too many parts in
       kannel expect msgdata non NULL.

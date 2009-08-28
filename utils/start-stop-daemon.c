@@ -917,11 +917,17 @@ main(int argc, char **argv)
 		close(fd);
 		chdir("/");
 		umask(022); /* set a default for dumb programs */
-#ifndef FreeBSD
-		setpgrp();  /* set the process group */
+#ifdef DARWIN
+                setpgrp();  /* set the process group */
 #else
-		setpgrp(0, runas_gid);  /* set the process group */
+#ifndef FreeBSD
+                setpgrp();  /* set the process group */
+#else
+ 		setpgrp(0, runas_gid);  /* set the process group */
 #endif
+#endif
+
+		setpgrp();  /* set the process group */
 		fd=open("/dev/null", O_RDWR); /* stdin */
 		dup(fd); /* stdout */
 		dup(fd); /* stderr */
