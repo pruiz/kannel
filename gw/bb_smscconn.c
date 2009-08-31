@@ -1194,12 +1194,12 @@ long smsc2_rout(Msg *msg, int resend)
      * and 80% for new msgs. So we can guarantee that old msgs find
      * place in the SMSC's queue.
      */
-    if (max_outgoing_sms_qlength > 0 && gwlist_len(outgoing_sms) > 0) {
+    if (gwlist_len(outgoing_sms) > 0) {
         max_queue = (resend ? max_outgoing_sms_qlength :
                                max_outgoing_sms_qlength * 0.8);
     }
     else
-        max_queue = (max_outgoing_sms_qlength > 0 ? max_outgoing_sms_qlength : 1000000);
+        max_queue = max_outgoing_sms_qlength;
 
     s = gw_rand() % gwlist_len(smsc_list);
     best_preferred = best_ok = NULL;

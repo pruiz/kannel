@@ -495,6 +495,9 @@ static Cfg *init_bearerbox(Cfg *cfg)
                                   octstr_imm("sms-outgoing-queue-limit")) == -1)
         max_outgoing_sms_qlength = -1;
 
+    if (max_outgoing_sms_qlength < 0)
+        max_outgoing_sms_qlength = DEFAULT_OUTGOING_SMS_QLENGTH;
+
 #ifndef NO_SMS    
     {
         List *list;

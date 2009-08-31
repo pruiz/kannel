@@ -1500,7 +1500,7 @@ admin-password = f00bar
      <entry valign="bottom">
         Set maximum size of outgoing message queue. After number of messages
         has hit this value, Kannel began to discard them.
-        Value -1 default, means that the queue of infinite length is accepted.
+        The default value, 1 million, works for most installations.
      </entry></row>
 
      <row><entry><literal>white-list-regex</literal></entry>

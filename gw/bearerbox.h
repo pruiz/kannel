@@ -65,6 +65,8 @@
 #include "smscconn.h"
 #include "bb_store.h"
 
+/* Default outgoing queue length */
+#define DEFAULT_OUTGOING_SMS_QLENGTH    1000000
 
 /* general bearerbox state */
 
