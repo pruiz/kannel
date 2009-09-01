@@ -704,6 +704,7 @@ int main(int argc, char **argv)
     alog_close();		/* if we have any */
     bb_alog_shutdown();
     cfg_destroy(cfg);
+    octstr_destroy(cfg_filename);
     dlr_shutdown();
     gwlib_shutdown();
 

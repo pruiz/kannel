@@ -1,3 +1,6 @@
+2009-09-01 Alexander Malysh <amalysh at kannel.org>
+    * gw/bearerbox.c: fixed memory leak
+
 2009-08-31 Alejandro Guerrieri <aguerrieri at kannel.org>
     * gw/bb_smscconn.c, gw/bearerbox.c, gw/bearerbox.h,
       doc/userguide/userguide.xml: limit of 1M messages on outgoing queue limit
