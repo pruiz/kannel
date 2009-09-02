@@ -9638,6 +9638,7 @@ name = my_tlv_name
 tag = 0x1601
 type = octetstring
 length = 20
+smsc-id = a;b;c
 </programlisting>
 
 <informaltable frame="none">
@@ -9667,9 +9668,16 @@ length = 20
         Maximum data length expected in bytes. Must match SMPP specifications for the TLV (or be agreed with the SMSC operator).
      </entry></row>
 
+   <row><entry><literal>smsc-id</literal></entry>
+     <entry><literal>string</literal></entry>
+     <entry valign="bottom">
+        An optional smsc-id for which this TLV is valid. If smsc-id is not given
+		then this TLV is valid for all SMSCs.
+		To define list of smsc-id, just use ; as split char.
+     </entry></row>
 
-		</tbody>
-	</tgroup>
+	</tbody>
+  </tgroup>
 </informaltable>
       <sect2>
         <title>MO Messages</title>

@@ -69,7 +69,8 @@
 #define MIN_SMPP_PDU_LEN    (4*4)
 /* old value was (1024). We need more because message_payload can be up to 64K octets*/
 #define MAX_SMPP_PDU_LEN    (7424)
-
+/* we use ; in the middle because ; is split char in smsc-id and can't be in the smsc-id */
+#define DEFAULT_SMSC_ID "def;ault"
 
 struct smpp_tlv {
     Octstr *name;
@@ -78,9 +79,11 @@ struct smpp_tlv {
     enum { SMPP_TLV_OCTETS = 0, SMPP_TLV_NULTERMINATED = 1, SMPP_TLV_INTEGER = 2 } type;
 };
 
-
-static Dict *tlv_by_tag;
-static Dict *tlv_by_name;
+/* Dict(smsc_id, Dict(tag, tlv)) */
+static Dict *tlvs_by_tag;
+/* Dict(smsc_id, Dict(tag_name, tlv)) */
+static Dict *tlvs_by_name;
+static List *tlvs;
 static int initialized;
 
 
@@ -92,6 +95,57 @@ static void smpp_tlv_destroy(struct smpp_tlv *tlv)
     gw_free(tlv);
 }
 
+static struct smpp_tlv *smpp_tlv_get_by_name(Octstr *smsc_id, Octstr *name)
+{
+    struct smpp_tlv *res = NULL;
+    Dict *tmp_dict;
+
+    if (tlvs_by_name == NULL || name == NULL)
+        return NULL;
+
+    if (smsc_id != NULL) {
+        tmp_dict = dict_get(tlvs_by_name, smsc_id);
+        if (tmp_dict != NULL)
+            res = dict_get(tmp_dict, name);
+    }
+    if (res == NULL) {
+        /* try default smsc_id */
+        smsc_id = octstr_imm(DEFAULT_SMSC_ID);
+        tmp_dict = dict_get(tlvs_by_name, smsc_id);
+        if (tmp_dict != NULL)
+            res = dict_get(tmp_dict, name);
+    }
+    return res;
+}
+
+static struct smpp_tlv *smpp_tlv_get_by_tag(Octstr *smsc_id, long tag)
+{
+    struct smpp_tlv *res = NULL;
+    Dict *tmp_dict;
+    Octstr *tmp;
+
+    if (tlvs_by_tag == NULL)
+        return NULL;
+
+    tmp = octstr_format("%ld", tag);
+
+    if (smsc_id != NULL) {
+        tmp_dict = dict_get(tlvs_by_tag, smsc_id);
+        if (tmp_dict != NULL)
+            res = dict_get(tmp_dict, tmp);
+    }
+    if (res == NULL) {
+        /* try default smsc_id */
+        smsc_id = octstr_imm(DEFAULT_SMSC_ID);
+        tmp_dict = dict_get(tlvs_by_tag, smsc_id);
+        if (tmp_dict != NULL)
+            res = dict_get(tmp_dict, tmp);
+    }
+
+    octstr_destroy(tmp);
+
+    return res;
+}
 
 int smpp_pdu_init(Cfg *cfg)
 {
@@ -101,13 +155,14 @@ int smpp_pdu_init(Cfg *cfg)
     if (initialized)
         return 0;
 
-
     l = cfg_get_multi_group(cfg, octstr_imm("smpp-tlv"));
-    tlv_by_tag = dict_create(gwlist_len(l) > 0 ? gwlist_len(l) : 1, (void(*)(void*))smpp_tlv_destroy);
-    tlv_by_name = dict_create(gwlist_len(l) > 0 ? gwlist_len(l) : 1, NULL);
+    tlvs = gwlist_create();
+    tlvs_by_tag = dict_create(1024, (void(*)(void*))dict_destroy);
+    tlvs_by_name = dict_create(1024, (void(*)(void*))dict_destroy);
     while (l != NULL && (grp = gwlist_extract_first(l)) != NULL) {
         struct smpp_tlv *tlv;
-        Octstr *tmp;
+        Octstr *tmp, *smsc_id;
+        List *l2;
 
         tlv = gw_malloc(sizeof(*tlv));
         if ((tlv->name = cfg_get(grp, octstr_imm("name"))) == NULL) {
@@ -143,19 +198,51 @@ int smpp_pdu_init(Cfg *cfg)
             goto failed;
         }
         octstr_destroy(tmp);
-        /* put into dict */
-        if (!dict_put_once(tlv_by_name, tlv->name, tlv)) {
-            error(0, "SMPP: Double TLV name %s found.", octstr_get_cstr(tlv->name));
-            smpp_tlv_destroy(tlv);
-            goto failed;
+
+        /* put to all TLVs */
+        gwlist_produce(tlvs, tlv);
+
+        smsc_id = cfg_get(grp, octstr_imm("smsc-id"));
+        if (smsc_id != NULL) {
+            l2 = octstr_split(smsc_id, octstr_imm(";"));
+            octstr_destroy(smsc_id);
+        } else {
+            l2 = gwlist_create();
+            gwlist_produce(l2, octstr_create(DEFAULT_SMSC_ID));
         }
-        tmp = octstr_format("%ld", tlv->tag);
-        if (!dict_put_once(tlv_by_tag, tmp, tlv)) {
-            error(0, "SMPP: Double TLV tag %s found.", octstr_get_cstr(tmp));
+        while(l2 != NULL && (smsc_id = gwlist_extract_first(l2)) != NULL) {
+            Dict *tmp_dict;
+
+            debug("sms.smpp", 0, "adding smpp-tlv for smsc-id=%s", octstr_get_cstr(smsc_id));
+
+            tmp_dict = dict_get(tlvs_by_name, smsc_id);
+            if (tmp_dict == NULL) {
+                tmp_dict = dict_create(1024, NULL);
+                dict_put(tlvs_by_name, smsc_id, tmp_dict);
+            }
+            /* put into dict */
+            if (!dict_put_once(tmp_dict, tlv->name, tlv)) {
+                error(0, "SMPP: Double TLV name %s found.", octstr_get_cstr(tlv->name));
+                octstr_destroy(smsc_id);
+                goto failed;
+            }
+
+            tmp_dict = dict_get(tlvs_by_tag, smsc_id);
+            if (tmp_dict == NULL) {
+                tmp_dict = dict_create(1024, NULL);
+                dict_put(tlvs_by_tag, smsc_id, tmp_dict);
+            }
+            tmp = octstr_format("%ld", tlv->tag);
+            if (!dict_put_once(tmp_dict, tmp, tlv)) {
+                error(0, "SMPP: Double TLV tag %s found.", octstr_get_cstr(tmp));
+                octstr_destroy(tmp);
+                octstr_destroy(smsc_id);
+                goto failed;
+            }
             octstr_destroy(tmp);
-            goto failed;
+            octstr_destroy(smsc_id);
         }
-        octstr_destroy(tmp);
+        gwlist_destroy(l2, octstr_destroy_item);
     }
     gwlist_destroy(l, NULL);
 
@@ -163,8 +250,9 @@ int smpp_pdu_init(Cfg *cfg)
     return 0;
 
 failed:
-    dict_destroy(tlv_by_tag);
-    dict_destroy(tlv_by_name);
+    gwlist_destroy(tlvs, (void(*)(void*))smpp_tlv_destroy);
+    dict_destroy(tlvs_by_tag);
+    dict_destroy(tlvs_by_name);
     return -1;
 }
 
@@ -175,9 +263,11 @@ int smpp_pdu_shutdown(void)
         return 0;
 
     initialized = 0;
-    dict_destroy(tlv_by_tag);
-    dict_destroy(tlv_by_name);
-    tlv_by_tag = tlv_by_name = NULL;
+    gwlist_destroy(tlvs, (void(*)(void*))smpp_tlv_destroy);
+    tlvs = NULL;
+    dict_destroy(tlvs_by_tag);
+    dict_destroy(tlvs_by_name);
+    tlvs_by_tag = tlvs_by_name = NULL;
 
     return 0;
 }
@@ -287,7 +377,7 @@ void smpp_pdu_destroy(SMPP_PDU *pdu)
 }
 
 
-Octstr *smpp_pdu_pack(SMPP_PDU *pdu)
+Octstr *smpp_pdu_pack(Octstr *smsc_id, SMPP_PDU *pdu)
 {
     Octstr *os;
     Octstr *temp;
@@ -349,7 +439,7 @@ Octstr *smpp_pdu_pack(SMPP_PDU *pdu)
             struct smpp_tlv *tlv; \
             keys = dict_keys(p->tlv); \
             while(keys != NULL && (key = gwlist_extract_first(keys)) != NULL) { \
-                tlv = dict_get(tlv_by_name, key); \
+                tlv = smpp_tlv_get_by_name(smsc_id, key); \
                 if (tlv == NULL) { \
                     error(0, "SMPP: Unknown TLV `%s', don't send.", octstr_get_cstr(key)); \
                     octstr_destroy(key); \
@@ -424,7 +514,7 @@ Octstr *smpp_pdu_pack(SMPP_PDU *pdu)
 }
 
 
-SMPP_PDU *smpp_pdu_unpack(Octstr *data_without_len)
+SMPP_PDU *smpp_pdu_unpack(Octstr *smsc_id, Octstr *data_without_len)
 {
     SMPP_PDU *pdu;
     unsigned long type;
@@ -454,16 +544,13 @@ SMPP_PDU *smpp_pdu_unpack(Octstr *data_without_len)
         {   /* Read optional parameters */  \
             while (pos + 4 <= len) { \
                 struct smpp_tlv *tlv; \
-                Octstr *tmp; \
                 unsigned long opt_tag, opt_len; \
                 opt_tag = decode_integer(data_without_len, pos, 2); pos += 2; \
                 debug("sms.smpp", 0, "Optional parameter tag (0x%04lx)", opt_tag);  \
                 opt_len = decode_integer(data_without_len, pos, 2); pos += 2;  \
                 debug("sms.smpp", 0, "Optional parameter length read as %ld", opt_len); \
                 /* check configured TLVs */ \
-                tmp = octstr_format("%ld", opt_tag); \
-                tlv = dict_get(tlv_by_tag, tmp); \
-                octstr_destroy(tmp); \
+                tlv = smpp_tlv_get_by_tag(smsc_id, opt_tag); \
                 if (tlv != NULL) debug("sms.smpp", 0, "Found configured optional parameter `%s'", octstr_get_cstr(tlv->name));
     #define TLV_INTEGER(mname, octets) \
                 if (SMPP_##mname == opt_tag) { \

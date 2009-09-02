@@ -313,7 +313,7 @@ static void smpp_emu_writer(void *arg)
     	pdu->u.deliver_sm.source_addr = octstr_create("123");
     	pdu->u.deliver_sm.destination_addr = octstr_create("456");
 	pdu->u.deliver_sm.short_message = octstr_format("%ld", e->time);
-	os = smpp_pdu_pack(pdu);
+	os = smpp_pdu_pack(NULL, pdu);
 	conn_write(p->conn, os);
 	octstr_destroy(os);
 	smpp_pdu_destroy(pdu);
@@ -372,7 +372,7 @@ static void smpp_emu_handle_pdu(struct smpp_emu_arg *p, SMPP_PDU *pdu)
     }
 		
     if (resp != NULL) {
-	os = smpp_pdu_pack(resp);
+	os = smpp_pdu_pack(NULL, resp);
 	conn_write(p->conn, os);
 	octstr_destroy(os);
 	smpp_pdu_destroy(resp);
@@ -408,7 +408,7 @@ static void smpp_emu_reader(void *arg)
 	    os = smpp_pdu_read_data(p->conn, len);
 	    if (os != NULL) {
     	    	len = 0;
-		pdu = smpp_pdu_unpack(os);
+		pdu = smpp_pdu_unpack(NULL, os);
 		if (pdu == NULL) {
 		    error(0, "PDU unpacking failed!");
 		    octstr_dump(os, 0);
@@ -541,7 +541,7 @@ static void smsc_emu_submit_ack(Event *e)
     Octstr *os;
 
     resp = smpp_pdu_create(submit_sm_resp, e->sequence_number);
-    os = smpp_pdu_pack(resp);
+    os = smpp_pdu_pack(NULL, resp);
     conn_write(e->conn, os);
     octstr_destroy(os);
     smpp_pdu_destroy(resp);

@@ -1,3 +1,7 @@
+2009-09-02 Alexander Malysh <amalysh at kannel.org>
+    * doc/userguide/userguide.xml, gw/smsc/smpp_pdu.[ch], gw/smsc/smsc_smpp.c, test/drive_smpp.c,
+      test/drive_smpp.conf, test/test_smsc.c: implemented smsc-id config option for smpp-tlv group.
+
 2009-09-01 Alexander Malysh <amalysh at kannel.org>
     * gw/bearerbox.c: fixed memory leak
 

@@ -328,7 +328,7 @@ static int read_pdu(SMPP *smpp, Connection *conn, long *len, SMPP_PDU **pdu)
     }
     *len = 0;
 
-    *pdu = smpp_pdu_unpack(os);
+    *pdu = smpp_pdu_unpack(smpp->conn->id, os);
     if (*pdu == NULL) {
         error(0, "SMPP[%s]: PDU unpacking failed.",
               octstr_get_cstr(smpp->conn->id));
@@ -970,7 +970,7 @@ static int send_enquire_link(SMPP *smpp, Connection *conn, long *last_sent)
 
     pdu = smpp_pdu_create(enquire_link, counter_increase(smpp->message_id_counter));
     dump_pdu("Sending enquire link:", smpp->conn->id, pdu);
-    os = smpp_pdu_pack(pdu);
+    os = smpp_pdu_pack(smpp->conn->id, pdu);
     if (os != NULL)
         ret = conn_write(conn, os); /* Write errors checked by caller. */
     else
@@ -990,7 +990,7 @@ static int send_gnack(SMPP *smpp, Connection *conn, long reason, unsigned long s
     pdu = smpp_pdu_create(generic_nack, seq_num);
     pdu->u.generic_nack.command_status = reason;
     dump_pdu("Sending generic_nack:", smpp->conn->id, pdu);
-    os = smpp_pdu_pack(pdu);
+    os = smpp_pdu_pack(smpp->conn->id, pdu);
     if (os != NULL)
         ret = conn_write(conn, os);
     else
@@ -1009,7 +1009,7 @@ static int send_unbind(SMPP *smpp, Connection *conn)
 
     pdu = smpp_pdu_create(unbind, counter_increase(smpp->message_id_counter));
     dump_pdu("Sending unbind:", smpp->conn->id, pdu);
-    os = smpp_pdu_pack(pdu);
+    os = smpp_pdu_pack(smpp->conn->id, pdu);
     if (os != NULL)
         ret = conn_write(conn, os);
     else
@@ -1027,7 +1027,7 @@ static int send_pdu(Connection *conn, Octstr *id, SMPP_PDU *pdu)
     int ret;
 
     dump_pdu("Sending PDU:", id, pdu);
-    os = smpp_pdu_pack(pdu);
+    os = smpp_pdu_pack(id, pdu);
     if (os) {
         /* Caller checks for write errors later */
         ret = conn_write(conn, os);

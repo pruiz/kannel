@@ -236,7 +236,7 @@ static void handle_pdu(ESME *esme, SMPP_PDU *pdu)
     	if (handlers[i].type == pdu->type) {
 	    resp = handlers[i].handler(esme, pdu);
 	    if (resp != NULL) {
-	    	os = smpp_pdu_pack(resp);
+	    	os = smpp_pdu_pack(NULL, resp);
 		conn_write(esme->conn, os);
 		octstr_destroy(os);
 		smpp_pdu_destroy(resp);
@@ -272,7 +272,7 @@ static void send_smpp_thread(void *arg)
         pdu->u.deliver_sm.short_message = octstr_format("%ld", id);
         if (esme->version > 0x33)
             pdu->u.deliver_sm.receipted_message_id = octstr_create("receipted_message_id\0");
-        os = smpp_pdu_pack(pdu);
+        os = smpp_pdu_pack(NULL, pdu);
         conn_write(esme->conn, os);
         octstr_destroy(os);
         smpp_pdu_destroy(pdu);
@@ -283,7 +283,7 @@ static void send_smpp_thread(void *arg)
 
         if ((id % enquire_interval) == 0) {
             pdu = smpp_pdu_create(enquire_link, counter_increase(message_id_counter));
-            os = smpp_pdu_pack(pdu);
+            os = smpp_pdu_pack(NULL, pdu);
             conn_write(esme->conn, os);
             octstr_destroy(os);
             smpp_pdu_destroy(pdu);
@@ -327,7 +327,7 @@ static void receive_smpp_thread(void *arg)
 	    os = smpp_pdu_read_data(esme->conn, len);
 	    if (os != NULL) {
     	    	len = 0;
-		pdu = smpp_pdu_unpack(os);
+		pdu = smpp_pdu_unpack(NULL, os);
 		if (pdu == NULL) {
 		    error(0, "PDU unpacking failed!");
 		    octstr_dump(os, 0);
