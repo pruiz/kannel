@@ -1,3 +1,6 @@
+2009-09-03 Alexander Malysh <amalysh at kannel.org>
+    * gw/smsc/smpp_pdu.c: fixed memory leak.
+
 2009-09-02 Alexander Malysh <amalysh at kannel.org>
     * doc/userguide/userguide.xml, gw/smsc/smpp_pdu.[ch], gw/smsc/smsc_smpp.c, test/drive_smpp.c,
       test/drive_smpp.conf, test/test_smsc.c: implemented smsc-id config option for smpp-tlv group.

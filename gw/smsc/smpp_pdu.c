@@ -235,6 +235,7 @@ int smpp_pdu_init(Cfg *cfg)
             tmp = octstr_format("%ld", tlv->tag);
             if (!dict_put_once(tmp_dict, tmp, tlv)) {
                 error(0, "SMPP: Double TLV tag %s found.", octstr_get_cstr(tmp));
+                gwlist_destroy(l2, octstr_destroy_item);
                 octstr_destroy(tmp);
                 octstr_destroy(smsc_id);
                 goto failed;
