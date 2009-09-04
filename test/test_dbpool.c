@@ -58,7 +58,7 @@
  * test_dbpool.c - test DBPool objects
  *
  * Stipe Tolj <stolj@wapme.de>
- * Alexander Malysh <a.malysh@centrium.de>
+ * Alexander Malysh <amalysh@kannel.org>
  */
              
 #include "gwlib/gwlib.h"
@@ -104,40 +104,42 @@ static enum db_type database_type = DBPOOL_MYSQL;
 static void (*client_thread)(void*) = NULL;
 
 #ifdef HAVE_MYSQL
-#include <mysql.h>
 
 static void mysql_client_thread(void *arg)
 {
     unsigned long i, succeeded, failed;
     DBPool *pool = arg;
+    List *result;
+    DBPoolConn *pconn;
 
     succeeded = failed = 0;
 
     info(0,"Client thread started with %ld queries to perform on pool", queries);
 
-    /* perform random queries on the pool */
     for (i = 1; i <= queries; i++) {
-        DBPoolConn *pconn;
-        int state;
-        MYSQL_RES *result;
-
-        /* provide us with a connection from the pool */
         pconn = dbpool_conn_consume(pool);
-        debug("",0,"Query %ld/%ld: mysql thread id %ld obj at %p",
-              i, queries, mysql_thread_id(pconn->conn), (void*) pconn->conn);
 
-        state = mysql_query(pconn->conn, octstr_get_cstr(sql));
-        if (state != 0) {
-            error(0, "MYSQL: %s", mysql_error(pconn->conn));
-            failed++;
-        } else {
+        if (pconn == NULL)
+            continue;
+#if 1 /* selects */
+        if (dbpool_conn_select(pconn, sql, NULL, &result) == 0) {
+            long i,j;
+            for (i=0; i < gwlist_len(result); i++) {
+                List *row = gwlist_get(result, i);
+                for (j=0; j < gwlist_len(row); j++)
+                    debug("", 0, "col = %ld   value = '%s'", j, octstr_get_cstr(gwlist_get(row,j)));
+                gwlist_destroy(row, octstr_destroy_item);
+            }
             succeeded++;
+        } else {
+            failed++;
         }
-        result = mysql_store_result(pconn->conn);
-        mysql_free_result(result);
-
-        /* return the connection to the pool */
+        gwlist_destroy(result, NULL);
         dbpool_conn_produce(pconn);
+#else /* only updates */
+        debug("", 0, "rows processed = %d ", dbpool_conn_update(pconn, sql, NULL));
+        dbpool_conn_produce(pconn);
+#endif
     }
     info(0, "This thread: %ld succeeded, %ld failed.", succeeded, failed);
 }
@@ -152,6 +154,7 @@ static DBConf *mysql_create_conf(Octstr *user, Octstr *pass, Octstr *db, Octstr 
     conf->mysql->password = octstr_duplicate(pass);
     conf->mysql->database = octstr_duplicate(db);
     conf->mysql->host = octstr_duplicate(host);
+    conf->mysql->port = 3306;
 
     return conf;
 }
@@ -504,6 +507,10 @@ int main(int argc, char **argv)
           (host ? octstr_get_cstr(host) : octstr_get_cstr(db)), pool_size, octstr_get_cstr(db_type));
     pool = dbpool_create(database_type, conf, pool_size);
     debug("",0,"Connections within pool: %ld", dbpool_conn_count(pool));
+    if (dbpool_conn_count(pool) == 0) {
+        panic(0, "Unable to start without DBConns...");
+        exit(1);
+    }
 
     for (i = 0; i < num_threads; ++i) {
         if (gwthread_create(inc_dec_thread, pool) == -1)

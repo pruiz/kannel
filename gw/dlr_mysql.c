@@ -71,7 +71,6 @@
 
 
 #ifdef HAVE_MYSQL
-#include <mysql/mysql.h>
 
 /*
  * Our connection pool to mysql.
@@ -84,56 +83,6 @@ static DBPool *pool = NULL;
 static struct dlr_db_fields *fields = NULL;
 
 
-static void mysql_update(const Octstr *sql)
-{
-    int	state;
-    DBPoolConn *pc;
-
-#if defined(DLR_TRACE)
-     debug("dlr.mysql", 0, "sql: %s", octstr_get_cstr(sql));
-#endif
-
-    pc = dbpool_conn_consume(pool);
-    if (pc == NULL) {
-        error(0, "MYSQL: Database pool got no connection! DB update failed!");
-        return;
-    }
-
-    state = mysql_query(pc->conn, octstr_get_cstr(sql));
-    if (state != 0)
-        error(0, "MYSQL: %s", mysql_error(pc->conn));
-
-    dbpool_conn_produce(pc);
-}
-
-static MYSQL_RES* mysql_select(const Octstr *sql)
-{
-    int	state;
-    MYSQL_RES *result = NULL;
-    DBPoolConn *pc;
-
-#if defined(DLR_TRACE)
-    debug("dlr.mysql", 0, "sql: %s", octstr_get_cstr(sql));
-#endif
-
-    pc = dbpool_conn_consume(pool);
-    if (pc == NULL) {
-        error(0, "MYSQL: Database pool got no connection! DB update failed!");
-        return NULL;
-    }
-
-    state = mysql_query(pc->conn, octstr_get_cstr(sql));
-    if (state != 0) {
-        error(0, "MYSQL: %s", mysql_error(pc->conn));
-    } else {
-        result = mysql_store_result(pc->conn);
-    }
-
-    dbpool_conn_produce(pc);
-
-    return result;
-}
-
 static void dlr_mysql_shutdown()
 {
     dbpool_destroy(pool);
@@ -142,74 +91,100 @@ static void dlr_mysql_shutdown()
 
 static void dlr_mysql_add(struct dlr_entry *entry)
 {
-    Octstr *sql;
+    Octstr *sql, *os_mask;
+    DBPoolConn *pconn;
+    List *binds = gwlist_create();
+    debug("dlr.mysql", 0, "adding DLR entry into database");
 
-    sql = octstr_format("INSERT INTO %s (%s, %s, %s, %s, %s, %s, %s, %s, %s) VALUES "
-                        "('%s', '%s', '%s', '%s', '%s', '%s', '%d', '%s', '%d');",
-                        octstr_get_cstr(fields->table), octstr_get_cstr(fields->field_smsc),
-                        octstr_get_cstr(fields->field_ts),
-                        octstr_get_cstr(fields->field_src), octstr_get_cstr(fields->field_dst),
-                        octstr_get_cstr(fields->field_serv), octstr_get_cstr(fields->field_url),
-                        octstr_get_cstr(fields->field_mask), octstr_get_cstr(fields->field_boxc),
-                        octstr_get_cstr(fields->field_status),
-                        octstr_get_cstr(entry->smsc), octstr_get_cstr(entry->timestamp), octstr_get_cstr(entry->source),
-                        octstr_get_cstr(entry->destination), octstr_get_cstr(entry->service), octstr_get_cstr(entry->url),
-                        entry->mask, octstr_get_cstr(entry->boxc_id), 0);
+    pconn = dbpool_conn_consume(pool);
+    /* just for sure */
+    if (pconn == NULL) {
+        dlr_entry_destroy(entry);
+        return;
+    }
 
+    sql = octstr_format("INSERT INTO %S (%S, %S, %S, %S, %S, %S, %S, %S, %S) VALUES "
+                        "(?, ?, ?, ?, ?, ?, ?, ?, 0)",
+                        fields->table, fields->field_smsc, fields->field_ts,
+                        fields->field_src, fields->field_dst, fields->field_serv,
+                        fields->field_url, fields->field_mask, fields->field_boxc,
+                        fields->field_status);
+    os_mask = octstr_format("%d", entry->mask);
+    gwlist_append(binds, entry->smsc);
+    gwlist_append(binds, entry->timestamp);
+    gwlist_append(binds, entry->source);
+    gwlist_append(binds, entry->destination);
+    gwlist_append(binds, entry->service);
+    gwlist_append(binds, entry->url);
+    gwlist_append(binds, os_mask);
+    gwlist_append(binds, entry->boxc_id);
 
-    mysql_update(sql);
+#if defined(DLR_TRACE)
+    debug("dlr.mysql", 0, "sql: %s", octstr_get_cstr(sql));
+#endif
+    if (dbpool_conn_update(pconn, sql, binds) == -1)
+        error(0, "DLR: MYSQL: Error while adding dlr entry for DST<%s>", octstr_get_cstr(entry->destination));
 
+    dbpool_conn_produce(pconn);
     octstr_destroy(sql);
+    gwlist_destroy(binds, NULL);
+    octstr_destroy(os_mask);
     dlr_entry_destroy(entry);
 }
 
 static struct dlr_entry* dlr_mysql_get(const Octstr *smsc, const Octstr *ts, const Octstr *dst)
 {
-    struct dlr_entry *res = NULL;
     Octstr *sql;
-    MYSQL_RES *result;
-    MYSQL_ROW row;
+    DBPoolConn *pconn;
+    List *result = NULL, *row;
+    struct dlr_entry *res = NULL;
+    List *binds = gwlist_create();
 
-    sql = octstr_format("SELECT %s, %s, %s, %s, %s, %s FROM %s WHERE %s='%s' AND %s='%s';",
-                        octstr_get_cstr(fields->field_mask), octstr_get_cstr(fields->field_serv),
-                        octstr_get_cstr(fields->field_url), octstr_get_cstr(fields->field_src),
-                        octstr_get_cstr(fields->field_dst), octstr_get_cstr(fields->field_boxc),
-                        octstr_get_cstr(fields->table), octstr_get_cstr(fields->field_smsc),
-                        octstr_get_cstr(smsc), octstr_get_cstr(fields->field_ts), octstr_get_cstr(ts));
+    pconn = dbpool_conn_consume(pool);
+    if (pconn == NULL) /* should not happens, but sure is sure */
+        return NULL;
 
+    sql = octstr_format("SELECT %S, %S, %S, %S, %S, %S FROM %S WHERE %S=? AND %S=? LIMIT 1",
+                        fields->field_mask, fields->field_serv,
+                        fields->field_url, fields->field_src,
+                        fields->field_dst, fields->field_boxc,
+                        fields->table, fields->field_smsc,
+                        fields->field_ts);
 
-    result = mysql_select(sql);
+    gwlist_append(binds, (Octstr *)smsc);
+    gwlist_append(binds, (Octstr *)ts);
+
+#if defined(DLR_TRACE)
+    debug("dlr.mysql", 0, "sql: %s", octstr_get_cstr(sql));
+#endif
+
+    if (dbpool_conn_select(pconn, sql, binds, &result) != 0) {
+        octstr_destroy(sql);
+        dbpool_conn_produce(pconn);
+        return NULL;
+    }
     octstr_destroy(sql);
+    gwlist_destroy(binds, NULL);
+    dbpool_conn_produce(pconn);
 
-    if (result == NULL) {
-        return NULL;
+#define LO2CSTR(r, i) octstr_get_cstr(gwlist_get(r, i))
+
+    if (gwlist_len(result) > 0) {
+        row = gwlist_extract_first(result);
+        res = dlr_entry_create();
+        gw_assert(res != NULL);
+        res->mask = atoi(LO2CSTR(row,0));
+        res->service = octstr_create(LO2CSTR(row, 1));
+        res->url = octstr_create(LO2CSTR(row,2));
+        res->source = octstr_create(LO2CSTR(row, 3));
+        res->destination = octstr_create(LO2CSTR(row, 4));
+        res->boxc_id = octstr_create(LO2CSTR(row, 5));
+        gwlist_destroy(row, octstr_destroy_item);
+        res->smsc = octstr_duplicate(smsc);
     }
-    if (mysql_num_rows(result) < 1) {
-        debug("dlr.mysql", 0, "no rows found");
-        mysql_free_result(result);
-        return NULL;
-    }
-    row = mysql_fetch_row(result);
-    if (!row) {
-        debug("dlr.mysql", 0, "rows found but could not load them");
-        mysql_free_result(result);
-        return NULL;
-    }
+    gwlist_destroy(result, NULL);
 
-    debug("dlr.mysql", 0, "Found entry, row[0]=%s, row[1]=%s, row[2]=%s, row[3]=%s, row[4]=%s row[5]=%s",
-          row[0], row[1], row[2], (row[3] ? row[3] : "NULL"), (row[4] ? row[4] : "NULL"), (row[5] ? row[5] : "NULL"));
-
-    res = dlr_entry_create();
-    gw_assert(res != NULL);
-    res->mask = atoi(row[0]);
-    res->service = octstr_create(row[1]);
-    res->url = octstr_create(row[2]);
-    res->source = row[3] ? octstr_create(row[3]) : octstr_create("");
-    res->destination = row[4] ? octstr_create(row[4]) : octstr_create("");
-    res->boxc_id = row[5] ? octstr_create(row[5]) : octstr_create("");
-    res->smsc = octstr_duplicate(smsc);
-
-    mysql_free_result(result);
+#undef LO2CSTR
 
     return res;
 }
@@ -217,74 +192,125 @@ static struct dlr_entry* dlr_mysql_get(const Octstr *smsc, const Octstr *ts, con
 static void dlr_mysql_remove(const Octstr *smsc, const Octstr *ts, const Octstr *dst)
 {
     Octstr *sql;
+    DBPoolConn *pconn;
+    List *binds = gwlist_create();
 
     debug("dlr.mysql", 0, "removing DLR from database");
-    sql = octstr_format("DELETE FROM %s WHERE %s='%s' AND %s='%s' LIMIT 1;",
-                        octstr_get_cstr(fields->table), octstr_get_cstr(fields->field_smsc),
-                        octstr_get_cstr(smsc), octstr_get_cstr(fields->field_ts), octstr_get_cstr(ts));
 
+    pconn = dbpool_conn_consume(pool);
+    /* just for sure */
+    if (pconn == NULL)
+        return;
 
-    mysql_update(sql);
+    sql = octstr_format("DELETE FROM %S WHERE %S=? AND %S=? LIMIT 1",
+                        fields->table, fields->field_smsc,
+                        fields->field_ts);
 
+    gwlist_append(binds, (Octstr *)smsc);
+    gwlist_append(binds, (Octstr *)ts);
+
+#if defined(DLR_TRACE)
+    debug("dlr.mysql", 0, "sql: %s", octstr_get_cstr(sql));
+#endif
+
+    if (dbpool_conn_update(pconn, sql, binds) == -1)
+        error(0, "DLR: MYSQL: Error while removing dlr entry for DST<%s>", octstr_get_cstr(dst));
+
+    dbpool_conn_produce(pconn);
+    gwlist_destroy(binds, NULL);
     octstr_destroy(sql);
 }
 
 static void dlr_mysql_update(const Octstr *smsc, const Octstr *ts, const Octstr *dst, int status)
 {
-    Octstr *sql;
+    Octstr *sql, *os_status;
+    DBPoolConn *pconn;
+    List *binds = gwlist_create();
 
     debug("dlr.mysql", 0, "updating DLR status in database");
-    sql = octstr_format("UPDATE %s SET %s=%d WHERE %s='%s' AND %s='%s' LIMIT 1;",
-                        octstr_get_cstr(fields->table),
-                        octstr_get_cstr(fields->field_status), status,
-                        octstr_get_cstr(fields->field_smsc), octstr_get_cstr(smsc),
-                        octstr_get_cstr(fields->field_ts), octstr_get_cstr(ts));
 
-    mysql_update(sql);
+    pconn = dbpool_conn_consume(pool);
+    /* just for sure */
+    if (pconn == NULL)
+        return;
 
+    sql = octstr_format("UPDATE %S SET %S=? WHERE %S=? AND %S=? LIMIT 1",
+                        fields->table, fields->field_status,
+                        fields->field_smsc, fields->field_ts);
+
+    os_status = octstr_format("%d", status);
+    gwlist_append(binds, (Octstr *)os_status);
+    gwlist_append(binds, (Octstr *)smsc);
+    gwlist_append(binds, (Octstr *)ts);
+
+#if defined(DLR_TRACE)
+    debug("dlr.mysql", 0, "sql: %s", octstr_get_cstr(sql));
+#endif
+    if (dbpool_conn_update(pconn, sql, binds) == -1)
+        error(0, "DLR: MYSQL: Error while updating dlr entry for DST<%s>", octstr_get_cstr(dst));
+
+    dbpool_conn_produce(pconn);
+    gwlist_destroy(binds, NULL);
+    octstr_destroy(os_status);
     octstr_destroy(sql);
 }
 
 
 static long dlr_mysql_messages(void)
 {
+    List *result, *row;
     Octstr *sql;
-    long res;
-    MYSQL_RES *result;
-    MYSQL_ROW row;
+    DBPoolConn *conn;
+    long msgs = -1;
 
-    sql = octstr_format("SELECT count(*) FROM %s;", octstr_get_cstr(fields->table));
+    conn = dbpool_conn_consume(pool);
+    if (conn == NULL)
+        return -1;
 
-    result = mysql_select(sql);
-    octstr_destroy(sql);
+    sql = octstr_format("SELECT count(*) FROM %S", fields->table);
+#if defined(DLR_TRACE)
+    debug("dlr.mysql", 0, "sql: %s", octstr_get_cstr(sql));
+#endif
 
-    if (result == NULL) {
+    if (dbpool_conn_select(conn, sql, NULL, &result) != 0) {
+        octstr_destroy(sql);
+        dbpool_conn_produce(conn);
         return -1;
     }
-    if (mysql_num_rows(result) < 1) {
-        debug("dlr.mysql", 0, "Could not get count of DLR table");
-        mysql_free_result(result);
-        return 0;
-    }
-    row = mysql_fetch_row(result);
-    if (row == NULL) {
-        debug("dlr.mysql", 0, "rows found but could not load them");
-        mysql_free_result(result);
-        return 0;
-    }
-    res = atol(row[0]);
-    mysql_free_result(result);
+    dbpool_conn_produce(conn);
+    octstr_destroy(sql);
 
-    return res;
+    if (gwlist_len(result) > 0) {
+        row = gwlist_extract_first(result);
+        msgs = strtol(octstr_get_cstr(gwlist_get(row,0)), NULL, 10);
+        gwlist_destroy(row, octstr_destroy_item);
+    }
+    gwlist_destroy(result, NULL);
+
+    return msgs;
 }
 
 static void dlr_mysql_flush(void)
 {
     Octstr *sql;
+    DBPoolConn *pconn;
+    int rows;
 
-    sql = octstr_format("DELETE FROM %s;", octstr_get_cstr(fields->table));
+    pconn = dbpool_conn_consume(pool);
+    /* just for sure */
+    if (pconn == NULL)
+        return;
 
-    mysql_update(sql);
+    sql = octstr_format("DELETE FROM %S", fields->table);
+#if defined(DLR_TRACE)
+    debug("dlr.mysql", 0, "sql: %s", octstr_get_cstr(sql));
+#endif
+    rows = dbpool_conn_update(pconn, sql, NULL);
+    if (rows == -1)
+        error(0, "DLR: MYSQL: Error while flushing dlr entries from database");
+    else
+        debug("dlr.mysql", 0, "Flushing %d DLR entries from database", rows);
+    dbpool_conn_produce(pconn);
     octstr_destroy(sql);
 }
 

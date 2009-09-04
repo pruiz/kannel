@@ -966,6 +966,9 @@ else
         AC_MSG_RESULT([$MYSQL_CFLAGS])
     fi
     AC_CHECK_HEADERS(mysql/mysql.h mysql/mysql_version.h)
+    AC_CHECK_LIB(mysqlclient_r, mysql_stmt_init, [],
+		AC_CHECK_LIB(mysqlclient, mysql_stmt_init, [], [AC_MSG_ERROR([Unable to find MySQL client libraries version >= 4.1])])
+    )
     AC_DEFINE(HAVE_MYSQL)
     AC_MSG_CHECKING([whether to compile with MySQL support])
     AC_MSG_RESULT(yes)
