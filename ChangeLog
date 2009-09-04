@@ -1,7 +1,7 @@
 2009-09-04 Alexander Malysh <amalysh at kannel.org>
     * aclocal.m4, configure, configure.in, gw/dlr_mysql.c, gwlib/dbpool_mysql.c,
       test/test_dbpool.c: implemented select/update function calls for dbpool_mysql. This
-      require mysql prepaid statement support and therefore mysql version >= 4.1.
+      require mysql prepared statement support and therefore mysql version >= 4.1.
       Changed dlr_mysql to use these new function calls. This fixes #258.
 
 2009-09-03 Alexander Malysh <amalysh at kannel.org>
