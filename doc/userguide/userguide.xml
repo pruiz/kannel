@@ -4336,37 +4336,38 @@ generic-status-error = 404
 
 
 <sect2>
-<title>MT to MO direction switching</title>
-
-    <para>In case you want to route MT messages coming from 
-	 <literal>smsbox</literal> to 
-	 <literal>bearerbox</literal> back into the system again as MO messages, 
-	 you can use the HTTP SMSC to address it's own MO interface like this:
-	 </para>
+<title>Loopback SMSC (MT to MO direction switching)</title>
+ 
+   <para>This special "SMSC" type can be used to route MT messages in
+   bearerbox internally as MO input messages again. Therefore this
+   tyoe is the MT wise counterpart of the 'reroute' functionality
+   of the smsc group when MOs are re-routed as MTs.</para>
   
 <programlisting>
 group = smsc
-smsc = http
-smsc-id = MT2MO
-system-type = kannel
-smsc-username = tester
-smsc-password = foobar
-port = 14000
-send-url = "http://localhost:14000/cgi-bin/sendsms"
+smsc = loopback
+smsc-id = loop1
+reroute-smsc-id = my_id
 </programlisting>
 
-    <para>This smsc group will allow you to send MT messages to 
-	 <literal>smsc-id MT2MO</literal>, which addresses the configured HTTP SMSC 
-	 module. Now the module will use the <literal>send-url</literal> to pass the 
-	 MT messages. As you see, the send-url loops back to it's own MO interface 
-	 listening on <literal>port</literal> 14000, which will lead into an MO message 
-	 and passed to smsbox again. 
-	 </para>
+ <informaltable frame="none">
+  <tgroup cols="3"><thead><row>
+     <entry>Variable</entry>
+     <entry>Value</entry>
+     <entry>Description</entry>
+   </row></thead><tbody>
 
-	 <para>This can be used to generate cycles or allow to connect smsbox users
-	 that pass messages and make them look like they originated from an SMSC.
-	 </para>
+   <row><entry><literal>reroute-smsc-id (o)</literal></entry>
+     <entry><literal>string</literal></entry>
+     <entry valign="bottom">
+        Tag the rerouted MO with the given value for smsc-id 
+        instead of the canonical smsc-id value of the smsc group 
+        itself.
+     </entry></row>
+
+   </tbody></tgroup></informaltable>
 </sect2>
+
 
 <sect2>
 <title>Using multiple SMS centers</title>

@@ -284,6 +284,9 @@ int smsc_smasi_create(SMSCConn *conn, CfgGroup *cfg);
 /* Responsible file: smsc/smsc_oisd.c */
 int smsc_oisd_create(SMSCConn *conn, CfgGroup *cfg);
 
+/* Responsible file: smsc/smsc_loopback.c */
+int smsc_loopback_create(SMSCConn *conn, CfgGroup *cfg);
+
 /* ADD NEW CREATE FUNCTIONS HERE
  *
  * int smsc_xxx_create(SMSCConn *conn, CfgGroup *cfg);
