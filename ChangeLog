@@ -1,9 +1,14 @@
+2009-09-20 Alexander Malysh <amalysh at kannel.org>
+    * gw/msg.c: fixed crash when wrong packet received on bearerbox port.
+      Thanks to Michael Zervakis <michael at zervakis.com> for report.
+      [Msg-Id: <4AB3A08C.3050408@zervakis.com>]
+
 2009-09-17  Stipe Tolj  <stolj at kannel.org>
     * doc/userguide.xml: document the 'smsc = loopback' type.
     * gw/smscconn[_p].[ch]: add the loopback SMSC type to the internal 
       structures.
     * gw/smsc/smsc_loopback.c: add loopback SMSC type module.
-    [Msg-Id: <4A4B9245.1030705@tolj.org>]
+      [Msg-Id: <4A4B9245.1030705@tolj.org>]
 
 2009-09-04 Alexander Malysh <amalysh at kannel.org>
     * aclocal.m4, configure, configure.in, gw/dlr_mysql.c, gwlib/dbpool_mysql.c,

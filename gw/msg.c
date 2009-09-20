@@ -232,8 +232,11 @@ Msg *msg_unpack_real(Octstr *os, const char *file, long line, const char *func)
     switch (msg->type) {
 #include "msg-decl.h"
     default:
-        panic(0, "Internal error: unknown message type: %d",
+        error(0, "Internal error: unknown message type: %d",
               msg->type);
+        msg->type = 0;
+        msg_destroy(msg);
+        return NULL;
     }
 
     return msg;
