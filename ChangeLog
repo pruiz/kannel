@@ -1,3 +1,9 @@
+2009-10-13 Alexander Malysh <amalysh at kannel.org>
+    * gw/dlr_mysql.c: applied patch that fixes table name and field names that
+      use reserved keywords.
+      See http://dev.mysql.com/doc/refman/5.0/en/identifiers.html for details.
+      Thanks to Vincent CHAVANIS <v.chavanis at telemaque.fr> for this patch.
+
 2009-09-20 Alexander Malysh <amalysh at kannel.org>
     * gw/msg.c: fixed crash when wrong packet received on bearerbox port.
       Thanks to Michael Zervakis <michael at zervakis.com> for report.

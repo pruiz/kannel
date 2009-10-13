@@ -103,7 +103,7 @@ static void dlr_mysql_add(struct dlr_entry *entry)
         return;
     }
 
-    sql = octstr_format("INSERT INTO %S (%S, %S, %S, %S, %S, %S, %S, %S, %S) VALUES "
+    sql = octstr_format("INSERT INTO `%S` (`%S`, `%S`, `%S`, `%S`, `%S`, `%S`, `%S`, `%S`, `%S`) VALUES "
                         "(?, ?, ?, ?, ?, ?, ?, ?, 0)",
                         fields->table, fields->field_smsc, fields->field_ts,
                         fields->field_src, fields->field_dst, fields->field_serv,
@@ -144,7 +144,7 @@ static struct dlr_entry* dlr_mysql_get(const Octstr *smsc, const Octstr *ts, con
     if (pconn == NULL) /* should not happens, but sure is sure */
         return NULL;
 
-    sql = octstr_format("SELECT %S, %S, %S, %S, %S, %S FROM %S WHERE %S=? AND %S=? LIMIT 1",
+    sql = octstr_format("SELECT `%S`, `%S`, `%S`, `%S`, `%S`, `%S` FROM `%S` WHERE `%S`=? AND `%S`=? LIMIT 1",
                         fields->field_mask, fields->field_serv,
                         fields->field_url, fields->field_src,
                         fields->field_dst, fields->field_boxc,
@@ -202,7 +202,7 @@ static void dlr_mysql_remove(const Octstr *smsc, const Octstr *ts, const Octstr 
     if (pconn == NULL)
         return;
 
-    sql = octstr_format("DELETE FROM %S WHERE %S=? AND %S=? LIMIT 1",
+    sql = octstr_format("DELETE FROM `%S` WHERE `%S`=? AND `%S`=? LIMIT 1",
                         fields->table, fields->field_smsc,
                         fields->field_ts);
 
@@ -234,7 +234,7 @@ static void dlr_mysql_update(const Octstr *smsc, const Octstr *ts, const Octstr 
     if (pconn == NULL)
         return;
 
-    sql = octstr_format("UPDATE %S SET %S=? WHERE %S=? AND %S=? LIMIT 1",
+    sql = octstr_format("UPDATE `%S` SET `%S`=? WHERE `%S`=? AND `%S`=? LIMIT 1",
                         fields->table, fields->field_status,
                         fields->field_smsc, fields->field_ts);
 
@@ -267,7 +267,7 @@ static long dlr_mysql_messages(void)
     if (conn == NULL)
         return -1;
 
-    sql = octstr_format("SELECT count(*) FROM %S", fields->table);
+    sql = octstr_format("SELECT count(*) FROM `%S`", fields->table);
 #if defined(DLR_TRACE)
     debug("dlr.mysql", 0, "sql: %s", octstr_get_cstr(sql));
 #endif
@@ -301,7 +301,7 @@ static void dlr_mysql_flush(void)
     if (pconn == NULL)
         return;
 
-    sql = octstr_format("DELETE FROM %S", fields->table);
+    sql = octstr_format("DELETE FROM `%S`", fields->table);
 #if defined(DLR_TRACE)
     debug("dlr.mysql", 0, "sql: %s", octstr_get_cstr(sql));
 #endif
@@ -347,6 +347,20 @@ struct dlr_storage *dlr_init_mysql(Cfg *cfg)
 
     fields = dlr_db_fields_create(grp);
     gw_assert(fields != NULL);
+
+    /*
+     * Escaping special quotes for field/table names
+     */
+    octstr_replace(fields->table, octstr_imm("`"), octstr_imm("``"));
+    octstr_replace(fields->field_smsc, octstr_imm("`"), octstr_imm("``"));
+    octstr_replace(fields->field_ts, octstr_imm("`"), octstr_imm("``"));
+    octstr_replace(fields->field_src, octstr_imm("`"), octstr_imm("``"));
+    octstr_replace(fields->field_dst, octstr_imm("`"), octstr_imm("``"));
+    octstr_replace(fields->field_serv, octstr_imm("`"), octstr_imm("``"));
+    octstr_replace(fields->field_url, octstr_imm("`"), octstr_imm("``"));
+    octstr_replace(fields->field_mask, octstr_imm("`"), octstr_imm("``"));
+    octstr_replace(fields->field_status, octstr_imm("`"), octstr_imm("``"));
+    octstr_replace(fields->field_boxc, octstr_imm("`"), octstr_imm("``"));
 
     /*
      * now grap the required information from the 'mysql-connection' group
