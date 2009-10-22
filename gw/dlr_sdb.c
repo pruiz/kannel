@@ -157,6 +157,8 @@ static void dlr_sdb_add(struct dlr_entry *dlr)
     state = gw_sdb_query(octstr_get_cstr(sql), NULL, NULL);
     if (state == -1)
         error(0, "SDB: error in inserting DLR for DST <%s>", octstr_get_cstr(dlr->destination));
+    else if (!state)
+        warning(0, "SDB: No dlr inserted for DST <%s>", octstr_get_cstr(dlr->destination));
 
     octstr_destroy(sql);
     dlr_entry_destroy(dlr);
@@ -266,9 +268,10 @@ static void  dlr_sdb_update(const Octstr *smsc, const Octstr *ts, const Octstr *
 
     state = gw_sdb_query(octstr_get_cstr(sql), NULL, NULL);
     octstr_destroy(sql);
-    if (state == -1) {
+    if (state == -1)
         error(0, "SDB: error in updating DLR");
-    }
+    else if (!state)
+        warning(0, "SDB: No dlr to update for DST<%s> (status %d)", octstr_get_cstr(dst), status);
 }
 
 static void  dlr_sdb_remove(const Octstr *smsc, const Octstr *ts, const Octstr *dst)
@@ -306,6 +309,8 @@ static void  dlr_sdb_remove(const Octstr *smsc, const Octstr *ts, const Octstr *
     octstr_destroy(sql);
     if (state == -1)
         error(0, "SDB: error in deleting DLR");
+    else if (!state)
+        warning(0, "SDB: No dlr deleted for DST<%s>", octstr_get_cstr(dst));
 }
 
 static long dlr_sdb_messages(void)

@@ -154,7 +154,8 @@ static void dlr_pgsql_add(struct dlr_entry *entry)
                         entry->mask, octstr_get_cstr(entry->boxc_id), 0);
 
 
-    pgsql_update(sql);
+    if (!pgsql_update(sql))
+       warning(0, "DLR: PGSQL: No dlr inserted for DST<%s>", octstr_get_cstr(entry->destination));
     
     octstr_destroy(sql);
     dlr_entry_destroy(entry);
@@ -226,7 +227,8 @@ static void dlr_pgsql_remove(const Octstr *smsc, const Octstr *ts, const Octstr 
                         octstr_get_cstr(smsc), octstr_get_cstr(fields->field_ts), octstr_get_cstr(ts));
 
 
-    pgsql_update(sql);
+    if (!pgsql_update(sql))
+       warning(0, "DLR: PGSQL: No dlr deleted for DST<%s>", octstr_get_cstr(dst));
     octstr_destroy(sql);
 }
 
@@ -242,7 +244,8 @@ static void dlr_pgsql_update(const Octstr *smsc, const Octstr *ts, const Octstr 
                         octstr_get_cstr(fields->table),
                         octstr_get_cstr(fields->field_smsc), octstr_get_cstr(smsc),
                         octstr_get_cstr(fields->field_ts), octstr_get_cstr(ts));
-    pgsql_update(sql);
+    if (!pgsql_update(sql))
+       warning(0, "DLR: PGSQL: No dlr updated for DST<%s> (status: %d)", octstr_get_cstr(dst), status);
     octstr_destroy(sql);
 }
 

@@ -129,6 +129,7 @@ static void dlr_add_mssql(struct dlr_entry *entry)
     Octstr *sql;
     DBPoolConn *pconn;
     debug("dlr.mssql", 0, "adding DLR entry into database");
+    int res;
 
     pconn = dbpool_conn_consume(pool);
     /* just for sure */
@@ -148,8 +149,10 @@ static void dlr_add_mssql(struct dlr_entry *entry)
 #if defined(DLR_TRACE)
     debug("dlr.mssql", 0, "sql: %s", octstr_get_cstr(sql));
 #endif
-    if (dbpool_conn_update(pconn, sql, NULL) == -1)
+    if ((res = dbpool_conn_update(pconn, sql, NULL)) == -1)
         error(0, "DLR: MSSQL: Error while adding dlr entry for DST<%s>", octstr_get_cstr(entry->destination));
+    else if (!res)
+        warning(0, "DLR: MSSQL: No dlr inserted for DST<%s>", octstr_get_cstr(entry->destination));
 
     dbpool_conn_produce(pconn);
     octstr_destroy(sql);
@@ -160,6 +163,7 @@ static void dlr_remove_mssql(const Octstr *smsc, const Octstr *ts, const Octstr 
 {
     Octstr *sql;
     DBPoolConn *pconn;
+    int res;
 
     debug("dlr.mssql", 0, "removing DLR from database");
 
@@ -178,8 +182,10 @@ static void dlr_remove_mssql(const Octstr *smsc, const Octstr *ts, const Octstr 
     debug("dlr.mssql", 0, "sql: %s", octstr_get_cstr(sql));
 #endif
 
-    if (dbpool_conn_update(pconn, sql, NULL) == -1)
+    if ((res = dbpool_conn_update(pconn, sql, NULL)) == -1)
         error(0, "DLR: MSSQL: Error while removing dlr entry for DST<%s>", octstr_get_cstr(dst));
+    else if (!res)
+        warning(0, "DLR: MSSQL: No dlr deleted for DST<%s>", octstr_get_cstr(dst));
 
     dbpool_conn_produce(pconn);
     octstr_destroy(sql);
@@ -238,6 +244,7 @@ static void dlr_update_mssql(const Octstr *smsc, const Octstr *ts, const Octstr 
 {
     Octstr *sql, *os_status;
     DBPoolConn *pconn;
+    int res;
 
     debug("dlr.mssql", 0, "updating DLR status in database");
 
@@ -255,8 +262,10 @@ static void dlr_update_mssql(const Octstr *smsc, const Octstr *ts, const Octstr 
 #if defined(DLR_TRACE)
     debug("dlr.mssql", 0, "sql: %s", octstr_get_cstr(sql));
 #endif
-    if (dbpool_conn_update(pconn, sql, NULL) == -1)
+    if ((res = dbpool_conn_update(pconn, sql, NULL)) == -1)
         error(0, "DLR: MSSQL: Error while updating dlr entry for DST<%s>", octstr_get_cstr(dst));
+    else if (!res)
+        warning(0, "DLR: MSSQL: No dlr found to update for DST<%s> (status: %d)", octstr_get_cstr(dst), status);
 
     dbpool_conn_produce(pconn);
     octstr_destroy(os_status);

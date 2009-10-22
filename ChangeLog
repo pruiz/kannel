@@ -1,3 +1,10 @@
+2009-10-22 Alexander Malysh <amalysh at kannel.org>
+    * gw/dlr_mssql.c, gw/dlr_mysql.c, gw/dlr_oracle.c, gw/dlr_pgsql.c, gw/dlr_sdb.c:
+      added warnings if DLR was not inserted/updated/deleted but no error occurs
+      e.g. row to update not found.
+      Thanks to Nikos Balkanas <nbal at amdtelecom.net> for this patch.
+      [Msg-Id: <001801ca530c$43c24ac0$02b2a8c0@tardis>
+
 2009-10-13 Alexander Malysh <amalysh at kannel.org>
     * gw/dlr_mysql.c: applied patch that fixes table name and field names that
       use reserved keywords.

@@ -127,6 +127,8 @@ static void dlr_add_oracle(struct dlr_entry *entry)
     Octstr *sql, *os_mask;
     DBPoolConn *pconn;
     List *binds = gwlist_create();
+    int res;
+
     debug("dlr.oracle", 0, "adding DLR entry into database");
 
     pconn = dbpool_conn_consume(pool);
@@ -155,8 +157,10 @@ static void dlr_add_oracle(struct dlr_entry *entry)
 #if defined(DLR_TRACE)
     debug("dlr.oracle", 0, "sql: %s", octstr_get_cstr(sql));
 #endif
-    if (dbpool_conn_update(pconn, sql, binds) == -1)
+    if ((res = dbpool_conn_update(pconn, sql, binds)) == -1)
         error(0, "DLR: ORACLE: Error while adding dlr entry for DST<%s>", octstr_get_cstr(entry->destination));
+    else if (!res)
+        warning(0, "DLR: ORACLE: No dlr inserted for DST<%s>", octstr_get_cstr(entry->destination));
 
     dbpool_conn_produce(pconn);
     octstr_destroy(sql);
@@ -170,6 +174,7 @@ static void dlr_remove_oracle(const Octstr *smsc, const Octstr *ts, const Octstr
     Octstr *sql;
     DBPoolConn *pconn;
     List *binds = gwlist_create();
+    int res;
 
     debug("dlr.oracle", 0, "removing DLR from database");
 
@@ -190,8 +195,10 @@ static void dlr_remove_oracle(const Octstr *smsc, const Octstr *ts, const Octstr
     debug("dlr.oracle", 0, "sql: %s", octstr_get_cstr(sql));
 #endif
 
-    if (dbpool_conn_update(pconn, sql, binds) == -1)
+    if ((res = dbpool_conn_update(pconn, sql, binds)) == -1)
         error(0, "DLR: ORACLE: Error while removing dlr entry for DST<%s>", octstr_get_cstr(dst));
+    else if (!res)
+        warning(0, "DLR: ORACLE: No dlr deleted for DST<%s>", octstr_get_cstr(dst));
 
     dbpool_conn_produce(pconn);
     gwlist_destroy(binds, NULL);
@@ -260,6 +267,7 @@ static void dlr_update_oracle(const Octstr *smsc, const Octstr *ts, const Octstr
     Octstr *sql, *os_status;
     DBPoolConn *pconn;
     List *binds = gwlist_create();
+    int res;
 
     debug("dlr.oracle", 0, "updating DLR status in database");
 
@@ -280,8 +288,10 @@ static void dlr_update_oracle(const Octstr *smsc, const Octstr *ts, const Octstr
 #if defined(DLR_TRACE)
     debug("dlr.oracle", 0, "sql: %s", octstr_get_cstr(sql));
 #endif
-    if (dbpool_conn_update(pconn, sql, binds) == -1)
+    if ((res = dbpool_conn_update(pconn, sql, binds)) == -1)
         error(0, "DLR: ORACLE: Error while updating dlr entry for DST<%s>", octstr_get_cstr(dst));
+    else if (!res)
+        warning(0, "DLR: ORACLE: No dlr found to update for DST<%s> (status: %d)", octstr_get_cstr(dst), status);
 
     dbpool_conn_produce(pconn);
     gwlist_destroy(binds, NULL);
