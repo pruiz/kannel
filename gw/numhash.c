@@ -95,11 +95,11 @@ struct numhash_table {
   long			table_size;
   struct numhash_number	**hash;
   long			hash_size;
-};	/* Numhash */
+}; /* Numhash */
 
 struct numhash_number {
-  long long			key;		/* (hopefully) unique key */
-  struct numhash_number	*next;		/* next in hash table, if any */
+  long long		key;	/* (hopefully) unique key */
+  struct numhash_number	*next;	/* next in hash table, if any */
 };
 
 
@@ -111,7 +111,7 @@ struct nh_entry {
 struct numhashes {
     struct nh_entry	*first;
     struct nh_entry 	*last;
-};	/* Multitable */
+}; /* Multitable */
 
 
 static int	precision = 19;		/* the precision (last numbers) used */
@@ -218,7 +218,8 @@ static Numhash *numhash_init(int max_numbers, int hash_size)
 int numhash_find_number(Numhash *table, Octstr *nro)
 {
     long long key = numhash_get_key(nro);
-    if (key<0) return key;
+    if (key < 0)
+        return key;
 
     return numhash_find_key(table, key);
 }

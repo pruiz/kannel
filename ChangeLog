@@ -1,3 +1,7 @@
+2009-11-01 Alexander Malysh <amalysh at kannel.org>
+    * gw/numhash.c, gw/bb_smscconn.c: fixed possible crash by reloading
+      white/blask lists via HTTP interface.
+
 2009-10-22 Alexander Malysh <amalysh at kannel.org>
     * gw/dlr_mssql.c, gw/dlr_mysql.c, gw/dlr_oracle.c, gw/dlr_pgsql.c, gw/dlr_sdb.c:
       added warnings if DLR was not inserted/updated/deleted but no error occurs

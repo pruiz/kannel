@@ -126,6 +126,7 @@ static RWLock smsc_list_lock;
 static List *smsc_groups;
 static Octstr *unified_prefix;
 
+static RWLock white_black_list_lock;
 static Octstr *black_list_url;
 static Octstr *white_list_url;
 static Numhash *black_list;
@@ -382,8 +383,9 @@ long bb_smscconn_receive(SMSCConn *conn, Msg *sms)
     uf = unified_prefix ? octstr_get_cstr(unified_prefix) : NULL;
     normalize_number(uf, &(sms->sms.sender));
 
-    if (white_list &&
-	numhash_find_number(white_list, sms->sms.sender) < 1) {
+    gw_rwlock_rdlock(&white_black_list_lock);
+    if (white_list && numhash_find_number(white_list, sms->sms.sender) < 1) {
+        gw_rwlock_unlock(&white_black_list_lock);
 	info(0, "Number <%s> is not in white-list, message discarded",
 	     octstr_get_cstr(sms->sms.sender));
 	bb_alog_sms(conn, sms, "REJECTED - not white-listed SMS");
@@ -392,6 +394,7 @@ long bb_smscconn_receive(SMSCConn *conn, Msg *sms)
     }
 
     if (white_list_regex && gw_regex_match_pre(white_list_regex, sms->sms.sender) == 0) {
+        gw_rwlock_unlock(&white_black_list_lock);
         info(0, "Number <%s> is not in white-list, message discarded",
              octstr_get_cstr(sms->sms.sender));
         bb_alog_sms(conn, sms, "REJECTED - not white-regex-listed SMS");
@@ -399,8 +402,8 @@ long bb_smscconn_receive(SMSCConn *conn, Msg *sms)
         return SMSCCONN_FAILED_REJECTED;
     }
     
-    if (black_list &&
-	numhash_find_number(black_list, sms->sms.sender) == 1) {
+    if (black_list && numhash_find_number(black_list, sms->sms.sender) == 1) {
+        gw_rwlock_unlock(&white_black_list_lock);
 	info(0, "Number <%s> is in black-list, message discarded",
 	     octstr_get_cstr(sms->sms.sender));
 	bb_alog_sms(conn, sms, "REJECTED - black-listed SMS");
@@ -409,12 +412,14 @@ long bb_smscconn_receive(SMSCConn *conn, Msg *sms)
     }
 
     if (black_list_regex && gw_regex_match_pre(black_list_regex, sms->sms.sender) == 0) {
+        gw_rwlock_unlock(&white_black_list_lock);
         info(0, "Number <%s> is not in black-list, message discarded",
              octstr_get_cstr(sms->sms.sender));
         bb_alog_sms(conn, sms, "REJECTED - black-regex-listed SMS");
         msg_destroy(sms);
         return SMSCCONN_FAILED_REJECTED;
     }
+    gw_rwlock_unlock(&white_black_list_lock);
 
     /* fix sms type if not set already */
     if (sms->sms.sms_type != report_mo)
@@ -631,6 +636,7 @@ int smsc2_start(Cfg *cfg)
     grp = cfg_get_single_group(cfg, octstr_imm("core"));
     unified_prefix = cfg_get(grp, octstr_imm("unified-prefix"));
 
+    gw_rwlock_init_static(&white_black_list_lock);
     white_list = black_list = NULL;
     white_list_url = black_list_url = NULL;
     white_list_url = cfg_get(grp, octstr_imm("white-list"));
@@ -1021,6 +1027,7 @@ void smsc2_cleanup(void)
     /* destroy msg split counter */
     counter_destroy(split_msg_counter);
     gw_rwlock_destroy(&smsc_list_lock);
+    gw_rwlock_destroy(&white_black_list_lock);
 
     /* Stop concat handling */
     shutdown_concat_handler();
@@ -1629,21 +1636,37 @@ static int check_concatenation(Msg **pmsg, Octstr *smscid)
 
 int bb_reload_lists(void)
 {
-    numhash_destroy(white_list);
-    numhash_destroy(black_list);
+    Numhash *tmp;
+    int rc = 1;
     
     if (white_list_url != NULL) {
-        white_list = numhash_create(octstr_get_cstr(white_list_url));
+        tmp = numhash_create(octstr_get_cstr(white_list_url));
+
+        gw_rwlock_wrlock(&white_black_list_lock);
+        numhash_destroy(white_list);
+        white_list = tmp;
+        gw_rwlock_unlock(&white_black_list_lock);
+
+        if (white_list == NULL) {
+            error(0, "Unable to reload white_list."),
+            rc = -1;
+        }
     }
-    if (white_list == NULL)
-        return -1;
 
     if (black_list_url != NULL) {
-        black_list = numhash_create(octstr_get_cstr(black_list_url));
-    }
-    if (black_list == NULL)
-        return -1;
+        tmp = numhash_create(octstr_get_cstr(black_list_url));
 
-    return 1;
+        gw_rwlock_wrlock(&white_black_list_lock);
+        numhash_destroy(black_list);
+        black_list = tmp;
+        gw_rwlock_unlock(&white_black_list_lock);
+
+        if (black_list == NULL) {
+            error(0, "Unable to reload black_list");
+            rc = -1;
+        }
+    }
+
+    return rc;
 }
 
