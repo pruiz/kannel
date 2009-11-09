@@ -1,3 +1,7 @@
+2009-11-09 Alexander Malysh <amalysh at kannel.org>
+    * gwlib/octstr.c: fixed crashes on Snow Leopard 64Bit.
+      Thanks to Paul Bagyenda <bagyenda at dsmagic.com> for this patch
+
 2009-11-01 Alexander Malysh <amalysh at kannel.org>
     * gw/numhash.c, gw/bb_smscconn.c: fixed possible crash by reloading
       white/blask lists via HTTP interface.
