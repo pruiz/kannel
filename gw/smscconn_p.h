@@ -159,7 +159,9 @@ struct smscconn {
     /* connection specific counters (created in smscconn.c, updated
      *  by callback functions in bb_smscconn.c, NOT used by specific driver) */
     Counter *received;
+    Counter *received_dlr;
     Counter *sent;
+    Counter *sent_dlr;
     Counter *failed;
 
     /* SMSCConn variables set in smscconn.c */

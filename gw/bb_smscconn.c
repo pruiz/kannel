@@ -102,9 +102,13 @@ extern List *outgoing_sms;
 
 extern Counter *incoming_sms_counter;
 extern Counter *outgoing_sms_counter;
+extern Counter *incoming_dlr_counter;
+extern Counter *outgoing_dlr_counter;
 
 extern Load *outgoing_sms_load;
 extern Load *incoming_sms_load;
+extern Load *incoming_dlr_load;
+extern Load *outgoing_dlr_load;
 
 extern List *flow_threads;
 extern List *suspended;
@@ -261,15 +265,21 @@ void bb_smscconn_sent(SMSCConn *conn, Msg *sms, Octstr *reply)
         octstr_destroy(reply);
         return;
     }
-    
-    counter_increase(outgoing_sms_counter);
-    load_increase(outgoing_sms_load);
-    if (conn) counter_increase(conn->sent);
 
     /* write ACK to store file */
     store_save_ack(sms, ack_success);
 
-    bb_alog_sms(conn, sms, "Sent SMS");
+    if (sms->sms.sms_type != report_mt) {
+        bb_alog_sms(conn, sms, "Sent SMS");
+        counter_increase(outgoing_sms_counter);
+        load_increase(outgoing_sms_load);
+        if (conn) counter_increase(conn->sent);
+    } else {
+        bb_alog_sms(conn, sms, "Sent DLR");
+        counter_increase(outgoing_dlr_counter);
+        load_increase(outgoing_dlr_load);
+        if (conn) counter_increase(conn->sent_dlr);
+    }
 
     /* generate relay confirmancy message */
     if (DLR_IS_SMSC_SUCCESS(sms->sms.dlr_mask)) {
@@ -495,14 +505,17 @@ long bb_smscconn_receive(SMSCConn *conn, Msg *sms)
         return (rc == -1 ? SMSCCONN_FAILED_QFULL : rc);
     }
 
-    if (sms->sms.sms_type != report_mo)
-	bb_alog_sms(conn, sms, "Receive SMS");
-    else
-	bb_alog_sms(conn, sms, "Receive DLR");
-
-    counter_increase(incoming_sms_counter);
-    load_increase(incoming_sms_load);
-    if (conn != NULL) counter_increase(conn->received);
+    if (sms->sms.sms_type != report_mo) {
+        bb_alog_sms(conn, sms, "Receive SMS");
+        counter_increase(incoming_sms_counter);
+        load_increase(incoming_sms_load);
+        if (conn != NULL) counter_increase(conn->received);
+    } else {
+        bb_alog_sms(conn, sms, "Receive DLR");
+        counter_increase(incoming_dlr_counter);
+        load_increase(incoming_dlr_load);
+        if (conn != NULL) counter_increase(conn->received_dlr);
+    }
 
     msg_destroy(sms);
 
@@ -1132,15 +1145,17 @@ Octstr *smsc2_status(int status_type)
         }
 	
         if (status_type == BBSTATUS_XML)
-            octstr_format_append(tmp, "<status>%s</status>\n\t\t<received>%ld</received>"
-                "\n\t\t<sent>%ld</sent>\n\t\t<failed>%ld</failed>\n\t\t"
+            octstr_format_append(tmp, "<status>%s</status>\n\t\t"
+                "<received><sms>%ld</sms><dlr>%ld</dlr></received>\n\t\t"
+                "<sent><sms>%ld</sms><dlr>%ld</dlr></sent>\n\t\t"
+                "<failed>%ld</failed>\n\t\t"
                 "<queued>%ld</queued>\n\t</smsc>\n", tmp3,
-                info.received, info.sent, info.failed,
+                info.received, info.received_dlr, info.sent, info.sent_dlr, info.failed,
                 info.queued);
         else
-            octstr_format_append(tmp, " (%s, rcvd %ld, sent %ld, failed %ld, "
+            octstr_format_append(tmp, " (%s, rcvd: sms %ld / dlr %ld, sent: sms %ld / dlr %ld, failed %ld, "
                 "queued %ld msgs)%s", tmp3,
-            info.received, info.sent, info.failed,
+            info.received, info.received_dlr, info.sent, info.sent_dlr, info.failed,
             info.queued, lb);
     }
     gw_rwlock_unlock(&smsc_list_lock);

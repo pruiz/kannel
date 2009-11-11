@@ -1,3 +1,8 @@
+2009-11-11 Alexander Malysh <amalysh at kannel.org>
+    * gw/bb_smscconn.c, gw/bearerbox.c, gw/smscconn.[ch], gw/smscconn_p.h: applied patch
+      that adds separate dlr counters on the status page.
+      Thanks to Alejandro Guerrieri <aguerrieri at kannel.org> fir this patch.
+
 2009-11-09 Alexander Malysh <amalysh at kannel.org>
     * gwlib/octstr.c: fixed crashes on Snow Leopard 64Bit.
       Thanks to Paul Bagyenda <bagyenda at dsmagic.com> for this patch

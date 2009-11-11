@@ -89,6 +89,8 @@ List *outgoing_wdp;
 
 Counter *incoming_sms_counter;
 Counter *outgoing_sms_counter;
+Counter *incoming_dlr_counter;
+Counter *outgoing_dlr_counter;
 Counter *incoming_wdp_counter;
 Counter *outgoing_wdp_counter;
 
@@ -99,6 +101,8 @@ long max_outgoing_sms_qlength;
 
 Load *outgoing_sms_load;
 Load *incoming_sms_load;
+Load *incoming_dlr_load;
+Load *outgoing_dlr_load;
 
 
 /* this is not a list of items; instead it is used as
@@ -457,6 +461,8 @@ static Cfg *init_bearerbox(Cfg *cfg)
 
     outgoing_sms_counter = counter_create();
     incoming_sms_counter = counter_create();
+    incoming_dlr_counter = counter_create();
+    outgoing_dlr_counter = counter_create();
     outgoing_wdp_counter = counter_create();
     incoming_wdp_counter = counter_create();
 
@@ -472,6 +478,16 @@ static Cfg *init_bearerbox(Cfg *cfg)
     load_add_interval(incoming_sms_load, 60);
     load_add_interval(incoming_sms_load, 300);
     load_add_interval(incoming_sms_load, -1);
+    incoming_dlr_load = load_create();
+    /* add 60,300,-1 entries to dlr */
+    load_add_interval(incoming_dlr_load, 60);
+    load_add_interval(incoming_dlr_load, 300);
+    load_add_interval(incoming_dlr_load, -1);
+    outgoing_dlr_load = load_create();
+    /* add 60,300,-1 entries to dlr */
+    load_add_interval(outgoing_dlr_load, 60);
+    load_add_interval(outgoing_dlr_load, 300);
+    load_add_interval(outgoing_dlr_load, -1);
 
     setup_signal_handlers();
     
@@ -556,19 +572,25 @@ static void empty_msg_lists(void)
         debug("bb", 0, "Remaining SMS: %ld incoming, %ld outgoing",
               gwlist_len(incoming_sms), gwlist_len(outgoing_sms));
 
-    info(0, "Total SMS messages: received %ld, sent %ld",
+    info(0, "Total SMS messages: received %ld, dlr %ld, sent %ld, dlr %ld",
          counter_value(incoming_sms_counter),
-         counter_value(outgoing_sms_counter));
+         counter_value(incoming_dlr_counter),
+         counter_value(outgoing_sms_counter),
+         counter_value(outgoing_dlr_counter));
 #endif
 
     gwlist_destroy(incoming_sms, msg_destroy_item);
     gwlist_destroy(outgoing_sms, msg_destroy_item);
     
     counter_destroy(incoming_sms_counter);
+    counter_destroy(incoming_dlr_counter);
     counter_destroy(outgoing_sms_counter);
+    counter_destroy(outgoing_dlr_counter);
 
     load_destroy(incoming_sms_load);
+    load_destroy(incoming_dlr_load);
     load_destroy(outgoing_sms_load);
+    load_destroy(outgoing_dlr_load);
 }
 
 
@@ -876,9 +898,12 @@ Octstr *bb_print_status(int status_type)
                " <p>WDP: received %ld (%ld queued), sent %ld "
                "(%ld queued)</p>\n\n"
                " <p>SMS: received %ld (%ld queued), sent %ld "
-               "(%ld queued), store size %ld</p>\n"
-               " <p>SMS: inbound (%.2f,%.2f,%.2f) msg/sec, outbound (%.2f,%.2f,%.2f) msg/sec</p>\n\n"
-               " <p>DLR: %ld queued, using %s storage</p>\n\n";
+               "(%ld queued), store size %ld<br>\n"
+               " SMS: inbound (%.2f,%.2f,%.2f) msg/sec, "
+               "outbound (%.2f,%.2f,%.2f) msg/sec</p>\n\n"
+               " <p>DLR: received %ld, sent %ld<br>\n"
+               " DLR: inbound (%.2f,%.2f,%.2f) msg/sec, outbound (%.2f,%.2f,%.2f) msg/sec<br>\n"
+               " DLR: %ld queued, using %s storage</p>\n\n";
         footer = "<p>";
     } else if (status_type == BBSTATUS_WML) {
         frmt = "%s</p>\n\n"
@@ -889,8 +914,12 @@ Octstr *bb_print_status(int status_type)
                "      SMS: sent %ld (%ld queued)<br/>\n"
                "      SMS: store size %ld<br/>\n"
                "      SMS: inbound (%.2f,%.2f,%.2f) msg/sec<br/>\n"
-               "      SMS: outbound (%.2f,%.2f,%.2f) msg/sec</p>\n\n"
-               "   <p>DLR: %ld queued<br/>\n"
+               "      SMS: outbound (%.2f,%.2f,%.2f) msg/sec</p>\n"
+               "   <p>DLR: received %ld<br/>\n"
+               "      DLR: sent %ld<br/>\n"
+               "      DLR: inbound (%.2f,%.2f,%.2f) msg/sec<br/>\n"
+               "      DLR: outbound (%.2f,%.2f,%.2f) msg/sec<br/>\n"
+               "      DLR: %ld queued<br/>\n"
                "      DLR: using %s storage</p>\n\n";
         footer = "<p>";
     } else if (status_type == BBSTATUS_XML) {
@@ -902,14 +931,23 @@ Octstr *bb_print_status(int status_type)
                "\t<sms>\n\t\t<received><total>%ld</total><queued>%ld</queued>"
                "</received>\n\t\t<sent><total>%ld</total><queued>%ld</queued>"
                "</sent>\n\t\t<storesize>%ld</storesize>\n\t\t"
-               "<inbound>%.2f,%.2f,%.2f</inbound>\n\t\t<outbound>%.2f,%.2f,%.2f</outbound>\n\t</sms>\n"
-               "\t<dlr>\n\t\t<queued>%ld</queued>\n\t\t<storage>%s</storage>\n\t</dlr>\n";
+               "<inbound>%.2f,%.2f,%.2f</inbound>\n\t\t"
+               "<outbound>%.2f,%.2f,%.2f</outbound>\n\t\t"
+               "</sms>\n"
+               "\t<dlr>\n\t\t<received><total>%ld</total></received>\n\t\t"
+               "<sent><total>%ld</total></sent>\n\t\t"
+               "<inbound>%.2f,%.2f,%.2f</inbound>\n\t\t"
+               "<outbound>%.2f,%.2f,%.2f</outbound>\n\t\t"
+               "<queued>%ld</queued>\n\t\t<storage>%s</storage>\n\t</dlr>\n";
         footer = "";
     } else {
         frmt = "%s\n\nStatus: %s, uptime %ldd %ldh %ldm %lds\n\n"
                "WDP: received %ld (%ld queued), sent %ld (%ld queued)\n\n"
                "SMS: received %ld (%ld queued), sent %ld (%ld queued), store size %ld\n"
-               "SMS: inbound (%.2f,%.2f,%.2f) msg/sec, outbound (%.2f,%.2f,%.2f) msg/sec\n\n"
+               "SMS: inbound (%.2f,%.2f,%.2f) msg/sec, "
+               "outbound (%.2f,%.2f,%.2f) msg/sec\n\n"
+               "DLR: received %ld, sent %ld\n"
+               "DLR: inbound (%.2f,%.2f,%.2f) msg/sec, outbound (%.2f,%.2f,%.2f) msg/sec\n"
                "DLR: %ld queued, using %s storage\n\n";
         footer = "";
     }
@@ -925,6 +963,9 @@ Octstr *bb_print_status(int status_type)
         store_messages(),
         load_get(incoming_sms_load,0), load_get(incoming_sms_load,1), load_get(incoming_sms_load,2),
         load_get(outgoing_sms_load,0), load_get(outgoing_sms_load,1), load_get(outgoing_sms_load,2),
+        counter_value(incoming_dlr_counter), counter_value(outgoing_dlr_counter),
+        load_get(incoming_dlr_load,0), load_get(incoming_dlr_load,1), load_get(incoming_dlr_load,2),
+        load_get(outgoing_dlr_load,0), load_get(outgoing_dlr_load,1), load_get(outgoing_dlr_load,2),
         dlr_messages(), dlr_type());
 
     octstr_destroy(version);

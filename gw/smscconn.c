@@ -170,7 +170,9 @@ SMSCConn *smscconn_create(CfgGroup *grp, int start_as_stopped)
     conn->is_stopped = start_as_stopped;
 
     conn->received = counter_create();
+    conn->received_dlr = counter_create();
     conn->sent = counter_create();
+    conn->sent_dlr = counter_create();
     conn->failed = counter_create();
     conn->flow_mutex = mutex_create();
 
@@ -334,7 +336,9 @@ int smscconn_destroy(SMSCConn *conn)
     mutex_lock(conn->flow_mutex);
 
     counter_destroy(conn->received);
+    counter_destroy(conn->received_dlr);
     counter_destroy(conn->sent);
+    counter_destroy(conn->sent_dlr);
     counter_destroy(conn->failed);
 
     octstr_destroy(conn->name);
@@ -599,6 +603,8 @@ int smscconn_info(SMSCConn *conn, StatusInfo *infotable)
     
     infotable->sent = counter_value(conn->sent);
     infotable->received = counter_value(conn->received);
+    infotable->sent_dlr = counter_value(conn->sent_dlr);
+    infotable->received_dlr = counter_value(conn->received_dlr);
     infotable->failed = counter_value(conn->failed);
 
     if (conn->queued)
