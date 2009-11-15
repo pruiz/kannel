@@ -1,4 +1,8 @@
 2009-11-15 Alexander Malysh <amalysh at kannel.org>
+    * gw/wap_push_ppg.c: allow requesting DLRs without dlr-url.
+      Thanks to Nikos Balkanas <nbal at amdtelecom.net> for this patch.
+
+2009-11-15 Alexander Malysh <amalysh at kannel.org>
     * gw/bb_smscconn.c: applied patch that minimize possibility of wrong re-assembling of
       concatenated MO messages.
 

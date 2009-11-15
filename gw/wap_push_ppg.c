@@ -3319,10 +3319,6 @@ static long set_dlr_mask(List *headers, Octstr *dlr_url)
     long dlr_mask;
     long masklen;    
 
-    if (dlr_url == NULL) {
-        return 0; 
-    }
-
     dlrmaskos = http_header_value(headers, octstr_imm("X-Kannel-DLR-Mask"));
     if (dlrmaskos == NULL) { 
         return 0;
