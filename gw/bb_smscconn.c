@@ -1143,7 +1143,7 @@ Octstr *smsc2_status(int status_type)
             default:
                 sprintf(tmp3, "unknown");
         }
-	
+
         if (status_type == BBSTATUS_XML)
             octstr_format_append(tmp, "<status>%s</status>\n\t\t"
                 "<received><sms>%ld</sms><dlr>%ld</dlr></received>\n\t\t"
@@ -1378,6 +1378,7 @@ typedef struct ConcatMsg {
     int refnum;
     int total_parts;
     int num_parts;
+    Octstr *udh; /* normalized UDH */
     time_t trecv;
     Octstr *key; /* in dict. */
     int ack;     /* set to the type of ack to send when deleting. */
@@ -1402,6 +1403,7 @@ static void destroy_concatMsg(void *x)
     }
     gw_free(msg->parts);
     octstr_destroy(msg->key);
+    octstr_destroy(msg->udh);
     gw_free(msg);
 }
 
@@ -1412,7 +1414,7 @@ static void init_concat_handler(void)
     incoming_concat_msgs = dict_create(max_incoming_sms_qlength > 0 ? max_incoming_sms_qlength : 1024, 
                                        destroy_concatMsg);
     concat_lock = mutex_create();
-    debug("bb.sms",0,"smsbox MO concatenated message handling enabled");
+    debug("bb.sms",0,"MO concatenated message handling enabled");
 }
 
 static void shutdown_concat_handler(void)
@@ -1424,7 +1426,7 @@ static void shutdown_concat_handler(void)
 
     incoming_concat_msgs = NULL;
     concat_lock = NULL;
-    debug("bb.sms",0,"smsbox MO concatenated message handling cleaned up");
+    debug("bb.sms",0,"MO concatenated message handling cleaned up");
 }
 
 static void clear_old_concat_parts(void)
@@ -1520,7 +1522,7 @@ static void clear_old_concat_parts(void)
 static int check_concatenation(Msg **pmsg, Octstr *smscid)
 {
     Msg *msg = *pmsg;
-    int l, iel, refnum, pos, c, part, totalparts, i, sixteenbit;
+    int l, iel = 0, refnum, pos, c, part, totalparts, i, sixteenbit;
     Octstr *udh = msg->sms.udhdata, *key;
     ConcatMsg *cmsg;
     int ret = concat_complete;
@@ -1531,7 +1533,7 @@ static int check_concatenation(Msg **pmsg, Octstr *smscid)
 
     for (pos = 1, c = -1; pos < l - 1; pos += iel + 2) {
         iel = octstr_get_char(udh, pos + 1);
-        if ((c = octstr_get_char(udh,pos)) == 0 || c == 8)
+        if ((c = octstr_get_char(udh, pos)) == 0 || c == 8)
             break;
     }
     if (pos >= l)  /* no concat UDH found. */
@@ -1540,7 +1542,7 @@ static int check_concatenation(Msg **pmsg, Octstr *smscid)
     /* c = 0 means 8 bit, c = 8 means 16 bit concat info */
     sixteenbit = (c == 8);
     refnum = (!sixteenbit) ? octstr_get_char(udh, pos + 2) :
-        (octstr_get_char(udh, pos + 2) << 8) | octstr_get_char(udh, pos + 3);
+    		(octstr_get_char(udh, pos + 2) << 8) | octstr_get_char(udh, pos + 3);
     totalparts = octstr_get_char(udh, pos + 3 + sixteenbit);
     part = octstr_get_char(udh, pos + 4 + sixteenbit);
 
@@ -1550,17 +1552,27 @@ static int check_concatenation(Msg **pmsg, Octstr *smscid)
         return concat_none;
     }
 
+    /* extract UDH */
+    udh = octstr_duplicate(msg->sms.udhdata);
+    octstr_delete(udh, pos, iel + 2);
+    if (octstr_len(udh) <= 1) /* no other UDH elements. */
+    	octstr_delete(udh, 0, octstr_len(udh));
+    else
+    	octstr_set_char(udh, 0, octstr_len(udh) - 1);
+
     debug("bb.sms.splits", 0, "Got part %d [ref %d, total parts %d] of message from %s. Dump follows:",
-          part, refnum,totalparts, octstr_get_cstr(msg->sms.sender));
+          part, refnum, totalparts, octstr_get_cstr(msg->sms.sender));
      
-    msg_dump(msg,0);
+    msg_dump(msg, 0);
      
-    key = octstr_format("%S %S %S %d", msg->sms.sender, msg->sms.receiver, smscid, refnum);
+    key = octstr_format("'%S' '%S' '%S' '%d' '%d' '%H'", msg->sms.sender, msg->sms.receiver, smscid, refnum, totalparts, udh);
     mutex_lock(concat_lock);
     if ((cmsg = dict_get(incoming_concat_msgs, key)) == NULL) {
         cmsg = gw_malloc(sizeof(*cmsg));
         cmsg->refnum = refnum;
         cmsg->total_parts = totalparts;
+        cmsg->udh = udh;
+        udh = NULL;
         cmsg->num_parts = 0;
         cmsg->key = octstr_duplicate(key);
         cmsg->ack = ack_success;
@@ -1570,18 +1582,7 @@ static int check_concatenation(Msg **pmsg, Octstr *smscid)
         dict_put(incoming_concat_msgs, key, cmsg);
     }
     octstr_destroy(key);
-
-    if (totalparts != cmsg->total_parts) {
-        /* totalparts in udh and cmsg not equal assume bad message */
-        error(0, "Totalparts in UDH doesn't match received before, "
-                "total parts <%d>:<%d> part %d, ref %d, from %s, to %s. Discarded!",
-                cmsg->total_parts, totalparts, part, refnum, octstr_get_cstr(msg->sms.sender), octstr_get_cstr(msg->sms.receiver));
-        mutex_unlock(concat_lock);
-        store_save_ack(msg, ack_success);
-        msg_destroy(msg);
-        *pmsg = msg = NULL;
-        return concat_error;
-    }
+    octstr_destroy(udh);
 
     /* check if we have seen message part before... */
     if (cmsg->parts[part - 1] != NULL) {	  
@@ -1622,26 +1623,16 @@ static int check_concatenation(Msg **pmsg, Octstr *smscid)
     } else 
         *pmsg = msg; /* return the message part. */
 
+    /* fix up UDH */
+    octstr_destroy(msg->sms.udhdata);
+    msg->sms.udhdata = cmsg->udh;
+    cmsg->udh = NULL;
+
     /* Delete it from the queue and from the Dict. */
     /* Note: dict_put with NULL value delete and destroy value */
     dict_put(incoming_concat_msgs, cmsg->key, NULL);
     mutex_unlock(concat_lock);
 
-    /* fix up UDH */
-    udh = msg->sms.udhdata;
-    l = octstr_len(udh);
-    for (pos = 1; pos < l - 1; pos += iel + 2) {
-        iel = octstr_get_char(udh, pos + 1);
-        if ((c = octstr_get_char(udh, pos)) == 0 || c == 8) {
-            octstr_delete(udh, pos, iel + 2);
-
-            if (octstr_len(udh) <= 1) /* no other UDH elements. */
-                octstr_delete(udh, 0, octstr_len(udh));
-            else
-                octstr_set_char(udh, 0, octstr_len(udh) - 1);
-            break;
-        }
-    }
     debug("bb.sms.splits", 0, "Got full message [ref %d] of message from %s to %s. Dumping: ",
           refnum, octstr_get_cstr(msg->sms.sender), octstr_get_cstr(msg->sms.receiver));
     msg_dump(msg,0);
