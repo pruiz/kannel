@@ -1,3 +1,7 @@
+2009-11-24 Alejandro Guerrieri <aguerrieri at kannel.org>
+    * contrib/kannel-monitor/*: rewrite of the code to support separate dlr
+      counters. Interface cleanup and php code updates.
+
 2009-11-23 Alexander Malysh <amalysh at kannel.org>
     * gw/dlr_pgsql.c: applied patch that escapes table name and fields.
       Quoting an identifier also makes it case-sensitive, whereas unquoted names are

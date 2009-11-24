@@ -4,52 +4,6 @@
  * xmlfunc.php -- Kannel's XML status output parsing functions.
  */
 
-if (empty($XMLFUNC_PHP)) {
-    $XMLFUNC_PHP = 1;
-
-
-function startElement($parser, $name, $attrs) {
-    global $depth;
-    for ($i = 0; $i < $depth[$parser]; $i++) {
-        print "  ";
-    }
-    print "$name\n";
-    $depth[$parser]++;
-}
-
-
-function endElement($parser, $name) {
-    global $depth;
-    $depth[$parser]--;
-}
-
-
-function GetElementByName($xml, $start, $end) {
-    $startpos = strpos($xml, $start);
-    if ($startpos === false) {
-        return false;
-    }
-    $endpos = strpos($xml, $end);
-    $endpos = $endpos + strlen($end); 
-    $endpos = $endpos - $startpos;
-    $endpos = $endpos - strlen($end);
-    $tag = substr($xml, $startpos, $endpos);
-    $tag = substr($tag, strlen($start));
-    return $tag;
-}
-
-
-function XPathValue($xpath, $xml) {
-    $XPathArray = explode("/", $xpath);
-    $node = $xml;
-    while (list($key, $value) = each($XPathArray)) {
-        $node = GetElementByName($node, "<$value>", "</$value>"); 
-    }
-  
-    return $node;
-}
-
-
 function nf($number) {
     return number_format($number, 0, ",", ".");
 }
@@ -58,126 +12,182 @@ function nfd($number) {
     return number_format($number, 2, ",", ".");
 }
 
+function get_timeout() {
+    $refresh = intval($_REQUEST['refresh']);
+    return ($refresh > 0) ? $refresh : DEFAULT_REFRESH;
+}
 
-function display_uptime($sec) {
-	 $d = floor($sec/(24*3600));
-	 $sec = $sec - ($d*24*3600);
-	 $h = floor($sec/3600);
-	 $sec = $sec - ($h*3600);
-	 $m = floor($sec/60);
-	 $sec = $sec - ($m*60);
-	 $s = $sec;
-	
-	 return $d."d ".$h."h ".$m."m ".$s."s";
+function get_uptime($sec) {
+    $d = floor($sec/(24*3600));
+    $sec -= ($d*24*3600);
+    $h = floor($sec/3600);
+    $sec -= ($h*3600);
+    $m = floor($sec/60);
+    $sec -= ($m*60);
+    return sprintf("%dd %dh %dm %ds", $d, $h, $m, $sec);
 } 
 
-function check_status($status, $xml) { 
-
-    $x = XPathValue("gateway/smscs", $xml);
-    /* loop the smsc */ 
-    $i = 0;
-    $n = 0;
-    while (($y = XPathValue("smsc", $x)) != "") {
-        $i++;
-        if (substr(XPathValue("status", $y), 0, strlen($status)) == $status) {
-           $n++;
+function count_smsc_status($smscs) {
+    $stats = array(
+        'online' => 0,
+        'disconnected' => 0,
+        'connecting' => 0,
+        're-connecting' => 0,
+        'dead' => 0,
+        'unknown' => 0
+    );
+    foreach ($smscs as $smsc) {
+        foreach ($stats as $st => $i) {
+            if (substr($smsc['status'], 0, strlen($st)) == $st) {
+                $stats[$st]++;
+            }
         }
-        $a = substr($x, strpos($x, "</smsc>") + 7);
-        $x = $a;
     }
-
-    return $n;
+    return $stats;
 }
 
-function get_smscids($status, $xml) { 
-
-    $x = XPathValue("gateway/smscs", $xml);
+function get_smscids($status, $smscs) {
     /* loop the smsc */ 
-    $i = 0;
     $n = "";
-    while (($y = XPathValue("smsc", $x)) != "") {
-        $i++;
-        if (substr(XPathValue("status", $y), 0, strlen($status)) == $status) {
-           $n .= XPathValue("id", $y)." ";
+    foreach ($smscs as $smsc) {
+        if (substr($smsc['status'], 0, strlen($status)) == $status) {
+           $n .= $smsc['admin-id']." ";
         }
-        $a = substr($x, strpos($x, "</smsc>") + 7);
-        $x = $a;
     }
 
     return $n;
 }
 
-function smsc_details($inst, $xml) { 
+function format_status($st) {
+    $span = 'text';
+    switch ($st) {
+        case "online":
+            $span = 'green';
+            break;
+        case "disconnected":
+        case "connecting":
+        case "re-connecting":
+            $span = 'red';
+            break;
+    }
+    return "<span class=\"$span\">$st</span>";
+}
+
+/*
+ * Parse start date, uptime and status from the status text
+ */
+function parse_uptime($str) {
+    $regs = array();
+    if (ereg("(.*), uptime (.*)d (.*)h (.*)m (.*)s", $str, $regs) ||
+        ereg("(.*) (.*)d (.*)h (.*)m (.*)s", $str, $regs)) {
+        $ts = ($regs[2]*24*60*60) + ($regs[3]*60*60) + ($regs[4]*60) + $regs[5];
+        $bb_time[$inst] = mktime()-$ts;
+        $started = date("Y-m-d H:i:s", mktime()-$ts);
+        $uptime = sprintf("%dd %02d:%02d:%02d", $regs[2], $regs[3], $regs[4], $regs[5]);
+        $status = $regs[1];
+    } else {
+        $started = '-';
+        $uptime = '-';
+        $status = '-';
+    }
+    return array($status, $started, $uptime);
+}
+
+/*
+ * Create a link for the SMSC status with a detail popup
+ */
+function make_link($smsc_status, $state, $mode='red') {
+    global $status, $inst;
+    if ($state == 'total') {
+        return ($smsc_status > 0) ? "$smsc_status links":"none";
+    } elseif ($smsc_status[$state] == 0) {
+        return "none";
+    } else {
+        switch ($mode) {
+            case 'red':
+                return "<a href=\"#\" class=href onClick=\"do_alert('".
+                       "smsc-ids in $state state are\\n\\n".
+                       get_smscids($state, $status[$inst]['smscs']).
+                       "');\"><span class=red><b>".
+                       $smsc_status[$state].
+                       "</b> links</span></a>";
+                break;
+            case 'green':
+                return "<span class=green><b>".
+                       $smsc_status[$state].
+                       "</b> links</span></a>";
+                break;
+        }
+    }
+}
+
+/*
+ * Split the load text into 3 <TD>
+ */
+function split_load($str) {
+    if (!$str) {
+        return "<td>-</td><td>-</td><td>-</td>\n";
+    } else {
+        return "<td>".implode("</td><td>", explode(",", $str))."</td>\n";
+    }
+}
+
+/*
+ * Create the admin link to change bearerbox status
+ */
+function admin_link($mode) {
     global $config;
-
-    $x = XPathValue("gateway/smscs", $xml);
-    /* loop the smsc */ 
-    $i = 0;
-    while (($y = XPathValue("smsc", $x)) != "") {
-        $i++;
-        echo "<tr><td colspan=9><hr/></td></tr>\n";
-        echo "<tr><td valign=top align=center class=text>\n";
-        echo "($inst)";
-        echo "</td><td valign=top class=text>\n";
-        $smsc = XPathValue("id", $y);
-        echo "<b>".$smsc."</b> <br />";
-        echo XPathValue("name", $y)." <br />";
-
-        echo "</td><td valign=top class=text nowrap>\n";
-        $a = explode(" ", XPathValue("status", $y));
-        switch ($a[0]) {
-            case "online":
-                echo "<span class=green>online</span> <br />";
-                echo " (".$z."s)";
-                break;
-            case "disconnected":
-                echo "<span class=red>disconnected</span>";
-                break;
-            case "connecting":
-                echo "<span class=red>connecting</span>";
-                break;
-            case "re-connecting":
-                echo "<span class=red>re-connecting</span>";
-                break;
-            case "dead":
-                echo "<span class=text>dead</span>";
-                break;
-            case "unkown":
-                echo "<span class=text>unknown</span>";
-                break;
-
-        }
-
-        echo "</td><td valign=top class=text nowrap>\n";
-        if (ereg("online (.*)s", XPathValue("status", $y), $regs)) {
-            $z = $regs[1];
-            echo date("Y-m-d H:i:s", mktime()-$z)."<br />";
-				echo "uptime ".display_uptime($z);
-        }
-        echo "</td><td valign=top align=right class=text nowrap>\n";
-        echo nf(XPathValue("received", $y));
-        echo "</td><td valign=top align=right class=text nowrap>\n";
-        echo nf(XPathValue("sent", $y));
-        echo "</td><td valign=top align=right class=text nowrap>\n";
-        echo nf(XPathValue("failed", $y));
-        echo "</td><td valign=top align=right class=text nowrap>\n";
-        echo nf(XPathValue("queued", $y));
-        echo "</td><td valign=top align=right class=text nowrap>\n";
-        echo "<a class=href href=\"#\" onClick=\"admin_smsc_url('stop-smsc', '";
-        echo $config["base_url"]."/stop-smsc?smsc=$smsc','";
-        echo "$smsc', '".$config["admin_passwd"]."');\">stop</a> <br />";
-        echo "<a class=href href=\"#\" onClick=\"admin_smsc_url('start-smsc', '";
-        echo $config["base_url"]."/start-smsc?smsc=$smsc','";
-        echo "$smsc', '".$config["admin_passwd"]."');\">start</a>";
-        echo "</td></tr>\n";
-        $a = substr($x, strpos($x, "</smsc>") + 7);
-        $x = $a;
-    }
-
-    return $n;
+    return "<a class=\"href\" href=\"#\" onClick=\"admin_url('".$mode."', ".
+         "'".$config["base_url"]."/".$mode."', '".$config["admin_passwd"]."');\">".$mode."</a>";
 }
 
+/*
+ * Cleanup the whole array
+ */
+function cleanup_array($arr) {
+    if (is_array($arr) && is_array($arr['gateway'])) {
+        $arr = $arr['gateway'];
+        clean_branch($arr, 'wdp');
+        clean_branch($arr, 'sms');
+        clean_branch($arr, 'dlr');
+        $arr['boxes'] = $arr['boxes'][0]['box'];
+        $arr['smscs'] = $arr['smscs'][0]['smsc'];
+    }
+    return $arr;
+}
 
-} /* XMLFUNC_PHP */
-	    
+/*
+ * Cleanup the branches to fold unnecessary levels
+ */
+function clean_branch(&$arr, $tag='') {
+    $fields = array('received', 'sent');
+    if ($tag) {
+        $arr[$tag] = array_shift($arr[$tag]);
+    }
+    foreach ($fields as $key) {
+        if ($tag) {
+            if (is_array($arr[$tag][$key])) {
+                $arr[$tag][$key] = array_shift($arr[$tag][$key]);
+            }
+        } else {
+            if (is_array($arr[$key])) {
+                $arr[$key] = array_shift($arr[$key]);
+            }
+        }
+    }
+}
+
+/*
+ * Get a path/of/xml/nodes from an array
+ */
+function get_path($arr, $path) {
+    $parts = explode("/", $path);
+    if (!is_array($arr) || !is_array($parts)) {
+        return $arr;
+    }
+    foreach($parts as $part) {
+        $arr = $arr[$part];
+    }
+    return $arr;
+}
 ?>
