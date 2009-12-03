@@ -290,8 +290,9 @@ int meta_data_set_values(Octstr *data, const Dict *dict, const char *group, int 
                 keys = dict_keys(curr->values);
                 while((key = gwlist_extract_first(keys)) != NULL) {
                     dict_put_once((Dict*)dict, key, octstr_duplicate(dict_get(curr->values, key)));
+                    octstr_destroy(key);
                 }
-                gwlist_destroy(keys, NULL);
+                gwlist_destroy(keys, octstr_destroy_item);
             }
             dict_destroy(curr->values);
             curr->values = (Dict*)dict;

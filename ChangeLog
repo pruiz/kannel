@@ -1,3 +1,7 @@
+2009-12-03 Alexander Malysh <amalysh at kannel.org>
+    * gw/meta_data.c: fixed memory leak.
+      Thanks to Nikos Balkanas <nbal at amdtelecom.net> for hint.
+
 2009-11-24 Alejandro Guerrieri <aguerrieri at kannel.org>
     * contrib/kannel-monitor/*: rewrite of the code to support separate dlr
       counters. Interface cleanup and php code updates.
