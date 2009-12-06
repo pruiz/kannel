@@ -3340,7 +3340,7 @@ static Cfg *init_smsbox(Cfg *cfg)
     CfgGroup *grp;
     Octstr *logfile;
     Octstr *p;
-    long lvl;
+    long lvl, value;
     Octstr *http_proxy_host = NULL;
     long http_proxy_port = -1;
     int http_proxy_ssl = 0;
@@ -3539,6 +3539,9 @@ static Cfg *init_smsbox(Cfg *cfg)
     if (cfg_get_integer(&max_req, grp, octstr_imm("max-pending-requests")) == -1)
         max_req = HTTP_MAX_PENDING; 
     max_pending_requests = semaphore_create(max_req);
+
+    if (cfg_get_integer(&value, grp, octstr_imm("http-timeout")) == 0)
+       http_set_client_timeout(value);
 
     /*
      * Reading the name we are using for ppg services from ppg core group

@@ -126,6 +126,7 @@ SINGLE_GROUP(core,
     OCTSTR(sms-resend-retry)
     OCTSTR(sms-combine-concatenated-mo)
     OCTSTR(sms-combine-concatenated-mo-timeout)
+    OCTSTR(http-timeout)
 )
 
 
@@ -159,6 +160,7 @@ SINGLE_GROUP(wapbox,
     OCTSTR(concatenation)
     OCTSTR(max-messages)
     OCTSTR(wml-strict)
+    OCTSTR(http-timeout)
 )
 
 
@@ -280,6 +282,7 @@ SINGLE_GROUP(smsbox,
     OCTSTR(black-list-regex)
     OCTSTR(immediate-sendsms-reply)
     OCTSTR(max-pending-requests)
+    OCTSTR(http-timeout)
 )
 
 

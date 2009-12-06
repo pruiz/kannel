@@ -364,7 +364,7 @@ static Cfg *init_bearerbox(Cfg *cfg)
 {
     CfgGroup *grp;
     Octstr *log, *val;
-    long loglevel, store_dump_freq;
+    long loglevel, store_dump_freq, value;
     int lf, m;
 #ifdef HAVE_LIBSSL
     Octstr *ssl_server_cert_file;
@@ -514,6 +514,8 @@ static Cfg *init_bearerbox(Cfg *cfg)
     if (max_outgoing_sms_qlength < 0)
         max_outgoing_sms_qlength = DEFAULT_OUTGOING_SMS_QLENGTH;
 
+    if (cfg_get_integer(&value, grp, octstr_imm("http-timeout")) == 0)
+        http_set_client_timeout(value);
 #ifndef NO_SMS    
     {
         List *list;

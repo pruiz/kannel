@@ -126,6 +126,7 @@ static Cfg *init_wapbox(Cfg *cfg)
     Octstr *s;
     Octstr *logfile;
     int lf, m;
+    long value;
 
     lf = m = 1;
 
@@ -199,6 +200,9 @@ static Cfg *init_wapbox(Cfg *cfg)
         alog_open(octstr_get_cstr(s), lf, m ? 0 : 1);
         octstr_destroy(s);
     }
+
+    if (cfg_get_integer(&value, grp, octstr_imm("http-timeout")) == 0)
+       http_set_client_timeout(value);
 
     /* configure the 'wtls' group */
 #if (HAVE_WTLS_OPENSSL)

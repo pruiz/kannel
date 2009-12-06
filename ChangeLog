@@ -1,3 +1,8 @@
+2009-12-06 Alexander Malysh <amalysh at kannel.org>
+    * doc/userguide/userguide.xml, gw/bearerbox.c, gw/smsbox.c, gw/wapbox.c, gwlib/cfg.def:
+      Applied patch that adds configurable http-timeout support for outgoing http client connections.
+      Thanks to Nikos Balkanas <nbal at amdtelecom.net> for this patch.
+
 2009-12-03 Alexander Malysh <amalysh at kannel.org>
     * gw/meta_data.c: fixed memory leak.
       Thanks to Nikos Balkanas <nbal at amdtelecom.net> for hint.

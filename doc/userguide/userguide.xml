@@ -1557,6 +1557,13 @@ admin-password = f00bar
         </entry>   
      </row>
 
+    <row><entry><literal>http-timeout</literal></entry>
+     <entry>seconds</entry>
+     <entry valign="bottom">
+        Sets socket timeout in seconds for outgoing client http
+        connections. Optional. Defaults to 240 seconds.
+     </entry></row>
+
   </tbody>
   </tgroup>
  </table>
@@ -2155,10 +2162,15 @@ bearerbox-host = localhost
 	 is assumed.
 	 </entry></row>
 
+    <row><entry><literal>http-timeout</literal></entry>
+     <entry>seconds</entry>
+     <entry valign="bottom">
+        Sets socket timeout in seconds for outgoing client http
+        connections. Optional. Defaults to 240 seconds.
+     </entry></row>
   </tbody>
   </tgroup>
  </table>
-
 
 <programlisting>
 </programlisting>
@@ -5734,6 +5746,12 @@ ssl-certkey-file
         </entry>
      </row>
 
+    <row><entry><literal>http-timeout</literal></entry>
+     <entry>seconds</entry>
+     <entry valign="bottom">
+        Sets socket timeout in seconds for outgoing client http
+        connections. Optional. Defaults to 240 seconds.
+     </entry></row>
   </tbody>
   </tgroup>
  </table>
