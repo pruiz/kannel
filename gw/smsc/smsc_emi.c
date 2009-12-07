@@ -1814,7 +1814,7 @@ int smsc_emi2_create(SMSCConn *conn, CfgGroup *cfg)
 
 error:
     error(0, "EMI2[%s]: Failed to create emi2 smsc connection",
-	  octstr_get_cstr(privdata->name));
+            (privdata ? octstr_get_cstr(privdata->name) : "-"));
     if (privdata != NULL) {
 	gw_prioqueue_destroy(privdata->outgoing_queue, NULL);
     }
@@ -1824,6 +1824,6 @@ error:
     octstr_destroy(host);
     conn->why_killed = SMSCCONN_KILLED_CANNOT_CONNECT;
     conn->status = SMSCCONN_DEAD;
-    info(0, "EMI2[%s]: exiting", octstr_get_cstr(privdata->name));
+    info(0, "EMI2[%s]: exiting", (privdata ? octstr_get_cstr(privdata->name) : "-"));
     return -1;
 }
