@@ -1,3 +1,8 @@
+2009-12-22 Alexander Malysh <amalysh at kannel.org>
+    * gwlib/octstr.c: fixed crash in octstr_decode_url() when called with octstr=NULL.
+      Bug #528.
+      Thanks to Stepan Seycek <s.seycek at dimoco.at> for this patch.
+
 2009-12-07  Stipe Tolj  <stolj at kannel.org>
     * gw/smsc/smsc_emi.c: fix segmentation fault in case we jump via goto 
       error in smsc_emi2_create(), but have yet no privdata created.

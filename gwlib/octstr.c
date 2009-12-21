@@ -1689,8 +1689,8 @@ void octstr_url_encode(Octstr *ostr)
 
 int octstr_url_decode(Octstr *ostr)
 {
-    unsigned char *string = ostr->data;
-    unsigned char *dptr = ostr->data;
+    unsigned char *string;
+    unsigned char *dptr;
     int code, code2, ret = 0;
 
     if (ostr == NULL)
@@ -1701,6 +1701,9 @@ int octstr_url_decode(Octstr *ostr)
 
     if (ostr->len == 0)
         return 0;
+
+    string = ostr->data;
+    dptr = ostr->data;
 
     do {
         if (*string == '%') {
