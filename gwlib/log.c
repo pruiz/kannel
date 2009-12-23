@@ -172,7 +172,7 @@ void log_init(void)
     gw_rwlock_init_static(&rwlock);
 
     /* default all possible thread to logging index 0, stderr */
-    for (i = 0; i <= THREADTABLE_SIZE; i++) {
+    for (i = 0; i < THREADTABLE_SIZE; i++) {
         thread_to[i] = 0;
     }
 

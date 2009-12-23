@@ -1,3 +1,7 @@
+2009-12-23 Alexander Malysh <amalysh at kannel.org>
+    * gwlib/log.c, gw/wap_push_ppg.c: fixed some compiler warnings and typos.
+      Thanks to Nikos Balkanas <nbal at amdtelecom.net> for this patch.
+
 2009-12-22 Alexander Malysh <amalysh at kannel.org>
     * gwlib/octstr.c: fixed crash in octstr_decode_url() when called with octstr=NULL.
       Bug #528.

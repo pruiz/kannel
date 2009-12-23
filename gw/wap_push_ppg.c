@@ -2116,7 +2116,7 @@ int select_bearer_network(WAPEvent **e)
         network = (**e).u.Push_Message.network;
     
     for (i = 0; i < NUMBER_OF_NETWORKS ; ++i) {
-        if (octstr_case_compare(bearer, octstr_imm(bearers[i])) == 0)
+        if (octstr_case_compare(network, octstr_imm(networks[i])) == 0)
 	        break;
     }
     for (j = 0; j < NUMBER_OF_BEARERS ; ++j) {
