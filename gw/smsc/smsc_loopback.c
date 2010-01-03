@@ -101,6 +101,10 @@ static int msg_cb(SMSCConn *conn, Msg *msg)
     sms = msg_duplicate(msg);
     sms->sms.sms_type = mo;
     
+    /* since this is a new MO now, create an own UUID */
+    uuid_clear(sms->sms.id); 
+    uuid_generate(sms->sms.id); 
+    
     /* 
      * If there is a reroute-smsc-id in the config group,
      * then let's use that value, otherwise assign the
