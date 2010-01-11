@@ -1,3 +1,6 @@
+2010-01-11 Alexander Malysh <amalysh at kannel.org>
+    * gwlib/octstr.c: fixed #527
+
 2010-01-03  Stipe Tolj  <stolj at kannel.org>
     * gw/smsc/smsc_loopback.c: make sure we create an new UUID for the MO we
       are about to loopback via this smsc. This is more realistic by means that

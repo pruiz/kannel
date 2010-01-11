@@ -352,7 +352,7 @@ Octstr *octstr_copy_real(const Octstr *ostr, long from, long len, const char *fi
     if (ostr == NULL)
         return octstr_create("");
 
-    seems_valid(ostr);
+    seems_valid_real(ostr, file, line, func);
     gw_assert(from >= 0);
     gw_assert(len >= 0);
 
@@ -373,7 +373,7 @@ Octstr *octstr_duplicate_real(const Octstr *ostr, const char *file, long line,
 {
     if (ostr == NULL)
         return NULL;
-    seems_valid(ostr);
+    seems_valid_real(ostr, file, line, func);
     return octstr_create_from_data_trace(ostr->data, ostr->len, file, line, func);
 }
 
