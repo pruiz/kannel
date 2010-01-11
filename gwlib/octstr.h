@@ -363,14 +363,14 @@ int octstr_print(FILE *f, Octstr *ostr);
  * Search the character from octet string starting from position pos. Returns 
  * the position (index) of the char in string, -1 if not found.
  */
-int octstr_search_char(const Octstr *ostr, int ch, long pos);
+long octstr_search_char(const Octstr *ostr, int ch, long pos);
 
 
 /*
  * Search several character from octet string starting from position pos. Returns 
  * the position (index) of the first char found in string, -1 if none was found.
  */
-int octstr_search_chars(const Octstr *ostr, const Octstr *chars, long pos);
+long octstr_search_chars(const Octstr *ostr, const Octstr *chars, long pos);
 
 
 /*
@@ -378,18 +378,18 @@ int octstr_search_chars(const Octstr *ostr, const Octstr *chars, long pos);
  * Return the start position (index) of 'needle' in 'haystack'.
  * Return -1 if not found.
  */
-int octstr_search(const Octstr *haystack, const Octstr *needle, long pos);
+long octstr_search(const Octstr *haystack, const Octstr *needle, long pos);
 
 
 /*
  * Like octstr_search, but ignores 8-bit byte case.
  */
-int octstr_case_search(const Octstr *haystack, const Octstr *needle, long pos);
+long octstr_case_search(const Octstr *haystack, const Octstr *needle, long pos);
 
 /*
  * Like octstr_case_search, but searchs only first n octets.
  */
-int octstr_case_nsearch(const Octstr *haystack, const Octstr *needle, long pos, long n);
+long octstr_case_nsearch(const Octstr *haystack, const Octstr *needle, long pos, long n);
 
 /*
  * Write contents of octet string to a file, in human readable form. 

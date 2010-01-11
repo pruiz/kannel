@@ -1,5 +1,10 @@
 2010-01-11 Alexander Malysh <amalysh at kannel.org>
+    * gwlib/octstr.[ch]: the search functions should return long #526
+      Thanks to Stepan Seycek <s.seycek at dimoco.at> for this patch.
+
+2010-01-11 Alexander Malysh <amalysh at kannel.org>
     * gwlib/octstr.c: fixed #527
+      Thanks to Stepan Seycek <s.seycek at dimoco.at> for this patch.
 
 2010-01-03  Stipe Tolj  <stolj at kannel.org>
     * gw/smsc/smsc_loopback.c: make sure we create an new UUID for the MO we

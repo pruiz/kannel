@@ -1008,7 +1008,7 @@ int octstr_str_ncompare(const Octstr *ostr, const char *str, long n)
 }
 
 
-int octstr_search_char(const Octstr *ostr, int ch, long pos)
+long octstr_search_char(const Octstr *ostr, int ch, long pos)
 {
     unsigned char *p;
 
@@ -1027,7 +1027,7 @@ int octstr_search_char(const Octstr *ostr, int ch, long pos)
 }
 
 
-int octstr_search_chars(const Octstr *ostr, const Octstr *chars, long pos)
+long octstr_search_chars(const Octstr *ostr, const Octstr *chars, long pos)
 {
     long i, j;
 
@@ -1045,7 +1045,7 @@ int octstr_search_chars(const Octstr *ostr, const Octstr *chars, long pos)
 }
 
 
-int octstr_search(const Octstr *haystack, const Octstr *needle, long pos)
+long octstr_search(const Octstr *haystack, const Octstr *needle, long pos)
 {
     int first;
 
@@ -1077,7 +1077,7 @@ int octstr_search(const Octstr *haystack, const Octstr *needle, long pos)
 }
 
 
-int octstr_case_search(const Octstr *haystack, const Octstr *needle, long pos)
+long octstr_case_search(const Octstr *haystack, const Octstr *needle, long pos)
 {
     long i, j;
     int c1, c2;
@@ -1104,7 +1104,7 @@ int octstr_case_search(const Octstr *haystack, const Octstr *needle, long pos)
     return -1;    
 }
 
-int octstr_case_nsearch(const Octstr *haystack, const Octstr *needle, long pos, long n)
+long octstr_case_nsearch(const Octstr *haystack, const Octstr *needle, long pos, long n)
 {
     long i, j;
     int c1, c2;
