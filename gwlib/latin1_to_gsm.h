@@ -163,13 +163,13 @@ static const int latin1_to_gsm[256] = {
 /* 0x9e */ NRP, /* pc: NON PRINTABLE */
 /* 0x9f */ NRP, /* pc: NON PRINTABLE */
 /* 0xa0 */ NRP, /* pc: NON PRINTABLE */
-/* 0xa1 */ 0x40, /* pc: NON PRINTABLE */
+/* 0xa1 */ 0x40, /* pc: INVERTED EXCLAMATION MARK */
 /* 0xa2 */ NRP, /* pc: NON PRINTABLE */
-/* 0xa3 */ 0x01, /* pc: NON PRINTABLE */
-/* 0xa4 */ 0x24, /* pc: NON PRINTABLE */
-/* 0xa5 */ 0x03, /* pc: NON PRINTABLE */
+/* 0xa3 */ 0x01, /* pc: POUND SIGN */
+/* 0xa4 */ 0x24, /* pc: CURRENCY SIGN */
+/* 0xa5 */ 0x03, /* pc: YEN SIGN*/
 /* 0xa6 */ NRP, /* pc: NON PRINTABLE */
-/* 0xa7 */ 0x5f, /* pc: NON PRINTABLE */
+/* 0xa7 */ 0x5f, /* pc: SECTION SIGN */
 /* 0xa8 */ NRP, /* pc: NON PRINTABLE */
 /* 0xa9 */ NRP, /* pc: NON PRINTABLE */
 /* 0xaa */ NRP, /* pc: NON PRINTABLE */
@@ -193,17 +193,17 @@ static const int latin1_to_gsm[256] = {
 /* 0xbc */ NRP, /* pc: NON PRINTABLE */
 /* 0xbd */ NRP, /* pc: NON PRINTABLE */
 /* 0xbe */ NRP, /* pc: NON PRINTABLE */
-/* 0xbf */ 0x60, /* pc: NON PRINTABLE */
+/* 0xbf */ 0x60, /* pc: INVERTED QUESTION MARK */
 /* 0xc0 */ NRP, /* pc: NON PRINTABLE */
 /* 0xc1 */ NRP, /* pc: NON PRINTABLE */
 /* 0xc2 */ NRP, /* pc: NON PRINTABLE */
 /* 0xc3 */ NRP, /* pc: NON PRINTABLE */
-/* 0xc4 */ 0x5b, /* pc: NON PRINTABLE */
-/* 0xc5 */ 0x0e, /* pc: NON PRINTABLE */
-/* 0xc6 */ 0x1c, /* pc: NON PRINTABLE */
-/* 0xc7 */ 0x09, /* pc: NON PRINTABLE */
+/* 0xc4 */ 0x5b, /* pc: LATIN CAPITAL LETTER A WITH DIAERESIS */
+/* 0xc5 */ 0x0e, /* pc: LATIN CAPITAL LETTER A WITH RING ABOVE */
+/* 0xc6 */ 0x1c, /* pc: LATIN CAPITAL LETTER AE */
+/* 0xc7 */ 0x09, /* pc: LATIN CAPITAL LETTER C WITH CEDILLA (mapped to small) */
 /* 0xc8 */ NRP, /* pc: NON PRINTABLE */
-/* 0xc9 */ 0x1f, /* pc: NON PRINTABLE */
+/* 0xc9 */ 0x1f, /* pc: LATIN CAPITAL LETTER E WITH ACUTE  */
 /* 0xca */ NRP, /* pc: NON PRINTABLE */
 /* 0xcb */ NRP, /* pc: NON PRINTABLE */
 /* 0xcc */ NRP, /* pc: NON PRINTABLE */
@@ -211,29 +211,29 @@ static const int latin1_to_gsm[256] = {
 /* 0xce */ NRP, /* pc: NON PRINTABLE */
 /* 0xcf */ NRP, /* pc: NON PRINTABLE */
 /* 0xd0 */ NRP, /* pc: NON PRINTABLE */
-/* 0xd1 */ 0x5d, /* pc: NON PRINTABLE */
+/* 0xd1 */ 0x5d, /* pc: LATIN CAPITAL LETTER N WITH TILDE */
 /* 0xd2 */ NRP, /* pc: NON PRINTABLE */
 /* 0xd3 */ NRP, /* pc: NON PRINTABLE */
 /* 0xd4 */ NRP, /* pc: NON PRINTABLE */
 /* 0xd5 */ NRP, /* pc: NON PRINTABLE */
-/* 0xd6 */ 0x5c, /* pc: NON PRINTABLE */
+/* 0xd6 */ 0x5c, /* pc: LATIN CAPITAL LETTER O WITH DIAEREIS */
 /* 0xd7 */ NRP, /* pc: NON PRINTABLE */
-/* 0xd8 */ 0x0b, /* pc: NON PRINTABLE */
+/* 0xd8 */ 0x0b, /* pc: LATIN CAPITAL LETTER O WITH STROKE */
 /* 0xd9 */ NRP, /* pc: NON PRINTABLE */
 /* 0xda */ NRP, /* pc: NON PRINTABLE */
 /* 0xdb */ NRP, /* pc: NON PRINTABLE */
-/* 0xdc */ 0x5e, /* pc: NON PRINTABLE */
+/* 0xdc */ 0x5e, /* pc: LATIN CAPITAL LETTER U WITH DIAERESIS */
 /* 0xdd */ NRP, /* pc: NON PRINTABLE */
 /* 0xde */ NRP, /* pc: NON PRINTABLE */
-/* 0xdf */ 0x1e, /* pc: NON PRINTABLE */
-/* 0xe0 */ 0x7f, /* pc: NON PRINTABLE */
+/* 0xdf */ 0x1e, /* pc: LATIN SMALL LETTER SHARP S */
+/* 0xe0 */ 0x7f, /* pc: LATIN SMALL LETTER A WITH GRAVE */
 /* 0xe1 */ NRP, /* pc: NON PRINTABLE */
 /* 0xe2 */ NRP, /* pc: NON PRINTABLE */
 /* 0xe3 */ NRP, /* pc: NON PRINTABLE */
-/* 0xe4 */ 0x7b, /* pc: NON PRINTABLE */
-/* 0xe5 */ 0x0f, /* pc: NON PRINTABLE */
-/* 0xe6 */ 0x1d, /* pc: NON PRINTABLE */
-/* 0xe7 */ NRP, /* pc: NON PRINTABLE */
+/* 0xe4 */ 0x7b, /* pc: LATIN SMALL LETTER A WITH DIAERESIS */
+/* 0xe5 */ 0x0f, /* pc: LATIN SMALL LETTER A WITH RING ABOVE */
+/* 0xe6 */ 0x1d, /* pc: LATIN SMALL LETTER AE */
+/* 0xe7 */ 0x09, /* pc: LATIN SMALL LETTER C WITH CEDILLA */
 /* 0xe8 */ 0x04, /* pc: NON PRINTABLE */
 /* 0xe9 */ 0x05, /* pc: NON PRINTABLE */
 /* 0xea */ NRP, /* pc: NON PRINTABLE */

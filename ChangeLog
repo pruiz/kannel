@@ -1,3 +1,10 @@
+2010-01-19 Andreas Fink <andreas at fink.org>
+    * gwlib/charset.c Fixed french character c cedille. In GSM 23.38-700 it 
+      looks like a capital C cedille for code point 0x09. Real life phones
+      however display a small c cedille for code 0x09. The change does
+      encode capital and small C cedille into 0x09 and decodes to small C
+      on incoming. Before a small c cedille resulted in a questionmark.
+
 2010-01-11 Alexander Malysh <amalysh at kannel.org>
     * gwlib/octstr.[ch]: the search functions should return long #526
       Thanks to Stepan Seycek <s.seycek at dimoco.at> for this patch.
