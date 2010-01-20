@@ -1,3 +1,7 @@
+2010-01-20  Stipe Tolj  <stolj at kannel.org>
+    * utils/start-stop-daemon.c: fix FreeBSD build, removed the redundant
+      command here that breaks the build. NLC.
+
 2010-01-19 Andreas Fink <andreas at fink.org>
     * gwlib/charset.c Fixed french character c cedille. In GSM 23.38-700 it 
       looks like a capital C cedille for code point 0x09. Real life phones

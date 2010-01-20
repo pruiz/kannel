@@ -927,7 +927,6 @@ main(int argc, char **argv)
 #endif
 #endif
 
-		setpgrp();  /* set the process group */
 		fd=open("/dev/null", O_RDWR); /* stdin */
 		dup(fd); /* stdout */
 		dup(fd); /* stderr */
