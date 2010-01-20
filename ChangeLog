@@ -3,6 +3,18 @@
       command here that breaks the build. NLC.
 
 2010-01-19 Andreas Fink <andreas at fink.org>
+    * gwlib/charset.c partially revert last change.
+      GSM charset character 09 is encoded differently by various vendors.
+      Nokia and Apple show a small c cedille.
+      Ericcson and Android show a capital C cedile
+      The standard GSM ETSI TS 123 038 V8.2.0 (2008-10) shows a 
+      capital, even though french speakers who have invented GSM
+      will agree that it most likely was meant as small (in french you dont
+      write capital C cedille but you use small c cedille often).
+      Capital and small c cedile get encoded into 09.
+      09 gets decoded to capital c cedille as it is in the standard.
+
+2010-01-19 Andreas Fink <andreas at fink.org>
     * gwlib/charset.c Fixed french character c cedille. In GSM 23.38-700 it 
       looks like a capital C cedille for code point 0x09. Real life phones
       however display a small c cedille for code 0x09. The change does
