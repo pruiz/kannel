@@ -1,3 +1,9 @@
+2010-01-21  Stipe Tolj  <stolj at kannel.org>
+    * gw/bb_boxc.c: fix a duplicate store_save_ack() call in case we get
+      SMSCCONN_FAILED_DISCARDED as result of our smsc routing call. In this
+      case we HAVE already called the store_save_ack(), and hence yield an
+      ERROR line that we're unable to unlink the file from a spool directory.
+
 2010-01-20  Stipe Tolj  <stolj at kannel.org>
     * utils/start-stop-daemon.c: fix FreeBSD build, removed the redundant
       command here that breaks the build. NLC.

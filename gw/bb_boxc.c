@@ -226,27 +226,46 @@ static void deliver_sms_to_queue(Msg *msg, Boxc *conn)
     store_save(msg);
 
     rc = smsc2_rout(msg, 0);
-    switch(rc) {
+    switch (rc) {
+        
         case SMSCCONN_SUCCESS:
-           mack->ack.nack = ack_success;
-           break;
+            mack->ack.nack = ack_success;
+            break;
+        
         case SMSCCONN_QUEUED:
-           mack->ack.nack = ack_buffered;
-           break;
+            mack->ack.nack = ack_buffered;
+            break;
+        
         case SMSCCONN_FAILED_DISCARDED: /* no router at all */
+            warning(0, "Message rejected by bearerbox, no router!");
+            
+            /* 
+             * we don't store_save_ack() here, since the call to
+             * bb_smscconn_send_failed() within smsc2_route() did 
+             * it already. 
+             */
+            mack->ack.nack = ack_failed;
+
+            /* destroy original message */
+            msg_destroy(msg);
+            break;
+        
         case SMSCCONN_FAILED_QFULL: /* queue full */
-           warning(0, "Message rejected by bearerbox, %s!",
+            warning(0, "Message rejected by bearerbox, %s!",
                              (rc == SMSCCONN_FAILED_DISCARDED) ? "no router" : "queue full");
            /*
             * first create nack for store-file, in order to delete
             * message from store-file.
             */
-           store_save_ack(msg, (rc == SMSCCONN_FAILED_QFULL ? ack_failed_tmp : ack_failed));
-           mack->ack.nack = (rc == SMSCCONN_FAILED_QFULL ? ack_failed_tmp : ack_failed);
+            mack->ack.nack = ack_failed_tmp;
+            store_save_ack(msg, ack_failed_tmp);
 
-           /* destroy original message */
-           msg_destroy(msg);
-           break;
+            /* destroy original message */
+            msg_destroy(msg);
+            break;
+            
+        default:
+            break;
     }
 
     /* put ack into incoming queue of conn */
