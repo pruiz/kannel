@@ -1,3 +1,6 @@
+2010-02-28 Alexander Malysh <amalysh at kannel.org>
+    * gw/bearerbox.c: don't ignore errors on startup. This fixes #536.
+
 2010-01-21  Stipe Tolj  <stolj at kannel.org>
     * gw/bb_boxc.c: fix a duplicate store_save_ack() call in case we get
       SMSCCONN_FAILED_DISCARDED as result of our smsc routing call. In this

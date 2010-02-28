@@ -233,9 +233,15 @@ static int start_smsc(Cfg *cfg)
     if (started) 
         return 0;
 
-    smsbox_start(cfg);
+    if (smsbox_start(cfg) == -1) {
+        error(0, "Unable to start smsbox module.");
+        return -1;
+    }
 
-    smsc2_start(cfg);
+    if (smsc2_start(cfg) == -1) {
+        error(0, "Unable to start smsc module.");
+        return -1;
+    }
 
     started = 1;
     return 0;
@@ -522,8 +528,11 @@ static Cfg *init_bearerbox(Cfg *cfg)
 	
         list = cfg_get_multi_group(cfg, octstr_imm("smsc"));
         if (list != NULL) {
-            start_smsc(cfg);
-            gwlist_destroy(list, NULL);
+           gwlist_destroy(list, NULL); 
+           if (start_smsc(cfg) == -1) {
+               panic(0, "Unable to start SMSCs.");
+               return NULL;
+           }
         }
     }
 #endif
@@ -649,7 +658,8 @@ int main(int argc, char **argv)
 
     flow_threads = gwlist_create();
     
-    init_bearerbox(cfg);
+    if (init_bearerbox(cfg) == NULL)
+        panic(0, "Initialization failed.");
 
     info(0, "----------------------------------------");
     info(0, GW_NAME " bearerbox II version %s starting", GW_VERSION);
