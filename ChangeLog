@@ -1,3 +1,8 @@
+2010-03-09  Stipe Tolj  <stolj at kannel.org>
+    * doc/userguide/userguide.xml: we use UTF-8 as default encoding for the
+      payload and not WINDOWS-1252. This caused a lot of mis-understanding.
+    * gw/smsbox.c: fix also the comment. NLC.
+
 2010-02-28 Alexander Malysh <amalysh at kannel.org>
     * gw/bearerbox.c: don't ignore errors on startup. This fixes #536.
 

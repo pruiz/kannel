@@ -7507,7 +7507,7 @@ the Kannel configuration, or 'Authorization failed' is returned.
    <entry><literal>string</literal></entry>
    <entry valign="bottom">
         Charset of text message. Used to convert to a format suitable for
-	7 bits or to UCS-2. Defaults to WINDOWS-1252 if coding is 7bits and
+	7 bits or to UCS-2. Defaults to UTF-8 if coding is 7 bits and
 	UTF-16BE if coding is UCS-2.
    </entry></row>
 

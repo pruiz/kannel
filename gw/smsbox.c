@@ -3718,7 +3718,7 @@ int charset_processing (Octstr *charset, Octstr *body, int coding) {
 
 	if (coding == DC_7BIT) {
 	    /*
-         * For 7 bit, convert to WINDOWS-1252
+         * For 7 bit, convert to UTF-8
 	     */
         if (charset_convert(body, octstr_get_cstr(charset), "UTF-8") < 0) {
 		resultcode = -1;
