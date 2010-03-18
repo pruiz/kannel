@@ -1,3 +1,8 @@
+2010-03-18  Andreas Fink <andreas at fink.org>
+    * doc/examples/modems.conf, modems.conf
+      fixed default settings for Siemens TC35
+      this should make hanging TC35's a thing of the past
+
 2010-03-09  Stipe Tolj  <stolj at kannel.org>
     * doc/userguide/userguide.xml: we use UTF-8 as default encoding for the
       payload and not WINDOWS-1252. This caused a lot of mis-understanding.

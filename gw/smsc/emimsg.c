@@ -293,22 +293,23 @@ struct emimsg *get_fields(Octstr *message, Octstr *whoami)
     char or, posit;
     long fieldno, pos, pos2;
     struct emimsg *result = NULL;
+    int e = 0;
 
     debug("smsc.emi2", 0, "EMI2[%s]: emi2 parsing packet: <%s>",
 	  octstr_get_cstr(whoami), octstr_get_cstr(message));
     if (octstr_get_char(message, 0) != 2 ||
 	octstr_get_char(message, octstr_len(message) - 1) != 3)
-	goto error;
+	goto error1;
     if (octstr_parse_long(&trn, message, 1, 10) != 3)
-	goto error;
+	goto error2;
     if (octstr_parse_long(&len, message, 4, 10) != 9)
-	goto error;
+	goto error3;
     if (octstr_len(message) != len + 2)     /* +2 for start/end markers */
-	goto error;
+	goto error4;
     if ( (or = octstr_get_char(message, 10)) != 'O' && or != 'R')
-	goto error;
+	goto error5;
     if (octstr_parse_long(&ot, message, 12, 10) != 14)
-	goto error;
+	goto error6;
     if (or == 'O')
 	result = emimsg_create_op(ot, trn, whoami);
     else {
@@ -318,15 +319,15 @@ struct emimsg *get_fields(Octstr *message, Octstr *whoami)
 	else if (posit == 'N')
 	    result = emimsg_create_reply_s(ot, trn, 0, whoami);
 	else
-	    goto error;
+	    goto error7;
     }
     if (result == NULL)
-	goto error;
+	goto error8;
     pos2 = 14;
     for (fieldno = 0; fieldno < result->num_fields; fieldno++) {
 	pos = pos2 + 1;
 	if ( (pos2 = octstr_search_char(message, '/', pos)) == -1)
-	    goto error;
+	    goto error9;
 	if (pos2 > pos)
 	    result->fields[fieldno] = octstr_copy(message, pos, pos2 - pos);
     }
@@ -344,21 +345,59 @@ struct emimsg *get_fields(Octstr *message, Octstr *whoami)
     }
     if (octstr_parse_long(&checksum, message, pos2 + 1, 16) !=
 	octstr_len(message) - 1 || checksum != calculate_checksum(message))
-	goto error;
+	goto error10;
     if (result->or == 'R' && octstr_get_char(result->fields[0], 0) == 'N') {
 	long errcode;
 	if (!result->fields[1] ||
 	    octstr_parse_long(&errcode, result->fields[1], 0, 10) != 2)
-	    goto error;
+	    goto error11;
 	error(0, "EMI2[%s]: Got negative ack. op:%d, trn:%d, error:%ld (%s), message:%s",
 	      octstr_get_cstr(whoami),
 	      result->ot, result->trn, errcode, emi_strerror(errcode),
 	      result->fields[2] ? octstr_get_cstr(result->fields[2]) : "");
     }
     return result;
+	
+
+error12:
+	e++;
+
+error11:
+	e++;
+
+error10:
+	e++;
+
+error9:
+	e++;
+
+error8:
+	e++;
+
+error7:
+	e++;
+
+error6:
+	e++;
+
+error5:
+	e++;
+
+error4:
+	e++;
+
+error3:
+	e++;
+
+error2:
+	e++;
+
+error1:
+	e++;
+	
 error:
-    error(0, "EMI2[%s]: Invalid EMI packet: %s", octstr_get_cstr(whoami),
-	  octstr_get_cstr(message));
+    error(0, "EMI2[%s]: Invalid EMI packet: %s err=%d", octstr_get_cstr(whoami),
+	  octstr_get_cstr(message),e);
     if (result)
 	emimsg_destroy(result);
     return NULL;
