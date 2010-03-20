@@ -1,4 +1,8 @@
 2010-03-20 Alexander Malysh <amalysh at kannel.org>
+    * userguide/userguide.xml: applied patch that should clarify modem initialization.
+      Thanks to Nikos Balkanas <nbal at amdtelecom.net> for this patch.
+
+2010-03-20 Alexander Malysh <amalysh at kannel.org>
     * gw/smsbox.c: rewrite of XML POST to use libxml/xpath. This should handle all of
       escaping, namespacing etc. issues.
 

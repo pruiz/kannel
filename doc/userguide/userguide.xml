@@ -3975,7 +3975,70 @@ pin = 2345
    It is recommended to use <literal>keepalive</literal> variable, in order to 
    automatically reconnect in case of network connectivity problems.</para>
 
+   <sect3>
+     <title>Modem initialization</title>
+     <para>This question has frequented much user lists. It usually comes in 2
+           forms:
 
+     <orderedlist>
+        <listitem><para>Modem doesn't receive or transmit SMS.</para>
+           <para>In its current implementation, the at driver will panic if it
+                 cannot find the modem device and bearerbox won't start. This
+                 can happen either because the wrong modem device is configured
+                 or the device has no write access for kannel's user.</para>
+           <para> In the first case use system logs to discover where is your
+                  modem assigned to:</para>
+           <para>grep tty /var/log/messages</para>
+           <para>Then verify that this is indeed your GSM modem device by
+                 connecting to it with minicom or wvdial and issuing a few AT
+                 commands. Wvdial is preferrable, since it can also give you a
+                 working <literal>init-string</literal></para>
+           <para>In the second case you need to give write access to kannel
+                 user. This is no problem if you run kannel as root, but it is
+                 not recommended to do so. In Ubuntu linux you just need to
+                 assign kannel user to group "dial". In other systems you can
+                 either:</para>
+           <programlisting>chmod 666 /dev/modem</programlisting>
+           <para>or preferably:</para>
+           <programlisting>
+chmod 664 /dev/modem
+chgrp <emphasis>group</emphasis> /dev/modem
+usermod -G <emphasis>group</emphasis> <emphasis>kannel-user</emphasis>
+           </programlisting>
+        </listitem>
+        <listitem><para>Modem doesn't receive DLRs or SMS.</para>
+           <para>By default the modem doesn't know how to treat incoming
+                 messages. To tell it to send it to kannel you have to
+                 configure <literal>init-string</literal> with the <emphasis>
+                 +CNMI=x,x,x,x,x</emphasis> command. X's are decimal numbers
+                 and CNMI stands for Command New Message Indication. There is
+                 no hard rule about its values. They are model and manufacturer
+                 specific. Best to consult modem manual or manufacturer's web
+                 site. Failing that, wvdialconf might give a working CNMI.
+                 Finally see modems.conf for examples and try out different
+                 values. Some Nokia phones do not support this command, but
+                 are ready to transmit incoming messages from the start.</para>
+           <para>Since this setting is modem specific, kannel cannot understand
+                 what it means from its value, and if using unconventional
+                 values you should tell kannel through <literal>sim-buffering
+                 </literal> and <literal> message-storage</literal>. In any
+                 case it is useful to add +CMEE = 1 or 2 in the <literal>
+                 init-string</literal> in order to make the modem more verbose
+                 in its responses.</para>
+           <programlisting>
+group = modems
+init-string = "AT+CNMI=2,3,0,1,0;+CMEE=1"
+message-storage = ME or SM    Depending on your modem, you may need to adjust it
+...
+
+group = smsc
+smsc = at
+sim-buffering = true          This will tell kannel to search for messages in
+...                           the modem (either memory or its SIM)
+           </programlisting>
+        </listitem>
+     </orderedlist>
+   </sect3>
 </sect2>
 
 
