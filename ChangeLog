@@ -1,3 +1,7 @@
+2010-03-20 Alexander Malysh <amalysh at kannel.org>
+    * gw/smsbox.c: rewrite of XML POST to use libxml/xpath. This should handle all of
+      escaping, namespacing etc. issues.
+
 2010-03-18  Andreas Fink <andreas at fink.org>
     * doc/examples/modems.conf, modems.conf
       fixed default settings for Siemens TC35
