@@ -4,7 +4,7 @@ It is stored on the first line. Nothing else should
 be there. 
 
 Note that if you get this file from SVN, it will just
-say "svni-revision" instead of a version number. 
+say "svn-r<revision>" instead of a version number. 
 This is intentional, it avoids confusion with real releases.
 
 Starting with version 0.8, version numbers that have an even

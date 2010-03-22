@@ -1,3 +1,6 @@
+2010-03-22  Stipe Tolj  <stolj at kannel.org>
+    * VERSION: fix typo and make the rXXXX tag more clean here.
+    
 2010-03-22 Alexander Malysh <amalysh at kannel.org>
     * configure, VERSION, configure.in, acinclude.m4, aclocal.m4: switched CVS -> SVN
 
