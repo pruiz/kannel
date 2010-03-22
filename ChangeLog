@@ -1,3 +1,6 @@
+2010-03-22 Alexander Malysh <amalysh at kannel.org>
+    * configure, VERSION, configure.in, acinclude.m4, aclocal.m4: switched CVS -> SVN
+
 2010-03-20 Alexander Malysh <amalysh at kannel.org>
     * userguide/userguide.xml: applied patch that should clarify modem initialization.
       Thanks to Nikos Balkanas <nbal at amdtelecom.net> for this patch.

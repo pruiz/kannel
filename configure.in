@@ -73,11 +73,11 @@ AC_CONFIG_NICE(config.nice)
 
 dnl Check gateway version number.
 VERSION=`head -n 1 VERSION`
-if test "x$VERSION" = "xcvs"; then
-  AC_MSG_CHECKING([cvs checkout date])
-  AC_CVS_DATE(CVS_DATE)
-  AC_MSG_RESULT([$CVS_DATE])
-  VERSION="$VERSION-$CVS_DATE"
+if test "x$VERSION" = "xsvn"; then
+  AC_MSG_CHECKING([svn checkout revision])
+  AC_SVN_REVISION(SVN_REVISION)
+  AC_MSG_RESULT([$SVN_REVISION])
+  VERSION="$VERSION-r$SVN_REVISION"
 fi
 AC_DEFINE_UNQUOTED(GW_NAME, "Kannel")
 AC_DEFINE_UNQUOTED(GW_VERSION, "$VERSION")

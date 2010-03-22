@@ -1,11 +1,11 @@
-cvs
+svn
 This file contains the version number of the gateway.
 It is stored on the first line. Nothing else should
 be there. 
 
-Note that if you get this file from CVS, it will just
-say "cvs" instead of a version number.  This is intentional,
-it avoids confusion with real releases.
+Note that if you get this file from SVN, it will just
+say "svni-revision" instead of a version number. 
+This is intentional, it avoids confusion with real releases.
 
 Starting with version 0.8, version numbers that have an even
 second part are STABLE versions and those with odd ones are
