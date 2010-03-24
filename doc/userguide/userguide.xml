@@ -3977,8 +3977,8 @@ pin = 2345
 
    <sect3>
      <title>Modem initialization</title>
-     <para>This question has frequented much user lists. It usually comes in 2
-           forms:
+     <para>This question has been asked frequently in the users mailing list. 
+     It usually comes in two forms:
 
      <orderedlist>
         <listitem><para>Modem doesn't receive or transmit SMS.</para>
@@ -4038,6 +4038,7 @@ sim-buffering = true          This will tell kannel to search for messages in
            </programlisting>
         </listitem>
      </orderedlist>
+     </para>
    </sect3>
 </sect2>
 
