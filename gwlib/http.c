@@ -1199,10 +1199,8 @@ static void handle_transaction(Connection *conn, void *data)
         trans->url = h; /* apply new absolute URL to next request */
         trans->state = request_not_sent;
         trans->status = -1;
-        http_destroy_headers(trans->response->headers);
-        trans->response->headers = gwlist_create();
-        octstr_destroy(trans->response->body);
-        trans->response->body = octstr_create("");
+        entity_destroy(trans->response);
+        trans->response = NULL;
         --trans->follow_remaining;
         conn_destroy(trans->conn);
         trans->conn = NULL;
