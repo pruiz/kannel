@@ -910,7 +910,7 @@ static int at2_wait_modem_command(PrivAT2data *privdata, time_t timeout, int gt_
     O_DESTROY(line);
     O_DESTROY(line2);
     O_DESTROY(pdu);
-	O_DESTROY(smsc_number);
+    O_DESTROY(smsc_number);
     return -1; /* timeout */
 
 end:
@@ -2238,13 +2238,13 @@ static void at2_send_one_message(PrivAT2data *privdata, Msg *msg)
 
     if (msg_type(msg) == sms) {
         Octstr *pdu;
+        int msg_id = -1;
 
         if ((pdu = at2_pdu_encode(msg, privdata)) == NULL) {
             error(2, "AT2[%s]: Error encoding PDU!",octstr_get_cstr(privdata->name));
             return;
         }
 
-        int msg_id = -1;
         /* 
          * send the initial command and then wait for > 
          */
@@ -2268,13 +2268,10 @@ static void at2_send_one_message(PrivAT2data *privdata, Msg *msg)
              */
 
             if (octstr_compare(privdata->modem->id, octstr_imm("nokiaphone")) != 0) { 
-
                 sprintf(command, "%s%s", sc, octstr_get_cstr(pdu));
                 at2_write(privdata, command);
                 at2_write_ctrlz(privdata);
-
             } else {
-
                 /* include the CTRL-Z in the PDU string */
                 sprintf(command, "%s%s%c", sc, octstr_get_cstr(pdu), 0x1A);
 
@@ -2308,7 +2305,7 @@ static void at2_send_one_message(PrivAT2data *privdata, Msg *msg)
             if (ret != 0) {
                 bb_smscconn_send_failed(privdata->conn, msg,
                         SMSCCONN_FAILED_TEMPORARILY, octstr_create("ERROR"));
-            }else{
+            } else {
                 /* store DLR message if needed for SMSC generated delivery reports */
                 if (DLR_IS_ENABLED_DEVICE(msg->sms.dlr_mask)) {
                     if (msg_id == -1)
@@ -2326,6 +2323,14 @@ static void at2_send_one_message(PrivAT2data *privdata, Msg *msg)
 
                 bb_smscconn_sent(privdata->conn, msg, NULL);
             }
+        } else {
+            error(0,"AT2[%s]: Error received, notifying failure, "
+                 "sender: %s receiver: %s msgdata: %s udhdata: %s",
+                  octstr_get_cstr(privdata->name),
+                  octstr_get_cstr(msg->sms.sender), octstr_get_cstr(msg->sms.receiver),
+                  octstr_get_cstr(msg->sms.msgdata), octstr_get_cstr(msg->sms.udhdata));
+            bb_smscconn_send_failed(privdata->conn, msg,
+                                    SMSCCONN_FAILED_TEMPORARILY, octstr_create("ERROR"));
         }
         O_DESTROY(pdu);
     }
