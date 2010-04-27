@@ -1,3 +1,11 @@
+2010-04-27 Alexander Malysh <amalysh at kannel.org>
+    * doc/userguide/userguide.xml, gw/smsc/smsc_at.[ch], gwlib/cfg.def:
+      Aplied patch that adds configuration option to at smsc, message-start
+     (in group modems). In case of sim-buffering it will set the starting buffer
+     index in the sim. For some modems such as the UMG181 this needs to be set to
+     0. Defaults to 1, and doesn't need changing for most others.
+     Thanks to to Nikos Balkanas <nbal at amdtelecom.net> for this patch.
+
 2010-04-12 Alexander Malysh <amalysh at kannel.org>
     * gw/smsc/smsc_at.c: applied patch that fixes issue when error received
       during handshake.
