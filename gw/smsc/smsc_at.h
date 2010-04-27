@@ -111,6 +111,7 @@ typedef struct ModemDef {
     Octstr *keepalive_cmd;
     int	broken;
     Octstr *message_storage;
+    long message_start;
     int	enable_mms;
 } ModemDef;
 

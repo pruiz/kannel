@@ -532,6 +532,7 @@ MULTI_GROUP(modems,
     OCTSTR(keepalive-cmd)
     OCTSTR(broken)
     OCTSTR(message-storage)
+    OCTSTR(message-start)
     OCTSTR(enable-mms)
     OCTSTR(reset-string)
 )

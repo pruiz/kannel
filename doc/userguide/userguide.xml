@@ -3939,6 +3939,16 @@ pin = 2345
                 storage will be used (usually "SM").
      </entry></row>
 
+   <row><entry><literal>message-start</literal></entry>
+     <entry><literal>string</literal></entry>
+     <entry valign="bottom">
+        Optional integer, defaults to 1. Specifies starting index in
+                SIM buffer for new SMS. Most modems start numbering from 1,
+                however a few like the UMG181 start numbering from 0. This
+                parameter ensures that all SMS are fetched when using
+                "SIM buffering".
+     </entry></row>
+
    <row><entry><literal>enable-mms</literal></entry>
      <entry><literal>boolean</literal></entry>
      <entry valign="bottom">

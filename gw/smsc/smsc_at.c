@@ -1087,6 +1087,7 @@ static int at2_read_sms_memory(PrivAT2data* privdata)
          */
         int i;
         int message_count = 0; /* cound number of messages collected */
+        ModemDef *modem = privdata->modem;
 
         debug("bb.smsc.at2", 0, "AT2[%s]: %d messages waiting in memory", 
               octstr_get_cstr(privdata->name), privdata->sms_memory_usage);
@@ -1094,8 +1095,7 @@ static int at2_read_sms_memory(PrivAT2data* privdata)
         /*
          * loop till end of memory or collected enouch messages
          */
-        for (i = 1; i <= privdata->sms_memory_capacity &&
-             message_count < privdata->sms_memory_usage; ++i) { 
+        for (i = modem->message_start; i < (privdata->sms_memory_capacity  + modem->message_start) && message_count < privdata->sms_memory_usage; ++i) {
 
             /* if (meanwhile) there are pending CMTI notifications, process these first
              * to not let CMTI and sim buffering sit in each others way */
@@ -2832,6 +2832,8 @@ static ModemDef *at2_read_modems(PrivAT2data *privdata, Octstr *file, Octstr *id
             modem->keepalive_cmd = octstr_create("AT");
 
         modem->message_storage = cfg_get(grp, octstr_imm("message-storage"));
+        if (cfg_get_integer(&modem->message_start, grp, octstr_imm("message-start")))
+            modem->message_start = 1;
 
         cfg_get_bool(&modem->enable_mms, grp, octstr_imm("enable-mms"));
 
