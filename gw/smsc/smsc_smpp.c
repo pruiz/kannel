@@ -2237,21 +2237,25 @@ int smsc_smpp_create(SMSCConn *conn, CfgGroup *grp)
         ok = 0;
     }
     if (username == NULL) {
-	    error(0, "SMPP: Configuration file doesn't specify username.");
-	    ok = 0;
+        error(0, "SMPP: Configuration file doesn't specify username.");
+        ok = 0;
     }
     if (password == NULL) {
-	    error(0, "SMPP: Configuration file doesn't specify password.");
-	    ok = 0;
+         error(0, "SMPP: Configuration file doesn't specify password.");
+         ok = 0;
     }
     if (system_type == NULL) {
-	    error(0, "SMPP: Configuration file doesn't specify system-type.");
-	    ok = 0;
+        error(0, "SMPP: Configuration file doesn't specify system-type.");
+        ok = 0;
     }
     if (octstr_len(service_type) > 6) {
-            error(0, "SMPP: Service type must be 6 characters or less.");
-            ok = 0;
+        error(0, "SMPP: Service type must be 6 characters or less.");
+        ok = 0;
     }
+    if (transceiver_mode && receive_port != 0) {
+        warning(0, "SMPP: receive-port for transceiver mode defined, ignoring.");
+        receive_port = 0;
+    } 
 
     if (!ok)
         return -1;
