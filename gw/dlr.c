@@ -319,13 +319,20 @@ void dlr_add(const Octstr *smsc, const Octstr *ts, Msg *msg)
 {
     struct dlr_entry *dlr = NULL;
 
-    /* Add the foreign_id so all SMSC modules can use it */
+    /* Add the foreign_id so all SMSC modules can use it.
+     * Obey also the original message in the split_parts list. */
     if (msg->sms.foreign_id != NULL)
         octstr_destroy(msg->sms.foreign_id);
     msg->sms.foreign_id = octstr_duplicate(ts);
+    if (msg->sms.split_parts != NULL) {
+        struct split_parts *split = msg->sms.split_parts;
+        if (split->orig->sms.foreign_id != NULL)
+            octstr_destroy(split->orig->sms.foreign_id);
+        split->orig->sms.foreign_id = octstr_duplicate(ts);
+    }
 
     if(octstr_len(smsc) == 0) {
-	warning(0, "DLR[%s]: Can't add a dlr without smsc-id", dlr_type());
+        warning(0, "DLR[%s]: Can't add a dlr without smsc-id", dlr_type());
         return;
     }
 
@@ -352,8 +359,8 @@ void dlr_add(const Octstr *smsc, const Octstr *ts, Msg *msg)
     dlr->mask = msg->sms.dlr_mask;
 
     debug("dlr.dlr", 0, "DLR[%s]: Adding DLR smsc=%s, ts=%s, src=%s, dst=%s, mask=%d, boxc=%s",
-              dlr_type(), octstr_get_cstr(dlr->smsc), octstr_get_cstr(dlr->timestamp),
-              octstr_get_cstr(dlr->source), octstr_get_cstr(dlr->destination), dlr->mask, octstr_get_cstr(dlr->boxc_id));
+          dlr_type(), octstr_get_cstr(dlr->smsc), octstr_get_cstr(dlr->timestamp),
+          octstr_get_cstr(dlr->source), octstr_get_cstr(dlr->destination), dlr->mask, octstr_get_cstr(dlr->boxc_id));
 	
     /* call registered function */
     handles->dlr_add(dlr);

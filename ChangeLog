@@ -1,3 +1,11 @@
+2010-05-14  Stipe Tolj  <stolj at kannel.org>
+    * gw/dlr.c: fixed missing foreign ID (FID) escape codes handling for 
+      DLR SMSC SUCCESS|FAIL events, due that we handle the last chunk here, we
+      didn't get hold of the FID. We need to duplicate it to the split list 
+      original too, in order to have it available later, when the last chunk 
+      us handled for the DLR events.
+      Thanks to Gianluca Moretti <gianluca.moretti at hotmail dot it> for report.
+
 2010-05-06 Alexander Malysh <amalysh at kannel.org>
     * gw/smsc/smsc_smpp.c: ignore receive_port for transceiver mode.
       Thanks to Juan Nin <juanin at gmail.com> for report.
