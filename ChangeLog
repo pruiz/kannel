@@ -1,3 +1,7 @@
+2010-05-31 Alexander Malysh <amalysh at kannel.org>
+    * gw/smsc/smsc_oisd.c: applied patch that allows empty MOs.
+      Thanks to Michael Zervakis <michael at zervakis.com> for this patch.
+
 2010-05-14  Stipe Tolj  <stolj at kannel.org>
     * gw/dlr.c: fixed missing foreign ID (FID) escape codes handling for 
       DLR SMSC SUCCESS|FAIL events, due that we handle the last chunk here, we

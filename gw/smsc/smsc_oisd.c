@@ -894,9 +894,7 @@ static Msg *oisd_accept_message(struct packet *request, SMSCConn *conn)
 
     if ((!(msg->sms.msgdata) || octstr_len(msg->sms.msgdata) == 0)
         && (!(msg->sms.udhdata) || octstr_len(msg->sms.udhdata) == 0)) {
-        info(0, "OISD[%s]: Got empty SMS, ignoring.",
-              octstr_get_cstr(conn->id));
-        goto error;
+        msg->sms.msgdata = octstr_create("");
     }
 
     return msg;
