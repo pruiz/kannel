@@ -1,3 +1,8 @@
+2010-06-04 Alexander Malysh <amalysh at kannel.org>
+    * gw/smsc/smsc_at.c: clear privdata afetr read error to get clean status
+      for reconnect.This fixes #544.
+      Thanks to <anping.qiao at gmail.com> for patch and bugreport.
+
 2010-05-31 Alexander Malysh <amalysh at kannel.org>
     * gw/smsc/smsc_oisd.c: applied patch that allows empty MOs.
       Thanks to Michael Zervakis <michael at zervakis.com> for this patch.

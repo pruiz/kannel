@@ -278,7 +278,7 @@ static int at2_open_device(PrivAT2data *privdata)
 static void at2_close_device(PrivAT2data *privdata)
 {
     info(0, "AT2[%s]: Closing device", octstr_get_cstr(privdata->name));
-	if (privdata->fd != -1)
+    if (privdata->fd != -1)
         close(privdata->fd);
     privdata->fd = -1;
     privdata->pin_ready = 0;
@@ -1377,6 +1377,7 @@ reconnect:
 
         /* read error, so re-connect */
         if (privdata->fd == -1) {
+            at2_close_device(privdata);
             reconnecting = 1;
             goto reconnect;
         }
