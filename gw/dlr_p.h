@@ -70,6 +70,8 @@
 
 #define DLR_TRACE 1
 
+/* Used in destination based queries for EMI/UUCP DLRs */
+#define MIN_DST_LEN 7
 /*
  * The structure of a delivery report  entry.
  */

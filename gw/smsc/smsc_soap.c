@@ -1616,7 +1616,7 @@ static long soap_parse_dlr(SMSCConn *conn, Octstr *request, Octstr **response)
     /* fetch the DLR */
 
     dlrmsg = dlr_find(conn->id, octstr_imm(msgid), octstr_imm("receiver"), /* destination */
-                      dlrtype);
+                      dlrtype, 0);
 
     if (!dlrmsg) {
         error(0,"SOAP[%s]: parse_dlr invoked (%ld), but no DLR found for MsgID %s", octstr_get_cstr(privdata->name),dlrtype,msgid);

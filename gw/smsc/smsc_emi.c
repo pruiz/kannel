@@ -851,19 +851,19 @@ static int handle_operation(SMSCConn *conn, Connection *server,
 		msg = dlr_find((conn->id ? conn->id : privdata->name),
 			emimsg->fields[E50_SCTS], /* timestamp */
 			emimsg->fields[E50_OADC], /* destination */
-			DLR_SUCCESS);
+			DLR_SUCCESS, 1);
 		break;
 	case 1: /* buffered */
 		msg = dlr_find((conn->id ? conn->id : privdata->name),
 			emimsg->fields[E50_SCTS], /* timestamp */
 			emimsg->fields[E50_OADC], /* destination */
-			DLR_BUFFERED);
+			DLR_BUFFERED, 1);
 		break;
 	case 2: /* not delivered */
 		msg = dlr_find((conn->id ? conn->id : privdata->name),
 			emimsg->fields[E50_SCTS], /* timestamp */
 			emimsg->fields[E50_OADC], /* destination */
-			DLR_FAIL);
+			DLR_FAIL, 1);
 		break;
 	}
 	if (msg != NULL) {     

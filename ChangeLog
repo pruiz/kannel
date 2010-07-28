@@ -1,3 +1,11 @@
+2010-07-28 Alexander Malysh <amalysh at kannel.org>
+    * gw/dlr.[ch], gw/dlr_mem.c, gw/dlr_mssql.c, gw/dlr_mysql.c, gw/dlr_oracle.c, gw/dlr_p.h
+      gw/dlr_pgsql.c, gw/dlr_sdb.c, gw/smsc/smsc_at.c, gw/smsc/smsc_cgw.c, gw/smsc/smsc_cimd2.c,
+      gw/smsc/smsc_emi.c, gw/smsc/smsc_fake.c, gw/smsc/smsc_http.c, gw/smsc/smsc_oisd.c,
+      gw/smsc/smsc_smpp.c, gw/smsc/smsc_soap.c: applied patch that adds last 7 digits from destination
+      to DB queries for DLR support. It reduces possibility to get wrong DLR for e.g. EMI.
+      Thanks to Nikos Balkanas <nbal at amdtelecom.net> for this patch.
+
 2010-06-04 Alexander Malysh <amalysh at kannel.org>
     * gw/smsc/smsc_at.c: clear privdata afetr read error to get clean status
       for reconnect.This fixes #544.

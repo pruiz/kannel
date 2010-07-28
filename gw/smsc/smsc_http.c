@@ -643,7 +643,7 @@ static void kannel_receive_sms(SMSCConn *conn, HTTPClient *client,
         dlrmsg = dlr_find(conn->id,
             dlrmid, /* message id */
             to, /* destination */
-            dlrmask);
+            dlrmask, 0);
 
         if (dlrmsg != NULL) {
             dlrmsg->sms.sms_type = report_mo;
@@ -931,8 +931,8 @@ static void clickatell_receive_sms(SMSCConn *conn, HTTPClient *client,
 	}
         dlrmsg = dlr_find(conn->id,
             apimsgid, /* smsc message id */
-            dest , /* destination */
-            dlrstat);
+            dest, /* destination */
+            dlrstat, 0);
 
         if (dlrmsg != NULL) {
             /* dlrmsg->sms.msgdata = octstr_duplicate(apimsgid); */
@@ -1410,8 +1410,8 @@ static void xidris_receive_sms(SMSCConn *conn, HTTPClient *client,
 
         dlrmsg = dlr_find(conn->id,
             mid, /* smsc message id */
-            dest , /* destination */
-            dlrstat);
+            dest, /* destination */
+            dlrstat, 0);
 
         if (dlrmsg != NULL) {
             dlrmsg->sms.msgdata = octstr_duplicate(mid);
@@ -1681,7 +1681,7 @@ static void generic_receive_sms(SMSCConn *conn, HTTPClient *client,
         dlrmsg = dlr_find(conn->id,
             dlrmid, /* message id */
             to, /* destination */
-            dlrmask);
+            dlrmask, 0);
 
         if (dlrmsg != NULL) {
             dlrmsg->sms.sms_type = report_mo;

@@ -1137,19 +1137,19 @@ static int cgw_handle_op(SMSCConn *conn, Connection *server, struct cgwop *cgwop
                 dlrmsg = dlr_find(conn->id,
                                             ts,     /* timestamp */
                                             msid,   /* destination */
-                                  DLR_SUCCESS);
+                                  DLR_SUCCESS, 0);
                 break;
             case 1:     /* buffered */
                 dlrmsg = dlr_find(conn->id,
                                             ts,     /* timestamp */
                                             msid,   /* destination */
-                                  DLR_BUFFERED);
+                                  DLR_BUFFERED, 0);
                 break;
             case 2:     /* not delivered */
                 dlrmsg = dlr_find(conn->id,
                                             ts,     /* timestamp */
                                             msid,   /* destination */
-                                  DLR_FAIL);
+                                  DLR_FAIL, 0);
                 break;
             }
 

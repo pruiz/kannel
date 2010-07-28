@@ -2114,7 +2114,7 @@ static Msg *cimd2_accept_delivery_report_message(struct packet *request,
         code = 0;
     }
     if(code)
-    	msg = dlr_find(conn->name, timestamp, destination, code);
+        msg = dlr_find(conn->name, timestamp, destination, code, 1);
     else
         msg = NULL;
 

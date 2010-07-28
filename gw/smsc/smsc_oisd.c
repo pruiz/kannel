@@ -1306,7 +1306,7 @@ static Msg *oisd_accept_delivery_report_message(struct packet *request,
     }
 
     if (code)
-        msg = dlr_find(conn->name, timestamp, destination, code);
+        msg = dlr_find(conn->name, timestamp, destination, code, 0);
 
     octstr_destroy(destination);
     octstr_destroy(timestamp);

@@ -1392,7 +1392,7 @@ static Msg *handle_dlr(SMPP *smpp, Octstr *destination_addr, Octstr *short_messa
         dlrmsg = dlr_find(smpp->conn->id,
             tmp, /* smsc message id */
             destination_addr, /* destination */
-            dlrstat);
+            dlrstat, 0);
 
         octstr_destroy(msgid);
     } else

@@ -291,7 +291,7 @@ static void main_connection_loop(SMSCConn *conn, Connection *client)
                     dlrmsg = dlr_find(conn->id,
                                       tmp, /* smsc message id */
                                       copy->sms.receiver, /* destination */
-                                      dlrstat);
+                                      dlrstat, 0);
                     if (dlrmsg != NULL) {
                         /* XXX TODO: Provide a SMPP DLR text in msgdata */
                         bb_smscconn_receive(conn, dlrmsg);

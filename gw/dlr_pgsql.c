@@ -165,19 +165,23 @@ static void dlr_pgsql_add(struct dlr_entry *entry)
 static struct dlr_entry *dlr_pgsql_get(const Octstr *smsc, const Octstr *ts, const Octstr *dst)
 {
     struct dlr_entry *res = NULL;
-    Octstr *sql;
+    Octstr *sql, *like;
     List *result, *row;
 
-    sql = octstr_format("SELECT \"%s\", \"%s\", \"%s\", \"%s\", \"%s\", \"%s\" FROM \"%s\" WHERE \"%s\"='%s' AND \"%s\"='%s' LIMIT 1;",
-                        octstr_get_cstr(fields->field_mask), octstr_get_cstr(fields->field_serv),
-                        octstr_get_cstr(fields->field_url), octstr_get_cstr(fields->field_src),
-                        octstr_get_cstr(fields->field_dst), octstr_get_cstr(fields->field_boxc),
-                        octstr_get_cstr(fields->table), octstr_get_cstr(fields->field_smsc),
-                        octstr_get_cstr(smsc), octstr_get_cstr(fields->field_ts), octstr_get_cstr(ts));
+    if (dst)
+        like = octstr_format("AND \"%S\" LIKE '%%%S'", fields->field_dst, dst);
+    else
+        like = octstr_imm("");
 
+    sql = octstr_format("SELECT \"%S\", \"%S\", \"%S\", \"%S\", \"%S\", "
+          "\"%S\" FROM \"%S\" WHERE \"%S\"='%S' AND \"%S\"='%S' %S LIMIT 1;",
+          fields->field_mask, fields->field_serv, fields->field_url,
+          fields->field_src, fields->field_dst, fields->field_boxc,
+          fields->table, fields->field_smsc, smsc, fields->field_ts, ts, like);
 
     result = pgsql_select(sql);
     octstr_destroy(sql);
+    octstr_destroy(like);
 
     if (result == NULL || gwlist_len(result) < 1) {
         debug("dlr.pgsql", 0, "no rows found");
@@ -186,7 +190,7 @@ static struct dlr_entry *dlr_pgsql_get(const Octstr *smsc, const Octstr *ts, con
         gwlist_destroy(result, NULL);
         return NULL;
     }
-    
+
     row = gwlist_get(result, 0);
 
     debug("dlr.pgsql", 0, "Found entry, col1=%s, col2=%s, col3=%s, col4=%s, col5=%s col6=%s",
@@ -211,42 +215,52 @@ static struct dlr_entry *dlr_pgsql_get(const Octstr *smsc, const Octstr *ts, con
     while((row = gwlist_extract_first(result)))
         gwlist_destroy(row, octstr_destroy_item);
     gwlist_destroy(result, NULL);
-    
+
     return res;
 }
 
 
 static void dlr_pgsql_remove(const Octstr *smsc, const Octstr *ts, const Octstr *dst)
 {
-    Octstr *sql;
+    Octstr *sql, *like;
 
     debug("dlr.pgsql", 0, "removing DLR from database");
-    sql = octstr_format("DELETE FROM \"%s\" WHERE oid = (SELECT oid FROM \"%s\" WHERE \"%s\"='%s' AND \"%s\"='%s' LIMIT 1);",
-                        octstr_get_cstr(fields->table), octstr_get_cstr(fields->table),
-                        octstr_get_cstr(fields->field_smsc),
-                        octstr_get_cstr(smsc), octstr_get_cstr(fields->field_ts), octstr_get_cstr(ts));
+    if (dst)
+        like = octstr_format("AND \"%S\" LIKE '%%%S'", fields->field_dst, dst);
+    else
+        like = octstr_imm("");
 
+    sql = octstr_format("DELETE FROM \"%S\" WHERE oid = (SELECT oid FROM "
+          "\"%S\" WHERE \"%S\"='%S' AND \"%S\"='%S' %S LIMIT 1);",
+          fields->table, fields->table, fields->field_smsc, smsc,
+          fields->field_ts, ts, like);
 
     if (!pgsql_update(sql))
        warning(0, "DLR: PGSQL: No dlr deleted for DST<%s>", octstr_get_cstr(dst));
     octstr_destroy(sql);
+    octstr_destroy(like);
 }
 
 
 static void dlr_pgsql_update(const Octstr *smsc, const Octstr *ts, const Octstr *dst, int status)
 {
-    Octstr *sql;
+    Octstr *sql, *like;
 
     debug("dlr.pgsql", 0, "updating DLR status in database");
-    sql = octstr_format("UPDATE \"%s\" SET \"%s\"=%d WHERE oid = (SELECT oid FROM \"%s\" WHERE \"%s\"='%s' AND \"%s\"='%s' LIMIT 1);",
-                        octstr_get_cstr(fields->table),
-                        octstr_get_cstr(fields->field_status), status,
-                        octstr_get_cstr(fields->table),
-                        octstr_get_cstr(fields->field_smsc), octstr_get_cstr(smsc),
-                        octstr_get_cstr(fields->field_ts), octstr_get_cstr(ts));
+    if (dst)
+        like = octstr_format("AND \"%S\" LIKE '%%%S'", fields->field_dst, dst);
+    else
+        like = octstr_imm("");
+
+    sql = octstr_format("UPDATE \"%S\" SET \"%S\"=%d WHERE oid = (SELECT "
+        "oid FROM \"%S\" WHERE \"%S\"='%S' AND \"%S\"='%S' %S LIMIT 1);",
+        fields->table, fields->field_status, status, fields->table,
+        fields->field_smsc, smsc, fields->field_ts, ts, like);
+
     if (!pgsql_update(sql))
        warning(0, "DLR: PGSQL: No dlr updated for DST<%s> (status: %d)", octstr_get_cstr(dst), status);
     octstr_destroy(sql);
+    octstr_destroy(like);
 }
 
 

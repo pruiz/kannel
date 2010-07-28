@@ -171,7 +171,7 @@ static void dlr_add_oracle(struct dlr_entry *entry)
 
 static void dlr_remove_oracle(const Octstr *smsc, const Octstr *ts, const Octstr *dst)
 {
-    Octstr *sql;
+    Octstr *sql, *like;
     DBPoolConn *pconn;
     List *binds = gwlist_create();
     int res;
@@ -183,13 +183,19 @@ static void dlr_remove_oracle(const Octstr *smsc, const Octstr *ts, const Octstr
     if (pconn == NULL)
         return;
 
-    sql = octstr_format("DELETE FROM %S WHERE %S=:1 AND %S=:2 AND %S=:3 AND ROWNUM < 2",
+    if (dst)
+        like = octstr_format("AND %S LIKE CONCAT('%%', :3)", fields->field_dst);
+    else
+        like = octstr_imm("");
+
+    sql = octstr_format("DELETE FROM %S WHERE %S=:1 AND %S=:2 %S AND ROWNUM < 2",
                         fields->table, fields->field_smsc,
-                        fields->field_ts, fields->field_dst);
+                        fields->field_ts, like);
 
     gwlist_append(binds, (Octstr *)smsc);      /* :1 */
     gwlist_append(binds, (Octstr *)ts);        /* :2 */
-    gwlist_append(binds, (Octstr *)dst);       /* :3 */
+    if (dst)                                   /* :3 */
+        gwlist_append(binds, (Octstr *)dst);
 
 #if defined(DLR_TRACE)
     debug("dlr.oracle", 0, "sql: %s", octstr_get_cstr(sql));
@@ -203,11 +209,12 @@ static void dlr_remove_oracle(const Octstr *smsc, const Octstr *ts, const Octstr
     dbpool_conn_produce(pconn);
     gwlist_destroy(binds, NULL);
     octstr_destroy(sql);
+    octstr_destroy(like);
 }
 
 static struct dlr_entry* dlr_get_oracle(const Octstr *smsc, const Octstr *ts, const Octstr *dst)
 {
-    Octstr *sql;
+    Octstr *sql, *like;
     DBPoolConn *pconn;
     List *result = NULL, *row;
     struct dlr_entry *res = NULL;
@@ -217,26 +224,35 @@ static struct dlr_entry* dlr_get_oracle(const Octstr *smsc, const Octstr *ts, co
     if (pconn == NULL) /* should not happens, but sure is sure */
         return NULL;
 
-    sql = octstr_format("SELECT %S, %S, %S, %S, %S, %S FROM %S WHERE %S=:1 AND %S=:2 AND %S=:3 AND ROWNUM < 2",
+    if (dst)
+        like = octstr_format("AND %S LIKE CONCAT('%%', :3)",
+              fields->field_dst);
+    else
+        like = octstr_imm("");
+
+    sql = octstr_format("SELECT %S, %S, %S, %S, %S, %S FROM %S WHERE %S=:1 AND %S=:2 %S ROWNUM < 2",
                         fields->field_mask, fields->field_serv,
                         fields->field_url, fields->field_src,
                         fields->field_dst, fields->field_boxc,
                         fields->table, fields->field_smsc,
-                        fields->field_ts, fields->field_dst);
+                        fields->field_ts, like);
 
     gwlist_append(binds, (Octstr *)smsc);      /* :1 */
     gwlist_append(binds, (Octstr *)ts);        /* :2 */
-    gwlist_append(binds, (Octstr *)dst);       /* :3 */
+    if (dst)                                   /* :3 */
+        gwlist_append(binds, (Octstr *)dst);
 
 #if defined(DLR_TRACE)
     debug("dlr.oracle", 0, "sql: %s", octstr_get_cstr(sql));
 #endif
     if (dbpool_conn_select(pconn, sql, binds, &result) != 0) {
         octstr_destroy(sql);
+        octstr_destroy(like);
         dbpool_conn_produce(pconn);
         return NULL;
     }
     octstr_destroy(sql);
+    octstr_destroy(like);
     gwlist_destroy(binds, NULL);
     dbpool_conn_produce(pconn);
 
@@ -264,7 +280,7 @@ static struct dlr_entry* dlr_get_oracle(const Octstr *smsc, const Octstr *ts, co
 
 static void dlr_update_oracle(const Octstr *smsc, const Octstr *ts, const Octstr *dst, int status)
 {
-    Octstr *sql, *os_status;
+    Octstr *sql, *os_status, *like;
     DBPoolConn *pconn;
     List *binds = gwlist_create();
     int res;
@@ -276,15 +292,22 @@ static void dlr_update_oracle(const Octstr *smsc, const Octstr *ts, const Octstr
     if (pconn == NULL)
         return;
 
-    sql = octstr_format("UPDATE %S SET %S=:1 WHERE %S=:2 AND %S=:3 AND %S=:4 AND ROWNUM < 2",
+    if (dst)
+        like = octstr_format("AND %S LIKE CONCAT('%%', :4)", fields->field_dst);
+    else
+        like = octstr_imm("");
+
+    sql = octstr_format("UPDATE %S SET %S=:1 WHERE %S=:2 AND %S=:3 %S AND ROWNUM < 2",
                         fields->table, fields->field_status,
-                        fields->field_smsc, fields->field_ts, fields->field_dst);
+                        fields->field_smsc, fields->field_ts, like);
 
     os_status = octstr_format("%d", status);
     gwlist_append(binds, (Octstr *)os_status); /* :1 */
     gwlist_append(binds, (Octstr *)smsc);      /* :2 */
     gwlist_append(binds, (Octstr *)ts);        /* :3 */
-    gwlist_append(binds, (Octstr *)dst);       /* :4 */
+    if (dst)                                   /* :4 */
+        gwlist_append(binds, (Octstr *)dst);
+
 #if defined(DLR_TRACE)
     debug("dlr.oracle", 0, "sql: %s", octstr_get_cstr(sql));
 #endif
@@ -297,6 +320,7 @@ static void dlr_update_oracle(const Octstr *smsc, const Octstr *ts, const Octstr
     gwlist_destroy(binds, NULL);
     octstr_destroy(os_status);
     octstr_destroy(sql);
+    octstr_destroy(like);
 }
 
 static void dlr_flush_oracle (void)

@@ -161,7 +161,7 @@ static void dlr_add_mssql(struct dlr_entry *entry)
 
 static void dlr_remove_mssql(const Octstr *smsc, const Octstr *ts, const Octstr *dst)
 {
-    Octstr *sql;
+    Octstr *sql, *like;
     DBPoolConn *pconn;
     int res;
 
@@ -172,11 +172,14 @@ static void dlr_remove_mssql(const Octstr *smsc, const Octstr *ts, const Octstr 
     if (pconn == NULL)
         return;
 
-    sql = octstr_format("SET ROWCOUNT 1\n"
-            "DELETE FROM %S WHERE %S='%S' AND %S='%S'\n"
-            "SET ROWCOUNT 0",
-            fields->table, fields->field_smsc, smsc,
-            fields->field_ts, ts);
+    if (dst)
+        like = octstr_format("AND %S LIKE '%%%S'", fields->field_dst, dst);
+    else
+        like = octstr_imm("");
+
+    sql = octstr_format("SET ROWCOUNT 1\nDELETE FROM %S WHERE %S='%S' AND "
+         "%S='%S' %S \nSET ROWCOUNT 0", fields->table, fields->field_smsc,
+         smsc, fields->field_ts, ts, like);
 
 #if defined(DLR_TRACE)
     debug("dlr.mssql", 0, "sql: %s", octstr_get_cstr(sql));
@@ -189,11 +192,12 @@ static void dlr_remove_mssql(const Octstr *smsc, const Octstr *ts, const Octstr 
 
     dbpool_conn_produce(pconn);
     octstr_destroy(sql);
+    octstr_destroy(like);
 }
 
 static struct dlr_entry* dlr_get_mssql(const Octstr *smsc, const Octstr *ts, const Octstr *dst)
 {
-    Octstr *sql;
+    Octstr *sql, *like;
     DBPoolConn *pconn;
     List *result = NULL, *row;
     struct dlr_entry *res = NULL;
@@ -202,10 +206,16 @@ static struct dlr_entry* dlr_get_mssql(const Octstr *smsc, const Octstr *ts, con
     if (pconn == NULL) /* should not happens, but sure is sure */
         return NULL;
 
-    sql = octstr_format("SELECT %S, %S, %S, %S, %S, %S FROM %S WHERE %S='%S' AND %S='%S'",
-                fields->field_mask, fields->field_serv, fields->field_url,
-                fields->field_src, fields->field_dst, fields->field_boxc,
-                fields->table, fields->field_smsc, smsc, fields->field_ts, ts);
+    if (dst)
+        like = octstr_format("AND %S LIKE '%%%S'", fields->field_dst, dst);
+    else
+        like = octstr_imm("");
+
+    sql = octstr_format("SELECT %S, %S, %S, %S, %S, %S FROM %S WHERE %S='%S'"
+          " AND %S='%S' %S", fields->field_mask, fields->field_serv,
+          fields->field_url, fields->field_src, fields->field_dst,
+          fields->field_boxc, fields->table, fields->field_smsc, smsc,
+          fields->field_ts, ts, like);
 
 #if defined(DLR_TRACE)
     debug("dlr.mssql", 0, "sql: %s", octstr_get_cstr(sql));
@@ -216,6 +226,7 @@ static struct dlr_entry* dlr_get_mssql(const Octstr *smsc, const Octstr *ts, con
         return NULL;
     }
     octstr_destroy(sql);
+    octstr_destroy(like);
     dbpool_conn_produce(pconn);
 
 #define LO2CSTR(r, i) octstr_get_cstr(gwlist_get(r, i))
@@ -242,7 +253,7 @@ static struct dlr_entry* dlr_get_mssql(const Octstr *smsc, const Octstr *ts, con
 
 static void dlr_update_mssql(const Octstr *smsc, const Octstr *ts, const Octstr *dst, int status)
 {
-    Octstr *sql, *os_status;
+    Octstr *sql, *like;
     DBPoolConn *pconn;
     int res;
 
@@ -253,11 +264,15 @@ static void dlr_update_mssql(const Octstr *smsc, const Octstr *ts, const Octstr 
     if (pconn == NULL)
         return;
 
-    sql = octstr_format("SET ROWCOUNT 1\n"
-            "UPDATE %S SET %S=%d WHERE %S='%S' AND %S='%S'\n"
-            "SET ROWCOUNT 0",
-            fields->table, fields->field_status, status,
-            fields->field_smsc, smsc, fields->field_ts, ts);
+    if (dst)
+        like = octstr_format("AND %S LIKE '%%%S'", fields->field_dst, dst);
+    else
+        like = octstr_imm("");
+
+    sql = octstr_format("SET ROWCOUNT 1\nUPDATE %S SET %S=%d WHERE %S='%S' "
+        "AND %S='%S' %S\nSET ROWCOUNT 0",
+        fields->table, fields->field_status, status, fields->field_smsc, smsc,
+        fields->field_ts, ts, like);
 
 #if defined(DLR_TRACE)
     debug("dlr.mssql", 0, "sql: %s", octstr_get_cstr(sql));
@@ -268,8 +283,8 @@ static void dlr_update_mssql(const Octstr *smsc, const Octstr *ts, const Octstr 
         warning(0, "DLR: MSSQL: No dlr found to update for DST<%s> (status: %d)", octstr_get_cstr(dst), status);
 
     dbpool_conn_produce(pconn);
-    octstr_destroy(os_status);
     octstr_destroy(sql);
+    octstr_destroy(like);
 }
 
 static void dlr_flush_mssql (void)

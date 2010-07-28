@@ -138,7 +138,7 @@ static void dlr_mysql_add(struct dlr_entry *entry)
 
 static struct dlr_entry* dlr_mysql_get(const Octstr *smsc, const Octstr *ts, const Octstr *dst)
 {
-    Octstr *sql;
+    Octstr *sql, *like;
     DBPoolConn *pconn;
     List *result = NULL, *row;
     struct dlr_entry *res = NULL;
@@ -148,15 +148,22 @@ static struct dlr_entry* dlr_mysql_get(const Octstr *smsc, const Octstr *ts, con
     if (pconn == NULL) /* should not happens, but sure is sure */
         return NULL;
 
-    sql = octstr_format("SELECT `%S`, `%S`, `%S`, `%S`, `%S`, `%S` FROM `%S` WHERE `%S`=? AND `%S`=? LIMIT 1",
+    if (dst)
+        like = octstr_format("AND `%S` LIKE CONCAT('%%', ?)", fields->field_dst);
+    else
+        like = octstr_imm("");
+
+    sql = octstr_format("SELECT `%S`, `%S`, `%S`, `%S`, `%S`, `%S` FROM `%S` WHERE `%S`=? AND `%S`=? %S LIMIT 1",
                         fields->field_mask, fields->field_serv,
                         fields->field_url, fields->field_src,
                         fields->field_dst, fields->field_boxc,
                         fields->table, fields->field_smsc,
-                        fields->field_ts);
+                        fields->field_ts, like);
 
     gwlist_append(binds, (Octstr *)smsc);
     gwlist_append(binds, (Octstr *)ts);
+    if (dst)
+        gwlist_append(binds, (Octstr *)dst);
 
 #if defined(DLR_TRACE)
     debug("dlr.mysql", 0, "sql: %s", octstr_get_cstr(sql));
@@ -164,10 +171,12 @@ static struct dlr_entry* dlr_mysql_get(const Octstr *smsc, const Octstr *ts, con
 
     if (dbpool_conn_select(pconn, sql, binds, &result) != 0) {
         octstr_destroy(sql);
+        octstr_destroy(like);
         dbpool_conn_produce(pconn);
         return NULL;
     }
     octstr_destroy(sql);
+    octstr_destroy(like);
     gwlist_destroy(binds, NULL);
     dbpool_conn_produce(pconn);
 
@@ -195,7 +204,7 @@ static struct dlr_entry* dlr_mysql_get(const Octstr *smsc, const Octstr *ts, con
 
 static void dlr_mysql_remove(const Octstr *smsc, const Octstr *ts, const Octstr *dst)
 {
-    Octstr *sql;
+    Octstr *sql, *like;
     DBPoolConn *pconn;
     List *binds = gwlist_create();
     int res;
@@ -207,12 +216,19 @@ static void dlr_mysql_remove(const Octstr *smsc, const Octstr *ts, const Octstr 
     if (pconn == NULL)
         return;
 
-    sql = octstr_format("DELETE FROM `%S` WHERE `%S`=? AND `%S`=? LIMIT 1",
+    if (dst)
+        like = octstr_format("AND `%S` LIKE CONCAT('%%', ?)", fields->field_dst);
+    else
+        like = octstr_imm("");
+
+    sql = octstr_format("DELETE FROM `%S` WHERE `%S`=? AND `%S`=? %S LIMIT 1",
                         fields->table, fields->field_smsc,
-                        fields->field_ts);
+                        fields->field_ts, like);
 
     gwlist_append(binds, (Octstr *)smsc);
     gwlist_append(binds, (Octstr *)ts);
+    if (dst)
+        gwlist_append(binds, (Octstr *)dst);
 
 #if defined(DLR_TRACE)
     debug("dlr.mysql", 0, "sql: %s", octstr_get_cstr(sql));
@@ -226,11 +242,12 @@ static void dlr_mysql_remove(const Octstr *smsc, const Octstr *ts, const Octstr 
     dbpool_conn_produce(pconn);
     gwlist_destroy(binds, NULL);
     octstr_destroy(sql);
+    octstr_destroy(like);
 }
 
 static void dlr_mysql_update(const Octstr *smsc, const Octstr *ts, const Octstr *dst, int status)
 {
-    Octstr *sql, *os_status;
+    Octstr *sql, *os_status, *like;
     DBPoolConn *pconn;
     List *binds = gwlist_create();
     int res;
@@ -242,14 +259,22 @@ static void dlr_mysql_update(const Octstr *smsc, const Octstr *ts, const Octstr 
     if (pconn == NULL)
         return;
 
-    sql = octstr_format("UPDATE `%S` SET `%S`=? WHERE `%S`=? AND `%S`=? LIMIT 1",
+    if (dst)
+        like = octstr_format("AND `%S` LIKE CONCAT('%%', ?)", fields->field_dst);
+    else
+        like = octstr_imm("");
+
+    sql = octstr_format("UPDATE `%S` SET `%S`=? WHERE `%S`=? AND `%S`=? %S LIMIT 1",
                         fields->table, fields->field_status,
-                        fields->field_smsc, fields->field_ts);
+                        fields->field_smsc, fields->field_ts,
+                        like);
 
     os_status = octstr_format("%d", status);
     gwlist_append(binds, (Octstr *)os_status);
     gwlist_append(binds, (Octstr *)smsc);
     gwlist_append(binds, (Octstr *)ts);
+    if (dst)
+        gwlist_append(binds, (Octstr *)like);
 
 #if defined(DLR_TRACE)
     debug("dlr.mysql", 0, "sql: %s", octstr_get_cstr(sql));
@@ -263,8 +288,8 @@ static void dlr_mysql_update(const Octstr *smsc, const Octstr *ts, const Octstr 
     gwlist_destroy(binds, NULL);
     octstr_destroy(os_status);
     octstr_destroy(sql);
+    octstr_destroy(like);
 }
-
 
 static long dlr_mysql_messages(void)
 {
@@ -446,4 +471,3 @@ struct dlr_storage *dlr_init_mysql(Cfg* cfg)
     return NULL;
 }
 #endif /* HAVE_MYSQL */
-
