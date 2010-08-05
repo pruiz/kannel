@@ -1,3 +1,7 @@
+2010-08-5 Alexander Malysh <amalysh at kannel.org>
+    * bootstrap.sh: changed to /bin/sh bacase e.g. FreeBSD has bash in /usr/local/bin.
+      Thanks to Victor Luchitz <vluchits at gmail.com> for the hint.
+
 2010-07-28 Alexander Malysh <amalysh at kannel.org>
     * gw/dlr.[ch], gw/dlr_mem.c, gw/dlr_mssql.c, gw/dlr_mysql.c, gw/dlr_oracle.c, gw/dlr_p.h
       gw/dlr_pgsql.c, gw/dlr_sdb.c, gw/smsc/smsc_at.c, gw/smsc/smsc_cgw.c, gw/smsc/smsc_cimd2.c,
