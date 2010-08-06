@@ -1,4 +1,9 @@
-2010-08-5 Alexander Malysh <amalysh at kannel.org>
+2010-08-06 Alexander Malysh <amalysh at kannel.org>
+    * gw/bb_boxc.c: fixed security issue that box-[allow|deny]-ip options were
+      ignored for smsbox. This fixes #188.
+      Thanks to Roland Discein for patch.
+
+2010-08-05 Alexander Malysh <amalysh at kannel.org>
     * bootstrap.sh: changed to /bin/sh bacase e.g. FreeBSD has bash in /usr/local/bin.
       Thanks to Victor Luchitz <vluchits at gmail.com> for the hint.
 
