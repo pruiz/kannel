@@ -1,4 +1,8 @@
 2010-09-12 Alexander Malysh <amalysh at kannel.org>
+    * gwlib/http.c: fixed issue that new servers were added every time gwthread_poll returns as well as on startup.
+      This fixes #525.
+
+2010-09-12 Alexander Malysh <amalysh at kannel.org>
     * merged wtls_provision branch.
       Thanks to Nikos Balkanas <nbal at amdtelecom.net> for this patch.
 
