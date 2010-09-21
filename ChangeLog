@@ -1,3 +1,7 @@
+2010-09-21 Alexander Malysh <amalysh at kannel.org>
+    * gw/smsc/smsc_smpp.c: handle “Invalid system_type" as fatal and don't retry login.
+      Thanks to Roy Walker <rwalker at sensorlogic.com> for this patch.
+
 2010-09-13 Alexander Malysh <amalysh at kannel.org>
     * gwlib/pki.c, wmlscript/wsgram.[chy]: fixed some warnings.
       Thanks to Nikos Balkanas <nbal at amdtelecom.net> for this patch.
