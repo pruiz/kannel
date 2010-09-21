@@ -104,6 +104,15 @@ static List *secmgr_queue = NULL;
 
 static void main_thread(void *);
 
+/*
+ * Public functions.
+ */
+
+void wtls_secmgr_init(void);
+void wtls_secmgr_shutdown(void);
+void wtls_secmgr_dispatch(WAPEvent *event);
+long wtls_secmgr_get_load(void);
+
 /***********************************************************************
  * The public interface to the application layer.
  */

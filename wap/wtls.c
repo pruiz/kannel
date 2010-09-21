@@ -144,11 +144,14 @@ static void wtls_event_handle(WTLSMachine * machine, WAPEvent * event);
  */
 static WTLSMachine *wtls_machine_find(WAPAddrTuple * tuple, long mid);
 
+/* Function prototypes */
 static void main_thread(void *);
 static WTLSMachine *find_wtls_machine_using_mid(long mid);
 static void add_wtls_address(Msg * msg, WTLSMachine * wtls_machine);
 static void add_pdu(WTLSMachine * wtls_machine, wtls_PDU * pduToAdd);
 static void send_queuedpdus(WTLSMachine * wtls_machine);
+void send_alert(WAPEvent * event, WTLSMachine * wtls_machine);
+char *stateName(int s);
 
 /* The match* functions are used for searches through lists */
 static int match_handshake_type(void *item, void *pattern);
@@ -156,6 +159,7 @@ static int match_pdu_type(void *item, void *pattern);
 
 extern void write_to_bearerbox(Msg * pmsg);
 extern Octstr *wtls_get_certificate(void);
+
 /*static WAPEvent *create_tr_invoke_ind(WTPRespMachine *sm, Octstr *user_data);
 static WAPEvent *create_tr_abort_ind(WTPRespMachine *sm, long abort_reason);
 static WAPEvent *create_tr_result_cnf(WTPRespMachine *sm); */

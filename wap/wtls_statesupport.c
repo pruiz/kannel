@@ -131,10 +131,19 @@ extern unsigned char *MD5(const unsigned char *d, size_t n, unsigned char
            *md);
 extern unsigned char *stateName(int state);
 
+/*
+ * Function Prototypes.
+ */
+
 Octstr *wtls_hmac_hash(Octstr * key, Octstr * data, int algo);
 Octstr *wtls_hash(Octstr * inputData, WTLSMachine * wtls_machine);
 Octstr *wtls_rc5(Octstr * data, WTLSMachine * wtls_machine, int crypt);
 Octstr *wtls_des(Octstr * data, WTLSMachine * wtls_machine, int crypt);
+Octstr *wtls_P_hash(Octstr * secret, Octstr * seed, int byteLength,
+          WTLSMachine * wtls_machine);
+Octstr *wtls_get_certificate(void);
+int isSupportedKeyEx(int keyExId);
+void add_all_handshake_data(WTLSMachine * wtls_machine, List * pdu_list);
 
 /* Add here the supported KeyExchangeSuites 
    used by wtls_choose_clientkeyid */

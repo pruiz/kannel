@@ -76,7 +76,9 @@ KeyExchangeSuite client_key_exchange_algo = rsa_anon;
 PublicKeyAlgorithm public_key_algo;
 SignatureAlgorithm signature_algo;
 
+/* Function prototypes */
 wtls_Payload *wtls_payload_unpack_from_offset(Octstr * data, int *offset);
+int wtls_payload_guess_length(Octstr * data);
 
 wtls_PDU *wtls_pdu_create(int type)
 {

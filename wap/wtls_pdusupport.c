@@ -71,9 +71,21 @@
 #include "wtls_pdusupport.h"
 #include "wtls_statesupport.h"
 
-// Change this later !!!!
 extern PublicKeyAlgorithm public_key_algo;
 extern SignatureAlgorithm signature_algo;
+
+/* Function prototypes */
+
+void destroy_octstr(Octstr * data);
+void destroy_octstr16(Octstr * data);
+void destroy_octstr_fixed(Octstr * data);
+void destroy_dhparams(DHParameters * dhparams);
+void destroy_ecparams(ECParameters * ecparams);
+void destroy_public_key(PublicKey * key);
+void destroy_rsa_secret(RSASecret * secret);
+void destroy_key_exchange_id(KeyExchangeId * keyexid);
+void destroy_signature(Signature * sig);
+void dump_void16(char *dbg, int level, int i);
 
 /*****************************************************************
  * PACK functions

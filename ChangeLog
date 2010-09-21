@@ -1,4 +1,9 @@
 2010-09-21 Alexander Malysh <amalysh at kannel.org>
+    * wap/wtls-secmgr.c, wap/wtls.c, wap/wtls_pdu.c, wap/wtls_pdusupport.c, wap/wtls_statesupport.c:
+      Fixed WTLS branch warnings.
+      Thanks to Nikos Balkanas <nbal at amdtelecom.net> for this patch.
+
+2010-09-21 Alexander Malysh <amalysh at kannel.org>
     * gw/smsc/smsc_smpp.c: handle “Invalid system_type" as fatal and don't retry login.
       Thanks to Roy Walker <rwalker at sensorlogic.com> for this patch.
 
