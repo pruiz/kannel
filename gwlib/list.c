@@ -524,6 +524,24 @@ List *gwlist_search_all(List *list, void *pattern, int (*cmp)(void *, void *))
 }
 
 
+long gwlist_search_equal(List *list, void *item)
+{
+    long i;
+    long ret = -1;
+
+    lock(list);
+    for (i = 0; i < list->len; i++) {
+        if (GET(list, i) == item) {
+            ret = i;
+            break;
+        }
+    }
+    unlock(list);
+
+    return ret;
+}
+
+
 static void quicksort(List *list, long left, long right, int(*cmp)(const void *, const void *))
 {
     if (left < right) {

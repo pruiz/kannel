@@ -306,6 +306,13 @@ List *gwlist_search_all(List *list, void *pattern, gwlist_item_matches_t *cmp);
 
 
 /*
+ * Search the list for the first equal item. If not found, return -1. If found
+ * return position.
+ */
+long gwlist_search_equal(List *list, void *item);
+
+
+/*
  * Sort the list with qsort.
  * if you have a list that you feed like that: 
  * Msg *message;

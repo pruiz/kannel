@@ -1,4 +1,8 @@
 2010-09-24 Alexander Malysh <amalysh at kannel.org>
+    * gwlib/list.[ch]: added function to search for the equal item on the list, this is usefull
+      to lookup for one element if it's still present.
+
+2010-09-24 Alexander Malysh <amalysh at kannel.org>
     * gwlib/list.[ch]: added new function gwlist_consumer_count to receive count consumers
       for this list. Fixed comment for gwlist_sort function.
 
