@@ -266,6 +266,12 @@ void gwlist_produce(List *list, void *item);
 
 
 /*
+ * Return the current number of consumers for the list
+ */
+int gwlist_consumer_count(List *list);
+
+
+/*
  * Remove an item from the list, or return NULL if the list was empty
  * and there were no producers. If the list is empty but there are
  * producers, sleep until there is something to return.
@@ -303,12 +309,12 @@ List *gwlist_search_all(List *list, void *pattern, gwlist_item_matches_t *cmp);
  * Sort the list with qsort.
  * if you have a list that you feed like that: 
  * Msg *message;
- * gwlist_add(mylist, message); 
+ * gwlist_add(mylist, message);
  * a function that could sort messages by their data length would look like that:
  * int sort_by_messagelength(void* first_msg_pp, void* second_msg_pp)
  * {
- *     Msg *first_msg=*(Msg**)first_msg_pp;
- *     Msg *second_msg=*(Msg**)second_msg_pp;
+ *     Msg *first_msg=(Msg*)first_msg_pp;
+ *     Msg *second_msg=(Msg*)second_msg_pp;
  *     return octstr_len(first_msg->sms.msgdata) - octstr_len(second_msg->sms.msgdata);
  * }
  */

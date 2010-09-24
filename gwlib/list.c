@@ -109,6 +109,7 @@ struct List
     Mutex *permanent_lock;
     pthread_cond_t nonempty;
     long num_producers;
+    long num_consumers;
 };
 
 #define INDEX(list, i)	(((list)->start + i) % (list)->tab_size)
@@ -136,6 +137,7 @@ List *gwlist_create_real(void)
     list->permanent_lock = mutex_create();
     pthread_cond_init(&list->nonempty, NULL);
     list->num_producers = 0;
+    list->num_consumers = 0;
     return list;
 }
 
@@ -206,7 +208,7 @@ void gwlist_append_unique(List *list, void *item, int (*cmp)(void *, void *))
     }
     unlock(list);
 }
-        
+
 
 void gwlist_insert(List *list, long pos, void *item)
 {
@@ -409,11 +411,22 @@ void gwlist_produce(List *list, void *item)
 }
 
 
+int gwlist_consumer_count(List *list)
+{
+    int ret;
+    lock(list);
+    ret = list->num_consumers;
+    unlock(list);
+    return ret;
+}
+
+
 void *gwlist_consume(List *list)
 {
     void *item;
 
     lock(list);
+    ++list->num_consumers;
     while (list->len == 0 && list->num_producers > 0) {
         list->single_operation_lock->owner = -1;
         pthread_cond_wait(&list->nonempty,
@@ -426,6 +439,7 @@ void *gwlist_consume(List *list)
     } else {
         item = NULL;
     }
+    --list->num_consumers;
     unlock(list);
     return item;
 }
@@ -441,6 +455,7 @@ void *gwlist_timed_consume(List *list, long sec)
     abstime.tv_nsec = 0;
 
     lock(list);
+    ++list->num_consumers;
     while (list->len == 0 && list->num_producers > 0) {
         list->single_operation_lock->owner = -1;
         rc = pthread_cond_timedwait(&list->nonempty,
@@ -455,6 +470,7 @@ void *gwlist_timed_consume(List *list, long sec)
     } else {
         item = NULL;
     }
+    --list->num_consumers;
     unlock(list);
     return item;
 }
@@ -480,7 +496,6 @@ void *gwlist_search(List *list, void *pattern, int (*cmp)(void *, void *))
 
     return item;
 }
-
 
 
 List *gwlist_search_all(List *list, void *pattern, int (*cmp)(void *, void *))
