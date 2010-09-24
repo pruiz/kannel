@@ -1,3 +1,6 @@
+2010-09-24 Alexander Malysh <amalysh at kannel.org>
+    * gwlib/list.c, test/test_list.c: fixed gwlist_sort if list get fragmented by usage.
+
 2010-09-21 Alexander Malysh <amalysh at kannel.org>
     * wap/wtls-secmgr.c, wap/wtls.c, wap/wtls_pdu.c, wap/wtls_pdusupport.c, wap/wtls_statesupport.c:
       Fixed WTLS branch warnings.

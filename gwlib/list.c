@@ -509,6 +509,30 @@ List *gwlist_search_all(List *list, void *pattern, int (*cmp)(void *, void *))
 }
 
 
+static void quicksort(List *list, long left, long right, int(*cmp)(const void *, const void *))
+{
+    if (left < right) {
+        long l = left;
+        long r = right;
+        void *pivot = GET(list, right);
+
+        do {
+            while (cmp(GET(list, l), pivot) < 0) l++;
+            while (cmp(GET(list, r), pivot) > 0) r--;
+            if (l <= r) {
+                void *swap = GET(list, l);
+                GET(list, l) = GET(list, r);
+                GET(list, r) = swap;
+                l++;
+                r--;
+            }
+        } while(l <= r);
+
+        quicksort(list, left, r, cmp);
+        quicksort(list, l, right, cmp);
+    }
+}
+
 void gwlist_sort(List *list, int(*cmp)(const void *, const void *))
 {
     gw_assert(list != NULL && cmp != NULL);
@@ -519,7 +543,7 @@ void gwlist_sort(List *list, int(*cmp)(const void *, const void *))
         unlock(list);
         return;
     }
-    qsort(&GET(list, 0), list->len, sizeof(void*), cmp);
+    quicksort(list, 0, list->len - 1, cmp);
     unlock(list);
 }
 

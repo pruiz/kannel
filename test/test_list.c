@@ -68,8 +68,8 @@
 
 static int my_sort_cmp(const void *a, const void *b)
 {
-    Octstr *fa = *((Octstr**) a);
-    Octstr *fb = *((Octstr**) b);
+    Octstr *fa = a;
+    Octstr *fb = b;
     
     return octstr_compare(fa, fb);
 }
