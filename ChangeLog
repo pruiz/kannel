@@ -1,3 +1,7 @@
+2010-09-27 Alexander Malysh <amalysh at kannel.org>
+    *  gw/bb_smscconn.c, gw/msg.h, gw/smscconn.c: applied patch that fixes sms-resend-* handling
+       for concatenated messages.
+
 2010-09-24 Alexander Malysh <amalysh at kannel.org>
     * gwlib/list.[ch]: added function to search for the equal item on the list, this is usefull
       to lookup for one element if it's still present.

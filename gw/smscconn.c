@@ -551,6 +551,7 @@ int smscconn_send(SMSCConn *conn, Msg *msg)
         split->parts_left = counter_create();
         split->status = SMSCCONN_SUCCESS;
         counter_set(split->parts_left, parts_len);
+        split->smsc_conn = conn;
         debug("bb.sms.splits", 0, "new split_parts created %p", split);
         for (i = 0; i < parts_len; i++) {
             msg = gwlist_get(parts, i);

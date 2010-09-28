@@ -88,9 +88,14 @@ typedef struct {
 } Msg;
 
 struct split_parts {
+    /* original large message */
     Msg *orig;
+    /* how many parts still not sent */
     Counter *parts_left;
+    /* status of splitted message parts */
     long status;
+    /* pointer to SMSCConn */
+    void *smsc_conn;
 };
 
 /* enums for Msg fields */
