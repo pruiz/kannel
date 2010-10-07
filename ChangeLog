@@ -1,4 +1,7 @@
 2010-10-07  Stipe Tolj  <stolj at kannel.org>
+    * */*: updating the LICENSE preamble to reflect the correct year.
+    
+2010-10-07  Stipe Tolj  <stolj at kannel.org>
     * utils/makedist: addopt for our SVN repository.
     
 2010-09-27 Alexander Malysh <amalysh at kannel.org>
