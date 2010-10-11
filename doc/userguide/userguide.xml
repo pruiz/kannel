@@ -6491,6 +6491,10 @@ the SMS ID of the internal message structure
 the delivery report value
 </entry></row>
 
+<row><entry><literal>%R</literal></entry><entry>
+the delivery report URL value
+</entry></row>
+
 <row><entry><literal>%D</literal></entry><entry>
 meta-data from the SMSC. See <xref linkend="meta-data"> for more into.
 </entry></row>

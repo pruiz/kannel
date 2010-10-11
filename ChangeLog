@@ -1,3 +1,10 @@
+2010-10-11  Stipe Tolj  <stolj at kannel.org>
+    * doc/userguide/userguide.xml: add reference to new '%R' escape code for
+      the DLR-URL value.
+    * gw/bb_alog.c: add '%R' handling to get_pattern() for the 'access-log-format'
+      custom access logging.
+    * gw/urltrans.c: add '%R' handling to the escape code handling.
+
 2010-10-07  Stipe Tolj  <stolj at kannel.org>
     * */*: updating the LICENSE preamble to reflect the correct year.
     

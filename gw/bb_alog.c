@@ -88,6 +88,7 @@ static Octstr *custom_log_format = NULL;
  *   %M - message waiting indicator (mwi)
  *   %C - compress indicator
  *   %d - dlr_mask
+ *   %R - dlr_url
  *   %D - meta-data
  *   %a - the original SMS message, spaces squeezed
  *   %u - UDH data (in escaped form)
@@ -262,6 +263,11 @@ static Octstr *get_pattern(SMSCConn *conn, Msg *msg, const char *message)
 	case 'd':
 	    octstr_append_decimal(result, msg->sms.dlr_mask);
 	    break;
+
+	case 'R':
+        if (msg->sms.dlr_url != NULL)
+            octstr_append(result, msg->sms.dlr_url);
+        break;
 
     case 'D': /* meta_data */
         if (msg->sms.meta_data != NULL)
