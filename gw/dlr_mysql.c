@@ -274,7 +274,7 @@ static void dlr_mysql_update(const Octstr *smsc, const Octstr *ts, const Octstr 
     gwlist_append(binds, (Octstr *)smsc);
     gwlist_append(binds, (Octstr *)ts);
     if (dst)
-        gwlist_append(binds, (Octstr *)like);
+        gwlist_append(binds, (Octstr *)dst);
 
 #if defined(DLR_TRACE)
     debug("dlr.mysql", 0, "sql: %s", octstr_get_cstr(sql));
