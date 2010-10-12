@@ -1,3 +1,6 @@
+2010-10-12 Vincent CHAVANIS <v.chavanis at telemaque.fr>
+    * gw/dlr_mysql.c: Fix broken DLR when state is intermediate when using Mysql
+
 2010-10-11  Stipe Tolj  <stolj at kannel.org>
     * doc/userguide/userguide.xml: add reference to new '%R' escape code for
       the DLR-URL value.
