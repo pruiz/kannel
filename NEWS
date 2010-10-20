@@ -58,6 +58,10 @@ New features:
     value for outgoing HTTP calls.
   
   * Added WTLS provisioning support.
+  
+  * Added add-on packages sqlbox and opensmppbox to the main distribution,
+    where sqlbox provides abstraction from bearerbox towards SQL RDBMS and
+    opensmppbox provides abstraction from bearerbox towards SMPP clients. 
    
 Bugfixes:
 
