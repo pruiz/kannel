@@ -386,9 +386,11 @@ static int change_user(const char *user)
         return -1;
     }
 
+#ifndef __INTERIX
     if (initgroups(user, -1) == -1) {
         error(errno, "Could not set supplementary group ID's.");
     }
+#endif
     
     if (-1 == setuid(pass->pw_uid)) {
         error(errno, "Could not change user id from %ld to %ld.", (long) getuid(), (long) pass->pw_uid);

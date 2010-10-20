@@ -1,3 +1,18 @@
+2010-10-20  Stipe Tolj  <stolj at kannel.org>
+    * configure[.in]: make sure we use the packaged install script rather
+      then the system own install on Interix 3. The system own version has
+      no option -d support.
+    * gwlib/counter.c: Interix 3 has pthread spinlocks, but they seem to
+      be experimental and block the system. We'll use mutex locks instead.
+    * gwlib/gwlib.h: Interix 3 has no strtoll(), but strtoq() provides the
+      equivalent functionality.
+    * gwlib/gwthread.h: Interix 3 has no sys/poll.h, so ignore the inclusion
+      for this platform.
+    * gwlib/socket.c: use gw_netaddr_to_octstr() instead of inet_ntop(), due
+      to the fact that the later is not provided in Interix 3.
+    * gwlib/utils.c: there is no initgroups() in Interix 3, so avoid the call
+      for this specific platform.
+
 2010-10-12 Vincent CHAVANIS <v.chavanis at telemaque.fr>
     * test/test_list.c: fixed compiler warnings.
 

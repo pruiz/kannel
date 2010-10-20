@@ -112,4 +112,9 @@ void gwlib_shutdown(void);
 #define gwlib_assert_init() ((void) 0)
 #endif
 
+#ifdef __INTERIX
+#undef strtoll
+#define strtoll(A,B,C) strtoq((A),(B),(C))
+#endif
+
 #endif
