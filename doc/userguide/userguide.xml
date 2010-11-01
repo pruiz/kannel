@@ -5826,6 +5826,15 @@ ssl-certkey-file
         Sets socket timeout in seconds for outgoing client http
         connections. Optional. Defaults to 240 seconds.
      </entry></row>
+
+     <row><entry><literal>sms-length</literal></entry>
+        <entry>number</entry>
+        <entry valign="bottom">
+        Maximum allowed number of characters for a single SMS in smsbox.
+        If this maximum exceeds Kannel will split SMS into multiparts.
+        Default: 140
+     </entry></row>
+
   </tbody>
   </tgroup>
  </table>
