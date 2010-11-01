@@ -1,4 +1,9 @@
 2010-11-01 Alexander Malysh <amalysh at kannel.org>
+    * gw/smsc/smsc_smpp.c: applied patch maps the receipted_msg_id parameter
+      on MO message to the foreign_id field, thus allowing to use %F for MO as well.
+      Thanks to Alejandro Guerrieri <aguerrieri at kannel.org>
+
+2010-11-01 Alexander Malysh <amalysh at kannel.org>
     * doc/userguide/userguide.xml: added smsbox group configuration
       variable sms-length to the userguide. 
       Thanks to Luca Corti <luca at fantacast.it> for this patch.

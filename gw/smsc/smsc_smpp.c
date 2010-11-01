@@ -471,6 +471,10 @@ static Msg *pdu_to_msg(SMPP *smpp, SMPP_PDU *pdu, long *reason)
     msg->sms.binfo = pdu->u.deliver_sm.service_type;
     pdu->u.deliver_sm.service_type = NULL;
 
+    /* Foreign ID on MO */
+    msg->sms.foreign_id = pdu->u.deliver_sm.receipted_message_id;
+    pdu->u.deliver_sm.receipted_message_id = NULL;
+
     if (pdu->u.deliver_sm.esm_class & ESM_CLASS_SUBMIT_RPI)
         msg->sms.rpi = 1;
 
@@ -634,6 +638,10 @@ static Msg *data_sm_to_msg(SMPP *smpp, SMPP_PDU *pdu, long *reason)
     /* SMSCs use service_type for billing information */
     msg->sms.binfo = pdu->u.data_sm.service_type;
     pdu->u.data_sm.service_type = NULL;
+
+    /* Foreign ID on MO */
+    msg->sms.foreign_id = pdu->u.data_sm.receipted_message_id;
+    pdu->u.data_sm.receipted_message_id = NULL;
 
     if (pdu->u.data_sm.esm_class & ESM_CLASS_SUBMIT_RPI)
         msg->sms.rpi = 1;
