@@ -353,7 +353,7 @@ static void poller(void *arg)
                 /* update event time */
                 time(&set->times[i]);
             } else if (set->timeout > 0 && difftime(set->times[i] + set->timeout, now) <= 0) {
-                debug("gwlib.fdset", 0, "Timeout for fd:%d appeares.", set->pollinfo[i].fd);
+                debug("gwlib.fdset", 0, "Timeout for fd:%d appears.", set->pollinfo[i].fd);
                 set->callbacks[i](set->pollinfo[i].fd, POLLERR, set->datafields[i]);
             }
         }

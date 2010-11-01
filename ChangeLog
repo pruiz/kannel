@@ -1,2 +1,7 @@
+2010-11-01 Alexander Malysh <amalysh at kannel.org>
+    * contrib/web/sendsms.php, gw/ota_prov.c, gwlib/fdset.c: fixed some
+      spelling errors.
+      Thanks to Luca Corti <luca at fantacast.it> for this patch.
+
 2010-10-20  Stipe Tolj  <stolj at kannel.org>
     * Making development release 1.5.0.
