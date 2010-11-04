@@ -1,3 +1,9 @@
+2010-11-04 Alexander Malysh <amalysh at kannel.org>
+    * doc/userguide/userguide.xml, gw/smsc/smsc_smpp.c, gwlib/cfg.def: applied
+      patch that adds the implementation of client SSL certificate support
+      to SMPP.
+      Thanks to Luca Corti <luca at fantacast.it> for this patch.
+
 2010-11-01 Alexander Malysh <amalysh at kannel.org>
     * gw/smsc/smsc_smpp.c: applied patch maps the receipted_msg_id parameter
       on MO message to the foreign_id field, thus allowing to use %F for MO as well.

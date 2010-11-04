@@ -3159,6 +3159,14 @@ address-range = ""
         Defines whether we should try to bind with SSL enabled connection.
      </entry></row>
 
+    <row><entry><literal>ssl-client-certkey-file (c)</literal></entry>
+     <entry>filename</entry>
+     <entry valign="bottom">
+      A PEM encoded SSL certificate and private key file to be used
+      for SSL connections. This option is used together with use-ssl
+      for client certificate validation with SMPP SMSCs requiring it.
+     </entry></row>
+
    <row><entry><literal>transceiver-mode</literal></entry>
      <entry>bool</entry>
      <entry valign="bottom">

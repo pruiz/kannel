@@ -154,6 +154,7 @@ typedef struct {
     int transmit_port;
     int receive_port;
     int use_ssl;
+    Octstr *ssl_client_certkey_file;
     volatile int quitting;
     long enquire_link_interval;
     long max_pending_submits;
@@ -265,6 +266,7 @@ static SMPP *smpp_create(SMSCConn *conn, Octstr *host, int transmit_port,
     smpp->bind_addr_ton = 0;
     smpp->bind_addr_npi = 0;
     smpp->use_ssl = 0;
+    smpp->ssl_client_certkey_file = NULL;
     smpp->load = load_create_real(0);
     load_add_interval(smpp->load, 1);
 
@@ -288,6 +290,7 @@ static void smpp_destroy(SMPP *smpp)
         octstr_destroy(smpp->my_number);
         octstr_destroy(smpp->alt_charset);
         octstr_destroy(smpp->alt_addr_charset);
+        octstr_destroy(smpp->ssl_client_certkey_file);
         load_destroy(smpp->load);
         gw_free(smpp);
     }
@@ -1111,7 +1114,7 @@ static Connection *open_transmitter(SMPP *smpp)
 
 #ifdef HAVE_LIBSSL
     if (smpp->use_ssl)
-        conn = conn_open_ssl(smpp->host, smpp->transmit_port, NULL, smpp->conn->our_host);
+        conn = conn_open_ssl(smpp->host, smpp->transmit_port, smpp->ssl_client_certkey_file, smpp->conn->our_host);
     else
 #endif
         conn = conn_open_tcp(smpp->host, smpp->transmit_port, smpp->conn->our_host);
@@ -1159,7 +1162,7 @@ static Connection *open_transceiver(SMPP *smpp)
 
 #ifdef HAVE_LIBSSL
     if (smpp->use_ssl)
-        conn = conn_open_ssl(smpp->host, smpp->transmit_port, NULL, smpp->conn->our_host);
+        conn = conn_open_ssl(smpp->host, smpp->transmit_port, smpp->ssl_client_certkey_file, smpp->conn->our_host);
     else
 #endif
         conn = conn_open_tcp(smpp->host, smpp->transmit_port, smpp->conn->our_host);
@@ -1205,7 +1208,7 @@ static Connection *open_receiver(SMPP *smpp)
 
 #ifdef HAVE_LIBSSL
     if (smpp->use_ssl)
-        conn = conn_open_ssl(smpp->host, smpp->receive_port, NULL, smpp->conn->our_host);
+        conn = conn_open_ssl(smpp->host, smpp->receive_port, smpp->ssl_client_certkey_file, smpp->conn->our_host);
     else
 #endif
         conn = conn_open_tcp(smpp->host, smpp->receive_port, smpp->conn->our_host);
@@ -2349,9 +2352,11 @@ int smsc_smpp_create(SMSCConn *conn, CfgGroup *grp)
     cfg_get_integer(&smpp->bind_addr_npi, grp, octstr_imm("bind-addr-npi"));
 
     cfg_get_bool(&smpp->use_ssl, grp, octstr_imm("use-ssl"));
-#ifndef HAVE_LIBSSL
     if (smpp->use_ssl)
+#ifndef HAVE_LIBSSL
         panic(0, "SMPP: Can not use 'use-ssl' without SSL support compiled in.");
+#else
+        smpp->ssl_client_certkey_file = cfg_get(grp, octstr_imm("ssl-client-certkey-file"));
 #endif
 
     conn->data = smpp;

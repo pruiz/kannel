@@ -389,6 +389,7 @@ MULTI_GROUP(smsc,
     OCTSTR(max-sms-octets)
     OCTSTR(login-prompt)
     OCTSTR(password-prompt)
+    OCTSTR(ssl-client-certkey-file)
     OCTSTR(generic-param-username)
     OCTSTR(generic-param-password)
     OCTSTR(generic-param-from)
