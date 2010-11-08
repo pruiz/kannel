@@ -1,3 +1,7 @@
+2010-11-08 Alexander Malysh <amalysh at kannel.org>
+    * gw/bearerbox.[ch], gw/bb_smscconn.c: moved bb_reload_list to gw/bearerbox.c
+      and added wrapper function.
+
 2010-11-04 Alexander Malysh <amalysh at kannel.org>
     * doc/userguide/userguide.xml, gw/smsc/smsc_smpp.c, gwlib/cfg.def: applied
       patch that adds the implementation of client SSL certificate support

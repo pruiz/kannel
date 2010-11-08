@@ -875,6 +875,10 @@ int bb_restart(void)
     return bb_shutdown();
 }
 
+int bb_reload_lists(void)
+{
+    return smsc2_reload_lists();
+}
 
 #define append_status(r, s, f, x) { s = f(x); octstr_append(r, s); \
                                     octstr_destroy(s); }

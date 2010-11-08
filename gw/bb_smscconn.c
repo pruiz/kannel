@@ -947,6 +947,42 @@ int smsc2_add_smsc(Octstr *id)
     return 0;
 }
 
+int smsc2_reload_lists(void)
+{
+    Numhash *tmp;
+    int rc = 1;
+
+    if (white_list_url != NULL) {
+        tmp = numhash_create(octstr_get_cstr(white_list_url));
+
+        gw_rwlock_wrlock(&white_black_list_lock);
+        numhash_destroy(white_list);
+        white_list = tmp;
+        gw_rwlock_unlock(&white_black_list_lock);
+
+        if (white_list == NULL) {
+            error(0, "Unable to reload white_list."),
+            rc = -1;
+        }
+    }
+
+    if (black_list_url != NULL) {
+        tmp = numhash_create(octstr_get_cstr(black_list_url));
+
+        gw_rwlock_wrlock(&white_black_list_lock);
+        numhash_destroy(black_list);
+        black_list = tmp;
+        gw_rwlock_unlock(&white_black_list_lock);
+
+        if (black_list == NULL) {
+            error(0, "Unable to reload black_list");
+            rc = -1;
+        }
+    }
+
+    return rc;
+}
+
 void smsc2_resume(void)
 {
     SMSCConn *conn;
@@ -1653,41 +1689,5 @@ static int check_concatenation(Msg **pmsg, Octstr *smscid)
     msg_dump(msg,0);
 
     return ret;
-}
-
-int bb_reload_lists(void)
-{
-    Numhash *tmp;
-    int rc = 1;
-    
-    if (white_list_url != NULL) {
-        tmp = numhash_create(octstr_get_cstr(white_list_url));
-
-        gw_rwlock_wrlock(&white_black_list_lock);
-        numhash_destroy(white_list);
-        white_list = tmp;
-        gw_rwlock_unlock(&white_black_list_lock);
-
-        if (white_list == NULL) {
-            error(0, "Unable to reload white_list."),
-            rc = -1;
-        }
-    }
-
-    if (black_list_url != NULL) {
-        tmp = numhash_create(octstr_get_cstr(black_list_url));
-
-        gw_rwlock_wrlock(&white_black_list_lock);
-        numhash_destroy(black_list);
-        black_list = tmp;
-        gw_rwlock_unlock(&white_black_list_lock);
-
-        if (black_list == NULL) {
-            error(0, "Unable to reload black_list");
-            rc = -1;
-        }
-    }
-
-    return rc;
 }
 

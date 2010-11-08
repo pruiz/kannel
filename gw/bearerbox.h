@@ -175,6 +175,8 @@ int smsc2_restart_smsc(Octstr *id);  /* re-start a specific smsc */
 int smsc2_add_smsc(Octstr *id);   /* add a new smsc */
 int smsc2_remove_smsc(Octstr *id);   /* remove a specific smsc */
 
+int smsc2_reload_lists(void); /* reload blacklists */
+
 
 /*---------------
  * bb_http.c (HTTP Admin)
