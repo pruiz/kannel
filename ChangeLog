@@ -1,3 +1,7 @@
+2010-12-09 Alexander Malysh <amalysh at kannel.org>
+    * gw/dlr_mem.c: fixed PANIC and memleak when flushing dlr_mem. Fixes #581.
+      Thanks to Tom Moertel for bug report.
+
 2010-11-08 Alexander Malysh <amalysh at kannel.org>
     * gw/bb_smscconn.c: destroy old lists by reload only if we were able to
       load new one.
