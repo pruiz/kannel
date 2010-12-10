@@ -1,3 +1,7 @@
+2010-12-10 Alexander Malysh <amalysh at kannel.org>
+    * gw/bb_smscconn.c: Fixed panic that we destroy message twice. This fixes #582.
+      Thanks to Alexey K for bug report.
+
 2010-12-09 Alexander Malysh <amalysh at kannel.org>
     * gw/dlr_mem.c: fixed PANIC and memleak when flushing dlr_mem. Fixes #581.
       Thanks to Tom Moertel for bug report.

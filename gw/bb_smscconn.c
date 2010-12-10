@@ -223,7 +223,7 @@ static void handle_split(SMSCConn *conn, Msg *msg, long reason)
                 warning(0, "Maximum retries for message exceeded, discarding it!");
                 bb_smscconn_send_failed(NULL, msg, SMSCCONN_FAILED_DISCARDED,
                                         octstr_create("Retries Exceeded"));
-                break;
+                return;
             }
             msg->sms.resend_try = (msg->sms.resend_try > 0 ? msg->sms.resend_try + 1 : 1);
             time(&msg->sms.resend_time);
