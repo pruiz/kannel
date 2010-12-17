@@ -374,6 +374,7 @@
         <br />
         <a class="href" href="#" onClick="admin_smsc_url('start-smsc',
             '<?php echo $config["base_url"] ?>/start-smsc?smsc=<?php echo $smsc['admin-id'] ?>',
+	    '<?php echo $smsc['admin-id'] ?>',
             '<?php echo $config["admin_passwd"] ?>'); return false;">start</a>
     </td>
 </tr>

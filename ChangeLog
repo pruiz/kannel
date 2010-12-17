@@ -1,3 +1,7 @@
+2010-12-17 Alejandro Guerrieri <aguerrieri at kannel.org>
+    * contrib/kannel-monitor/index.php: Fixes display bug on kannel monitor.
+      Thanks to Mariana Gambande <mlgambande at gmail.com> for this patch.
+
 2010-12-10 Alexander Malysh <amalysh at kannel.org>
     * gw/bb_smscconn.c: Fixed panic that we destroy message twice. This fixes #582.
       Thanks to Alexey K for bug report.
