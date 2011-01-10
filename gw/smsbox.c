@@ -3403,6 +3403,22 @@ static Cfg *init_smsbox(Cfg *cfg)
 	log_open(octstr_get_cstr(logfile), lvl, GW_NON_EXCL);
 	octstr_destroy(logfile);
     }
+    if ((p = cfg_get(grp, octstr_imm("syslog-level"))) != NULL) {
+        long level;
+        Octstr *facility;
+        if ((facility = cfg_get(grp, octstr_imm("syslog-facility"))) != NULL) {
+            log_set_syslog_facility(octstr_get_cstr(facility));
+            octstr_destroy(facility);
+        }
+        if (octstr_compare(p, octstr_imm("none")) == 0) {
+            log_set_syslog(NULL, 0);
+        } else if (octstr_parse_long(&level, p, 0, 10) > 0) {
+            log_set_syslog("smsbox", level);
+        }
+        octstr_destroy(p);
+    } else {
+        log_set_syslog(NULL, 0);
+    }
     if (global_sender != NULL) {
 	info(0, "Service global sender set as '%s'", 
 	     octstr_get_cstr(global_sender));

@@ -172,11 +172,15 @@ static Cfg *init_wapbox(Cfg *cfg)
 
     if ((s = cfg_get(grp, octstr_imm("syslog-level"))) != NULL) {
         long level;
-	
+        Octstr *facility;
+        if ((facility = cfg_get(grp, octstr_imm("syslog-facility"))) != NULL) {
+            log_set_syslog_facility(octstr_get_cstr(facility));
+            octstr_destroy(facility);
+        }
         if (octstr_compare(s, octstr_imm("none")) == 0) {
             log_set_syslog(NULL, 0);
             debug("wap", 0, "syslog parameter is none");
-        } else if (octstr_parse_long(&level, s, 0, 0) == -1) {
+        } else if (octstr_parse_long(&level, s, 0, 10) > 0) {
             log_set_syslog("wapbox", level);
             debug("wap", 0, "syslog parameter is %ld", level);
         }

@@ -1,3 +1,9 @@
+2011-01-10 Alejandro Guerrieri <aguerrieri at kannel.org> and Stipe Tolj <stolj at kannel.org>
+    * gw/bearerbox.c, gw/smsbox.c, gw/wapbox.c, gwlib/cfg.def, gwlib/log.c, gwlib/log.h,
+      doc/userguide/userguide.xml: Extended the syslog functionality already on wapbox to
+      function on the core and smsbox groups as well. Also added the ability to specify the
+      syslog facility to use.
+
 2010-12-17 Alejandro Guerrieri <aguerrieri at kannel.org>
     * contrib/kannel-monitor/index.php: Fixes display bug on kannel monitor.
       Thanks to Mariana Gambande <mlgambande at gmail.com> for this patch.

@@ -1329,6 +1329,24 @@ admin-password = f00bar
 		           [flags:%m:%c:%M:%C:%d] [msg:%L:%b] [udh:%U:%u]"</literal>
      </entry></row>
 
+    <row><entry><literal>syslog-level</literal></entry>
+     <entry>number</entry>
+     <entry valign="bottom">
+	 Messages of this log level or higher will also be
+	 sent to syslog, the UNIX system log daemon. If not explicitly
+         set with <literal>syslog-facility</literal>, it logs under the
+         'daemon' category. The default is not to use syslog, and you can
+         set that explicitly by setting <literal>syslog-level</literal>
+	 to 'none'.
+     </entry></row>
+
+    <row><entry><literal>syslog-facility</literal></entry>
+     <entry>string</entry>
+     <entry valign="bottom">
+         The syslog facility to send the syslog entries to. The
+         default is 'daemon'.
+     </entry></row>
+
     <row><entry><literal>unified-prefix</literal></entry>
      <entry>prefix-list</entry>
      <entry valign="bottom">
@@ -2105,17 +2123,6 @@ bearerbox-host = localhost
     <row><entry><literal>log-level</literal></entry>
      <entry>number 0..5</entry></row>
 
-    <row><entry><literal>syslog-level</literal></entry>
-     <entry>number</entry>
-     <entry valign="bottom">
-	 Messages of this log level or higher will also be
-	 sent to syslog, the UNIX system log daemon.  The wapbox
-	 logs under the 'daemon' category.
-	 The default is not to use syslog, and you can set that
-	 explicitly by setting <literal>syslog-level</literal>
-	 to 'none'.
-     </entry></row>
-
     <row><entry><literal>access-log</literal></entry>
      <entry>filename</entry>
      <entry valign="bottom">
@@ -2140,7 +2147,25 @@ bearerbox-host = localhost
           anything else will use local time. Default is local time.
      </entry></row>
 
-	 <row><entry><literal>smart-errors</literal></entry>
+    <row><entry><literal>syslog-level</literal></entry>
+     <entry>number</entry>
+     <entry valign="bottom">
+	 Messages of this log level or higher will also be
+	 sent to syslog, the UNIX system log daemon. If not explicitly
+         set with <literal>syslog-facility</literal>, it logs under the
+         'daemon' category. The default is not to use syslog, and you can
+         set that explicitly by setting <literal>syslog-level</literal>
+	 to 'none'.
+     </entry></row>
+
+    <row><entry><literal>syslog-facility</literal></entry>
+     <entry>string</entry>
+     <entry valign="bottom">
+         The syslog facility to send the syslog entries to. The
+         default is 'daemon'.
+     </entry></row>
+
+    <row><entry><literal>smart-errors</literal></entry>
      <entry>bool</entry>
      <entry valign="bottom">
 	 If set wapbox will return a valid WML deck describing the 
@@ -5726,6 +5751,24 @@ ssl-certkey-file
 
     <row><entry><literal>access-log</literal></entry>
      <entry>filename</entry></row>
+
+    <row><entry><literal>syslog-level</literal></entry>
+     <entry>number</entry>
+     <entry valign="bottom">
+	 Messages of this log level or higher will also be
+	 sent to syslog, the UNIX system log daemon. If not explicitly
+         set with <literal>syslog-facility</literal>, it logs under the
+         'daemon' category. The default is not to use syslog, and you can
+         set that explicitly by setting <literal>syslog-level</literal>
+	 to 'none'.
+     </entry></row>
+
+    <row><entry><literal>syslog-facility</literal></entry>
+     <entry>string</entry>
+     <entry valign="bottom">
+         The syslog facility to send the syslog entries to. The
+         default is 'daemon'.
+     </entry></row>
 
     <row><entry><literal>white-list</literal></entry>
      <entry>URL</entry>

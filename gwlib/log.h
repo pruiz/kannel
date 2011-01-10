@@ -138,6 +138,11 @@ void log_set_output_level(enum output_level level);
 void log_set_log_level(enum output_level level);
 
 /*
+ * Set the syslog facility to use.
+ */
+void log_set_syslog_facility(char *facility);
+
+/*
  * Set syslog usage. If `ident' is NULL, syslog is not used.
  */
 void log_set_syslog(const char *ident, int syslog_level);

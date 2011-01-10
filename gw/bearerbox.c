@@ -390,6 +390,22 @@ static Cfg *init_bearerbox(Cfg *cfg)
         log_open(octstr_get_cstr(log), loglevel, GW_NON_EXCL);
         octstr_destroy(log);
     }
+    if ((val = cfg_get(grp, octstr_imm("syslog-level"))) != NULL) {
+        long level;
+        Octstr *facility;
+        if ((facility = cfg_get(grp, octstr_imm("syslog-facility"))) != NULL) {
+            log_set_syslog_facility(octstr_get_cstr(facility));
+            octstr_destroy(facility);
+        }
+        if (octstr_compare(val, octstr_imm("none")) == 0) {
+            log_set_syslog(NULL, 0);
+        } else if (octstr_parse_long(&level, val, 0, 10) > 0) {
+            log_set_syslog("bearerbox", level);
+        }
+        octstr_destroy(val);
+    } else {
+        log_set_syslog(NULL, 0);
+    }
 
     if (check_config(cfg) == -1)
         panic(0, "Cannot start with corrupted configuration");
