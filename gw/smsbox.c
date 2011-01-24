@@ -908,11 +908,10 @@ static void fill_message(Msg *msg, URLTranslation *trans,
     }
 
     if (validity != SMS_PARAM_UNDEFINED) {
-	if (urltrans_accept_x_kannel_headers(trans))
-	    msg->sms.validity = validity;
-	else
-	    warning(0, "Tried to change validity to '%d', denied.",
-		    validity);
+        if (urltrans_accept_x_kannel_headers(trans))
+            msg->sms.validity = validity;
+        else
+            warning(0, "Tried to change validity to '%d', denied.", validity);
     }
     if (deferred != SMS_PARAM_UNDEFINED) {
 	if (urltrans_accept_x_kannel_headers(trans))
@@ -1367,9 +1366,8 @@ static int obey_request(Octstr **result, URLTranslation *trans, Msg *msg)
 	}
 	if (msg->sms.validity != SMS_PARAM_UNDEFINED) {
 	    Octstr *os;
-	    os = octstr_format("%d",msg->sms.validity);
-	    http_header_add(request_headers, "X-Kannel-Validity",
-	    	octstr_get_cstr(os));
+	    os = octstr_format("%d", msg->sms.validity);
+	    http_header_add(request_headers, "X-Kannel-Validity", octstr_get_cstr(os));
 	    octstr_destroy(os);
 	}
 	if (msg->sms.deferred != SMS_PARAM_UNDEFINED) {
