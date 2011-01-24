@@ -377,6 +377,13 @@ static Cfg *init_bearerbox(Cfg *cfg)
     Octstr *ssl_server_key_file;
     int ssl_enabled = 0;
 #endif /* HAVE_LIBSSL */
+    Octstr *http_proxy_host = NULL;
+    long http_proxy_port = -1;
+    int http_proxy_ssl = 0;
+    List *http_proxy_exceptions = NULL;
+    Octstr *http_proxy_username = NULL;
+    Octstr *http_proxy_password = NULL;
+    Octstr *http_proxy_exceptions_regex = NULL;
 
     /* defaults: use localtime and markers for access-log */
     lf = m = 1;
@@ -448,6 +455,22 @@ static Cfg *init_bearerbox(Cfg *cfg)
         panic(0, "Could not start with store init failed.");
     octstr_destroy(val);
     octstr_destroy(log);
+
+    cfg_get_integer(&http_proxy_port, grp, octstr_imm("http-proxy-port"));
+#ifdef HAVE_LIBSSL
+    cfg_get_bool(&http_proxy_ssl, grp, octstr_imm("http-proxy-ssl"));
+#endif /* HAVE_LIBSSL */
+
+    http_proxy_host = cfg_get(grp, 
+    	    	    	octstr_imm("http-proxy-host"));
+    http_proxy_username = cfg_get(grp, 
+    	    	    	    octstr_imm("http-proxy-username"));
+    http_proxy_password = cfg_get(grp, 
+    	    	    	    octstr_imm("http-proxy-password"));
+    http_proxy_exceptions = cfg_get_list(grp,
+    	    	    	    octstr_imm("http-proxy-exceptions"));
+    http_proxy_exceptions_regex = cfg_get(grp,
+    	    	    	    octstr_imm("http-proxy-exceptions-regex"));
 
     conn_config_ssl (grp);
 
@@ -563,7 +586,19 @@ static Cfg *init_bearerbox(Cfg *cfg)
     if (cfg_get_single_group(cfg, octstr_imm("wapbox")) != NULL)
         start_wap(cfg);
 #endif
-    
+
+    if (http_proxy_host != NULL && http_proxy_port > 0) {
+    	http_use_proxy(http_proxy_host, http_proxy_port, http_proxy_ssl,
+		       http_proxy_exceptions, http_proxy_username,
+                       http_proxy_password, http_proxy_exceptions_regex);
+    }
+
+    octstr_destroy(http_proxy_host);
+    octstr_destroy(http_proxy_username);
+    octstr_destroy(http_proxy_password);
+    octstr_destroy(http_proxy_exceptions_regex);
+    gwlist_destroy(http_proxy_exceptions, octstr_destroy_item);
+
     return cfg;
 }
 
