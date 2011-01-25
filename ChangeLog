@@ -1,3 +1,6 @@
+2011-01-25  Stipe Tolj  <stolj at kannel.org>
+    * gwlib/socket.c: fixing memory leak in tcpip_connect_to_server_with_port().
+    
 2011-01-24 Alexander Malysh <amalysh at kannel.org>
     * gw/bearerbox.c: Added support for HTTP-Proxy.
       Thanks to Christoph Gysin <christoph.gysin at fr33z3.org> for this patch.

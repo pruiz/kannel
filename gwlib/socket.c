@@ -219,6 +219,7 @@ int tcpip_connect_to_server_with_port(char *hostname, int port, int our_port, co
         if (rc == -1) {
             error(errno, "connect to <%s> failed", octstr_get_cstr(ip2));
         }
+        octstr_destroy(ip2);
     } while (rc == -1 && hostinfo.h_addr_list[++i] != NULL);
 
     if (rc == -1)
