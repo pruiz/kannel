@@ -1,3 +1,10 @@
+2011-03-08 Alexander Malysh <amalysh at kannel.org>
+    * gwlib/list.c: applied patch which fixes a rare memory leak.
+      When the destroy is called, it extracts until a NULL is found, which may
+      not necessarily be the last item in the list as gwlist allows you to add
+      NULL items to it.
+      Thanks to Donald Jackson <djackson at kannel.org> for this patch.
+
 2011-01-25  Stipe Tolj  <stolj at kannel.org>
     * gwlib/socket.c: fixing memory leak in tcpip_connect_to_server_with_port().
     

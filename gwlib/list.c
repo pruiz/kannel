@@ -144,14 +144,15 @@ List *gwlist_create_real(void)
 
 void gwlist_destroy(List *list, gwlist_item_destructor_t *destructor)
 {
-    void *item;
+    long len, i;
 
     if (list == NULL)
         return;
 
     if (destructor != NULL) {
-        while ((item = gwlist_extract_first(list)) != NULL)
-            destructor(item);
+        len = gwlist_len(list); /* Using while(x != NULL) is unreliable, what if someone added NULL values? */
+        for (i = 0; i < len; i++)
+          destructor(gwlist_extract_first(list));
     }
 
     mutex_destroy(list->permanent_lock);
