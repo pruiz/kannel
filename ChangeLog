@@ -1,3 +1,9 @@
+2011-03-09 Alexander Malysh <amalysh at kannel.org>
+    * applied patch that adds sqlite3 DB and DLR support. This patch was originally
+      contributed by David Butler, posted 2009-11-23 to the list, with Msg-ID
+      <22DE7AAC95BA4B5A9EEF3FEC90222162@VAIO>. Stipe added userguide parts and
+      fixed destination number prefix handling.
+
 2011-03-08 Alexander Malysh <amalysh at kannel.org>
     * gwlib/list.c: applied patch which fixes a rare memory leak.
       When the destroy is called, it extracts until a NULL is found, which may

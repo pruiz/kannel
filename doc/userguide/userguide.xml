@@ -1491,9 +1491,15 @@ admin-password = f00bar
      <entry valign="bottom">
         Defines the way DLRs are stored. If you have build-in external 
           DLR storage support, i.e. using MySQL you may define here the
-          alternative storage type like 'mysql'. Supported types are:
-          internal, mysql, pgsql, sdb, mssql and oracle. By default this
-          is set to 'internal'.
+          alternative storage type like <literal>mysql</literal>. 
+          Supported types are:
+          <literal>internal</literal>, 
+          <literal>mysql</literal>,
+          <literal>pgsql</literal>,
+          <literal>sdb</literal>,
+          <literal>mssql</literal>,
+          <literal>sqlite3</literal> and <literal>oracle</literal>.
+          By default this is set to <literal>internal</literal>.
      </entry></row>
 
      <row><entry><literal>maximum-queue-length</literal></entry>
@@ -5458,6 +5464,43 @@ field-boxc-id = boxc
     </para>
 
     </sect2>
+
+	<sect2>
+	<title>SQLite3 DLR storage</title>
+	<para>To store DLR information into a SQLite3 database you may use the
+	<literal>dlr-storage = sqlite3</literal> configuration directive in the
+	<literal>core</literal> group.
+	</para>
+	<para>In addition to that you must have a <literal>dlr-db</literal>
+	group defined that specifies the table field names that are used to the
+	DLR attributes and a <literal>sqlite3-connection</literal> group that
+	defines the connection to the SQLite3 database itself.
+	</para>
+	<para>Here is the example configuration:
+
+<programlisting>
+group = sqlite3-connection
+id = mydlr
+database = /path/to/file
+max-connections = 1
+
+group = dlr-db
+id = mydlr
+table = dlr
+field-smsc = smsc
+field-timestamp = ts
+field-destination = destination
+field-source = source
+field-service = service
+field-url = url
+field-mask = mask
+field-status = status
+field-boxc-id = boxc
+</programlisting>
+
+	</para>
+
+	</sect2>
 
         <sect2>
 	<title>DLR database field configuration</title>

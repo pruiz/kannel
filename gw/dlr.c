@@ -260,6 +260,8 @@ void dlr_init(Cfg* cfg)
         handles = dlr_init_pgsql(cfg);
     } else if (octstr_compare(dlr_type, octstr_imm("mssql")) == 0) {
         handles = dlr_init_mssql(cfg);
+    } else if (octstr_compare(dlr_type, octstr_imm("sqlite3")) == 0) {
+        handles = dlr_init_sqlite3(cfg);
     }
 
     /*
