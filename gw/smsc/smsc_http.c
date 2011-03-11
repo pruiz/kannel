@@ -127,7 +127,8 @@
 #include "dlr.h"
 #include "urltrans.h"
 
-#define DEFAULT_CHARSET "UTF-8"
+#define DEFAULT_CHARSET         "UTF-8"
+#define DEFAULT_UCS2_CHARSET    "UCS-2BE"
 
 /*
  * This maps fields to values for MO parameters
@@ -1890,11 +1891,35 @@ static int httpsmsc_send(SMSCConn *conn, Msg *msg)
     }
 
     /* convert character encoding if required */
-    if (conndata->alt_charset && 
-        charset_convert(sms->sms.msgdata, DEFAULT_CHARSET,
-                        octstr_get_cstr(conndata->alt_charset)) != 0)
-        error(0, "Failed to convert msgdata from charset <%s> to <%s>, will send as is.",
-                 DEFAULT_CHARSET, octstr_get_cstr(conndata->alt_charset));
+    if (conndata->alt_charset) {
+        /* 
+         * Converted now to the target character set based on the
+         * one we got in the msg, which is either UTF-8 (our normal
+         * inter-box encoding), but may also be UCS-2, so beware. 
+         * In addition, IF we convert to an "extra" encoding here
+         * we also revert the .coding vaue to DC_UNDEF, in order
+         * that all API specific code doesn't indicate an encoding
+         * which is no longer inside the payload here. 
+         */
+        if (sms->sms.coding == DC_7BIT) {
+            if (charset_convert(sms->sms.msgdata, DEFAULT_CHARSET,
+                    octstr_get_cstr(conndata->alt_charset)) == 0) {
+                sms->sms.coding = DC_UNDEF;
+            } else {
+                error(0, "Failed to convert msgdata from charset <%s> to <%s>, will send as is.",
+                         DEFAULT_CHARSET, octstr_get_cstr(conndata->alt_charset));
+            }
+        }
+        else if (sms->sms.coding == DC_UCS2) {
+            if (charset_convert(sms->sms.msgdata, DEFAULT_UCS2_CHARSET,
+                    octstr_get_cstr(conndata->alt_charset)) == 0) {
+                sms->sms.coding = DC_UNDEF;
+            } else {
+                error(0, "Failed to convert msgdata from charset <%s> to <%s>, will send as is.",
+                        DEFAULT_UCS2_CHARSET, octstr_get_cstr(conndata->alt_charset));
+            }
+        }
+    }
 
     conndata->open_sends++;
     conndata->send_sms(conn, sms);

@@ -1,3 +1,8 @@
+2011-03-11  Stipe Tolj  <stolj at kannel.org>
+    * gw/smsc/smsc_http.c: ensure we handle 'alt-charset' correctly, in case 
+      we get DC_UCS2 coding in the payload.
+      [Message-Id: <4D76BF9C.7070700@tolj.org>]
+
 2011-03-09 Alexander Malysh <amalysh at kannel.org>
     * applied patch that adds sqlite3 DB and DLR support. This patch was originally
       contributed by David Butler, posted 2009-11-23 to the list, with Msg-ID
