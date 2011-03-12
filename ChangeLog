@@ -1,3 +1,7 @@
+2011-03-12  Stipe Tolj  <stolj at kannel.org>
+    * gw/smsc/smsc_http.c: reverting back last commit due to veto if Alex. Need
+      further investigation.
+    
 2011-03-11  Stipe Tolj  <stolj at kannel.org>
     * gw/smsc/smsc_http.c: ensure we handle 'alt-charset' correctly, in case 
       we get DC_UCS2 coding in the payload.
