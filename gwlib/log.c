@@ -461,13 +461,8 @@ static void PRINTFLIKE(1,0) kannel_syslog(char *format, va_list args, int level)
     int translog;
     
     if (level >= sysloglevel && dosyslog) {
-        if (args == NULL) {
-            strncpy(buf, format, sizeof(buf));
-            buf[sizeof(buf) - 1] = '\0';
-        } else {
-            vsnprintf(buf, sizeof(buf), format, args);
-            /* XXX vsnprint not 100% portable */
-        }
+        vsnprintf(buf, sizeof(buf), format, args);
+        /* XXX vsnprint not 100% portable */
 
         switch(level) {
             case GW_DEBUG:
