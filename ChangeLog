@@ -1,4 +1,7 @@
 2011-03-21 Alexander Malysh <amalysh at kannel.org>
+    * test/test_http_server.c: don't do anythink that use threading in signal handler.
+
+2011-03-21 Alexander Malysh <amalysh at kannel.org>
     * gw/smsc/smsc_http.c: fixed alt-charset issue that we try to reencode even
       binary and UCS2 data.
 

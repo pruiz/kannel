@@ -73,8 +73,10 @@
 Octstr *whitelist, *blacklist;
 Octstr *reply_text = NULL;
 
-int verbose, run, port;
+int verbose, port;
 int ssl = 0;   /* indicate if SSL-enabled server should be used */
+static volatile sig_atomic_t run;
+
 
 static void client_thread(void *arg) 
 {
@@ -274,7 +276,6 @@ static void help(void) {
 
 static void sigterm(int signo) {
     run = 0;
-    http_close_all_ports();
     debug("test.gwlib", 0, "Signal %d received, quitting.", signo);
 }
 
@@ -300,6 +301,7 @@ int main(int argc, char **argv) {
     sigemptyset(&act.sa_mask);
     act.sa_flags = 0;
     sigaction(SIGTERM, &act, NULL);
+    sigaction(SIGINT, &act, NULL);
 
     port = 8080;
     use_threads = 1;
