@@ -1,4 +1,7 @@
 2011-03-21 Alexander Malysh <amalysh at kannel.org>
+    * gwlib/http.c: indents.
+
+2011-03-21 Alexander Malysh <amalysh at kannel.org>
     * gwlib/log.c: Comparing a va_list with NULL is bogus. It's supposed to be treated like
       an opaque type and only be manipulated with va_* accessors. This fixes #587.
 
