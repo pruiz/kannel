@@ -1890,7 +1890,7 @@ static int httpsmsc_send(SMSCConn *conn, Msg *msg)
     }
 
     /* convert character encoding if required */
-    if (conndata->alt_charset && 
+    if (msg->sms.coding == DC_7BIT && conndata->alt_charset &&
         charset_convert(sms->sms.msgdata, DEFAULT_CHARSET,
                         octstr_get_cstr(conndata->alt_charset)) != 0)
         error(0, "Failed to convert msgdata from charset <%s> to <%s>, will send as is.",

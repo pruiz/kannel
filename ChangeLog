@@ -1,4 +1,8 @@
 2011-03-21 Alexander Malysh <amalysh at kannel.org>
+    * gw/smsc/smsc_http.c: fixed alt-charset issue that we try to reencode even
+      binary and UCS2 data.
+
+2011-03-21 Alexander Malysh <amalysh at kannel.org>
     * gwlib/http.c: added new method.
 
 2011-03-21 Alexander Malysh <amalysh at kannel.org>
