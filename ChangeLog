@@ -1,4 +1,7 @@
 2011-03-21 Alexander Malysh <amalysh at kannel.org>
+    * gwlib/http.c: added new method.
+
+2011-03-21 Alexander Malysh <amalysh at kannel.org>
     * gwlib/http.c: indents.
 
 2011-03-21 Alexander Malysh <amalysh at kannel.org>

@@ -2662,6 +2662,10 @@ void http_close_client(HTTPClient *client)
     client_destroy(client);
 }
 
+int http_method(HTTPClient *client)
+{
+    return client->method;
+}
 
 static void server_init(void)
 {

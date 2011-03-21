@@ -297,7 +297,7 @@ void http_close_proxy(void);
 void http_set_interface(const Octstr *our_host);
 
 /**
- * Define timeout in seconds for which HTTP clint will wait for
+ * Define timeout in seconds for which HTTP client will wait for
  * response. Set -1 to disable timeouts.
  */
 void http_set_client_timeout(long timeout);
@@ -469,6 +469,10 @@ void http_destroy_cgiargs(List *args);
  */
 Octstr *http_cgi_variable(List *list, char *name);
 
+/*
+ * Return METHOD used by client
+ */
+int http_method(HTTPClient *client);
 
 /***********************************************************************
  * HTTP header interface.
