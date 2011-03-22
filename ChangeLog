@@ -1,3 +1,8 @@
+2011-03-22 Alexander Malysh <amalysh at kannel.org>
+    * debian/kannel-cvs.init, debian/kannel-devel.init, debian/kannel.init: added status
+      command.
+      Thanks to Konstantin Vayner <poncha at appcell.net> for this patch.
+
 2011-03-21 Alexander Malysh <amalysh at kannel.org>
     * test/test_http_server.c: don't do anythink that use threading in signal handler.
 
