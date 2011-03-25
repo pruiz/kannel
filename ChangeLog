@@ -1,3 +1,10 @@
+2011-03-25  Stipe Tolj  <stolj at kannel.org>
+    * gwlib/dbpool_sqlite3.c: ensure we handle the sqlite3 version >= 3.3.9
+      function call switching via #if pre-processor macro so we choose either
+      sqlite3_prepare_v2() if we do have a local sqlite3 version that supports
+      it. This ensures we build again on CentOS 5.x ie.
+      [Message-Id: <4D8A73B6.4050508@tolj.org>]
+
 2011-03-22 Alexander Malysh <amalysh at kannel.org>
     * debian/kannel-cvs.init, debian/kannel-devel.init, debian/kannel.init: added status
       command.

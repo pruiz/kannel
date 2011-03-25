@@ -147,7 +147,11 @@ static int sqlite3_select(void *theconn, const Octstr *sql, List *binds, List **
     *res = NULL;
 
     /* prepare statement */
+#if SQLITE_VERSION_NUMBER >= 3003009    
     status = sqlite3_prepare_v2(db, octstr_get_cstr(sql), octstr_len(sql) + 1, &stmt, &rem);
+#else    
+    status = sqlite3_prepare(db, octstr_get_cstr(sql), octstr_len(sql) + 1, &stmt, &rem);
+#endif
     if (SQLITE_OK != status) {
         error(0, "SQLite3: %s", sqlite3_errmsg(db));
         return -1;
@@ -209,7 +213,11 @@ static int sqlite3_update(void *theconn, const Octstr *sql, List *binds)
     int binds_len = (binds ? gwlist_len(binds) : 0);
 
     /* prepare statement */
+#if SQLITE_VERSION_NUMBER >= 3003009    
     status = sqlite3_prepare_v2(db, octstr_get_cstr(sql), octstr_len(sql) + 1, &stmt, &rem);
+#else
+    status = sqlite3_prepare(db, octstr_get_cstr(sql), octstr_len(sql) + 1, &stmt, &rem);
+#endif    
     if (SQLITE_OK != status) {
         error(0, "SQLite3: %s", sqlite3_errmsg(db));
         return -1;
