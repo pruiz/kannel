@@ -195,7 +195,7 @@ Octstr *msg_pack(Msg *msg)
     switch (msg->type) {
 #include "msg-decl.h"
     default:
-        panic(0, "Internal error: unknown message type %d",
+        panic(0, "Internal error: unknown message type: %d",
               msg->type);
     }
 
