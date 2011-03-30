@@ -1,4 +1,14 @@
-2011-03-22 Alexander Malysh <amalysh at kannel.org>
+2011-03-30 Alexander Malysh <amalysh at kannel.org>
+    * applied patch that fixes some issues for HTTP-SMSC:
+      1) added support for max-pending-submits , so that we don't eat all our
+         file descriptors if we have much traffic
+      2) changed open_sends from long to Counter, avoid race conditions
+      3) start new sender_thread because otherwise we are unable to limit max pending
+         submits and if throughput is set we block the whole bearerbox instead of only
+         one SMSC
+      4) changed shutdown sequence to run safe in parallel
+
+2011-03-30 Alexander Malysh <amalysh at kannel.org>
     * applied patch that fixes DDos issue with our HTTP-Server implementation
       (consume all available file descriptors) and also adds possibility to
       set keep alive timeout for each listen port.

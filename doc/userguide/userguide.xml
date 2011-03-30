@@ -4230,6 +4230,14 @@ send-url = "http://localhost:20022"
      </entry></row>
    </tbody></tgroup></informaltable>
 
+   <row><entry><literal>max-pending-submits</literal></entry>
+     <entry><literal>number</literal></entry>
+     <entry valign="bottom">
+       Optional the maximum number of outstanding (i.e. acknowledged)
+       requests. As a guideline it is recommended that no more than
+       10 (default) requests are outstanding at any time.
+    </entry></row>
+
 <sect3>
 <title>The "generic" system-type</title>
 

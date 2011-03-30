@@ -162,12 +162,14 @@ typedef struct conndata {
     FieldMap *fieldmap;
     long receive_thread;
     long send_cb_thread;
+    long sender_thread;
     int shutdown;
     int	port;   /* port for receiving SMS'es */
     Octstr *allow_ip;
     Octstr *send_url;
-    Octstr *dlr_url;    /* our own DLR MO URL */
-    long open_sends;
+    Octstr *dlr_url;
+    Counter *open_sends;
+    Semaphore *max_pending_sends;
     Octstr *username;   /* if needed */
     Octstr *password;   /* as said */
     Octstr *system_id;	/* api id for clickatell */
@@ -176,6 +178,7 @@ typedef struct conndata {
     int no_sep;         /* not to mention this */
     Octstr *proxy;      /* proxy a constant string */
     Octstr *alt_charset;    /* alternative charset use */
+    List *msg_to_send; /* our send queue */
 
     /* The following are compiled regex for the 'generic' type for handling 
      * success, permanent failure and temporary failure. For types that use
@@ -252,6 +255,10 @@ static void conndata_destroy(ConnData *conndata)
     octstr_destroy(conndata->proxy);
     octstr_destroy(conndata->system_id);
     octstr_destroy(conndata->alt_charset);
+    counter_destroy(conndata->open_sends);
+    gwlist_destroy(conndata->msg_to_send, NULL);
+    if (conndata->max_pending_sends)
+        semaphore_destroy(conndata->max_pending_sends);
 
     gw_free(conndata);
 }
@@ -273,17 +280,17 @@ static void httpsmsc_receiver(void *arg)
 
     /* Make sure we log into our own log-file if defined */
     log_thread_to(conn->log_idx);
- 
+
     while (conndata->shutdown == 0) {
 
         /* XXX if conn->is_stopped, do not receive new messages.. */
-	
+
         client = http_accept_request(conndata->port, &ip, &url,
                                      &headers, &body, &cgivars);
         if (client == NULL)
             break;
 
-        debug("smsc.http", 0, "HTTP[%s]: Got request `%s'", 
+        debug("smsc.http", 0, "HTTP[%s]: Got request `%s'",
               octstr_get_cstr(conn->id), octstr_get_cstr(url));
 
         if (connect_denied(conndata->allow_ip, ip)) {
@@ -307,12 +314,100 @@ static void httpsmsc_receiver(void *arg)
 
     conndata->shutdown = 1;
     http_close_port(conndata->port);
-    
+
     /* unblock http_receive_result() if there are no open sends */
-    if (conndata->open_sends == 0)
+    if (counter_value(conndata->open_sends) == 0)
         http_caller_signal_shutdown(conndata->http_ref);
+
+    if (conndata->sender_thread != -1) {
+        gwthread_wakeup(conndata->sender_thread);
+        gwthread_join(conndata->sender_thread);
+    }
+    if (conndata->send_cb_thread != -1) {
+        gwthread_wakeup(conndata->send_cb_thread);
+        gwthread_join(conndata->send_cb_thread);
+    }
+
+    mutex_lock(conn->flow_mutex);
+    conn->data = NULL;
+    conn->status = SMSCCONN_DEAD;
+    mutex_unlock(conn->flow_mutex);
+
+    conndata_destroy(conndata);
+    bb_smscconn_killed();
 }
 
+
+/*
+ * Thread to send queued messages
+ */
+static void httpsmsc_sender(void *arg)
+{
+    SMSCConn *conn = arg;
+    ConnData *conndata = conn->data;
+    Msg *msg;
+    double delay = 0;
+
+    /* Make sure we log into our own log-file if defined */
+    log_thread_to(conn->log_idx);
+
+    if (conn->throughput) {
+        delay = 1.0 / conn->throughput;
+    }
+
+    while (conndata->shutdown == 0) {
+        /* check if we can send ; otherwise block on semaphore */
+        if (conndata->max_pending_sends)
+            semaphore_down(conndata->max_pending_sends);
+
+        if (conndata->shutdown) {
+            if (conndata->max_pending_sends)
+                semaphore_up(conndata->max_pending_sends);
+            break;
+        }
+
+        msg = gwlist_consume(conndata->msg_to_send);
+        if (msg == NULL)
+            break;
+
+        /* obey throughput speed limit, if any */
+        if (conn->throughput > 0) {
+            gwthread_sleep(delay);
+        }
+        counter_increase(conndata->open_sends);
+        conndata->send_sms(conn, msg);
+        /* TODO check send_sms return code
+         * if (conndata->send_sms(conn, msg) == -1) {
+         *     counter_decrease(conndata->open_sends);
+         *     if (conndata->max_pending_sends)
+         *         semaphore_up(conndata->max_pending_sends);
+         * }
+         */
+    }
+
+    /* put outstanding sends back into global queue */
+    while((msg = gwlist_extract_first(conndata->msg_to_send)))
+        bb_smscconn_send_failed(conn, msg, SMSCCONN_FAILED_SHUTDOWN, NULL);
+
+    /* if there no receiver shutdown */
+    if (conndata->port <= 0) {
+        /* unblock http_receive_result() if there are no open sends */
+        if (counter_value(conndata->open_sends) == 0)
+            http_caller_signal_shutdown(conndata->http_ref);
+
+        if (conndata->send_cb_thread != -1) {
+            gwthread_wakeup(conndata->send_cb_thread);
+            gwthread_join(conndata->send_cb_thread);
+        }
+        mutex_lock(conn->flow_mutex);
+        conn->data = NULL;
+        conn->status = SMSCCONN_DEAD;
+        mutex_unlock(conn->flow_mutex);
+
+        conndata_destroy(conndata);
+        bb_smscconn_killed();
+    }
+}
 
 /*
  * Thread to handle finished sendings
@@ -329,7 +424,7 @@ static void httpsmsc_send_cb(void *arg)
     /* Make sure we log into our own log-file if defined */
     log_thread_to(conn->log_idx);
 
-    while (conndata->shutdown == 0 || conndata->open_sends) {
+    while(conndata->shutdown == 0 || counter_value(conndata->open_sends)) {
 
         msg = http_receive_result(conndata->http_ref, &status,
                                   &final_url, &headers, &body);
@@ -337,34 +432,56 @@ static void httpsmsc_send_cb(void *arg)
         if (msg == NULL)
             break;  /* they told us to die, by unlocking */
 
+        counter_decrease(conndata->open_sends);
+        if (conndata->max_pending_sends)
+            semaphore_up(conndata->max_pending_sends);
+
         /* Handle various states here. */
 
         /* request failed and we are not in shutdown mode */
-        if (status == -1 && conndata->shutdown == 0) { 
-            error(0, "HTTP[%s]: Couldn't connect to SMS center "
-                     "(retrying in %ld seconds).",
-                     octstr_get_cstr(conn->id), conn->reconnect_delay);
-            conn->status = SMSCCONN_RECONNECTING; 
-            gwthread_sleep(conn->reconnect_delay);
-            debug("smsc.http.kannel", 0, "HTTP[%s]: Re-sending request",
-                  octstr_get_cstr(conn->id));
-            conndata->send_sms(conn, msg);
-            continue; 
-        } 
-        /* request failed and we *are* in shutdown mode, drop the message */ 
-        else if (status == -1 && conndata->shutdown == 1) {
-        }
-        /* request succeeded */    
-        else {
-            /* we received a response, so this link is considered online again */
-            if (status && conn->status != SMSCCONN_ACTIVE) {
+        if (status == -1 && conndata->shutdown == 0) {
+            error(0, "HTTP[%s]: Couldn't connect to SMS center."
+                     "(retrying in %ld seconds) %ld.",
+                     octstr_get_cstr(conn->id), conn->reconnect_delay, counter_value(conndata->open_sends));
+            mutex_lock(conn->flow_mutex);
+            conn->status = SMSCCONN_RECONNECTING;
+            mutex_unlock(conn->flow_mutex);
+            /* XXX how should we know whether it's temp. error ?? */
+            bb_smscconn_send_failed(conn, msg, SMSCCONN_FAILED_TEMPORARILY, NULL);
+            /*
+             * Just sleep reconnect delay and set conn to ACTIVE again;
+             * otherwise if no pending request are here, we leave conn in
+             * RECONNECTING state for ever and no routing (trials) take place.
+             */
+            if (counter_value(conndata->open_sends) == 0) {
+                gwthread_sleep(conn->reconnect_delay);
+                /* and now enable routing again */
+                mutex_lock(conn->flow_mutex);
                 conn->status = SMSCCONN_ACTIVE;
                 time(&conn->connect_time);
+                mutex_unlock(conn->flow_mutex);
+                /* tell bearerbox core that we are connected again */
+                bb_smscconn_connected(conn);
+            }
+            continue;
+        }
+        /* request failed and we *are* in shutdown mode, drop the message */
+        else if (status == -1 && conndata->shutdown == 1) {
+            bb_smscconn_send_failed(conn, msg, SMSCCONN_FAILED_SHUTDOWN, NULL);
+        }
+        /* request succeeded */
+        else {
+            /* we received a response, so this link is considered online again */
+            if (conn->status != SMSCCONN_ACTIVE) {
+                mutex_lock(conn->flow_mutex);
+                conn->status = SMSCCONN_ACTIVE;
+                time(&conn->connect_time);
+                mutex_unlock(conn->flow_mutex);
+                /* tell bearerbox core that we are connected again */
+                bb_smscconn_connected(conn);
             }
             conndata->parse_reply(conn, msg, status, headers, body);
         }
-   
-        conndata->open_sends--;
 
         http_destroy_headers(headers);
         octstr_destroy(final_url);
@@ -374,18 +491,10 @@ static void httpsmsc_send_cb(void *arg)
           octstr_get_cstr(conn->id));
     conndata->shutdown = 1;
 
-    if (conndata->open_sends) {
+    if (counter_value(conndata->open_sends)) {
         warning(0, "HTTP[%s]: Shutdown while <%ld> requests are pending.",
-                octstr_get_cstr(conn->id), conndata->open_sends);
+                octstr_get_cstr(conn->id), counter_value(conndata->open_sends));
     }
-
-    gwthread_join(conndata->receive_thread);
-
-    conn->data = NULL;
-    conndata_destroy(conndata);
-
-    conn->status = SMSCCONN_DEAD;
-    bb_smscconn_killed();
 }
 
 
@@ -1882,26 +1991,23 @@ static void generic_parse_reply(SMSCConn *conn, Msg *msg, int status,
 static int httpsmsc_send(SMSCConn *conn, Msg *msg)
 {
     ConnData *conndata = conn->data;
-    Msg *sms = msg_duplicate(msg);
-    double delay = 0;
+    Msg *sms;
 
-    if (conn->throughput > 0) {
-        delay = 1.0 / conn->throughput;
-    }
 
+    /* don't crash if no send_sms handle defined */
+    if (!conndata || !conndata->send_sms)
+        return -1;
+
+    sms = msg_duplicate(msg);
     /* convert character encoding if required */
     if (msg->sms.coding == DC_7BIT && conndata->alt_charset &&
         charset_convert(sms->sms.msgdata, DEFAULT_CHARSET,
-                        octstr_get_cstr(conndata->alt_charset)) != 0)
+                        octstr_get_cstr(conndata->alt_charset)) != 0) {
         error(0, "Failed to convert msgdata from charset <%s> to <%s>, will send as is.",
-                 DEFAULT_CHARSET, octstr_get_cstr(conndata->alt_charset));
+              DEFAULT_CHARSET, octstr_get_cstr(conndata->alt_charset));
+    }
 
-    conndata->open_sends++;
-    conndata->send_sms(conn, sms);
-
-    /* obey throughput speed limit, if any */
-    if (conn->throughput > 0)
-        gwthread_sleep(delay);
+    gwlist_produce(conndata->msg_to_send, sms);
 
     return 0;
 }
@@ -1912,7 +2018,7 @@ static long httpsmsc_queued(SMSCConn *conn)
     ConnData *conndata = conn->data;
 
     return (conndata ? (conn->status != SMSCCONN_DEAD ? 
-            conndata->open_sends : 0) : 0);
+            counter_value(conndata->open_sends) : 0) : 0);
 }
 
 
@@ -1920,12 +2026,26 @@ static int httpsmsc_shutdown(SMSCConn *conn, int finish_sending)
 {
     ConnData *conndata = conn->data;
 
+    if (conndata == NULL)
+        return 0;
+
     debug("httpsmsc_shutdown", 0, "HTTP[%s]: Shutting down",
           octstr_get_cstr(conn->id));
+
+    mutex_lock(conn->flow_mutex);
     conn->why_killed = SMSCCONN_KILLED_SHUTDOWN;
+
     conndata->shutdown = 1;
 
-    http_close_port(conndata->port);
+    if (conndata->port > 0)
+        http_close_port(conndata->port);
+    gwlist_remove_producer(conndata->msg_to_send);
+    if (conndata->receive_thread != -1)
+        gwthread_wakeup(conndata->receive_thread);
+    if (conndata->sender_thread != -1)
+        gwthread_wakeup(conndata->sender_thread);
+    mutex_unlock(conn->flow_mutex);
+
     return 0;
 }
 
@@ -1934,7 +2054,7 @@ int smsc_http_create(SMSCConn *conn, CfgGroup *cfg)
 {
     ConnData *conndata = NULL;
     Octstr *type;
-    long portno;   /* has to be long because of cfg_get_integer */
+    long portno, max_ps;   /* has to be long because of cfg_get_integer */
     int ssl = 0;   /* indicate if SSL-enabled server should be used */
     Octstr *os;
 
@@ -1969,6 +2089,15 @@ int smsc_http_create(SMSCConn *conn, CfgGroup *cfg)
     conndata->alt_charset = cfg_get(cfg, octstr_imm("alt-charset"));
     conndata->fieldmap = NULL;
 
+    if (cfg_get_integer(&max_ps, cfg, octstr_imm("max-pending-submits")) == -1 || max_ps < 1)
+        max_ps = 10;
+    
+    conndata->max_pending_sends = semaphore_create(max_ps);
+
+    if (conndata->port <= 0 && conndata->send_url == NULL) {
+        error(0, "Sender and receiver disabled. Dummy SMSC not allowed.");
+        goto error;
+    }
     if (conndata->send_url == NULL)
         panic(0, "HTTP[%s]: Sending not allowed. No 'send-url' specified.",
               octstr_get_cstr(conn->id));
@@ -2062,44 +2191,62 @@ int smsc_http_create(SMSCConn *conn, CfgGroup *cfg)
      * ADD NEW HTTP SMSC TYPES HERE
      */
     else {
-	error(0, "HTTP[%s]: system-type '%s' unknown smsc 'http' record.",
-          octstr_get_cstr(conn->id), octstr_get_cstr(type));
-
-	goto error;
-    }	
-    conndata->open_sends = 0;
+        error(0, "HTTP[%s]: system-type '%s' unknown smsc 'http' record.",
+              octstr_get_cstr(conn->id), octstr_get_cstr(type));
+        goto error;
+    }
+    conndata->open_sends = counter_create();
+    conndata->msg_to_send = gwlist_create();
+    gwlist_add_producer(conndata->msg_to_send);
     conndata->http_ref = http_caller_create();
-    
+
     conn->data = conndata;
-    conn->name = octstr_format("HTTP:%S", type);
-    conn->status = SMSCCONN_ACTIVE;
+    conn->name = octstr_format("HTTP%s:%S:%d", (ssl?"S":""), type, conndata->port);
+
+    if (conndata->send_url != NULL) {
+        conn->status = SMSCCONN_ACTIVE;
+    } else {
+        conn->status = SMSCCONN_ACTIVE_RECV;
+    }
+
+
     conn->connect_time = time(NULL);
 
     conn->shutdown = httpsmsc_shutdown;
     conn->queued = httpsmsc_queued;
     conn->send_msg = httpsmsc_send;
 
-    if (http_open_port_if(portno, ssl, conn->our_host)==-1)
-	goto error;
-
-    conndata->port = portno;
     conndata->shutdown = 0;
-    
-    if ((conndata->receive_thread =
-	 gwthread_create(httpsmsc_receiver, conn)) == -1)
-	goto error;
 
-    if ((conndata->send_cb_thread =
-	 gwthread_create(httpsmsc_send_cb, conn)) == -1)
-	goto error;
+    /* start receiver thread */
+    if (conndata->port > 0) {
+        if (http_open_port(conndata->port, ssl) == -1)
+            goto error;
+        if ((conndata->receive_thread = gwthread_create(httpsmsc_receiver, conn)) == -1)
+            goto error;
+    } else
+        conndata->receive_thread = -1;
+
+    /* start sender threads */
+    if (conndata->send_url) {
+        if ((conndata->send_cb_thread =
+	        gwthread_create(httpsmsc_send_cb, conn)) == -1)
+	    goto error;
+        if ((conndata->sender_thread =
+                gwthread_create(httpsmsc_sender, conn)) == -1)
+	    goto error;
+    }
+    else {
+        conndata->send_cb_thread = conndata->sender_thread = -1;
+    }
 
     info(0, "HTTP[%s]: Initiated and ready", octstr_get_cstr(conn->id));
-    
+
     octstr_destroy(type);
     return 0;
 
 error:
-    error(0, "HTTP[%s]: Failed to create http smsc connection",
+    error(0, "HTTP[%s]: Failed to create HTTP SMSC connection",
           octstr_get_cstr(conn->id));
 
     conn->data = NULL;
