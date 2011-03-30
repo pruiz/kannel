@@ -1,3 +1,10 @@
+2011-03-22 Alexander Malysh <amalysh at kannel.org>
+    * applied patch that fixes DDos issue with our HTTP-Server implementation
+      (consume all available file descriptors) and also adds possibility to
+      set keep alive timeout for each listen port.
+
+This patch will limit maximum open client connections to 500. 
+
 2011-03-25  Stipe Tolj  <stolj at kannel.org>
     * gwlib/dbpool_sqlite3.c: ensure we handle the sqlite3 version >= 3.3.9
       function call switching via #if pre-processor macro so we choose either
