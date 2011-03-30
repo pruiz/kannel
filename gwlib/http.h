@@ -395,6 +395,12 @@ void *http_receive_result_real(HTTPCaller *caller, int *status, Octstr **final_u
 typedef struct HTTPClient HTTPClient;
 
 
+/**
+ * Define timeout in seconds for which HTTP server will wait for
+ * request. Set -1 to disable timeouts.
+ */
+void http_set_server_timeout(int port, long timeout);
+
 /*
  * Open an HTTP server at a given port. Return -1 for errors (invalid
  * port number, etc), 0 for OK. This will also start a background thread
