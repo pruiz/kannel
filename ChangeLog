@@ -1,4 +1,7 @@
 2011-04-05 Alexander Malysh <amalysh at kannel.org>
+    * gw/bb_smscconn.c: fixed last commit.
+
+2011-04-05 Alexander Malysh <amalysh at kannel.org>
     * gw/bb_smscconn.c, gw/smscconn.c, gw/smscconn_p.h: apllied patch that implements
       speed/throughput meters on a per-smsc basis.
       Thanks to Alejandro Guerrieri <aguerrieri at kannel.org> for this patch.

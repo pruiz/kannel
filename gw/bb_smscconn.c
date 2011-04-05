@@ -1193,18 +1193,18 @@ Octstr *smsc2_status(int status_type)
             case SMSCCONN_ACTIVE:
             case SMSCCONN_ACTIVE_RECV:
                 sprintf(tmp3, "online %lds", info.online);
-                incoming_sms_load_0 = load_get(incoming_sms_load,0);
-                incoming_sms_load_1 = load_get(incoming_sms_load,1);
-                incoming_sms_load_2 = load_get(incoming_sms_load,2);
-                outgoing_sms_load_0 = load_get(outgoing_sms_load,0);
-                outgoing_sms_load_1 = load_get(outgoing_sms_load,1);
-                outgoing_sms_load_2 = load_get(outgoing_sms_load,2);
-                incoming_dlr_load_0 = load_get(incoming_dlr_load,0);
-                incoming_dlr_load_1 = load_get(incoming_dlr_load,1);
-                incoming_dlr_load_2 = load_get(incoming_dlr_load,2);
-                outgoing_dlr_load_0 = load_get(outgoing_dlr_load,0);
-                outgoing_dlr_load_1 = load_get(outgoing_dlr_load,1);
-                outgoing_dlr_load_2 = load_get(outgoing_dlr_load,2);
+                incoming_sms_load_0 = load_get(conn->incoming_sms_load,0);
+                incoming_sms_load_1 = load_get(conn->incoming_sms_load,1);
+                incoming_sms_load_2 = load_get(conn->incoming_sms_load,2);
+                outgoing_sms_load_0 = load_get(conn->outgoing_sms_load,0);
+                outgoing_sms_load_1 = load_get(conn->outgoing_sms_load,1);
+                outgoing_sms_load_2 = load_get(conn->outgoing_sms_load,2);
+                incoming_dlr_load_0 = load_get(conn->incoming_dlr_load,0);
+                incoming_dlr_load_1 = load_get(conn->incoming_dlr_load,1);
+                incoming_dlr_load_2 = load_get(conn->incoming_dlr_load,2);
+                outgoing_dlr_load_0 = load_get(conn->outgoing_dlr_load,0);
+                outgoing_dlr_load_1 = load_get(conn->outgoing_dlr_load,1);
+                outgoing_dlr_load_2 = load_get(conn->outgoing_dlr_load,2);
                 break;
             case SMSCCONN_DISCONNECTED:
                 sprintf(tmp3, "disconnected");
