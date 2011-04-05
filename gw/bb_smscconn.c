@@ -283,12 +283,18 @@ void bb_smscconn_sent(SMSCConn *conn, Msg *sms, Octstr *reply)
         bb_alog_sms(conn, sms, "Sent SMS");
         counter_increase(outgoing_sms_counter);
         load_increase(outgoing_sms_load);
-        if (conn) counter_increase(conn->sent);
+        if (conn != NULL) {
+            counter_increase(conn->sent);
+            load_increase(conn->outgoing_sms_load);
+        }
     } else {
         bb_alog_sms(conn, sms, "Sent DLR");
         counter_increase(outgoing_dlr_counter);
         load_increase(outgoing_dlr_load);
-        if (conn) counter_increase(conn->sent_dlr);
+        if (conn != NULL) {
+            counter_increase(conn->sent_dlr);
+            load_increase(conn->outgoing_dlr_load);
+        }
     }
 
     /* generate relay confirmancy message */
@@ -469,8 +475,10 @@ long bb_smscconn_receive(SMSCConn *conn, Msg *sms)
             case concat_pending:
                 counter_increase(incoming_sms_counter); /* ?? */
                 load_increase(incoming_sms_load);
-                if (conn != NULL)
+                if (conn != NULL) {
                     counter_increase(conn->received);
+                    load_increase(conn->incoming_sms_load);
+                }
                 msg_destroy(sms);
                 return SMSCCONN_SUCCESS;
             case concat_complete:
@@ -519,12 +527,18 @@ long bb_smscconn_receive(SMSCConn *conn, Msg *sms)
         bb_alog_sms(conn, sms, "Receive SMS");
         counter_increase(incoming_sms_counter);
         load_increase(incoming_sms_load);
-        if (conn != NULL) counter_increase(conn->received);
+        if (conn != NULL) {
+            counter_increase(conn->received);
+            load_increase(conn->incoming_sms_load);
+        }
     } else {
         bb_alog_sms(conn, sms, "Receive DLR");
         counter_increase(incoming_dlr_counter);
         load_increase(incoming_dlr_load);
-        if (conn != NULL) counter_increase(conn->received_dlr);
+        if (conn != NULL) {
+            counter_increase(conn->received_dlr);
+            load_increase(conn->incoming_dlr_load);
+        }
     }
 
     msg_destroy(sms);
@@ -1105,6 +1119,10 @@ Octstr *smsc2_status(int status_type)
     const Octstr *conn_id = NULL;
     const Octstr *conn_admin_id = NULL;
     const Octstr *conn_name = NULL;
+    float incoming_sms_load_0, incoming_sms_load_1, incoming_sms_load_2;
+    float outgoing_sms_load_0, outgoing_sms_load_1, outgoing_sms_load_2;
+    float incoming_dlr_load_0, incoming_dlr_load_1, incoming_dlr_load_2;
+    float outgoing_dlr_load_0, outgoing_dlr_load_1, outgoing_dlr_load_2;
 
     if ((lb = bb_status_linebreak(status_type)) == NULL)
         return octstr_create("Un-supported format");
@@ -1127,6 +1145,10 @@ Octstr *smsc2_status(int status_type)
 
     gw_rwlock_rdlock(&smsc_list_lock);
     for (i = 0; i < gwlist_len(smsc_list); i++) {
+        incoming_sms_load_0 = incoming_sms_load_1 = incoming_sms_load_2 = 0.0;
+        outgoing_sms_load_0 = outgoing_sms_load_1 = outgoing_sms_load_2 = 0.0;
+        incoming_dlr_load_0 = incoming_dlr_load_1 = incoming_dlr_load_2 = 0.0;
+        outgoing_dlr_load_0 = outgoing_dlr_load_1 = outgoing_dlr_load_2 = 0.0;
         conn = gwlist_get(smsc_list, i);
 
         if ((smscconn_info(conn, &info) == -1)) {
@@ -1171,6 +1193,18 @@ Octstr *smsc2_status(int status_type)
             case SMSCCONN_ACTIVE:
             case SMSCCONN_ACTIVE_RECV:
                 sprintf(tmp3, "online %lds", info.online);
+                incoming_sms_load_0 = load_get(incoming_sms_load,0);
+                incoming_sms_load_1 = load_get(incoming_sms_load,1);
+                incoming_sms_load_2 = load_get(incoming_sms_load,2);
+                outgoing_sms_load_0 = load_get(outgoing_sms_load,0);
+                outgoing_sms_load_1 = load_get(outgoing_sms_load,1);
+                outgoing_sms_load_2 = load_get(outgoing_sms_load,2);
+                incoming_dlr_load_0 = load_get(incoming_dlr_load,0);
+                incoming_dlr_load_1 = load_get(incoming_dlr_load,1);
+                incoming_dlr_load_2 = load_get(incoming_dlr_load,2);
+                outgoing_dlr_load_0 = load_get(outgoing_dlr_load,0);
+                outgoing_dlr_load_1 = load_get(outgoing_dlr_load,1);
+                outgoing_dlr_load_2 = load_get(outgoing_dlr_load,2);
                 break;
             case SMSCCONN_DISCONNECTED:
                 sprintf(tmp3, "disconnected");
@@ -1189,19 +1223,48 @@ Octstr *smsc2_status(int status_type)
         }
 
         if (status_type == BBSTATUS_XML)
-            octstr_format_append(tmp, "<status>%s</status>\n\t\t"
-                "<received><sms>%ld</sms><dlr>%ld</dlr></received>\n\t\t"
-                "<sent><sms>%ld</sms><dlr>%ld</dlr></sent>\n\t\t"
-                "<failed>%ld</failed>\n\t\t"
-                "<queued>%ld</queued>\n\t</smsc>\n", tmp3,
-                info.received, info.received_dlr, info.sent, info.sent_dlr, info.failed,
-                info.queued);
+            octstr_format_append(tmp, "<status>%s</status>\n"
+                "\t\t<failed>%ld</failed>\n"
+                "\t\t<queued>%ld</queued>\n"
+                "\t\t<sms>\n"
+                "\t\t\t<received>%ld</received>\n"
+                "\t\t\t<sent>%ld</sent>\n"
+                "\t\t\t<inbound>%.2f,%.2f,%.2f</inbound>\n"
+                "\t\t\t<outbound>%.2f,%.2f,%.2f</outbound>\n"
+                "\t\t</sms>\n\t\t<dlr>\n"
+                "\t\t\t<received>%ld</received>\n"
+                "\t\t\t<sent>%ld</sent>\n"
+                "\t\t\t<inbound>%.2f,%.2f,%.2f</inbound>\n"
+                "\t\t\t<outbound>%.2f,%.2f,%.2f</outbound>\n"
+                "\t\t</dlr>\n"
+                "\t</smsc>\n", tmp3,
+                info.failed, info.queued, info.received, info.sent,
+                incoming_sms_load_0, incoming_sms_load_1, incoming_sms_load_2,
+                outgoing_sms_load_0, outgoing_sms_load_1, outgoing_sms_load_2,
+                info.received_dlr, info.sent_dlr,
+                incoming_dlr_load_0, incoming_dlr_load_1, incoming_dlr_load_2,
+                outgoing_dlr_load_0, outgoing_dlr_load_1, outgoing_dlr_load_2);
         else
-            octstr_format_append(tmp, " (%s, rcvd: sms %ld / dlr %ld, sent: sms %ld / dlr %ld, failed %ld, "
-                "queued %ld msgs)%s", tmp3,
-            info.received, info.received_dlr, info.sent, info.sent_dlr, info.failed,
-            info.queued, lb);
+            octstr_format_append(tmp, " (%s, rcvd: sms %ld (%.2f,%.2f,%.2f) / dlr %ld (%.2f,%.2f,%.2f), "
+                "sent: sms %ld (%.2f,%.2f,%.2f) / dlr %ld (%.2f,%.2f,%.2f), failed %ld, "
+                "queued %ld msgs)%s",
+                tmp3,
+                info.received,
+                incoming_sms_load_0, incoming_sms_load_1, incoming_sms_load_2,
+                info.received_dlr,
+                incoming_dlr_load_0, incoming_dlr_load_1, incoming_dlr_load_2,
+                info.sent,
+                outgoing_sms_load_0, outgoing_sms_load_1, outgoing_sms_load_2,
+                info.sent_dlr,
+                outgoing_dlr_load_0, outgoing_dlr_load_1, outgoing_dlr_load_2,
+                info.failed,
+                info.queued,
+                lb);
     }
+
+
+
+
     gw_rwlock_unlock(&smsc_list_lock);
 
     if (para)

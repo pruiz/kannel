@@ -176,6 +176,31 @@ SMSCConn *smscconn_create(CfgGroup *grp, int start_as_stopped)
     conn->failed = counter_create();
     conn->flow_mutex = mutex_create();
 
+    conn->outgoing_sms_load = load_create();
+    /* add 60,300,-1 entries */
+    load_add_interval(conn->outgoing_sms_load, 60);
+    load_add_interval(conn->outgoing_sms_load, 300);
+    load_add_interval(conn->outgoing_sms_load, -1);
+
+    conn->incoming_sms_load = load_create();
+    /* add 60,300,-1 entries */
+    load_add_interval(conn->incoming_sms_load, 60);
+    load_add_interval(conn->incoming_sms_load, 300);
+    load_add_interval(conn->incoming_sms_load, -1);
+
+    conn->incoming_dlr_load = load_create();
+    /* add 60,300,-1 entries to dlr */
+    load_add_interval(conn->incoming_dlr_load, 60);
+    load_add_interval(conn->incoming_dlr_load, 300);
+    load_add_interval(conn->incoming_dlr_load, -1);
+
+    conn->outgoing_dlr_load = load_create();
+    /* add 60,300,-1 entries to dlr */
+    load_add_interval(conn->outgoing_dlr_load, 60);
+    load_add_interval(conn->outgoing_dlr_load, 300);
+    load_add_interval(conn->outgoing_dlr_load, -1);
+
+
 #define GET_OPTIONAL_VAL(x, n) x = cfg_get(grp, octstr_imm(n))
 #define SPLIT_OPTIONAL_VAL(x, n) \
         do { \
@@ -340,6 +365,11 @@ int smscconn_destroy(SMSCConn *conn)
     counter_destroy(conn->sent);
     counter_destroy(conn->sent_dlr);
     counter_destroy(conn->failed);
+
+    load_destroy(conn->incoming_sms_load);
+    load_destroy(conn->incoming_dlr_load);
+    load_destroy(conn->outgoing_sms_load);
+    load_destroy(conn->outgoing_dlr_load);
 
     octstr_destroy(conn->name);
     octstr_destroy(conn->id);

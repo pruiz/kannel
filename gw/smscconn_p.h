@@ -144,6 +144,7 @@
 #include "gwlib/gwlib.h"
 #include "gwlib/regex.h"
 #include "smscconn.h"
+#include "load.h"
 
 struct smscconn {
     /* variables set by appropriate SMSCConn driver */
@@ -206,6 +207,11 @@ struct smscconn {
     int reroute_dlr;            /* should DLR's are rereouted too? */
 
     long max_sms_octets; /* max allowed octets for this SMSC */
+
+    Load *outgoing_sms_load;
+    Load *incoming_sms_load;
+    Load *incoming_dlr_load;
+    Load *outgoing_dlr_load;
 
     /* XXX: move rest global data from Smsc here
      */
