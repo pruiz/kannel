@@ -1,4 +1,9 @@
 2011-04-07 Alexander Malysh <amalysh at kannel.org>
+    * fixed kannel monitor web interface after r4897.
+      This close #594.
+      Thanks to Roland Discein.
+
+2011-04-07 Alexander Malysh <amalysh at kannel.org>
     * applied patch that adds support for limiting listening for smsbox connections
       to specific interface.
       Thanks to Roman Shterenzon <romanbsd at yahoo.com>.

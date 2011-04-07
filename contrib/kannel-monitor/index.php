@@ -360,10 +360,10 @@
     </td>
     <td><?php echo format_status($st) ?></td>
     <td><?php echo $uptime ?></td>
-    <td><?php echo nf($smsc['received']['sms']) ?></td>
-    <td><?php echo nf($smsc['received']['dlr']) ?></td>
-    <td><?php echo nf($smsc['sent']['sms']) ?></td>
-    <td><?php echo nf($smsc['sent']['dlr']) ?></td>
+    <td><?php echo nf($smsc['sms'][0]['received']) ?></td>
+    <td><?php echo nf($smsc['dlr'][0]['received']) ?></td>
+    <td><?php echo nf($smsc['sms'][0]['sent']) ?></td>
+    <td><?php echo nf($smsc['dlr'][0]['sent']) ?></td>
     <td><?php echo nf($smsc['failed']) ?></td>
     <td><?php echo nf($smsc['queued']) ?></td>
     <td>
