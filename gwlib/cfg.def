@@ -84,6 +84,7 @@ SINGLE_GROUP(core,
     OCTSTR(admin-allow-ip)
     OCTSTR(smsbox-port)
     OCTSTR(smsbox-port-ssl)
+    OCTSTR(smsbox-interface)
     OCTSTR(smsbox-max-pending)
     OCTSTR(wapbox-port)
     OCTSTR(wapbox-port-ssl)

@@ -1218,6 +1218,12 @@ admin-password = f00bar
      </entry></row>
     <row><entry><literal>admin-allow-ip</literal></entry></row>
 
+     <row><entry><literal>smsbox-interface (o)</literal></entry>
+     <entry>string</entry>
+     <entry valign="bottom">
+        If this is set, the smsbox listener will only bind
+        to a specified address. For example: "127.0.0.1".
+     </entry></row>
 
     <row><entry><literal>smsbox-port (c)</literal></entry>
      <entry>port-number</entry>
@@ -5725,6 +5731,13 @@ ssl-certkey-file
 		  you own boxes that do pass messages into bearerbox for delivery
 		  you may want that answers to those are routed back to your 
 		  specific smsbox instance, i.e. SMPP or EMI proxying boxes.
+     </entry></row>
+
+     <row><entry><literal>sendsms-interface (o)</literal></entry>
+     <entry>string</entry>
+     <entry valign="bottom">
+        If this is set, the sendsms HTTP interface will only bind
+        to a specified address. For example: "127.0.0.1".
      </entry></row>
 
     <row><entry><literal>sendsms-port (c)</literal></entry>

@@ -114,6 +114,7 @@ static Dict *smsbox_by_smsc_receiver;
 
 static long	smsbox_port;
 static int smsbox_port_ssl;
+static Octstr *smsbox_interface;
 static long	wapbox_port;
 static int wapbox_port_ssl;
 
@@ -993,17 +994,15 @@ static void wait_for_connections(int fd, void (*function) (void *arg),
 static void smsboxc_run(void *arg)
 {
     int fd;
-    int port;
 
     gwlist_add_producer(flow_threads);
     gwthread_wakeup(MAIN_THREAD_ID);
-    port = (int) *((long *)arg);
 
-    fd = make_server_socket(port, NULL);
+    fd = make_server_socket(smsbox_port, smsbox_interface ? octstr_get_cstr(smsbox_interface) : NULL);
     /* XXX add interface_name if required */
 
     if (fd < 0) {
-        panic(0, "Could not open smsbox port %d", port);
+        panic(0, "Could not open smsbox port %ld", smsbox_port);
     }
 
     /*
@@ -1222,6 +1221,8 @@ int smsbox_start(Cfg *cfg)
     if (smsbox_port_ssl)
         debug("bb", 0, "smsbox connection module is SSL-enabled");
 
+    smsbox_interface = cfg_get(grp, octstr_imm("smsbox-interface"));
+
     if (cfg_get_integer(&smsbox_max_pending, grp, octstr_imm("smsbox-max-pending")) == -1) {
         smsbox_max_pending = SMSBOX_MAX_PENDING;
         info(0, "BOXC: 'smsbox-max-pending' not set, using default (%ld).", smsbox_max_pending);
@@ -1258,7 +1259,7 @@ int smsbox_start(Cfg *cfg)
     if ((sms_dequeue_thread = gwthread_create(sms_to_smsboxes, NULL)) == -1)
  	    panic(0, "Failed to start a new thread for smsbox routing");
 
-    if (gwthread_create(smsboxc_run, &smsbox_port) == -1)
+    if (gwthread_create(smsboxc_run, NULL) == -1)
 	    panic(0, "Failed to start a new thread for smsbox connections");
 
     return 0;
@@ -1470,6 +1471,8 @@ void boxc_cleanup(void)
     box_deny_ip = NULL;
     counter_destroy(boxid);
     boxid = NULL;
+    octstr_destroy(smsbox_interface);
+    smsbox_interface = NULL;
 }
 
 
