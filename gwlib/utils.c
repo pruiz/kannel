@@ -386,7 +386,7 @@ static int change_user(const char *user)
         return -1;
     }
 
-#ifndef __INTERIX
+#ifdef HAVE_INITGROUPS
     if (initgroups(user, -1) == -1) {
         error(errno, "Could not set supplementary group ID's.");
     }

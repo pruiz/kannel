@@ -1,4 +1,7 @@
 2011-04-18 Alexander Malysh <amalysh at kannel.org>
+    * handle INTERIX differences in the configure.
+
+2011-04-18 Alexander Malysh <amalysh at kannel.org>
     * removed INTERIX check from gwlib source and put it into configure.
 
 2011-04-18 Alexander Malysh <amalysh at kannel.org>

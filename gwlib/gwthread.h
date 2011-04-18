@@ -69,7 +69,7 @@
 #define GWTHREAD_H
 
 #include "gw-config.h"
-#ifndef __INTERIX
+#ifdef HAVE_SYS_POLL_H
 #include <sys/poll.h>
 #endif
 

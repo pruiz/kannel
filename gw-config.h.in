@@ -133,6 +133,15 @@
 /* Define if you have the srandom function. */
 #undef HAVE_SRANDOM
 
+/* Define if you have the initgroups function. */
+#undef HAVE_INITGROUPS
+
+/* Define if you have the strtoll function. */
+#undef HAVE_STRTOLL
+
+/* Define if you have the strtoq function. */
+#undef HAVE_STRTOQ
+
 /* Define if you have the <fcntl.h> header file.  */
 #undef HAVE_FCNTL_H
 
