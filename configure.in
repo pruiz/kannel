@@ -342,11 +342,19 @@ dnl Checking pthread_spin support
 dnl
 AC_MSG_CHECKING([for pthread_spinlock support])
 AC_TRY_COMPILE([#include <pthread.h>], [
+#ifdef __INTERIX
+/*
+ * interix has experimental spinlock support and this doesn't work very well
+ * therefore disable it for now
+ */
+pthread_spinlock_t_failed lock;
+#else
 pthread_spinlock_t lock;
 pthread_spin_init(&lock, 0);
 pthread_spin_lock(&lock);
 pthread_spin_unlock(&lock);
 pthread_spin_destroy(&lock);
+#endif
 ], [AC_MSG_RESULT(yes); AC_DEFINE(HAVE_PTHREAD_SPINLOCK_T)], AC_MSG_RESULT(no))
 
 dnl checking pthread_rwlock support

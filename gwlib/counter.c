@@ -71,10 +71,6 @@
 
 #include "gwlib.h"
 
-#ifdef __INTERIX
-#undef HAVE_PTHREAD_SPINLOCK_T
-#endif
-
 struct Counter
 {
 #ifdef HAVE_PTHREAD_SPINLOCK_T
