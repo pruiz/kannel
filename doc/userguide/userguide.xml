@@ -4234,7 +4234,6 @@ send-url = "http://localhost:20022"
      <entry valign="bottom">
        Password for username, if needed.
      </entry></row>
-   </tbody></tgroup></informaltable>
 
    <row><entry><literal>max-pending-submits</literal></entry>
      <entry><literal>number</literal></entry>
@@ -4243,6 +4242,7 @@ send-url = "http://localhost:20022"
        requests. As a guideline it is recommended that no more than
        10 (default) requests are outstanding at any time.
     </entry></row>
+   </tbody></tgroup></informaltable>
 
 <sect3>
 <title>The "generic" system-type</title>
