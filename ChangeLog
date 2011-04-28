@@ -1,3 +1,8 @@
+2011-04-28  Stipe Tolj  <stolj at kannel.org>
+    * gw/smsc/smsc_http.c: fixing removed portno assignment in r4894.
+      Thanks to Rene Kluwen for spotting the defect.
+      [Message-Id: <030b01cc052c$60054600$200fd200$@kluwen@chimit.nl>]
+    
 2011-04-18 Alexander Malysh <amalysh at kannel.org>
     * handle INTERIX differences in the configure.
 

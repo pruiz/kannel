@@ -2071,6 +2071,7 @@ int smsc_http_create(SMSCConn *conn, CfgGroup *cfg)
         return -1;
     }
     conndata = gw_malloc(sizeof(ConnData));
+    conndata->port = portno;
     conndata->http_ref = NULL;
     conndata->success_regex = 
         conndata->permfail_regex = conndata->tempfail_regex = NULL;
