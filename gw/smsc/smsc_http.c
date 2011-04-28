@@ -1013,7 +1013,7 @@ static void clickatell_receive_sms(SMSCConn *conn, HTTPClient *client,
     } else if (apimsgid == NULL || status == NULL || timestamp == NULL || dest == NULL) {
         error(0, "HTTP[%s]: Insufficient args.",
               octstr_get_cstr(conn->id));
-        httpstatus = HTTP_BAD_REQUEST;
+        httpstatus = HTTP_OK;
         retmsg = octstr_create("Insufficient arguments, rejected.");
     } else {
 	switch (atoi(octstr_get_cstr(status))) {
