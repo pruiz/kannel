@@ -4427,6 +4427,13 @@ send-url = "http://localhost:20022"
        Overrides the default parameter for the 'foreign-id' field
        used on incoming requests.
      </entry></row>
+     
+   <row><entry><literal>generic-param-meta-data (o)</literal></entry>
+     <entry><literal>string</literal></entry>
+     <entry valign="bottom">
+       Overrides the default parameter for the 'meta-data' field
+       used on incoming requests.
+     </entry></row>
 
    <row><entry><literal>generic-message-sent (o)</literal></entry>
      <entry><literal>string</literal></entry>

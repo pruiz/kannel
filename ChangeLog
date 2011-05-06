@@ -1,3 +1,8 @@
+2011-05-06 Alexander Malysh <amalysh at kannel.org>
+    * doc/userguide/userguide.xml, gw/smsc/smsc_http.c, gwlib/cfg.def:
+      applied patch that adds meta-data to generic http smsc.
+      Thanks to Semion Spivak <semion at smscoin.com> for this patch.
+
 2011-04-28  Stipe Tolj  <stolj at kannel.org>
     * gw/smsc/smsc_http.c: fixing removed portno assignment in r4894.
       Thanks to Rene Kluwen for spotting the defect.

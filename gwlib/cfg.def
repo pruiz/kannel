@@ -415,6 +415,7 @@ MULTI_GROUP(smsc,
     OCTSTR(generic-param-validity)
     OCTSTR(generic-param-deferred)
     OCTSTR(generic-param-foreign-id)
+    OCTSTR(generic-param-meta-data)
     OCTSTR(generic-message-sent)
     OCTSTR(generic-status-sent)
     OCTSTR(generic-status-error)
