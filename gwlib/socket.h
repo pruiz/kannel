@@ -65,6 +65,7 @@
 #include <stdio.h>
 #include <sys/types.h>
 #include <netinet/in.h>
+#include <netinet/tcp.h>
 
 #include "gw-config.h"
 
@@ -109,6 +110,11 @@ int write_to_socket(int socket, char *str);
 /* Set socket to blocking or non-blocking mode.  Return -1 for error,
  * 0 for success. */
 int socket_set_blocking(int socket, int blocking);
+
+/* Diable or enable TCP_NODELAY.
+ * Return -1 for error, 0 for success.
+ */
+int socket_set_nodelay(int fd, int on);
 
 /* Check if there is something to be read in 'fd'. Return 1 if there
  * is data, 0 otherwise, -1 on error */

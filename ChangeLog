@@ -1,3 +1,6 @@
+2011-05-11 Alexander Malysh <amalysh at kannel.org>
+    * gwlib/socket.[ch]: added function to enable/disable Nagle algo.
+
 2011-05-06 Alexander Malysh <amalysh at kannel.org>
     * doc/userguide/userguide.xml, gw/smsc/smsc_http.c, gwlib/cfg.def:
       applied patch that adds meta-data to generic http smsc.

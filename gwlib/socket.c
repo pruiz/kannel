@@ -391,6 +391,18 @@ int socket_set_blocking(int fd, int blocking)
 }
 
 
+int socket_set_nodelay(int fd, int on)
+{
+    int rc;
+
+    rc = setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, &on, sizeof (on));
+    if (rc == -1)
+        error(errno, "Unable set TCP_NODELAY(%d)", on);
+
+    return rc;
+}
+
+
 int read_available(int fd, long wait_usec)
 {
     fd_set rf;
