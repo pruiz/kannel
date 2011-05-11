@@ -1,4 +1,7 @@
 2011-05-11 Alexander Malysh <amalysh at kannel.org>
+    * configure.in: added MacOSX10.6.sdk 
+
+2011-05-11 Alexander Malysh <amalysh at kannel.org>
     * gwlib/socket.[ch]: added function to enable/disable Nagle algo.
 
 2011-05-06 Alexander Malysh <amalysh at kannel.org>

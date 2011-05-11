@@ -138,7 +138,7 @@ case "$host" in
     # location libs and includes.
     found=0
     SDK=""
-    for loc in "MacOSX10.5.sdk" "MacOSX10.4u.sdk" "MacOSX10.4.0.sdk" "MacOSX10.3.9.sdk" \
+    for loc in "MacOSX10.6.sdk" "MacOSX10.5.sdk" "MacOSX10.4u.sdk" "MacOSX10.4.0.sdk" "MacOSX10.3.9.sdk" \
 	           "MacOSX10.3.0.sdk" "MacOSX10.2.8.sdk" "MacOSX10.1.5.sdk"
   	do 
       if test "$found" = "0" ; then
