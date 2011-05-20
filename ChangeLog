@@ -1,3 +1,8 @@
+2011-05-20  Stipe Tolj  <stolj at kannel.org>
+    * gw/smsc/smsc_loopback.c: after switching the MT to an MO message
+      we want to clean up any MT specific values, that are still present
+      due to the duplication of the message. This is semantically cleaner.
+
 2011-05-11 Alexander Malysh <amalysh at kannel.org>
     * configure.in: added MacOSX10.6.sdk 
 

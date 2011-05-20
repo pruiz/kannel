@@ -70,6 +70,8 @@
 #include "bb_smscconn_cb.h"
 #include "dlr.h"
 
+#define O_DESTROY(a) { octstr_destroy(a); a = NULL; }
+
 
 static int msg_cb(SMSCConn *conn, Msg *msg)
 {
@@ -101,9 +103,13 @@ static int msg_cb(SMSCConn *conn, Msg *msg)
     sms = msg_duplicate(msg);
     sms->sms.sms_type = mo;
     
-    /* since this is a new MO now, create an own UUID */
+    /* Since this is a new MO now, make sure that the
+     * values we have still from the MT are cleaned. */
     uuid_clear(sms->sms.id); 
-    uuid_generate(sms->sms.id); 
+    uuid_generate(sms->sms.id);
+    O_DESTROY(sms->sms.boxc_id);
+    sms->sms.dlr_mask = MSG_PARAM_UNDEFINED;
+    O_DESTROY(sms->sms.dlr_url);
     
     /* 
      * If there is a reroute-smsc-id in the config group,
