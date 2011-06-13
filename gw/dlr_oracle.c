@@ -230,7 +230,7 @@ static struct dlr_entry* dlr_get_oracle(const Octstr *smsc, const Octstr *ts, co
     else
         like = octstr_imm("");
 
-    sql = octstr_format("SELECT %S, %S, %S, %S, %S, %S FROM %S WHERE %S=:1 AND %S=:2 %S ROWNUM < 2",
+    sql = octstr_format("SELECT %S, %S, %S, %S, %S, %S FROM %S WHERE %S=:1 AND %S=:2 %S AND ROWNUM < 2",
                         fields->field_mask, fields->field_serv,
                         fields->field_url, fields->field_src,
                         fields->field_dst, fields->field_boxc,
