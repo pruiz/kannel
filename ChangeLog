@@ -1,4 +1,4 @@
-2011-06-13 Vincent CHAVANIS <v.chavanis at telemaque.fr>
+2011-07-12 Vincent CHAVANIS <v.chavanis at telemaque.fr>
     * gw/smsc/smsc_at.[ch]: added support for throughput in AT smsc
 
 2011-06-13 Alexander Malysh <amalysh at kannel.org>
