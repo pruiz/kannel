@@ -55,7 +55,7 @@
  */ 
 
 /*
- * gw/smsc_at2.h
+ * gw/smsc_at.h
  *
  * New driver for serial connected AT based
  * devices.
@@ -68,6 +68,7 @@
 #define SMSC_AT2_H
 
 #include "gwlib/gwlib.h"
+#include "load.h"
 
 /* maximum data to attempt to read in one go */
 #define	MAX_READ        1023
@@ -149,6 +150,7 @@ typedef struct PrivAT2data {
     int rawtcp_port;
     int is_serial; /* false if device is rawtcp */ 
     int use_telnet; /* use telnet escape sequences */
+    Load *load;
  } PrivAT2data;
 
 

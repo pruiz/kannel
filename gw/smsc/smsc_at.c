@@ -95,6 +95,7 @@
 #include "sms.h"
 #include "dlr.h"
 #include "smsc_at.h"
+#include "load.h"
 
 static Octstr 			*gsm2number(Octstr *pdu);
 static unsigned char	nibble2hex(unsigned char b);
@@ -1432,6 +1433,7 @@ reconnect:
     octstr_destroy(privdata->rawtcp_host);
     gw_prioqueue_destroy(privdata->outgoing_queue, NULL);
     gwlist_destroy(privdata->pending_incoming_messages, octstr_destroy_item);
+    load_destroy(privdata->load);
     gw_free(conn->data);
     conn->data = NULL;
     mutex_lock(conn->flow_mutex);
@@ -1474,39 +1476,34 @@ static int at2_shutdown_cb(SMSCConn *conn, int finish_sending)
 
 static long at2_queued_cb(SMSCConn *conn)
 {
-    long ret;
-    PrivAT2data *privdata = conn->data;
+    PrivAT2data *privdata;
 
-    if (conn->status == SMSCCONN_DEAD) /* I'm dead, why would you care ? */
-        return -1;
-
-    ret = gw_prioqueue_len(privdata->outgoing_queue);
-
-    /* use internal queue as load, maybe something else later */
-    conn->load = ret;
-    return ret;
-}
+    privdata = conn->data;
+    conn->load = (privdata ? (conn->status != SMSCCONN_DEAD ?        
+                  gw_prioqueue_len(privdata->outgoing_queue) : 0) : 0);
+    return conn->load;               
+} 
 
 
 static void at2_start_cb(SMSCConn *conn)
 {
-    PrivAT2data *privdata = conn->data;
+    PrivAT2data *privdata;
 
+    privdata = conn->data;
     if (conn->status == SMSCCONN_DISCONNECTED)
         conn->status = SMSCCONN_ACTIVE;
-    
+
     /* in case there are messages in the buffer already */
-    gwthread_wakeup(privdata->device_thread);
+    gwthread_wakeup(privdata->device_thread); 
     debug("smsc.at2", 0, "AT2[%s]: start called", octstr_get_cstr(privdata->name));
-}
+}   
 
 static int at2_add_msg_cb(SMSCConn *conn, Msg *sms)
 {
-    PrivAT2data *privdata = conn->data;
-    Msg *copy;
+    PrivAT2data *privdata;
 
-    copy = msg_duplicate(sms);
-    gw_prioqueue_produce(privdata->outgoing_queue, copy);
+    privdata = conn->data;
+    gw_prioqueue_produce(privdata->outgoing_queue, msg_duplicate(sms));
     gwthread_wakeup(privdata->device_thread);
     return 0;
 }
@@ -1627,6 +1624,9 @@ int smsc_at2_create(SMSCConn *conn, CfgGroup *cfg)
     privdata->validityperiod = cfg_get(cfg, octstr_imm("validityperiod"));
     if (cfg_get_integer((long *) &privdata->max_error_count,  cfg, octstr_imm("max-error-count")) == -1)
         privdata->max_error_count = -1;
+
+    privdata->load = load_create_real(0);
+    load_add_interval(privdata->load, 1);
 
     conn->data = privdata;
     conn->name = octstr_format("AT2[%s]", octstr_get_cstr(privdata->name));
@@ -2207,11 +2207,18 @@ static void at2_send_messages(PrivAT2data *privdata)
 {
     Msg *msg;
 
-    if (privdata->modem->enable_mms && gw_prioqueue_len(privdata->outgoing_queue) > 1)
+    if (privdata->modem->enable_mms && gw_prioqueue_len(privdata->outgoing_queue) > 1)                  
         at2_send_modem_command(privdata, "AT+CMMS=2", 0, 0);
 
-    if ((msg = gw_prioqueue_remove(privdata->outgoing_queue)))
-        at2_send_one_message(privdata, msg);
+    if (privdata->conn->throughput > 0 && load_get(privdata->load, 0) >= privdata->conn->throughput) {
+      debug("bb.sms.at2", 0, "AT2[%s]: throughput limit exceeded (load: %.02f, throughput: %.02f)",
+            octstr_get_cstr(privdata->conn->id), load_get(privdata->load, 0), privdata->conn->throughput);
+    } else {
+      if ((msg = gw_prioqueue_remove(privdata->outgoing_queue))) {                 
+          load_increase(privdata->load);
+          at2_send_one_message(privdata, msg);
+      }
+    }
 }
 
 
