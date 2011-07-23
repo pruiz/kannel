@@ -1,3 +1,6 @@
+2011-07-23 Alexander Malysh <amalysh at kannel.org>
+    * gwlib/log.c: Fixed compilation issue when no syslog defined.
+
 2011-07-12 Vincent CHAVANIS <v.chavanis at telemaque.fr>
     * gw/smsc/smsc_at.[ch]: added support for throughput in AT smsc
 

@@ -75,6 +75,26 @@
 #if HAVE_SYSLOG_H
 #define	SYSLOG_NAMES
 #include <syslog.h>
+
+/*
+ * Decode the syslog name to its int value
+ */
+static int decode(char *name)
+{
+    register CODE *c;
+    CODE *facilities = facilitynames;
+    
+    if (isdigit(*name)) {
+        return (atoi(name));
+    }
+    for (c = facilities; c->c_name; c++) {
+        if (!strcasecmp(name, c->c_name)) {
+            return (c->c_val);
+        }
+    }
+    return LOG_DAEMON;
+}
+
 #else
 
 /*
@@ -86,11 +106,16 @@ enum {
     LOG_PID, LOG_DAEMON, LOG_DEBUG, LOG_INFO, LOG_WARNING, LOG_ERR, LOG_ALERT
 };
 
+static int decode(char *name)
+{
+    return LOG_DAEMON;
+}
+
 static void openlog(const char *ident, int option, int facility)
 {
 }
 
-static void syslog(int translog, const char *buf)
+static void syslog(int translog, const char *msg, ...)
 {
 }
 
@@ -148,24 +173,6 @@ static RWLock rwlock;
 static int sysloglevel;
 static int syslogfacility = LOG_DAEMON;
 static int dosyslog = 0;
-
-/*
- * Decode the syslog name to its int value
- */
-static int decode(char *name, CODE *facilities)
-{
-	register CODE *c;
-
-	if (isdigit(*name)) {
-	    return (atoi(name));
-	}
-	for (c = facilities; c->c_name; c++) {
-	    if (!strcasecmp(name, c->c_name)) {
-	        return (c->c_val);
-	    }
-	}
-	return LOG_DAEMON;
-}
 
 /*
  * Make sure stderr is included in the list.
@@ -235,7 +242,7 @@ void log_set_log_level(enum output_level level)
 void log_set_syslog_facility(char *facility)
 {
     if (facility != NULL)
-        syslogfacility = decode(facility, facilitynames);
+        syslogfacility = decode(facility);
 }
 
 void log_set_syslog(const char *ident, int syslog_level)
