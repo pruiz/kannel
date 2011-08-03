@@ -1,3 +1,8 @@
+2011-08-03 Alexander Malysh <amalysh at kannel.org>
+    * wap/wtls_statesupport.c: applied patch that fixes a problem
+      with debug log output when large MAC names are used.
+      Thanks to Armindo Antunes <armindo.antunes at gmail.com>
+
 2011-07-23 Alexander Malysh <amalysh at kannel.org>
     * gwlib/log.c: Fixed compilation issue when no syslog defined.
 

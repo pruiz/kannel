@@ -1171,7 +1171,7 @@ CipherSuite *wtls_choose_ciphersuite(List * ciphersuites)
 				/* Check if we support this MAC algsorithm */
          if (currentCS->mac_algo >= SHA_0 &&
 				   currentCS->mac_algo <= MD5_NOLIMIT) {
-            char cipher[20], mac[10];
+            char cipher[20], mac[15];
 
 					/* We can use this CipherSuite then */
             cipherName(cipher, currentCS->bulk_cipher_algo);
