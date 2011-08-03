@@ -1,4 +1,9 @@
 2011-08-03 Alexander Malysh <amalysh at kannel.org>
+    * doc/userguide/userguide.xml: update to wtls section with
+      available ciphers and howto create SSL-Cert.
+      Thanks to Nikos Balkanas <nbalkanas at gmail.com>
+
+2011-08-03 Alexander Malysh <amalysh at kannel.org>
     * wap/wtls_statesupport.c: applied patch that fixes a problem
       with debug log output when large MAC names are used.
       Thanks to Armindo Antunes <armindo.antunes at gmail.com>

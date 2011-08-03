@@ -2235,6 +2235,132 @@ bearerbox-host = localhost
 </chapter>
 
 
+<chapter id="wtls">
+<title>Setting up wtls security</title>
+
+	<para>This chapter tells you how to set Kannel up to handle wtls traffic.
+	</para>
+
+	<para>'wtls' group is optional and single. The prerequisites for this group
+		are to have defined a wapbox group, and a pair of SSL certificates
+		available. Instructions on how to create self-signed 1024-bit RSA
+		certificates are in Appendix B.
+	</para>
+	<para>Current imlementation provides for the following functionality:</para>
+	<para>
+		<itemizedlist>
+			<listitem><para>A) Supported MACs:</para>
+				<para><itemizedlist>
+						<listitem>SHA_0</listitem>
+						<listitem>SHA_40</listitem>
+						<listitem>SHA_80</listitem>
+						<listitem>SHA_NOLIMIT</listitem>
+						<listitem>MD5_40</listitem>
+						<listitem>MD5_80</listitem>
+						<listitem>MD5_NOLIMIT</listitem>
+				</itemizedlist></para>
+				<para>Missing:</pata>
+				<para><itemizedlist>
+						<listitem>SHA_XOR_40</listitem>
+				</itemizedlist></para>
+			</listitem>
+			<listitem><para>B) Supported Ciphers:</para>
+				<para><itemizedlist>
+						<listitem>RC5_CBC_40</listitem>
+						<listitem>RC5_CBC_56</listitem>
+						<listitem>RC5_CBC</listitem>
+						<listitem>DES_CBC</listitem>
+						<listitem>DES_CBC_40</listitem>
+				</itemizedlist></para>
+				<para>Missing:</pata>
+				<para><itemizedlist>
+						<listitem>NULL_bulk</listitem>
+						<listitem>TRIPLE_DES_CBC_EDE</listitem>
+						<listitem>IDEA_CBC_40</listitem>
+						<listitem>IDEA_CBC_56</listitem>
+						<listitem>IDEA_CBC</listitem>
+				</itemizedlist></para>
+			</listitem>
+			<listitem><para>C) Supported Keys:</para>
+				<para><itemizedlist>
+						<listitem>RSA_anon</listitem>
+				</itemizedlist></para>
+				<para>Missing:</pata>
+				<para><itemizedlist>
+						<listitem>RSA_anon_512</listitem>
+						<listitem>RSA_anon_768</listitem>
+						<listitem>RSA_NOLIMIT</listitem>
+						<listitem>RSA_512</listitem>
+						<listitem>RSA_768</listitem>
+						<listitem>ECDH_anon</listitem>
+						<listitem>ECDH_anon_113</listitem>
+						<listitem>ECDH_anon_131</listitem>
+						<listitem>ECDH_ECDSA_NOLIMIT</listitem>
+				</itemizedlist></para>
+				<para>Keys might seem a shortcoming, but all mobiles support
+					RSA_anon. Some of the other RSA_anon keys (i.e. RSA_anon_512,
+					RSA_anon_768) are propably supported as well, just haven't been
+					tested yet.</para>
+			</listitem>
+			<listitem><para>D) All wtls states except:</para>
+				<para><itemizedlist>
+						<listitem>Suspend/Resume wtls session</listitem>
+						<listitem>Cipher change when already connected. In practice
+							this is handled through another client hello, while
+							already connected to the same client</listitem>
+			</listitem>
+	</itemizedlist></para>
+
+
+
+	<para>The simplest working 'wtls' group looks like this:
+<programlisting>
+group = wtls
+certificate-file = /etc/kannel/server.crt
+privatekey-file = /etc/kannel/server.key
+</programlisting>
+
+	Can also be the same single combined pem file with both certificate and
+	privatekey parts. The complete variable list for the 'wtls' group is:
+
+<sect1>
+<title>Wtls configuration</title>
+ <table frame="none">
+  <title>Wtls Group Variables</title>
+  <tgroup cols="3">
+  <thead>
+   <row>
+     <entry>Variable</entry>
+     <entry>Value</entry>
+     <entry>Description</entry>
+   </row>
+  </thead>
+  <tbody>
+   <row><entry><literal>group (m)</literal></entry>
+     <entry><literal>wtls</literal></entry>
+     <entry valign="bottom">
+       This is mandatory variable
+     </entry></row>
+
+   <row><entry><literal>certificate-file (m)</literal></entry>
+     <entry><literal>filename</literal></entry>
+     <entry valign="bottom">
+       Public key SSL certificate.
+     </entry></row>
+
+   <row><entry><literal>privatekey-file (m)</literal></entry>
+     <entry><literal>filename</literal></entry>
+     <entry valign="bottom">
+       Private key SSL certificate.
+     </entry></row>
+
+   <row><entry><literal>privatekey-password (o)</literal></entry>
+     <entry><literal>Phrase</literal></entry>
+     <entry valign="bottom">
+       Optional. Needed only if private key was created with a passphrase.
+     </entry></row>
+</sect1>
+</chapter>
 
 <chapter id="msisdn-provisioning">
 <title>Setting up MSISDN provisioning for WAP gateway</title>
@@ -8959,6 +9085,61 @@ ssl-server-key-file = "/etc/kannel/key1.pem"
 
 </appendix>
 
+<appendix id="certificates">
+<title>Certificate generation</title>
+
+	<para>This appendix includes pertinent information about required SSL
+		certificate genaration, where needed.
+	</para>
+
+<sect1>
+	<title>Self-signed 1024-bit RSA SSL certificates using openssl</title>
+	<para>
+		<itemizedlist>
+			<listitem><para>1. Generate private key:</para>
+				<para><literal>openssl genrsa -des3 -out server.key 1024</literal>
+				</para>
+				<para>You will be asked for a passphrase.</para></listitem>
+
+			<listitem><para>2. Generate a certificate request:</para>
+				<para><literal>
+					openssl req -new -key server.key -out server.csr
+				</literal></para>
+				<para>Several questions follow. At the end you may send server.csr
+					to a certificate authority, which in turn will sign it and
+					generate the certificate for you, or you can sign it yourself.
+			</para></listitem>
+
+			<listitem><para>3. Remove passphrase from key:</para>
+				<para><literal>cp server.key server.key.org</literal>
+				</para>
+				<para><literal>openssl rsa -in server.key.org -out server.key
+				</literal></para>
+				<para><literal>rm server.key.org</literal></para>
+			</listitem>
+
+			<listitem><para>4. Self-sign the certificate:</para>
+				<para>If you chose not to send the request to a Certificate
+					Authority, you will need to sign it yourself. This one is good
+					for 1 year:</para>
+				<para><literal>openssl x509 -req -days 365 -in server.csr -signkey
+					server.key -out server.crt</literal></para>
+		</listitem>
+
+			<listitem><para>5. Move keys to desired location:</para>
+				<para><literal>mv server.crt /etc/kannel/public/server.crt</literal>
+				</para>
+				<para><literal>mv server.key /etc/kannel/private/server.key
+				</literal></para>
+				<para><literal>mv server.csr /etc/ianwap/private/ianwap.csr (key
+					request)</literal></para>
+			</listitem>
+		</itemizedlist>
+	</para>
+	<para>Update configuration accordingly</para>
+</sect1>
+
+</appendix>
 <appendix>
 <title>Using the fake WAP sender</title>
 
