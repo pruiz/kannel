@@ -1,3 +1,7 @@
+2011-08-17 Alexander Malysh <amalysh at kannel.org>
+    * doc/userguide/userguide.xml: fixed prev. commit.
+      Thanks to Nikos Balkanas <nbalkanas at gmail.com>
+
 2011-08-03 Alexander Malysh <amalysh at kannel.org>
     * doc/userguide/userguide.xml: update to wtls section with
       available ciphers and howto create SSL-Cert.
