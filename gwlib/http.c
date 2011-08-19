@@ -1957,19 +1957,21 @@ static int client_is_persistent(List *headers, int use_version_1_0)
     if (h == NULL) {
         return !use_version_1_0;
     } else {
+        List *values = octstr_split(h, octstr_imm(","));
+        octstr_destroy(h);
         if (!use_version_1_0) {
-            if (octstr_case_compare(h, octstr_imm("keep-alive")) == 0) {
-                octstr_destroy(h);
+            if (gwlist_search(values, octstr_imm("keep-alive"), octstr_item_case_match) != NULL) {
+                gwlist_destroy(values, octstr_destroy_item);
                 return 1;
             } else {
-                octstr_destroy(h);
+                gwlist_destroy(values, octstr_destroy_item);
                 return 0;
             }
-	    } else if (octstr_case_compare(h, octstr_imm("close")) == 0) {
-            octstr_destroy(h);
+        } else if (gwlist_search(values, octstr_imm("close"), octstr_item_case_match) != NULL) {
+            gwlist_destroy(values, octstr_destroy_item);
             return 0;
         }
-        octstr_destroy(h);
+        gwlist_destroy(values, octstr_destroy_item);
     }
 
     return 1;
