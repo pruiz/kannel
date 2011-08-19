@@ -1,3 +1,7 @@
+2011-08-19 Alexander Malysh <amalysh at kannel.org>
+    * doc/userguide/userguide.xml: another try to fixed prev. commit.
+      Thanks to Nikos Balkanas <nbalkanas at gmail.com>
+
 2011-08-17 Alexander Malysh <amalysh at kannel.org>
     * gw/dlr_pgsql.c: fixed panic when DB is not available.
       Thanks to Alan McNatty <alan at catalyst.net.nz>
