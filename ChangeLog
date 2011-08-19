@@ -1,4 +1,7 @@
 2011-08-19 Alexander Malysh <amalysh at kannel.org>
+    * doc/userguide/userguide.xml: fixed userguide compilation.
+
+2011-08-19 Alexander Malysh <amalysh at kannel.org>
     * doc/userguide/userguide.xml: another try to fixed prev. commit.
       Thanks to Nikos Balkanas <nbalkanas at gmail.com>
 

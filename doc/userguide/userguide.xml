@@ -2250,8 +2250,8 @@ bearerbox-host = localhost
 	<para>
 		<orderedlist numeration="upperalpha">
 			<listitem><para>Supported MACs:</para>
-				<itemizedlist title="Supported MACs:">
-					<listitem><para>SHA_0</para></listitem>
+				<itemizedlist>
+						<listitem><para>SHA_0</para></listitem>
 						<listitem><para>SHA_40</para></listitem>
 						<listitem><para>SHA_80</para></listitem>
 						<listitem><para>SHA_NOLIMIT</para></listitem>
