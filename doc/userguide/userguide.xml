@@ -2241,10 +2241,10 @@ bearerbox-host = localhost
 	<para>This chapter tells you how to set Kannel up to handle wtls traffic.
 	</para>
 
-	<para>'wtls' group is optional and single. The prerequisites for this group
+	<para><literal>wtls</literal> group is optional and single. The prerequisites for this group
 		are to have defined a wapbox group, and a pair of SSL certificates
 		available. Instructions on how to create self-signed 1024-bit RSA
-		certificates are in Appendix B.
+		certificates are in <xref linkend="certificates">.
 	</para>
 	<para>Current imlementation provides for the following functionality:</para>
 	<para>
@@ -2312,7 +2312,7 @@ bearerbox-host = localhost
 			</listitem>
 	</orderedlist></para>
 
-	<para>The simplest working 'wtls' group looks like this:
+	<para>The simplest working <literal>wtls</literal> group looks like this:
 <programlisting>
 group = wtls
 certificate-file = /etc/kannel/server.crt
@@ -2320,7 +2320,7 @@ privatekey-file = /etc/kannel/server.key
 </programlisting>
 
 	Can also be the same single combined pem file with both certificate and
-	privatekey parts. The complete variable list for the 'wtls' group is:</para>
+	privatekey parts. The complete variable list for the <literal>wtls</literal> group is:</para>
 
 <sect1>
 <title>Wtls configuration</title>
