@@ -1,3 +1,12 @@
+2011-09-13  Stipe Tolj  <stolj at kannel.org>
+    * gw/smsc/smsc_http.c: fixed double hex encoding for system type 'kannel'
+      and 'no-sep = yes'. Due that we manipulate the msg->sms.[udh|msg]data
+      directly, and the msg is re-queued in case of a HTTP call failure we get
+      perform the hex encoding again, which results in a truncated content.
+      We need to perform the transcoding on a copy and keep the original.
+      Thanks to Paulo Correia <paulo.correia at go4mobility dot com>.
+      [Msg-Id: <4E6F3FF5.9000009@go4mobility.com>]
+      
 2011-08-19 Alexander Malysh <amalysh at kannel.org>
     * doc/userguide/userguide.xml: fixed userguide compilation.
 

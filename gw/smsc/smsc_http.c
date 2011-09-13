@@ -571,22 +571,27 @@ static void kannel_send_sms(SMSCConn *conn, Msg *sms)
 			     conndata->username, conndata->password,
 			     sms->sms.receiver, sms->sms.msgdata);
     } else {
-        octstr_binary_to_hex(sms->sms.msgdata, HEX_NOT_UPPERCASE);
+        Octstr *msgdata = octstr_duplicate(sms->sms.msgdata);
+        
+        octstr_binary_to_hex(msgdata, HEX_NOT_UPPERCASE);
         url = octstr_format("%S?"
 			    "username=%E&password=%E&to=%E&text=%S",
 			     conndata->send_url,
 			     conndata->username, conndata->password,
-			     sms->sms.receiver, 
-                             sms->sms.msgdata); 
+			     sms->sms.receiver, msgdata);
+        octstr_destroy(msgdata);
     }   
 
     if (octstr_len(sms->sms.udhdata)) {
         if (!conndata->no_sep) {
-	    octstr_format_append(url, "&udh=%E", sms->sms.udhdata);
+            octstr_format_append(url, "&udh=%E", sms->sms.udhdata);
         } else {
-	    octstr_binary_to_hex(sms->sms.udhdata, HEX_NOT_UPPERCASE);
-            octstr_format_append(url, "&udh=%S", sms->sms.udhdata);
-	}
+            Octstr *udhdata = octstr_duplicate(sms->sms.udhdata);
+            
+            octstr_binary_to_hex(udhdata, HEX_NOT_UPPERCASE);
+            octstr_format_append(url, "&udh=%S", udhdata);
+            octstr_destroy(udhdata);
+        }
     }
 
     if (!conndata->no_sender)
