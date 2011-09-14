@@ -3574,6 +3574,14 @@ address-range = ""
      	 try to send the message to the recipient. Defined in minutes.
      </entry></row>
 
+   <row><entry><literal>esm-class</literal></entry>
+     <entry><literal>number</literal></entry>
+     <entry valign="bottom">
+       Change the "esm_class" parameter sent from Kannel. 
+       Accepted values are 0 (Default SMSC Mode) and 3 (Store and Forward). 
+       Defaults to 3.
+     </entry></row>
+
    </tbody></tgroup></informaltable>
 
 </sect2>

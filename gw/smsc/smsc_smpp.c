@@ -169,6 +169,7 @@ typedef struct {
     long connection_timeout;
     long wait_ack;
     int wait_ack_action;
+    int esm_class;
     Load *load;
     SMSCConn *conn;
 } SMPP;
@@ -222,7 +223,7 @@ static SMPP *smpp_create(SMSCConn *conn, Octstr *host, int transmit_port,
                          Octstr *my_number, int smpp_msg_id_type,
                          int autodetect_addr, Octstr *alt_charset, Octstr *alt_addr_charset,
                          Octstr *service_type, long connection_timeout,
-                         long wait_ack, int wait_ack_action)
+                         long wait_ack, int wait_ack_action, int esm_class)
 {
     SMPP *smpp;
 
@@ -269,6 +270,7 @@ static SMPP *smpp_create(SMSCConn *conn, Octstr *host, int transmit_port,
     smpp->ssl_client_certkey_file = NULL;
     smpp->load = load_create_real(0);
     load_add_interval(smpp->load, 1);
+    smpp->esm_class = esm_class;
 
     return smpp;
 }
@@ -876,7 +878,7 @@ static SMPP_PDU *msg_to_pdu(SMPP *smpp, Msg *msg)
      * set the esm_class field
      * default is store and forward, plus udh and rpi if requested
      */
-    pdu->u.submit_sm.esm_class = ESM_CLASS_SUBMIT_STORE_AND_FORWARD_MODE;
+    pdu->u.submit_sm.esm_class = smpp->esm_class;
     if (octstr_len(msg->sms.udhdata))
         pdu->u.submit_sm.esm_class = pdu->u.submit_sm.esm_class |
             ESM_CLASS_SUBMIT_UDH_INDICATOR;
@@ -2204,6 +2206,7 @@ int smsc_smpp_create(SMSCConn *conn, CfgGroup *grp)
     Octstr *alt_charset;
     Octstr *alt_addr_charset;
     long connection_timeout, wait_ack, wait_ack_action;
+    long esm_class;
 
     my_number = alt_addr_charset = alt_charset = NULL;
     transceiver_mode = 0;
@@ -2336,9 +2339,17 @@ int smsc_smpp_create(SMSCConn *conn, CfgGroup *grp)
 
     if (cfg_get_integer(&wait_ack_action, grp, octstr_imm("wait-ack-expire")) == -1)
         wait_ack_action = SMPP_WAITACK_REQUEUE;
-
-    if (wait_ack_action > 0x03 || wait_ack_action < 0)
+    else if (wait_ack_action > 0x03 || wait_ack_action < 0)
         panic(0, "SMPP: Invalid wait-ack-expire directive in configuration.");
+
+    if (cfg_get_integer(&esm_class, grp, octstr_imm("esm-class")) == -1) {
+        esm_class = ESM_CLASS_SUBMIT_STORE_AND_FORWARD_MODE;
+    } else if ( esm_class != ESM_CLASS_SUBMIT_DEFAULT_SMSC_MODE && 
+              esm_class != ESM_CLASS_SUBMIT_STORE_AND_FORWARD_MODE ) {
+        error(0, "SMPP: Invalid esm_class mode '%ld' in configuration. Switching to \"Store and Forward\".", 
+                      esm_class);
+        esm_class = ESM_CLASS_SUBMIT_STORE_AND_FORWARD_MODE;
+    }
 
     smpp = smpp_create(conn, host, port, receive_port, system_type,
     	    	       username, password, address_range,
@@ -2346,7 +2357,7 @@ int smsc_smpp_create(SMSCConn *conn, CfgGroup *grp)
                        dest_addr_npi, enquire_link_interval,
                        max_pending_submits, version, priority, validity, my_number,
                        smpp_msg_id_type, autodetect_addr, alt_charset, alt_addr_charset,
-                       service_type, connection_timeout, wait_ack, wait_ack_action);
+                       service_type, connection_timeout, wait_ack, wait_ack_action, esm_class);
 
     cfg_get_integer(&smpp->bind_addr_ton, grp, octstr_imm("bind-addr-ton"));
     cfg_get_integer(&smpp->bind_addr_npi, grp, octstr_imm("bind-addr-npi"));
