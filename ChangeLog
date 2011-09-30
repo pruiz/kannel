@@ -1,3 +1,7 @@
+2011-09-30 Alexander Malysh <amalysh at kannel.org>
+    * gw/smsc/smsc_at.c: fixed double reencoding issue when message retried
+      again after the failure.
+
 2011-09-14 Alexander Malysh <amalysh at kannel.org>
     *  doc/userguide/userguide.xml, gw/smsc/smsc_smpp.c, gwlib/cfg.def: applied
        patch that allows setting of esm_class in SMPP module.

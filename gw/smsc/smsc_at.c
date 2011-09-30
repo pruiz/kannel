@@ -2458,6 +2458,7 @@ static Octstr *at2_pdu_encode(Msg *msg, PrivAT2data *privdata)
         octstr_append(buffer, msg->sms.msgdata);
     } else {
         int offset = 0;
+        Octstr *msgdata;
 
         /*
          * calculate the number of fill bits needed to align
@@ -2468,11 +2469,13 @@ static Octstr *at2_pdu_encode(Msg *msg, PrivAT2data *privdata)
             offset = (((nbits / 7) + 1) * 7 - nbits) % 7; /* Fill bits */
         }
 
-        charset_utf8_to_gsm(msg->sms.msgdata);
+        msgdata = octstr_duplicate(msg->sms.msgdata);
+        charset_utf8_to_gsm(msgdata);
         
-        if ((temp = at2_encode7bituncompressed(msg->sms.msgdata, offset)) != NULL)
+        if ((temp = at2_encode7bituncompressed(msgdata, offset)) != NULL)
             octstr_append(buffer, temp);
         O_DESTROY(temp);
+        octstr_destroy(msgdata);
     }
 
     /* convert PDU to HEX representation suitable for the AT2 command set */
