@@ -1,11 +1,19 @@
+2011-10-06  Stipe Tolj  <stolj at kannel.org>
+    * gw/smsc/smsc_http.c: fix default DLR storing behaviour for 'generic' type.
+      We shall always store the DLR temp data in a successful transmission,
+      even if no 'generic-foreign-id-regex' is given. If it is given, then we
+      try to regex scan it and use it for the DLR temp data, if not, then store
+      our own UUID as reference ID of the message. This ensures generic behaves
+      the same way as type kannel.
+
 2011-09-30 Alexander Malysh <amalysh at kannel.org>
     * gw/smsc/smsc_at.c: fixed double reencoding issue when message retried
       again after the failure.
 
 2011-09-14 Alexander Malysh <amalysh at kannel.org>
-    *  doc/userguide/userguide.xml, gw/smsc/smsc_smpp.c, gwlib/cfg.def: applied
-       patch that allows setting of esm_class in SMPP module.
-       Thanks to Alan McNatty <alan at catalyst.net.nz> for the patch.
+    * doc/userguide/userguide.xml, gw/smsc/smsc_smpp.c, gwlib/cfg.def: applied
+      patch that allows setting of esm_class in SMPP module.
+      Thanks to Alan McNatty <alan at catalyst.net.nz> for the patch.
 
 2011-09-13  Stipe Tolj  <stolj at kannel.org>
     * gw/smsc/smsc_http.c: fixed double hex encoding for system type 'kannel'
