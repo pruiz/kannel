@@ -1,4 +1,8 @@
 2011-10-09 Alexander Malysh <amalysh at kannel.org>
+    * gw/smsbox.c: fixed double charset processing for POST requests.
+      This fixes #615.
+
+2011-10-09 Alexander Malysh <amalysh at kannel.org>
     * gw/bearerbox.c, gw/shared.[ch], gw/smsbox.c, gw/wapbox.c, gwlib/gwlib.[ch], gwlib/utils.c:
       This patch should fix issues with restart HTTP command.
 

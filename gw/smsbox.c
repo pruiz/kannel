@@ -2584,12 +2584,6 @@ static Octstr *smsbox_sendsms_post(List *headers, Octstr *body,
 	goto error;
     }
 
-    if (charset_processing(charset, body, coding) == -1) {
-	*status = HTTP_BAD_REQUEST;
-	ret = octstr_create("Invalid charset");
-	goto error2;
-    }
-
     /* check the username and password */
     t = authorise_username(user, pass, client_ip);
     if (t == NULL) {
