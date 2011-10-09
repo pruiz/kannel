@@ -1,4 +1,9 @@
 2011-10-09 Alexander Malysh <amalysh at kannel.org>
+    * gw/smsc/smsc_smpp.c: fixed encoding of LATIN1 messages.
+      This fixes #613.
+      Thanks to Anders B for this patch.
+
+2011-10-09 Alexander Malysh <amalysh at kannel.org>
     * gw/smsbox.c:: Set charset to UTF-8 for POST requests.
       This fixes #614.
       Thanks Anders B for the patch.

@@ -536,7 +536,10 @@ static Msg *pdu_to_msg(SMPP *smpp, SMPP_PDU *pdu, long *reason)
             }
             break;
         case 0x01: /* ASCII or IA5 - not sure if I need to do anything */
-        case 0x03: /* ISO-8859-1 - do nothing */
+            msg->sms.coding = DC_7BIT; break;
+        case 0x03: /* ISO-8859-1 - I'll convert to unicode */
+            if (charset_convert(msg->sms.msgdata, "ISO-8859-1", SMPP_DEFAULT_CHARSET) != 0)
+                error(0, "Failed to convert msgdata from ISO-8859-1 to " SMPP_DEFAULT_CHARSET ", will leave as is");
             msg->sms.coding = DC_7BIT; break;
         case 0x02: /* 8 bit binary - do nothing */
         case 0x04: /* 8 bit binary - do nothing */
@@ -694,7 +697,10 @@ static Msg *data_sm_to_msg(SMPP *smpp, SMPP_PDU *pdu, long *reason)
             }
             break;
         case 0x01: /* ASCII or IA5 - not sure if I need to do anything */
-        case 0x03: /* ISO-8859-1 - do nothing */
+            msg->sms.coding = DC_7BIT; break;
+        case 0x03: /* ISO-8859-1 - I'll convert to unicode */
+            if (charset_convert(msg->sms.msgdata, "ISO-8859-1", SMPP_DEFAULT_CHARSET) != 0)
+                error(0, "Failed to convert msgdata from ISO-8859-1 to " SMPP_DEFAULT_CHARSET ", will leave as is");
             msg->sms.coding = DC_7BIT; break;
         case 0x02: /* 8 bit binary - do nothing */
         case 0x04: /* 8 bit binary - do nothing */
