@@ -1270,20 +1270,21 @@ static int obey_request(Octstr **result, URLTranslation *trans, Msg *msg)
 	if (msg->sms.coding == DC_8BIT)
 	    http_header_add(request_headers, "Content-Type",
 			    "application/octet-stream");
-	else
-	    if(msg->sms.coding == DC_UCS2)
+	else if(msg->sms.coding == DC_UCS2)
 		http_header_add(request_headers, "Content-Type", "text/plain; charset=\"UTF-16BE\"");
-	    else {
-		Octstr *header;
-		header = octstr_create("text/plain");
-		if(msg->sms.charset) {
-		    octstr_append(header, octstr_imm("; charset=\""));
-		    octstr_append(header, msg->sms.charset);
-		    octstr_append(header, octstr_imm("\""));
-		}
-		http_header_add(request_headers, "Content-Type", octstr_get_cstr(header));
-		O_DESTROY(header);
-	    }
+	else {
+	    Octstr *header;
+	    header = octstr_create("text/plain");
+	    if(msg->sms.charset) {
+	        octstr_append(header, octstr_imm("; charset=\""));
+	        octstr_append(header, msg->sms.charset);
+	        octstr_append(header, octstr_imm("\""));
+	    } else {
+                octstr_append(header, octstr_imm("; charset=\"UTF-8\""));
+            }
+	    http_header_add(request_headers, "Content-Type", octstr_get_cstr(header));
+	    O_DESTROY(header);
+	}
 	if (urltrans_send_sender(trans))
 	    http_header_add(request_headers, "X-Kannel-From",
 			    octstr_get_cstr(msg->sms.receiver));
