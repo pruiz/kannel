@@ -1,3 +1,7 @@
+2011-10-09 Alexander Malysh <amalysh at kannel.org>
+    * gw/bearerbox.c, gw/shared.[ch], gw/smsbox.c, gw/wapbox.c, gwlib/gwlib.[ch], gwlib/utils.c:
+      This patch should fix issues with restart HTTP command.
+
 2011-10-06  Stipe Tolj  <stolj at kannel.org>
     * gw/smsc/smsc_http.c: fix default DLR storing behaviour for 'generic' type.
       We shall always store the DLR temp data in a successful transmission,

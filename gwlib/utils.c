@@ -103,6 +103,8 @@
 
 /* pid of child process when parachute is used */
 static pid_t child_pid = -1;
+/* pid of pid file owner */
+static pid_t pidfile_owner_pid = -1;
 /* saved child signal handlers */
 static struct sigaction child_actions[32];
 /* just a flag that child signal handlers are stored */
@@ -350,7 +352,7 @@ static void write_pid_file(void)
     if (!file)
         panic(errno, "Could not open file-stream `%s'", pid_file);
 
-    fprintf(file, "%ld\n", (long) getpid());
+    fprintf(file, "%ld\n", (long) (pidfile_owner_pid = getpid()));
     fclose(file);
 }
 
@@ -359,12 +361,21 @@ static void remove_pid_file(void)
     if (!pid_file)
         return;
 
-    /* ensure we don't called from child process */
-    if (child_pid == 0)
+    /* ensure that only pidfile owner can remove it */
+    if (pidfile_owner_pid != getpid())
         return;
 
-    if (-1 == unlink(pid_file))
+    if (-1 == unlink(pid_file)) {
+        int initdone = gwlib_initialized();
+        /* we are called at exit so gwlib may be shutdown already, init again */
+        if (!initdone) {
+            gwlib_init();
+            log_set_syslog("kannel", 0);
+        }
         error(errno, "Could not unlink pid-file `%s'", pid_file);
+        if (!initdone)
+            gwlib_shutdown();
+    }
 }
 
 

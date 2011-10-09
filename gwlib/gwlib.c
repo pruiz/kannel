@@ -107,3 +107,9 @@ void gwlib_shutdown(void)
     gwmem_shutdown();
     init = 0;
 }
+
+int gwlib_initialized(void)
+{
+    return init;
+}
+

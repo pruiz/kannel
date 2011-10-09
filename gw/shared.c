@@ -60,6 +60,7 @@
  * Lars Wirzenius
  */
 
+#include <errno.h>
 #include <libxml/xmlversion.h>
 
 #include "gwlib/gwlib.h"
@@ -272,5 +273,23 @@ Octstr *parse_date(Octstr *date)
 error:
     warning(0, "parse_date: not an ISO date");
     return NULL;
+}
+
+int restart_box(char **argv)
+{
+    int rc;
+
+    if (!(rc = fork())) {
+        /*
+         * Sleep a while in order to get father
+         * process time to cleanup things
+         */
+        gwthread_sleep(1.0);
+        if (execvp(argv[0],argv) == -1)
+            error(errno, "Unable to start new process.");
+    } else if (rc == -1)
+        error(errno, "Could not restart, exiting...");
+
+    return rc == -1 ? -1 : 0;
 }
 

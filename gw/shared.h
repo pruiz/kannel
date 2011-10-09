@@ -130,6 +130,11 @@ int deliver_to_bearerbox(Msg *msg);
 Octstr *parse_date(Octstr *date);
 
 
+/*
+ * Restarts process with a given params
+ */
+int restart_box(char **argv);
+
 #endif
 
 

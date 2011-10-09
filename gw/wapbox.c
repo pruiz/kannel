@@ -775,9 +775,12 @@ int main(int argc, char **argv)
 
         /* block infinite for reading messages */
         ret = read_from_bearerbox(&msg, INFINITE_TIME);
-        if (ret == -1)
+        if (ret == -1) {
+            error(0, "Bearerbox is gone, restarting");
+            program_status = shutting_down;
+            restart = 1;
             break;
-        else if (ret == 1) /* timeout */
+        } else if (ret == 1) /* timeout */
             continue;
         else if (msg == NULL) /* just to be sure, may not happens */
             break;
@@ -861,14 +864,13 @@ int main(int argc, char **argv)
      * Otherwise we will fail while trying to connect to bearerbox!
      */
     if (restart) {
-        gwthread_sleep(5.0);
+        gwthread_sleep(10.0);
+        /* now really restart */
+        restart_box(argv);
     }
 
+    log_close_all();
     gwlib_shutdown();
-
-    /* now really restart */
-    if (restart)
-        execvp(argv[0], argv);
 
     return 0;
 }

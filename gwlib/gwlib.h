@@ -107,6 +107,7 @@
 void gwlib_assert_init(void);
 void gwlib_init(void);
 void gwlib_shutdown(void);
+int gwlib_initialized(void);
 
 #ifdef NO_GWASSERT
 #define gwlib_assert_init() ((void) 0)

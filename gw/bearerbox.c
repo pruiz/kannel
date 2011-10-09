@@ -791,10 +791,12 @@ int main(int argc, char **argv)
     cfg_destroy(cfg);
     octstr_destroy(cfg_filename);
     dlr_shutdown();
-    gwlib_shutdown();
 
-    if (restart == 1)
-        execvp(argv[0],argv);
+    /* now really restart */
+    if (restart)
+        restart_box(argv);
+
+    gwlib_shutdown();
 
     return 0;
 }
