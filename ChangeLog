@@ -1,3 +1,11 @@
+2011-10-11  Stipe Tolj  <stolj at kannel.org>
+    * gw/smsc/smsc_smpp.c: moved .foreign_id injection from dlr_add() to the
+      submit_sm_resp PDU handling code, otherwise we would ONLY see foreign IDs
+      in the access-log IF DLR have been requested. Now we see them in any case.
+    * gw/dlr.c: remove .foreign_id injection code in dlr_add(), due that this is
+      the wrong place to do it. If the user didn't request a DLR, we still want
+      to pickup the foreign ID and use it, at least in the access-log i.e.
+    
 2011-10-09 Alexander Malysh <amalysh at kannel.org>
     * gw/smsc/smsc_smpp.c: fixed encoding of LATIN1 messages.
       This fixes #613.
