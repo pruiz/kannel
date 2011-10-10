@@ -321,19 +321,7 @@ void dlr_add(const Octstr *smsc, const Octstr *ts, Msg *msg)
 {
     struct dlr_entry *dlr = NULL;
 
-    /* Add the foreign_id so all SMSC modules can use it.
-     * Obey also the original message in the split_parts list. */
-    if (msg->sms.foreign_id != NULL)
-        octstr_destroy(msg->sms.foreign_id);
-    msg->sms.foreign_id = octstr_duplicate(ts);
-    if (msg->sms.split_parts != NULL) {
-        struct split_parts *split = msg->sms.split_parts;
-        if (split->orig->sms.foreign_id != NULL)
-            octstr_destroy(split->orig->sms.foreign_id);
-        split->orig->sms.foreign_id = octstr_duplicate(ts);
-    }
-
-    if(octstr_len(smsc) == 0) {
+    if (octstr_len(smsc) == 0) {
         warning(0, "DLR[%s]: Can't add a dlr without smsc-id", dlr_type());
         return;
     }
@@ -475,7 +463,7 @@ void dlr_flush(void)
 }
 
 
-Msg* create_dlr_from_msg(const Octstr *smsc, const Msg *msg, const Octstr *reply, long stat)
+Msg *create_dlr_from_msg(const Octstr *smsc, const Msg *msg, const Octstr *reply, long stat)
 {
     Msg *dlrmsg;
 
@@ -483,8 +471,8 @@ Msg* create_dlr_from_msg(const Octstr *smsc, const Msg *msg, const Octstr *reply
         return NULL;
 
     /* generate DLR */
-    debug("dlr.dlr", 0,"SMSC[%s]: creating DLR message",
-                (smsc ? octstr_get_cstr(smsc) : "UNKNOWN"));
+    debug("dlr.dlr",0,"SMSC[%s]: creating DLR message",
+          (smsc ? octstr_get_cstr(smsc) : "UNKNOWN"));
 
     dlrmsg = msg_create(sms);
     gw_assert(dlrmsg != NULL);
@@ -501,9 +489,9 @@ Msg* create_dlr_from_msg(const Octstr *smsc, const Msg *msg, const Octstr *reply
     dlrmsg->sms.foreign_id = octstr_duplicate(msg->sms.foreign_id);
     time(&dlrmsg->sms.time);
 
-    debug("dlr.dlr", 0,"SMSC[%s]: DLR = %s",
-                (smsc ? octstr_get_cstr(smsc) : "UNKNOWN"),
-                (dlrmsg->sms.dlr_url ? octstr_get_cstr(dlrmsg->sms.dlr_url) : ""));
+    debug("dlr.dlr",0,"SMSC[%s]: DLR = %s",
+          (smsc ? octstr_get_cstr(smsc) : "UNKNOWN"),
+          (dlrmsg->sms.dlr_url ? octstr_get_cstr(dlrmsg->sms.dlr_url) : ""));
 
     return dlrmsg;
 }
