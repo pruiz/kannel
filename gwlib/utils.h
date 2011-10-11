@@ -198,6 +198,11 @@ int roundup_div(int a, int b);
  */
 unsigned long long gw_generate_id(void);
 
+/**
+ * Install fatal signal handler. Usefull to receive backtrace if 
+ * program crash with SEGFAULT.
+ */
+void init_fatal_signals(void);
 
 /*
  * Return an octet string with information about Kannel version,

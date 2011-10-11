@@ -556,6 +556,37 @@ static void PRINTFLIKE(2,3) gw_panic_output(int err, const char *fmt, ...)
 }
 #endif
 
+void gw_backtrace(void **stack_frames, size_t size, int lock)
+{
+#if HAVE_BACKTRACE
+    void *frames[50];
+    size_t i;
+    char **strings;
+
+    if (stack_frames == NULL) {
+        stack_frames = frames;
+        size = backtrace(stack_frames, sizeof(frames) / sizeof(void*));
+    }
+
+    strings = backtrace_symbols(stack_frames, size);
+
+    if (strings) {
+        for (i = 0; i < size; i++)
+            gw_panic_output(0, "%s", strings[i]);
+    }
+    else { /* hmm, no memory available */
+        for (i = 0; i < size; i++)
+            gw_panic_output(0, "%p", stack_frames[i]);
+    }
+
+    /*
+     * Note: we must call gw_native_free directly because if gw_free points to gw_check_free we could
+     *       panic's and we have endless loop with SEGFAULT at the end.
+     */
+    gw_native_free(strings);
+#endif
+}
+
 void gw_panic(int err, const char *fmt, ...)
 {
     /*
@@ -564,31 +595,7 @@ void gw_panic(int err, const char *fmt, ...)
      */
     FUNCTION_GUTS(GW_PANIC, "");
 
-#ifdef HAVE_BACKTRACE
-    {
-        void *stack_frames[50];
-        size_t size, i;
-        char **strings;
-
-        size = backtrace(stack_frames, sizeof(stack_frames) / sizeof(void*));
-        strings = backtrace_symbols(stack_frames, size);
-
-        if (strings) {
-            for (i = 0; i < size; i++)
-                gw_panic_output(0, "%s", strings[i]);
-        }
-        else { /* hmm, no memory available */
-            for (i = 0; i < size; i++)
-                gw_panic_output(0, "%p", stack_frames[i]);
-        }
-
-        /*
-         * Note: we don't free 'strings' array because gw_free could panic's and we
-         *       have endless loop with SEGFAULT at the end. And this doesn't care
-         *       us in any case, because we are panic's and exiting immediately. (alex)
-         */
-    }
-#endif
+    gw_backtrace(NULL, 0, 0);
 
 #ifdef SEGFAULT_PANIC
     *((char*)0) = 0;

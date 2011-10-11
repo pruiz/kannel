@@ -1,3 +1,7 @@
+2011-10-11 Alexander Malysh <amalysh at kannel.org>
+    * gwlib/log.[ch], gwlib/utils.[ch]: extracted backtrace output into extra
+      function. Added fatal signal handler in order to be able to trace segfaults.
+
 2011-10-11  Stipe Tolj  <stolj at kannel.org>
     * gw/smsc/smsc_smpp.c: moved .foreign_id injection from dlr_add() to the
       submit_sm_resp PDU handling code, otherwise we would ONLY see foreign IDs

@@ -71,6 +71,7 @@
 #include <unistd.h>
 #include <termios.h>
 #include <signal.h>
+#include <sys/ucontext.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <sys/stat.h>
@@ -81,6 +82,10 @@
 #include <libgen.h>
 
 #include "gwlib.h"
+
+#if HAVE_BACKTRACE
+#include <execinfo.h> /*backtrace */
+#endif
 
 /* Headers required for the version dump. */
 #if defined(HAVE_LIBSSL) || defined(HAVE_WTLS_OPENSSL) 
@@ -112,6 +117,33 @@ static int child_actions_init = 0;
 /* our pid file name */
 static char *pid_file = NULL;
 static volatile sig_atomic_t parachute_shutdown = 0;
+
+
+static void fatal_handler(int sig, siginfo_t *info, void *secret)
+{
+    void *trace[50];
+#ifdef REG_EIP
+    ucontext_t *uc = (ucontext_t*)secret;
+#endif
+    size_t size;
+    struct sigaction act;
+    
+    act.sa_handler = SIG_DFL;
+    sigemptyset(&act.sa_mask);
+    act.sa_flags = 0;
+    sigaction(sig, &act, NULL);
+    
+#ifdef HAVE_BACKTRACE
+    size = backtrace(trace, sizeof(trace) / sizeof(void*));
+#ifdef REG_EIP
+    /* overwrite sigaction with caller's address */
+    trace[1] = (void *) uc->uc_mcontext.gregs[REG_EIP];
+#endif
+    gw_backtrace(trace, size, 0);
+#endif
+    
+    raise(sig);
+}
 
 
 static void parachute_sig_handler(int signum)
@@ -167,6 +199,7 @@ static void parachute_init_signals(int child)
         sigaction(SIGTTIN, &sa, NULL);
         sigaction(SIGTSTP, &sa, NULL);
         child_actions_init = 1;
+        init_fatal_signals();
     }
     else
         panic(0, "Child process signal handlers not initialized before.");
@@ -185,7 +218,8 @@ static int is_executable(const char *filename)
         return 0;
     }
     /* others has exec permission */
-    if (S_IXOTH & buf.st_mode) return 1;
+    if (S_IXOTH & buf.st_mode)
+        return 1;
     /* group has exec permission */
     if ((S_IXGRP & buf.st_mode) && buf.st_gid == getgid())
         return 1;
@@ -466,6 +500,18 @@ Octet reverse_octet(Octet source)
 }
 
 
+void init_fatal_signals()
+{
+    /* install fatal signal handler */
+    struct sigaction act;
+    /* set segfault handler */
+    sigemptyset(&act.sa_mask);
+    act.sa_sigaction = fatal_handler;
+    act.sa_flags = SA_SIGINFO;
+    sigaction(SIGSEGV, &act, NULL);
+}
+
+
 void report_versions(const char *boxname)
 {
     Octstr *os;
@@ -667,6 +713,9 @@ int get_and_set_debugs(int argc, char **argv,
     if (debug_places != NULL)
 	    info(0, "Debug places: `%s'", debug_places);
 
+
+    init_fatal_signals();
+    
     return i;
 }
 
