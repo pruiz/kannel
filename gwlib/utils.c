@@ -71,7 +71,6 @@
 #include <unistd.h>
 #include <termios.h>
 #include <signal.h>
-#include <sys/ucontext.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <sys/stat.h>
@@ -80,6 +79,10 @@
 #include <pwd.h>
 #include <grp.h>
 #include <libgen.h>
+
+#if HAVE_UCONTEXT
+#include <sys/ucontext.h>
+#endif
 
 #include "gwlib.h"
 
@@ -121,11 +124,13 @@ static volatile sig_atomic_t parachute_shutdown = 0;
 
 static void fatal_handler(int sig, siginfo_t *info, void *secret)
 {
+#ifdef HAVE_BACKTRACE
     void *trace[50];
 #ifdef REG_EIP
     ucontext_t *uc = (ucontext_t*)secret;
 #endif
     size_t size;
+#endif    
     struct sigaction act;
     
     act.sa_handler = SIG_DFL;

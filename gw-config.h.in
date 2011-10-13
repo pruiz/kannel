@@ -130,6 +130,9 @@
 /* Define if you have the backtrace function. */
 #undef HAVE_BACKTRACE
 
+/* Define if you have the user context functions. */
+#undef HAVE_UCONTEXT
+
 /* Define if you have the srandom function. */
 #undef HAVE_SRANDOM
 

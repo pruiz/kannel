@@ -239,6 +239,9 @@ AC_CHECK_HEADERS([net/if.h], [], [],
    # include <sys/socket.h>
    #endif
   ])
+AC_CHECK_HEADERS([sys/ucontext.h], [AC_DEFINE(HAVE_UCONTEXT)],
+  [AC_MSG_WARN(System lacks ucontext.h - user context support)]
+)
 
 dnl Checks for typedefs, structures, and compiler characteristics.
 

@@ -1,3 +1,12 @@
+2011-10-13  Stipe Tolj  <stolj at kannel.org>
+    * configure[.in]: need to test for <sys/ucontext.h>, tbough it is defined 
+      in IEEE Std 1003.1-2001/Cor 2-2004 it is not fully portable, i.e. OpenBSD
+      and Cygwin lack the functionality.
+    * gw-config.h.in: add HAVE_UCONTEXT macro.
+    * gw/shared.c: add header include to fix implicite declaration warning. NLC.
+    * gwlib/utils.c: include <sys/ucontext.h> only if the system has user 
+      context support, fix minor compiler warning. 
+      
 2011-10-11 Alexander Malysh <amalysh at kannel.org>
     * gwlib/log.[ch], gwlib/utils.[ch]: extracted backtrace output into extra
       function. Added fatal signal handler in order to be able to trace segfaults.
