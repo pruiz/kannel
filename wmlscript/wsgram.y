@@ -108,7 +108,7 @@ WsCompilerPtr global_compiler = NULL;
 /* Options for bison. */
 
 /* Generate reentrant parser. */
-%pure_parser
+%pure-parser
 
 /* This grammar has one shift-reduce conflict.  It comes from the
    if-else statement. */

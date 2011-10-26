@@ -1,3 +1,6 @@
+2011-10-26 Alexander Malysh <amalysh at kannel.org>
+    * wmlscript/wsgram.y: fixed compilation error.
+
 2011-10-13  Stipe Tolj  <stolj at kannel.org>
     * configure[.in]: need to test for <sys/ucontext.h>, tbough it is defined 
       in IEEE Std 1003.1-2001/Cor 2-2004 it is not fully portable, i.e. OpenBSD
