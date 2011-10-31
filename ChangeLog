@@ -1,3 +1,7 @@
+2011-10-31 Alexander Malysh <amalysh at kannel.org>
+    * reverted commited that moved .foreign_id injection from dlr_add() because
+      it breaks other SMSC module as SMPP.
+
 2011-10-26 Alexander Malysh <amalysh at kannel.org>
     * wmlscript/wsgram.y: fixed compilation error.
 
