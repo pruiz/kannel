@@ -1656,18 +1656,6 @@ static int handle_pdu(SMPP *smpp, Connection *conn, SMPP_PDU *pdu,
                 if (DLR_IS_ENABLED_DEVICE(msg->sms.dlr_mask))
                     dlr_add(smpp->conn->id, tmp, msg);
 
-                /* Add the foreign_id so all SMSC modules can use it.
-                 * Obey also the original message in the split_parts list. */
-                if (msg->sms.foreign_id != NULL)
-                    octstr_destroy(msg->sms.foreign_id);
-                msg->sms.foreign_id = octstr_duplicate(tmp);
-                if (msg->sms.split_parts != NULL) {
-                    struct split_parts *split = msg->sms.split_parts;
-                    if (split->orig->sms.foreign_id != NULL)
-                        octstr_destroy(split->orig->sms.foreign_id);
-                    split->orig->sms.foreign_id = octstr_duplicate(tmp);
-                }
-
                 octstr_destroy(tmp);
                 bb_smscconn_sent(smpp->conn, msg, NULL);
                 --(*pending_submits);
