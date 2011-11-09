@@ -142,7 +142,7 @@ static char is_safe[UCHAR_MAX + 1];
  * and discarding the lowest to bits to get rid of typical alignment
  * bits.
  */
-#define CSTR_TO_LONG(ptr)	(((long) ptr) >> 2)
+#define CSTR_TO_LONG(ptr)	(((unsigned long) ptr) >> 2)
 
 
 /*
