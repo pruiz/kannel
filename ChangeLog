@@ -1,3 +1,10 @@
+2012-01-07 Andreas FInk <afink at smsrelay.com> 
+    * gw/smsc/smsc_http.c: added new parameter for DLR named dlr-err which can
+      contain a network error code which is parsed the same way the err: field
+      in SMPP delivery reports are parsed.
+    * configure.in
+      Added support for MacOS X 10.7 Lion SDK
+
 2011-11-09 Alexander Malysh <amalysh at kannel.org>
     * gwlib/octstr.c, gwlib/octstr.c.debug: fixed segfault on some systems where
       long overflow occurs. This fixes #623.

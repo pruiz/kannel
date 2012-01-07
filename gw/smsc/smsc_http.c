@@ -126,6 +126,7 @@
 #include "sms.h"
 #include "dlr.h"
 #include "urltrans.h"
+#include "meta_data.h"
 
 #define DEFAULT_CHARSET "UTF-8"
 
@@ -699,7 +700,8 @@ static void kannel_receive_sms(SMSCConn *conn, HTTPClient *client,
     int	mclass, mwi, coding, validity, deferred, dlrmask;
     List *reply_headers;
     int ret;
-
+    int dlr_err = 0;
+	
     mclass = mwi = coding = validity = 
         deferred = dlrmask = SMS_PARAM_UNDEFINED;
 
@@ -741,6 +743,10 @@ static void kannel_receive_sms(SMSCConn *conn, HTTPClient *client,
     if (tmp_string) {
         sscanf(octstr_get_cstr(tmp_string),"%d", &dlrmask);
     }
+    tmp_string = http_cgi_variable(cgivars, "dlr-err");
+    if (tmp_string) {
+        sscanf(octstr_get_cstr(tmp_string),"%d", &dlr_err);
+    }
     debug("smsc.http.kannel", 0, "HTTP[%s]: Received an HTTP request",
           octstr_get_cstr(conn->id));
     
@@ -766,7 +772,13 @@ static void kannel_receive_sms(SMSCConn *conn, HTTPClient *client,
 
             debug("smsc.http.kannel", 0, "HTTP[%s]: Received DLR for DLR-URL <%s>",
                   octstr_get_cstr(conn->id), octstr_get_cstr(dlrmsg->sms.dlr_url));
-    
+
+            if(dlr_err) {
+                Octstr *err = ocstr_format("%03d",dlr_err);
+                meta_data_set_value(dlrmsg->sms.meta_data, "smpp", octstr_imm("dlr_err"), err, 1);
+                octstr_destroy(err);
+            }
+
             ret = bb_smscconn_receive(conn, dlrmsg);
             if (ret == -1)
                 retmsg = octstr_create("Not accepted");
