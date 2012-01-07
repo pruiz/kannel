@@ -774,7 +774,7 @@ static void kannel_receive_sms(SMSCConn *conn, HTTPClient *client,
                   octstr_get_cstr(conn->id), octstr_get_cstr(dlrmsg->sms.dlr_url));
 
             if(dlr_err) {
-                Octstr *err = ocstr_format("%03d",dlr_err);
+                Octstr *err = octstr_format("%03d",dlr_err);
                 meta_data_set_value(dlrmsg->sms.meta_data, "smpp", octstr_imm("dlr_err"), err, 1);
                 octstr_destroy(err);
             }
