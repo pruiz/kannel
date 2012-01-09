@@ -773,8 +773,11 @@ static void kannel_receive_sms(SMSCConn *conn, HTTPClient *client,
             debug("smsc.http.kannel", 0, "HTTP[%s]: Received DLR for DLR-URL <%s>",
                   octstr_get_cstr(conn->id), octstr_get_cstr(dlrmsg->sms.dlr_url));
 
-            if (dlr_err) {
+            if (dlr_err>0) {
                 tmp_string = octstr_format("%03d", dlr_err);
+                if (dlrmsg->sms.meta_data == NULL)
+                       dlrmsg->sms.meta_data = octstr_create("");
+
                 meta_data_set_value(dlrmsg->sms.meta_data, "smpp", 
                                     octstr_imm("dlr_err"), tmp_string, 1);
                 octstr_destroy(tmp_string);
