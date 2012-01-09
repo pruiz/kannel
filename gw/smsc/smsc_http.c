@@ -774,7 +774,7 @@ static void kannel_receive_sms(SMSCConn *conn, HTTPClient *client,
                   octstr_get_cstr(conn->id), octstr_get_cstr(dlrmsg->sms.dlr_url));
 
             if (dlr_err>0) {
-                tmp_string = octstr_format("%uc,%uc%uc", 3,(dlr_err & 0xFF00) >> 8, dlr_err & 0xFF );
+                tmp_string = octstr_format("%c%c%c", 3,(dlr_err & 0xFF00) >> 8, dlr_err & 0xFF );
                 if (dlrmsg->sms.meta_data == NULL)
                        dlrmsg->sms.meta_data = octstr_create("");
 
