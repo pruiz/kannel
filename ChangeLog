@@ -1,9 +1,16 @@
-2011-01-07  Stipe Tolj  <stolj at kannel.org>
+2012-01-12 Andreas Fink <afink at smsrelay.com>
+    * gw/smsc/smsc_smpp.c: proper handling of network_error_code. Kannel assumed
+      it was the same 3 characters as in the delivery report string but 
+      spec says something else so its properly converted now. 
+      Whitespace changes (removed tabs).
+    * ChangeLog. Corrected Stipe's year
+
+2012-01-07  Stipe Tolj  <stolj at kannel.org>
     * gw/smsc/smsc_http.c: slight code change from Andrea's previous commit. We
       don't need to allocate more variables on the stack as we have a temp 
       Ocstr* already. NLC.
       
-2012-01-07 Andreas FInk <afink at smsrelay.com> 
+2012-01-07 Andreas Fink <afink at smsrelay.com> 
     * gw/smsc/smsc_http.c: added new parameter for DLR named dlr-err which can
       contain a network error code which is parsed the same way the err: field
       in SMPP delivery reports are parsed.
