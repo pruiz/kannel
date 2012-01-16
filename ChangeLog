@@ -1,3 +1,7 @@
+2012-01-16  Stipe Tolj  <stolj at kannel.org>
+    * gw/smsc/smsc_[http|smpp].c: again, minor source code changes to follow
+      our doc/CodingStyle rules! NLC.
+      
 2012-01-12 Andreas Fink <afink at smsrelay.com>
     * gw/smsc/smsc_smpp.c: proper handling of network_error_code. Kannel assumed
       it was the same 3 characters as in the delivery report string but 

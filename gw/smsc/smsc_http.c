@@ -773,8 +773,9 @@ static void kannel_receive_sms(SMSCConn *conn, HTTPClient *client,
             debug("smsc.http.kannel", 0, "HTTP[%s]: Received DLR for DLR-URL <%s>",
                   octstr_get_cstr(conn->id), octstr_get_cstr(dlrmsg->sms.dlr_url));
 
-            if (dlr_err>0) {
-                tmp_string = octstr_format("%c%c%c", 3,(dlr_err & 0xFF00) >> 8, dlr_err & 0xFF );
+            if (dlr_err > 0) {
+                /* we assume it's a GSM network type, hence 0x03 */
+                tmp_string = octstr_format("%c%c%c", 0x03, (dlr_err & 0xFF00) >> 8, dlr_err & 0xFF);
                 if (dlrmsg->sms.meta_data == NULL)
                        dlrmsg->sms.meta_data = octstr_create("");
 
@@ -782,6 +783,7 @@ static void kannel_receive_sms(SMSCConn *conn, HTTPClient *client,
                                     octstr_imm("dlr_err"), tmp_string, 1);
                 octstr_destroy(tmp_string);
             }
+            
             ret = bb_smscconn_receive(conn, dlrmsg);
             if (ret == -1)
                 retmsg = octstr_create("Not accepted");
