@@ -1265,14 +1265,14 @@ static int error_from_network_error_code(Octstr *network_error_code)
     if (network_error_code == NULL || octstr_len(network_error_code) != 3)
         return 0;
     
-    nec = octstr_get_cstr(network_error_code);
+    nec = (unsigned char*) octstr_get_cstr(network_error_code);
     type = nec[0];
     err = (nec[1] << 8) | nec[2];
 
     if ((type >= '0') && (type <= '9')) {
         /* this is a bogous SMSC sending back network_error_code as 
          * 3 digit string instead as in the delivery report. */
-        sscanf(nec, "%03d", &err);
+        sscanf((char*) nec, "%03d", &err);
         return err;
     }
     
@@ -1455,7 +1455,7 @@ static Msg *handle_dlr(SMPP *smpp, Octstr *destination_addr, Octstr *short_messa
         ctmp[0] = 3; /* we assume here its a GSM error due to lack of other information */
         ctmp[1] = (err_int >> 8) & 0xFF;
         ctmp[2] = (err_int & 0xFF);
-        network_err = octstr_create_from_data(ctmp, 3);
+        network_err = octstr_create_from_data((char*)ctmp, 3);
     }
     
     if (dlrmsg != NULL) {

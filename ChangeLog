@@ -1,3 +1,6 @@
+2012-01-24 Alexander Malysh <amalysh at kannel.org>
+    * gw/smsc/smsc_smpp.c: fixed compiler warnings
+
 2012-01-16  Stipe Tolj  <stolj at kannel.org>
     * gw/smsc/smsc_[http|smpp].c: again, minor source code changes to follow
       our doc/CodingStyle rules! NLC.
