@@ -1,3 +1,8 @@
+2012-01-25  Stipe Tolj  <stolj at kannel.org>
+    * configure: fixing autoconf generated script from Andreas, which breaks
+      the 'config.nice' re-configuration handling. Seems to be the autoconf
+      version related. NLC.
+
 2012-01-24 Alexander Malysh <amalysh at kannel.org>
     * gw/smsc/smsc_smpp.c: fixed compiler warnings
 
