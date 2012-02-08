@@ -1,3 +1,7 @@
+2012-02-08 Alexander Malysh <amalysh at kannel.org>
+    * wap/wtls_pdu.c: fixed possible segfault.
+      Thanks to Armindo Antunes <armindo.antunes at gmail.com> for this patch.
+
 2012-02-02 Alexander Malysh <amalysh at kannel.org>
     * gw/bb_smscconn.c: fixed bb_smscconn_send_failed for DLRs.
 
