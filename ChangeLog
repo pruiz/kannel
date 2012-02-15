@@ -1,3 +1,8 @@
+2012-02-15  Stipe Tolj  <stolj at kannel.org>
+    * gw/smsc/smsc_http.c: inject 'text' and username variables to DLR message
+      passed back to a smsbox connection. This harmonizes the behaviour to be
+      similar as for the SMPP client module part.
+      
 2012-02-08 Alexander Malysh <amalysh at kannel.org>
     * wap/wtls_pdu.c: fixed possible segfault.
       Thanks to Armindo Antunes <armindo.antunes at gmail.com> for this patch.

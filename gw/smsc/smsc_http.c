@@ -769,6 +769,8 @@ static void kannel_receive_sms(SMSCConn *conn, HTTPClient *client,
 
         if (dlrmsg != NULL) {
             dlrmsg->sms.sms_type = report_mo;
+            dlrmsg->sms.msgdata = octstr_duplicate(text);
+            dlrmsg->sms.account = octstr_duplicate(conndata->username);
 
             debug("smsc.http.kannel", 0, "HTTP[%s]: Received DLR for DLR-URL <%s>",
                   octstr_get_cstr(conn->id), octstr_get_cstr(dlrmsg->sms.dlr_url));
@@ -1821,6 +1823,8 @@ static void generic_receive_sms(SMSCConn *conn, HTTPClient *client,
 
         if (dlrmsg != NULL) {
             dlrmsg->sms.sms_type = report_mo;
+            dlrmsg->sms.msgdata = octstr_duplicate(text);
+            dlrmsg->sms.account = octstr_duplicate(conndata->username);
 
             debug("smsc.http.generic", 0, "HTTP[%s]: Received DLR for DLR-URL <%s>",
                   octstr_get_cstr(conn->id), octstr_get_cstr(dlrmsg->sms.dlr_url));
