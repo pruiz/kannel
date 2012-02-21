@@ -3417,14 +3417,17 @@ void http_cgivar_dump(List *cgiargs)
 void http_cgivar_dump_into(List *cgiargs, Octstr *os)
 {
     HTTPCGIVar *v;
+    long i;
 
     if (os == NULL)
         return;
 
     gwlib_assert_init();
 
-    while ((v = gwlist_extract_first(cgiargs)) != NULL)
-        octstr_format_append(os, "&%S=%S", v->name, v->value);
+    for (i = 0; i < gwlist_len(cgiargs); i++) {
+        v = gwlist_get(cgiargs, i);
+        octstr_format_append(os, "&%E=%E", v->name, v->value);
+    }
 }
 
 
