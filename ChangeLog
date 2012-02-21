@@ -1,3 +1,6 @@
+2012-02-21 Alexander Malysh <amalysh at kannel.org>
+    * test/test_http_server.c: allow define custom response headers.
+
 2012-02-15  Stipe Tolj  <stolj at kannel.org>
     * gw/smsc/smsc_http.c: inject 'text' and username variables to DLR message
       passed back to a smsbox connection. This harmonizes the behaviour to be
