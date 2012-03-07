@@ -239,7 +239,7 @@
         No boxes connected to this bearerbox!
     </td>
 </tr>
-<?
+<?php
         } else {
             $sep = ($inst > 0) ? " class=\"sep\"":'';
             /* loop the boxes */
@@ -257,7 +257,7 @@
     <td><?php echo $uptime ?></td>
     <td><?php echo $box['ssl'] ?></td>
 </tr>
-<?
+<?php
                 $sep = '';
             }
         }

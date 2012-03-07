@@ -1,3 +1,9 @@
+2012-03-07 Alexander Malysh <amalysh at kannel.org>
+    * contrib/kannel-monitor/index.php, contrib/kannel-monitor/xmltoarray.php:
+      This patch adds replaces the <? to <?php to fully support when open tags
+      are not configured. This patch fixes #250.
+      Thanks to Renato Jop for this patch. 
+
 2012-02-23 Alexander Malysh <amalysh at kannel.org>
     * acinclude.m4, configure: added GIT version check
 
