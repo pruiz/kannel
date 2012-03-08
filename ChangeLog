@@ -1,3 +1,11 @@
+2012-03-08  Stipe Tolj  <stolj at kannel.org>
+    * gw/bb_boxc.c: fix MO routing logic implied by 'smsbox-route' context. We
+      have been passing MOs that had a strict smsbox-id routing decission to
+      an random not-identified smsbox if there was no smsbox-id connection.
+      This breaks the MO routing criteria. Now we obey the smsbox-id routing
+      decission and re-inject the MO message rather back to the main queue.
+      This patchset fixes bug #633.
+      
 2012-03-07 Alexander Malysh <amalysh at kannel.org>
     * contrib/kannel-monitor/index.php, contrib/kannel-monitor/xmltoarray.php:
       This patch adds replaces the <? to <?php to fully support when open tags
