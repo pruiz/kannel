@@ -1,4 +1,7 @@
 2012-03-21 Alexander Malysh <amalysh at kannel.org>
+    * gw/smsc/smsc_http.c: request DLR also if conndata->dlr_url is set.
+
+2012-03-21 Alexander Malysh <amalysh at kannel.org>
     * gw/smsc/smsc_http.c: write the whole URL, with query string by debugging.
 
 2012-03-21 Alexander Malysh <amalysh at kannel.org>

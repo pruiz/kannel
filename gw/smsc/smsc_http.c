@@ -627,28 +627,26 @@ static void kannel_send_sms(SMSCConn *conn, Msg *sms)
         octstr_format_append(url, "&binfo=%S", sms->sms.binfo);
     if (sms->sms.smsc_id) /* proxy the smsc-id to the next instance */
         octstr_format_append(url, "&smsc=%S", sms->sms.smsc_id);
-    if (sms->sms.dlr_url) {
-        if (conndata->dlr_url) {
-            char id[UUID_STR_LEN + 1];
-            Octstr *mid;
+	if (conndata->dlr_url) {
+		char id[UUID_STR_LEN + 1];
+		Octstr *mid;
 
-            /* create Octstr from UUID */  
-            uuid_unparse(sms->sms.id, id);
-            mid = octstr_create(id); 
+		/* create Octstr from UUID */
+		uuid_unparse(sms->sms.id, id);
+		mid = octstr_create(id);
 
-            octstr_format_append(url, "&dlr-url=%E", conndata->dlr_url);
+		octstr_format_append(url, "&dlr-url=%E", conndata->dlr_url);
 
-            /* encapsulate the orginal DLR-URL, escape code for DLR mask
-             * and message id */
-            octstr_format_append(url, "%E%E%E%E%E", 
-                octstr_imm("&dlr-url="), sms->sms.dlr_url,
-                octstr_imm("&dlr-mask=%d"),
-                octstr_imm("&dlr-mid="), mid);
-                
-            octstr_destroy(mid);
-        } else             
-            octstr_format_append(url, "&dlr-url=%E", sms->sms.dlr_url);
-    }
+		/* encapsulate the original DLR-URL, escape code for DLR mask
+		 * and message id */
+		octstr_format_append(url, "%E%E%E%E%E",
+			octstr_imm("&dlr-url="), sms->sms.dlr_url != NULL ? sms->sms.dlr_url : octstr_imm(""),
+			octstr_imm("&dlr-mask=%d"),
+			octstr_imm("&dlr-mid="), mid);
+
+		octstr_destroy(mid);
+	} else if (sms->sms.dlr_url != NULL)
+		octstr_format_append(url, "&dlr-url=%E", sms->sms.dlr_url);
     if (sms->sms.dlr_mask != DLR_UNDEFINED && sms->sms.dlr_mask != DLR_NOTHING)
         octstr_format_append(url, "&dlr-mask=%d", sms->sms.dlr_mask);
 
