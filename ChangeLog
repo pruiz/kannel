@@ -1,4 +1,9 @@
 2012-03-21 Alexander Malysh <amalysh at kannel.org>
+    * gw/smsc/smsc_http.c: don't convert HTTP dlr errorcode as stated in SMPP
+      spec because HTTP is not SMPP. Just pass dlr errorcode as is to smsbox
+      in ?dlr? meta data group, similar to other smsc modules.
+
+2012-03-21 Alexander Malysh <amalysh at kannel.org>
     * gw/smsc/smsc_http.c: request DLR also if conndata->dlr_url is set.
 
 2012-03-21 Alexander Malysh <amalysh at kannel.org>

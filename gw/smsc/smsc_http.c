@@ -698,12 +698,11 @@ static void kannel_receive_sms(SMSCConn *conn, HTTPClient *client,
 {
     ConnData *conndata = conn->data;
     Octstr *user, *pass, *from, *to, *text, *udh, *account, *binfo;
-    Octstr *dlrurl, *dlrmid;
+    Octstr *dlrurl, *dlrmid, *dlrerr;
     Octstr *tmp_string, *retmsg;
     int	mclass, mwi, coding, validity, deferred, dlrmask;
     List *reply_headers;
     int ret;
-    int dlr_err = 0;
 	
     mclass = mwi = coding = validity = 
         deferred = dlrmask = SMS_PARAM_UNDEFINED;
@@ -746,10 +745,8 @@ static void kannel_receive_sms(SMSCConn *conn, HTTPClient *client,
     if (tmp_string) {
         sscanf(octstr_get_cstr(tmp_string),"%d", &dlrmask);
     }
-    tmp_string = http_cgi_variable(cgivars, "dlr-err");
-    if (tmp_string) {
-        sscanf(octstr_get_cstr(tmp_string),"%d", &dlr_err);
-    }
+    dlrerr = http_cgi_variable(cgivars, "dlr-err");
+
     debug("smsc.http.kannel", 0, "HTTP[%s]: Received an HTTP request",
           octstr_get_cstr(conn->id));
     
@@ -760,8 +757,7 @@ static void kannel_receive_sms(SMSCConn *conn, HTTPClient *client,
         error(0, "HTTP[%s]: Authorization failure",
               octstr_get_cstr(conn->id));
         retmsg = octstr_create("Authorization failed for sendsms");
-    }
-    else if (dlrmask != 0 && dlrmid != NULL) {
+    } else if (dlrmask != 0 && dlrmid != NULL) {
         /* we got a DLR, and we don't require additional values */
         Msg *dlrmsg;
         
@@ -778,15 +774,13 @@ static void kannel_receive_sms(SMSCConn *conn, HTTPClient *client,
             debug("smsc.http.kannel", 0, "HTTP[%s]: Received DLR for DLR-URL <%s>",
                   octstr_get_cstr(conn->id), octstr_get_cstr(dlrmsg->sms.dlr_url));
 
-            if (dlr_err > 0) {
-                /* we assume it's a GSM network type, hence 0x03 */
-                tmp_string = octstr_format("%c%c%c", 0x03, (dlr_err & 0xFF00) >> 8, dlr_err & 0xFF);
-                if (dlrmsg->sms.meta_data == NULL)
-                       dlrmsg->sms.meta_data = octstr_create("");
+            if (dlrerr != NULL) {
+                /* pass errorcode as is */
+            	if (dlrmsg->sms.meta_data == NULL)
+            		dlrmsg->sms.meta_data = octstr_create("");
 
-                meta_data_set_value(dlrmsg->sms.meta_data, "smpp", 
-                                    octstr_imm("dlr_err"), tmp_string, 1);
-                octstr_destroy(tmp_string);
+                meta_data_set_value(dlrmsg->sms.meta_data, METADATA_DLR_GROUP,
+                                    octstr_imm(METADATA_DLR_GROUP_ERRORCODE), dlrerr, 1);
             }
             
             ret = bb_smscconn_receive(conn, dlrmsg);
