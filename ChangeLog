@@ -1,3 +1,6 @@
+2012-03-21 Alexander Malysh <amalysh at kannel.org>
+    * gw/meta_data.h: added some defines to use for meta data.
+
 2012-03-08  Stipe Tolj  <stolj at kannel.org>
     * gw/bb_boxc.c: fix MO routing logic implied by 'smsbox-route' context. We
       have been passing MOs that had a strict smsbox-id routing decission to

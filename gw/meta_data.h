@@ -65,6 +65,11 @@
 #ifndef META_DATA_H
 #define META_DATA_H
 
+#define METADATA_DLR_GROUP            "dlr"
+#define METADATA_DLR_GROUP_DONETIME   "donetime"
+#define METADATA_DLR_GROUP_SUBMITTIME "submittime"
+#define METADATA_DLR_GROUP_ERRORCODE  "errorcode"
+
 /**
  * Get Dictionary with all values for this group.
  */
