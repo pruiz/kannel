@@ -1,4 +1,7 @@
 2012-03-21 Alexander Malysh <amalysh at kannel.org>
+    * gw/smsc/smsc_http.c: write the whole URL, with query string by debugging.
+
+2012-03-21 Alexander Malysh <amalysh at kannel.org>
     * gw/meta_data.h: added some defines to use for meta data.
 
 2012-03-08  Stipe Tolj  <stolj at kannel.org>

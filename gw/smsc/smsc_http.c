@@ -293,6 +293,11 @@ static void httpsmsc_receiver(void *arg)
         if (client == NULL)
             break;
 
+        if (cgivars != NULL) {
+        	octstr_append_char(url, '?');
+        	http_cgivar_dump_into(cgivars, url);
+        }
+
         debug("smsc.http", 0, "HTTP[%s]: Got request `%s'",
               octstr_get_cstr(conn->id), octstr_get_cstr(url));
 
