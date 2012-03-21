@@ -1,4 +1,8 @@
 2012-03-21 Alexander Malysh <amalysh at kannel.org>
+    * gw/smsc/smsc_http.c, gwlib/cfg.def, doc/userguide/userguide.xml:
+      added new option 'generic-param-dlr-err' to pass dlr-err for DLR.
+
+2012-03-21 Alexander Malysh <amalysh at kannel.org>
     * gw/smsc/smsc_http.c: don't convert HTTP dlr errorcode as stated in SMPP
       spec because HTTP is not SMPP. Just pass dlr errorcode as is to smsbox
       in ?dlr? meta data group, similar to other smsc modules.

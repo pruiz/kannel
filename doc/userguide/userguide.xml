@@ -4501,6 +4501,13 @@ send-url = "http://localhost:20022"
        used on incoming requests.
      </entry></row>
 
+   <row><entry><literal>generic-param-dlr-err (o)</literal></entry>
+     <entry><literal>string</literal></entry>
+     <entry valign="bottom">
+       Overrides the default parameter for the 'dlr-err' field
+       used on incoming requests.
+     </entry></row>
+
    <row><entry><literal>generic-param-dlr-url (o)</literal></entry>
      <entry><literal>string</literal></entry>
      <entry valign="bottom">

@@ -407,6 +407,7 @@ MULTI_GROUP(smsc,
     OCTSTR(generic-param-account)
     OCTSTR(generic-param-binfo)
     OCTSTR(generic-param-dlr-mask)
+	OCTSTR(generic-param-dlr-err)
     OCTSTR(generic-param-dlr-url)
     OCTSTR(generic-param-dlr-mid)
     OCTSTR(generic-param-flash)

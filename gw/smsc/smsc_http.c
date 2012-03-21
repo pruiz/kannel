@@ -145,6 +145,7 @@ typedef struct fieldmap {
     Octstr *binfo;
     Octstr *meta_data;
     Octstr *dlr_mask;
+    Octstr *dlr_err;
     Octstr *dlr_url;
     Octstr *dlr_mid;
     Octstr *flash;
@@ -221,6 +222,7 @@ static void fieldmap_destroy(FieldMap *fieldmap)
     octstr_destroy(fieldmap->binfo);
     octstr_destroy(fieldmap->meta_data);
     octstr_destroy(fieldmap->dlr_mask);
+    octstr_destroy(fieldmap->dlr_err);
     octstr_destroy(fieldmap->dlr_url);
     octstr_destroy(fieldmap->dlr_mid);
     octstr_destroy(fieldmap->flash);
@@ -1725,6 +1727,9 @@ static FieldMap *generic_get_field_map(CfgGroup *grp)
     fm->dlr_mask = cfg_get(grp, octstr_imm("generic-param-dlr-mask"));
     if (fm->dlr_mask == NULL)
         fm->dlr_mask = octstr_create("dlr-mask");
+    fm->dlr_err = cfg_get(grp, octstr_imm("generic-param-dlr-err"));
+    if (fm->dlr_err == NULL)
+        fm->dlr_err = octstr_create("dlr-err");
     fm->dlr_url = cfg_get(grp, octstr_imm("generic-param-dlr-url"));
     if (fm->dlr_url == NULL)
         fm->dlr_url = octstr_create("dlr-url");
@@ -1775,7 +1780,7 @@ static void generic_receive_sms(SMSCConn *conn, HTTPClient *client,
     ConnData *conndata = conn->data;
     FieldMap *fm = conndata->fieldmap;
     Octstr *user, *pass, *from, *to, *text, *udh, *account, *binfo, *meta_data;
-    Octstr *dlrurl, *dlrmid;
+    Octstr *dlrurl, *dlrmid, *dlrerr;
     Octstr *tmp_string, *retmsg;
     int	mclass, mwi, coding, validity, deferred, dlrmask;
     List *reply_headers;
@@ -1797,6 +1802,8 @@ static void generic_receive_sms(SMSCConn *conn, HTTPClient *client,
     if (tmp_string) {
         sscanf(octstr_get_cstr(tmp_string),"%d", &dlrmask);
     }
+    dlrerr = http_cgi_variable(cgivars, octstr_get_cstr(fm->dlr_err));
+
     debug("smsc.http.generic", 0, "HTTP[%s]: Received an HTTP request",
           octstr_get_cstr(conn->id));
 
@@ -1825,6 +1832,15 @@ static void generic_receive_sms(SMSCConn *conn, HTTPClient *client,
 
             debug("smsc.http.generic", 0, "HTTP[%s]: Received DLR for DLR-URL <%s>",
                   octstr_get_cstr(conn->id), octstr_get_cstr(dlrmsg->sms.dlr_url));
+
+            if (dlrerr != NULL) {
+                /* pass errorcode as is */
+            	if (dlrmsg->sms.meta_data == NULL)
+            		dlrmsg->sms.meta_data = octstr_create("");
+
+                meta_data_set_value(dlrmsg->sms.meta_data, METADATA_DLR_GROUP,
+                                    octstr_imm(METADATA_DLR_GROUP_ERRORCODE), dlrerr, 1);
+            }
 
             Msg *resp = msg_duplicate(dlrmsg);
             ret = bb_smscconn_receive(conn, dlrmsg);
