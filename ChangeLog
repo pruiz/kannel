@@ -1,3 +1,6 @@
+2012-03-28  Stipe Tolj  <stolj at kannel.org>
+    * gw/smsbox.c: fix minor compiler warning. NLC.
+    
 2012-03-21 Alexander Malysh <amalysh at kannel.org>
     * gw/smsc/smsc_http.c, gwlib/cfg.def, doc/userguide/userguide.xml:
       added new option 'generic-param-dlr-err' to pass dlr-err for DLR.

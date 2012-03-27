@@ -2626,7 +2626,6 @@ static Octstr *smsbox_sendsms_post(List *headers, Octstr *body,
 				    binfo, priority, meta_data);
 
     }
-error2:
     octstr_destroy(user);
     octstr_destroy(pass);
     octstr_destroy(from);
