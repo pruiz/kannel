@@ -3447,7 +3447,7 @@ address-range = ""
       <entry><literal>number</literal></entry>
       <entry valign="bottom">
       Optional, source address TON setting for the link.
-		(Defaults to 0).
+		(Defaults to 2).
      </entry></row>
 
     <row><entry><literal>source-addr-npi</literal></entry>
@@ -3470,7 +3470,7 @@ address-range = ""
       <entry><literal>number</literal></entry>
       <entry valign="bottom">
       Optional, destination address TON setting for the link.
-		(Defaults to 0).
+		(Defaults to 2).
      </entry></row>
 
     <row><entry><literal>dest-addr-npi</literal></entry>

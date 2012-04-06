@@ -1,3 +1,7 @@
+2012-04-06 Alexander Malysh <amalysh at kannel.org>
+    * doc/userguide/userguide.xml: fixed default source and destination addr
+      ton. This fixes #636.
+
 2012-03-28  Stipe Tolj  <stolj at kannel.org>
     * gw/smsbox.c: fix minor compiler warning. NLC.
     
