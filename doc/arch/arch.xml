@@ -2259,8 +2259,8 @@ bad:
 		<para>A C preprocessor trick for handling many similar
 		structured data types, such as packets in a communication
 		protocol, is described and justified. See <ulink
-		url="http://www.iki.fi/liw/texts/index.html#cpp-trick">
-		http://www.iki.fi/liw/texts/index.html#cpp-trick</ulink>.
+		url="http://liw.iki.fi/liw/texts/cpp-trick.html">
+		http://liw.iki.fi/liw/texts/cpp-trick.html</ulink>.
 		</para>
 
 	</abstract> </biblioentry>

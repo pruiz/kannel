@@ -1,4 +1,7 @@
 2012-04-06 Alexander Malysh <amalysh at kannel.org>
+    * doc/arch/arch.xml: fixed #354.
+
+2012-04-06 Alexander Malysh <amalysh at kannel.org>
     * doc/arch/arch.xml: fixed #355.
 
 2012-04-06 Alexander Malysh <amalysh at kannel.org>
