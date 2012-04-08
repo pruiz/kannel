@@ -1,3 +1,8 @@
+2012-04-08 Alexander Malysh <amalysh at kannel.org>
+    * gw/smsbox.c: fixed double free bug for post request.
+      Thanks to Bartlomiej Balcerek <Bartlomiej.Balcerek at pwr.wroc.pl>
+      for bug report.
+
 2012-04-06 Alexander Malysh <amalysh at kannel.org>
     * doc/arch/arch.xml: fixed #354.
 

@@ -2557,7 +2557,6 @@ static Octstr *smsbox_sendsms_post(List *headers, Octstr *body,
 	octstr_case_compare(type, text_wml) == 0) {
 	text = html_to_sms(body);
 	octstr_strip_blanks(text);
-	octstr_destroy(body);
 	body = text;
 	get_x_kannel_from_headers(headers, &from, &to, &udh,
 				  &user, &pass, &smsc, &mclass, &mwi, 
@@ -3117,6 +3116,10 @@ static void sendsms_thread(void *arg)
     int status;
     
     for (;;) {
+    	/* reset request wars */
+    	ip = url = body = answer = NULL;
+    	hdrs = args = NULL;
+
         client = http_accept_request(sendsms_port, &ip, &url, &hdrs, &body, &args);
         if (client == NULL)
             break;
