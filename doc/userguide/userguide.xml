@@ -6842,6 +6842,12 @@ the SMS to the SIM card. Other SMSC types than AT do not
 set this field so it will be empty.
 </entry></row>
 
+<row><entry><literal>%x</literal></entry><entry>
+the smsbox-id of the message, identifying from which smsbox connection
+the message is originating. (Only available withing the
+<literal>access-log-format</literal> directive)
+</entry></row>
+
 </tbody>
 </tgroup>
 </table>

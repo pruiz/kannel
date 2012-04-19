@@ -1,3 +1,10 @@
+2012-04-19  Stipe Tolj  <stolj at kannel.org>
+    * doc/userguide/userguide.xml: adding documentation for escape code %x
+      applicable for 'access-log-format' in the 'group = core' context.
+    * gw/bb_alog.c: adding escape code %x for 'access-log-format' pattern
+      handling, which substitutes to the smsbox-id. Reformated the function
+      to comply with CodingStyle standards.
+      
 2012-04-08 Alexander Malysh <amalysh at kannel.org>
     * gw/smsbox.c: fixed double free bug for post request.
       Thanks to Bartlomiej Balcerek <Bartlomiej.Balcerek at pwr.wroc.pl>
