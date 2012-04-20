@@ -243,9 +243,11 @@ static void read_messages_from_bearerbox(void)
         /* block infinite for reading messages */
         ret = read_from_bearerbox(&msg, INFINITE_TIME);
         if (ret == -1) {
-            error(0, "Bearerbox is gone, restarting");
-            program_status = shutting_down;
-            restart = 1;
+            if (program_status != shutting_down) {
+                error(0, "Bearerbox is gone, restarting");
+                program_status = shutting_down;
+                restart = 1;
+            }
             break;
         } else if (ret == 1) /* timeout */
             continue;
