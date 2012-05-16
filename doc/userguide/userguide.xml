@@ -4065,6 +4065,13 @@ pin = 2345
 	Defaults to "AT+IFC=2,2"
      </entry></row>
 
+   <row><entry><literal>hardware-flow-control</literal></entry>
+     <entry><literal>boolean</literal></entry>
+     <entry valign="bottom">
+     	Optionally disable hardware handshake on the computer side by setting it to false.
+	Defaults to true.
+     </entry></row>
+
    <row><entry><literal>need-sleep</literal></entry>
      <entry><literal>boolean</literal></entry>
      <entry valign="bottom">

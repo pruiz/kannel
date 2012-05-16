@@ -545,6 +545,8 @@ MULTI_GROUP(modems,
     OCTSTR(message-start)
     OCTSTR(enable-mms)
     OCTSTR(reset-string)
+    OCTSTR(hardware-flow-control)
+
 )
 
 

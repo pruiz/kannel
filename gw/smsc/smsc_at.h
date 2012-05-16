@@ -114,6 +114,7 @@ typedef struct ModemDef {
     Octstr *message_storage;
     long message_start;
     int	enable_mms;
+    int	hardware_flow_control;
 } ModemDef;
 
 typedef struct PrivAT2data {

@@ -1,3 +1,13 @@
+2012-05-16 Andreas Fink <andreas at fink.org>
+    * gw/smsc_at.c gw/smsc_at.h gwlib/cfg.def: implemented ability to disable
+    hardware flow control from the computer side due to some broken modems
+    who not simply ignore hardware flow control but actually wire it in the
+    way that if its enabled, flow is always disabled. You can now
+    say hardware-flow-control = 0 in the modem definition to let the computer
+    ignore that fake signal. Note this is not the same as enable-hwhs which is the
+    AT command to tell the modem to actually use flow control. hardware-flow-control
+    is the hardware flow control for the computer side.
+
 2012-04-20 Alexander Malysh <amalysh at kannel.org>
     * gw/smsbox.c: fixed issue with shut down of smsbox.
 
