@@ -2853,7 +2853,7 @@ static ModemDef *at2_read_modems(PrivAT2data *privdata, Octstr *file, Octstr *id
 
         cfg_get_bool(&modem->enable_mms, grp, octstr_imm("enable-mms"));
         modem->hardware_flow_control = 1;
-+       cfg_get_bool(&modem->hardware_flow_control, grp, octstr_imm("hardware-flow-control"));
+        cfg_get_bool(&modem->hardware_flow_control, grp, octstr_imm("hardware-flow-control"));
 
         /*	
         if (modem->message_storage == NULL)
