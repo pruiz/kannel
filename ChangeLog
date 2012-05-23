@@ -1,3 +1,6 @@
+2012-05-23 Alexander Malysh <amalysh at kannel.org>
+    * gw/smsc/smsc_smpp.c: added workaround for deferred=0.
+
 2012-05-16 Andreas Fink <andreas at fink.org>
     * gw/smsc_at.c gw/smsc_at.h gwlib/cfg.def: implemented ability to disable
     hardware flow control from the computer side due to some broken modems

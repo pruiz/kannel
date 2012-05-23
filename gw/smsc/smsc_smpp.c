@@ -944,7 +944,7 @@ static SMPP_PDU *msg_to_pdu(SMPP *smpp, Msg *msg)
                 tm.tm_hour, tm.tm_min, tm.tm_sec);
     }
 
-    if (msg->sms.deferred != SMS_PARAM_UNDEFINED) {
+    if (msg->sms.deferred != SMS_PARAM_UNDEFINED && msg->sms.deferred > 0) {
         struct tm tm = gw_gmtime(time(NULL) + msg->sms.deferred * 60);
         pdu->u.submit_sm.schedule_delivery_time = octstr_format("%02d%02d%02d%02d%02d%02d000+",
                 tm.tm_year % 100, tm.tm_mon + 1, tm.tm_mday,
