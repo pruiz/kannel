@@ -1,3 +1,7 @@
+2012-05-31 Alexander Malysh <amalysh at kannel.org>
+    * doc/userguide/userguide.xml: removed meta-data from smsc group because it
+      is not supported there.
+
 2012-05-23 Alexander Malysh <amalysh at kannel.org>
     * gw/smsc/smsc_smpp.c: added workaround for deferred=0.
 

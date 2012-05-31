@@ -2884,12 +2884,6 @@ secret-nas = radius
         </entry>   
      </row>
 
-     <row><entry><literal>meta-data</literal></entry>
-        <entry>string</entry>
-        <entry valign="bottom">url-encoded string with properly formatted meta-data pair(s)..
-        See <xref linkend="meta-data"> for an explanation about meta-data configuration and encoding.
-        </entry>   
-     </row>
   </tbody>
   </tgroup>
  </table>
