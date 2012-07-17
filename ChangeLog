@@ -1,3 +1,7 @@
+2012-07-17 Alexander Malysh <amalysh at kannel.org>
+    * README: applied patch that corrects docs build on current debian.
+      Thanks to Martin Atukunda <matlads at gmail.com> for this patch.
+
 2012-07-04  Stipe Tolj  <stolj at kannel.org>
     * doc/CodingStyle: fix type for --pad-oper option. NLC.
      
