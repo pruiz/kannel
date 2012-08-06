@@ -1,3 +1,7 @@
+2012-08-06  Stipe Tolj  <stolj at kannel.org>
+    * test/test_dict.c: add a lookup phase too, in order to have a populate
+      and lookup phase while testing.
+    
 2012-07-17 Alexander Malysh <amalysh at kannel.org>
     * README: applied patch that corrects docs build on current debian.
       Thanks to Martin Atukunda <matlads at gmail.com> for this patch.

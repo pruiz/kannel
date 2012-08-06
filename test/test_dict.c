@@ -58,6 +58,7 @@
  * test_dict.c - test Dict objects
  *
  * Lars Wirzenius
+ * Stipe Tolj
  */
 
 
@@ -68,8 +69,9 @@
 int main(void)
 {
     Dict *dict;
-    Octstr *foo, *bar;
+    Octstr *foo, *bar, *key;
     unsigned long i;
+    List *keys;
      
     gwlib_init();
     
@@ -86,7 +88,7 @@ int main(void)
         error(0, "key count is %ld, should be 1.", dict_key_count(dict));
     dict_destroy(dict);
 
-    debug("",0,"Dict extended/huge test.");
+    debug("",0,"Dict populate phase.");
     dict = dict_create(HUGE_SIZE, (void (*)(void *))octstr_destroy);
     for (i = 1; i <= HUGE_SIZE; i++) {
         unsigned long val;
@@ -99,12 +101,23 @@ int main(void)
         okey = octstr_create(key);
         oval = octstr_format("%ld", val);
         dict_put(dict, okey, oval);
+        octstr_destroy(okey);
     }
-    gwthread_sleep(5); /* give hash table some time */
     if (dict_key_count(dict) == HUGE_SIZE)
         info(0, "ok, got %d entries in the dictionary.", HUGE_SIZE);
     else
         error(0, "key count is %ld, should be %d.", dict_key_count(dict), HUGE_SIZE);
+
+    debug("",0,"Dict lookup phase.");
+    keys = dict_keys(dict);
+    while ((key = gwlist_extract_first(keys)) != NULL) {
+    	Octstr *oval;
+    	if ((oval = dict_get(dict, key)) == NULL)
+    		error(0, "key %s has NULL value.", octstr_get_cstr(key));
+    	octstr_destroy(key);
+    }
+    gwlist_destroy(keys, NULL);
+
     dict_destroy(dict);
 
     gwlib_shutdown();
