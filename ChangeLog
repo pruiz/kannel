@@ -1,4 +1,19 @@
 2012-08-06  Stipe Tolj  <stolj at kannel.org>
+    * doc/userguide/userguide.xml: add documentation about 'dlr-storage = spool'
+    * gw/dlr_p.h: add dlr_init_spool() prototype.
+    * gw/dlr_spool.c: implement a DLR storage using a spool directory. This
+      uses either a SHA1 or MD5 hash representing the msg ID, adding a suffix
+      of the destination address. When dlr_find() is called, we use the same
+      heuristic approach to resolve the correct DLR message as in the internal
+      DLR storage module.
+    * gw/dlr.c: add initialization call to dlr_init_spool() if configured
+      accordingly.
+    * gwlib/cfg.def: add config directive 'dlr-spool' in the core group to let
+      the user define which DLR storage spool location should be used.
+    This patchset implements a simple, natively supported (no external libs)
+    persistent DLR storage on the local file system using a spool directory.
+    
+2012-08-06  Stipe Tolj  <stolj at kannel.org>
     * configure[.in], gw-config.h.in: add detection of POSIX.1 nftw() 
       availability.
     * test/test_file_traversal.c: file traversal test, using two different

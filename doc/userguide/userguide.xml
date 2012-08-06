@@ -1495,17 +1495,31 @@ admin-password = f00bar
     <row><entry><literal>dlr-storage</literal></entry>
      <entry>type</entry>
      <entry valign="bottom">
-        Defines the way DLRs are stored. If you have build-in external 
-          DLR storage support, i.e. using MySQL you may define here the
-          alternative storage type like <literal>mysql</literal>. 
-          Supported types are:
-          <literal>internal</literal>, 
-          <literal>mysql</literal>,
-          <literal>pgsql</literal>,
-          <literal>sdb</literal>,
-          <literal>mssql</literal>,
-          <literal>sqlite3</literal> and <literal>oracle</literal>.
-          By default this is set to <literal>internal</literal>.
+        Defines the way DLRs are stored. Natively in-memory storage is 
+        supported, which is very fast, but has no persistancy. This means 
+        you will loose all your temporary DLR information on bearebox 
+        re-start. In addition a spool directory approach is natively 
+        supported, which garantees persistancy with a reasonable 
+        performance, depending on your disk IO performance.
+        If you have build-in external DLR storage support, i.e. using 
+        MySQL you may define here the alternative storage type like 
+        <literal>mysql</literal>. 
+        Supported types are:
+        <literal>internal</literal>, 
+        <literal>spool</literal>, 
+        <literal>mysql</literal>,
+        <literal>pgsql</literal>,
+        <literal>sdb</literal>,
+        <literal>mssql</literal>,
+        <literal>sqlite3</literal> and <literal>oracle</literal>.
+        By default this is set to <literal>internal</literal>.
+     </entry></row>
+
+    <row><entry><literal>dlr-spool</literal></entry>
+     <entry>filename</entry>
+     <entry valign="bottom">
+        Depends on <literal>dlr-storage = spool</literal> option used, it 
+        is the spool directory to use for DLR storage data.
      </entry></row>
 
      <row><entry><literal>maximum-queue-length</literal></entry>

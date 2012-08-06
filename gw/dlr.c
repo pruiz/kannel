@@ -248,7 +248,9 @@ void dlr_init(Cfg* cfg)
     }
 
     /* call the sub-init routine */
-    if (octstr_compare(dlr_type, octstr_imm("mysql")) == 0) {
+    if (octstr_compare(dlr_type, octstr_imm("spool")) == 0) {
+        handles = dlr_init_spool(cfg);
+    } else if (octstr_compare(dlr_type, octstr_imm("mysql")) == 0) {
         handles = dlr_init_mysql(cfg);
     } else if (octstr_compare(dlr_type, octstr_imm("sdb")) == 0) {
         handles = dlr_init_sdb(cfg);
