@@ -55,9 +55,9 @@
  */ 
 
 /*
- * test_md5.c - test MD5 routine.
+ * test_hash.c - test MD5 and SHA1 routines.
  *
- * Stipe Tolj <stolj@wapme.de>
+ * Stipe Tolj <stolj at kannel dot org>
  */
 
 #include <string.h>
@@ -65,6 +65,28 @@
 #include <signal.h>
 
 #include "gwlib/gwlib.h"
+
+#ifdef HAVE_LIBSSL
+static Octstr *our_hash_func(Octstr *os)
+{
+    /* use openssl's SHA1 */
+    EVP_MD_CTX mdctx;
+    const EVP_MD *md;
+    unsigned char md_value[EVP_MAX_MD_SIZE];
+    unsigned int md_len;
+
+    md = EVP_get_digestbyname("sha1");
+
+    EVP_MD_CTX_init(&mdctx);
+    EVP_DigestInit_ex(&mdctx, md, NULL);
+    EVP_DigestUpdate(&mdctx, octstr_get_cstr(os), octstr_len(os));
+    EVP_DigestFinal_ex(&mdctx, md_value, &md_len);
+    EVP_MD_CTX_cleanup(&mdctx);
+
+    return octstr_create_from_data((char*) md_value, md_len);
+}
+#endif
+
 
 int main(int argc, char **argv)
 {
@@ -80,7 +102,28 @@ int main(int argc, char **argv)
     data = octstr_create(argv[1]);
     enc = md5(data);
 
-    debug("",0,"MD5 <%s>", octstr_get_cstr(enc));
+    debug("",0,"MD5:");
+    octstr_dump(enc, 0);
+
+    octstr_destroy(enc);
+    enc = md5digest(data);
+
+    debug("",0,"MD5 (digest):");
+    octstr_dump(enc, 0);
+
+#ifdef HAVE_LIBSSL
+    OpenSSL_add_all_digests();
+    
+    octstr_destroy(enc);
+    enc = our_hash_func(data);
+
+    debug("",0,"SHA1:");
+    octstr_dump(enc, 0);
+
+    octstr_binary_to_hex(enc, 0);
+    debug("",0,"SHA1 (digest):");
+    octstr_dump(enc, 0);
+#endif
 
     octstr_destroy(data);
     octstr_destroy(enc);
