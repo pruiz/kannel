@@ -1,4 +1,7 @@
 2012-08-06  Stipe Tolj  <stolj at kannel.org>
+    * gw/dlr_spool.c: reduce code complexity be re-using the essential parts.
+    
+2012-08-06  Stipe Tolj  <stolj at kannel.org>
     * */*: updating the LICENSE preamble to reflect the correct year.
     
 2012-08-06  Stipe Tolj  <stolj at kannel.org>

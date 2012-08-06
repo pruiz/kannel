@@ -304,62 +304,6 @@ static int for_each_file(const Octstr *dir_s, int ignore_err,
 #endif
 
 
-static Octstr *get_msg_surrogate(const Octstr *dir_s, const Octstr *hash,
-		                         const Octstr *dst, Octstr **filename)
-{
-	Octstr *ret;
-    DIR *dir;
-    struct dirent *ent;
-    char *hash_cstr;
-
-    if ((dir = opendir(octstr_get_cstr(dir_s))) == NULL) {
-        error(errno, "Could not open directory `%s'", octstr_get_cstr(dir_s));
-        return NULL;
-    }
-
-    hash_cstr = octstr_get_cstr(hash);
-    while ((ent = readdir(dir)) != NULL) {
-    	Octstr *fname = octstr_create((char*)ent->d_name);
-
-    	if (octstr_ncompare(fname, hash, OUR_DIGEST_LEN) == 0) {
-    		Octstr *addr;
-    		long addr_len, pos;
-
-    		/* this is a candidate */
-    		if (dst == NULL)
-    			goto found;
-
-    		/* check for the destination address suffix part */
-    		if ((addr_len = (octstr_len(fname) - OUR_DIGEST_LEN)) < 0 ||
-    				(pos = (addr_len - octstr_len(dst))) < 0) {
-    			octstr_destroy(fname);
-    			continue;
-    		}
-    		addr = octstr_copy(fname, OUR_DIGEST_LEN, addr_len);
-
-    		/* if not found, then bail out*/
-    		if (octstr_search(addr, dst, pos) == -1) {
-    			octstr_destroy(addr);
-    			octstr_destroy(fname);
-    			continue;
-    		}
-    		octstr_destroy(addr);
-found:
-			/* found it */
-			closedir(dir);
-			*filename = octstr_format("%S/%S", dir_s, fname);
-			octstr_destroy(fname);
-			ret = octstr_read_file(octstr_get_cstr(*filename));
-			return ret;
-    	}
-    	octstr_destroy(fname);
-    }
-    closedir(dir);
-
-    return NULL;
-}
-
-
 static Octstr *get_msg_filename(const Octstr *dir_s, const Octstr *hash, const Octstr *dst)
 {
 	Octstr *ret;
@@ -412,6 +356,17 @@ found:
 
     return NULL;
 }
+
+static Octstr *get_msg_surrogate(const Octstr *dir_s, const Octstr *hash,
+		                         const Octstr *dst, Octstr **filename)
+{
+    /* get our msg filename */
+    if ((*filename = get_msg_filename(dir_s, hash, dst)) == NULL)
+    	return NULL;
+
+	return octstr_read_file(octstr_get_cstr(*filename));
+}
+
 
 /********************************************************************
  * Implementation of the DLR handle functions.
