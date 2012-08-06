@@ -249,13 +249,14 @@ static int at2_open_device(PrivAT2data *privdata)
     tios.c_iflag |= IGNPAR; /* ignore parity */
     tios.c_iflag &= ~INPCK;
 #if defined(CRTSCTS)
-	if(privdata->modem) {
-	    if(privdata->modem->hardware_flow_control) {
-	        tios.c_cflag |= CRTSCTS; /* enable hardware flow control */
-    	}
-	    else {
-		    tios.c_cflag &= ~CRTSCTS; /* disable hardware flow control */
-	    }
+    if(privdata->modem) {
+        if(privdata->modem->hardware_flow_control) {
+            tios.c_cflag |= CRTSCTS; /* enable hardware flow control */
+        }
+        else {
+            tios.c_cflag &= ~CRTSCTS; /* disable hardware flow control */
+        }
+    }
     else {
         tios.c_cflag &= ~CRTSCTS; /* disable hardware flow control */
     }
