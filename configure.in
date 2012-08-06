@@ -300,6 +300,14 @@ GW_HAVE_FUNC_FROM(stdio.h, getopt, HAVE_GETOPT_IN_STDIO_H,
 GW_HAVE_FUNC_FROM(unistd.h, getopt, HAVE_GETOPT_IN_UNISTD_H,
     	    	  [Does <unistd.h> declare getopt()?])
 
+dnl POSIX nftw()
+
+AC_CHECK_HEADERS(ftw.h, [
+  AC_CHECK_FUNC(nftw, [ 
+    AC_DEFINE(HAVE_NFTW)
+  ])
+])
+
 
 dnl POSIX regular expression check
 
@@ -311,7 +319,7 @@ AC_CHECK_HEADERS(regex.h, [
 ])
 
 
-dnl Misfeature checks
+dnl Misc feature checks
 
 AC_CONFIG_SECTION([Checking for POSIX threads support])
 

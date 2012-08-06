@@ -265,6 +265,9 @@
 /* Define if you have and want to use POSIX regular expressions */
 #undef HAVE_REGEX
 
+/* Define if you have and want to use POSIX nftw function */
+#undef HAVE_NFTW
+
 /* Define if you have and want to use PCRE (Perl compatible regular expressions) */
 #undef HAVE_PCRE
 

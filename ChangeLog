@@ -1,4 +1,10 @@
 2012-08-06  Stipe Tolj  <stolj at kannel.org>
+    * configure[.in], gw-config.h.in: add detection of POSIX.1 nftw() 
+      availability.
+    * test/test_file_traversal.c: file traversal test, using two different
+      approaches to traverse a directory structure recursively.
+    
+2012-08-06  Stipe Tolj  <stolj at kannel.org>
     * test/test_hash.c: simple test program replacing test_md5.c which
       computes both, MD5 hash digest and a SHA1 hash digest if openssl has
       been available.
