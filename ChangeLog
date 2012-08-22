@@ -1,3 +1,6 @@
+2012-08-22 Alexander Malysh <amalysh at kannel.org>
+    * gwlib/octstr.c: replaced old hash funtion with hash from Robert Sedgewick.
+
 2012-08-06 Andreas Fink <andreas at fink.org>
     * gw/smsc/smsc_at.c: fixed a bug which crashed bearerbox if no
       modem definition was used in the config.
