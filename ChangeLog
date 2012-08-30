@@ -1,3 +1,9 @@
+2012-08-29 Alexander Malysh <amalysh at kannel.org>
+    * gw/smsc/http/*.c, gw/smsc/smsc_http.c: splitted HTTP SMSC submodules into files.
+      This allow us to reduce code in HTTP SMSC itself and prepare this SMSC for
+      dynamicaly loading of submodules.
+      No behavior change in any implementation.
+
 2012-08-22 Alexander Malysh <amalysh at kannel.org>
     * gwlib/octstr.c: replaced old hash funtion with hash from Robert Sedgewick.
 
