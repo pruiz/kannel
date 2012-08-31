@@ -1,3 +1,6 @@
+2012-08-31 Alexander Malysh <amalysh at kannel.org>
+    * gw/smsc/smsc_http.c: fixed segfault produced by last commit.
+
 2012-08-29 Alexander Malysh <amalysh at kannel.org>
     * gw/smsc/http/*.c, gw/smsc/smsc_http.c: splitted HTTP SMSC submodules into files.
       This allow us to reduce code in HTTP SMSC itself and prepare this SMSC for

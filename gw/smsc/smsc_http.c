@@ -782,6 +782,11 @@ static void kannel_receive_sms(SMSCConn *conn, HTTPClient *client,
     http_destroy_headers(reply_headers);
 }
 
+struct smsc_http_fn_callbacks smsc_http_kannel_callback = {
+        .send_sms = kannel_send_sms,
+        .parse_reply = kannel_parse_reply,
+        .receive_sms = kannel_receive_sms,
+};
 
 /*-----------------------------------------------------------------
  * functions to implement various smscconn operations
@@ -911,12 +916,6 @@ int smsc_http_create(SMSCConn *conn, CfgGroup *cfg)
               octstr_get_cstr(conn->id));
 
     if (octstr_case_compare(type, octstr_imm("kannel")) == 0) {
-        struct smsc_http_fn_callbacks smsc_http_kannel_callback = {
-                .send_sms = kannel_send_sms,
-                .parse_reply = kannel_parse_reply,
-                .receive_sms = kannel_receive_sms,
-        };
-
         if (conndata->username == NULL || conndata->password == NULL) {
             error(0, "HTTP[%s]: 'username' and 'password' required for Kannel http smsc",
                   octstr_get_cstr(conn->id));
