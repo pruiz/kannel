@@ -1,3 +1,12 @@
+2012-08-31  Stipe Tolj  <stolj at kannel.org>
+    * gwlib/dict.[ch]: added function dict_duplicate() allowing an easy
+      logical content duplication of an existing Dict structure, added
+      functions dict_traverse[_sorted]() which allow in Dict traversal without
+      locking the Dict logically outside, before going into a traversal loop.
+      The sorted version allows to pre-sort the data elements of the Dict
+      via a custom sorting function, then traversing the elements in this
+      sorted order.
+      
 2012-08-31 Alexander Malysh <amalysh at kannel.org>
     * gwlib/octstr.[ch]: added two new functions: octstr_str_search and octstr_str_rsearch.
 
