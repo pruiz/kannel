@@ -207,9 +207,9 @@ static void urlcode_init(void)
     int i;
 
     unsigned char *safe = " 0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-	"abcdefghijklmnopqrstuvwxyz-_.!~*'()";
+                          "abcdefghijklmnopqrstuvwxyz-_.!~*'()";
     for (i = 0; safe[i] != '\0'; ++i)
-	is_safe[safe[i]] = 1;
+        is_safe[safe[i]] = 1;
 }
 
 
@@ -1027,6 +1027,27 @@ long octstr_search_char(const Octstr *ostr, int ch, long pos)
 }
 
 
+long octstr_rsearch_char(const Octstr *ostr, int ch, long pos)
+{
+    long i;
+
+    seems_valid(ostr);
+    gw_assert(ch >= 0);
+    gw_assert(ch <= UCHAR_MAX);
+    gw_assert(pos >= 0);
+
+    if (pos >= ostr->len)
+        return -1;
+
+    for (i = pos; i >= 0; i--) {
+        if (ostr->data[i] == ch)
+            return i;
+    }
+
+    return -1;
+}
+
+
 long octstr_search_chars(const Octstr *ostr, const Octstr *chars, long pos)
 {
     long i, j;
@@ -1126,6 +1147,40 @@ long octstr_case_nsearch(const Octstr *haystack, const Octstr *needle, long pos,
         }
         if (j == needle->len)
             return i;
+    }
+
+    return -1;
+}
+
+
+long octstr_str_search(const Octstr *haystack, const char *needle, long pos)
+{
+    int first;
+    int needle_len;
+
+    seems_valid(haystack);
+    gw_assert(pos >= 0);
+
+    /* Always "find" an empty string */
+    if (needle == NULL || needle[0] == '\0')
+        return 0;
+
+    needle_len = strlen(needle);
+
+    if (needle_len == 1)
+        return octstr_search_char(haystack, needle[0], pos);
+
+    /* For each occurrence of needle's first character in ostr,
+     * check if the rest of needle follows.  Stop if there are no
+     * more occurrences, or if the rest of needle can't possibly
+     * fit in the haystack. */
+    first = needle[0];
+    pos = octstr_search_char(haystack, first, pos);
+    while (pos >= 0 && haystack->len - pos >= needle_len) {
+        if (memcmp(haystack->data + pos,
+                   needle, needle_len) == 0)
+            return pos;
+        pos = octstr_search_char(haystack, first, pos + 1);
     }
 
     return -1;
@@ -1992,7 +2047,7 @@ static void octstr_dump_debug(const Octstr *ostr, int level)
  * the 3 log levels info(), warning() and error() that have the same
  * argument list.
  * We need to map the function calls via ## concatenation and revert
- * to the orginal function call by a define.
+ * to the original function call by a define.
  * The do-while loop emulates a function call.
  */
 

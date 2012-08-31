@@ -1,4 +1,7 @@
 2012-08-31 Alexander Malysh <amalysh at kannel.org>
+    * gwlib/octstr.[ch]: added two new functions: octstr_str_search and octstr_str_rsearch.
+
+2012-08-31 Alexander Malysh <amalysh at kannel.org>
     * gw/smsc/smsc_http.c: fixed segfault produced by last commit.
 
 2012-08-29 Alexander Malysh <amalysh at kannel.org>
