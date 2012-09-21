@@ -1,3 +1,8 @@
+2012-09-21  Stipe Tolj  <stolj at kannel.org>
+    * gw/smsc/smsc_smpp.c: fix missing conversion to internal encoding (UTF-8)
+      if we receive IA5/ASCII payload content.
+      Thanks to Donald Jackson <dj at kannel.org> for spotting this.
+  
 2012-08-31  Stipe Tolj  <stolj at kannel.org>
     * gwlib/dict.[ch]: added function dict_duplicate() allowing an easy
       logical content duplication of an existing Dict structure, added
