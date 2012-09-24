@@ -1,3 +1,10 @@
+2012-09-24  Stipe Tolj  <stolj at kannel.org>
+    * gw/smsc/smsc_smpp.c: reverting the last commit, since this has no logical
+      effect in fact, due that ASCII is the first byte range in UTF-8 anyway.
+      We get the same result, but still go throught the convert routine which
+      can be considered overhead.
+      Thanks to Alexander Malysh who pointed this out and voted for a revert.
+      
 2012-09-21  Stipe Tolj  <stolj at kannel.org>
     * gw/smsc/smsc_smpp.c: fix missing conversion to internal encoding (UTF-8)
       if we receive IA5/ASCII payload content.
