@@ -307,6 +307,8 @@ int main(int argc, char **argv)
             /* something went off, let's see if it's stdin */
             if (FD_ISSET(fileno(fp), &rset)) { /* stdin is readable */
                 cptr = fgets(buffer, IN_BUFSIZE, stdin);
+                if (!cptr)
+                    goto over;
                 if( strlen( cptr ) < 2 )
                     goto rcv;
             } else { /* timer kicked in */

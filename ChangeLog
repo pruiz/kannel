@@ -1,4 +1,8 @@
 2012-09-26 Alexander Malysh <amalysh at kannel.org>
+    * test/fakesmsc.c: segmentation fault when the program reaches EOF.
+      Thanks to Rudy Matela <rudy at matela.com.br> for this patch.
+
+2012-09-26 Alexander Malysh <amalysh at kannel.org>
     * gw/smsc/http/generic.c: fixed segfault and mem leak.
 
 2012-09-24  Stipe Tolj  <stolj at kannel.org>
