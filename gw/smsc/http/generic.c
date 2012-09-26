@@ -134,9 +134,6 @@ struct generic_values {
     /* Compiled regex for the 'generic' type to get the foreign message id
     * from the HTTP response body */
     regex_t *generic_foreign_id_regex;
-
-    /* send cgi vars as headers */
-    int use_header;
 };
 
 /*
@@ -540,7 +537,7 @@ static int generic_init(SMSCConn *conn, CfgGroup *cfg)
               octstr_get_cstr(conn->id));
         return -1;
     }
-    conndata->data = gw_malloc(sizeof(*values));
+    conndata->data = values = gw_malloc(sizeof(*values));
     /* reset */
     memset(conndata->data, 0, sizeof(*values));
 
@@ -577,9 +574,6 @@ static int generic_init(SMSCConn *conn, CfgGroup *cfg)
         octstr_destroy(os);
     }
 
-    if (cfg_get_bool(&values->use_header, cfg, octstr_imm("generic-use-header")) == -1)
-        values->use_header = 0;
-
     debug("", 0, "generic init completed");
 
     return 0;
@@ -605,6 +599,9 @@ static void generic_destroy(SMSCConn *conn)
         gw_regex_destroy(values->tempfail_regex);
     if (values->generic_foreign_id_regex)
         gw_regex_destroy(values->generic_foreign_id_regex);
+
+    gw_free(values);
+    conndata->data = NULL;
 
     debug("", 0, "generic destroy completed");
 }
