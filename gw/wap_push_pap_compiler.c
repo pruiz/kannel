@@ -1291,6 +1291,9 @@ static int set_attribute_value(Octstr *element_name, Octstr *attr_value,
 
     ret = -2;
     if (octstr_compare(element_name, octstr_imm("push-message")) == 0) {
+        if (*e == NULL)
+            *e = wap_event_create(Push_Message);
+
         if (octstr_compare(attr_name, 
                           octstr_imm("progress-notes-requested")) == 0)
             (**e).u.Push_Message.progress_notes_requested = 
@@ -1298,7 +1301,10 @@ static int set_attribute_value(Octstr *element_name, Octstr *attr_value,
 
     } else if (octstr_compare(element_name, 
 			     octstr_imm("quality-of-service")) == 0) {
-        if (octstr_compare(attr_name, octstr_imm("priority")) == 0)
+        if (*e == NULL)
+            *e = wap_event_create(Push_Message);
+
+    	if (octstr_compare(attr_name, octstr_imm("priority")) == 0)
             (**e).u.Push_Message.priority = 
                  (ret = parse_priority(attr_value)) >= 0 ? ret : 0;
         else if (octstr_compare(attr_name, octstr_imm("delivery-method")) == 0)

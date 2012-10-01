@@ -1,3 +1,13 @@
+2012-10-01  Stipe Tolj  <stolj at kannel.org>
+    * gw/wap_push_pap_[compiler|mime].c: process the 'X-Wap-Application-Id'
+      within the HTTP header of the payload content part of the multi-part
+      MIME type, and NOT inside the meta-level HTTP headers.
+    * test/test_pgg.c: ensure we inject the 'X-Wap-Application-Id' header
+      to the correct section of the payload multi-part MIME type content.
+    This patchset fixes bug #551 and has been confirmed in production.
+    Thanks a lot to Nikolay Khrustalev and Rafael Aquino for reporting and
+    providing analysis data to resolve the bug.
+
 2012-09-26 Alexander Malysh <amalysh at kannel.org>
     * test/fakesmsc.c: segmentation fault when the program reaches EOF.
       Thanks to Rudy Matela <rudy at matela.com.br> for this patch.
