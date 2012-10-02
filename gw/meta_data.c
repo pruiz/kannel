@@ -55,9 +55,9 @@
  */
 
 /*
- * meta_data.h
+ * meta_data.c
  *
- * Meta Data manupilation.
+ * Meta Data manipulation.
  * 
  * Alexander Malysh <amalysh kannel.org>, 2007-2009
  */
