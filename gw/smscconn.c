@@ -263,6 +263,9 @@ SMSCConn *smscconn_create(CfgGroup *grp, int start_as_stopped)
     if (cfg_get_integer(&conn->max_sms_octets, grp, octstr_imm("max-sms-octets")) == -1)
         conn->max_sms_octets = MAX_SMS_OCTETS;
 
+    if (cfg_get_bool(&conn->dead_start, grp, octstr_imm("dead-start")) == -1)
+        conn->dead_start = 0;	/* default to connect at start-up time */
+
     /* open a smsc-id specific log-file in exlusive mode */
     if (conn->log_file)
         conn->log_idx = log_open(octstr_get_cstr(conn->log_file), 

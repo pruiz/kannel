@@ -205,6 +205,7 @@ struct smscconn {
     Dict *reroute_by_receiver;  /* reroute receiver numbers to specific smsc-ids */
     Octstr *reroute_to_smsc;    /* define a smsc-id to reroute to */
     int reroute_dlr;            /* should DLR's are rereouted too? */
+    int dead_start;             /* don't connect this SMSC at startup time */
 
     long max_sms_octets; /* max allowed octets for this SMSC */
 

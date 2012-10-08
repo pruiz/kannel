@@ -953,7 +953,12 @@ int smsc2_add_smsc(Octstr *id)
             conn = smscconn_create(grp, 1);
             if (conn != NULL) {
                 gwlist_append(smsc_list, conn);
-                smscconn_start(conn);
+                if (conn->dead_start) {
+                    /* Shutdown connection if it's not configured to connect at start-up time */
+                    smscconn_shutdown(conn, 0);
+                } else {
+                    smscconn_start(conn);
+                }
                 success = 1;
             }
         }
@@ -1001,7 +1006,7 @@ int smsc2_reload_lists(void)
     return rc;
 }
 
-void smsc2_resume(void)
+void smsc2_resume(int is_init)
 {
     SMSCConn *conn;
     long i;
@@ -1012,7 +1017,12 @@ void smsc2_resume(void)
     gw_rwlock_rdlock(&smsc_list_lock);
     for (i = 0; i < gwlist_len(smsc_list); i++) {
         conn = gwlist_get(smsc_list, i);
-        smscconn_start(conn);
+        if (!is_init || !conn->dead_start) {
+            smscconn_start(conn);
+        } else {
+            /* Shutdown the connections that are not configured to start at boot */
+            smscconn_shutdown(conn, 0);
+        }
     }
     gw_rwlock_unlock(&smsc_list_lock);
     

@@ -25,8 +25,8 @@
 			<jobtitle>Chairman &amp; CTO</jobtitle>
 			<orgname>Global Networks Inc.</orgname>
 			<address> <email>andreas@fink.org</email>
-				<otheraddr>http://www.smsrelay.com</otheraddr>
-				<otheraddr>http://www.gni.ch</otheraddr>
+				<otheraddr>http://www.smsrelay.com/</otheraddr>
+				<otheraddr>http://www.gni.ch/</otheraddr>
 			</address>
 		</affiliation>
 	</author>
@@ -48,7 +48,7 @@
 			<orgname>Tolj System Architecture</orgname>
 			<address> 
 				<email>stolj@kannel.org</email>
-				<otheraddr>http://www.kannel.org</otheraddr>
+				<otheraddr>http://www.tolj.org/</otheraddr>
 			</address>
 		</affiliation>
 	</author>
@@ -60,7 +60,7 @@
 			<orgname>Global Networks Inc.</orgname>
 			<address> 
 				<email>as@gni.ch</email>
-				<otheraddr>http://www.gni.ch</otheraddr>
+				<otheraddr>http://www.gni.ch/</otheraddr>
 			</address>
 		</affiliation>
 	</author>
@@ -72,10 +72,22 @@
 			<orgname>GTX Ltd.</orgname>
 			<address> 
 				<email>amalysh at kannel.org</email>
-				<otheraddr>http://www.gtx-messaging.com</otheraddr>
+				<otheraddr>http://www.gtx-messaging.com/</otheraddr>
 			</address>
 		</affiliation>
 	</author>
+    <author>
+        <firstname>Alejandro</firstname>
+        <surname>Guerrieri</surname>
+        <affiliation>
+            <jobtitle>Senior System Architect</jobtitle>
+            <orgname>3Cinteractive, L.L.C.</orgname>
+            <address> 
+                <email>aguerrieri@kannel.org</email>
+                <otheraddr>http://www.3cinteractive.com/</otheraddr>
+            </address>
+        </affiliation>
+    </author>
 	<author>
 		<firstname>Lars</firstname>
 		<surname>Wirzenius</surname>
@@ -2896,6 +2908,15 @@ secret-nas = radius
         SMS into multiparts.
         Default: 140
         </entry>   
+     </row>
+
+     <row><entry><literal>dead-start</literal></entry>
+        <entry><literal>boolean</literal></entry>
+        <entry valign="bottom">
+        Optional, defines if the SMSC connection type is started in disconnected mode (dead).
+        This allows SMSC to be connected at a later time with the add-smsc HTTP administration command. 
+        If set to 'true' the connection will start as 'dead' and will require a start-smsc command 
+        to activate it. Defaults to 'false' if not present.</entry>
      </row>
 
   </tbody>

@@ -727,7 +727,7 @@ int main(int argc, char **argv)
         info(0, "Gateway is now ISOLATED by startup arguments");
         gwlist_remove_producer(suspended);
     } else {
-        smsc2_resume();
+        smsc2_resume(1);
         gwlist_remove_producer(suspended);	
         gwlist_remove_producer(isolated);
     }
@@ -882,7 +882,7 @@ int bb_resume(void)
     if (bb_status == BB_SUSPENDED)
         gwlist_remove_producer(suspended);
 
-    smsc2_resume();
+    smsc2_resume(0);
     bb_status = BB_RUNNING;
     gwlist_remove_producer(isolated);
     mutex_unlock(status_mutex);

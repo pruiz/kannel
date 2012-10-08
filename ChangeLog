@@ -1,3 +1,19 @@
+2012-10-08  Stipe Tolj  <stolj at kannel.org>
+    * doc/userguide.xml: adding documentation part for new config directive
+      'dead-start' being a global config directive for the 'group = smsc' 
+      scope.
+    * gw/bb_smscconn.c: use the dead_start flag in the connection struct to
+      determine if we're connecting a SMSC or leave it in 'dead' mode.
+    * gw/bearerbox.[ch]: changed prototype for smsc2_resume() to indicate a
+      flag if it was/should be inited.
+    * gw/smscconn_p.h: add dead_start flag to smscconn.
+    * gw/smscconn.c: read the SMSC type generic 'dead-start' boolean config
+      directive to determine if we are starting this SMSC connection type in
+      a disconnected mode (dead).
+    This patchset was originally provided by Alejandro Guerrieri.
+    [Msg-Id: <DB023A11-9563-4F0B-A4CB-39A8E86DEE7B@kannel.org>]
+    Thanks to Alejandro for the patchset, and Juan Nin for raising the topic.
+      
 2012-10-01  Stipe Tolj  <stolj at kannel.org>
     * gw/wap_push_pap_[compiler|mime].c: process the 'X-Wap-Application-Id'
       within the HTTP header of the payload content part of the multi-part

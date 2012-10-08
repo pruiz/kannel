@@ -320,6 +320,7 @@ MULTI_GROUP(smsc,
     OCTSTR(our-host)
     OCTSTR(alt-dcs)
     OCTSTR(throughput)
+    OCTSTR(dead-start)
     OCTSTR(alt-charset)
     OCTSTR(host)
     OCTSTR(alt-host)

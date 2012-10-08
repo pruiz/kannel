@@ -152,7 +152,7 @@ int smsc2_start(Cfg *config);
 int smsc2_restart(Cfg *config);
 
 void smsc2_suspend(void);    /* suspend (can still send but not receive) */
-void smsc2_resume(void);     /* resume */
+void smsc2_resume(int is_init);     /* resume */
 int smsc2_shutdown(void);
 void smsc2_cleanup(void); /* final clean-up */
 
