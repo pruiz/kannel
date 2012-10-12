@@ -283,6 +283,9 @@
 /* Define if you have working semaphore (sem_t). */
 #undef HAVE_SEMAPHORE
 
+/* Define if you have and want to use gSOAP compiler */
+#undef HAVE_GSOAP
+
 /* If we're using GCC, we can get it to check format function arguments. */
 #ifdef __GNUC__
     #define PRINTFLIKE(a,b) __attribute__((format(printf, a, b)))

@@ -296,6 +296,11 @@ int smsc_oisd_create(SMSCConn *conn, CfgGroup *cfg);
 /* Responsible file: smsc/smsc_loopback.c */
 int smsc_loopback_create(SMSCConn *conn, CfgGroup *cfg);
 
+#ifdef HAVE_GSOAP
+/* Responsible file: smsc/smsc_soap_parlayx.c */
+int smsc_soap_parlayx_create(SMSCConn *conn, CfgGroup *cfg);
+#endif
+
 /* ADD NEW CREATE FUNCTIONS HERE
  *
  * int smsc_xxx_create(SMSCConn *conn, CfgGroup *cfg);

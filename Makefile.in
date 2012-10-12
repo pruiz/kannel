@@ -329,7 +329,9 @@ distclean: clean
 nag:
 	utils/find-long-lines
 
-depend .depend: wmlscript/wsgram.h gw-config.h
+@SOAP_INCLUDE@
+
+depend .depend: wmlscript/wsgram.h gw-config.h $(soap_depend)
 	for dir in $(srcdirs); do \
 	for file in $$dir/*.c; do \
 	    $(MKDEPEND) $$file -MT $$dir/`basename $$file .c`.o -MT $$dir/`basename $$file .c`.i; done; done > .depend  

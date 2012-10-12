@@ -312,6 +312,10 @@ SMSCConn *smscconn_create(CfgGroup *grp, int start_as_stopped)
         ret = smsc_oisd_create(conn, grp);
     else if (octstr_compare(smsc_type, octstr_imm("loopback")) == 0)
         ret = smsc_loopback_create(conn, grp);
+#ifdef HAVE_GSOAP
+    else if (octstr_compare(smsc_type, octstr_imm("parlayx")) == 0)
+    	ret = smsc_soap_parlayx_create(conn, grp);
+#endif
     else
         ret = smsc_wrapper_create(conn, grp);
 

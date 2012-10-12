@@ -600,6 +600,10 @@ ac_includes_default="\
 #endif"
 
 ac_subst_vars='LTLIBOBJS
+GSOAP_SHARE
+SOAP_INCLUDE
+SOAPCPP
+WSDL2H
 PGSQL_CONFIG
 SQLITE3
 SQLITE
@@ -743,6 +747,7 @@ with_pgsql
 with_pgsql_dir
 with_mssql
 with_wtls
+with_gsoap
 '
       ac_precious_vars='build_alias
 host_alias
@@ -1417,9 +1422,11 @@ Optional Packages:
   --with-pgsql            enable PostgreSQL storage [disabled]
   --with-pgsql-dir=DIR    where to look for PostgreSQL libs and header files
                           DIR points to the installation [/usr/local/pgsql]
-  --with-mssql=DIR        Include FreeTDS Ct-Lib support.  DIR is the FreeTDS
-                          install directory, defaults to /usr/local.
-  --with-wtls[=TYPE]      select WTLS version to use: openssl/baltimore
+  --with-mssql=DIR        enable FreeTDS Ct-Lib storage support [disabled]
+                          DIR points to the installation [/usr/local]
+  --with-wtls[=TYPE]      select WTLS version to use: [openssl|baltimore]
+  --with-gsoap[=DIR]      enable gSOAP web services SMSC module support [disabled]
+                          DIR points to the gSOAP share directory [/usr/share/gsoap]
 
 Some influential environment variables:
   CC          C compiler command
@@ -9717,12 +9724,201 @@ fi
 
 
 
+  nl='
+'
+  echo "${nl}${T_MD}Configuring for gSOAP support ...${T_ME}"
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to compile with SOAP support" >&5
+$as_echo_n "checking whether to compile with SOAP support... " >&6; }
+
+# Check whether --with-gsoap was given.
+if test "${with_gsoap+set}" = set; then :
+  withval=$with_gsoap;
+  if test "x$withval" = "xyes"; then
+    GSOAP_SHARE="/usr/share/gsoap"
+    if test -d "$GSOAP_SHARE/import" && test -d "$GSOAP_SHARE/plugin"; then
+      { $as_echo "$as_me:${as_lineno-$LINENO}: result: $GSOAP_SHARE" >&5
+$as_echo "$GSOAP_SHARE" >&6; }
+    else
+      { $as_echo "$as_me:${as_lineno-$LINENO}: result: not found" >&5
+$as_echo "not found" >&6; }
+      as_fn_error $? "Unable to find gSOAP import at $GSOAP_SHARE/import or plugin at $GSOAP_SHARE/plugin" "$LINENO" 5
+    fi
+  else
+    if test -d "$withval/import" && test -d "$withval/plugin"; then
+      GSOAP_SHARE="$withval"
+      { $as_echo "$as_me:${as_lineno-$LINENO}: result: $withval" >&5
+$as_echo "$withval" >&6; }
+    else
+      { $as_echo "$as_me:${as_lineno-$LINENO}: result: not found" >&5
+$as_echo "not found" >&6; }
+      as_fn_error $? "Unable to find gSOAP import at $withval/import or plugin at $withval/plugin" "$LINENO" 5
+    fi
+  fi
+  gsoap_ver_required="2.8.4"
+
+  for ac_prog in wsdl2h
+do
+  # Extract the first word of "$ac_prog", so it can be a program name with args.
+set dummy $ac_prog; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_path_WSDL2H+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  case $WSDL2H in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_WSDL2H="$WSDL2H" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
+    ac_cv_path_WSDL2H="$as_dir/$ac_word$ac_exec_ext"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+  ;;
+esac
+fi
+WSDL2H=$ac_cv_path_WSDL2H
+if test -n "$WSDL2H"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $WSDL2H" >&5
+$as_echo "$WSDL2H" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+  test -n "$WSDL2H" && break
+done
+test -n "$WSDL2H" || WSDL2H="no"
+
+  if test "$WSDL2H" = "no"; then
+    as_fn_error $? "Unable to find gSOAP's wsdl2h in path for SOAP support" "$LINENO" 5
+  fi
+  for ac_prog in soapcpp2
+do
+  # Extract the first word of "$ac_prog", so it can be a program name with args.
+set dummy $ac_prog; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_path_SOAPCPP+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  case $SOAPCPP in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_SOAPCPP="$SOAPCPP" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
+    ac_cv_path_SOAPCPP="$as_dir/$ac_word$ac_exec_ext"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+  ;;
+esac
+fi
+SOAPCPP=$ac_cv_path_SOAPCPP
+if test -n "$SOAPCPP"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $SOAPCPP" >&5
+$as_echo "$SOAPCPP" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+  test -n "$SOAPCPP" && break
+done
+test -n "$SOAPCPP" || SOAPCPP="no"
+
+  if test "$SOAPCPP" = "no"; then
+    as_fn_error $? "Unable to find gSOAP's soapcpp2 in path for SOAP support" "$LINENO" 5
+  fi
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking gSOAP version" >&5
+$as_echo_n "checking gSOAP version... " >&6; }
+  gsoap_version=`$SOAPCPP -v &> /tmp/gsoap.tmp && cat /tmp/gsoap.tmp | grep "C and C++" | awk '{print $NF}'`
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $gsoap_version" >&5
+$as_echo "$gsoap_version" >&6; }
+  gsoap_version_str=`echo $gsoap_version | grep -P "^(\d*\.)(\d*\.)(\d*)$"`
+  if test "$gsoap_version_str" = ""; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: gSOAP version $gsoap_version contains alphanumeric characters. Version MAYBE too old!" >&5
+$as_echo "$as_me: WARNING: gSOAP version $gsoap_version contains alphanumeric characters. Version MAYBE too old!" >&2;}
+  else
+
+    ac_inst_ver_maj=`echo $gsoap_version | sed -e 's/^\(.*\)\..*\..*$/\1/'`
+  ac_inst_ver_mid=`echo $gsoap_version | sed -e 's/^.*\.\(.*\)\..*$/\1/'`
+  ac_inst_ver_min=`echo $gsoap_version | sed -e 's/^.*\..*\.\(.*\)$/\1/'`
+
+    ac_req_ver_maj=`echo $gsoap_ver_required | sed -e 's/^\(.*\)\..*\..*$/\1/'`
+  ac_req_ver_mid=`echo $gsoap_ver_required | sed -e 's/^.*\.\(.*\)\..*$/\1/'`
+  ac_req_ver_min=`echo $gsoap_ver_required | sed -e 's/^.*\..*\.\(.*\)$/\1/'`
+
+    if test "$ac_inst_ver_maj" -lt "$ac_req_ver_maj" || \
+    ( test "$ac_inst_ver_maj" -eq "$ac_req_ver_maj" && \
+      test "$ac_inst_ver_mid" -lt "$ac_req_ver_mid" ) || \
+    ( test "$ac_inst_ver_mid" -eq "$ac_req_ver_mid" && \
+      test "$ac_inst_ver_min" -lt "$ac_req_ver_min" )
+  then
+    ac_ver_fail=yes
+  else
+    ac_ver_fail=no
+  fi
+
+
+  if test $ac_ver_fail = yes; then
+
+      as_fn_error $? "gSOAP version $gsoap_version is too old. You MUST have at least $gsoap_ver_required" "$LINENO" 5
+
+   fi
+
+  fi
+
+  SOAP_INCLUDE="include soap/Makefile"
+  $as_echo "#define HAVE_GSOAP 1" >>confdefs.h
+
+
+
+
+
+
+else
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: disabled" >&5
+$as_echo "disabled" >&6; }
+
+fi
+
+
+
+
 
   nl='
 '
   echo "${nl}${T_MD}Generating output files ...${T_ME}"
 
-ac_config_files="$ac_config_files gwlib/gw_uuid_types.h Makefile"
+ac_config_files="$ac_config_files gwlib/gw_uuid_types.h Makefile soap/Makefile"
 
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
@@ -10429,6 +10625,7 @@ do
     "gw-config.h") CONFIG_HEADERS="$CONFIG_HEADERS gw-config.h" ;;
     "gwlib/gw_uuid_types.h") CONFIG_FILES="$CONFIG_FILES gwlib/gw_uuid_types.h" ;;
     "Makefile") CONFIG_FILES="$CONFIG_FILES Makefile" ;;
+    "soap/Makefile") CONFIG_FILES="$CONFIG_FILES soap/Makefile" ;;
 
   *) as_fn_error $? "invalid argument: \`$ac_config_target'" "$LINENO" 5 ;;
   esac

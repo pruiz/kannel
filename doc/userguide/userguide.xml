@@ -4271,6 +4271,102 @@ sim-buffering = true          This will tell kannel to search for messages in
 
 
 <sect2>
+<title>GSMA OneAPI v1.0 ParlayX SMS SOAP</title>
+
+   <para>This implements the GSMA OneAPI v1.0 ParlayX SMS SOAP/XML interface
+   in two flavors, the Ericsson SDP (service delivery platform) ParlayX and
+   the GSMA OneAPI v1.0 SOAP interfaces.</para>
+
+  <para>Example configuration for the Ericsson SDP variant:</para>
+
+<programlisting>
+group = smsc
+smsc = parlayx
+system-type = ericsson-sdp
+port = 10000
+connect-allow-ip = 10.11.12.13
+send-url = http://host/location
+dlr-url = http://our-host:10000/dlr-location
+smsc-username = tester
+smsc-password = foobar
+</programlisting>
+
+ <informaltable frame="none">
+  <tgroup cols="3"><thead><row>
+     <entry>Variable</entry>
+     <entry>Value</entry>
+     <entry>Description</entry>
+   </row></thead><tbody>
+
+   <row><entry><literal>system-type (m)</literal></entry>
+     <entry><literal>string</literal></entry>
+     <entry valign="bottom">
+        Type of ParlayX connection. Currently supported are: 
+        'oneapi-v1', 'ericsson-sdp'. 
+        The variants have the same ParlayX SOAP XML PDUs, but differ in the
+        authentication scheme they use, where 'ericsson-sdp' uses WS-Security 
+        via wsse and 'oneapi-v1' uses plain HTTP basic authentication.
+     </entry></row>
+
+   <row><entry><literal>port (m)</literal></entry>
+     <entry><literal>port-number</literal></entry>
+     <entry valign="bottom">
+       Port number in which Kannel listens to (MO and DLR) messages 
+       from other SOAP service side.
+     </entry></row>
+
+   <row><entry><literal>send-url (m)</literal></entry>
+     <entry><literal>url</literal></entry>
+     <entry valign="bottom">
+       Location of the SOAP service to send MT messages.
+     </entry></row>
+
+   <row><entry><literal>dlr-url (m)</literal></entry>
+     <entry><literal>url</literal></entry>
+     <entry valign="bottom">
+       Location of our side SOAP service for DLR notifications.
+     </entry></row>
+
+   <row><entry><literal>smsc-username (m)</literal></entry>
+     <entry><literal>string</literal></entry>
+     <entry valign="bottom">
+       Username associated for the SOAP service connection.
+     </entry></row>
+
+   <row><entry><literal>smsc-password (m)</literal></entry>
+     <entry><literal>string</literal></entry>
+     <entry valign="bottom">
+       Password associated for the SOAP service username.
+     </entry></row>
+
+   <row><entry><literal>use-ssl</literal></entry>
+   <entry><literal>boolean</literal></entry>
+   <entry valign="bottom">
+      Defines whether listen port should use SSL.
+   </entry></row>
+
+   <row><entry><literal>connect-allow-ip</literal></entry>
+     <entry><literal>IP-list</literal></entry>
+     <entry valign="bottom">
+       IPs allowed to use this SOAP service interface. If not set, 
+       "127.0.0.1" (localhost) is the only host allowed to connect.
+       Typically you will allow the IP of the other side SOAP service
+       here.
+     </entry></row>
+
+   <row><entry><literal>window</literal></entry>
+   <entry><literal>boolean</literal></entry>
+   <entry valign="bottom">
+      Number of concurrent sending threads. If not set,
+      one thread is used.
+   </entry></row>
+
+   </tbody></tgroup></informaltable>
+
+</sect2>
+
+
+<sect2>
 <title>Fake SMSC</title>
 
   <para>Fake SMSC is a simple protocol to test out Kannel. It is not

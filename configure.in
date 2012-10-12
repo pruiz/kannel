@@ -1229,8 +1229,8 @@ fi
 dnl Checking for FreeTDS Ct-Lib support
 AC_MSG_CHECKING([whether to compile with FreeTDS Ct-Lib support])
 AC_ARG_WITH(mssql,
-[  --with-mssql[=DIR]        Include FreeTDS Ct-Lib support.  DIR is the FreeTDS
-                          install directory, defaults to /usr/local.], [
+[  --with-mssql[=DIR]        enable FreeTDS Ct-Lib storage support @<:@disabled@:>@
+                          DIR points to the installation @<:@/usr/local@:>@], [
     if test "$withval" = "yes"; then
         withval=/usr/local
     fi
@@ -1264,7 +1264,7 @@ dnl Implement the --with-wtls option.
 dnl Check to see if we should include WTLS support, and which library to use.
 
 AC_ARG_WITH(wtls,
-[  --with-wtls@<:@=TYPE@:>@      select WTLS version to use: openssl/baltimore], 
+[  --with-wtls@<:@=TYPE@:>@      select WTLS version to use: @<:@openssl|baltimore@:>@], 
 [ AC_CONFIG_SECTION([Configuring WTLS support]) 
   AC_MSG_CHECKING([for WTLS library])
   AC_MSG_RESULT($withval)
@@ -1288,10 +1288,67 @@ AC_ARG_WITH(wtls,
 ])
 
 
+AC_CONFIG_SECTION([Configuring for gSOAP support])
+AC_MSG_CHECKING([whether to compile with SOAP support])
+AC_ARG_WITH(gsoap,
+[  --with-gsoap@<:@=DIR@:>@      enable gSOAP web services SMSC module support @<:@disabled@:>@
+                          DIR points to the gSOAP share directory @<:@/usr/share/gsoap@:>@], [
+  if test "x$withval" = "xyes"; then
+    GSOAP_SHARE="/usr/share/gsoap"
+    if test -d "$GSOAP_SHARE/import" && test -d "$GSOAP_SHARE/plugin"; then
+      AC_MSG_RESULT($GSOAP_SHARE)
+    else
+      AC_MSG_RESULT(not found)
+      AC_MSG_ERROR(Unable to find gSOAP import at $GSOAP_SHARE/import or plugin at $GSOAP_SHARE/plugin)
+    fi
+  else  
+    if test -d "$withval/import" && test -d "$withval/plugin"; then
+      GSOAP_SHARE="$withval"
+      AC_MSG_RESULT($withval)
+    else
+      AC_MSG_RESULT(not found)
+      AC_MSG_ERROR(Unable to find gSOAP import at $withval/import or plugin at $withval/plugin)
+    fi
+  fi
+  gsoap_ver_required="2.8.4"
+
+  AC_PATH_PROGS(WSDL2H, wsdl2h, no)
+  if test "$WSDL2H" = "no"; then
+    AC_MSG_ERROR([Unable to find gSOAP's wsdl2h in path for SOAP support])
+  fi
+  AC_PATH_PROGS(SOAPCPP, soapcpp2, no)
+  if test "$SOAPCPP" = "no"; then
+    AC_MSG_ERROR([Unable to find gSOAP's soapcpp2 in path for SOAP support])
+  fi
+
+  AC_MSG_CHECKING([gSOAP version])
+  gsoap_version=`$SOAPCPP -v &> /tmp/gsoap.tmp && cat /tmp/gsoap.tmp | grep "C and C++" | awk '{print $NF}'`
+  AC_MSG_RESULT([$gsoap_version])
+  gsoap_version_str=`echo $gsoap_version | grep -P "^(\d*\.)(\d*\.)(\d*)$"`
+  if test "$gsoap_version_str" = ""; then
+    AC_MSG_WARN([gSOAP version $gsoap_version contains alphanumeric characters. Version MAYBE too old!])
+  else 
+    AC_CHECK_VERSION($gsoap_version, $gsoap_ver_required, [], 
+    [
+      AC_MSG_ERROR([gSOAP version $gsoap_version is too old. You MUST have at least $gsoap_ver_required])
+    ])
+  fi
+
+  SOAP_INCLUDE="include soap/Makefile"
+  AC_DEFINE(HAVE_GSOAP)
+  AC_SUBST(WSDL2H)
+  AC_SUBST(SOAPCPP)
+  AC_SUBST(SOAP_INCLUDE)
+  AC_SUBST(GSOAP_SHARE)
+],[
+  AC_MSG_RESULT(disabled)
+])
+
+
 dnl Final Output
 
 AC_CONFIG_SECTION([Generating output files]) 
-AC_OUTPUT(gwlib/gw_uuid_types.h Makefile)
+AC_OUTPUT(gwlib/gw_uuid_types.h Makefile soap/Makefile)
 
 
 dnl LICENSE notice

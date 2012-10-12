@@ -1,3 +1,29 @@
+2012-10-12  Stipe Tolj  <stolj at kannel.org>
+    * doc/userguide.xml: adding documentation part for new SMSC type 'GSMA 
+      OneAPI v1.0 ParlayX SMS SOAP'.
+    * gw/smscconn_p.h, gw/smscconn.c: add new SMSC type create function
+      smsc_soap_parlayx_create(), depending on gSOAP support.
+    * gw/smsc/smsc_soap_parlayx.c: implement two variants of 'smsc = parlayx',
+      for the Ericsson SDP 'system-type = ericsson-sdp' and the GSMA OneAPI
+      v1.0 'system-type = oneapi-v1', both based on ParlayX 2.1 SOAP service.
+    * soap/Makefile.in: generic Makefile for SOAP services implemented via
+      gSOAP created C headers and sources.
+    * soap/service/parlayx/parlayx_sms_send_service_2_1_wrapper.h: wrapper
+      for the gSOAP wsdl2h created header file, to include WS-Security via
+      wsse imports.
+    * soap/service/parlayx/typemap.dat: namespace mapping file for the service.
+    * soap/service/parlayx/wsdl/*.[wsdl|xsd]: web service description language
+      and extensible schema description files for this service.
+    * configure[.in]: implement --with-gsoap[=DIR] to allow adding gSOAP 
+      support for SOAP based services, i.e. for the ParlayX SMSC type.
+    * gw-config.h.in: add define HAVE_GSOAP.
+    * Makefile.in: set include marker for the soap/Makefile[.in] spin-off
+      Makefile dedicated to the whole SOAP building framework.
+    This patchset adds generic gSOAP support for building SOAP based SMS
+    services into Kannel. As the first implementation, we provide ParlayX 2.1
+    with the variants of the Ericsson SDP and the GSMA OneAPI v1.0. More
+    SOAP based services can be implemented easily now.
+    
 2012-10-08  Stipe Tolj  <stolj at kannel.org>
     * doc/userguide.xml: adding documentation part for new config directive
       'dead-start' being a global config directive for the 'group = smsc' 
