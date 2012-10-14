@@ -3307,10 +3307,10 @@ smsc-password = bar
 </sect2>
 
 <sect2>
-<title>SMPP 3.4</title>
+<title>SMPP 3.3, 3.4 and 5.0</title>
 
    <para>This implements Short Message Peer to Peer (SMPP) Protocol
-   3.4 in a manner that should also be compatible with 3.3. Sample
+   5.0, with most used support for 3.4 and full support for 3.3. Sample
    configuration:</para>
 
 <programlisting>
@@ -3367,8 +3367,8 @@ address-range = ""
        Attempt to use a TRANSCEIVER mode connection
        to the SM-SC. It uses the standard transmit 'port',
        there is no need to set 'receive-port'.
-       This is a SMPP 3.4 only feature and will not work
-       on an earlier SM-SC.
+       This is a SMPP 3.4 and 5.0 feature and will not work
+       on an earlier SM-SC using SMPP 3.3.
        This will try a bind_transceiver only and will not attempt
        to fall back to doing transmit and receive on the same connection.
       </entry></row>
@@ -3406,8 +3406,10 @@ address-range = ""
    <row><entry><literal>system-type (m)</literal></entry>
      <entry><literal>string</literal></entry>
      <entry valign="bottom">
-       Usually you can get away with "VMA" which stands for
-       Voice Mail Activation.
+       Optional; used to categorize the type of ESME that is binding 
+       to the SMSC. Examples include "VMS" (voice mail system) and "OTA" 
+       (over-the-air activation system). If not set, defaults to 
+       "VMA" (voice mail alerting).
      </entry></row>
 
    <row><entry><literal>service-type</literal></entry>
@@ -3418,16 +3420,22 @@ address-range = ""
        influence SMS routing (for example). The SMSC operator may
        also refer to this as the "profile ID". The maximum length of the
        service type is 6, according to the SMPP specification v3.4.
+       Defined values are: "CMT" (cellular messaging), "CPT" (cellular
+       paging), "VMN" (voice mail notification), "VMA" (voice mail
+       alerting), "WAP" (wireless application protocol), "USSD"
+       (unstructured supplementary services data), "CBS" (cell broadcast
+       service) and "GUTS" (generic UDP transport service). Other values
+       may be defined mutually between the SMSC and the ESME application.
      </entry></row>
 
    <row><entry><literal>interface-version</literal></entry>
      <entry><literal>number</literal></entry>
      <entry valign="bottom">
        Change the "interface version" parameter sent from Kannel to
-       a value other then 0x34 (for SMPP v3.4). the value entered here
+       a value other then 0x34 (for SMPP v3.4). The value entered here
        should be the hexadecimal representation of the interface version
-       parameter. for example, the default (if not set) is "34" which stands
-       for 0x34. for SMPP v3.3 set to "33".
+       parameter. For example, the default (if not set) is "34" which stands
+       for 0x34. For SMPP v3.3 set to "33". For SMPP v5.0 set to "50".
      </entry></row>
 
    <row><entry><literal>address-range (m)</literal></entry>

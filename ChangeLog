@@ -1,4 +1,15 @@
 2012-10-14  Stipe Tolj  <stolj at kannel.org>
+    * doc/userguide/userguide.xml: document that we can use SMPP v5.0 
+      bind connections too now.
+    * gw/smsc/smpp_pdu_opt.def: add the TLVs added in SMPP v5.0.
+    * gw/smsc/smpp_pdu.def: add optional TLVs to the the SMPP v3.[3|4] PDUs
+      and some new PDUs as defined in SMPP v5.0.
+    * gw/smpp_pdu.h: added a couple of NPI values defined in SMPP v5.0.
+    * gw/smsc_smpp.c: add basic support for SMPP v5.0 handling.
+    This patchset incorporates the new parts from the SMPP v5.0 spec into
+    the codebase, without being intrusive to the current default behaviour.
+    
+2012-10-14  Stipe Tolj  <stolj at kannel.org>
     * gwlib/http.[ch]: add function http_request_url() to gain access to
       the used URL of the transaction, i.e. this will be required for HTTP 
       RESTful implementations of OneAPI v2.0 in the SMSC HTTP module for 

@@ -55,10 +55,10 @@
  */
 
 /*
- * smsc_smpp.c - SMPP v3.3 and v3.4 implementation
+ * smsc_smpp.c - SMPP v3.3, v3.4 and v5.0 implementation
  *
  * Lars Wirzenius
- * Stipe Tolj <stolj@wapme.de>
+ * Stipe Tolj <stolj at kannel.org>
  * Alexander Malysh  <amalysh at kannel.org>
  */
 
@@ -367,19 +367,19 @@ static long convert_addr_from_pdu(Octstr *id, Octstr *addr, long ton, long npi, 
                 /* We consider this as a "non-hard" condition, since there "may"
                  * be international numbers routable that are < 7 digits. Think
                  * of 2 digit country code + 3 digit emergency code. */
-                warning(0, "SMPP[%s]: Mallformed addr `%s', generally expected at least 7 digits. ",
+                warning(0, "SMPP[%s]: Malformed addr `%s', generally expected at least 7 digits. ",
                         octstr_get_cstr(id),
                         octstr_get_cstr(addr));
             } else if (octstr_get_char(addr, 0) == '+' &&
                        !octstr_check_range(addr, 1, 256, gw_isdigit)) {
-                error(0, "SMPP[%s]: Mallformed addr `%s', expected all digits. ",
+                error(0, "SMPP[%s]: Malformed addr `%s', expected all digits. ",
                       octstr_get_cstr(id),
                       octstr_get_cstr(addr));
                 reason = SMPP_ESME_RINVSRCADR;
                 goto error;
             } else if (octstr_get_char(addr, 0) != '+' &&
                        !octstr_check_range(addr, 0, 256, gw_isdigit)) {
-                error(0, "SMPP[%s]: Mallformed addr `%s', expected all digits. ",
+                error(0, "SMPP[%s]: Malformed addr `%s', expected all digits. ",
                       octstr_get_cstr(id),
                       octstr_get_cstr(addr));
                 reason = SMPP_ESME_RINVSRCADR;
@@ -397,7 +397,7 @@ static long convert_addr_from_pdu(Octstr *id, Octstr *addr, long ton, long npi, 
         case GSM_ADDR_TON_ALPHANUMERIC:
             if (octstr_len(addr) > 11) {
                 /* alphanum sender, max. allowed length is 11 (according to GSM specs) */
-                error(0, "SMPP[%s]: Mallformed addr `%s', alphanum length greater 11 chars. ",
+                error(0, "SMPP[%s]: Malformed addr `%s', alphanumeric length greater 11 chars. ",
                       octstr_get_cstr(id),
                       octstr_get_cstr(addr));
                 reason = SMPP_ESME_RINVSRCADR;
@@ -456,7 +456,7 @@ static Msg *pdu_to_msg(SMPP *smpp, SMPP_PDU *pdu, long *reason)
      * it's not allowed to have destination_addr NULL
      */
     if (pdu->u.deliver_sm.destination_addr == NULL) {
-        error(0, "SMPP[%s]: Mallformed destination_addr `%s', may not be empty. "
+        error(0, "SMPP[%s]: Malformed destination_addr `%s', may not be empty. "
               "Discarding MO message.", octstr_get_cstr(smpp->conn->id),
               octstr_get_cstr(pdu->u.deliver_sm.destination_addr));
         *reason = SMPP_ESME_RINVDSTADR;
@@ -472,7 +472,9 @@ static Msg *pdu_to_msg(SMPP *smpp, SMPP_PDU *pdu, long *reason)
     msg->sms.receiver = pdu->u.deliver_sm.destination_addr;
     pdu->u.deliver_sm.destination_addr = NULL;
 
-    /* SMSCs use service_type for billing information */
+    /* SMSCs use service_type for billing information
+     * According to SMPP v5.0 there is no 'billing_identification'
+     * TLV in the deliver_sm PDU optional TLVs. */
     msg->sms.binfo = pdu->u.deliver_sm.service_type;
     pdu->u.deliver_sm.service_type = NULL;
 
@@ -506,7 +508,7 @@ static Msg *pdu_to_msg(SMPP *smpp, SMPP_PDU *pdu, long *reason)
         debug("bb.sms.smpp",0,"SMPP[%s]: UDH length read as %d",
               octstr_get_cstr(smpp->conn->id), udhl);
         if (udhl > octstr_len(msg->sms.msgdata)) {
-            error(0, "SMPP[%s]: Mallformed UDH length indicator 0x%03x while message length "
+            error(0, "SMPP[%s]: Malformed UDH length indicator 0x%03x while message length "
                   "0x%03lx. Discarding MO message.", octstr_get_cstr(smpp->conn->id),
                   udhl, octstr_len(msg->sms.msgdata));
             *reason = SMPP_ESME_RINVESMCLASS;
@@ -629,7 +631,7 @@ static Msg *data_sm_to_msg(SMPP *smpp, SMPP_PDU *pdu, long *reason)
      * it's not allowed to have destination_addr NULL
      */
     if (pdu->u.data_sm.destination_addr == NULL) {
-        error(0, "SMPP[%s]: Mallformed destination_addr `%s', may not be empty. "
+        error(0, "SMPP[%s]: Malformed destination_addr `%s', may not be empty. "
               "Discarding MO message.", octstr_get_cstr(smpp->conn->id),
               octstr_get_cstr(pdu->u.data_sm.destination_addr));
         *reason = SMPP_ESME_RINVDSTADR;
@@ -646,8 +648,13 @@ static Msg *data_sm_to_msg(SMPP *smpp, SMPP_PDU *pdu, long *reason)
     pdu->u.data_sm.destination_addr = NULL;
 
     /* SMSCs use service_type for billing information */
-    msg->sms.binfo = pdu->u.data_sm.service_type;
-    pdu->u.data_sm.service_type = NULL;
+    if (smpp->version == 0x50 && pdu->u.data_sm.billing_identification) {
+    	msg->sms.binfo = pdu->u.data_sm.billing_identification;
+    	pdu->u.data_sm.billing_identification = NULL;
+    } else {
+        msg->sms.binfo = pdu->u.data_sm.service_type;
+        pdu->u.data_sm.service_type = NULL;
+    }
 
     /* Foreign ID on MO */
     msg->sms.foreign_id = pdu->u.data_sm.receipted_message_id;
@@ -669,7 +676,7 @@ static Msg *data_sm_to_msg(SMPP *smpp, SMPP_PDU *pdu, long *reason)
         debug("bb.sms.smpp",0,"SMPP[%s]: UDH length read as %d",
               octstr_get_cstr(smpp->conn->id), udhl);
         if (udhl > octstr_len(msg->sms.msgdata)) {
-            error(0, "SMPP[%s]: Mallformed UDH length indicator 0x%03x while message length "
+            error(0, "SMPP[%s]: Malformed UDH length indicator 0x%03x while message length "
                   "0x%03lx. Discarding MO message.", octstr_get_cstr(smpp->conn->id),
                   udhl, octstr_len(msg->sms.msgdata));
             *reason = SMPP_ESME_RINVESMCLASS;
@@ -781,11 +788,19 @@ static SMPP_PDU *msg_to_pdu(SMPP *smpp, Msg *msg)
 
     /* Set the service type of the outgoing message. We'll use the config
      * directive as default and 'binfo' as specific parameter. */
-    pdu->u.submit_sm.service_type = octstr_len(msg->sms.binfo) ?
-        octstr_duplicate(msg->sms.binfo) : octstr_duplicate(smpp->service_type);
+    if (octstr_len(msg->sms.binfo)) {
+        /* SMPP v5.0 has an own TLV for billing information */
+    	if (smpp->version == 0x50) {
+    		pdu->u.submit_sm.billing_identification = octstr_duplicate(msg->sms.binfo);
+    	} else {
+        	pdu->u.submit_sm.service_type = octstr_duplicate(msg->sms.binfo);
+    	}
+    } else {
+    	pdu->u.submit_sm.service_type = octstr_duplicate(smpp->service_type);
+    }
 
     /* Check for manual override of source ton and npi values */
-    if(smpp->source_addr_ton > -1 && smpp->source_addr_npi > -1) {
+    if (smpp->source_addr_ton > -1 && smpp->source_addr_npi > -1) {
         pdu->u.submit_sm.source_addr_ton = smpp->source_addr_ton;
         pdu->u.submit_sm.source_addr_npi = smpp->source_addr_npi;
         debug("bb.sms.smpp", 0, "SMPP[%s]: Manually forced source addr ton = %d, source add npi = %d",
@@ -879,7 +894,7 @@ static SMPP_PDU *msg_to_pdu(SMPP *smpp, Msg *msg)
              msg->sms.alt_dcs : smpp->conn->alt_dcs));
 
     /* set protocol id */
-    if(msg->sms.pid != SMS_PARAM_UNDEFINED)
+    if (msg->sms.pid != SMS_PARAM_UNDEFINED)
         pdu->u.submit_sm.protocol_id = msg->sms.pid;
 
     /*
@@ -1293,6 +1308,10 @@ static Msg *handle_dlr(SMPP *smpp, Octstr *destination_addr, Octstr *short_messa
     if (smpp->version > 0x33 && receipted_message_id) {
         msgid = octstr_duplicate(receipted_message_id);
         switch(message_state) {
+        case 0: /* SCHEDULED, defined in SMPP v5.0, sec. 4.7.15, page 127 */
+        	if (smpp->version == 0x50)	/* being very pedantic here */
+                dlrstat = DLR_BUFFERED;
+        	break;
         case 1: /* ENROUTE */
         case 6: /* ACCEPTED */
             dlrstat = DLR_BUFFERED;
@@ -1307,6 +1326,10 @@ static Msg *handle_dlr(SMPP *smpp, Octstr *destination_addr, Octstr *short_messa
         case 8: /* REJECTED */
             dlrstat = DLR_FAIL;
             break;
+        case 9: /* SKIPPED, defined in SMPP v5.0, sec. 4.7.15, page 127 */
+        	if (smpp->version == 0x50)
+        		dlrstat = DLR_FAIL;
+        	break;
         case -1: /* message state is not present, partial SMPP v3.4 */
             debug("bb.sms.smpp", 0, "SMPP[%s]: Partial SMPP v3.4, receipted_message_id present but not message_state.",
                     octstr_get_cstr(smpp->conn->id));
@@ -1723,6 +1746,10 @@ static int handle_pdu(SMPP *smpp, Connection *conn, SMPP_PDU *pdu,
                     smpp->quitting = 1;
                 }
             } else {
+            	/* obey SMSC's returned interface version */
+            	if (smpp->version >= 0x34 && pdu->u.bind_transmitter_resp.sc_interface_version) {
+            		smpp->version = pdu->u.bind_transmitter_resp.sc_interface_version;
+            	}
                 *pending_submits = 0;
                 mutex_lock(smpp->conn->flow_mutex);
                 smpp->conn->status = SMSCCONN_ACTIVE;
@@ -1748,6 +1775,10 @@ static int handle_pdu(SMPP *smpp, Connection *conn, SMPP_PDU *pdu,
                      smpp->quitting = 1;
                  }
             } else {
+            	/* obey SMSC's returned interface version */
+            	if (smpp->version >= 0x34 && pdu->u.bind_transceiver_resp.sc_interface_version) {
+            		smpp->version = pdu->u.bind_transceiver_resp.sc_interface_version;
+            	}
                 *pending_submits = 0;
                 mutex_lock(smpp->conn->flow_mutex);
                 smpp->conn->status = SMSCCONN_ACTIVE;
@@ -1773,7 +1804,11 @@ static int handle_pdu(SMPP *smpp, Connection *conn, SMPP_PDU *pdu,
                      smpp->quitting = 1;
                  }
             } else {
-                /* set only receive status if no transmitt is bind */
+            	/* obey SMSC's returned interface version */
+            	if (smpp->version >= 0x34 && pdu->u.bind_receiver_resp.sc_interface_version) {
+            		smpp->version = pdu->u.bind_receiver_resp.sc_interface_version;
+            	}
+                /* set only receive status if no transmit is bind */
                 mutex_lock(smpp->conn->flow_mutex);
                 if (smpp->conn->status != SMSCCONN_ACTIVE) {
                     smpp->conn->status = SMSCCONN_ACTIVE_RECV;
@@ -2010,7 +2045,7 @@ static void io_thread(void *arg)
                 
                 /*
                  * If we are not bounded then no PDU may coming from SMSC.
-                 * It's just a workaround for buggy SMSC's whoes send enquire_link's
+                 * It's just a workaround for buggy SMSC's who send enquire_link's
                  * although link is not bounded. Means: we doesn't notice these and if link
                  * keep to be not bounden we are reconnect after defined timeout elapsed.
                  */
@@ -2024,7 +2059,7 @@ static void io_thread(void *arg)
                 /* check last enquire_resp, if difftime > as idle_timeout
                  * mark connection as broken.
                  * We have some SMSC connections where connection seems to be OK, but
-                 * in reallity is broken, because no responses received.
+                 * in reality is broken, because no responses received.
                  */
                 if (smpp->connection_timeout > 0 &&
                     difftime(time(NULL), last_response) > smpp->connection_timeout) {

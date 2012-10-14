@@ -106,7 +106,7 @@ struct SMPP_PDU {
 
 
 /******************************************************************************
-* Numering Plan Indicator and Type of Number codes from
+* Numbering Plan Indicator and Type of Number codes from
 * GSM 03.40 Version 5.3.0 Section 9.1.2.5.
 * http://www.etsi.org/
 */
@@ -126,7 +126,9 @@ struct SMPP_PDU {
 #define GSM_ADDR_NPI_NATIONAL         0x00000008
 #define GSM_ADDR_NPI_PRIVATE          0x00000009
 #define GSM_ADDR_NPI_ERMES            0x0000000A /* ETSI DE/PS 3 01-3 */
+#define GSM_ADDR_NPI_INTERNET         0x0000000E /* SMPP v5.0, sec. 4.7.2, page 113 */
 #define GSM_ADDR_NPI_EXTENSION        0x0000000F /* Reserved */
+#define GSM_ADDR_NPI_WAP_CLIENT_ID    0x00000012 /* SMPP v5.0, sec. 4.7.2, page 113 */
 
 /******************************************************************************
  * esm_class parameters for both submit_sm and deliver_sm PDUs
