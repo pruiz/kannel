@@ -1,3 +1,9 @@
+2012-10-14  Stipe Tolj  <stolj at kannel.org>
+    * gwlib/http.[ch]: add function http_request_url() to gain access to
+      the used URL of the transaction, i.e. this will be required for HTTP 
+      RESTful implementations of OneAPI v2.0 in the SMSC HTTP module for 
+      the receiving function callback to distinguish MO and DLRs.
+      
 2012-10-12  Stipe Tolj  <stolj at kannel.org>
     * doc/userguide.xml: adding documentation part for new SMSC type 'GSMA 
       OneAPI v1.0 ParlayX SMS SOAP'.

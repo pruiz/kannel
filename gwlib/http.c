@@ -2734,6 +2734,11 @@ int http_method(HTTPClient *client)
     return client->method;
 }
 
+Octstr *http_request_url(HTTPClient *client)
+{
+    return client->url;
+}
+
 static void server_init(void)
 {
     new_server_sockets = gwlist_create();

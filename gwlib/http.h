@@ -480,6 +480,12 @@ Octstr *http_cgi_variable(List *list, char *name);
  */
 int http_method(HTTPClient *client);
 
+/*
+ * Return URL used by client
+ */
+Octstr *http_request_url(HTTPClient *client);
+
+
 /***********************************************************************
  * HTTP header interface.
  */
