@@ -9,6 +9,7 @@
     * gw/urltrans.[ch]: added function urltrans_alt_charset() and corresponding
       element in the URLTranslation struct, keeping the config directive.
     * gwlib/cfg.def: added 'alt-charset' to 'group = sms-service' context. 
+    This patchset implements feature Feature #661.
     
 2012-10-19  Stipe Tolj  <stolj at kannel.org>
     * gw/smsc/smsc_fake.c: handled the msg->sms.coding types more adequate
