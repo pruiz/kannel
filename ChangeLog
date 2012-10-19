@@ -1,4 +1,8 @@
 2012-10-19  Stipe Tolj  <stolj at kannel.org>
+    * gw/smsc/smsc_fake.c: handled the msg->sms.coding types more adequate
+      in function sms_to_client(), as most common terminals can display UTF-8.
+            
+2012-10-19  Stipe Tolj  <stolj at kannel.org>
     * gw/smsc/smsc_fake.c: add missing declaration of msg->sms.coding when
       an MO message is received and forwarded to the core layer.
       

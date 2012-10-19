@@ -111,11 +111,9 @@ static int sms_to_client(Connection *client, Msg *msg)
 {
     Octstr *line;
     Octstr *msgdata = NULL; /* NULL to allow octstr_destroy */
-    char *contents;
-    int len;
 
     debug("bb.sms", 0, "smsc_fake: sending message to client");
-//    msg_dump(msg, 0);
+    /* msg_dump(msg, 0); */
 
     line = octstr_duplicate(msg->sms.sender);
     octstr_append_char(line, ' ');
@@ -126,28 +124,29 @@ static int sms_to_client(Connection *client, Msg *msg)
         octstr_url_encode(msgdata);
         octstr_append(line, msgdata);
         octstr_destroy(msgdata);
-        octstr_append_char(line, ' ');
+        octstr_append(line, octstr_imm(" data "));
         msgdata = octstr_duplicate(msg->sms.msgdata);
         octstr_url_encode(msgdata);
         octstr_append(line, msgdata);
     } else {
-        contents = octstr_get_cstr(msg->sms.msgdata);
-        len = octstr_len(msg->sms.msgdata);
-        while (len > 0) {
-            len--;
-            if (contents[len] < 32 || contents[len] > 126) {
-                octstr_append(line, octstr_imm(" data "));
-                msgdata = octstr_duplicate(msg->sms.msgdata);
-                octstr_url_encode(msgdata);
-                octstr_append(line, msgdata);
-                goto notelse; /* C lacks "else" clause for while loops */
-            }
-        }
-        octstr_append(line, octstr_imm(" text "));
-        octstr_append(line, msg->sms.msgdata);
+    	if (msg->sms.coding == DC_8BIT) {
+            octstr_append(line, octstr_imm(" data "));
+            msgdata = octstr_duplicate(msg->sms.msgdata);
+            octstr_url_encode(msgdata);
+            octstr_append(line, msgdata);
+    	}
+    	else if (msg->sms.coding == DC_UCS2) {
+            octstr_append(line, octstr_imm(" ucs-2 "));
+            msgdata = octstr_duplicate(msg->sms.msgdata);
+            octstr_url_encode(msgdata);
+            octstr_append(line, msgdata);
+    	}
+    	else {
+            octstr_append(line, octstr_imm(" text "));
+            octstr_append(line, msg->sms.msgdata);
+    	}
     }
 
-notelse:
     octstr_append_char(line, 10);
 
     if (conn_write(client, line) == -1) {
