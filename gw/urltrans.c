@@ -97,6 +97,7 @@ struct URLTranslation {
     int omit_empty;	/* if the reply is empty, is notification send */
     Octstr *header;	/* string to be inserted to each SMS */
     Octstr *footer;	/* string to be appended to each SMS */
+    Octstr *alt_charset; /* alternative charset to use towards service */
     List *accepted_smsc; /* smsc id's allowed to use this service. If not set,
 			    all messages can use this service */
     List *accepted_account; /* account id's allowed to use this service. If not set,
@@ -397,7 +398,7 @@ Octstr *urltrans_fill_escape_codes(Octstr *pattern, Msg *request)
         break;
 
     case 'C':
-        if(octstr_len(request->sms.charset)) {
+        if (octstr_len(request->sms.charset)) {
             octstr_append(result, request->sms.charset);
         } else {
             switch (request->sms.coding) {
@@ -766,6 +767,11 @@ Octstr *urltrans_footer(URLTranslation *t)
     return t->footer;
 }
 
+Octstr *urltrans_alt_charset(URLTranslation *t)
+{
+    return t->alt_charset;
+}
+
 Octstr *urltrans_name(URLTranslation *t) 
 {
     return t->name;
@@ -910,6 +916,7 @@ static URLTranslation *create_onetrans(CfgGroup *grp)
         cfg_get_bool(&ot->catch_all, grp, octstr_imm("catch-all"));
 
         ot->dlr_url = cfg_get(grp, octstr_imm("dlr-url"));
+        ot->alt_charset = cfg_get(grp, octstr_imm("alt-charset"));
 	    
         url = cfg_get(grp, octstr_imm("get-url"));
         if (url == NULL)
@@ -1191,6 +1198,7 @@ static void destroy_onetrans(void *p)
 	octstr_destroy(ot->split_suffix);
 	octstr_destroy(ot->header);
 	octstr_destroy(ot->footer);
+	octstr_destroy(ot->alt_charset);
 	gwlist_destroy(ot->accepted_smsc, octstr_destroy_item);
 	gwlist_destroy(ot->accepted_account, octstr_destroy_item);
 	octstr_destroy(ot->name);

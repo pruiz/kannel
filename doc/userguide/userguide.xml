@@ -6820,6 +6820,20 @@ get-url = "http://%S"
         </entry>   
      </row>
 
+     <row><entry><literal>alt-charset</literal></entry>
+        <entry>string</entry>
+        <entry valign="bottom">
+        Defines which character encoding is used for the SMS message when
+        passed to a remote HTTP application. This includes how the SMS message
+        text is send in the HTTP GET parameter list and in the HTTP POST bidy.
+        Uses <literal>iconv()</literal> routines to convert from and to that 
+        specific character set encoding. 
+        See your local <literal>iconv_open(3)</literal> manual page for the 
+        supported character encodings and the type strings that should be 
+        presented for this directive.
+        </entry>   
+     </row>
+
   </tbody>
   </tgroup>
  </table>

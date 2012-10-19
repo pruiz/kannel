@@ -287,6 +287,12 @@ Octstr *urltrans_footer(URLTranslation *t);
 
 
 /*
+ * Return the alternative charset to be used for the sms-service.
+ */
+Octstr *urltrans_alt_charset(URLTranslation *t);
+
+
+/*
  * return the name, username or password string, or NULL if not set
  * (used only with TRANSTYPE_SENDSMS)
  */

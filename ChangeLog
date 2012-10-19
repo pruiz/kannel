@@ -1,4 +1,16 @@
 2012-10-19  Stipe Tolj  <stolj at kannel.org>
+    * doc/userguide/userguide.xml: add 'alt-charset' documentation for context
+      'group = sms-service'.
+    * gw/smsbox.c: adding the 'alt-charset' handling for sms-services, allowing
+      an user to define an alternative character encoding then UTF-8 to be used
+      while making HTTP calls to remote application systems. Most of the diff
+      changes are source code re-formating. The essential logic changes are
+      found at line 1112 for the MO handling, and at line 1693 for MT handling.
+    * gw/urltrans.[ch]: added function urltrans_alt_charset() and corresponding
+      element in the URLTranslation struct, keeping the config directive.
+    * gwlib/cfg.def: added 'alt-charset' to 'group = sms-service' context. 
+    
+2012-10-19  Stipe Tolj  <stolj at kannel.org>
     * gw/smsc/smsc_fake.c: handled the msg->sms.coding types more adequate
       in function sms_to_client(), as most common terminals can display UTF-8.
             
