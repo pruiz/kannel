@@ -1,3 +1,7 @@
+2012-10-19  Stipe Tolj  <stolj at kannel.org>
+    * gw/smsc/smsc_fake.c: add missing declaration of msg->sms.coding when
+      an MO message is received and forwarded to the core layer.
+      
 2012-10-14  Stipe Tolj  <stolj at kannel.org>
     * doc/userguide/userguide.xml: document that we can use SMPP v5.0 
       bind connections too now.
