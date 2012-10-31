@@ -1366,8 +1366,8 @@ static Msg *handle_dlr(SMPP *smpp, Octstr *destination_addr, Octstr *short_messa
             /* get server message id */
             /* first try sscanf way if thus failed then old way */
             ret = sscanf(octstr_get_cstr(respstr),
-                         "id:%64[^s] sub:%d dlvrd:%d submit date:%14[0-9] done "
-                         "date:%14[0-9] stat:%15[^t^e] err:%3[^t]",
+                         "id:%64[^ ] sub:%d dlvrd:%d submit date:%14[0-9] done "
+                         "date:%14[0-9] stat:%15[^ ] err:%3[^ ]",
                          id_cstr, &sub, &dlrvrd, sub_d_cstr, done_d_cstr,
                          stat_cstr, err_cstr);
             if (ret == 7) {
