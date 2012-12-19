@@ -441,7 +441,7 @@ static int change_user(const char *user)
     }
 
 #ifdef HAVE_INITGROUPS
-    if (initgroups(user, -1) == -1) {
+    if (initgroups(user, pass->pw_gid) == -1) {
         error(errno, "Could not set supplementary group ID's.");
     }
 #endif
