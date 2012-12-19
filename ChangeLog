@@ -1,4 +1,8 @@
 2012-12-19 Alexander Malysh <amalysh at kannel.org>
+    * gwlib/utils.c: applied patch that display compiled PostgreSQL version.
+      Thanks to Alexey Savchuk <international at devpreview.ru> for this patch.
+
+2012-12-19 Alexander Malysh <amalysh at kannel.org>
     * gwlib/gw-prioqueue.c, gwlib/gwthread-pthread.c, gwlib/list.c: fixed
       gwthread_cancel function. This commit fixes #667.
 
