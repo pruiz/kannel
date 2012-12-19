@@ -365,9 +365,11 @@ int gwlist_wait_until_nonempty(List *list)
     lock(list);
     while (list->len == 0 && list->num_producers > 0) {
         list->single_operation_lock->owner = -1;
+        pthread_cleanup_push((void(*)(void*))pthread_mutex_unlock, &list->single_operation_lock->mutex);
         pthread_cond_wait(&list->nonempty,
                           &list->single_operation_lock->mutex);
         list->single_operation_lock->owner = gwthread_self();
+        pthread_cleanup_pop(0);
     }
     if (list->len > 0)
         ret = 1;
@@ -430,8 +432,10 @@ void *gwlist_consume(List *list)
     ++list->num_consumers;
     while (list->len == 0 && list->num_producers > 0) {
         list->single_operation_lock->owner = -1;
+        pthread_cleanup_push((void(*)(void*))pthread_mutex_unlock, &list->single_operation_lock->mutex);
         pthread_cond_wait(&list->nonempty,
                           &list->single_operation_lock->mutex);
+        pthread_cleanup_pop(0);
         list->single_operation_lock->owner = gwthread_self();
     }
     if (list->len > 0) {
@@ -459,8 +463,10 @@ void *gwlist_timed_consume(List *list, long sec)
     ++list->num_consumers;
     while (list->len == 0 && list->num_producers > 0) {
         list->single_operation_lock->owner = -1;
+        pthread_cleanup_push((void(*)(void*))pthread_mutex_unlock, &list->single_operation_lock->mutex);
         rc = pthread_cond_timedwait(&list->nonempty,
                           &list->single_operation_lock->mutex, &abstime);
+        pthread_cleanup_pop(0);
         list->single_operation_lock->owner = gwthread_self();
         if (rc == ETIMEDOUT)
             break;
