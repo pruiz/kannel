@@ -1393,27 +1393,28 @@ static struct packet *packet_encode_message(Msg *msg, Octstr *sender_prefix, SMS
      *
      * This code was copied from smsc_at2.c.
      */
-    if (msg->sms.validity >= 0) {
-      if (msg->sms.validity > 635040)
-	setvalidity = 255;
-      if (msg->sms.validity >= 50400 && msg->sms.validity <= 635040)
-	setvalidity = (msg->sms.validity - 1) / 7 / 24 / 60 + 192 + 1;
-      if (msg->sms.validity > 43200 && msg->sms.validity < 50400)
-	setvalidity = 197;
-      if (msg->sms.validity >= 2880 && msg->sms.validity <= 43200)
-	setvalidity = (msg->sms.validity - 1) / 24 / 60 + 166 + 1;
-      if (msg->sms.validity > 1440 && msg->sms.validity < 2880)
-	setvalidity = 168;
-      if (msg->sms.validity >= 750 && msg->sms.validity <= 1440)
-	setvalidity = (msg->sms.validity - 720 - 1) / 30 + 143 + 1;
-      if (msg->sms.validity > 720 && msg->sms.validity < 750)
-	setvalidity = 144;
-      if (msg->sms.validity >= 5 && msg->sms.validity <= 720)
-	setvalidity = (msg->sms.validity - 1) / 5 - 1 + 1;
-      if (msg->sms.validity < 5)
-	setvalidity = 0;
+    if (msg->sms.validity != MSG_PARAM_UNDEFINED) {
+        long val = (msg->sms.validity - time(NULL)) / 60;
+        if (val > 635040)
+            setvalidity = 255;
+        if (val >= 50400 && val <= 635040)
+            setvalidity = (val - 1) / 7 / 24 / 60 + 192 + 1;
+        if (val > 43200 && val < 50400)
+            setvalidity = 197;
+        if (val >= 2880 && val <= 43200)
+            setvalidity = (val - 1) / 24 / 60 + 166 + 1;
+        if (val > 1440 && val < 2880)
+            setvalidity = 168;
+        if (val >= 750 && val <= 1440)
+            setvalidity = (val - 720 - 1) / 30 + 143 + 1;
+        if (val > 720 && val < 750)
+            setvalidity = 144;
+        if (val >= 5 && val <= 720)
+            setvalidity = (val - 1) / 5 - 1 + 1;
+        if (val < 5)
+            setvalidity = 0;
 
-      packet_add_int_parm(packet, P_VALIDITY_PERIOD_RELATIVE, setvalidity, conn);
+        packet_add_int_parm(packet, P_VALIDITY_PERIOD_RELATIVE, setvalidity, conn);
     }
 
     /* Explicitly ask not to get status reports.

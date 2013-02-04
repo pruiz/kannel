@@ -912,15 +912,15 @@ static void fill_message(Msg *msg, URLTranslation *trans,
     }
     if (validity != SMS_PARAM_UNDEFINED) {
         if (urltrans_accept_x_kannel_headers(trans))
-            msg->sms.validity = validity;
+            msg->sms.validity = validity * 60 + time(NULL);
         else
             warning(0, "Tried to change validity to '%d', denied.", validity);
     }
     if (deferred != SMS_PARAM_UNDEFINED) {
-    	if (urltrans_accept_x_kannel_headers(trans))
-    	    msg->sms.deferred = deferred;
-    	else
-    	    warning(0, "Tried to change deferred to '%d', denied.", deferred);
+        if (urltrans_accept_x_kannel_headers(trans))
+            msg->sms.deferred = deferred * 60 + time(NULL);
+        else
+            warning(0, "Tried to change deferred to '%d', denied.", deferred);
     }
     if (dlr_mask != SMS_PARAM_UNDEFINED) {
     	if (urltrans_accept_x_kannel_headers(trans)) {
@@ -1366,13 +1366,13 @@ static int obey_request(Octstr **result, URLTranslation *trans, Msg *msg)
     	}
     	if (msg->sms.validity != SMS_PARAM_UNDEFINED) {
     	    Octstr *os;
-    	    os = octstr_format("%d", msg->sms.validity);
+    	    os = octstr_format("%d", (msg->sms.validity - time(NULL)) / 60);
     	    http_header_add(request_headers, "X-Kannel-Validity", octstr_get_cstr(os));
     	    octstr_destroy(os);
     	}
     	if (msg->sms.deferred != SMS_PARAM_UNDEFINED) {
     	    Octstr *os;
-    	    os = octstr_format("%d",msg->sms.deferred);
+    	    os = octstr_format("%d", (msg->sms.deferred - time(NULL)) / 60);
     	    http_header_add(request_headers, "X-Kannel-Deferred", octstr_get_cstr(os));
     	    octstr_destroy(os);
     	}
@@ -1509,21 +1509,21 @@ static int obey_request(Octstr **result, URLTranslation *trans, Msg *msg)
     	    OCTSTR_APPEND_XML(xml, "dcs", tmp);
     	octstr_destroy(tmp);
 
-    	/* deferred (timing/delay) */
-    	tmp = octstr_create("");
-    	if (msg->sms.deferred != SMS_PARAM_UNDEFINED)
-    	    OCTSTR_APPEND_XML_NUMBER(tmp, "delay", msg->sms.deferred);
-    	if (octstr_len(tmp))
-    	    OCTSTR_APPEND_XML(xml, "timing", tmp);
-    	octstr_destroy(tmp);
+	/* deferred (timing/delay) */
+	tmp = octstr_create("");
+	if(msg->sms.deferred != SMS_PARAM_UNDEFINED)
+	    OCTSTR_APPEND_XML_NUMBER(tmp, "delay", (msg->sms.deferred - time(NULL)) / 60);
+	if(octstr_len(tmp))
+	    OCTSTR_APPEND_XML(xml, "timing", tmp);
+	octstr_destroy(tmp);
 
-    	/* validity (vp/delay) */
-    	tmp = octstr_create("");
-    	if (msg->sms.validity != SMS_PARAM_UNDEFINED)
-    	    OCTSTR_APPEND_XML_NUMBER(tmp, "delay", msg->sms.validity);
-    	if (octstr_len(tmp))
-    	    OCTSTR_APPEND_XML(xml, "vp", tmp);
-    	octstr_destroy(tmp);
+	/* validity (vp/delay) */
+	tmp = octstr_create("");
+	if(msg->sms.validity != SMS_PARAM_UNDEFINED)
+	    OCTSTR_APPEND_XML_NUMBER(tmp, "delay", (msg->sms.validity - time(NULL)) / 60);
+	if(octstr_len(tmp))
+	    OCTSTR_APPEND_XML(xml, "vp", tmp);
+	octstr_destroy(tmp);
 
     	/* time (at) */
     	tm = gw_gmtime(msg->sms.time);
@@ -2206,17 +2206,17 @@ static Octstr *smsbox_req_handle(URLTranslation *t, Octstr *client_ip,
     }
 	
 
-    if ( validity < -1 ) {
-	returnerror = octstr_create("Validity field misformed, rejected");
-	goto field_error;
+    if (validity < -1 ) {
+        returnerror = octstr_create("Validity field misformed, rejected");
+        goto field_error;
     }
-    msg->sms.validity = validity;
+    msg->sms.validity = validity * 60 + time(NULL);
 
     if ( deferred < -1 ) {
-	returnerror = octstr_create("Deferred field misformed, rejected");
-	goto field_error;
+        returnerror = octstr_create("Deferred field misformed, rejected");
+        goto field_error;
     }
-    msg->sms.deferred = deferred;
+    msg->sms.deferred = deferred * 60 + time(NULL);
     
     if (priority != SMS_PARAM_UNDEFINED && (priority < 0 || priority > 3)) {
         returnerror = octstr_create("Priority field misformed, rejected");

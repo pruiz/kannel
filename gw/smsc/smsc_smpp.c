@@ -948,21 +948,24 @@ static SMPP_PDU *msg_to_pdu(SMPP *smpp, Msg *msg)
     pdu->u.submit_sm.sm_length = octstr_len(pdu->u.submit_sm.short_message);
 
     /*
-     * check for validity and defered settings
-     * were message value has higher priiority then smsc config group value
+     * check for validity and deferred settings
+     * were message value has higher priority then smsc config group value
      * Note: we always send in UTC and just define "Time Difference" as 00 and
      *       direction '+'.
      */
-    validity = msg->sms.validity != SMS_PARAM_UNDEFINED ? msg->sms.validity : smpp->validityperiod;
+    if (msg->sms.validity != SMS_PARAM_UNDEFINED)
+    	validity = msg->sms.validity;
+    else if (smpp->validityperiod != SMS_PARAM_UNDEFINED)
+    	validity = time(NULL) + smpp->validityperiod * 60;
     if (validity != SMS_PARAM_UNDEFINED) {
-        struct tm tm = gw_gmtime(time(NULL) + validity * 60);
+        struct tm tm = gw_gmtime(validity);
         pdu->u.submit_sm.validity_period = octstr_format("%02d%02d%02d%02d%02d%02d000+",
                 tm.tm_year % 100, tm.tm_mon + 1, tm.tm_mday,
                 tm.tm_hour, tm.tm_min, tm.tm_sec);
     }
 
-    if (msg->sms.deferred != SMS_PARAM_UNDEFINED && msg->sms.deferred > 0) {
-        struct tm tm = gw_gmtime(time(NULL) + msg->sms.deferred * 60);
+    if (msg->sms.deferred != SMS_PARAM_UNDEFINED) {
+        struct tm tm = gw_gmtime(msg->sms.deferred);
         pdu->u.submit_sm.schedule_delivery_time = octstr_format("%02d%02d%02d%02d%02d%02d000+",
                 tm.tm_year % 100, tm.tm_mon + 1, tm.tm_mday,
                 tm.tm_hour, tm.tm_min, tm.tm_sec);
@@ -2397,7 +2400,7 @@ int smsc_smpp_create(SMSCConn *conn, CfgGroup *grp)
 
     /* check for message validity period */
     if (cfg_get_integer(&validity, grp, octstr_imm("validityperiod")) == -1)
-        validity = -1;
+        validity = SMS_PARAM_UNDEFINED;
     else if (validity < 0)
         panic(0, "SMPP: Invalid value for validity period (allowed value >= 0).");
 

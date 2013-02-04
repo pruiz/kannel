@@ -283,8 +283,8 @@ static void brunet_receive_sms(SMSCConn *conn, HTTPClient *client,
         msg->sms.mclass = mclass;
         msg->sms.mwi = mwi;
         msg->sms.coding = coding;
-        msg->sms.validity = validity;
-        msg->sms.deferred = deferred;
+        msg->sms.validity = time(NULL) + validity * 60;
+        msg->sms.deferred = time(NULL) + deferred * 60;
 
         ret = bb_smscconn_receive(conn, msg);
         if (ret == -1)

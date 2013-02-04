@@ -502,7 +502,7 @@ static struct packet *packet_encode_message(Msg *msg, SMSCConn *conn)
     struct packet *packet;
     PrivData *pdata = conn->data;
     int DCS;
-    int setvalidity = 0;
+    int setvalidity = SMS_PARAM_UNDEFINED;
     int so = 0;
     int udhlen7, udhlen8;
     int msglen7, msglen8;
@@ -577,8 +577,11 @@ static struct packet *packet_encode_message(Msg *msg, SMSCConn *conn)
      * Validity-Period (TP-VP)
      * see GSM 03.40 section 9.2.3.12
      */
-    if ((setvalidity = msg->sms.validity) != SMS_PARAM_UNDEFINED ||
-        (setvalidity = pdata->validityperiod) != SMS_PARAM_UNDEFINED) {
+    if (msg->sms.validity != SMS_PARAM_UNDEFINED)
+    	setvalidity = (msg->sms.validity - time(NULL)) / 60;
+    else if (setvalidity != SMS_PARAM_UNDEFINED)
+    	setvalidity = pdata->validityperiod;
+    if (setvalidity != SMS_PARAM_UNDEFINED) {
         /* Validity period type 0=none, 1=absolute, 2=relative */
         octstr_append_char(packet->data, 2);
 
@@ -1521,7 +1524,7 @@ int smsc_oisd_create(SMSCConn *conn, CfgGroup *grp)
     if (cfg_get_integer(&(pdata->keepalive), grp, octstr_imm("keepalive")) == -1)
         pdata->keepalive = 0;
     if (cfg_get_integer(&(pdata->validityperiod), grp, octstr_imm("validityperiod")) == -1)
-        pdata->validityperiod = 0;
+        pdata->validityperiod = SMS_PARAM_UNDEFINED;
 
     cfg_get_bool(&pdata->no_dlr, grp, octstr_imm("no-dlr"));
 

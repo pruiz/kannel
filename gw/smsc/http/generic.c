@@ -384,10 +384,12 @@ static void generic_receive_sms(SMSCConn *conn, HTTPClient *client,
         tmp_string = http_cgi_variable(cgivars, octstr_get_cstr(fm->validity));
         if (tmp_string) {
             sscanf(octstr_get_cstr(tmp_string),"%ld", &msg->sms.validity);
+            msg->sms.validity = time(NULL) + msg->sms.validity * 60;
         }
         tmp_string = http_cgi_variable(cgivars, octstr_get_cstr(fm->deferred));
         if (tmp_string) {
             sscanf(octstr_get_cstr(tmp_string),"%ld", &msg->sms.deferred);
+            msg->sms.deferred = time(NULL) + msg->sms.deferred * 60;
         }
         account = http_cgi_variable(cgivars, octstr_get_cstr(fm->account));
         binfo = http_cgi_variable(cgivars, octstr_get_cstr(fm->binfo));

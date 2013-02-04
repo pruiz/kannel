@@ -409,8 +409,8 @@ static Msg *pack_sms_datagram(WAPEvent *dgram)
     msg->sms.mwi = MWI_UNDEF;
     msg->sms.coding = DC_8BIT;
     msg->sms.mclass = MC_UNDEF;
-    msg->sms.validity = 1440;
-    msg->sms.deferred = -1;
+    msg->sms.validity = time(NULL) + 1440;
+    msg->sms.deferred = SMS_PARAM_UNDEFINED;
     if (dgram->u.T_DUnitdata_Req.service_name != NULL)
         msg->sms.service = octstr_duplicate(dgram->u.T_DUnitdata_Req.service_name);
     
