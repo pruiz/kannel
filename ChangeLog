@@ -1,3 +1,7 @@
+20123-02-04 Alexander Malysh <amalysh at kannel.org>
+    * changed validity and deferred fields to unix timestamp. Nothing changed
+      for the external calls for smsbox.
+
 2012-12-19 Alexander Malysh <amalysh at kannel.org>
     * gwlib/utils.c: fixed initgroups call. This fixes #676.
       Thanks to  Alexandr Ryabukhin for report.
