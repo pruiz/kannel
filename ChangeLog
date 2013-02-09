@@ -1,4 +1,8 @@
-20123-02-04 Alexander Malysh <amalysh at kannel.org>
+2013-02-09 Alexander Malysh <amalysh at kannel.org>
+    * gw/smsc/smsc_smpp.c: fixed issue reseting user configuration parameters.
+      This should fix #680.
+
+2013-02-04 Alexander Malysh <amalysh at kannel.org>
     * changed validity and deferred fields to unix timestamp. Nothing changed
       for the external calls for smsbox.
 

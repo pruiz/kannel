@@ -1749,10 +1749,6 @@ static int handle_pdu(SMPP *smpp, Connection *conn, SMPP_PDU *pdu,
                     smpp->quitting = 1;
                 }
             } else {
-            	/* obey SMSC's returned interface version */
-            	if (smpp->version >= 0x34 && pdu->u.bind_transmitter_resp.sc_interface_version) {
-            		smpp->version = pdu->u.bind_transmitter_resp.sc_interface_version;
-            	}
                 *pending_submits = 0;
                 mutex_lock(smpp->conn->flow_mutex);
                 smpp->conn->status = SMSCCONN_ACTIVE;
@@ -1778,10 +1774,6 @@ static int handle_pdu(SMPP *smpp, Connection *conn, SMPP_PDU *pdu,
                      smpp->quitting = 1;
                  }
             } else {
-            	/* obey SMSC's returned interface version */
-            	if (smpp->version >= 0x34 && pdu->u.bind_transceiver_resp.sc_interface_version) {
-            		smpp->version = pdu->u.bind_transceiver_resp.sc_interface_version;
-            	}
                 *pending_submits = 0;
                 mutex_lock(smpp->conn->flow_mutex);
                 smpp->conn->status = SMSCCONN_ACTIVE;
@@ -1807,10 +1799,6 @@ static int handle_pdu(SMPP *smpp, Connection *conn, SMPP_PDU *pdu,
                      smpp->quitting = 1;
                  }
             } else {
-            	/* obey SMSC's returned interface version */
-            	if (smpp->version >= 0x34 && pdu->u.bind_receiver_resp.sc_interface_version) {
-            		smpp->version = pdu->u.bind_receiver_resp.sc_interface_version;
-            	}
                 /* set only receive status if no transmit is bind */
                 mutex_lock(smpp->conn->flow_mutex);
                 if (smpp->conn->status != SMSCCONN_ACTIVE) {
