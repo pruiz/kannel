@@ -424,15 +424,6 @@ Octstr *urltrans_fill_escape_codes(Octstr *pattern, Msg *request)
         octstr_destroy(enc);
         break;
 
-    case 'R': /* dlr_url */
-        if (octstr_len(request->sms.dlr_url)) {
-            enc = octstr_duplicate(request->sms.dlr_url);
-            octstr_url_encode(enc);
-            octstr_append(result, enc);
-            octstr_destroy(enc);
-        }
-        break;
-
     case 'D': /* meta_data */
         if (octstr_len(request->sms.meta_data)) {
             enc = octstr_duplicate(request->sms.meta_data);
@@ -587,9 +578,18 @@ Octstr *urltrans_fill_escape_codes(Octstr *pattern, Msg *request)
         }
         break;
 
+    case 'R': /* dlr_url */
+        if (octstr_len(request->sms.dlr_url)) {
+            enc = octstr_duplicate(request->sms.dlr_url);
+            octstr_url_encode(enc);
+            octstr_append(result, enc);
+            octstr_destroy(enc);
+        }
+        break;
+
     case 's':
         if (nextarg >= num_words)
-        break;
+        	break;
         enc = octstr_duplicate(gwlist_get(word_list, nextarg));
         octstr_url_encode(enc);
         octstr_append(result, enc);
@@ -599,13 +599,13 @@ Octstr *urltrans_fill_escape_codes(Octstr *pattern, Msg *request)
 
     case 'S':
         if (nextarg >= num_words)
-        break;
+        	break;
         temp = gwlist_get(word_list, nextarg);
         for (i = 0; i < octstr_len(temp); ++i) {
-        if (octstr_get_char(temp, i) == '*')
-            octstr_append_char(result, '~');
-        else
-            octstr_append_char(result, octstr_get_char(temp, i));
+        	if (octstr_get_char(temp, i) == '*')
+        		octstr_append_char(result, '~');
+        	else
+        		octstr_append_char(result, octstr_get_char(temp, i));
         }
         ++nextarg;
         break;
@@ -635,6 +635,18 @@ Octstr *urltrans_fill_escape_codes(Octstr *pattern, Msg *request)
         octstr_destroy(enc);
         }
         break;
+
+    case 'v':
+        if (request->sms.validity != MSG_PARAM_UNDEFINED) {
+            octstr_format_append(result, "%ld", (request->sms.validity - time(NULL)) / 60);
+        }
+        break;
+
+    case 'V':
+        if (request->sms.deferred != MSG_PARAM_UNDEFINED) {
+            octstr_format_append(result, "%ld", (request->sms.deferred - time(NULL)) / 60);
+        }
+        break;
     
     /* XXX sms.parameters not present in here:
      *   * pid - will we receive this ? 
@@ -642,7 +654,7 @@ Octstr *urltrans_fill_escape_codes(Octstr *pattern, Msg *request)
      *               which alt-dcs external server should use back
      *   * compress - if we use compression, probably kannel would 
      *                decompress and reset this to 0. not required
-     *   * validity, deferred, rpi - we don't receive these from smsc
+     *   * rpi - we don't receive these from smsc
      *   * username, password, dlr-url, account - nonsense to send
      */
     case '%':

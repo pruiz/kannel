@@ -578,6 +578,11 @@ static int kannel_send_sms(SMSCConn *conn, Msg *sms)
     if (sms->sms.dlr_mask != DLR_UNDEFINED && sms->sms.dlr_mask != DLR_NOTHING)
         octstr_format_append(url, "&dlr-mask=%d", sms->sms.dlr_mask);
 
+    if (sms->sms.validity != SMS_PARAM_UNDEFINED)
+    	octstr_format_append(url, "&validity=%ld", (sms->sms.validity - time(NULL)) / 60);
+    if (sms->sms.deferred != SMS_PARAM_UNDEFINED)
+    	octstr_format_append(url, "&deferred=%ld", (sms->sms.deferred - time(NULL)) / 60);
+
     headers = gwlist_create();
     debug("smsc.http.kannel", 0, "HTTP[%s]: Start request",
           octstr_get_cstr(conn->id));

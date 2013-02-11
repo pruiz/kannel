@@ -1,3 +1,7 @@
+2013-02-11 Alexander Malysh <amalysh at kannel.org>
+    *  doc/userguide/userguide.xml, gw/smsc/smsc_http.c, gw/urltrans.c: added
+       support for validity and deferred values.
+
 2013-02-09 Alexander Malysh <amalysh at kannel.org>
     * gw/smsc/smsc_smpp.c: fixed issue reseting user configuration parameters.
       This should fix #680.

@@ -7002,6 +7002,16 @@ the message is originating. (Only available withing the
 <literal>access-log-format</literal> directive)
 </entry></row>
 
+<row><entry><literal>%v</literal></entry><entry>
+Validity period in minutes. Available only if SMSC supports
+and sent this value.
+</entry></row>
+
+<row><entry><literal>%V</literal></entry><entry>
+Deferred in minutes. Available only if SMSC supports
+and sent this value.
+</entry></row>
+
 </tbody>
 </tgroup>
 </table>
