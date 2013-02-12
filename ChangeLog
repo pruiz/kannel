@@ -1,3 +1,7 @@
+2013-02-12 Alexander Malysh <amalysh at kannel.org>
+    * gw/smsc/smsc_http.c, gw/smsbox.c: fixed issue with validity and deferred
+      introduced by the converting to unix timestamp.
+
 2013-02-11 Alexander Malysh <amalysh at kannel.org>
     *  doc/userguide/userguide.xml, gw/smsc/smsc_http.c, gw/urltrans.c: added
        support for validity and deferred values.

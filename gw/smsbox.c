@@ -2206,17 +2206,17 @@ static Octstr *smsbox_req_handle(URLTranslation *t, Octstr *client_ip,
     }
 	
 
-    if (validity < -1 ) {
+    if (validity < -1) {
         returnerror = octstr_create("Validity field misformed, rejected");
         goto field_error;
-    }
-    msg->sms.validity = validity * 60 + time(NULL);
+    } else if (validity != SMS_PARAM_UNDEFINED)
+    	msg->sms.validity = validity * 60 + time(NULL);
 
-    if ( deferred < -1 ) {
+    if (deferred < -1) {
         returnerror = octstr_create("Deferred field misformed, rejected");
         goto field_error;
-    }
-    msg->sms.deferred = deferred * 60 + time(NULL);
+    } else if (deferred != SMS_PARAM_UNDEFINED)
+    	msg->sms.deferred = deferred * 60 + time(NULL);
     
     if (priority != SMS_PARAM_UNDEFINED && (priority < 0 || priority > 3)) {
         returnerror = octstr_create("Priority field misformed, rejected");

@@ -766,8 +766,8 @@ static void kannel_receive_sms(SMSCConn *conn, HTTPClient *client,
         msg->sms.mclass = mclass;
         msg->sms.mwi = mwi;
         msg->sms.coding = coding;
-        msg->sms.validity = time(NULL) + validity * 60;
-        msg->sms.deferred = time(NULL) + deferred * 60;
+        msg->sms.validity = (validity == SMS_PARAM_UNDEFINED ? validity : time(NULL) + validity * 60);
+        msg->sms.deferred = (deferred == SMS_PARAM_UNDEFINED ? deferred : time(NULL) + deferred * 60);
         msg->sms.account = octstr_duplicate(account);
         msg->sms.binfo = octstr_duplicate(binfo);
         ret = bb_smscconn_receive(conn, msg);
