@@ -596,7 +596,7 @@ int charset_convert(Octstr* string, char* charset_from, char* charset_to)
     if (!charset_from || !charset_to || !string) /* sanity check */
         return -1;
 
-    if (octstr_len(string) < 1)
+    if (octstr_len(string) < 1 || strcasecmp(charset_from, charset_to) == 0)
         return 0; /* we are done, nothing to convert */
         
     cd = iconv_open(charset_to, charset_from);
