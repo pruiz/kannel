@@ -1,4 +1,7 @@
 2013-02-21 Alexander Malysh <amalysh at kannel.org>
+    * gw/smsc/smsc_smpp.c: added support for sar_ multipart TLVs.
+
+2013-02-21 Alexander Malysh <amalysh at kannel.org>
     * gw/sms.[ch]: made prepend_catenation_udh function global.
 
 2013-02-13 Alexander Malysh <amalysh at kannel.org>

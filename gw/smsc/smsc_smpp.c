@@ -498,6 +498,28 @@ static Msg *pdu_to_msg(SMPP *smpp, SMPP_PDU *pdu, long *reason)
         pdu->u.deliver_sm.short_message = NULL;
     }
 
+    /* check sar_msg_ref_num, sar_segment_seqnum, sar_total_segments */
+    if (smpp->version > 0x33 &&
+    	pdu->u.submit_sm.sar_msg_ref_num >= 0 && pdu->u.submit_sm.sar_segment_seqnum > 0 && pdu->u.submit_sm.sar_total_segments > 0) {
+    	/*
+    		For GSM networks, the concatenation related TLVs (sar_msg_ref_num, sar_total_segments, sar_segment_seqnum)
+    		or port addressing related TLVs
+    		(source_port, dest_port) cannot be used in conjunction with encoded User Data Header in the short_message
+    		(user data) field. This means that the above listed TLVs cannot be used if the User Data Header Indicator flag is set.
+    	*/
+    	if (pdu->u.submit_sm.esm_class & ESM_CLASS_SUBMIT_UDH_INDICATOR) {
+    		error(0, "SMPP[%s]: sar_msg_ref_num, sar_segment_seqnum, sar_total_segments in conjuction with UDHI used, rejected.",
+    			  octstr_get_cstr(smpp->conn->id));
+    		*reason = SMPP_ESME_RINVTLVVAL;
+    		goto error;
+    	}
+    	/* create multipart UDH */
+    	prepend_catenation_udh(msg,
+    						   pdu->u.submit_sm.sar_segment_seqnum,
+    						   pdu->u.submit_sm.sar_total_segments,
+    						   pdu->u.submit_sm.sar_msg_ref_num);
+    }
+
     /*
      * Encode udh if udhi set
      * for reference see GSM03.40, section 9.2.3.24
@@ -665,6 +687,27 @@ static Msg *data_sm_to_msg(SMPP *smpp, SMPP_PDU *pdu, long *reason)
 
     msg->sms.msgdata = pdu->u.data_sm.message_payload;
     pdu->u.data_sm.message_payload = NULL;
+
+    /* check sar_msg_ref_num, sar_segment_seqnum, sar_total_segments */
+    if (pdu->u.data_sm.sar_msg_ref_num >= 0 && pdu->u.data_sm.sar_segment_seqnum > 0 && pdu->u.data_sm.sar_total_segments > 0) {
+    	/*
+    		For GSM networks, the concatenation related TLVs (sar_msg_ref_num, sar_total_segments, sar_segment_seqnum)
+    		or port addressing related TLVs
+    		(source_port, dest_port) cannot be used in conjunction with encoded User Data Header in the short_message
+    		(user data) field. This means that the above listed TLVs cannot be used if the User Data Header Indicator flag is set.
+    	*/
+    	if (pdu->u.data_sm.esm_class & ESM_CLASS_SUBMIT_UDH_INDICATOR) {
+    		error(0, "SMPP[%s]: sar_msg_ref_num, sar_segment_seqnum, sar_total_segments in conjuction with UDHI used, rejected.",
+    			  octstr_get_cstr(smpp->conn->id));
+    		*reason = SMPP_ESME_RINVTLVVAL;
+    		goto error;
+    	}
+    	/* create multipart UDH */
+    	prepend_catenation_udh(msg,
+    						   pdu->u.data_sm.sar_segment_seqnum,
+    						   pdu->u.data_sm.sar_total_segments,
+    						   pdu->u.data_sm.sar_msg_ref_num);
+    }
 
     /*
      * Encode udh if udhi set
