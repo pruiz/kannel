@@ -192,6 +192,11 @@ List *sms_split(Msg *orig, Octstr *header, Octstr *footer,
                 unsigned long msg_sequence, int max_messages, int max_octets);
 
 /**
+ * Create multipart UDH
+ */
+void prepend_catenation_udh(Msg *sms, int part_no, int num_messages, int msg_sequence);
+
+/**
  * Compare priority and time of two sms's.
  * @return -1 of a < b; 0 a = b; 1 a > b
  */

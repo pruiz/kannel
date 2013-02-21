@@ -1,3 +1,6 @@
+2013-02-21 Alexander Malysh <amalysh at kannel.org>
+    * gw/sms.[ch]: made prepend_catenation_udh function global.
+
 2013-02-13 Alexander Malysh <amalysh at kannel.org>
     * gw/charset.c: don't call iconv if charset from & to equal
 

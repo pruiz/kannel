@@ -221,7 +221,7 @@ int sms_swap(Msg *msg)
 #define CATENATE_UDH_LEN 5
 
 
-static void prepend_catenation_udh(Msg *sms, int part_no, int num_messages,
+void prepend_catenation_udh(Msg *sms, int part_no, int num_messages,
     	    	    	    	   int msg_sequence)
 {
     if (sms->sms.udhdata == NULL)
