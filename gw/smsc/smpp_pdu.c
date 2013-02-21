@@ -58,7 +58,7 @@
  * smpp_pdu.c - parse and generate SMPP PDUs
  *
  * Lars Wirzenius
- * Alexander Malysh <a.malysh@centrium.de>:
+ * Alexander Malysh <amalysh@kannel.org>:
  *     Extended optional parameters implementation.
  */
 
