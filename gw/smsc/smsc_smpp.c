@@ -500,14 +500,14 @@ static Msg *pdu_to_msg(SMPP *smpp, SMPP_PDU *pdu, long *reason)
 
     /* check sar_msg_ref_num, sar_segment_seqnum, sar_total_segments */
     if (smpp->version > 0x33 &&
-    	pdu->u.submit_sm.sar_msg_ref_num >= 0 && pdu->u.submit_sm.sar_segment_seqnum > 0 && pdu->u.submit_sm.sar_total_segments > 0) {
+    	pdu->u.deliver_sm.sar_msg_ref_num >= 0 && pdu->u.deliver_sm.sar_segment_seqnum > 0 && pdu->u.deliver_sm.sar_total_segments > 0) {
     	/*
     		For GSM networks, the concatenation related TLVs (sar_msg_ref_num, sar_total_segments, sar_segment_seqnum)
     		or port addressing related TLVs
     		(source_port, dest_port) cannot be used in conjunction with encoded User Data Header in the short_message
     		(user data) field. This means that the above listed TLVs cannot be used if the User Data Header Indicator flag is set.
     	*/
-    	if (pdu->u.submit_sm.esm_class & ESM_CLASS_SUBMIT_UDH_INDICATOR) {
+    	if (pdu->u.deliver_sm.esm_class & ESM_CLASS_SUBMIT_UDH_INDICATOR) {
     		error(0, "SMPP[%s]: sar_msg_ref_num, sar_segment_seqnum, sar_total_segments in conjuction with UDHI used, rejected.",
     			  octstr_get_cstr(smpp->conn->id));
     		*reason = SMPP_ESME_RINVTLVVAL;
@@ -515,9 +515,9 @@ static Msg *pdu_to_msg(SMPP *smpp, SMPP_PDU *pdu, long *reason)
     	}
     	/* create multipart UDH */
     	prepend_catenation_udh(msg,
-    						   pdu->u.submit_sm.sar_segment_seqnum,
-    						   pdu->u.submit_sm.sar_total_segments,
-    						   pdu->u.submit_sm.sar_msg_ref_num);
+    						   pdu->u.deliver_sm.sar_segment_seqnum,
+    						   pdu->u.deliver_sm.sar_total_segments,
+    						   pdu->u.deliver_sm.sar_msg_ref_num);
     }
 
     /*
@@ -1036,7 +1036,7 @@ static SMPP_PDU *msg_to_pdu(SMPP *smpp, Msg *msg)
     dict_destroy(pdu->u.submit_sm.tlv);
     pdu->u.submit_sm.tlv = meta_data_get_values(msg->sms.meta_data, "smpp");
 
-    return pdu;
+	return pdu;
 }
 
 

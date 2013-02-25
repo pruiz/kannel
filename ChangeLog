@@ -1,3 +1,6 @@
+2013-02-25 Alexander Malysh <amalysh at kannel.org>
+    * gw/smsc/smsc_smpp.c: fixed sar_ multipart TLVs support.
+
 2013-02-21 Alexander Malysh <amalysh at kannel.org>
     * gw/smsc/smsc_smpp.c: added support for sar_ multipart TLVs.
 
