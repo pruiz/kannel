@@ -1,4 +1,10 @@
 2013-02-25 Alexander Malysh <amalysh at kannel.org>
+    * gw/smsc/smpp_pdu.[ch]: fixed issue with TLVs default value.
+      We initialized to -1 but the value was unsigned long therefore
+      0xff. Made TLV integer signed long and added check by packing
+      of the PDU.
+
+2013-02-25 Alexander Malysh <amalysh at kannel.org>
     * gw/smsc/smsc_smpp.c: fixed sar_ multipart TLVs support.
 
 2013-02-21 Alexander Malysh <amalysh at kannel.org>

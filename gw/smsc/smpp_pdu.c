@@ -413,7 +413,7 @@ Octstr *smpp_pdu_pack(Octstr *smsc_id, SMPP_PDU *pdu)
         append_encoded_integer(os, octets, 2);
     #define OPTIONAL_BEGIN
     #define TLV_INTEGER(name, octets) \
-        if (p->name != -1) { \
+        if (p->name >= 0) { \
             TL(name, octets); \
             INTEGER(name, octets) \
         }

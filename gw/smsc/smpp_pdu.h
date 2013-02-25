@@ -92,7 +92,7 @@ struct SMPP_PDU {
     const char *type_name;
     union {
         #define OPTIONAL_BEGIN
-        #define TLV_INTEGER(name, octets) unsigned long name;
+        #define TLV_INTEGER(name, octets) long name;
         #define TLV_NULTERMINATED(name, max_len) Octstr *name;
         #define TLV_OCTETS(name, min_len, max_len) Octstr *name;
         #define OPTIONAL_END Dict *tlv;
