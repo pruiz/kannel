@@ -1,3 +1,7 @@
+2013-03-07 Alexander Malysh <amalysh at kannel.org>
+    * gw/smsbox.c: fixed issue with DLRs arriving with a unknown service.
+      This fixes #681.
+
 2013-02-25 Alexander Malysh <amalysh at kannel.org>
     * gw/smsc/smpp_pdu.[ch]: fixed issue with TLVs default value.
       We initialized to -1 but the value was unsigned long therefore

@@ -1061,6 +1061,12 @@ static void url_result_thread(void *arg)
         get_receiver(id, &msg, &trans, &method, &req_url, &req_headers, &req_body, &retries);
 
         if (status == HTTP_OK || status == HTTP_ACCEPTED) {
+
+            if (msg->sms.sms_type == report_mo) {
+                /* we are done */
+                goto requeued;
+            }
+
             http_header_get_content_type(reply_headers, &type, &charset);
             if (octstr_case_compare(type, text_html) == 0 ||
                 octstr_case_compare(type, text_wml) == 0) {
