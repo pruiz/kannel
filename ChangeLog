@@ -1,4 +1,8 @@
 2013-03-07 Alexander Malysh <amalysh at kannel.org>
+    * gw/smsc/smsc_smpp.c: fixed issue with registered_delivery flag if we
+      ask only for failed DLR. This fixes #675.
+
+2013-03-07 Alexander Malysh <amalysh at kannel.org>
     * gw/smsbox.c: fixed issue with DLRs arriving with a unknown service.
       This fixes #681.
 
