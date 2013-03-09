@@ -996,6 +996,7 @@ static SMPP_PDU *msg_to_pdu(SMPP *smpp, Msg *msg)
      * Note: we always send in UTC and just define "Time Difference" as 00 and
      *       direction '+'.
      */
+    validity = SMS_PARAM_UNDEFINED;
     if (msg->sms.validity != SMS_PARAM_UNDEFINED)
     	validity = msg->sms.validity;
     else if (smpp->validityperiod != SMS_PARAM_UNDEFINED)
