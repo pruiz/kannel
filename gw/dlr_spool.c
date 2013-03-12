@@ -306,17 +306,15 @@ static int for_each_file(const Octstr *dir_s, int ignore_err,
 
 static Octstr *get_msg_filename(const Octstr *dir_s, const Octstr *hash, const Octstr *dst)
 {
-	Octstr *ret;
+    Octstr *ret;
     DIR *dir;
     struct dirent *ent;
-    char *hash_cstr;
 
     if ((dir = opendir(octstr_get_cstr(dir_s))) == NULL) {
         error(errno, "Could not open directory `%s'", octstr_get_cstr(dir_s));
         return NULL;
     }
 
-    hash_cstr = octstr_get_cstr(hash);
     while ((ent = readdir(dir)) != NULL) {
     	Octstr *fname = octstr_create((char*)ent->d_name);
 

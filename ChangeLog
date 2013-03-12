@@ -1,3 +1,6 @@
+2013-03-12 Alexander Malysh <amalysh at kannel.org>
+    * gw/dlr_spool.c: fixed compiler warning.
+
 2013-03-09 Alexander Malysh <amalysh at kannel.org>
     * gw/smsc/smsc_smpp.c: fixed issue with validity value because variable
       was not initialized.
