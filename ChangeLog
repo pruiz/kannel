@@ -1,3 +1,6 @@
+2013-03-27  Stipe Tolj  <stolj at kannel.org>
+    * */*: updating the LICENSE preamble to reflect the correct year.
+
 2013-03-12 Alexander Malysh <amalysh at kannel.org>
     * gw/dlr_spool.c: fixed compiler warning.
 
