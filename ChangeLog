@@ -1,4 +1,7 @@
 2013-03-27  Stipe Tolj  <stolj at kannel.org>
+    * configure[.in]: fix sqlite3 version string extraction.
+    
+2013-03-27  Stipe Tolj  <stolj at kannel.org>
     * */*: updating the LICENSE preamble to reflect the correct year.
 
 2013-03-12 Alexander Malysh <amalysh at kannel.org>
