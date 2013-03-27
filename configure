@@ -9523,33 +9523,42 @@ fi
     else
     	    	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking PostgreSQL version" >&5
 $as_echo_n "checking PostgreSQL version... " >&6; }
-    	pgsql_version=`$PGSQL_CONFIG --version`
+    	pgsql_version=`$PGSQL_CONFIG --version | awk '{print $2}'`
     	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $pgsql_version" >&5
 $as_echo "$pgsql_version" >&6; }
-    	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking PostgreSQL libs" >&5
-$as_echo_n "checking PostgreSQL libs... " >&6; }
+    	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking PostgreSQL libdir" >&5
+$as_echo_n "checking PostgreSQL libdir... " >&6; }
     	if $PGSQL_CONFIG --libdir &>/dev/null ; then
     		LIBS="$LIBS -L`$PGSQL_CONFIG --libdir`"
     		pg_libdir=`$PGSQL_CONFIG --libdir`
     		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $pg_libdir" >&5
 $as_echo "$pg_libdir" >&6; }
         fi
+        { $as_echo "$as_me:${as_lineno-$LINENO}: checking PostgreSQL libs" >&5
+$as_echo_n "checking PostgreSQL libs... " >&6; }
+        if $PGSQL_CONFIG --libs &>/dev/null ; then
+            LIBS="$LIBS `$PGSQL_CONFIG --libs`"
+            pg_libs=`$PGSQL_CONFIG --libs`
+            { $as_echo "$as_me:${as_lineno-$LINENO}: result: $pg_libs" >&5
+$as_echo "$pg_libs" >&6; }
+        fi
         { $as_echo "$as_me:${as_lineno-$LINENO}: checking PostgreSQL includes" >&5
 $as_echo_n "checking PostgreSQL includes... " >&6; }
         if $PGSQL_CONFIG --includedir &>/dev/null ; then
             CFLAGS="$CFLAGS -I`$PGSQL_CONFIG --includedir`"
+            CPPFLAGS="$CPPFLAGS -I`$PGSQL_CONFIG --includedir`"
             pg_incdir=`$PGSQL_CONFIG --includedir`
             { $as_echo "$as_me:${as_lineno-$LINENO}: result: $pg_incdir" >&5
 $as_echo "$pg_incdir" >&6; }
         fi
     fi
 
-    for ac_header in postgresql/libpq-fe.h
+    for ac_header in libpq-fe.h
 do :
-  ac_fn_c_check_header_mongrel "$LINENO" "postgresql/libpq-fe.h" "ac_cv_header_postgresql_libpq_fe_h" "$ac_includes_default"
-if test "x$ac_cv_header_postgresql_libpq_fe_h" = xyes; then :
+  ac_fn_c_check_header_mongrel "$LINENO" "libpq-fe.h" "ac_cv_header_libpq_fe_h" "$ac_includes_default"
+if test "x$ac_cv_header_libpq_fe_h" = xyes; then :
   cat >>confdefs.h <<_ACEOF
-#define HAVE_POSTGRESQL_LIBPQ_FE_H 1
+#define HAVE_LIBPQ_FE_H 1
 _ACEOF
 
 fi

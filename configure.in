@@ -1199,23 +1199,30 @@ else
     else
     	dnl pg_config found
     	AC_MSG_CHECKING([PostgreSQL version])
-    	pgsql_version=`$PGSQL_CONFIG --version`
+    	pgsql_version=`$PGSQL_CONFIG --version | awk '{print $2}'`
     	AC_MSG_RESULT([$pgsql_version])
-    	AC_MSG_CHECKING([PostgreSQL libs])
+    	AC_MSG_CHECKING([PostgreSQL libdir])
     	if $PGSQL_CONFIG --libdir &>/dev/null ; then
     		LIBS="$LIBS -L`$PGSQL_CONFIG --libdir`"
     		pg_libdir=`$PGSQL_CONFIG --libdir`
     		AC_MSG_RESULT([$pg_libdir])
         fi
+        AC_MSG_CHECKING([PostgreSQL libs])
+        if $PGSQL_CONFIG --libs &>/dev/null ; then
+            LIBS="$LIBS `$PGSQL_CONFIG --libs`"
+            pg_libs=`$PGSQL_CONFIG --libs`
+            AC_MSG_RESULT([$pg_libs])
+        fi
         AC_MSG_CHECKING([PostgreSQL includes])
         if $PGSQL_CONFIG --includedir &>/dev/null ; then
             CFLAGS="$CFLAGS -I`$PGSQL_CONFIG --includedir`"
+            CPPFLAGS="$CPPFLAGS -I`$PGSQL_CONFIG --includedir`"
             pg_incdir=`$PGSQL_CONFIG --includedir`
             AC_MSG_RESULT([$pg_incdir])
         fi
     fi
     
-    AC_CHECK_HEADERS(postgresql/libpq-fe.h)
+    AC_CHECK_HEADERS(libpq-fe.h)
     AC_CHECK_LIB(pq, PQconnectdb, [])
     AC_DEFINE(HAVE_PGSQL)
     AC_MSG_CHECKING([whether to compile with PostgreSQL support])

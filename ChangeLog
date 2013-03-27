@@ -1,4 +1,7 @@
 2013-03-27  Stipe Tolj  <stolj at kannel.org>
+    * configure[.in]: fix PostgreSQL detection and libs handling.
+    
+2013-03-27  Stipe Tolj  <stolj at kannel.org>
     * configure[.in]: fix sqlite3 version string extraction.
     
 2013-03-27  Stipe Tolj  <stolj at kannel.org>
