@@ -1,3 +1,9 @@
+2013-03-28  Stipe Tolj  <stolj at kannel.org>
+    * configure[.in]: revert back, not handling the 'pg_config --libs' output
+      as these seem to be the static libs used while linking libpg.a itself,
+      and they add unresolved dependancies on various systems. Causes more
+      trouble then it help, going back to the old way.
+      
 2013-03-27  Stipe Tolj  <stolj at kannel.org>
     * configure[.in]: fix PostgreSQL detection and libs handling.
     

@@ -9534,14 +9534,6 @@ $as_echo_n "checking PostgreSQL libdir... " >&6; }
     		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $pg_libdir" >&5
 $as_echo "$pg_libdir" >&6; }
         fi
-        { $as_echo "$as_me:${as_lineno-$LINENO}: checking PostgreSQL libs" >&5
-$as_echo_n "checking PostgreSQL libs... " >&6; }
-        if $PGSQL_CONFIG --libs &>/dev/null ; then
-            LIBS="$LIBS `$PGSQL_CONFIG --libs`"
-            pg_libs=`$PGSQL_CONFIG --libs`
-            { $as_echo "$as_me:${as_lineno-$LINENO}: result: $pg_libs" >&5
-$as_echo "$pg_libs" >&6; }
-        fi
         { $as_echo "$as_me:${as_lineno-$LINENO}: checking PostgreSQL includes" >&5
 $as_echo_n "checking PostgreSQL includes... " >&6; }
         if $PGSQL_CONFIG --includedir &>/dev/null ; then

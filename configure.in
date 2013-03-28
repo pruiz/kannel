@@ -1207,12 +1207,6 @@ else
     		pg_libdir=`$PGSQL_CONFIG --libdir`
     		AC_MSG_RESULT([$pg_libdir])
         fi
-        AC_MSG_CHECKING([PostgreSQL libs])
-        if $PGSQL_CONFIG --libs &>/dev/null ; then
-            LIBS="$LIBS `$PGSQL_CONFIG --libs`"
-            pg_libs=`$PGSQL_CONFIG --libs`
-            AC_MSG_RESULT([$pg_libs])
-        fi
         AC_MSG_CHECKING([PostgreSQL includes])
         if $PGSQL_CONFIG --includedir &>/dev/null ; then
             CFLAGS="$CFLAGS -I`$PGSQL_CONFIG --includedir`"
