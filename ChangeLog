@@ -1,3 +1,10 @@
+2013-04-09 Alexander Malysh <amalysh at kannel.org>
+    * gwlib/socket.[ch], test/fakewap.c: patch with
+      - parse WSP message and save only the received payload to the output file
+      - support for connectionless get/post
+      - robustness fixes for Post (resend group segments if no ack), packet loss simulation
+      Thanks to Piotr Galecki <piotr_galecki at affirmednetworks.com> for this patch.
+
 2013-03-28  Stipe Tolj  <stolj at kannel.org>
     * configure[.in]: revert back, not handling the 'pg_config --libs' output
       as these seem to be the static libs used while linking libpg.a itself,

@@ -165,6 +165,7 @@ int udp_sendto(int s, Octstr *datagram, Octstr *addr);
 /*
  * Receive a UDP message from a client.
  */
+int udp_recvfrom_flags(int s, Octstr **datagram, Octstr **addr, int sockrcvflags);
 int udp_recvfrom(int s, Octstr **datagram, Octstr **addr);
 
 

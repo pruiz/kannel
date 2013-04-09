@@ -581,6 +581,12 @@ int udp_sendto(int s, Octstr *datagram, Octstr *addr)
 
 int udp_recvfrom(int s, Octstr **datagram, Octstr **addr)
 {
+    return udp_recvfrom_flags(s, datagram, addr, 0);
+}
+
+
+int udp_recvfrom_flags(int s, Octstr **datagram, Octstr **addr, int sockrcvflags)
+{
     struct sockaddr_in sa;
     socklen_t salen;
     char *buf;
@@ -589,7 +595,7 @@ int udp_recvfrom(int s, Octstr **datagram, Octstr **addr)
     buf = gw_malloc(UDP_PACKET_MAX_SIZE);
 
     salen = sizeof(sa);
-    bytes = recvfrom(s, buf, UDP_PACKET_MAX_SIZE, 0, (struct sockaddr *) &sa, &salen);
+    bytes = recvfrom(s, buf, UDP_PACKET_MAX_SIZE, sockrcvflags, (struct sockaddr *) &sa, &salen);
     if (bytes == -1) {
         if (errno != EAGAIN)
             error(errno, "Couldn't receive UDP packet");
