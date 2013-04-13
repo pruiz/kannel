@@ -1,3 +1,7 @@
+2013-04-13  Stipe Tolj  <stolj at kannel.org>
+    * doc/doxgen/kannel.conf: automated update via 'doxygen -u' to the
+      configuration file.
+      
 2013-04-09 Alexander Malysh <amalysh at kannel.org>
     * gwlib/socket.[ch], test/fakewap.c: patch with
       - parse WSP message and save only the received payload to the output file
