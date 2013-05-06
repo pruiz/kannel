@@ -172,6 +172,7 @@ static struct dlr_entry* dlr_mysql_get(const Octstr *smsc, const Octstr *ts, con
     if (dbpool_conn_select(pconn, sql, binds, &result) != 0) {
         octstr_destroy(sql);
         octstr_destroy(like);
+        gwlist_destroy(binds, NULL);
         dbpool_conn_produce(pconn);
         return NULL;
     }
