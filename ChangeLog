@@ -1,3 +1,7 @@
+2013-05-07 Alexander Malysh <amalysh at kannel.org>
+	* gw/smsbox.c: fixed issue with DLRs because we don't have URLTranslation for
+	  it. This fixes #686.
+
 2013-05-06 Alexander Malysh <amalysh at kannel.org>
     * gwlib/conn.c: changed conn_read_packet to accept startmark -1 and ignore
       it in this case.

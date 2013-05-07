@@ -1141,17 +1141,17 @@ static void url_result_thread(void *arg)
         } else
             replytext = octstr_duplicate(reply_couldnotfetch);
 
-        fill_message(msg, trans, replytext, from, to, udh, mclass,
-        		     mwi, coding, compress, validity, deferred, dlr_url,
-        		     dlr_mask, pid, alt_dcs, rpi, smsc, account, charset,
-        		     binfo, priority, meta_data);
-
         if (final_url == NULL)
             final_url = octstr_imm("");
         if (reply_body == NULL)
             reply_body = octstr_imm("");
 
         if (msg->sms.sms_type != report_mo) {
+            fill_message(msg, trans, replytext, from, to, udh, mclass,
+                         mwi, coding, compress, validity, deferred, dlr_url,
+                         dlr_mask, pid, alt_dcs, rpi, smsc, account, charset,
+                         binfo, priority, meta_data);
+
             alog("SMS HTTP-request sender:%s request: '%s' url: '%s' reply: %d '%s'",
                  octstr_get_cstr(msg->sms.receiver),
                  (msg->sms.msgdata != NULL) ? octstr_get_cstr(msg->sms.msgdata) : "",
