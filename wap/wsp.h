@@ -67,6 +67,7 @@
  */
 
 typedef enum {
+	WSP_TBD = 0,	/* to be defined */
     WSP_1_1 = 1, 
     WSP_1_2 = 2, 
     WSP_1_3 = 3, 
