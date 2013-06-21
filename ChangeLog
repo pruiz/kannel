@@ -1,3 +1,9 @@
+2013-06-21  Stipe Tolj  <stolj at kannel.org>
+    * wap/wsp_headers.c: adding some debug() lines to trace WSP header packing
+      better for WAP Push messages, i.e. SI or MMS indications.
+    * wap/wsp_unit.c: added wsp_pdu_dump() to dump the WSP PDU before packing
+      for push transport, source code re-formating. NLC.
+      
 2013-06-19  Stipe Tolj  <stolj at kannel.org>
     * wap/wsp_strings.def: add various new WSP byte codes.
     * wap/wsp.h: add WSP_TBD to wsp_encoding enumeration.
