@@ -1,3 +1,6 @@
+2013-07-03  Stipe Tolj  <stolj at kannel.org>
+    * gw/wap_push_ppg.c: fix assertion check conditions.
+    
 2013-06-21  Stipe Tolj  <stolj at kannel.org>
     * wap/wsp_headers.c: adding some debug() lines to trace WSP header packing
       better for WAP Push messages, i.e. SI or MMS indications.

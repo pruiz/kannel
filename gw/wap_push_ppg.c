@@ -1311,7 +1311,7 @@ static PPGSessionMachine *session_machine_create(WAPAddrTuple *tuple,
 {
     PPGSessionMachine *m;
 
-    gw_assert(e->type = Push_Message);
+    gw_assert(e->type == Push_Message);
 
     m = gw_malloc(sizeof(PPGSessionMachine));
     
@@ -2176,7 +2176,7 @@ static int delivery_time_constraints(WAPEvent *e, PPGPushMachine *pm)
            *after;
     struct tm now;
    
-    gw_assert(e->type = Push_Message);
+    gw_assert(e->type == Push_Message);
     
     before = e->u.Push_Message.deliver_before_timestamp;
     after = pm->deliver_after_timestamp;
@@ -2484,7 +2484,7 @@ static PPGSessionMachine *update_session_data_with_headers(
  */
 static int confirmation_requested(WAPEvent *e)
 {
-    gw_assert(e->type = Push_Message);
+    gw_assert(e->type == Push_Message);
 
     return e->u.Push_Message.delivery_method == PAP_CONFIRMED || 
            e->u.Push_Message.delivery_method == PAP_PREFERCONFIRMED;
