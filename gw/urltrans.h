@@ -332,4 +332,8 @@ int urltrans_accept_x_kannel_headers(URLTranslation *t);
 int urltrans_strip_keyword(URLTranslation *t);
 int urltrans_send_sender(URLTranslation *t);
 
+/* Return DLR related values */
+Octstr *urltrans_dlr_url(URLTranslation *t);
+int urltrans_dlr_mask(URLTranslation *t);
+
 #endif

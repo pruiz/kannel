@@ -1,3 +1,12 @@
+2013-08-19  Stipe Tolj  <stolj at kannel.org>
+    * doc/userguide/userguide.xml: document 'dlr-[url|mask]' config directives
+      for 'group = sms-service' context.
+    * gw/smsbox.c: add corresponding DLR values in func send_message() if we
+      have some default values from the config, but no adhoc value from the
+      HTTP response.
+    * gw/urltrans.[ch]: added dlr_mask into URLTranslation struct, and access
+      functions, since the struct is module scoped.
+
 2013-07-03  Stipe Tolj  <stolj at kannel.org>
     * gw/wap_push_ppg.c: fix assertion check conditions.
     

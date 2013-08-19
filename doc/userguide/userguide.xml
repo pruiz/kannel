@@ -6834,6 +6834,24 @@ get-url = "http://%S"
         </entry>   
      </row>
 
+     <row><entry><literal>dlr-url</literal></entry>
+        <entry>string (URL)</entry>
+        <entry valign="bottom">
+        Optional Defines a default URL which is fetched for DLR event, if no 
+        specific X-Kannel HTTP header parameter is returned by the HTTP response.
+        </entry>   
+     </row>
+
+     <row><entry><literal>dlr-mask</literal></entry>
+        <entry>number (bit mask)</entry>
+        <entry valign="bottom">
+        Optional. Defines a default DLR event bit mask which is used in 
+        combination with the <literal>dlr-url</literal> config directive, 
+        if no specific X-Kannel HTTP header parameter is returned by the 
+        HTTP response.
+        </entry>   
+     </row>
+
   </tbody>
   </tgroup>
  </table>

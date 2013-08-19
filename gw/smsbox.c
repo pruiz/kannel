@@ -316,13 +316,13 @@ static int send_message(URLTranslation *trans, Msg *msg)
     gw_assert(msg_type(msg) == sms);
 
     if (trans != NULL)
-	max_msgs = urltrans_max_messages(trans);
+        max_msgs = urltrans_max_messages(trans);
     else
-	max_msgs = 1;
+        max_msgs = 1;
 
     if (max_msgs == 0) {
-	info(0, "No reply sent, denied.");
-	return 0;
+        info(0, "No reply sent, denied.");
+        return 0;
     }
 
     /*
@@ -348,26 +348,36 @@ static int send_message(URLTranslation *trans, Msg *msg)
     }
 
     if (trans == NULL) {
-	header = NULL;
-	footer = NULL;
-	suffix = NULL;
-	split_chars = NULL;
-	catenate = 0;
+        header = NULL;
+        footer = NULL;
+        suffix = NULL;
+        split_chars = NULL;
+        catenate = 0;
     } else {
-    	header = urltrans_header(trans);
-	footer = urltrans_footer(trans);
-	suffix = urltrans_split_suffix(trans);
-	split_chars = urltrans_split_chars(trans);
-	catenate = urltrans_concatenation(trans);
+        header = urltrans_header(trans);
+        footer = urltrans_footer(trans);
+        suffix = urltrans_split_suffix(trans);
+        split_chars = urltrans_split_chars(trans);
+        catenate = urltrans_concatenation(trans);
+
+        /*
+         * If there hasn't been yet any DLR-URL set in the message
+         * and we have configured values from the URLTranslation,
+         * hence the 'group = sms-service' context group, then use
+         * them in the message.
+         */
+        if (msg->sms.dlr_url == NULL &&
+                (msg->sms.dlr_url = octstr_duplicate(urltrans_dlr_url(trans))) != NULL)
+            msg->sms.dlr_mask = urltrans_dlr_mask(trans);
     }
 
     if (catenate)
-    	msg_sequence = counter_increase(catenated_sms_counter) & 0xFF;
+        msg_sequence = counter_increase(catenated_sms_counter) & 0xFF;
     else
-    	msg_sequence = 0;
+        msg_sequence = 0;
 
     list = sms_split(msg, header, footer, suffix, split_chars, catenate,
-    	    	     msg_sequence, max_msgs, sms_max_length);
+                     msg_sequence, max_msgs, sms_max_length);
     msg_count = gwlist_len(list);
     
     debug("sms", 0, "message length %ld, sending %ld messages",
@@ -388,7 +398,7 @@ static int send_message(URLTranslation *trans, Msg *msg)
         }
         write_to_bearerbox(new_msg);
     } else {
-        /* msgs are the independed parts so sent those as is */
+        /* msgs are the independent parts so sent those as is */
         while ((part = gwlist_extract_first(list)) != NULL)
             write_to_bearerbox(part);
     }

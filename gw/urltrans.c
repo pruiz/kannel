@@ -71,6 +71,7 @@
 #include "urltrans.h"
 #include "gwlib/gwlib.h"
 #include "gw/sms.h"
+#include "gw/dlr.h"
 
 
 /***********************************************************************
@@ -126,7 +127,8 @@ struct URLTranslation {
     int args;
     int has_catchall_arg;
     int catch_all;
-    Octstr *dlr_url;	/* Url to call for delivery reports */
+    Octstr *dlr_url;    /* URL to call for delivery reports */
+    long dlr_mask;       /* DLR event mask */
 
     regex_t *keyword_regex;       /* the compiled regular expression for the keyword*/
     regex_t *accepted_smsc_regex;
@@ -879,6 +881,15 @@ int urltrans_send_sender(URLTranslation *t)
     return t->send_sender;
 }
 
+Octstr *urltrans_dlr_url(URLTranslation *t)
+{
+    return t->dlr_url;
+}
+
+int urltrans_dlr_mask(URLTranslation *t)
+{
+    return t->dlr_mask;
+}
 
 
 /***********************************************************************
@@ -928,6 +939,8 @@ static URLTranslation *create_onetrans(CfgGroup *grp)
         cfg_get_bool(&ot->catch_all, grp, octstr_imm("catch-all"));
 
         ot->dlr_url = cfg_get(grp, octstr_imm("dlr-url"));
+        if (cfg_get_integer(&ot->dlr_mask, grp, octstr_imm("dlr-mask")) == -1)
+            ot->dlr_mask = DLR_UNDEFINED;
         ot->alt_charset = cfg_get(grp, octstr_imm("alt-charset"));
 	    
         url = cfg_get(grp, octstr_imm("get-url"));
