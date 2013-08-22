@@ -1,3 +1,6 @@
+2013-08-22 Alexander Malysh <amalysh at kannel.org>
+    * gwlib/cfg.def: added dlr-mask to sms-service group.
+
 2013-08-19  Stipe Tolj  <stolj at kannel.org>
     * doc/userguide/userguide.xml: document 'dlr-[url|mask]' config directives
       for 'group = sms-service' context.

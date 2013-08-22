@@ -472,6 +472,7 @@ MULTI_GROUP(sms-service,
     OCTSTR(black-list)
     OCTSTR(black-list-regex)
     OCTSTR(dlr-url)
+    OCTSTR(dlr-mask)
     OCTSTR(keyword-regex)
     OCTSTR(alt-charset)
 )
