@@ -1,4 +1,7 @@
 2013-08-22 Alexander Malysh <amalysh at kannel.org>
+    * test/test_http.c: added don't follow redirect option.
+
+2013-08-22 Alexander Malysh <amalysh at kannel.org>
     * gwlib/cfg.def: added dlr-mask to sms-service group.
 
 2013-08-19  Stipe Tolj  <stolj at kannel.org>
