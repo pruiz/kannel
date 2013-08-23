@@ -233,6 +233,9 @@
 /* Define if you have and want to use the OCI library */
 #undef HAVE_ORACLE
 
+/* Define if you have and want to use the OCIPing function */
+#undef HAVE_OCIPING
+
 /* Define if you have and want to use the SQLite database library (-lsqlite) */
 #undef HAVE_SQLITE
 

@@ -1,4 +1,8 @@
 2013-08-23 Alexander Malysh <amalysh at kannel.org>
+    * aclocal.m4, configure, configure.in, gw-config.h.in, gwlib/dbpool_oracle.c:
+      added OCIPing to check oracle connection.
+
+2013-08-23 Alexander Malysh <amalysh at kannel.org>
     * gwlib/http.c: fixed issue when Host already set in the headers but we set it again.
 
 2013-08-22 Alexander Malysh <amalysh at kannel.org>

@@ -1146,6 +1146,8 @@ else
           AC_CHECK_LIB(wtc9,wtcstu,[ LIBS="$LIBS -lwtc9" ], true)
         )
 
+		AC_CHECK_FUNC(OCIPing, [AC_DEFINE(HAVE_OCIPING, 1, [Do we have OCIPing])])
+
     AC_DEFINE(HAVE_ORACLE, 1, [Do we have Oracle])
     AC_MSG_CHECKING([whether to compile with Oracle support])
     AC_MSG_RESULT(yes)
