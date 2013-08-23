@@ -695,6 +695,7 @@ typedef struct {
 
 static int send_request(HTTPServer *trans);
 static Octstr *build_response(List *headers, Octstr *body);
+static int header_is_called(Octstr *header, char *name);
 
 static HTTPServer *server_create(HTTPCaller *caller, int method, Octstr *url,
                                  List *headers, Octstr *body, int follow_remaining,
@@ -1237,29 +1238,36 @@ static Octstr *build_request(char *method_name, Octstr *path_or_url,
 {
     /* XXX headers missing */
     Octstr *request;
-    int i;
+    int i, host_found = 0;
 
     request = octstr_format("%s %S HTTP/1.1\r\n",
                             method_name, path_or_url);
 
-    octstr_format_append(request, "Host: %S", host);
-    /*
-     * In accordance with HTT/1.1 [RFC 2616], section 14.23 "Host"
-     * we shall ONLY add the port number if it is not one of the
-     * officially assigned port numbers. This means we need to obey
-     * port 80 for non-SSL connections and port 443 for SSL-enabled.
-     */
-    if ((port != HTTP_PORT && !ssl) || (port != HTTPS_PORT && ssl))
-        octstr_format_append(request, ":%ld", port);
-    octstr_append(request, octstr_imm("\r\n"));
 #ifdef USE_KEEPALIVE 
     octstr_append(request, octstr_imm("Connection: keep-alive\r\n"));
 #endif
 
     for (i = 0; headers != NULL && i < gwlist_len(headers); ++i) {
+        /* check if Host already set in the headers */
+        if (header_is_called(gwlist_get(headers, i), "Host"))
+            host_found = 1;
         octstr_append(request, gwlist_get(headers, i));
         octstr_append(request, octstr_imm("\r\n"));
     }
+
+    if (!host_found) {
+        octstr_format_append(request, "Host: %S", host);
+        /*
+         * In accordance with HTT/1.1 [RFC 2616], section 14.23 "Host"
+         * we shall ONLY add the port number if it is not one of the
+         * officially assigned port numbers. This means we need to obey
+         * port 80 for non-SSL connections and port 443 for SSL-enabled.
+         */
+        if ((port != HTTP_PORT && !ssl) || (port != HTTPS_PORT && ssl))
+            octstr_format_append(request, ":%ld", port);
+        octstr_append(request, octstr_imm("\r\n"));
+    }
+
     octstr_append(request, octstr_imm("\r\n"));
 
     if (request_body != NULL)
