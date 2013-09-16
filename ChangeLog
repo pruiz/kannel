@@ -1,3 +1,9 @@
+2013-09-16  Stipe Tolj  <stolj at kannel.org>
+    * gw/smsc/smsc_smpp.c: fix PANIC conditions within octstr_check_range() if
+      the SMSC provides a positive ACK via command_status = 0x00, but doesn't
+      provide any message_id. We'll consider the MT still as successfull, but
+      warn the user via an error() entry log.
+      
 2013-08-23 Alexander Malysh <amalysh at kannel.org>
     * aclocal.m4, configure, configure.in, gw-config.h.in, gwlib/dbpool_oracle.c:
       added OCIPing to check oracle connection.

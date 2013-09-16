@@ -1748,7 +1748,8 @@ static int handle_pdu(SMPP *smpp, Connection *conn, SMPP_PDU *pdu,
                 bb_smscconn_send_failed(smpp->conn, msg, reason, octstr_format("0x%08lx/%s", pdu->u.submit_sm_resp.command_status,
                                         smpp_error_to_string(pdu->u.submit_sm_resp.command_status)));
                 --(*pending_submits);
-            } else {
+            }
+            else if (pdu->u.submit_sm_resp.message_id != NULL) {
                 Octstr *tmp;
 
                 /* check if msg_id is C string, decimal or hex for this SMSC */
@@ -1775,6 +1776,15 @@ static int handle_pdu(SMPP *smpp, Connection *conn, SMPP_PDU *pdu,
                 bb_smscconn_sent(smpp->conn, msg, NULL);
                 --(*pending_submits);
             } /* end if for SMSC ACK */
+            else {
+                error(0, "SMPP[%s]: SMSC returned error code 0x%08lx (%s) "
+                      "in response to submit_sm, but no `message_id' value!",
+                      octstr_get_cstr(smpp->conn->id),
+                      pdu->u.submit_sm_resp.command_status,
+                      smpp_error_to_string(pdu->u.submit_sm_resp.command_status));
+                bb_smscconn_sent(smpp->conn, msg, NULL);
+                --(*pending_submits);
+            }
             break;
 
         case bind_transmitter_resp:
