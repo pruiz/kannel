@@ -658,6 +658,8 @@ static void empty_msg_lists(void)
 
 static void dispatch_into_queue(Msg *msg)
 {
+    char id[UUID_STR_LEN + 1];
+
     gw_assert(msg != NULL),
     gw_assert(msg_type(msg) == sms);
 
@@ -672,7 +674,11 @@ static void dispatch_into_queue(Msg *msg)
             gwlist_append(incoming_sms, msg);
             break;
         default:
-            panic(0, "Not handled sms_type within store!");
+            uuid_unparse(msg->sms.id, id);
+            error(0, "Not handled sms_type %ld within store for message ID %s",
+                  msg->sms.sms_type, id);
+            msg_destroy(msg);
+            break;
     }
 }
 

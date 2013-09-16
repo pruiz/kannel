@@ -1,4 +1,10 @@
 2013-09-16  Stipe Tolj  <stolj at kannel.org>
+    * gw/bearerbox.c: remove PANIC within dispatch_into_queue() if the sms_type
+      is not handled. This ensures we don't run into infinite PANIC loops in
+      case any message is injected in the storage subsystem with strange values.
+      The message itself isn't removed from the store.
+      
+2013-09-16  Stipe Tolj  <stolj at kannel.org>
     * gw/smsc/smsc_smpp.c: fix PANIC conditions within octstr_check_range() if
       the SMSC provides a positive ACK via command_status = 0x00, but doesn't
       provide any message_id. We'll consider the MT still as successfull, but
