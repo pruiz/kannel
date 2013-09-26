@@ -1,3 +1,9 @@
+2013-09-26  Stipe Tolj  <stolj at kannel.org>
+    * gwlib/utils.c: fix build breaking if our own configure didn't detect
+      openssl. PostgreSQL's <pg_config.h> always defines it, and hence we run 
+      into build errors. Using a simple preprocessor trick to reset the #define
+      again if we know we didn't detected it on our own. NLC.
+       
 2013-09-16  Stipe Tolj  <stolj at kannel.org>
     * gw/bearerbox.c: remove PANIC within dispatch_into_queue() if the sms_type
       is not handled. This ensures we don't run into infinite PANIC loops in

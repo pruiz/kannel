@@ -98,10 +98,24 @@
 #include <mysql_version.h>
 #include <mysql.h>
 #endif
-#ifdef HAVE_PGSQL 
+/*
+ * PostgreSQL drives us in a mess here slights. Even
+ * if our own configure run didn't detect openssl and hence
+ * gw-config.h has no HAVE_LIBSSL set, it is generally set
+ * on most distro in <pg_config.h>, so we end up in unresolved
+ * items at some point. We trick this by undef it again here.
+ */
+#ifdef HAVE_PGSQL
+# ifndef HAVE_LIBSSL
+# define UNDEF_LIBSSL 1
+# endif
 #include <libpq-fe.h>
 #include <pg_config.h>
-#endif
+# ifdef UNDEF_LIBSSL
+# undef HAVE_LIBSSL
+# undef UNDEF_LIBSSL
+# endif
+#endif  /* HAVE_PGSQL */
 #ifdef HAVE_SQLITE 
 #include <sqlite.h>
 #endif
