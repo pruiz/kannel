@@ -1,4 +1,12 @@
 2013-09-26  Stipe Tolj  <stolj at kannel.org>
+    * configure[.in]: add detecting openssl library path on more recent Debian
+      based distributions, including Debian 7 and Ubuntu 13. They don't have
+      symlinks for the libssl.so libcrypo.so in the standard directories, but
+      rather use the machine specific path of the gcc library path. This will
+      allow to detect the path and hence ensure openssl enabled builds are
+      working out of the box on vanilla systems.
+      
+2013-09-26  Stipe Tolj  <stolj at kannel.org>
     * gwlib/utils.c: fix build breaking if our own configure didn't detect
       openssl. PostgreSQL's <pg_config.h> always defines it, and hence we run 
       into build errors. Using a simple preprocessor trick to reset the #define

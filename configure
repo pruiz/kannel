@@ -8198,6 +8198,14 @@ if test "$ssl" = "yes" ; then
         ssllib="$loc"
       fi
     done
+    if test "x$sslib" = "x"; then
+      for lib in libssl.a libssl.so libssl.dylib; do
+        name=`gcc -print-file-name=$lib`
+        if test -f "$name"; then
+          ssllib=`dirname $name`
+        fi
+      done
+    fi
     for loc in /usr/include/ssl /usr/include/openssl /usr/local/ssl/include \
                /usr/local/openssl/include; do
       if test -d "$loc"; then
