@@ -398,17 +398,17 @@ long bb_smscconn_receive(SMSCConn *conn, Msg *sms)
     int rc;
     Msg *copy;
 
-   /*
-    * first check whether msgdata data is NULL and set it to empty
-    *  because seems too much kannels parts rely on msgdata not to be NULL.
-    */
-   if (sms->sms.msgdata == NULL)
-       sms->sms.msgdata = octstr_create("");
+    /*
+     * first check whether msgdata data is NULL and set it to empty
+     *  because seems too much kannels parts rely on msgdata not to be NULL.
+     */
+    if (sms->sms.msgdata == NULL)
+        sms->sms.msgdata = octstr_create("");
 
-   /*
-    * First normalize in smsc level and then on global level.
-    * In outbound direction it's vise versa, hence first global then smsc.
-    */
+    /*
+     * First normalize in smsc level and then on global level.
+     * In outbound direction it's vise versa, hence first global then smsc.
+     */
     uf = (conn && conn->unified_prefix) ? octstr_get_cstr(conn->unified_prefix) : NULL;
     normalize_number(uf, &(sms->sms.sender));
 
@@ -418,10 +418,10 @@ long bb_smscconn_receive(SMSCConn *conn, Msg *sms)
     gw_rwlock_rdlock(&white_black_list_lock);
     if (white_list && numhash_find_number(white_list, sms->sms.sender) < 1) {
         gw_rwlock_unlock(&white_black_list_lock);
-	info(0, "Number <%s> is not in white-list, message discarded",
-	     octstr_get_cstr(sms->sms.sender));
-	bb_alog_sms(conn, sms, "REJECTED - not white-listed SMS");
-	msg_destroy(sms);
+        info(0, "Number <%s> is not in white-list, message discarded",
+             octstr_get_cstr(sms->sms.sender));
+        bb_alog_sms(conn, sms, "REJECTED - not white-listed SMS");
+        msg_destroy(sms);
         return SMSCCONN_FAILED_REJECTED;
     }
 
@@ -436,11 +436,11 @@ long bb_smscconn_receive(SMSCConn *conn, Msg *sms)
     
     if (black_list && numhash_find_number(black_list, sms->sms.sender) == 1) {
         gw_rwlock_unlock(&white_black_list_lock);
-	info(0, "Number <%s> is in black-list, message discarded",
-	     octstr_get_cstr(sms->sms.sender));
-	bb_alog_sms(conn, sms, "REJECTED - black-listed SMS");
-	msg_destroy(sms);
-	return SMSCCONN_FAILED_REJECTED;
+        info(0, "Number <%s> is in black-list, message discarded",
+             octstr_get_cstr(sms->sms.sender));
+        bb_alog_sms(conn, sms, "REJECTED - black-listed SMS");
+        msg_destroy(sms);
+        return SMSCCONN_FAILED_REJECTED;
     }
 
     if (black_list_regex && gw_regex_match_pre(black_list_regex, sms->sms.sender) == 0) {
