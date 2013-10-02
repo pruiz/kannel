@@ -1,4 +1,8 @@
 2013-10-02  Stipe Tolj  <stolj at kannel.org>
+    * configure[.in]: add the /usr/local/share/gsoap default target in the
+      gsoap detection.
+      
+2013-10-02  Stipe Tolj  <stolj at kannel.org>
     * configure[.in]: use grep -e rather then grep -P in the gsoap version
       pattern matching. The perl compatible grep may not be build in in various
       distribution.

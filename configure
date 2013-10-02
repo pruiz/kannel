@@ -9902,14 +9902,17 @@ $as_echo_n "checking whether to compile with SOAP support... " >&6; }
 if test "${with_gsoap+set}" = set; then :
   withval=$with_gsoap;
   if test "x$withval" = "xyes"; then
-    GSOAP_SHARE="/usr/share/gsoap"
-    if test -d "$GSOAP_SHARE/import" && test -d "$GSOAP_SHARE/plugin"; then
-      { $as_echo "$as_me:${as_lineno-$LINENO}: result: $GSOAP_SHARE" >&5
+    for loc in /usr/share/gsoap /usr/local/share/gsoap; do
+      if test -d "$loc/import" && test -d "$loc/plugin"; then
+        GSOAP_SHARE=$loc
+        { $as_echo "$as_me:${as_lineno-$LINENO}: result: $GSOAP_SHARE" >&5
 $as_echo "$GSOAP_SHARE" >&6; }
-    else
+      fi
+    done
+    if test "x$GSOAP_SHARE" = "x"; then
       { $as_echo "$as_me:${as_lineno-$LINENO}: result: not found" >&5
 $as_echo "not found" >&6; }
-      as_fn_error $? "Unable to find gSOAP import at $GSOAP_SHARE/import or plugin at $GSOAP_SHARE/plugin" "$LINENO" 5
+      as_fn_error $? "Unable to find gSOAP's import and/or plugin directory" "$LINENO" 5
     fi
   else
     if test -d "$withval/import" && test -d "$withval/plugin"; then
@@ -9919,7 +9922,7 @@ $as_echo "$withval" >&6; }
     else
       { $as_echo "$as_me:${as_lineno-$LINENO}: result: not found" >&5
 $as_echo "not found" >&6; }
-      as_fn_error $? "Unable to find gSOAP import at $withval/import or plugin at $withval/plugin" "$LINENO" 5
+      as_fn_error $? "Unable to find gSOAP's import at $withval/import and/or plugin at $withval/plugin" "$LINENO" 5
     fi
   fi
   gsoap_ver_required="2.8.4"

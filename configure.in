@@ -1305,12 +1305,15 @@ AC_ARG_WITH(gsoap,
 [  --with-gsoap@<:@=DIR@:>@      enable gSOAP web services SMSC module support @<:@disabled@:>@
                           DIR points to the gSOAP share directory @<:@/usr/share/gsoap@:>@], [
   if test "x$withval" = "xyes"; then
-    GSOAP_SHARE="/usr/share/gsoap"
-    if test -d "$GSOAP_SHARE/import" && test -d "$GSOAP_SHARE/plugin"; then
-      AC_MSG_RESULT($GSOAP_SHARE)
-    else
+    for loc in /usr/share/gsoap /usr/local/share/gsoap; do
+      if test -d "$loc/import" && test -d "$loc/plugin"; then
+        GSOAP_SHARE=$loc
+        AC_MSG_RESULT($GSOAP_SHARE)
+      fi
+    done
+    if test "x$GSOAP_SHARE" = "x"; then
       AC_MSG_RESULT(not found)
-      AC_MSG_ERROR(Unable to find gSOAP import at $GSOAP_SHARE/import or plugin at $GSOAP_SHARE/plugin)
+      AC_MSG_ERROR(Unable to find gSOAP's import and/or plugin directory)
     fi
   else  
     if test -d "$withval/import" && test -d "$withval/plugin"; then
@@ -1318,7 +1321,7 @@ AC_ARG_WITH(gsoap,
       AC_MSG_RESULT($withval)
     else
       AC_MSG_RESULT(not found)
-      AC_MSG_ERROR(Unable to find gSOAP import at $withval/import or plugin at $withval/plugin)
+      AC_MSG_ERROR(Unable to find gSOAP's import at $withval/import and/or plugin at $withval/plugin)
     fi
   fi
   gsoap_ver_required="2.8.4"
