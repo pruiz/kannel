@@ -62,7 +62,7 @@ $(soap_parlayx_cppsrc): $(soap_parlayx_wsdls)
 	sed -i -e '/^\/\/gsoapopt/d' $(soap_parlayx_cppsrc)
 	
 $(soap_parlayx_cpphdr): $(soap_parlayx_cppwrap) $(soap_parlayx_cppsrc)
-	$(SOAPCPP) -d `dirname $(soap_parlayx_cpphdr)` -I /usr/share/gsoap/import -I soap/service/parlayx -cLxw $(soap_parlayx_cppwrap)
+	$(SOAPCPP) -d `dirname $(soap_parlayx_cpphdr)` -I $(GSOAP_IMPORT) -I soap/service/parlayx -cLxw $(soap_parlayx_cppwrap)
 	
 libsoap_parlayx.a: $(soap_parlayx_cpphdr) $(soap_parlayx_plugin_srcs) $(soap_parlayx_objs)
 	@LIBTOOL@ libsoap_parlayx.a $(soap_parlayx_objs)

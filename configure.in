@@ -1335,7 +1335,7 @@ AC_ARG_WITH(gsoap,
   AC_MSG_CHECKING([gSOAP version])
   gsoap_version=`$SOAPCPP -v &> /tmp/gsoap.tmp && cat /tmp/gsoap.tmp | grep "C and C++" | awk '{print $NF}'`
   AC_MSG_RESULT([$gsoap_version])
-  gsoap_version_str=`echo $gsoap_version | grep -P "^(\d*\.)(\d*\.)(\d*)$"`
+  gsoap_version_str=`echo $gsoap_version | grep -e "^[[0-9]]*\.[[0-9]]*\.[[0-9]]*$"`
   if test "$gsoap_version_str" = ""; then
     AC_MSG_WARN([gSOAP version $gsoap_version contains alphanumeric characters. Version MAYBE too old!])
   else 

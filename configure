@@ -10028,7 +10028,7 @@ $as_echo_n "checking gSOAP version... " >&6; }
   gsoap_version=`$SOAPCPP -v &> /tmp/gsoap.tmp && cat /tmp/gsoap.tmp | grep "C and C++" | awk '{print $NF}'`
   { $as_echo "$as_me:${as_lineno-$LINENO}: result: $gsoap_version" >&5
 $as_echo "$gsoap_version" >&6; }
-  gsoap_version_str=`echo $gsoap_version | grep -P "^(\d*\.)(\d*\.)(\d*)$"`
+  gsoap_version_str=`echo $gsoap_version | grep -e "^[0-9]*\.[0-9]*\.[0-9]*$"`
   if test "$gsoap_version_str" = ""; then
     { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: gSOAP version $gsoap_version contains alphanumeric characters. Version MAYBE too old!" >&5
 $as_echo "$as_me: WARNING: gSOAP version $gsoap_version contains alphanumeric characters. Version MAYBE too old!" >&2;}
