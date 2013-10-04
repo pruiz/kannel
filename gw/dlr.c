@@ -97,7 +97,7 @@ static struct dlr_storage *handles = NULL;
 
 /*
  * Function to allocate a new struct dlr_entry entry
- * and intialize it to zero
+ * and initialize it to zero
  */
 struct dlr_entry *dlr_entry_create(void)
 {
