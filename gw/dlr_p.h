@@ -102,7 +102,7 @@ void dlr_entry_destroy(struct dlr_entry *dlr);
 struct dlr_entry *dlr_entry_duplicate(const struct dlr_entry *dlr);
 
 /* 
- * Callback functions to hanlde specifical dlr storage type 
+ * Callback functions to handle specific dlr storage type 
  */
 struct dlr_storage {
     /*
@@ -116,7 +116,7 @@ struct dlr_storage {
     void (*dlr_add) (struct dlr_entry *entry);
     /*
      * Find and return struct dlr_entry. If entry not found return NULL.
-     * NOTE: Caller will detroy struct dlr_entry
+     * NOTE: Caller will destroy struct dlr_entry
      */
     struct dlr_entry* (*dlr_get) (const Octstr *smsc, const Octstr *ts, const Octstr *dst);
     /*
