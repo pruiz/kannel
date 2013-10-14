@@ -1,3 +1,7 @@
+2013-10-14 Alexander Malysh <amalysh at kannel.org>
+    * gwlib/log.c: applied patch to reduce CPU load by logging.
+      Thanks to Jacek Raczkiewicz <jacek.raczkiewicz at gmail.com> for this patch.
+
 2013-10-02  Stipe Tolj  <stolj at kannel.org>
     * configure[.in]: add the /usr/local/share/gsoap default target in the
       gsoap detection.

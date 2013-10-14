@@ -508,15 +508,19 @@ static void PRINTFLIKE(1,0) kannel_syslog(char *format, va_list args, int level)
 #define FUNCTION_GUTS(level, place) \
 	do { \
 	    int i; \
+	    int formatted = 0; \
 	    char buf[FORMAT_SIZE]; \
 	    va_list args; \
 	    \
-	    format(buf, level, place, err, fmt, 1); \
             gw_rwlock_rdlock(&rwlock); \
 	    for (i = 0; i < num_logfiles; ++i) { \
 		if (logfiles[i].exclusive == GW_NON_EXCL && \
                     level >= logfiles[i].minimum_output_level && \
                     logfiles[i].file != NULL) { \
+                	if (!formatted) { \
+                	    format(buf, level, place, err, fmt, 1); \
+                	    formatted = 1; \
+                	} \
 		        va_start(args, fmt); \
 		        output(logfiles[i].file, buf, args); \
 		        va_end(args); \
@@ -536,11 +540,11 @@ static void PRINTFLIKE(1,0) kannel_syslog(char *format, va_list args, int level)
 	    char buf[FORMAT_SIZE]; \
 	    va_list args; \
 	    \
-	    format(buf, level, place, err, fmt, 1); \
             gw_rwlock_rdlock(&rwlock); \
             if (logfiles[e].exclusive == GW_EXCL && \
                 level >= logfiles[e].minimum_output_level && \
                 logfiles[e].file != NULL) { \
+                format(buf, level, place, err, fmt, 1); \
                 va_start(args, fmt); \
                 output(logfiles[e].file, buf, args); \
                 va_end(args); \
