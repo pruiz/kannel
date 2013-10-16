@@ -78,9 +78,9 @@
 
 #ifdef HAVE_GSOAP
 
-#include "soapH.h"
-#include "SendSmsBinding.nsmap"
-#include "wsseapi.h"
+#include "soap/service/parlayx/parlayxH.h"
+#include "soap/service/parlayx/parlayx.nsmap"
+#include "soap/service/parlayx/wsseapi.h"
 
 
 /*
@@ -737,7 +737,7 @@ static void soap_receive_sms(SMSCConn *conn, HTTPClient *client,
     soap->user = buf;
 
     /* perform the server operation */
-    soap_serve(soap); 
+    parlayx_serve(soap);
 
     /* move response XML from buffer to octstr */
     response = octstr_create("");

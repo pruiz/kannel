@@ -18,73 +18,83 @@ GSOAP_SHARE = @GSOAP_SHARE@
 GSOAP_IMPORT = $(GSOAP_SHARE)/import
 GSOAP_PLUGIN = $(GSOAP_SHARE)/plugin
 
-LIBS=-lgsoapssl -lgsoap @LIBS@ @LIBICONV@
-CFLAGS=-D_REENTRANT=1 -I. -Igw @CFLAGS@ -I$(GSOAP_IMPORT) -I$(GSOAP_PLUGIN) -DWITH_OPENSSL \
-	-Isoap/service/parlayx
+CFLAGS=-D_REENTRANT=1 -I. -Igw @CFLAGS@ -I$(GSOAP_IMPORT) -I$(GSOAP_PLUGIN) -DWITH_OPENSSL 
+LIBS=-lgsoapssl -lgsoap libsoap_env.a @LIBS@ @LIBICONV@
 
 #
-# gSOAP plugin library, i.e. required for WS-Security
+# gSOAP env/plugin library, i.e. required for WS-Security
 #
 gsoap_plugin_srcs = $(GSOAP_PLUGIN)/wsseapi.c \
 	$(GSOAP_PLUGIN)/smdevp.c \
 	$(GSOAP_PLUGIN)/mecevp.c
 
-soap_plugin_srcs = soap/plugin/wsseapi.c \
-	soap/plugin/smdevp.c \
-	soap/plugin/mecevp.c
-	
-soap_plugin_objs = $(soap_plugin_srcs:.c=.o)
+soap/envH.h soap/envC.c: soap/env.h
+	$(SOAPCPP) -c -CS -I soap -d soap -p env soap/env.h
 
-$(soap_plugin_srcs): $(gsoap_plugin_srcs)
-	mkdir -p soap/plugin 
-	for plugin in $(gsoap_plugin_srcs); do \
-	  ln -sf $$plugin soap/plugin/`basename $$plugin`; \
-	done
+libsoap_env.a: soap/envC.o soap/env.o
+	@LIBTOOL@ libsoap_env.a soap/envC.o soap/env.o
+	$(RANLIB) libsoap_env.a
 
-libsoap_plugin.a: $(soap_plugin_objs)
-	@LIBTOOL@ libsoap_plugin.a $(soap_plugin_objs)
-	$(RANLIB) libsoap_plugin.a
 
 #
-# Service implementation: Parlay X 2.1
+# Service implementation: Parlay X v2.1
 #
-soap_parlayx_wsdls = soap/service/parlayx/wsdl/parlayx_sms_send_service_2_1.wsdl \
-	soap/service/parlayx/wsdl/parlayx_sms_notification_service_2_1.wsdl \
-	soap/service/parlayx/wsdl/parlayx_sms_receive_service_2_1.wsdl 
-soap_parlayx_cppsrc = soap/service/parlayx/parlayx_sms_send_service_2_1.h
-soap_parlayx_cppwrap =  soap/service/parlayx/parlayx_sms_send_service_2_1_wrapper.h
-soap_parlayx_cpphdr = soap/service/parlayx/soapH.h
-soap_parlayx_srcs = $(wildcard soap/service/parlayx/*.c)
+soap_parlayx = soap/service/parlayx
+soap_parlayx_wsdls = $(soap_parlayx)/wsdl/parlayx_sms_send_service_2_1.wsdl \
+	$(soap_parlayx)/wsdl/parlayx_sms_notification_service_2_1.wsdl \
+	$(soap_parlayx)/wsdl/parlayx_sms_receive_service_2_1.wsdl 
+soap_parlayx_cppsrc = $(soap_parlayx)/parlayx_sms_send_service_2_1.h
+soap_parlayx_cppwrap = $(soap_parlayx)/parlayx_sms_send_service_2_1_wrapper.h
+soap_parlayx_cpphdr = $(soap_parlayx)/parlayxH.h
+soap_parlayx_srcs = $(soap_parlayx)/parlayxC.c $(wildcard $(soap_parlayx)/parlayx*Lib.c)
 soap_parlayx_objs = $(soap_parlayx_srcs:.c=.o)
+soap_parlayx_plugin_srcs = $(soap_parlayx)/wsseapi.c $(soap_parlayx)/smdevp.c $(soap_parlayx)/mecevp.c
+soap_parlayx_plugin_objs = $(soap_parlayx_plugin_srcs:.c=.o)
 
 $(soap_parlayx_cppsrc): $(soap_parlayx_wsdls)
 	$(WSDL2H) -c -W -npx -t soap/service/parlayx/typemap.dat -o $(soap_parlayx_cppsrc) -I soap/service/parlayx/wsdl $(soap_parlayx_wsdls)
 	sed -i -e '/^\/\/gsoapopt/d' $(soap_parlayx_cppsrc)
 	
 $(soap_parlayx_cpphdr): $(soap_parlayx_cppwrap) $(soap_parlayx_cppsrc)
-	$(SOAPCPP) -d `dirname $(soap_parlayx_cpphdr)` -I $(GSOAP_IMPORT) -I soap/service/parlayx -cLxw $(soap_parlayx_cppwrap)
+	$(SOAPCPP) -d $(soap_parlayx) -p parlayx -I $(GSOAP_IMPORT) -I $(soap_parlayx) -cxwn $(soap_parlayx_cppwrap)
+	for plugin in $(gsoap_plugin_srcs); do \
+	  ln -sf $$plugin $(soap_parlayx)/`basename $$plugin`; \
+	done
+	# we need to addopt the wsseapi.[ch] to use our own soapH.h version
+	cat $(GSOAP_PLUGIN)/wsseapi.h | sed 's/soapH.h/parlayxH.h/g' > $(soap_parlayx)/wsseapi.h
+	unlink $(soap_parlayx)/wsseapi.c
+	cat $(GSOAP_PLUGIN)/wsseapi.c | sed 's/wsseapi.h/soap\/service\/parlayx\/wsseapi.h/g' > $(soap_parlayx)/wsseapi.c
 	
-libsoap_parlayx.a: $(soap_parlayx_cpphdr) $(soap_parlayx_plugin_srcs) $(soap_parlayx_objs)
-	@LIBTOOL@ libsoap_parlayx.a $(soap_parlayx_objs)
+libsoap_parlayx.a: $(soap_parlayx_cpphdr) $(soap_parlayx_plugin_objs) $(soap_parlayx_objs)
+	@LIBTOOL@ libsoap_parlayx.a $(soap_parlayx_plugin_objs) $(soap_parlayx_objs)
 	$(RANLIB) libsoap_parlayx.a
+
+
+#
+# ### Add more service implementations here ###
+#
+
 
 #
 # Define all soapcpp2 header inputs
 # Add $(soap_SERVICE_cpphdr) for new implementation.
 #
-gsoap_cpp_hdrs = $(soap_parlayx_cpphdr)
+gsoap_cpp_hdrs = soap/envH.h \
+	$(soap_parlayx_cpphdr)
 
 # Add libsoap_SERVICE.a for new implementation.
-libs = libgw.a libwmlscript.a libwap.a libgwlib.a libsoap_plugin.a \
+libs = libgw.a libwmlscript.a libwap.a libgwlib.a libsoap_env.a \
 	libsoap_parlayx.a
 
 # Add soap/service/SERVICE for new implementation.
-srcdirs = gw gw/smsc gwlib test utils wmlscript checks wap radius soap/service/plugin \
+srcdirs = gw gw/smsc gwlib test utils wmlscript checks wap radius \
 	soap/service/parlayx
 	
-soap_depend = $(gsoap_cpp_hdrs) $(soap_plugin_srcs)
+soap_depend = $(gsoap_cpp_hdrs)
 
-cleansoap:
-	find soap -name "*.o" -o -name "*.i" -o -name "*.c" \
-		-o -name "soap*.h" -o -name "*.nsmap" | xargs rm -f
+soap_clean:
+	rm -f soap/*.o soap/envC.* soap/envH.* soap/envStub.* soap/h.* \
+		soap/header.h soap/fault.h
+	find soap/service -name "*.o" -o -name "*.i" -o -name "*.c" \
+		-o -name "*H.h" -o -name "*Stub.h" -o -name "*.nsmap" | xargs rm -f
 	

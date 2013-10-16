@@ -1,3 +1,16 @@
+2013-10-17  Stipe Tolj  <stolj at kannel.org>
+    * gw/smsc/smsc_soap_parlayx.c: changing namespace to use parlayx prefix
+      in order to allow multi-service implementation in a single binary.
+    * soap/env_[fault|header].h: using service independent SOAP header and
+      fault struct processing, which is needed to support multi-services.
+    * soap/env.c: dummy struct for undefined namespaces since we don't have
+      them included directly from the service C sources.
+    * soap/env.h: pre-processed by soapcpp2 to generate the service independent
+      code base for the generic SOAP routines.
+    * soap/Makefile.in: cleaning up the build process in order to allow adding
+      more gsoap service implementations. Before this we got several clashes
+      while building a multi-service binary.
+      
 2013-10-14 Alexander Malysh <amalysh at kannel.org>
     * gwlib/log.c: applied patch to reduce CPU load by logging.
       Thanks to Jacek Raczkiewicz <jacek.raczkiewicz at gmail.com> for this patch.
