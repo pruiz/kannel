@@ -3144,6 +3144,13 @@ smsc-password = bar
      end. TCP/IP connection only.
      </entry></row>
 
+   <row><entry><literal>our-receiver-port</literal></entry>
+     <entry><literal>port-number</literal></entry>
+     <entry valign="bottom">
+       Optional port number allowing to specify our port when connecting
+       an SMSC. TCP/IP connection only.
+     </entry></row>
+
    <row><entry><literal>receive-port</literal></entry>
      <entry><literal>port-number</literal></entry>
      <entry valign="bottom">

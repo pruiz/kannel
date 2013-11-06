@@ -337,6 +337,7 @@ MULTI_GROUP(smsc,
     OCTSTR(validityperiod)
     OCTSTR(our-port)
     OCTSTR(receive-port)
+    OCTSTR(our-receiver-port)
     OCTSTR(connect-allow-ip)
     OCTSTR(system-id)
     OCTSTR(system-type)

@@ -1,3 +1,7 @@
+2013-11-06 Vincent CHAVANIS <v.chavanis at telemaque.fr>
+    * gw/smsc/smsc_smpp.c, gwlib/cfg.def: added support to specify our port
+      when connecting an SMPP SMSC.
+
 2013-10-17  Stipe Tolj  <stolj at kannel.org>
     * gw/smsc/smsc_soap_parlayx.c: changing namespace to use parlayx prefix
       in order to allow multi-service implementation in a single binary.

@@ -149,6 +149,8 @@ typedef struct {
     int source_addr_npi;
     int dest_addr_ton;
     int dest_addr_npi;
+    int our_port;
+    int our_receiver_port;
     long bind_addr_ton;
     long bind_addr_npi;
     int transmit_port;
@@ -213,7 +215,7 @@ static inline void smpp_msg_destroy(struct smpp_msg *msg, int destroy_msg)
 
 
 static SMPP *smpp_create(SMSCConn *conn, Octstr *host, int transmit_port,
-                         int receive_port, Octstr *system_type,
+                         int receive_port, int our_port, int our_receiver_port, Octstr *system_type,
                          Octstr *username, Octstr *password,
                          Octstr *address_range,
                          int source_addr_ton, int source_addr_npi,
@@ -238,6 +240,8 @@ static SMPP *smpp_create(SMSCConn *conn, Octstr *host, int transmit_port,
     counter_increase(smpp->message_id_counter);
     smpp->host = octstr_duplicate(host);
     smpp->system_type = octstr_duplicate(system_type);
+    smpp->our_port = our_port;
+    smpp->our_receiver_port = our_receiver_port;
     smpp->username = octstr_duplicate(username);
     smpp->password = octstr_duplicate(password);
     smpp->address_range = octstr_duplicate(address_range);
@@ -736,7 +740,7 @@ static Msg *data_sm_to_msg(SMPP *smpp, SMPP_PDU *pdu, long *reason)
         case 0x00: /* default SMSC alphabet */
             /*
              * try to convert from something interesting if specified so
-             * unless it was specified binary, ie. UDH indicator was detected
+             * unless it was specified binary, i.e. UDH indicator was detected
              */
             if (smpp->alt_charset && msg->sms.coding != DC_8BIT) {
                 if (charset_convert(msg->sms.msgdata, octstr_get_cstr(smpp->alt_charset), SMPP_DEFAULT_CHARSET) != 0)
@@ -1189,7 +1193,12 @@ static Connection *open_transmitter(SMPP *smpp)
         conn = conn_open_ssl(smpp->host, smpp->transmit_port, smpp->ssl_client_certkey_file, smpp->conn->our_host);
     else
 #endif
+
+    if (smpp->our_port > 0)
+        conn = conn_open_tcp_with_port(smpp->host, smpp->transmit_port, smpp->our_port, smpp->conn->our_host );
+    else
         conn = conn_open_tcp(smpp->host, smpp->transmit_port, smpp->conn->our_host);
+
     if (conn == NULL) {
         error(0, "SMPP[%s]: Couldn't connect to server.",
               octstr_get_cstr(smpp->conn->id));
@@ -1237,7 +1246,12 @@ static Connection *open_transceiver(SMPP *smpp)
         conn = conn_open_ssl(smpp->host, smpp->transmit_port, smpp->ssl_client_certkey_file, smpp->conn->our_host);
     else
 #endif
+
+    if (smpp->our_port > 0)
+       conn = conn_open_tcp_with_port(smpp->host, smpp->transmit_port, smpp->our_port, smpp->conn->our_host );  
+    else
         conn = conn_open_tcp(smpp->host, smpp->transmit_port, smpp->conn->our_host);
+
     if (conn == NULL) {
        error(0, "SMPP[%s]: Couldn't connect to server.",
              octstr_get_cstr(smpp->conn->id));
@@ -1283,7 +1297,12 @@ static Connection *open_receiver(SMPP *smpp)
         conn = conn_open_ssl(smpp->host, smpp->receive_port, smpp->ssl_client_certkey_file, smpp->conn->our_host);
     else
 #endif
+
+    if (smpp->our_receiver_port > 0)
+        conn = conn_open_tcp_with_port(smpp->host, smpp->receive_port, smpp->our_receiver_port, smpp->conn->our_host);
+    else
         conn = conn_open_tcp(smpp->host, smpp->receive_port, smpp->conn->our_host);
+
     if (conn == NULL) {
         error(0, "SMPP[%s]: Couldn't connect to server.",
               octstr_get_cstr(smpp->conn->id));
@@ -2322,6 +2341,8 @@ int smsc_smpp_create(SMSCConn *conn, CfgGroup *grp)
     long source_addr_npi;
     long dest_addr_ton;
     long dest_addr_npi;
+    long our_port;
+    long our_receiver_port;
     Octstr *my_number;
     Octstr *service_type;
     SMPP *smpp;
@@ -2349,6 +2370,12 @@ int smsc_smpp_create(SMSCConn *conn, CfgGroup *grp)
         port = 0;
     if (cfg_get_integer(&receive_port, grp, octstr_imm("receive-port")) == -1)
         receive_port = 0;
+
+    if (cfg_get_integer(&our_port, grp, octstr_imm("our-port")) == -1)
+        our_port = 0;
+    if (cfg_get_integer(&our_receiver_port, grp, octstr_imm("our-receiver-port")) == -1)
+        our_receiver_port = 0;
+
     cfg_get_bool(&transceiver_mode, grp, octstr_imm("transceiver-mode"));
     username = cfg_get(grp, octstr_imm("smsc-username"));
     password = cfg_get(grp, octstr_imm("smsc-password"));
@@ -2483,7 +2510,7 @@ int smsc_smpp_create(SMSCConn *conn, CfgGroup *grp)
         esm_class = ESM_CLASS_SUBMIT_STORE_AND_FORWARD_MODE;
     }
 
-    smpp = smpp_create(conn, host, port, receive_port, system_type,
+    smpp = smpp_create(conn, host, port, receive_port, our_port, our_receiver_port, system_type,
                        username, password, address_range,
                        source_addr_ton, source_addr_npi, dest_addr_ton,
                        dest_addr_npi, enquire_link_interval,
