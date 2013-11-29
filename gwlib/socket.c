@@ -674,40 +674,25 @@ void socket_shutdown(void)
 }
 
 
-static Octstr *gw_netaddr_to_octstr4(unsigned char *src)
-{
-    return octstr_format("%d.%d.%d.%d", src[0], src[1], src[2], src[3]);
-}
-
-
-#ifdef AF_INET6
-static Octstr *gw_netaddr_to_octstr6(unsigned char *src)
-{
-    return octstr_format(
-	    	"%x:%x:%x:%x:"
-		"%x:%x:%x:%x:"
-		"%x:%x:%x:%x:"
-		"%x:%x:%x:%x",
-	         src[0],  src[1],  src[2],  src[3],
-		 src[4],  src[5],  src[6],  src[7],
-		 src[8],  src[9], src[10], src[11],
-		src[12], src[13], src[14], src[15]);
-}
-#endif
-
 Octstr *gw_netaddr_to_octstr(int af, void *src)
 {
     switch (af) {
-    case AF_INET:
-	return gw_netaddr_to_octstr4(src);
+    case AF_INET: {
+        char straddr[INET_ADDRSTRLEN];
+        inet_ntop(AF_INET, src, straddr, sizeof(straddr));
+        return octstr_create(straddr);
+    }
 
 #ifdef AF_INET6
-    case AF_INET6:
-	return gw_netaddr_to_octstr6(src);
+    case AF_INET6: {
+        char straddr[INET6_ADDRSTRLEN];
+        inet_ntop(AF_INET6, src, straddr, sizeof(straddr));
+        return octstr_create(straddr);
+    }
 #endif
 
     default:
-	return NULL;
+        return NULL;
     }
 }
 

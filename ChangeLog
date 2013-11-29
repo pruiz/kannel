@@ -1,3 +1,6 @@
+2013-11-29 Alexander Malysh <amalysh at kannel.org>
+    * gwlib/socket.c: use POSIX function to convert to address to IP
+
 2013-11-06 Vincent CHAVANIS <v.chavanis at telemaque.fr>
     * gw/smsc/smsc_smpp.c, gwlib/cfg.def: added support to specify our port
       when connecting an SMPP SMSC.
