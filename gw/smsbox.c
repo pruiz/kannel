@@ -3228,7 +3228,7 @@ static void signal_handler(int signum) {
 
     switch (signum) {
         case SIGINT:
-
+        case SIGTERM:
        	    if (program_status != shutting_down) {
                 error(0, "SIGINT received, aborting program...");
                 program_status = shutting_down;
@@ -3260,6 +3260,7 @@ static void setup_signal_handlers(void) {
     sigemptyset(&act.sa_mask);
     act.sa_flags = 0;
     sigaction(SIGINT, &act, NULL);
+    sigaction(SIGTERM, &act, NULL);
     sigaction(SIGQUIT, &act, NULL);
     sigaction(SIGHUP, &act, NULL);
     sigaction(SIGPIPE, &act, NULL);
