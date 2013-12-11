@@ -1197,7 +1197,7 @@ int main(int argc, char **argv)
 {
     int i, opt;
     double delta;
-    int proto_version, pdu_type, tcl, tid_new;
+    int proto_version, tcl, tid_new;
 #ifdef SunOS
     struct sigaction alrm;
 
