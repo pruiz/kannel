@@ -1,4 +1,8 @@
 2013-12-10  Stipe Tolj  <stolj at kannel.org>
+    * gw/smsbox.c: fix valgrind reported memory leak, when handling a failing
+      DLR HTTP call in url_result_thread().
+      
+2013-12-10  Stipe Tolj  <stolj at kannel.org>
     * */*: cleaning up the code by removing gcc warning occurances of 
       [-Wunused-but-set-variable]. NLC.
     

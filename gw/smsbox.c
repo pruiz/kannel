@@ -1167,6 +1167,8 @@ static void url_result_thread(void *arg)
                  (msg->sms.msgdata != NULL) ? octstr_get_cstr(msg->sms.msgdata) : "",
                  octstr_get_cstr(final_url), status,
                  (status == HTTP_OK) ? "<< successful >>" : octstr_get_cstr(reply_body));
+        } else {
+            octstr_destroy(replytext);
         }
 
 requeued:
