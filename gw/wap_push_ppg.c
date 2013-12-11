@@ -1066,13 +1066,11 @@ static int handle_push_message(HTTPClient **c, WAPEvent *e, int status)
     PPGPushMachine *pm;
     PPGSessionMachine *sm;
     WAPAddrTuple *tuple=NULL;
-    Octstr *push_data=NULL;
     Octstr *cliaddr=NULL;
     Octstr *type=NULL;
 
     List *push_headers;
    
-    push_data = e->u.Push_Message.push_data;
     push_headers = e->u.Push_Message.push_headers;
     cliaddr = e->u.Push_Message.address_value;
     session_exists = 0;

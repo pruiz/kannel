@@ -348,7 +348,7 @@ error:
 int smscenter_read_into_buffer(SMSCenter *smsc)
 {
     char *p;
-    int ret, result;
+    int ret;
     fd_set read_fd;
     struct timeval tv, tvinit;
     size_t bytes_read;
@@ -357,7 +357,6 @@ int smscenter_read_into_buffer(SMSCenter *smsc)
     tvinit.tv_usec = 1000;
 
     bytes_read = 0;
-    result = 0;
     for (;;) {
         FD_ZERO(&read_fd);
         FD_SET(smsc->socket, &read_fd);

@@ -911,7 +911,6 @@ static void send_messages(SMASI *smasi, Connection *conn,
 static void smasi_thread(void *arg) 
 {
     long pending_submits;
-    long len;
     SMASI_PDU *pdu;
     SMASI *smasi;
     int logoff_already_sent = 0;
@@ -940,7 +939,6 @@ static void smasi_thread(void *arg)
 
         last_enquire_sent = date_universal_now(); 
         pending_submits = -1;
-        len = 0;
 
         for (;;) {
             timeout = last_enquire_sent + smasi->enquire_link_interval

@@ -859,7 +859,6 @@ static int memorybuffer_cut_rawmessage(SMSCenter *smsc, char *buff, int length)
 
     char *stx, *etx;
     int size_of_cut_piece;
-    int size_of_the_rest;
 
     /* We don't check for NULLs since we're sure that nobody has fooled
        around with smsc->buffer since has_rawmessage was last called... */
@@ -871,7 +870,6 @@ static int memorybuffer_cut_rawmessage(SMSCenter *smsc, char *buff, int length)
         etx++;
 
     size_of_cut_piece = (etx - stx) + 1;
-    size_of_the_rest = (smsc->buflen - size_of_cut_piece);
 
     if (length < size_of_cut_piece) {
         error(0, "the buffer you provided for cutting was too small");

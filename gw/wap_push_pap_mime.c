@@ -773,15 +773,13 @@ static long octstr_drop_leading_blanks(Octstr **header_value)
  */
 static int pass_extension_headers(Octstr **body_part, List **content_headers, Octstr *boundary)
 {
-    long next_field_part_pos,
-         count;  
+    long next_field_part_pos;
     Octstr *header_name,
            *header_value; 
     long next_content_part_pos;
 
     header_name = octstr_create("");
     header_value = octstr_create("");
-    count = 0;
     next_field_part_pos = 0;
     next_content_part_pos = octstr_search(*body_part, boundary, 0);
 

@@ -237,7 +237,7 @@ static void brunet_receive_sms(SMSCConn *conn, HTTPClient *client,
                                List *headers, Octstr *body, List *cgivars)
 {
     ConnData *conndata = conn->data;
-    Octstr *user, *from, *to, *text, *udh, *date, *type;
+    Octstr *user, *from, *to, *text, *udh;
     Octstr *retmsg;
     int mclass, mwi, coding, validity, deferred;
     List *reply_headers;
@@ -250,8 +250,6 @@ static void brunet_receive_sms(SMSCConn *conn, HTTPClient *client,
     to = http_cgi_variable(cgivars, "Recipient");
     text = http_cgi_variable(cgivars, "SMMO");
     udh = http_cgi_variable(cgivars, "XSer");
-    date = http_cgi_variable(cgivars, "DateReceived");
-    type = http_cgi_variable(cgivars, "MessageType");
 
     debug("smsc.http.brunet", 0, "HTTP[%s]: Received a request",
           octstr_get_cstr(conn->id));

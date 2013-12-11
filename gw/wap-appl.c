@@ -1462,7 +1462,7 @@ static List *negotiate_capabilities(List *req_caps)
 static void check_application_headers(List **headers, 
                                       List **application_headers)
 {
-    List *inh;
+    List *inh = NULL;
     int i;
     long len;
     Octstr *appid_name, *coded_octstr;

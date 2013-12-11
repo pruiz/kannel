@@ -1635,7 +1635,6 @@ static void obey_request_thread(void *arg)
 
     	/* Recode to UTF-8 the MO message if possible */
     	if (mo_recode && msg->sms.coding == DC_UCS2) {
-    		int converted = 0;
     	    Octstr *text;
 
     	    text = octstr_duplicate(msg->sms.msgdata);
@@ -1645,7 +1644,6 @@ static void obey_request_thread(void *arg)
                 msg->sms.msgdata = octstr_duplicate(text);
                 msg->sms.charset = octstr_create("UTF-8");
                 msg->sms.coding = DC_7BIT;
-                converted = 1;
     	    }
     	    octstr_destroy(text);
     	}
@@ -1945,7 +1943,6 @@ static Octstr *smsbox_req_handle(URLTranslation *t, Octstr *client_ip,
     List *allowed = NULL;
     List *denied = NULL;
     int no_recv, ret = 0, i;
-    long del;
 
     /*
      * Multi-cast messages with several receivers in 'to' are handled
@@ -2079,7 +2076,7 @@ static Octstr *smsbox_req_handle(URLTranslation *t, Octstr *client_ip,
      */
     for (i = 0; i < gwlist_len(denied); i++) {
         receiv = gwlist_get(denied, i);
-        del = gwlist_delete_matching(allowed, receiv, octstr_item_match);
+        gwlist_delete_matching(allowed, receiv, octstr_item_match);
     }
 
     /* have all receivers been denied by list rules?! */
@@ -2682,20 +2679,14 @@ error:
 static Octstr *smsbox_xmlrpc_post(List *headers, Octstr *body,
                                   Octstr *client_ip, int *status)
 {
-    Octstr *ret, *type, *user, *pass;
-    Octstr *from, *to, *udh, *smsc, *charset, *dlr_url, *account, *binfo, *meta_data;
+    Octstr *ret, *type;
+    Octstr *charset;
     Octstr *output;
     Octstr *method_name;
     XMLRPCDocument *msg;
 
-    int	dlr_mask, mclass, mwi, coding, compress, validity, 
-	deferred, pid, alt_dcs, rpi;
-
-    from = to = udh = smsc = account = dlr_url = charset = binfo = meta_data = NULL;
-    mclass = mwi = coding = compress = validity = deferred = dlr_mask = 
-        pid = alt_dcs = rpi = -1;
- 
-    user = pass = ret = NULL;
+    charset = NULL;
+    ret = NULL;
 
     /*
      * check if the content type is valid for this request

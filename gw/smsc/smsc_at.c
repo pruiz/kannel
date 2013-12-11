@@ -107,7 +107,6 @@ static void  at2_scan_for_telnet_escapes(PrivAT2data *privdata)
     int start;
     int a;
     int b;
-    int i;
     Octstr *hex;
    
     char answer[5];
@@ -137,7 +136,7 @@ static void  at2_scan_for_telnet_escapes(PrivAT2data *privdata)
             answer[0] = 0xFF; /* escape */
             answer[1] = 0xFC; /* wont do any option*/
             answer[2] = b;
-            i = write(privdata->fd,&answer,3);
+            write(privdata->fd,&answer,3);
             octstr_delete(privdata->ilb,pos,3);
             len -=3;
             break;
@@ -772,7 +771,6 @@ static int at2_wait_modem_command(PrivAT2data *privdata, time_t timeout, int gt_
     time_t end_time;
     time_t cur_time;
     Msg	*msg;
-    int len;
     int cmgr_flag = 0;
 
     if (!timeout)
@@ -911,7 +909,6 @@ static int at2_wait_modem_command(PrivAT2data *privdata, time_t timeout, int gt_
         }
     }
 
-    len = octstr_len(privdata->ilb);
     /*
     error(0,"AT2[%s]: timeout. received <%s> until now, buffer size is %d, buf=%s",
           octstr_get_cstr(privdata->name),
@@ -1765,7 +1762,6 @@ static Octstr *gsm2number(Octstr *pdu)
 	unsigned char a;
 	unsigned char b;
 	int ton;
-	int npi;
     int len;
 	int pos;
 
@@ -1775,7 +1771,6 @@ static Octstr *gsm2number(Octstr *pdu)
 		return octstr_create("");
 		
     ton = octstr_get_char(pdu,pos++);
-    npi = ton & 0x0F;
     ton =  (ton >> 4) & 0x07;
 
 	switch(ton)
@@ -2509,12 +2504,12 @@ static Octstr *at2_encode7bituncompressed(Octstr *source, int offset)
     int MSBmask[8] = { 0x00, 0x40, 0x60, 0x70, 0x78, 0x7C, 0x7E, 0x7F };
     int destRemain = (int)ceil((octstr_len(source) * 7.0 + offset) / 8.0);
     int i = (offset?8-offset:7), iStore = offset;
-    int posT, posS;
+    int posS;
     Octstr *target = octstr_create("");
     int target_chr = 0, source_chr;
 
     /* start packing the septet stream into an octet stream */
-    for (posS = 0, posT = 0; (source_chr = octstr_get_char(source, posS++)) != -1;) {
+    for (posS = 0; (source_chr = octstr_get_char(source, posS++)) != -1;) {
         /* grab least significant bits from current septet and 
          * store them packed to the right */
         target_chr |= (source_chr & LSBmask[i]) << iStore;

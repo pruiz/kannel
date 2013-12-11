@@ -446,7 +446,6 @@ int cfg_read(Cfg *cfg)
     Octstr *filename; 
     CfgGroup *grp;
     long equals;
-    long lineno;
     long error_lineno;
     
     loc = loc_inc = NULL;
@@ -463,7 +462,6 @@ int cfg_read(Cfg *cfg)
     gwlist_insert(stack, 0, octstr_duplicate(cfg->filename)); 
 
     grp = NULL;
-    lineno = 0;
     error_lineno = 0;
     while (error_lineno == 0 && (loc = gwlist_extract_first(lines)) != NULL) { 
         octstr_strip_blanks(loc->line); 

@@ -846,7 +846,7 @@ static int packet_check_parameter(struct packet *packet, long pos, long len, SMS
 static int packet_check(struct packet *packet, SMSCConn *conn)
 {
     int errors = 0;
-    long pos, len, next;
+    long pos, next;
     Octstr *data;
 
     gw_assert(packet != NULL);
@@ -868,7 +868,6 @@ static int packet_check(struct packet *packet, SMSCConn *conn)
      * there is a tab, an optional two-digit checksum, and the ETX.
      * Check each parameter in turn, by skipping from tab to tab.
      */
-    len = octstr_len(data);
     /* Start at the first tab, wherever it is, so that we can still
      * check parameters if the header was weird. */
     pos = octstr_search_char(data, TAB, 0);

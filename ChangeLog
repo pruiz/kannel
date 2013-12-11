@@ -1,3 +1,7 @@
+2013-12-10  Stipe Tolj  <stolj at kannel.org>
+    * */*: cleaning up the code by removing gcc warning occurances of 
+      [-Wunused-but-set-variable]. NLC.
+    
 2013-12-02  Stipe Tolj  <stolj at kannel.org>
     * gw/smsbox.c: add SIGTERM handling in smsbox, otherwise the process will
       be cleanly killed, but we don't have a chance to do post-processing for

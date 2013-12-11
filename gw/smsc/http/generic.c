@@ -264,14 +264,13 @@ static void generic_receive_sms(SMSCConn *conn, HTTPClient *client,
     struct generic_values *values = conndata->data;
     struct fieldmap *fm = values->map;
     Octstr *user, *pass, *from, *to, *text, *udh, *account, *binfo, *meta_data;
-    Octstr *dlrurl, *dlrmid, *dlrerr;
+    Octstr *dlrmid, *dlrerr;
     Octstr *tmp_string, *retmsg;
-    int mclass, mwi, coding, validity, deferred, dlrmask;
+    int dlrmask;
     List *reply_headers;
     int ret, retstatus;
 
-    mclass = mwi = coding = validity =
-        deferred = dlrmask = SMS_PARAM_UNDEFINED;
+    dlrmask = SMS_PARAM_UNDEFINED;
 
     /* Parse enough parameters to validate the request */
     user = http_cgi_variable(cgivars, octstr_get_cstr(fm->username));
@@ -280,7 +279,6 @@ static void generic_receive_sms(SMSCConn *conn, HTTPClient *client,
     to = http_cgi_variable(cgivars, octstr_get_cstr(fm->to));
     text = http_cgi_variable(cgivars, octstr_get_cstr(fm->text));
     udh = http_cgi_variable(cgivars, octstr_get_cstr(fm->udh));
-    dlrurl = http_cgi_variable(cgivars, octstr_get_cstr(fm->dlr_url));
     dlrmid = http_cgi_variable(cgivars, octstr_get_cstr(fm->dlr_mid));
     tmp_string = http_cgi_variable(cgivars, octstr_get_cstr(fm->dlr_mask));
     if (tmp_string) {

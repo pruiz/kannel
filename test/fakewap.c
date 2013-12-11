@@ -1209,7 +1209,6 @@ int main(int argc, char **argv)
     gwlib_init();
 
     proto_version = 0;
-    pdu_type = 1;
     tcl = 2;
     tid_new = 0;
 
@@ -1247,7 +1246,7 @@ int main(int argc, char **argv)
     octstr_append_data(useragent, octstr_get_cstr(temp), octstr_len(temp) );
     octstr_append_data(useragent, "\0", 1 );
 
-    while ((opt = getopt(argc, argv, "Fhc:g:p:m:i:t:V:T:t:nsd:A:C:D:I:M:P:w:l:")) != EOF)
+    while ((opt = getopt(argc, argv, "Fhc:g:p:m:i:t:V:t:nsd:A:C:D:I:M:P:w:l:")) != EOF)
     {
 	switch (opt) {
 	case 'g':
@@ -1273,10 +1272,6 @@ int main(int argc, char **argv)
 
 	case 'V':
 	    proto_version = atoi(optarg);
-	    break;
-
-	case 'T':
-	    pdu_type = atoi(optarg);
 	    break;
 
 	case 't':

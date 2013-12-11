@@ -941,12 +941,9 @@ parsed:
  */
 static int parse_pap_value(Octstr *attr_name, Octstr *attr_value, WAPEvent **e)
 {
-    Octstr *ros;
-
     if (*e != NULL)
         wap_event_dump(*e);
 
-    ros = octstr_imm("erroneous");
     if (octstr_compare(attr_name, octstr_imm("product-name")) == 0) {
         /* 
          * XXX This is a kludge. 
@@ -1104,9 +1101,7 @@ static int parse_push_response_value(Octstr *attr_name, Octstr *attr_value,
                                      WAPEvent **e)
 {
     Octstr *ros;
-    int ret;
 
-    ret = -2;
     ros = octstr_imm("erroneous");
 
     if (octstr_compare(attr_name, octstr_imm("push-id")) == 0) {
@@ -1328,8 +1323,7 @@ static int set_attribute_value(Octstr *element_name, Octstr *attr_value,
  */
 static int parse_code(Octstr *attr_value)
 {
-    long attr_as_number,
-         len;
+    long attr_as_number;
     size_t i;
     Octstr *ros;
 
@@ -1344,7 +1338,7 @@ static int parse_code(Octstr *attr_value)
 
     warning(0, "PAP COMPILER: parse_code: no such return code, reversing to"
                " x000 code");
-    len = octstr_parse_long(&attr_as_number, attr_value, 0, 10);
+    octstr_parse_long(&attr_as_number, attr_value, 0, 10);
     if (attr_as_number >= PAP_OK && attr_as_number < PAP_BAD_REQUEST) {
         attr_as_number = PAP_OK;
     } else if (attr_as_number >= PAP_BAD_REQUEST && 

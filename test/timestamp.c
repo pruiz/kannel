@@ -119,10 +119,6 @@ static int remove_prefix(Octstr *os, Octstr *prefix)
 
 static int parse_date(struct universaltime *ut, Octstr *os)
 {
-    long pos;
-
-    pos = 0;
-    
     if (remove_long(&ut->year, os) == -1 ||
         remove_prefix(os, octstr_imm("-")) == -1 ||
 	remove_long(&ut->month, os) == -1 ||

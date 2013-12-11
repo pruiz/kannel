@@ -89,7 +89,6 @@ static XMLRPCDocument *msg;
 static void start_request(HTTPCaller *caller, List *reqh, long i)
 {
     long *id;
-    int ret;
 
     if ((i % 1000) == 0)
 	   info(0, "Starting fetch %ld", i);
@@ -100,7 +99,7 @@ static void start_request(HTTPCaller *caller, List *reqh, long i)
      * not semd the XML-RPC document contained in msg to
      * the URL 'url' using the POST method
      */
-    ret = xmlrpc_send_call(msg, caller, url, reqh, id);
+    xmlrpc_send_call(msg, caller, url, reqh, id);
 
     debug("", 0, "Started request %ld.", *id);
     /*
@@ -281,7 +280,6 @@ int main(int argc, char **argv)
     long threads[MAX_THREADS];
     time_t start, end;
     double run_time;
-    FILE *fp;
     Octstr *output, *xml_doc; 
     int ssl = 0;
     
@@ -295,7 +293,6 @@ int main(int argc, char **argv)
     exceptions_regex = NULL;
     num_threads = 0;
     file = 0;
-    fp = NULL;
     
     while ((opt = getopt(argc, argv, "hvr:t:p:u:P:Se:a:sc:")) != EOF) {
         switch (opt) {

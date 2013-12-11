@@ -633,7 +633,7 @@ static void kannel_receive_sms(SMSCConn *conn, HTTPClient *client,
 {
     ConnData *conndata = conn->data;
     Octstr *user, *pass, *from, *to, *text, *udh, *account, *binfo;
-    Octstr *dlrurl, *dlrmid, *dlrerr;
+    Octstr *dlrmid, *dlrerr;
     Octstr *tmp_string, *retmsg;
     int	mclass, mwi, coding, validity, deferred, dlrmask;
     List *reply_headers;
@@ -650,7 +650,6 @@ static void kannel_receive_sms(SMSCConn *conn, HTTPClient *client,
     udh = http_cgi_variable(cgivars, "udh");
     account = http_cgi_variable(cgivars, "account");
     binfo = http_cgi_variable(cgivars, "binfo");
-    dlrurl = http_cgi_variable(cgivars, "dlr-url");
     dlrmid = http_cgi_variable(cgivars, "dlr-mid");
     tmp_string = http_cgi_variable(cgivars, "flash");
     if (tmp_string) {

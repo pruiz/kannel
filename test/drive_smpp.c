@@ -466,7 +466,6 @@ static void help(void)
 int main(int argc, char **argv)
 {
     struct sigaction act;
-    int http_port;
     int port;
     int opt;
     double run_time;
@@ -482,7 +481,6 @@ int main(int argc, char **argv)
     sigaction(SIGINT, &act, NULL);
 
     port = 2345;
-    http_port = 8080;
     smsc_system_id = octstr_create("kannel_smpp");
     smsc_source_addr = octstr_create("123456");
     message_id_counter = counter_create();
@@ -495,7 +493,7 @@ int main(int argc, char **argv)
     num_from_bearerbox = counter_create();
     log_file = config_file = NULL;
 
-    while ((opt = getopt(argc, argv, "hv:p:P:m:l:c:")) != EOF) {
+    while ((opt = getopt(argc, argv, "hv:p:m:l:c:")) != EOF) {
 	switch (opt) {
 	case 'v':
 	    log_set_output_level(atoi(optarg));
@@ -513,11 +511,7 @@ int main(int argc, char **argv)
 	    port = atoi(optarg);
 	    break;
 
-	case 'P':
-	    http_port = atoi(optarg);
-	    break;
-
-    case 'l':
+	case 'l':
         log_file = optarg;
         break;
     
