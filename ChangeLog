@@ -1,3 +1,6 @@
+2013-12-17 Alexander Malysh <amalysh at kannel.org>
+    * wmlscript/wsgram.y, wmlscript/wsint.h: fixed compilation error
+
 2013-12-10  Stipe Tolj  <stolj at kannel.org>
     * gw/smsbox.c: fix valgrind reported memory leak, when handling a failing
       DLR HTTP call in url_result_thread().

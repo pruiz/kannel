@@ -269,6 +269,9 @@ typedef struct WsCompilerRec WsCompiler;
 
 /********************* Lexer and parser *********************************/
 
+#define YYPARSE_PARAM   pctx
+#define YYLEX_PARAM     pctx
+
 /* The lexer. */
 extern int yylex();
 
