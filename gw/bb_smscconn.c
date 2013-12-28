@@ -358,7 +358,7 @@ void bb_smscconn_send_failed(SMSCConn *conn, Msg *sms, int reason, Octstr *reply
         store_save_ack(sms, ack_failed);
 
         if (conn) counter_increase(conn->failed);
-        if (reason == SMSCCONN_FAILED_DISCARDED)
+        if (reason == SMSCCONN_FAILED_DISCARDED || reason == SMSCCONN_FAILED_TIMEOUT)
             if (sms->sms.sms_type != report_mt)
                 bb_alog_sms(conn, sms, "DISCARDED SMS");
             else
@@ -639,13 +639,20 @@ static void sms_router(void *arg)
         case SMSCCONN_QUEUED:
             debug("bb.sms", 0, "Routing failed, re-queued.");
             break;
-	case SMSCCONN_FAILED_DISCARDED:
+        case SMSCCONN_FAILED_DISCARDED:
             msg_destroy(msg);
             newmsg = startmsg = NULL;
             break;
         case SMSCCONN_FAILED_QFULL:
             debug("bb.sms", 0, "Routing failed, re-queuing.");
             gwlist_produce(outgoing_sms, msg);
+            break;
+        case SMSCCONN_FAILED_TIMEOUT:
+            debug("bb.sms", 0, "Routing failed, timed out.");
+            msg_destroy(msg);
+            newmsg = startmsg = NULL;
+            break;
+        default:
             break;
         }
     }
@@ -1316,6 +1323,12 @@ long smsc2_rout(Msg *msg, int resend)
     if (msg_type(msg) != sms) {
         error(0, "Attempt to route non SMS message through smsc2_rout!");
         return SMSCCONN_FAILED_DISCARDED;
+    }
+
+    /* check if validity period has expired */
+    if (msg->sms.validity != SMS_PARAM_UNDEFINED && time(NULL) > msg->sms.validity) {
+        bb_smscconn_send_failed(NULL, msg_duplicate(msg), SMSCCONN_FAILED_TIMEOUT, octstr_create("validity timeout"));
+        return SMSCCONN_FAILED_TIMEOUT;
     }
 
     /* unify prefix of receiver, in case of it has not been

@@ -1,3 +1,15 @@
+2013-12-28  Stipe Tolj  <stolj at kannel.org>
+    * gw/bb_[boxc|smscconn].c: handle new SMSCCONN_FAILED_TIMEOUT case as 
+      return value of smsc2_rout(), which now checks internally if the message
+      is still valid according to the validity timestamp. If not, i.e. since
+      there was a continues looping in sms_router() since no SMSC was available
+      for a particular time, it makes no sense to shift the message to the SMSC
+      since the validity has expired. In that case semantically it is cleaner
+      to DISCARD the message in the bearerbox scope directly, and avoid sending
+      the message to the upstream SMSC with a logically expired validity.
+    * gw/bb_smscconn_cb.h: add SMSCCONN_FAILED_TIMEOUT enum value to indicate
+      that the validity time fo the message expired while trying to route it.
+        
 2013-12-17 Alexander Malysh <amalysh at kannel.org>
     * wmlscript/wsgram.y, wmlscript/wsint.h: fixed compilation error
 

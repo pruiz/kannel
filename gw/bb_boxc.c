@@ -265,6 +265,20 @@ static void deliver_sms_to_queue(Msg *msg, Boxc *conn)
             msg_destroy(msg);
             break;
             
+        case SMSCCONN_FAILED_TIMEOUT:   /* validity timeout */
+            warning(0, "Message rejected by bearerbox, timed out!");
+
+            /*
+             * we don't store_save_ack() here, since the call to
+             * bb_smscconn_send_failed() within smsc2_route() did
+             * it already.
+             */
+            mack->ack.nack = ack_failed;
+
+            /* destroy original message */
+            msg_destroy(msg);
+            break;
+
         default:
             break;
     }
