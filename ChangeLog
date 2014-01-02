@@ -1,3 +1,8 @@
+2014-01-02  Stipe Tolj  <stolj at kannel.org>
+    * gw/bb_[boxc|smscconn].c, gw/bb_smscconn_cb.h: renamed enum value 
+      SMSCCONN_FAILED_TIMEOUT to _EXPIRED and also the access-log value to 
+      'EXPIRED SMS' in order to  make the meaning more clear, thanks Alex.
+      
 2013-12-28  Stipe Tolj  <stolj at kannel.org>
     * gw/bb_[boxc|smscconn].c: handle new SMSCCONN_FAILED_TIMEOUT case as 
       return value of smsc2_rout(), which now checks internally if the message

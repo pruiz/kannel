@@ -265,8 +265,8 @@ static void deliver_sms_to_queue(Msg *msg, Boxc *conn)
             msg_destroy(msg);
             break;
             
-        case SMSCCONN_FAILED_TIMEOUT:   /* validity timeout */
-            warning(0, "Message rejected by bearerbox, timed out!");
+        case SMSCCONN_FAILED_EXPIRED:   /* validity expired */
+            warning(0, "Message rejected by bearerbox, validity expired!");
 
             /*
              * we don't store_save_ack() here, since the call to
