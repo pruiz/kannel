@@ -217,6 +217,7 @@ int bb_stop_smsc(Octstr *id);
 int bb_add_smsc(Octstr *id);
 int bb_remove_smsc(Octstr *id);
 int bb_restart_smsc(Octstr *id);
+int bb_remove_message(Octstr *id);
 int bb_reload_lists(void);
 int bb_reload_smsc_groups(void);
 

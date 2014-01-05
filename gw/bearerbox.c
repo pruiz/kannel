@@ -939,6 +939,25 @@ int bb_reload_lists(void)
     return smsc2_reload_lists();
 }
 
+int bb_remove_message(Octstr *message_id)
+{
+    Msg *msg;
+    int ret;
+
+    msg = msg_create(ack);
+    msg->ack.nack = ack_failed;
+    msg->ack.time = time(NULL);
+    uuid_parse(octstr_get_cstr(message_id), msg->ack.id);
+    ret = store_save(msg);
+    msg_destroy(msg);
+    if (ret != 0) {
+        error(0, "Could not delete message %s", octstr_get_cstr(message_id));
+        return -1;
+    }
+    return 0;
+}
+
+
 #define append_status(r, s, f, x) { s = f(x); octstr_append(r, s); \
                                     octstr_destroy(s); }
 

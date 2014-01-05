@@ -2035,6 +2035,12 @@ commands never arrive nor can you restart it via WAP anymore.</para>
         lists change and signal bearerbox to re-load them on the fly.
    </entry></row>
 
+    <row><entry><literal>remove-message</literal></entry>
+   <entry valign="bottom">
+        Removes the message with the give <literal>id</literal> (an UUID)
+        from the local storage subsystem.
+   </entry></row>
+
   </tbody>
   </tgroup>
  </table>
