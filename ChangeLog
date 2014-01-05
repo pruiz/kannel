@@ -1,4 +1,9 @@
 2014-01-06  Stipe Tolj  <stolj at kannel.org>
+    * gwlib/gw-timer.[ch]: abstracting the wap/timers.[ch] module, making
+      it independent from the WAP parts, and useable for any delay object
+      handling.
+      
+2014-01-06  Stipe Tolj  <stolj at kannel.org>
     * doc/userguide/userguide.xml: document escape code %# used to 
       escape in values from the meta-data parts.
     * gw/urltrans.c: implement escape code %# used for meta-data values.
