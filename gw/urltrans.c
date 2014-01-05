@@ -72,6 +72,7 @@
 #include "gwlib/gwlib.h"
 #include "gw/sms.h"
 #include "gw/dlr.h"
+#include "gw/meta_data.h"
 
 
 /***********************************************************************
@@ -322,6 +323,7 @@ static void strip_keyword(Msg *request)
 Octstr *urltrans_fill_escape_codes(Octstr *pattern, Msg *request)
 {
     Octstr *enc;
+    Octstr *meta_group, *meta_param;
     int nextarg, j;
     struct tm tm;
     int num_words;
@@ -330,7 +332,7 @@ Octstr *urltrans_fill_escape_codes(Octstr *pattern, Msg *request)
     long pattern_len;
     long pos;
     int c;
-    long i;
+    long i, k;
     Octstr *temp;
 
     result = octstr_create("");
@@ -650,6 +652,38 @@ Octstr *urltrans_fill_escape_codes(Octstr *pattern, Msg *request)
         }
         break;
     
+    /*
+     * This allows to pass meta-data individual parameters into urls.
+     * The syntax is as follows: %#group#parameter#
+     * For example: %#smpp#my_param# would be replaced with the value
+     * 'my_param' from the group 'smpp' coming inside the meta_data field.
+     */
+    case '#':
+        /* ASCII 0x23 == '#' */
+        k = octstr_search_char(pattern, 0x23, pos + 2);
+        if (k >= 0) {
+            pos += 2;
+            meta_group = octstr_copy(pattern, pos, (k-pos));
+            pos = k + 1;
+            k = octstr_search_char(pattern, 0x23, pos);
+            if (k >= 0) {
+                meta_param = octstr_copy(pattern, pos, (k-pos));
+                pos = k - 1;
+                if (request->sms.meta_data != NULL) {
+                    enc = meta_data_get_value(request->sms.meta_data,
+                            octstr_get_cstr(meta_group), meta_param);
+                    octstr_url_encode(enc);
+                    octstr_append(result, enc);
+                    octstr_destroy(enc);
+                }
+                octstr_destroy(meta_param);
+            } else {
+                pos++;
+            }
+            octstr_destroy(meta_group);
+        }
+        break;
+
     /* XXX sms.parameters not present in here:
      *   * pid - will we receive this ? 
      *   * alt-dcs - shouldn't be required unless we want to inform 

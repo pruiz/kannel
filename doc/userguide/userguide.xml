@@ -7186,6 +7186,14 @@ Deferred in minutes. Available only if SMSC supports
 and sent this value.
 </entry></row>
 
+<row><entry><literal>%#</literal></entry><entry>
+This allows to pass meta-data individual parameters into urls.
+The syntax is as follows: <literal>%#group#parameter#</literal>
+For example: <literal>%#smpp#my_param#</literal> would be replaced 
+with the value 'my_param' from the group 'smpp' coming inside the 
+meta_data field.
+</entry></row>
+
 </tbody>
 </tgroup>
 </table>

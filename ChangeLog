@@ -1,4 +1,10 @@
 2014-01-06  Stipe Tolj  <stolj at kannel.org>
+    * doc/userguide/userguide.xml: document escape code %# used to 
+      escape in values from the meta-data parts.
+    * gw/urltrans.c: implement escape code %# used for meta-data values.
+    Thanks to Alejandro Guerrieri for the patchset.
+    
+2014-01-06  Stipe Tolj  <stolj at kannel.org>
     * doc/userguide/userguide.xml: document HTTP admin URI /remove-message
     * gw/bb_http.c, gw/bearerbox.[ch]: implement HTTP admin URI command
       /remove_message.
