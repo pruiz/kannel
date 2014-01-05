@@ -1,3 +1,31 @@
+2014-01-06  Stipe Tolj  <stolj at kannel.org>
+    * configure[.in]: implement --with-redis option to support Redis.
+    * gw-config.h.in: add HAVE_REDIS macro definition.
+    * doc/examples/dlr-redis.conf: Redis config example.
+    * doc/userguide/userguide.xml: adding Redis support documentation.
+    * gw/dlr_p.h: extending the dlr_entry struct to hold information if
+      we used the destination address in the lookup process, also adds
+      the TTL variable to dlr_db_fields struct.
+    * gw/dlr_redis.c: implements Redis support as DLR storage backend.
+    * gw/dlr.[ch]: add 'ttl' config handling and extend dlr_add() prototype
+      to allow passing the optional argument for indicating the usage of
+      the destination address.
+    * gw/smsc/smsc_[cimd2|emi].c: add use destination address flag in
+      dlr_add() call. This is required since these two SMSC types don't
+      have a message ID returned by the SMSC.
+    * gwlib/cfg.def: adding config 'group = redis-connection' context, and
+      adding the 'ttl' directive for 'group = dlr-db' context.
+    * gwlib/dbpool_redis.c: implements Redis support for the database pool
+      abstraction layer.
+    * gwlib/dbpool.[ch]: adding Redis support to internal structures.
+    * gwlib/octstr.[ch]: adding function octstr_replace_first().
+    * gwlib/utils.c: add Redis version output in version_report_string(). 
+    This patchset was originally developed by Toby Phipps. 
+    [Msg-Id: <C2EAA670-344D-4C9A-ACFB-01A3E536DB47@nexmedia.com.sg>]
+    [URL: https://github.com/tphipps/kannel-redis]
+    Thanks to Toby Phipps for the patchset, and Alejandro and Juan Nin 
+    for raising the topic again.
+     
 2014-01-02  Stipe Tolj  <stolj at kannel.org>
     * gw/bb_[boxc|smscconn].c, gw/bb_smscconn_cb.h: renamed enum value 
       SMSCCONN_FAILED_TIMEOUT to _EXPIRED and also the access-log value to 

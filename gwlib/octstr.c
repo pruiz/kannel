@@ -2660,6 +2660,21 @@ void octstr_replace(Octstr *haystack, Octstr *needle, Octstr *repl)
     }
 }
 
+void octstr_replace_first(Octstr *haystack, Octstr *needle, Octstr *repl)
+{
+    int p = 0;
+    long len, repl_len;
+
+    len = octstr_len(needle);
+    repl_len = octstr_len(repl);
+
+    p = octstr_search(haystack, needle, p);
+    if (p != -1) {
+        octstr_delete(haystack, p, len);
+        octstr_insert(haystack, repl, p);
+    }
+}
+
 int octstr_symbolize(Octstr *ostr)
 {
     long len, i;

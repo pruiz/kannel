@@ -727,6 +727,11 @@ int octstr_isnum(Octstr *ostr1);
 void octstr_replace(Octstr *haystack, Octstr *needle, Octstr *repl);
 
 /*
+ * Replace first occurence of needle with repl within haystack
+ */
+void octstr_replace_first(Octstr *haystack, Octstr *needle, Octstr *repl);
+
+/*
  * Symbolize hex string '78797a' becomes '%78%79%7a'
  */
 int octstr_symbolize(Octstr *ostr);

@@ -624,6 +624,7 @@ GSOAP_SHARE
 SOAP_INCLUDE
 SOAPCPP
 WSDL2H
+REDIS_CONFIG
 PGSQL_CONFIG
 SQLITE3
 SQLITE
@@ -765,6 +766,8 @@ with_oracle_includes
 with_oracle_libs
 with_pgsql
 with_pgsql_dir
+with_redis
+with_redis_dir
 with_mssql
 with_wtls
 with_gsoap
@@ -1440,6 +1443,9 @@ Optional Packages:
   --with-pgsql            enable PostgreSQL storage [disabled]
   --with-pgsql-dir=DIR    where to look for PostgreSQL libs and header files
                           DIR points to the installation [/usr/local/pgsql]
+  --with-redis            enable Redis storage [disabled]
+  --with-redis-dir=DIR    where to look for Redis libs and header files
+                          DIR points to the installation [/usr/local/redis]
   --with-mssql=DIR        enable FreeTDS Ct-Lib storage support [disabled]
                           DIR points to the installation [/usr/local]
   --with-wtls[=TYPE]      select WTLS version to use: [openssl|baltimore]
@@ -9750,6 +9756,225 @@ $as_echo_n "checking whether to compile with PostgreSQL support... " >&6; }
     { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 $as_echo "yes" >&6; }
     PGSQL="yes"
+fi
+
+else
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: disabled" >&5
+$as_echo "disabled" >&6; }
+
+fi
+
+
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to compile with Redis support" >&5
+$as_echo_n "checking whether to compile with Redis support... " >&6; }
+
+# Check whether --with-redis was given.
+if test "${with_redis+set}" = set; then :
+  withval=$with_redis;
+if test "$withval" != yes ; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: disabled" >&5
+$as_echo "disabled" >&6; }
+else
+
+# Check whether --with-redis-dir was given.
+if test "${with_redis_dir+set}" = set; then :
+  withval=$with_redis_dir;
+        redisloc=""
+        if test -d "$withval" ; then
+        redisloc="$withval"
+        fi
+
+fi
+
+
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: searching" >&5
+$as_echo "searching" >&6; }
+    # Extract the first word of "redis_config", so it can be a program name with args.
+set dummy redis_config; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_path_REDIS_CONFIG+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  case $REDIS_CONFIG in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_REDIS_CONFIG="$REDIS_CONFIG" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+as_dummy="$PATH:$redisloc/bin:$redisloc"
+for as_dir in $as_dummy
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_path_REDIS_CONFIG="$as_dir/$ac_word$ac_exec_ext"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+  test -z "$ac_cv_path_REDIS_CONFIG" && ac_cv_path_REDIS_CONFIG="no"
+  ;;
+esac
+fi
+REDIS_CONFIG=$ac_cv_path_REDIS_CONFIG
+if test -n "$REDIS_CONFIG"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $REDIS_CONFIG" >&5
+$as_echo "$REDIS_CONFIG" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+    if test "$REDIS_CONFIG" = "no"; then
+        found=""
+        for loc in $redisloc /usr /usr/local ; do
+            if test "x$found" = "x" ; then
+                { $as_echo "$as_me:${as_lineno-$LINENO}: checking for Redis include files in" >&5
+$as_echo_n "checking for Redis include files in... " >&6; }
+                { $as_echo "$as_me:${as_lineno-$LINENO}: result: $loc" >&5
+$as_echo "$loc" >&6; }
+                as_ac_File=`$as_echo "ac_cv_file_"$loc/hiredis.h"" | $as_tr_sh`
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for \"$loc/hiredis.h\"" >&5
+$as_echo_n "checking for \"$loc/hiredis.h\"... " >&6; }
+if eval \${$as_ac_File+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  test "$cross_compiling" = yes &&
+  as_fn_error $? "cannot check for file existence when cross compiling" "$LINENO" 5
+if test -r ""$loc/hiredis.h""; then
+  eval "$as_ac_File=yes"
+else
+  eval "$as_ac_File=no"
+fi
+fi
+eval ac_res=\$$as_ac_File
+	       { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
+$as_echo "$ac_res" >&6; }
+if eval test \"x\$"$as_ac_File"\" = x"yes"; then :
+  CFLAGS="$CFLAGS -I$loc"; LIBS="$LIBS -L$loc -lhiredis"; found=1
+else
+  as_ac_File=`$as_echo "ac_cv_file_"$loc/include/hiredis/hiredis.h"" | $as_tr_sh`
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for \"$loc/include/hiredis/hiredis.h\"" >&5
+$as_echo_n "checking for \"$loc/include/hiredis/hiredis.h\"... " >&6; }
+if eval \${$as_ac_File+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  test "$cross_compiling" = yes &&
+  as_fn_error $? "cannot check for file existence when cross compiling" "$LINENO" 5
+if test -r ""$loc/include/hiredis/hiredis.h""; then
+  eval "$as_ac_File=yes"
+else
+  eval "$as_ac_File=no"
+fi
+fi
+eval ac_res=\$$as_ac_File
+	       { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
+$as_echo "$ac_res" >&6; }
+if eval test \"x\$"$as_ac_File"\" = x"yes"; then :
+  CFLAGS="$CFLAGS -I$loc/include/hiredis"; LIBS="$LIBS -L$loc/lib -lhiredis"; found=1
+
+fi
+
+
+fi
+
+            fi
+        done
+        if test "x$found" != "x1" ; then
+            as_fn_error $? "Unable to find hiredis.h, please provide a --with-redis-dir=<dir> location" "$LINENO" 5
+        fi
+    else
+                REDIS_LIBS=""
+        if test -z "$REDIS_LIBS" ; then
+            REDIS_LIBS=`$REDIS_CONFIG --libs`
+            { $as_echo "$as_me:${as_lineno-$LINENO}: checking redis libs" >&5
+$as_echo_n "checking redis libs... " >&6; }
+            { $as_echo "$as_me:${as_lineno-$LINENO}: result: $REDIS_LIBS" >&5
+$as_echo "$REDIS_LIBS" >&6; }
+            as_ac_Lib=`$as_echo "ac_cv_lib_hiredis_ LIBS="$LIBS $REDIS_LIBS" " | $as_tr_sh`
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for  LIBS=\"$LIBS $REDIS_LIBS\"  in -lhiredis" >&5
+$as_echo_n "checking for  LIBS=\"$LIBS $REDIS_LIBS\"  in -lhiredis... " >&6; }
+if eval \${$as_ac_Lib+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lhiredis  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char  LIBS="$LIBS $REDIS_LIBS"  ();
+int
+main ()
+{
+return  LIBS="$LIBS $REDIS_LIBS"  ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  eval "$as_ac_Lib=yes"
+else
+  eval "$as_ac_Lib=no"
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+eval ac_res=\$$as_ac_Lib
+	       { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
+$as_echo "$ac_res" >&6; }
+if eval test \"x\$"$as_ac_Lib"\" = x"yes"; then :
+  as_fn_error $? "Unable to find Redis client libraries" "$LINENO" 5
+else
+   $REDIS_LIBS
+fi
+
+        fi
+        { $as_echo "$as_me:${as_lineno-$LINENO}: checking redis includes" >&5
+$as_echo_n "checking redis includes... " >&6; }
+        if $REDIS_CONFIG --include &>/dev/null ; then
+            REDIS_CFLAGS=`$REDIS_CONFIG --include`
+        else
+            REDIS_CFLAGS=`$REDIS_CONFIG --cflags`
+        fi
+        CFLAGS="$CFLAGS $REDIS_CFLAGS"
+        { $as_echo "$as_me:${as_lineno-$LINENO}: result: $REDIS_CFLAGS" >&5
+$as_echo "$REDIS_CFLAGS" >&6; }
+    fi
+    for ac_header in hiredis/hiredis.h
+do :
+  ac_fn_c_check_header_mongrel "$LINENO" "hiredis/hiredis.h" "ac_cv_header_hiredis_hiredis_h" "$ac_includes_default"
+if test "x$ac_cv_header_hiredis_hiredis_h" = xyes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_HIREDIS_HIREDIS_H 1
+_ACEOF
+
+fi
+
+done
+
+    $as_echo "#define HAVE_REDIS 1" >>confdefs.h
+
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to compile with Redis support" >&5
+$as_echo_n "checking whether to compile with Redis support... " >&6; }
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+    REDIS="yes"
 fi
 
 else

@@ -175,6 +175,9 @@ struct dlr_db_fields *dlr_db_fields_create(CfgGroup *grp)
 
     if (!(ret->table = cfg_get(grp, octstr_imm("table"))))
    	    panic(0, "DLR: DB: directive 'table' is not specified!");
+    ret->ttl = 0;
+    if (cfg_get_integer(&ret->ttl, grp, octstr_imm("ttl")) == -1 || ret->ttl < 0)
+        ret->ttl = 0;
     if (!(ret->field_smsc = cfg_get(grp, octstr_imm("field-smsc"))))
    	    panic(0, "DLR: DB: directive 'field-smsc' is not specified!");
     if (!(ret->field_ts = cfg_get(grp, octstr_imm("field-timestamp"))))
@@ -264,6 +267,8 @@ void dlr_init(Cfg* cfg)
         handles = dlr_init_mssql(cfg);
     } else if (octstr_compare(dlr_type, octstr_imm("sqlite3")) == 0) {
         handles = dlr_init_sqlite3(cfg);
+    } else if (octstr_compare(dlr_type, octstr_imm("redis")) == 0) {
+        handles = dlr_init_redis(cfg);
     }
 
     /*
@@ -317,11 +322,20 @@ const char* dlr_type(void)
 }
  
 /*
- * Add new dlr entry into dlr storage
+ * Add new dlr entry into dlr storage.
+ * Need to undefine the macro, otherwise the pointer
+ * function will we mangled by the pre-processor too.
  */
-void dlr_add(const Octstr *smsc, const Octstr *ts, Msg *msg)
+#undef dlr_add
+void dlr_add_real(const Octstr *smsc, const Octstr *ts, Msg *msg, ...)
 {
+    va_list args;
     struct dlr_entry *dlr = NULL;
+    int use_dst = 0;
+
+    va_start(args, msg);
+    use_dst = va_arg(args, int);
+    va_end(args);
 
     /* Add the foreign_id so all SMSC modules can use it.
      * Obey also the original message in the split_parts list. */
@@ -335,7 +349,7 @@ void dlr_add(const Octstr *smsc, const Octstr *ts, Msg *msg)
         split->orig->sms.foreign_id = octstr_duplicate(ts);
     }
 
-    if(octstr_len(smsc) == 0) {
+    if (octstr_len(smsc) == 0) {
         warning(0, "DLR[%s]: Can't add a dlr without smsc-id", dlr_type());
         return;
     }
@@ -361,6 +375,7 @@ void dlr_add(const Octstr *smsc, const Octstr *ts, Msg *msg)
     dlr->url = (msg->sms.dlr_url ? octstr_duplicate(msg->sms.dlr_url) : octstr_create(""));
     dlr->boxc_id = (msg->sms.boxc_id ? octstr_duplicate(msg->sms.boxc_id) : octstr_create(""));
     dlr->mask = msg->sms.dlr_mask;
+    dlr->use_dst = use_dst;
 
     debug("dlr.dlr", 0, "DLR[%s]: Adding DLR smsc=%s, ts=%s, src=%s, dst=%s, mask=%d, boxc=%s",
           dlr_type(), octstr_get_cstr(dlr->smsc), octstr_get_cstr(dlr->timestamp),

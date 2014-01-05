@@ -660,6 +660,14 @@
 
             Where to look for Oracle OCI-Library files.</para></listitem>
 
+        <listitem><para><literal>--with-redis</literal>
+                
+            Enable using Redis for DBPool and DLR support. Requires the hiredis library.</para></listitem>
+            
+            <listitem><para><literal>--with-redis-dir=</literal><replaceable>DIR</replaceable>
+                
+                Where to look for the hiredis library and header files.</para></listitem>
+
 	<!-- XXX DAVI add openssl and others in here -->
 
 	</itemizedlist>
@@ -1523,7 +1531,9 @@ admin-password = f00bar
         <literal>pgsql</literal>,
         <literal>sdb</literal>,
         <literal>mssql</literal>,
-        <literal>sqlite3</literal> and <literal>oracle</literal>.
+        <literal>sqlite3</literal>,
+        <literal>oracle</literal> and
+        <literal>redis<literal>.
         By default this is set to <literal>internal</literal>.
      </entry></row>
 
@@ -5813,6 +5823,139 @@ field-boxc-id = boxc
 
 	</sect2>
 
+    <sect2>
+        <title>Redis DLR storage</title>
+        <para>To store DLR information using the Redis (http://www.redis.io) keystore, you should set the
+            <literal>dlr-storage = redis</literal> configuration directive in the
+            <literal>core</literal> group.
+        </para>
+        <para>In addition, you must have a <literal>dlr-db</literal> group defined that specifies 
+            the key and hash field names that are used to store the DLR attributes and a 
+            <literal>redis-connection</literal> group that defines the connection to the Redis server.
+        </para>
+        <para>
+            Since Redis is a keystore and not a SQL database, keys and not tables are used to store 
+            DLR attributes. For ease of configuration, the same configuration parameters in the <literal>dlr-db</literal> 
+            group that are used to define SQL tables in other DLR storage engines are used to configure
+            key names in Redis. DLRs are stored as Redis hash keys with a separate key 
+            for each DLR. Key names are in the format 
+            <literal>&lt;table&gt;:&lt;smsc&gt;:&lt;timestamp&gt;</literal>. Some SMSCs also append the 
+            destination to the DLR keyname resulting DLR keynames in the format 
+            <literal>&lt;table&gt;:&lt;smsc&gt;:&lt;timestamp&gt;:&lt;destination&gt;</literal>. You can
+            specify the <literal>&lt;table&gt;</literal> portion of the keyname by specifying the
+            <literal>table</literal> value in the <literal>dlr-db</literal> group.</para>
+        <para>
+            In addition to one key per DLR, an additional key with a name in the format
+            <literal>&lt;table&gt;:Count</literal> is created to maintain a count of the total
+            number of outstanding DLRs.
+        </para>
+        
+        <para>Here is the example configuration from
+            <literal>doc/examples/dlr-redis.conf</literal>:
+            
+            <programlisting>
+                group = redis-connection
+                id = mydlr
+                host = localhost
+                port = 6739
+                #password = foo
+                database = 2
+                idle-timeout-secs = 3600
+                max-connections = 1
+                
+                group = dlr-db
+                id = mydlr
+                ttl = 604800
+                table = dlr
+                field-smsc = smsc
+                field-timestamp = ts
+                field-destination = destination
+                field-source = source
+                field-service = service
+                field-url = url
+                field-mask = mask
+                field-status = status
+                field-boxc-id = boxc
+            </programlisting>
+            
+        </para>
+        
+        <sect3>
+            <title>Redis connection configuration</title>
+            
+            <para>To define a Redis connection you need to specify a
+                <literal>redis-connection</literal> group as follows:
+            </para>
+            
+            <table frame="none">
+                <title>Redis Connection Group Variables</title>
+                <tgroup cols="3">
+                    <thead>
+                        <row>
+                            <entry>Variable</entry>
+                            <entry>Value</entry>
+                            <entry>Description</entry>
+                        </row>
+                    </thead>
+                    <tbody>
+                        <row><entry><literal>group</literal></entry>
+                            <entry><literal>redis-connection</literal></entry>
+                            <entry valign="bottom">
+                                This is a mandatory variable
+                            </entry></row>
+                        
+                        <row><entry><literal>id (m)</literal></entry>
+                            <entry><literal>string</literal></entry>
+                            <entry valign="bottom">
+                                An optional name or id to identify this Redis connection
+                                for internal reference with other Redis related configuration
+                                groups. Any string is acceptable, but semicolon ';' may cause
+                                problems, so avoid it and any other special non-alphabet characters.
+                            </entry></row>
+                        
+                        <row><entry><literal>host (m)</literal></entry>
+                            <entry>hostname or IP</entry>
+                            <entry valign="bottom">
+                                Hostname or IP of a server running Redis to connect to.
+                            </entry></row>
+                        
+                        <row><entry><literal>password</literal></entry>
+                            <entry>password</entry>
+                            <entry valign="bottom">
+                                If the Redis server is secured with a password in redis.conf, it must be 
+                                specified here. By default, Redis servers are unsecured and in that case,
+                                this parameter may be ommitted.</entry></row>
+                        
+                        <row><entry><literal>database</literal></entry>
+                            <entry>integer</entry>
+                            <entry valign="bottom">
+                                The numeric ID (0-15) of the Redis database to use. Ideally this database
+                                should be dedicated to storing Redis DLRs since a separate key wil be created
+                                for each DLR. If this variable is ommitted, the default database (0) will be used.
+                            </entry></row>
+                        
+                        <row><entry><literal>idle-timeout-secs</literal></entry>
+                            <entry>integer</entry>
+                            <entry valign="bottom">
+                                The number of seconds that Redis should hold the connection open without any
+                                traffic. Some Redis servers are configured to disconnect idle clients very
+                                quickly, and if this is the case you should set this value to something more
+                                reasonable. If ommitted, the Redis server-wide timeout from redis.conf will 
+                                apply.
+                            </entry></row>
+                        
+                        <row><entry><literal>max-connections</literal></entry>
+                            <entry>integer</entry>
+                            <entry valign="bottom">
+                                How many connections should be opened to the Redis server.
+                            </entry></row>
+                        
+                    </tbody>
+                </tgroup>
+            </table>
+        </sect3>
+	</sect2>
+    
         <sect2>
 	<title>DLR database field configuration</title>
 	<para>For external database storage of DLR information in relational

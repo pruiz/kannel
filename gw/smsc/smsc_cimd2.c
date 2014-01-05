@@ -1975,8 +1975,8 @@ static int cimd2_submit_msg(SMSCConn *conn, Msg *msg)
     }
 
     ret = cimd2_request(packet, conn, &ts);
-    if((ret == 0) && (ts) && DLR_IS_SUCCESS_OR_FAIL(msg->sms.dlr_mask) && !pdata->no_dlr) {
-        dlr_add(conn->name, ts, msg);
+    if ((ret == 0) && (ts) && DLR_IS_SUCCESS_OR_FAIL(msg->sms.dlr_mask) && !pdata->no_dlr) {
+        dlr_add(conn->name, ts, msg, 1);
     }
     octstr_destroy(ts);
     packet_destroy(packet);

@@ -80,6 +80,7 @@
 #include "dbpool_sdb.c"
 #include "dbpool_pgsql.c"
 #include "dbpool_mssql.c"
+#include "dbpool_redis.c"
 
 
 static void dbpool_conn_destroy(DBPoolConn *conn)
@@ -147,6 +148,11 @@ DBPool *dbpool_create(enum db_type db_type, DBConf *conf, unsigned int connectio
 #ifdef HAVE_PGSQL
        case DBPOOL_PGSQL:
            p->db_ops = &pgsql_ops;
+           break;
+#endif
+#ifdef HAVE_REDIS
+       case DBPOOL_REDIS:
+           p->db_ops = &redis_ops;
            break;
 #endif
         default:

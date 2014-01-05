@@ -125,6 +125,9 @@
 #ifdef HAVE_ORACLE 
 #include <oci.h>
 #endif
+#ifdef HAVE_REDIS 
+#include <hiredis.h>
+#endif
 
 
 /* pid of child process when parachute is used */
@@ -580,6 +583,9 @@ Octstr *version_report_string(const char *boxname)
              "Using Oracle OCI.\n"
 #endif
 #endif
+#ifdef HAVE_REDIS
+             "Using hiredis API %d.%d.%d\n"
+#endif
              "Using %s malloc.\n",
              boxname, GW_VERSION,
 #ifdef __GNUC__ 
@@ -611,6 +617,9 @@ Octstr *version_report_string(const char *boxname)
 #if defined(OCI_MAJOR_VERSION) && defined(OCI_MINOR_VERSION)
              OCI_MAJOR_VERSION, OCI_MINOR_VERSION,
 #endif
+#endif
+#ifdef HAVE_REDIS
+			 HIREDIS_MAJOR, HIREDIS_MINOR, HIREDIS_PATCH,
 #endif
              octstr_get_cstr(gwmem_type()));
 }

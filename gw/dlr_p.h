@@ -84,6 +84,7 @@ struct dlr_entry {
    Octstr *url;
    Octstr *boxc_id;
    int mask;
+   int use_dst;
 };
 
 /*
@@ -147,6 +148,7 @@ struct dlr_storage {
  */
 struct dlr_db_fields {
     Octstr *table;
+    long ttl;
     Octstr *field_smsc;
     Octstr *field_ts;
     Octstr *field_src;
@@ -173,6 +175,7 @@ struct dlr_storage *dlr_init_oracle(Cfg *cfg);
 struct dlr_storage *dlr_init_pgsql(Cfg *cfg);
 struct dlr_storage *dlr_init_mssql(Cfg *cfg);
 struct dlr_storage *dlr_init_sqlite3(Cfg *cfg);
+struct dlr_storage *dlr_init_redis(Cfg *cfg);
 
 
 #endif /* DLR_P_H */
