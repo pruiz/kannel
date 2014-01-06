@@ -1,4 +1,11 @@
 2014-01-06  Stipe Tolj  <stolj at kannel.org>
+    * gw/smsbox.c: fix HTTP retry starvation in a sequential retry with
+      in loop sleep time. This causes MOs that can't be delivered to the 
+      HTTP application layer to be held in the retry queue for too long.
+      Now we use the timer abstracted data type to trigger the retry call
+      asynchronously for every MO message event.
+      
+2014-01-06  Stipe Tolj  <stolj at kannel.org>
     * gwlib/gw-timer.[ch]: abstracting the wap/timers.[ch] module, making
       it independent from the WAP parts, and useable for any delay object
       handling.

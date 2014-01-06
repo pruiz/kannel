@@ -71,6 +71,7 @@
 
 #include "gwlib/gwlib.h"
 #include "gwlib/regex.h"
+#include "gwlib/gw-timer.h"
 
 #include "msg.h"
 #include "sms.h"
@@ -100,6 +101,12 @@
 #define HTTP_MAX_RETRIES    0
 #define HTTP_RETRY_DELAY    10 /* in sec. */
 #define HTTP_MAX_PENDING    512 /* max requests handled in parallel */
+
+/* Timer item structure for HTTP retrying */
+typedef struct TimerItem {
+    Timer *timer;
+    void *id;
+} TimerItem;
 
 /* have we received restart cmd from bearerbox? */
 volatile sig_atomic_t restart = 0;
@@ -135,6 +142,9 @@ static Octstr *ppg_service_name = NULL;
 
 static List *smsbox_requests = NULL;      /* the inbound request queue */
 static List *smsbox_http_requests = NULL; /* the outbound HTTP request queue */
+
+/* Timerset for the HTTP retry mechanism. */
+static Timerset *timerset = NULL;
 
 /* Maximum requests that we handle in parallel */
 static Semaphore *max_pending_requests;
@@ -991,15 +1001,13 @@ static void http_queue_thread(void *arg)
     Octstr *req_body;
     unsigned long retries;
     int method;
+    TimerItem *i;
 
-    while ((id = gwlist_consume(smsbox_http_requests)) != NULL) {
+    while ((i = gwlist_consume(smsbox_http_requests)) != NULL) {
         /*
-         * Sleep for a while in order not to block other operting requests.
-         * Defaults to 10 sec. if not given via http-queue-delay directive in
-         * smsbox group.
+         * The timer thread has injected the item to retry the
+         * HTTP call again now.
          */
-        if (http_queue_delay > 0)
-            gwthread_sleep(http_queue_delay);
 
         debug("sms.http",0,"HTTP: Queue contains %ld outstanding requests",
               gwlist_len(smsbox_http_requests));
@@ -1008,7 +1016,10 @@ static void http_queue_thread(void *arg)
          * Get all required HTTP request data from the queue and reconstruct
          * the id pointer for later lookup in url_result_thread.
          */
-        get_receiver(id, &msg, &trans, &method, &req_url, &req_headers, &req_body, &retries);
+        get_receiver(i->id, &msg, &trans, &method, &req_url, &req_headers, &req_body, &retries);
+
+        gw_timer_elapsed_destroy(i->timer);
+        gw_free(i);
 
         if (retries < max_http_retries) {
             id = remember_receiver(msg, trans, method, req_url, req_headers, req_body, ++retries);
@@ -1043,6 +1054,7 @@ static void url_result_thread(void *arg)
     Octstr *octet_stream;
     unsigned long retries;
     unsigned int queued; /* indicate if processes reply is re-queued */
+    TimerItem *item;
 
     Octstr *reply_body, *charset, *alt_charset;
     Octstr *udh, *from, *to, *dlr_url, *account, *smsc, *binfo, *meta_data;
@@ -1144,8 +1156,11 @@ static void url_result_thread(void *arg)
             }
             octstr_destroy(type);
         } else if (max_http_retries > retries) {
-            id = remember_receiver(msg, trans, method, req_url, req_headers, req_body, retries);
-            gwlist_produce(smsbox_http_requests, id);
+            item = gw_malloc(sizeof(TimerItem));
+            item->timer = gw_timer_create(timerset, smsbox_http_requests);
+            item->id = remember_receiver(msg, trans, method, req_url,
+                                         req_headers, req_body, retries);
+            gw_timer_elapsed_start(item->timer, http_queue_delay, item);
             queued++;
             goto requeued;
         } else
@@ -3569,6 +3584,7 @@ int main(int argc, char **argv)
     caller = http_caller_create();
     smsbox_requests = gwlist_create();
     smsbox_http_requests = gwlist_create();
+    timerset = gw_timerset_create();
     gwlist_add_producer(smsbox_requests);
     gwlist_add_producer(smsbox_http_requests);
     num_outstanding_requests = counter_create();
@@ -3608,6 +3624,7 @@ int main(int argc, char **argv)
     gwlist_destroy(smsbox_requests, NULL);
     gwlist_destroy(smsbox_http_requests, NULL);
     http_caller_destroy(caller);
+    gw_timerset_destroy(timerset);
     counter_destroy(num_outstanding_requests);
     counter_destroy(catenated_sms_counter);
     octstr_destroy(bb_host);
