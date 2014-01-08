@@ -1533,7 +1533,7 @@ admin-password = f00bar
         <literal>mssql</literal>,
         <literal>sqlite3</literal>,
         <literal>oracle</literal> and
-        <literal>redis<literal>.
+        <literal>redis</literal>.
         By default this is set to <literal>internal</literal>.
      </entry></row>
 
