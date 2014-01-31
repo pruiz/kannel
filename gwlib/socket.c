@@ -90,7 +90,7 @@ static const struct sockaddr_in empty_sockaddr_in;
 #endif
 
 
-int make_server_socket(int port, const char *interface_name )
+int make_server_socket(int port, const char *interface_name)
 {
     struct sockaddr_in addr;
     int s;
@@ -146,14 +146,14 @@ error:
 }
 
 
-int tcpip_connect_to_server(char *hostname, int port, const char *interface_name)
+int tcpip_connect_to_server(char *hostname, int port, const char *source_addr)
 {
 
-    return tcpip_connect_to_server_with_port(hostname, port, 0, interface_name);
+    return tcpip_connect_to_server_with_port(hostname, port, 0, source_addr);
 }
 
 
-int tcpip_connect_to_server_with_port(char *hostname, int port, int our_port, const char *interface_name)
+int tcpip_connect_to_server_with_port(char *hostname, int port, int our_port, const char *source_addr)
 {
     struct sockaddr_in addr;
     struct sockaddr_in o_addr;
@@ -175,16 +175,16 @@ int tcpip_connect_to_server_with_port(char *hostname, int port, int our_port, co
         goto error;
     }
 
-    if (our_port > 0 || (interface_name != NULL && strcmp(interface_name, "*") != 0))  {
+    if (our_port > 0 || (source_addr != NULL && strcmp(source_addr, "*") != 0))  {
         int reuse;
 
         o_addr = empty_sockaddr_in;
         o_addr.sin_family = AF_INET;
         o_addr.sin_port = htons(our_port);
-        if (interface_name == NULL || strcmp(interface_name, "*") == 0)
+        if (source_addr == NULL || strcmp(source_addr, "*") == 0)
             o_addr.sin_addr.s_addr = htonl(INADDR_ANY);
         else {
-            if (gw_gethostbyname(&o_hostinfo, interface_name, &buff1) == -1) {
+            if (gw_gethostbyname(&o_hostinfo, source_addr, &buff1) == -1) {
                 error(errno, "gethostbyname failed");
                 goto error;
             }
@@ -238,12 +238,12 @@ error:
     return -1;
 }
 
-int tcpip_connect_nb_to_server(char *hostname, int port, const char *interface_name, int *done)
+int tcpip_connect_nb_to_server(char *hostname, int port, const char *source_addr, int *done)
 {
-    return tcpip_connect_nb_to_server_with_port(hostname, port, 0, interface_name, done);
+    return tcpip_connect_nb_to_server_with_port(hostname, port, 0, source_addr, done);
 }
 
-int tcpip_connect_nb_to_server_with_port(char *hostname, int port, int our_port, const char *interface_name, int *done)
+int tcpip_connect_nb_to_server_with_port(char *hostname, int port, int our_port, const char *source_addr, int *done)
 {
     struct sockaddr_in addr;
     struct sockaddr_in o_addr;
@@ -266,16 +266,16 @@ int tcpip_connect_nb_to_server_with_port(char *hostname, int port, int our_port,
         goto error;
     }
 
-    if (our_port > 0 || (interface_name != NULL && strcmp(interface_name, "*") != 0)) {
+    if (our_port > 0 || (source_addr != NULL && strcmp(source_addr, "*") != 0)) {
         int reuse;
 
         o_addr = empty_sockaddr_in;
         o_addr.sin_family = AF_INET;
         o_addr.sin_port = htons(our_port);
-        if (interface_name == NULL || strcmp(interface_name, "*") == 0)
+        if (source_addr == NULL || strcmp(source_addr, "*") == 0)
             o_addr.sin_addr.s_addr = htonl(INADDR_ANY);
         else {
-            if (gw_gethostbyname(&o_hostinfo, interface_name, &buff1) == -1) {
+            if (gw_gethostbyname(&o_hostinfo, source_addr, &buff1) == -1) {
                 error(errno, "gethostbyname failed");
                 goto error;
             }
@@ -475,7 +475,7 @@ int udp_client_socket(void)
 }
 
 
-int udp_bind(int port, const char *interface_name)
+int udp_bind(int port, const char *source_addr)
 {
     int s;
     struct sockaddr_in sa;
@@ -491,10 +491,10 @@ int udp_bind(int port, const char *interface_name)
     sa = empty_sockaddr_in;
     sa.sin_family = AF_INET;
     sa.sin_port = htons(port);
-    if (strcmp(interface_name, "*") == 0)
+    if (strcmp(source_addr, "*") == 0)
         sa.sin_addr.s_addr = htonl(INADDR_ANY);
     else {
-        if (gw_gethostbyname(&hostinfo, interface_name, &buff) == -1) {
+        if (gw_gethostbyname(&hostinfo, source_addr, &buff) == -1) {
             error(errno, "gethostbyname failed");
             gw_free(buff);
             return -1;

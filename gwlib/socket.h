@@ -86,23 +86,23 @@ Octstr *get_official_name(void);
 Octstr *get_official_ip(void);
 
 /* Open a server socket. Return -1 for error, >= 0 socket number for OK.*/
-int make_server_socket(int port, const char *interface_name);
+int make_server_socket(int port, const char *source_addr);
 
 /* Open a client socket. */
-int tcpip_connect_to_server(char *hostname, int port, const char *interface_name);
+int tcpip_connect_to_server(char *hostname, int port, const char *source_addr);
 
 /* As above, but binds our end to 'our_port' */
 int tcpip_connect_to_server_with_port(char *hostname, int port, int our_port,
-		const char *interface_name);
+		const char *source_addr);
 
 /* Open a client socket in nonblocking mode, done is 0 if socket 
    connected  immediatly, overwise done is 1 */
-int tcpip_connect_nb_to_server(char *hostname, int port, const char *interface_name,
+int tcpip_connect_nb_to_server(char *hostname, int port, const char *source_addr,
                                int *done);
 
 /* As above, but binds our end to 'our_port' */
 int tcpip_connect_nb_to_server_with_port(char *hostname, int port, int our_port,
-                                         const char *interface_name, int *done);
+                                         const char *source_addr, int *done);
 
 /* Write string to socket. */
 int write_to_socket(int socket, char *str);
@@ -125,7 +125,7 @@ int read_available(int fd, long wait_usec);
  * Create a UDP socket for receiving from clients. Return -1 for failure,
  * a socket file descriptor >= 0 for OK.
  */
-int udp_bind(int port, const char *interface_name);
+int udp_bind(int port, const char *source_addr);
 
 
 /*
