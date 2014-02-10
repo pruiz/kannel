@@ -1,4 +1,4 @@
-/* ==================================================================== 
+/* ====================================================================
  * The Kannel Software License, Version 1.0 
  * 
  * Copyright (c) 2001-2013 Kannel Group  
@@ -236,7 +236,7 @@ void smpp_pdu_destroy(SMPP_PDU *pdu);
 int smpp_pdu_is_valid(SMPP_PDU *pdu); /* XXX */
 Octstr *smpp_pdu_pack(Octstr *smsc_id, SMPP_PDU *pdu);
 SMPP_PDU *smpp_pdu_unpack(Octstr *smsc_id, Octstr *data_without_len);
-void smpp_pdu_dump(SMPP_PDU *pdu);
+void smpp_pdu_dump(Octstr *smsc_id, SMPP_PDU *pdu);
 
 long smpp_pdu_read_len(Connection *conn);
 Octstr *smpp_pdu_read_data(Connection *conn, long len);

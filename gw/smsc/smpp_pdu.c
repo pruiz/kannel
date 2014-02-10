@@ -673,7 +673,7 @@ err:
 }
 
 
-void smpp_pdu_dump(SMPP_PDU *pdu)
+void smpp_pdu_dump(Octstr *smsc_id, SMPP_PDU *pdu)
 {
     debug("sms.smpp", 0, "SMPP PDU %p dump:", (void *) pdu);
     debug("sms.smpp", 0, "  type_name: %s", pdu->type_name);
@@ -695,9 +695,13 @@ void smpp_pdu_dump(SMPP_PDU *pdu)
         if (p->tlv != NULL) { \
             List *keys; \
             Octstr *key; \
+            struct smpp_tlv *tlv; \
             keys = dict_keys(p->tlv); \
             while(keys != NULL && (key = gwlist_extract_first(keys)) != NULL) { \
-                octstr_dump_short(dict_get(p->tlv, key), 2, octstr_get_cstr(key)); \
+                tlv = smpp_tlv_get_by_name(smsc_id, key); \
+                if (tlv != NULL) { \
+                    octstr_dump_short(dict_get(p->tlv, key), 2, octstr_get_cstr(key)); \
+                } \
                 octstr_destroy(key); \
             } \
             gwlist_destroy(keys, octstr_destroy_item); \

@@ -1,4 +1,8 @@
 2014-02-10 Alexander Malysh <amalysh at kannel.org>
+    * gw/smsc/smpp_pdu.[ch], gw/smsc/smsc_smpp.c, test/drive_smpp.c: don't
+      print TLVs if they are not configured for this SMSC
+
+2014-02-10 Alexander Malysh <amalysh at kannel.org>
     * gw/meta_data.[ch]: added meta_data_merge function.
 
 2014-01-31 Alexander Malysh <amalysh at kannel.org>

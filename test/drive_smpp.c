@@ -246,7 +246,7 @@ static void handle_pdu(ESME *esme, SMPP_PDU *pdu)
     }
 
     error(0, "Unhandled SMPP PDU.");
-    smpp_pdu_dump(pdu);
+    smpp_pdu_dump(octstr_imm(""), pdu);
 }
 
 
