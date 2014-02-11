@@ -517,6 +517,7 @@ Msg* create_dlr_from_msg(const Octstr *smsc, const Msg *msg, const Octstr *reply
     dlrmsg->sms.boxc_id = octstr_duplicate(msg->sms.boxc_id);
     dlrmsg->sms.foreign_id = octstr_duplicate(msg->sms.foreign_id);
     time(&dlrmsg->sms.time);
+    dlrmsg->sms.meta_data = octstr_duplicate(msg->sms.meta_data);
 
     debug("dlr.dlr", 0,"SMSC[%s]: DLR = %s",
                 (smsc ? octstr_get_cstr(smsc) : "UNKNOWN"),

@@ -1,3 +1,7 @@
+2014-02-11 Alexander Malysh <amalysh at kannel.org>
+    * gw/dlr.c,gw/smsc/smsc_smpp.c: Added meta-data support for SMPP response
+      PDUs.
+
 2014-02-10 Alexander Malysh <amalysh at kannel.org>
     * gw/smsc/smpp_pdu.[ch], gw/smsc/smsc_smpp.c, test/drive_smpp.c: don't
       print TLVs if they are not configured for this SMSC

@@ -598,7 +598,7 @@ static Msg *pdu_to_msg(SMPP *smpp, SMPP_PDU *pdu, long *reason)
              * So we just look decoded values from dcs_to_fields and if none there make our assumptions.
              * if we have an UDH indicator, we assume DC_8BIT.
              */
-            if (msg->sms.coding == DC_UNDEF && pdu->u.deliver_sm.esm_class & ESM_CLASS_SUBMIT_UDH_INDICATOR)
+            if (msg->sms.coding == DC_UNDEF && (pdu->u.deliver_sm.esm_class & ESM_CLASS_SUBMIT_UDH_INDICATOR))
                 msg->sms.coding = DC_8BIT;
             else if (msg->sms.coding == DC_7BIT || msg->sms.coding == DC_UNDEF) { /* assume GSM 7Bit , reencode */
                 msg->sms.coding = DC_7BIT;
@@ -785,7 +785,7 @@ static Msg *data_sm_to_msg(SMPP *smpp, SMPP_PDU *pdu, long *reason)
              * So we just look decoded values from dcs_to_fields and if none there make our assumptions.
              * if we have an UDH indicator, we assume DC_8BIT.
              */
-            if (msg->sms.coding == DC_UNDEF && pdu->u.data_sm.esm_class & ESM_CLASS_SUBMIT_UDH_INDICATOR)
+            if (msg->sms.coding == DC_UNDEF && (pdu->u.data_sm.esm_class & ESM_CLASS_SUBMIT_UDH_INDICATOR))
                 msg->sms.coding = DC_8BIT;
             else if (msg->sms.coding == DC_7BIT || msg->sms.coding == DC_UNDEF) { /* assume GSM 7Bit , reencode */
                 msg->sms.coding = DC_7BIT;
@@ -1746,6 +1746,12 @@ static int handle_pdu(SMPP *smpp, Connection *conn, SMPP_PDU *pdu,
             }
             msg = smpp_msg->msg;
             smpp_msg_destroy(smpp_msg, 0);
+
+            /* pack submit_sm_resp TLVs into metadata */
+            if (msg->sms.meta_data == NULL)
+                msg->sms.meta_data = octstr_create("");
+            meta_data_set_values(msg->sms.meta_data, pdu->u.submit_sm_resp.tlv, "smpp_resp", 1);
+
             if (pdu->u.submit_sm_resp.command_status != 0) {
                 error(0, "SMPP[%s]: SMSC returned error code 0x%08lx (%s) "
                       "in response to submit_sm.",
