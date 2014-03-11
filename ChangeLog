@@ -1,3 +1,9 @@
+2014-03-11  Stipe Tolj  <stolj at kannel.org>
+    * soap/Makefile.in: make sure the gsoap enabled build is installing 
+      correctly, so we have a working 'gw-config --libs' reference.
+    * Makefile.in: install all lib*.a library in the install target, which
+      ensures that the gsoap relevant libs are also installed to the target.
+      
 2014-02-11 Alexander Malysh <amalysh at kannel.org>
     * gw/dlr.c,gw/smsc/smsc_smpp.c: Added meta-data support for SMPP response
       PDUs.

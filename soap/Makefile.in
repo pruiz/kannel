@@ -19,7 +19,13 @@ GSOAP_IMPORT = $(GSOAP_SHARE)/import
 GSOAP_PLUGIN = $(GSOAP_SHARE)/plugin
 
 CFLAGS=-D_REENTRANT=1 -I. -Igw @CFLAGS@ -I$(GSOAP_IMPORT) -I$(GSOAP_PLUGIN) -DWITH_OPENSSL 
-LIBS=-lgsoapssl -lgsoap libsoap_env.a @LIBS@ @LIBICONV@
+LDFLAGS=-L. @LDFLAGS@
+
+#
+# Add any service implementation -lsoap_SERVICE library here
+#
+LIBS=-lsoap_parlayx \
+	 -lgsoapssl -lgsoap -lsoap_env @LIBS@ @LIBICONV@
 
 #
 # gSOAP env/plugin library, i.e. required for WS-Security
@@ -83,8 +89,9 @@ gsoap_cpp_hdrs = soap/envH.h \
 	$(soap_parlayx_cpphdr)
 
 # Add libsoap_SERVICE.a for new implementation.
-libs = libgw.a libwmlscript.a libwap.a libgwlib.a libsoap_env.a \
-	libsoap_parlayx.a
+libs = libgw.a libwmlscript.a libwap.a libgwlib.a \
+	libsoap_parlayx.a \
+	libsoap_env.a
 
 # Add soap/service/SERVICE for new implementation.
 srcdirs = gw gw/smsc gwlib test utils wmlscript checks wap radius \
