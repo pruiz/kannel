@@ -2327,7 +2327,7 @@ static void at2_send_one_message(PrivAT2data *privdata, Msg *msg)
                     else {
                         Octstr *dlrmsgid = octstr_format("%d", msg_id);
 
-                        dlr_add(privdata->conn->id, dlrmsgid, msg);
+                        dlr_add(privdata->conn->id, dlrmsgid, msg, 0);
 
                         O_DESTROY(dlrmsgid);
 

@@ -1172,7 +1172,7 @@ static int oisd_submit_msg(SMSCConn *conn, Msg *msg)
 
     ret = oisd_request(packet, conn, &ts);
     if((ret == 0) && (ts) && DLR_IS_SUCCESS_OR_FAIL(msg->sms.dlr_mask) && !pdata->no_dlr) {
-        dlr_add(conn->name, ts, msg);
+        dlr_add(conn->name, ts, msg, 0);
     }
     octstr_destroy(ts);
     packet_destroy(packet);

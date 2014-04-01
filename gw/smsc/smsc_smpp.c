@@ -1795,7 +1795,7 @@ static int handle_pdu(SMPP *smpp, Connection *conn, SMPP_PDU *pdu,
 
                 /* SMSC ACK.. now we have the message id. */
                 if (DLR_IS_ENABLED_DEVICE(msg->sms.dlr_mask))
-                    dlr_add(smpp->conn->id, tmp, msg);
+                    dlr_add(smpp->conn->id, tmp, msg, 0);
 
                 octstr_destroy(tmp);
                 bb_smscconn_sent(smpp->conn, msg, NULL);

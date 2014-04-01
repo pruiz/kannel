@@ -654,7 +654,7 @@ static void soap_send_sms(struct soap *soap, SMSCConn *conn, Msg *sms)
 
         /* add to our own DLR storage */               
         if (DLR_IS_ENABLED_DEVICE(sms->sms.dlr_mask) && mid) {
-            dlr_add(conn->id, mid, sms);
+            dlr_add(conn->id, mid, sms, 0);
 
 #ifdef DEBUG
             /* 
@@ -692,7 +692,7 @@ static void soap_parse_reply(SMSCConn *conn, Msg *msg, int status,
             uuid_unparse(msg->sms.id, id);
             mid = octstr_create(id); 
 
-            dlr_add(conn->id, mid, msg);
+            dlr_add(conn->id, mid, msg, 0);
 
             octstr_destroy(mid);            
         }

@@ -88,7 +88,7 @@ static int msg_cb(SMSCConn *conn, Msg *msg)
         uuid_unparse(sms->sms.id, id);
         mid = octstr_create(id);
 
-        dlr_add(conn->id, mid, sms);
+        dlr_add(conn->id, mid, sms, 0);
         
         octstr_destroy(mid);
     }

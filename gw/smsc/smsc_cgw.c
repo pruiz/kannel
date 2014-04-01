@@ -1176,7 +1176,7 @@ static int cgw_handle_op(SMSCConn *conn, Connection *server, struct cgwop *cgwop
             octstr_append_char(ts, '-');
             octstr_append_decimal(ts, trn);
 
-            dlr_add(conn->id, ts, msg);
+            dlr_add(conn->id, ts, msg, 0);
 
             octstr_destroy(ts);
             privdata->dlr[trn] = 1;

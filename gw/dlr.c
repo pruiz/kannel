@@ -323,19 +323,10 @@ const char* dlr_type(void)
  
 /*
  * Add new dlr entry into dlr storage.
- * Need to undefine the macro, otherwise the pointer
- * function will we mangled by the pre-processor too.
  */
-#undef dlr_add
-void dlr_add_real(const Octstr *smsc, const Octstr *ts, Msg *msg, ...)
+void dlr_add(const Octstr *smsc, const Octstr *ts, Msg *msg, int use_dst)
 {
-    va_list args;
     struct dlr_entry *dlr = NULL;
-    int use_dst = 0;
-
-    va_start(args, msg);
-    use_dst = va_arg(args, int);
-    va_end(args);
 
     /* Add the foreign_id so all SMSC modules can use it.
      * Obey also the original message in the split_parts list. */

@@ -1,3 +1,11 @@
+2014-04-01  Stipe Tolj  <stolj at kannel.org>
+    * gw/dlr.[ch]: reverting back to the direct dlr_add() including the use_dst
+      flag in the function prototype, there is no way to handle an int type
+      via va_args without knowin the number of arguments passed, only void*
+      can be handled this way.
+    * gw/smsc/smsc_*.c, gw/smsc/http/*.c: addopt the dlr_add() call to the
+      function prototype. NLC.
+      
 2014-03-11  Stipe Tolj  <stolj at kannel.org>
     * soap/Makefile.in: make sure the gsoap enabled build is installing 
       correctly, so we have a working 'gw-config --libs' reference.

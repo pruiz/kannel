@@ -485,7 +485,7 @@ static void generic_parse_reply(SMSCConn *conn, Msg *msg, int status,
                         msgid = octstr_copy(body, pmatch[1].rm_so, pmatch[1].rm_eo - pmatch[1].rm_so);
                         debug("smsc.http.generic", 0, "HTTP[%s]: Found foreign message id <%s> in body.",
                               octstr_get_cstr(conn->id), octstr_get_cstr(msgid));
-                        dlr_add(conn->id, msgid, msg);
+                        dlr_add(conn->id, msgid, msg, 0);
                         octstr_destroy(msgid);
                     }
                 }
@@ -497,7 +497,7 @@ static void generic_parse_reply(SMSCConn *conn, Msg *msg, int status,
                 /* use own own UUID as msg ID in the DLR storage */
                 uuid_unparse(msg->sms.id, id);
                 msgid = octstr_create(id);
-                dlr_add(conn->id, msgid, msg);
+                dlr_add(conn->id, msgid, msg, 0);
                 octstr_destroy(msgid);
             }
         }

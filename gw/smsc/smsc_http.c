@@ -616,7 +616,7 @@ static void kannel_parse_reply(SMSCConn *conn, Msg *msg, int status,
     
         /* add to our own DLR storage */               
         if (DLR_IS_ENABLED_DEVICE(msg->sms.dlr_mask))
-            dlr_add(conn->id, mid, msg);
+            dlr_add(conn->id, mid, msg, 0);
 
         octstr_destroy(mid);            
             

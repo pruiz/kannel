@@ -449,7 +449,7 @@ static int add_msg_cb(SMSCConn *conn, Msg *sms)
         char id[UUID_STR_LEN + 1];
         uuid_unparse(sms->sms.id, id);
         tmp = octstr_format("%s", id);
-        dlr_add(conn->id, tmp, sms);
+        dlr_add(conn->id, tmp, sms, 0);
         octstr_destroy(tmp);
     }
     gwlist_produce(privdata->outgoing_queue, copy);
