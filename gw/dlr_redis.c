@@ -187,13 +187,19 @@ static void dlr_redis_add(struct dlr_entry *entry)
             fields->field_boxc,
             fields->field_status);
 
+    /* prepare values */
+    if (entry->url) {
+        octstr_url_encode(entry->url);
+        octstr_replace(entry->url, octstr_imm("%"), octstr_imm("%%"));
+    }
+    os_mask = octstr_format("%d", entry->mask);
+
     gwlist_append(binds, entry->smsc);
     gwlist_append(binds, tsclean);
     gwlist_append(binds, srcclean);
     gwlist_append(binds, dstclean);
     gwlist_append(binds, entry->service);
     gwlist_append(binds, entry->url);
-    os_mask = octstr_format("%d", entry->mask);
     gwlist_append(binds, os_mask);
     gwlist_append(binds, entry->boxc_id);
 
@@ -289,19 +295,29 @@ static struct dlr_entry *dlr_redis_get(const Octstr *smsc, const Octstr *ts, con
 
     if (gwlist_len(result) > 0) {
         row = gwlist_extract_first(result);
-        res = dlr_entry_create();
-        gw_assert(res != NULL);
-        res->mask = atoi(octstr_get_cstr(gwlist_get(row, 0)));
-        get_octstr_value(&res->service, row, 1);
-        get_octstr_value(&res->url, row, 2);
-        get_octstr_value(&res->source, row, 3);
-        get_octstr_value(&res->destination, row, 4);
-        get_octstr_value(&res->boxc_id, row, 5);
-        gwlist_destroy(row, octstr_destroy_item);
-        res->smsc = octstr_duplicate(smsc);
 
-        octstr_replace(res->source, octstr_imm("__space__"), octstr_imm(" "));
-        octstr_replace(res->destination, octstr_imm("__space__"), octstr_imm(" "));
+        /*
+         * If we get an empty set back from redis, this is
+         * still an array with "" values, representing (nil).
+         * If the mask is empty then this can't be a valid
+         * set, therefore bail out.
+         */
+        if (octstr_len(gwlist_get(row, 0)) > 0) {
+            res = dlr_entry_create();
+            gw_assert(res != NULL);
+            res->mask = atoi(octstr_get_cstr(gwlist_get(row, 0)));
+            get_octstr_value(&res->service, row, 1);
+            get_octstr_value(&res->url, row, 2);
+            octstr_url_decode(res->url);
+            get_octstr_value(&res->source, row, 3);
+            get_octstr_value(&res->destination, row, 4);
+            get_octstr_value(&res->boxc_id, row, 5);
+            res->smsc = octstr_duplicate(smsc);
+
+            octstr_replace(res->source, octstr_imm("__space__"), octstr_imm(" "));
+            octstr_replace(res->destination, octstr_imm("__space__"), octstr_imm(" "));
+        }
+        gwlist_destroy(row, octstr_destroy_item);
     }
     gwlist_destroy(result, NULL);
 

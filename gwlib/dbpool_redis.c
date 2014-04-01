@@ -65,10 +65,10 @@
 #include <hiredis.h>
 
 /*
- * Define RADIS_DEBUG to get DEBUG level output of the
+ * Define REDIS_DEBUG to get DEBUG level output of the
  * Redis commands send to the server.
  */
-/* #define RADIS_DEBUG 1 */
+/* #define REDIS_DEBUG 1 */
 
 #define REDIS_DEFAULT_PORT  6379
 
@@ -292,6 +292,9 @@ static int redis_select(void *conn, Octstr *sql, List *binds, List **res)
                     continue;
                 }
                 temp = octstr_create_from_data(reply->element[i]->str, reply->element[i]->len);
+#if defined(REDIS_DEBUG)
+                debug("dbpool.redis",0,"Received REDIS_REPLY_ARRAY[%d]: %s", i, octstr_get_cstr(temp));
+#endif
                 gwlist_append(row, temp);
             }
             gwlist_produce(*res, row);

@@ -1,4 +1,12 @@
 2014-04-01  Stipe Tolj  <stolj at kannel.org>
+    * gwlib/dbpool_redis.c: fix typo for REDIS_DEBUG macro. Add more possible
+      debug output. NLC.
+    * gw/dlr_redis.c: DLR-URLs need to be URL-[en|de]coded for redis and
+      '%' needs to be escaped, since hiredis uses this inside redisCommand().
+      This patchset fixes bug #690. Thanks to Lorenzo Bagni for reporting.
+      [Msg-Id: <CAD8hAHGx520vLKnt0GOUhDRUPsoz14f=J4RO0PnH1dG3yUSNwQ@mail.gmail.com>]
+      
+2014-04-01  Stipe Tolj  <stolj at kannel.org>
     * gw/dlr.[ch]: reverting back to the direct dlr_add() including the use_dst
       flag in the function prototype, there is no way to handle an int type
       via va_args without knowin the number of arguments passed, only void*
