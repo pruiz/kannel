@@ -220,9 +220,10 @@ static void dlr_redis_add(struct dlr_entry *entry)
             sql = octstr_format("EXPIRE %S %ld", key, fields->ttl);
             res = dbpool_conn_update(pconn, sql, NULL);
         }
-        octstr_destroy(sql);
-        sql = octstr_format("INCR %S:Count", fields->table);
-        res = dbpool_conn_update(pconn, sql, NULL);
+        /* We are not performing an 'INCR <table>:Count'
+         * operation here, since we can't be accurate due
+         * to TTL'ed expiration. Rather use 'DBSIZE' based
+         * on seperated databases in redis. */
     }
 
     dbpool_conn_produce(pconn);
@@ -371,11 +372,8 @@ static void dlr_redis_remove(const Octstr *smsc, const Octstr *ts, const Octstr 
         error(0, "DLR: REDIS: Error while removing dlr entry for %s",
               octstr_get_cstr(key));
     }
-    else {
-        octstr_destroy(sql);
-        sql = octstr_format("DECR %S:Count", fields->table);
-        res = dbpool_conn_update(pconn, sql, NULL);
-    }
+    /* We don't perform 'DECR <table>:Count', since we have TTL'ed
+     * expirations, which can't be handled with manual counters. */
 
     dbpool_conn_produce(pconn);
     octstr_destroy(sql);
@@ -430,7 +428,6 @@ static void dlr_redis_update(const Octstr *smsc, const Octstr *ts, const Octstr 
 static long dlr_redis_messages(void)
 {
     List *result, *row;
-    Octstr *sql;
     DBPoolConn *conn;
     long msgs = -1;
 
@@ -438,28 +435,12 @@ static long dlr_redis_messages(void)
     if (conn == NULL)
         return -1;
 
-    /*
-     * An easier way to get the number of DLRs would be to count the keys
-     * with the table prefix using the Redis "KEYS %S:*" command, however the
-     * Redis doc strongly suggests against using the KEYS command in live code.
-     * Instead, we're tracking the number of outstanding DLRs in a seaparate
-     * counter key. Another possible implementation would be to require a
-     * dedicated Redis DB and to parse the output of the "INFO" command to get
-     * the key count.
-     */
-    sql = octstr_format("GET %S:Count", fields->table);
-
-    if (dbpool_conn_select(conn, sql, NULL, &result) != 0) {
-        octstr_destroy(sql);
+    if (dbpool_conn_select(conn, octstr_imm("DBSIZE"), NULL, &result) != 0) {
         dbpool_conn_produce(conn);
-        /* 
-         * The fetch will fail if the :Count key doesn't exist - i.e. 0 msgs 
-         */
         return 0;
     }
 
     dbpool_conn_produce(conn);
-    octstr_destroy(sql);
 
     if (gwlist_len(result) > 0) {
         row = gwlist_extract_first(result);
