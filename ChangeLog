@@ -1,4 +1,8 @@
 2014-04-01  Stipe Tolj  <stolj at kannel.org>
+    * doc/examples/dlr-redis.conf, doc/userguide.xml: Patchset fixes bug #689
+      reported by Lorenzo Bagni.
+      
+2014-04-01  Stipe Tolj  <stolj at kannel.org>
     * gwlib/dbpool_redis.c: add handling of REDIS_REPLY_INTEGER in function
       redis_select().
     * gw/dlr_redis.c: re-write the DLR messages counter retrieving. We can't

@@ -5863,10 +5863,10 @@ field-boxc-id = boxc
                 group = redis-connection
                 id = mydlr
                 host = localhost
-                port = 6739
+                port = 6379
                 #password = foo
                 database = 2
-                idle-timeout-secs = 3600
+                idle-timeout = 3600
                 max-connections = 1
                 
                 group = dlr-db
@@ -5940,7 +5940,7 @@ field-boxc-id = boxc
                                 for each DLR. If this variable is ommitted, the default database (0) will be used.
                             </entry></row>
                         
-                        <row><entry><literal>idle-timeout-secs</literal></entry>
+                        <row><entry><literal>idle-timeout</literal></entry>
                             <entry>integer</entry>
                             <entry valign="bottom">
                                 The number of seconds that Redis should hold the connection open without any
