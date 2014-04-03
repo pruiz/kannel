@@ -1,20 +1,25 @@
-/*	header.h
+/******************************************************************************\
+ *                                                                            *
+ * Import                                                                     *
+ *                                                                            *
+\******************************************************************************/
 
-	Defines SOAP Header data structure shared by client and service modules
+#import "wsse.h"    // wsse = <http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd>
 
-	Copyright (C) 2000-2002 Robert A. van Engelen. All Rights Reserved.
+/******************************************************************************\
+ *                                                                            *
+ * SOAP Header                                                                *
+ *                                                                            *
+\******************************************************************************/
+
+/**
+The SOAP Header is part of the gSOAP context and its content is accessed
+through the soap.header variable. You may have to set the soap.actor variable
+to serialize SOAP Headers with SOAP-ENV:actor or SOAP-ENV:role attributes.
 */
 
-//gsoap h schema namespace: http://websrv.cs.fsu.edu/~engelen/h.xsd
-
-// h:authentication type of SOAP Header <h:credentials> element
-struct h__authentication
-{ @char *userid; // h:userid attribute
-  @char *passwd; // h:passwd attribute
-};
-
-// SOAP Header elements
 struct SOAP_ENV__Header
-{ struct h__authentication *h__credentials; // <h:credentials>
+{
+    mustUnderstand                      // must be understood by receiver
+    _wsse__Security                     *wsse__Security;    ///< TODO: Check element type (imported type)
 };
-

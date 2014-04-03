@@ -1,3 +1,17 @@
+2014-04-03  Stipe Tolj  <stolj at kannel.org>
+    * gw/smsc/smsc_soap_parlayx.c: re-order header includes and remove comment
+      block. NLC.
+    * soap/env_header.h: add SOAP_ENV__Header struct for Parlay/X modules to
+      the abstracted SOAP env library build.
+    * soap/Makefile.in: change the SOAP env build and incarnation of wsseapi.[ch]
+      inside the soap/service/parlayx implementation.
+    * soap/service/parlayx/parlayx_sms_send_service_2_1_wrapper.h: removed, 
+      moved the SOAP_ENV__Header struct definition to the abstracted SOAP env
+      layer.
+    This patchset fixes possible segfaults for additional SOAP/XML modules, when
+    the SOAP_ENV__Header processing is taken from Parlay/X. This needs to be 
+    taken from the abstracted SOAP env library.
+      
 2014-04-01  Stipe Tolj  <stolj at kannel.org>
     * doc/examples/dlr-redis.conf, doc/userguide.xml: Patchset fixes bug #689
       reported by Lorenzo Bagni.

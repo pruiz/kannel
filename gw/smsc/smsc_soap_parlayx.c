@@ -78,9 +78,9 @@
 
 #ifdef HAVE_GSOAP
 
+#include "soap/service/parlayx/wsseapi.h"
 #include "soap/service/parlayx/parlayxH.h"
 #include "soap/service/parlayx/parlayx.nsmap"
-#include "soap/service/parlayx/wsseapi.h"
 
 
 /*
@@ -1095,12 +1095,6 @@ int __px1__sendSms (
         /* response struct */ 
         struct pxSmsSend__sendSmsResponse *resp)
 {
-    /*
-    if (soap->header->mm7__TransactionID) {
-        debug("",0,"SubmitSMReq: TransactionID: %s", soap->header->mm7__TransactionID);
-    }
-    */
-        
     /* positive response */
     resp->result = "100";
 

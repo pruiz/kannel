@@ -18,7 +18,7 @@ GSOAP_SHARE = @GSOAP_SHARE@
 GSOAP_IMPORT = $(GSOAP_SHARE)/import
 GSOAP_PLUGIN = $(GSOAP_SHARE)/plugin
 
-CFLAGS=-D_REENTRANT=1 -I. -Igw @CFLAGS@ -I$(GSOAP_IMPORT) -I$(GSOAP_PLUGIN) -DWITH_OPENSSL 
+CFLAGS=-D_REENTRANT=1 -I. -Igw @CFLAGS@ -I$(GSOAP_IMPORT) -I$(GSOAP_PLUGIN) -Isoap -DWITH_OPENSSL 
 LDFLAGS=-L. @LDFLAGS@
 
 #
@@ -30,15 +30,19 @@ LIBS=-lsoap_parlayx \
 #
 # gSOAP env/plugin library, i.e. required for WS-Security
 #
-gsoap_plugin_srcs = $(GSOAP_PLUGIN)/wsseapi.c \
-	$(GSOAP_PLUGIN)/smdevp.c \
-	$(GSOAP_PLUGIN)/mecevp.c
+gsoap_plugin_srcs = \
+	soap/smdevp.c \
+	soap/mecevp.c 
+gsoap_plugin_objs = $(gsoap_plugin_srcs:.c=.o)
 
 soap/envH.h soap/envC.c: soap/env.h
-	$(SOAPCPP) -c -CS -I soap -d soap -p env soap/env.h
-
-libsoap_env.a: soap/envC.o soap/env.o
-	@LIBTOOL@ libsoap_env.a soap/envC.o soap/env.o
+	for plugin in $(gsoap_plugin_srcs); do \
+	  ln -sf $(GSOAP_PLUGIN)/`basename $$plugin` $$plugin; \
+	done
+	$(SOAPCPP) -c -CS -I $(GSOAP_IMPORT) -I soap -d soap -p env soap/env.h
+	
+libsoap_env.a: $(gsoap_plugin_objs) soap/envC.o soap/env.o
+	@LIBTOOL@ libsoap_env.a $(gsoap_plugin_objs) soap/envC.o soap/env.o
 	$(RANLIB) libsoap_env.a
 
 
@@ -52,27 +56,21 @@ soap_parlayx_wsdls = $(soap_parlayx)/wsdl/parlayx_sms_send_service_2_1.wsdl \
 soap_parlayx_cppsrc = $(soap_parlayx)/parlayx_sms_send_service_2_1.h
 soap_parlayx_cppwrap = $(soap_parlayx)/parlayx_sms_send_service_2_1_wrapper.h
 soap_parlayx_cpphdr = $(soap_parlayx)/parlayxH.h
-soap_parlayx_srcs = $(soap_parlayx)/parlayxC.c $(wildcard $(soap_parlayx)/parlayx*Lib.c)
+soap_parlayx_srcs = $(soap_parlayx)/wsseapi.c $(wildcard $(soap_parlayx)/parlayx*Lib.c)
 soap_parlayx_objs = $(soap_parlayx_srcs:.c=.o)
-soap_parlayx_plugin_srcs = $(soap_parlayx)/wsseapi.c $(soap_parlayx)/smdevp.c $(soap_parlayx)/mecevp.c
-soap_parlayx_plugin_objs = $(soap_parlayx_plugin_srcs:.c=.o)
 
 $(soap_parlayx_cppsrc): $(soap_parlayx_wsdls)
 	$(WSDL2H) -c -W -npx -t soap/service/parlayx/typemap.dat -o $(soap_parlayx_cppsrc) -I soap/service/parlayx/wsdl $(soap_parlayx_wsdls)
 	sed -i -e '/^\/\/gsoapopt/d' $(soap_parlayx_cppsrc)
 	
-$(soap_parlayx_cpphdr): $(soap_parlayx_cppwrap) $(soap_parlayx_cppsrc)
-	$(SOAPCPP) -d $(soap_parlayx) -p parlayx -I $(GSOAP_IMPORT) -I $(soap_parlayx) -cxwn $(soap_parlayx_cppwrap)
-	for plugin in $(gsoap_plugin_srcs); do \
-	  ln -sf $$plugin $(soap_parlayx)/`basename $$plugin`; \
-	done
+$(soap_parlayx_cpphdr): $(soap_parlayx_cppsrc)
+	$(SOAPCPP) -d $(soap_parlayx) -p parlayx -I $(soap_parlayx) -cxwn $(soap_parlayx_cppsrc)
 	# we need to addopt the wsseapi.[ch] to use our own soapH.h version
-	cat $(GSOAP_PLUGIN)/wsseapi.h | sed 's/soapH.h/parlayxH.h/g' > $(soap_parlayx)/wsseapi.h
-	unlink $(soap_parlayx)/wsseapi.c
-	cat $(GSOAP_PLUGIN)/wsseapi.c | sed 's/wsseapi.h/soap\/service\/parlayx\/wsseapi.h/g' > $(soap_parlayx)/wsseapi.c
+	cat $(GSOAP_PLUGIN)/wsseapi.h | sed 's/soapH.h/envH.h/g' > $(soap_parlayx)/wsseapi.h
+	cat $(GSOAP_PLUGIN)/wsseapi.c > $(soap_parlayx)/wsseapi.c
 	
-libsoap_parlayx.a: $(soap_parlayx_cpphdr) $(soap_parlayx_plugin_objs) $(soap_parlayx_objs)
-	@LIBTOOL@ libsoap_parlayx.a $(soap_parlayx_plugin_objs) $(soap_parlayx_objs)
+libsoap_parlayx.a: $(soap_parlayx_cpphdr) $(soap_parlayx_objs)
+	@LIBTOOL@ libsoap_parlayx.a $(soap_parlayx_objs)
 	$(RANLIB) libsoap_parlayx.a
 
 
