@@ -1,3 +1,6 @@
+2014-04-11 Alexander Malysh <amalysh at kannel.org>
+    * gw/smsbox.c, gwlib/gw-timer.[ch]: added callback function to gw-timer
+
 2014-04-03  Stipe Tolj  <stolj at kannel.org>
     * gw/smsc/smsc_soap_parlayx.c: re-order header includes and remove comment
       block. NLC.

@@ -127,6 +127,10 @@ struct Timer
      */
     List *output;
     /*
+     * A call back function is called when the timer elapses.
+     */
+    void (*callback) (void* data);
+    /*
      * The timer is set to elapse at this time, expressed in
      * Unix time format.  This field is set to -1 if the timer
      * is not active (i.e. in the timer set's heap).
@@ -204,7 +208,7 @@ void gw_timerset_destroy(Timerset *set)
 }
 
 
-Timer *gw_timer_create(Timerset *set, List *outputlist)
+Timer *gw_timer_create(Timerset *set, List *outputlist, void (*callback) (void*))
 {
     Timer *t;
 
@@ -215,7 +219,9 @@ Timer *gw_timer_create(Timerset *set, List *outputlist)
     t->elapsed_data = NULL;
     t->index = -1;
     t->output = outputlist;
-    gwlist_add_producer(outputlist);
+    if (t->output != NULL)
+        gwlist_add_producer(outputlist);
+    t->callback = callback;
 
     return t;
 }
@@ -226,7 +232,8 @@ void gw_timer_destroy(Timer *timer)
         return;
 
     gw_timer_stop(timer);
-    gwlist_remove_producer(timer->output);
+    if (timer->output != NULL)
+        gwlist_remove_producer(timer->output);
     gw_free(timer);
 }
 
@@ -236,7 +243,8 @@ void gw_timer_elapsed_destroy(Timer *timer)
         return;
 
     gw_timer_elapsed_stop(timer);
-    gwlist_remove_producer(timer->output);
+    if (timer->output != NULL)
+        gwlist_remove_producer(timer->output);
     gw_free(timer);
 }
 
@@ -441,7 +449,8 @@ static void abort_elapsed(Timer *timer)
     if (timer->elapsed_data == NULL)
         return;
 
-    gwlist_delete_equal(timer->output, timer->elapsed_data);
+    if (timer->output != NULL)
+        gwlist_delete_equal(timer->output, timer->elapsed_data);
     timer->elapsed_data = NULL;
 }
 
@@ -615,7 +624,10 @@ static void elapse_timer(Timer *timer)
 
     timer->elapsed_data = timer->data;
     timer->elapses = -1;
-    gwlist_produce(timer->output, timer->elapsed_data);
+    if (timer->output != NULL)
+        gwlist_produce(timer->output, timer->elapsed_data);
+    if (timer->callback != NULL)
+        timer->callback(timer->elapsed_data);
 }
 
 /*

@@ -98,10 +98,11 @@ void gw_timerset_destroy(Timerset *set);
 
 
 /*
- * Create a timer and tell it to use the specified output list when
- * it elapses.  Do not start it yet.  Return the new timer.
+ * Create a timer and tell it to use the specified output list or
+ * callback function when it elapses.
+ * Do not start it yet.  Return the new timer.
  */
-Timer *gw_timer_create(Timerset *set, List *outputlist);
+Timer *gw_timer_create(Timerset *set, List *outputlist, void (*callback) (void*));
 
 /*
  * Destroy this timer and free its resources.  Stop it first, if needed.
